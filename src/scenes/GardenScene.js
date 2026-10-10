@@ -283,7 +283,7 @@ export default class GardenScene extends Phaser.Scene {
       this.add
         .text(x + dx, y + dy, text, {
           fontFamily: 'Trebuchet MS, Arial',
-          fontSize: '7px',
+          fontSize: text.length > 6 ? '6px' : '7px', // längere Namen etwas kleiner, damit sie aufs Brett passen
           fontStyle: 'bold',
           color: '#3a2414',
           resolution: 8,

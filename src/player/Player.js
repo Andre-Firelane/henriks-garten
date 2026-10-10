@@ -1,5 +1,6 @@
 import { blockedAt } from '../world/collision.js';
 import { touch } from '../ui/touch.js';
+import { SPRITE_SINK } from '../animals/Animal.js';
 
 // Bilder im Spritesheet "hero": Blickrichtung je nach Laufrichtung
 const FRAME = { downLeft: 1, downRight: 0, upRight: 2, upLeft: 3 };
@@ -86,7 +87,7 @@ export default class Player {
     // Laufen andeuten: leichtes Hüpfen und Wippen
     const phase = this.walkTime * STEP_RATE;
     const hop = moving ? Math.abs(Math.sin(phase)) * HOP : 0;
-    this.sprite.setPosition(this.x, this.y - hop);
+    this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
     this.sprite.setAngle(moving ? Math.sin(phase) * 3 : 0);
     this.shadow.setPosition(this.x, this.y);
     this.shadow.setScale(1 - hop * 0.04);

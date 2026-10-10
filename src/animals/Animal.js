@@ -210,6 +210,8 @@ const FOLLOW_SPEED = 100; // beim Hinterherlaufen schneller als der Spieler, dam
 export const FOLLOW_GAP = 34; // Abstand zwischen den Tieren auf der Spur des Spielers
 export const CATCH_DIST = 22; // so nah muss der Spieler ran, um es zu fangen
 const FOOT_H = 3;
+// Die Füße stehen etwas unterhalb der Schattenmitte, sonst wirkt die Figur, als schwebe sie über dem Schatten
+export const SPRITE_SINK = 3;
 
 // Zustände: 'wild' läuft frei herum, 'following' folgt dem Spieler, 'penned' ist im Gehege, 'trapped' sitzt in der Falle
 export default class Animal {
@@ -317,7 +319,7 @@ export default class Animal {
 
     const phase = this.walkTime * this.kind.stepRate;
     const hop = moving ? Math.abs(Math.sin(phase)) * this.kind.hop : 0;
-    this.sprite.setPosition(this.x, this.y - hop);
+    this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
     this.sprite.setAngle(moving ? Math.sin(phase) * 2 : 0);
     this.shadow.setPosition(this.x, this.y);
     this.sprite.setDepth(this.y);
