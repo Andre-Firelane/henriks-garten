@@ -69,6 +69,7 @@ export const LEVELS = {
     toolSpots: [
       { tool: 'net', tx: 18, ty: 21 },
       { tool: 'lasso', tx: 18, ty: 22 },
+      { tool: 'empty', tx: 18, ty: 23 }, // "Hände frei": hier legt man das getragene Werkzeug ab
     ],
     // Übergänge: wer auf die Kachel tritt, kommt im Ziel-Level an der Kachel "arrive" heraus
     exits: [{ tx: 0, ty: 19, to: 'forest', arrive: { tx: 37, ty: 18 }, label: 'Wald' }],
@@ -134,6 +135,7 @@ export const LEVELS = {
     ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [
       // vor der Hütte, neben dem Weg zum Gehege
+      { tool: 'empty', tx: 28, ty: 14 }, // "Hände frei": hier legt man das getragene Werkzeug ab
       { tool: 'net', tx: 29, ty: 14 },
       { tool: 'lasso', tx: 30, ty: 14 },
       // die beiden Fallen eine Reihe tiefer, damit man zwischen ihnen und Kescher/Lasso durchlaufen kann

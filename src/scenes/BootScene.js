@@ -9,7 +9,7 @@ const PIXEL_ART = [
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };

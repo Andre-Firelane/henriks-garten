@@ -855,7 +855,33 @@ const sprites = {
   'signpost.png': signpost(),
   'shed_log.png': shed('log'),
   'trap.png': trap(),
+  'hand.png': hand(),
 };
+
+// Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
+function hand() {
+  const skin = hex('#f2c89a');
+  const shade = hex('#d9a26f');
+  const o = new Canvas(64, 64);
+  // vier Finger mit runden Kuppen (der mittlere am längsten)
+  for (const [x, top] of [[20, 16], [27, 11], [34, 12], [41, 17]]) {
+    o.rect(x, top + 3, 6, 30 - top, skin);
+    o.circle(x + 3, top + 3, 3, skin);
+    o.line(x + 5, top + 4, x + 5, 33, shade); // Schatten an der rechten Fingerseite
+  }
+  // Handfläche
+  o.ellipse(33, 41, 14, 13, skin);
+  o.ellipse(35, 45, 9, 7, shade);
+  o.ellipse(34, 43, 8, 6, skin);
+  // Daumen schräg nach links
+  o.poly([[20, 40], [9, 29], [13, 25], [24, 34]], skin);
+  o.circle(11, 27, 3, skin);
+  o.line(21, 36, 12, 28, shade);
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.draw(o, 0, 0);
+  return c;
+}
 
 for (const [name, canvas] of Object.entries(sprites)) {
   canvas.save(path.join(OUT, name));

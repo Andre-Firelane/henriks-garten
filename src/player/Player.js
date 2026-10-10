@@ -11,7 +11,7 @@ const FOOT_W = 7; // halbe Breite der Füße für die Kollision
 const FOOT_H = 3;
 const TRAIL_STEP = 2; // Abstand der Spurpunkte
 const TRAIL_MAX = 400;
-const STEP_VOLUME = 0.1; // Lautstärke der Schritte
+const STEP_VOLUME = 0.065; // Lautstärke der Schritte
 const STEP_INTERVAL = 0.35; // Sekunden zwischen zwei Schritt-Geräuschen
 const STEP_DETUNE = 150; // Tonhöhe schwankt um so viele Cent, damit nicht jeder Schritt gleich klingt
 

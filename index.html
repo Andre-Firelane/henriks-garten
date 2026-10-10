@@ -80,6 +80,27 @@
       body.touch #tools { display: none; }
       body.touch #sign { bottom: auto; top: 84px; }
       body.touch #hud { font-size: 15px; max-width: calc(100% - 120px); }
+      /* Hinweise am Bildschirmrand: in welcher Richtung eine ausgelegte Falle liegt */
+      #markers { position: fixed; inset: 0; pointer-events: none; }
+      .marker {
+        position: absolute; width: 40px; height: 40px; margin: -22px 0 0 -22px; border-radius: 50%;
+        background: rgba(60, 40, 20, 0.8) url(assets/trap.png) center / 78% no-repeat;
+        border: 3px solid #fff8e6; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        opacity: 0; transition: opacity 0.2s;
+      }
+      .marker.show { opacity: 1; }
+      .marker.elsewhere.show { opacity: 0.55; }
+      .marker .pointer {
+        position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -7px 0 0 -6px;
+        transform-origin: 6px 7px;
+      }
+      .marker .pointer::after {
+        content: ''; position: absolute; left: 30px; top: 0;
+        border: 7px solid transparent; border-left: 11px solid #fff8e6;
+      }
+      .marker.caught { border-color: #ffd84a; animation: marker-pulse 0.9s ease-in-out infinite; }
+      .marker.caught .pointer::after { border-left-color: #ffd84a; }
+      @keyframes marker-pulse { 50% { transform: scale(1.18); } }
       @keyframes toast { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
     </style>
   </head>
@@ -89,6 +110,7 @@
     <div id="tools"></div>
     <div id="toast"></div>
     <div id="sign"></div>
+    <div id="markers"></div>
     <div id="stick-zone"></div>
     <div id="stick"><div id="stick-knob"></div></div>
     <button id="btn-action" aria-label="Aktion"></button>

@@ -53,6 +53,9 @@ const TRAP_TIME = [20, 180]; // Sekunden (zufällig)
 const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekunden erneut versuchen
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
+const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
+const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
+const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS-Pixel)
 
 // Spawner: wilde Tiere leben eine Weile, dann verschwinden sie, und neue kommen nach (siehe spawn in levels.js)
 const LIFETIME = [90, 240]; // Sekunden, die ein wildes Tier bleibt (zufällig)
@@ -168,8 +171,14 @@ export default class GardenScene extends Phaser.Scene {
     // Werkzeuge am Boden: gespeicherter Stand oder die Startplätze des Levels
     const saved = game.levels[LEVEL_ID];
     const pickupList =
-      saved?.pickups ?? TOOL_SPOTS.map(({ tool, tx, ty }) => ({ tool, ...tileToWorld(tx, ty) }));
+      saved?.pickups ??
+      TOOL_SPOTS.filter((s) => s.tool !== 'empty').map(({ tool, tx, ty }) => ({ tool, ...tileToWorld(tx, ty) }));
     this.pickups = pickupList.map(({ tool, x, y }) => new Pickup(this, x, y, tool, tool));
+    // "Hände frei"-Plätze: bleiben immer liegen; wer darüber läuft, legt sein Werkzeug zurück an dessen Platz
+    this.handSpots = TOOL_SPOTS.filter((s) => s.tool === 'empty').map(({ tx, ty }) => {
+      const p = tileToWorld(tx, ty);
+      return new Pickup(this, p.x, p.y, 'hand', 'empty');
+    });
 
     // Das getragene Werkzeug kommt mit
     this.tool = null;
@@ -215,6 +224,9 @@ export default class GardenScene extends Phaser.Scene {
     this.toolbar = document.getElementById('tools');
     this.toast = document.getElementById('toast');
     this.signPanel = document.getElementById('sign');
+    this.markerBox = document.getElementById('markers');
+    this.markerBox.innerHTML = '';
+    this.markers = new Map(); // Fallen-ID → Hinweis am Bildschirmrand
     this.signPanel.classList.remove('show');
     this.updateHud();
     this.updateToolbar();
@@ -472,7 +484,22 @@ export default class GardenScene extends Phaser.Scene {
 
   // Werkzeug aufnehmen; ein getragenes kommt zurück auf seinen Platz an der Hütte (Tausch)
   takeTool(pickup) {
-    const id = pickup.tool;
+    this.equipTool(pickup.tool);
+  }
+
+  // Hände frei: das getragene Werkzeug kommt zurück an seinen Platz an der Hütte
+  dropTool() {
+    const id = this.toolId;
+    this.tool.destroy();
+    this.tool = null;
+    this.toolId = null;
+    this.returnTool(id);
+    this.updateToolbar();
+    this.showToast(`Hände frei! ${TOOLS[id].name} liegt wieder an seinem Platz.`);
+  }
+
+  // Werkzeug in die Hand nehmen (ein getragenes kommt zurück an die Hütte)
+  equipTool(id, verb = 'genommen') {
     let dropped = '';
     if (this.tool) {
       this.tool.destroy();
@@ -482,7 +509,7 @@ export default class GardenScene extends Phaser.Scene {
     this.tool = TOOLS[id].create(this, this.player);
     this.toolId = id;
     this.updateToolbar();
-    this.showToast(`${TOOLS[id].name} genommen${dropped}! ${TOOLS[id].hint}: ${isTouch() ? 'Knopf rechts unten' : `Taste ${ACTION_KEY} oder Enter`}`);
+    this.showToast(`${TOOLS[id].name} ${verb}${dropped}! ${TOOLS[id].hint}: ${isTouch() ? 'Knopf rechts unten' : `Taste ${ACTION_KEY} oder Enter`}`);
   }
 
   // Getragene Falle vor dem Spieler auslegen
@@ -495,7 +522,7 @@ export default class GardenScene extends Phaser.Scene {
       x = p.x;
       y = p.y;
     }
-    const t = { id: game.nextTrapId++, level: LEVEL_ID, x, y, timer: Phaser.Math.FloatBetween(...TRAP_TIME), caught: false };
+    const t = { id: game.nextTrapId++, level: LEVEL_ID, x, y, timer: Phaser.Math.FloatBetween(...TRAP_TIME), caught: false, armed: false };
     game.traps.push(t);
     this.traps.set(t.id, new Trap(this, x, y));
     this.tool.destroy();
@@ -510,7 +537,75 @@ export default class GardenScene extends Phaser.Scene {
   updateTraps(dt) {
     for (const t of [...game.traps]) {
       if (t.caught) this.collectTrap(t);
-      else this.waitTrap(t, dt);
+      else if (!this.pickUpTrap(t)) this.waitTrap(t, dt);
+    }
+  }
+
+  // Leere ausgelegte Falle wieder aufheben, wenn man darüber läuft (erst, nachdem man sich einmal entfernt hat)
+  pickUpTrap(t) {
+    if (t.level !== LEVEL_ID) return false;
+    const d = Math.hypot(this.player.x - t.x, (this.player.y - t.y) * 2);
+    if (!t.armed) {
+      if (d > TRAP_REARM_DIST) t.armed = true;
+      return false;
+    }
+    if (d >= TRAP_PICKUP_DIST * 2) return false;
+    this.traps.get(t.id)?.destroy();
+    this.traps.delete(t.id);
+    game.traps = game.traps.filter((g) => g !== t);
+    this.equipTool('trap', 'wieder aufgenommen');
+    return true;
+  }
+
+  // Hinweise am Bildschirmrand: ein Kreis in Richtung jeder ausgelegten Falle, die gerade nicht zu sehen ist.
+  // Fallen im anderen Gebiet zeigen blass zum Übergang dorthin. Sitzt ein Tier drin, leuchtet der Hinweis.
+  updateTrapMarkers() {
+    const cam = this.cameras.main;
+    const view = cam.worldView;
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const top = Math.max(MARKER_MARGIN, this.hud.getBoundingClientRect().bottom + 26);
+    for (const t of game.traps) {
+      let target = t;
+      if (t.level !== LEVEL_ID) {
+        const exit = EXITS.find((e) => e.to === t.level);
+        if (!exit) continue;
+        target = tileToWorld(exit.tx, exit.ty);
+      }
+      // Bildschirmposition (etwas oberhalb des Fußpunkts, wo man die Falle sieht)
+      const sx = (target.x - view.x) * cam.zoom;
+      const sy = (target.y - 8 - view.y) * cam.zoom;
+      const onScreen = sx > 0 && sx < W && sy > 0 && sy < H;
+      let el = this.markers.get(t.id);
+      if (onScreen) {
+        el?.classList.remove('show');
+        continue;
+      }
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'marker';
+        el.innerHTML = '<span class="pointer"></span>';
+        this.markerBox.appendChild(el);
+        this.markers.set(t.id, el);
+      }
+      // vom Bildschirmmittelpunkt in Richtung Falle bis an den Rand (oben unterhalb der Anzeigeleiste)
+      const dx = sx - W / 2 || 1e-6;
+      const dy = sy - H / 2 || 1e-6;
+      const kx = (dx > 0 ? W - MARKER_MARGIN - W / 2 : MARKER_MARGIN - W / 2) / dx;
+      const ky = (dy > 0 ? H - MARKER_MARGIN - H / 2 : top - H / 2) / dy;
+      const k = Math.min(kx, ky);
+      el.style.left = `${W / 2 + dx * k}px`;
+      el.style.top = `${H / 2 + dy * k}px`;
+      el.querySelector('.pointer').style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
+      el.classList.add('show');
+      el.classList.toggle('caught', t.caught);
+      el.classList.toggle('elsewhere', t.level !== LEVEL_ID);
+    }
+    // Hinweise zu Fallen, die es nicht mehr gibt, entfernen
+    for (const [id, el] of this.markers) {
+      if (game.traps.some((t) => t.id === id)) continue;
+      el.remove();
+      this.markers.delete(id);
     }
   }
 
@@ -692,6 +787,7 @@ export default class GardenScene extends Phaser.Scene {
     }
 
     for (const p of [...this.pickups]) if (p.checkCollect(this.player)) this.takeTool(p);
+    if (this.tool && this.handSpots.some((h) => Math.hypot(this.player.x - h.x, this.player.y - h.y) < HAND_DIST)) this.dropTool();
     this.pickups = this.pickups.filter((p) => !p.collected);
     this.tool?.update(dt);
 
@@ -704,6 +800,7 @@ export default class GardenScene extends Phaser.Scene {
 
     for (const a of this.animals) a.update(dt, this.player);
     this.updateTraps(dt);
+    this.updateTrapMarkers();
     this.updateSpawner(dt);
     this.updateHerons(dt);
     this.updateGate(dt);
