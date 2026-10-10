@@ -24,6 +24,7 @@ const SOUNDS = [
   // Hintergrundgeräusche der Level (laufen in Dauerschleife, siehe ambient in levels.js)
   ['Sounds/Wald Ambient.mp3', 'public/assets/sounds/ambient_forest.mp3'],
   ['Sounds/WIese Ambient.mp3', 'public/assets/sounds/ambient_meadow.mp3'],
+  ['Sounds/Savanne Ambient.mp3', 'public/assets/sounds/ambient_savanna.mp3'],
 ];
 const MAX_RATE = 48000; // höhere Abtastraten werden heruntergerechnet
 

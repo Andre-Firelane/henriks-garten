@@ -6,6 +6,7 @@ const PIXEL_ART = [
   'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'fence_x', 'fence_y', 'gate_x', 'shed', 'sign_fish', 'fishpond0', 'fishpond1',
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
   'signpost', 'shed_log',
+  'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft', 'shed_tent',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)

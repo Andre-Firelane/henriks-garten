@@ -24,6 +24,11 @@ export const OBJECTS = {
   '|': { key: 'fence_y', originY: 44 / 64, solid: true },
   S: { key: 'sign_fish', originY: 54 / 56, solid: true },
   W: { key: 'signpost', originY: 60 / 64, solid: true },
+  // Savanne
+  A: { key: 'acacia', originY: 87 / 96, solid: true, hitbox: 12 },
+  R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
+  v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 12 },
+  y: { key: 'tuft', originY: 18 / 24, solid: false },
 };
 
 export let LEVEL_ID;

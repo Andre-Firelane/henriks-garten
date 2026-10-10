@@ -7,6 +7,7 @@
 //          f  rote Blumen g  gelbe Blumen
 //          P  Tanne       D  dunkler Laubbaum   k  dichter Busch   L  umgestürzter Stamm
 //          n  Farn        m  Pilze
+//          A  Akazie      R  großer Felsbrocken   v  trockener Strauch   y  Grasbüschel (Deko)
 //          -  Zaun (entlang tx)   |  Zaun (entlang ty)
 //          G  Tor zum Gehege (auf Weg, öffnet sich beim Durchgehen)
 //          H  Werkzeughütte (2x2 Kacheln, siehe shed)
@@ -36,7 +37,7 @@ export const LEVELS = {
       'b......~~~~~~~~~....#..........#.......T',
       'T......f~~~~~~~~T...#..........#..T....T',
       'T..................W#..........#.......b',
-      'X######################################T',
+      'X######################################X',
       'T.......g...........#..........f.......T',
       'T...fffgfff.....HH###....Soooo.........T',
       'b...fggfggf....bHH###....oooooo..b.....T',
@@ -72,9 +73,12 @@ export const LEVELS = {
       { tool: 'empty', tx: 18, ty: 23 }, // "Hände frei": hier legt man das getragene Werkzeug ab
     ],
     // Übergänge: wer auf die Kachel tritt, kommt im Ziel-Level an der Kachel "arrive" heraus
-    exits: [{ tx: 0, ty: 19, to: 'forest', arrive: { tx: 37, ty: 18 }, label: 'Wald' }],
+    exits: [
+      { tx: 0, ty: 19, to: 'forest', arrive: { tx: 37, ty: 18 }, label: 'Wald' },
+      { tx: 39, ty: 19, to: 'savanna', arrive: { tx: 1, ty: 19 }, label: 'Savanne' },
+    ],
     // Beschriftung der drei Bretter am Wegweiser (oben, Mitte, unten)
-    signLabels: ['Gehege', 'Wald', 'Teich'],
+    signLabels: ['Gehege', 'Wald', 'Savanne'],
     // Spawner: so viele wilde Tiere sind ungefähr gleichzeitig unterwegs; die Zahlen dahinter sind die
     // Wahrscheinlichkeiten (je größer, desto häufiger). Tiere verschwinden nach einer Weile und neue kommen.
     spawn: { population: 14, weights: { sheep: 6, cat: 2, fish: 2, frog: 1.6, mole: 0.6 } },
@@ -145,5 +149,68 @@ export const LEVELS = {
     exits: [{ tx: 39, ty: 18, to: 'meadow', arrive: { tx: 1, ty: 19 }, label: 'Wiese' }],
     spawn: { population: 12, weights: { deer: 4, squirrel: 2.5, fish: 2.5, frog: 1.6, fox: 1, stag: 0.4 } },
     herons: { every: [50, 110], landChance: 0.5 },
+  },
+
+  savanna: {
+    name: 'Savanne',
+    rows: [
+      'AvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvv',
+      'R......................................v',
+      'v.y.....v..y.....y.....................v',
+      'v.....v.......y.........-------------..v',
+      'v.........y..v......R...|...........|..v',
+      'v...............A...y...|...........|..v',
+      'v.v..........v....y.....|...........|..A',
+      'v.....~~.~~.....y.......|...........|..R',
+      'v....~~~~~~....y........|...........|..v',
+      'A.....~~~~~~y...........|...........|..v',
+      'R..v.~~~~~~..y.......y..|...........|..v',
+      'v.......~~......Ry.y....|...........|..v',
+      'v......y.....vy...y.....-----GGG-----..v',
+      'v....y.....y........#.........#........v',
+      'v.v.......v.........#.........#........v',
+      'v................R..#.........#....y...A',
+      'v.................y.#.y.......#....A...R',
+      'v.yv....A..R........#...A.....#........v',
+      'A...................#.........#........v',
+      'X##############################...R....v',
+      'v...............HH..#..................v',
+      'v...............HH..#.y.....y.R........v',
+      'v...y.y.............#............y.....v',
+      'v...R........A......#.Soooo.........R..v',
+      'v.......v...........#.oooooo...y.......A',
+      'v................yy.#..oooo............R',
+      'v..y...........R....#..................v',
+      'A....A..~~...y...v..#..R...........y...v',
+      'R......~~~~~..y.....#........~~~~~.A...v',
+      'v......~~~~~........#.......~~~~~~..y..v',
+      'v......~~~~~........#..v...~~~~~~~~.y..v',
+      'v...R..~~~~~y.A..R..#........~~~~~.....v',
+      'v.......~~~.........#..A..y....~~......v',
+      'v.......~~......y...#...............v..A',
+      'v....A..............#....v...........y.R',
+      'v........v...v....A........v...........v',
+      'A.......y...........y..y....y....v.....v',
+      'R.v.v...v......v.v......v....v.........v',
+      'v......................................v',
+      'vvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvv',
+    ],
+    grass: ['sgrass0', 'sgrass1', 'sgrass2'],
+    path: 'savanna_path',
+    start: { tx: 2, ty: 19 },
+    pen: { tx0: 25, tx1: 35, ty0: 4, ty1: 11 },
+    shed: { tx: 16, ty: 20 },
+    shedTexture: 'shed_tent', // Ranger-Zelt
+    background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
+    ambient: 'ambient_savanna', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
+    toolSpots: [
+      { tool: 'net', tx: 18, ty: 20 },
+      { tool: 'lasso', tx: 18, ty: 21 },
+      { tool: 'empty', tx: 18, ty: 22 }, // "Hände frei": hier legt man das getragene Werkzeug ab
+    ],
+    exits: [{ tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' }],
+    // Eigene Savannentiere gibt es noch nicht; bis dahin leben hier Tiere, die ans Wasserloch passen
+    spawn: { population: 9, weights: { fish: 3, frog: 2, cat: 1 } },
+    herons: { every: [50, 110], landChance: 0.6 },
   },
 };

@@ -236,6 +236,7 @@ export default class GardenScene extends Phaser.Scene {
     }
 
     const cam = this.cameras.main;
+    cam.setBackgroundColor(LEVEL.background ?? '#4f8a2f'); // Farbe außerhalb der Karte
     this.fitZoom();
     this.scale.on('resize', this.fitZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.fitZoom, this));
@@ -568,7 +569,8 @@ export default class GardenScene extends Phaser.Scene {
     for (const t of game.traps) {
       let target = t;
       if (t.level !== LEVEL_ID) {
-        const exit = EXITS.find((e) => e.to === t.level);
+        // direkter Übergang dorthin, sonst der Weg über die Wiese (sie verbindet alle Gebiete)
+        const exit = EXITS.find((e) => e.to === t.level) ?? EXITS.find((e) => e.to === 'meadow');
         if (!exit) continue;
         target = tileToWorld(exit.tx, exit.ty);
       }

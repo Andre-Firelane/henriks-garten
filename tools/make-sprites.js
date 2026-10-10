@@ -856,6 +856,16 @@ const sprites = {
   'shed_log.png': shed('log'),
   'trap.png': trap(),
   'hand.png': hand(),
+  // Savanne (hinten angehängt, damit sich der Zufall der älteren Grafiken nicht verschiebt)
+  'sgrass0.png': savannaGrass(0),
+  'sgrass1.png': savannaGrass(1),
+  'sgrass2.png': savannaGrass(2),
+  'savanna_path.png': savannaPath(),
+  'acacia.png': acacia(),
+  'boulder.png': boulder(),
+  'dry_bush.png': dryBush(),
+  'tuft.png': tuft(),
+  'shed_tent.png': tent(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -880,6 +890,182 @@ function hand() {
   o.outline(INK);
   const c = new Canvas(64, 64);
   c.draw(o, 0, 0);
+  return c;
+}
+
+// ---------- Savanne ----------
+
+// Trockenes, gelbliches Gras mit dürren Halmen
+function savannaGrass(variant) {
+  const c = tile(() => {
+    const r = rand();
+    return r < 0.08 ? hex('#b89a52') : r < 0.15 ? hex('#e6d08c') : hex('#d4bb72');
+  });
+  for (let n = 0; n < 9 + variant * 4; n++) {
+    const x = randInt(6, 57);
+    const y = randInt(4, 28);
+    if (!inDiamond(x, y) || !inDiamond(x, y - 2)) continue;
+    c.paint(x, y, hex('#9c7e3e'));
+    c.paint(x, y - 1, hex('#b8984c'));
+    c.paint(x + (rand() < 0.5 ? -1 : 1), y - 2, hex('#ecdca0'));
+  }
+  // ein paar rötliche Erdflecken
+  if (variant === 2) {
+    for (let n = 0; n < 4; n++) {
+      const x = randInt(14, 48);
+      const y = randInt(9, 23);
+      c.paint(x, y, hex('#c08a58'));
+      c.paint(x + 1, y, hex('#b07a4a'));
+    }
+  }
+  return c;
+}
+
+// Rote Erde
+function savannaPath() {
+  const c = tile(() => {
+    const r = rand();
+    return r < 0.1 ? hex('#a8603a') : r < 0.16 ? hex('#d8956a') : hex('#c47a4c');
+  });
+  for (let n = 0; n < 7; n++) {
+    const x = randInt(8, 55);
+    const y = randInt(5, 26);
+    c.paint(x, y, hex('#8a4a2a'));
+    c.paint(x + 1, y, hex('#e0a87a'));
+  }
+  return c;
+}
+
+// Schirmakazie: dünner, gegabelter Stamm und flache, breite Krone; Fuß des Stamms bei (48, 86)
+function acacia() {
+  const o = new Canvas(96, 96);
+  // Stamm mit zwei Ästen
+  for (let k = -2; k <= 2; k++) {
+    const col = k < 0 ? hex('#8a6440') : k === 0 ? hex('#6e4c2e') : hex('#563a22');
+    o.line(48 + k, 86, 47 + k, 60, col);
+    o.line(47 + k, 62, 34 + k, 40, col);
+    o.line(47 + k, 62, 62 + k, 41, col);
+  }
+  o.line(40, 50, 26, 42, hex('#6e4c2e'));
+  o.line(56, 50, 70, 43, hex('#6e4c2e'));
+  // flache Krone in Schichten, unten dunkler
+  o.ellipse(48, 37, 42, 11, hex('#4f6a26'));
+  o.ellipse(47, 34, 39, 9, hex('#66852f'));
+  o.ellipse(44, 31, 30, 6, hex('#7f9c3c'));
+  o.ellipse(38, 29, 14, 3.5, hex('#9cb650'));
+  o.ellipse(60, 30, 10, 3, hex('#9cb650'));
+  // Blattbüschel als Sprenkel
+  for (let n = 0; n < 70; n++) {
+    const x = randInt(8, 88);
+    const y = randInt(26, 46);
+    o.paint(x, y, rand() < 0.5 ? hex('#3f5820') : hex('#a8c25a'));
+  }
+  o.outline(INK);
+  return withShadow(96, 96, 48, 87, 30, 6, o);
+}
+
+// Großer Felsbrocken mit einem kleinen Stein daneben; Kachelmitte bei (32, 46)
+function boulder() {
+  const o = new Canvas(64, 56);
+  o.ellipse(30, 32, 23, 16, hex('#8c7658'));
+  o.ellipse(28, 29, 20, 13, hex('#a68e6c'), true);
+  o.ellipse(23, 24, 11, 7, hex('#c2ab86'), true);
+  o.ellipse(20, 21, 5, 3, hex('#d8c4a0'), true);
+  o.line(34, 22, 38, 32, hex('#6e5c44'));
+  o.line(38, 32, 36, 40, hex('#6e5c44'));
+  o.line(18, 36, 26, 38, hex('#6e5c44'));
+  o.ellipse(51, 42, 8, 6, hex('#8c7658'));
+  o.ellipse(50, 40.5, 6, 4, hex('#a68e6c'), true);
+  o.outline(hex('#3b3226'));
+  return withShadow(64, 56, 33, 46, 26, 6, o);
+}
+
+// Trockener Strauch: dürre Zweige mit ein paar olivgrünen Blättchen; Mitte bei (24, 33)
+function dryBush() {
+  const o = new Canvas(48, 40);
+  const twigs = [[-16, -10], [-11, -18], [-4, -22], [4, -21], [12, -17], [17, -9], [-8, -6], [9, -5]];
+  for (const [dx, dy] of twigs) {
+    o.line(24, 32, 24 + dx, 32 + dy, hex('#7a5a36'));
+    o.line(24 + dx * 0.6, 32 + dy * 0.6, 24 + dx * 0.6 + (dx > 0 ? 4 : -4), 32 + dy * 0.6 - 4, hex('#8a6a42'));
+  }
+  for (const [dx, dy] of twigs) {
+    o.ellipse(24 + dx, 31 + dy, 2.5, 1.8, hex('#8a8a3a'));
+    o.set(24 + dx - 1, 30 + dy, hex('#b0ac56'));
+  }
+  o.outline(hex('#3a2a18'));
+  return withShadow(48, 40, 24, 33, 13, 4, o);
+}
+
+// Büschel aus trockenem Gras (nur Deko, man kann hindurchlaufen); Mitte bei (16, 18)
+function tuft() {
+  const o = new Canvas(32, 24);
+  for (const [dx, h, col] of [[-6, 8, '#a88a40'], [-3, 11, '#c8a850'], [0, 13, '#e0c878'], [3, 10, '#c8a850'], [6, 7, '#a88a40'], [-1, 9, '#b8984c']]) {
+    o.line(16 + dx * 0.3, 19, 16 + dx, 19 - h, hex(col));
+  }
+  o.outline(hex('#6a5428'));
+  return o;
+}
+
+// Ranger-Zelt: Leinwandzelt mit hochgerollter Vorderplane, gleiche Grundfläche und Bildgröße wie die Hütten
+function tent() {
+  const cx = 72, cy = 90;
+  const H = 34; // Wandhöhe
+  const R = 34; // Dachhöhe über der Wand
+  const L = [cx - 64, cy], T = [cx, cy - 32], Rt = [cx + 64, cy], B = [cx, cy + 32];
+  const up = ([x, y], h) => [x, y - h];
+  const ridgeBack = [cx - 32, cy - 16 - H - R];
+  const ridgeFront = [cx + 32, cy + 16 - H - R];
+
+  const o = new Canvas(144, 128);
+  // Rückseitige Dachfläche
+  o.poly([up(T, H), up(Rt, H), ridgeFront, ridgeBack], hex('#a8925e'));
+  // Linke Wand aus Leinwand mit Nähten und erdigem Saum
+  const wall = new Canvas(144, 128);
+  wall.poly([L, B, up(B, H), up(L, H)], hex('#c9b07a'));
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 144; x++) if (x % 16 === 0) wall.paint(x, y, hex('#a08a58'));
+  wall.poly([L, B, up(B, 4), up(L, 4)], hex('#8a6a40'), true);
+  o.draw(wall, 0, 0);
+  // Offene Vorderseite: dunkles Inneres mit Regal und Kisten
+  o.poly([B, Rt, up(Rt, H), up(B, H)], hex('#3a2a18'));
+  o.poly([up(B, 15), up(Rt, 15), up(Rt, 18), up(B, 18)], hex('#a8743f'));
+  for (const [x, h, col] of [[cx + 14, 18, '#6a7a4a'], [cx + 24, 18, '#c49a62'], [cx + 40, 18, '#9aa0a8']]) {
+    const y = cy + 32 - (x - cx) / 2 - h;
+    o.rect(x - 3, y - 7, 6, 7, hex(col));
+  }
+  // Holzstangen an den Ecken der Öffnung
+  for (const P of [B, Rt]) o.rect(P[0] - (P === Rt ? 3 : 0), P[1] - H - 2, 3, H + 3, hex('#7a4e2d'));
+  // Hochgerollte Plane über der Öffnung
+  o.poly([up(B, H - 6), up(Rt, H - 6), up(Rt, H), up(B, H)], hex('#d8c48c'));
+  o.line(B[0], B[1] - H + 6, Rt[0], Rt[1] - H + 6, hex('#a08a58'));
+  // Giebel
+  o.poly([up(B, H), up(Rt, H), ridgeFront], hex('#c9b07a'));
+  o.line(ridgeFront[0], ridgeFront[1] + 2, ridgeFront[0], B[1] - H - 14, hex('#a08a58')); // Naht in der Mitte
+  // Vordere Dachfläche mit Überstand und Nähten vom Rand zum First
+  const roof = [[L[0] - 6, L[1] - H + 4], [B[0] - 4, B[1] - H + 6], ridgeFront, [ridgeBack[0] - 6, ridgeBack[1]]];
+  const cloth = new Canvas(144, 128);
+  cloth.poly(roof, hex('#dccb96'));
+  for (let y = 0; y < 128; y++) {
+    for (let x = 0; x < 144; x++) {
+      if ((((x * 50 + y * 32) % 640) + 640) % 640 < 40) cloth.paint(x, y, hex('#b8a26c')); // Nähte
+      const eave = y - 0.5 * x - (L[1] - H + 4 - 0.5 * (L[0] - 6)); // Abstand zur Traufe
+      if (eave > -4) cloth.paint(x, y, hex('#b8a26c')); // dunkler Saum an der Traufe
+    }
+  }
+  cloth.line(roof[2][0], roof[2][1], roof[3][0], roof[3][1], hex('#efe2b8')); // First
+  o.draw(cloth, 0, 0);
+  // Fähnchen auf der vorderen Firststange
+  o.rect(ridgeFront[0] - 1, ridgeFront[1] - 12, 2, 12, hex('#6e4c2e'));
+  o.poly([[ridgeFront[0] + 1, ridgeFront[1] - 12], [ridgeFront[0] + 11, ridgeFront[1] - 9], [ridgeFront[0] + 1, ridgeFront[1] - 6]], hex('#3f8a3f'));
+  o.outline(INK);
+
+  const c = new Canvas(144, 128);
+  c.poly([[L[0] - 4, L[1] + 2], [T[0], T[1]], [Rt[0] + 4, Rt[1] + 2], [B[0], B[1] + 6]], SHADOW);
+  c.draw(o, 0, 0);
+  // Spannseile von den Dachecken zu Heringen im Boden (nach der Kontur, damit sie dünn bleiben)
+  for (const [from, peg] of [[[L[0] - 6, L[1] - H + 4], [L[0] - 4, L[1] + 14]], [[B[0] - 4, B[1] - H + 6], [B[0] - 14, B[1] + 8]]]) {
+    c.line(from[0], from[1], peg[0], peg[1], hex('#8a7a5a'));
+    c.rect(peg[0] - 1, peg[1] - 1, 2, 3, hex('#5e3a20'));
+  }
   return c;
 }
 
