@@ -38,6 +38,7 @@ import { roundedTexture } from '../world/roundedTiles.js';
 import Net from '../tools/Net.js';
 import Lasso from '../tools/Lasso.js';
 import TrapTool from '../tools/TrapTool.js';
+import FoodTool from '../tools/FoodTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIcons } from '../ui/icons.js';
 import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
@@ -65,6 +66,8 @@ const SPAWN_INTERVAL = [5, 12]; // so oft schaut der Spawner, ob Tiere fehlen
 const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
 const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines Baums erscheinen
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
+const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
+const FEED_CHANCE = 1 / 5; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -99,6 +102,11 @@ const TOOLS = {
     create: (scene, player) => new TrapTool(scene, player),
     name: 'Falle',
     hint: 'Leg sie aus und warte, bis ein Tier hineingeht',
+  },
+  food: {
+    create: (scene, player) => new FoodTool(scene, player),
+    name: 'Grünfutter',
+    hint: `Geh nah an eine ${animalIcon('giraffe')} heran und füttere sie`,
   },
 };
 
@@ -552,6 +560,54 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Getragene Falle vor dem Spieler auslegen
+  // Grünfutter an die nächste Giraffe verfüttern: das Futter ist weg (liegt gleich wieder an der Hütte),
+  // und mit etwas Glück (FEED_CHANCE) läuft sie einem danach hinterher
+  feedGiraffe() {
+    const p = this.player;
+    const giraffe = this.animals
+      .filter((a) => a.species === 'giraffe' && a.canBeCaughtNow())
+      .map((a) => ({ a, d: Math.hypot(a.x - p.x, (a.y - p.y) * 2) }))
+      .filter(({ d }) => d < FEED_DIST)
+      .sort((u, v) => u.d - v.d)[0]?.a;
+    if (!giraffe) {
+      this.showToast(`Geh näher an eine ${animalIcon('giraffe')} heran, um sie zu füttern.`);
+      return;
+    }
+    this.tool.destroy();
+    this.tool = null;
+    this.toolId = null;
+    this.returnTool('food');
+    this.updateToolbar();
+    giraffe.faceX = Math.sign(p.x - giraffe.x) || giraffe.faceX; // schaut zum Spieler
+    this.munchLeaves(giraffe);
+    if (Math.random() < FEED_CHANCE) {
+      this.catchAnimal(giraffe);
+      this.showToast(`${animalIcon('giraffe', 3.2)} Die Giraffe mag dich! Sie läuft dir jetzt hinterher.`);
+    } else {
+      this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter liegt an der Hütte.`);
+    }
+  }
+
+  // Ein paar grüne Blätter rieseln vom Maul der Giraffe
+  munchLeaves(animal) {
+    const top = animal.y - animal.sprite.displayHeight * 0.8;
+    for (let i = 0; i < 8; i++) {
+      const leaf = this.add
+        .ellipse(animal.x + animal.faceX * 10 + Phaser.Math.Between(-6, 6), top + Phaser.Math.Between(-4, 4), 4, 2.5, i % 2 ? 0x66932f : 0x9cc850)
+        .setDepth(100000);
+      this.tweens.add({
+        targets: leaf,
+        y: leaf.y + Phaser.Math.Between(18, 34),
+        x: leaf.x + Phaser.Math.Between(-10, 10),
+        angle: Phaser.Math.Between(-180, 180),
+        alpha: 0,
+        duration: Phaser.Math.Between(700, 1100),
+        ease: 'Quad.easeIn',
+        onComplete: () => leaf.destroy(),
+      });
+    }
+  }
+
   placeTrap() {
     const p = this.player;
     let x = p.x + p.faceX * 20;

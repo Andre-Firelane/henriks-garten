@@ -866,6 +866,7 @@ const sprites = {
   'dry_bush.png': dryBush(),
   'tuft.png': tuft(),
   'shed_tent.png': tent(),
+  'food.png': food(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1066,6 +1067,35 @@ function tent() {
     c.line(from[0], from[1], peg[0], peg[1], hex('#8a7a5a'));
     c.rect(peg[0] - 1, peg[1] - 1, 2, 3, hex('#5e3a20'));
   }
+  return c;
+}
+
+// Grünfutter: gebundenes Bündel Akazienzweige (Gegenstand in doppelter Auflösung)
+function food() {
+  const o = new Canvas(64, 64);
+  // Zweige von unten (gebunden) fächerförmig nach oben
+  const tips = [[14, 14], [24, 8], [34, 6], [44, 10], [52, 18], [20, 26], [46, 28]];
+  for (const [x, y] of tips) {
+    o.line(32, 56, x, y, hex('#7a5a36'));
+    o.line(33, 56, x + 1, y, hex('#5e4228'));
+  }
+  // Blätter: kleine Büschel an den Zweigen, dunkel unten, hell oben
+  for (const [x, y] of tips) {
+    for (let t = 0.25; t <= 1; t += 0.25) {
+      const lx = Math.round(32 + (x - 32) * t);
+      const ly = Math.round(56 + (y - 56) * t);
+      o.ellipse(lx - 3, ly, 3.5, 2.2, hex('#4f7a2a'));
+      o.ellipse(lx + 3, ly - 1, 3.5, 2.2, hex('#66932f'));
+    }
+    o.ellipse(x, y, 4, 3, hex('#7fae3c'));
+    o.ellipse(x - 1, y - 1, 2, 1.5, hex('#a8d05a'));
+  }
+  // Schnur, die das Bündel zusammenhält
+  o.rect(27, 46, 11, 3, hex('#d8b07a'));
+  o.rect(27, 46, 11, 1, hex('#efd2a0'));
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.draw(o, 0, 0);
   return c;
 }
 

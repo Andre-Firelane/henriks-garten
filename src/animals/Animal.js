@@ -67,7 +67,8 @@ export const SPECIES = {
     fleeSpeed: 95,
     catchWith: ['lasso'],
   },
-  // Giraffe (Savanne): viel größer als die anderen Tiere, läuft gemächlich herum; kann man (noch) nicht fangen
+  // Giraffe (Savanne): viel größer als die anderen Tiere, läuft gemächlich herum; zahm wird sie nur mit Grünfutter
+  // (siehe feedGiraffe in GardenScene)
   giraffe: {
     texture: 'giraffe',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
@@ -80,7 +81,7 @@ export const SPECIES = {
     hop: 1,
     footW: 11,
     shadowW: 40,
-    catchWith: [],
+    catchWith: ['food'],
   },
   // Hirsch: verhält sich wie das Reh, ist aber sehr selten
   stag: {
@@ -418,7 +419,7 @@ export default class Animal {
 
   popHeart() {
     const heart = this.scene.add
-      .text(this.x, this.y - 40, '♥', { fontFamily: 'Arial', fontSize: '20px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 3 })
+      .text(this.x, this.y - Math.max(40, this.sprite.displayHeight * 0.85), '♥', { fontFamily: 'Arial', fontSize: '20px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 3 })
       .setOrigin(0.5)
       .setDepth(100000);
     this.scene.tweens.add({

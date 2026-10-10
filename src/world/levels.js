@@ -209,6 +209,7 @@ export const LEVELS = {
       { tool: 'net', tx: 18, ty: 20 },
       { tool: 'lasso', tx: 18, ty: 21 },
       { tool: 'empty', tx: 18, ty: 22 }, // "Hände frei": hier legt man das getragene Werkzeug ab
+      { tool: 'food', tx: 19, ty: 20 }, // Grünfutter für die Giraffen
     ],
     exits: [{ tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' }],
     // Hier leben Antilopen (Gazellen) in Gruppen zu 2 bis 4 und Giraffen; keine Fischreiher
