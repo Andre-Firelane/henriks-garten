@@ -16,7 +16,8 @@ const STEP_INTERVAL = 0.35; // Sekunden zwischen zwei Schritt-Geräuschen
 const STEP_DETUNE = 150; // Tonhöhe schwankt um so viele Cent, damit nicht jeder Schritt gleich klingt
 
 export default class Player {
-  constructor(scene, x, y) {
+  // texture: Spritesheet der Figur (je Gebiet andere Kleidung)
+  constructor(scene, x, y, texture = 'hero') {
     this.x = x;
     this.y = y;
     this.faceX = -1;
@@ -28,7 +29,7 @@ export default class Player {
     this.trail = [{ x, y }];
 
     this.shadow = scene.add.ellipse(x, y, 26, 9, 0x14320a, 0.3);
-    this.sprite = scene.add.sprite(x, y, 'hero', FRAME.downLeft);
+    this.sprite = scene.add.sprite(x, y, texture, FRAME.downLeft);
     this.sprite.setOrigin(0.5, 112 / 116).setScale(0.5);
 
     this.keys = scene.input.keyboard.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT');

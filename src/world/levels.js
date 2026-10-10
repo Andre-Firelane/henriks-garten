@@ -136,6 +136,7 @@ export const LEVELS = {
     pen: { tx0: 28, tx1: 36, ty0: 3, ty1: 10 },
     shed: { tx: 29, ty: 12 },
     shedTexture: 'shed_log', // rustikale Blockhütte
+    hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
     ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [
       // vor der Hütte, neben dem Weg zum Gehege
@@ -201,6 +202,7 @@ export const LEVELS = {
     pen: { tx0: 25, tx1: 35, ty0: 4, ty1: 11 },
     shed: { tx: 16, ty: 20 },
     shedTexture: 'shed_tent', // Ranger-Zelt
+    hero: 'hero_savanna', // Kleidung der Spielfigur in diesem Gebiet (Safari)
     background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
     ambient: 'ambient_savanna', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [

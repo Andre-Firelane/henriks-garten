@@ -172,7 +172,7 @@ export default class GardenScene extends Phaser.Scene {
 
     const arrive = data.arrive ?? START;
     const start = tileToWorld(arrive.tx, arrive.ty);
-    this.player = new Player(this, start.x, start.y);
+    this.player = new Player(this, start.x, start.y, LEVEL.hero ?? 'hero'); // Kleidung passend zum Gebiet
 
     // Werkzeuge am Boden: gespeicherter Stand oder die Startplätze des Levels
     const saved = game.levels[LEVEL_ID];

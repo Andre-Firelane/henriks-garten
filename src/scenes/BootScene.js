@@ -45,6 +45,9 @@ export default class BootScene extends Phaser.Scene {
   preload() {
     for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${key}.png`);
     this.load.spritesheet('hero', 'assets/hero.png', HERO_FRAME);
+    // Kleidung je Gebiet (siehe hero in levels.js)
+    this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
+    this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);

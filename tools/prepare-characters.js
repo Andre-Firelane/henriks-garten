@@ -11,6 +11,9 @@ import path from 'node:path';
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
+  // Kleidung je Gebiet (gleiche Maße wie oben); freigestellt mit npm run cutout
+  { src: 'Sprites/Charakter Wald.png', out: 'hero_forest.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Sprites/Charakter Savanne.png', out: 'hero_savanna.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Schaf.png', out: 'sheep.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
   // unten-rechts, unten-links, oben-rechts, oben-links; der gemalte graue Bodenschatten wird entfernt
