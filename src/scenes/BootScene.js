@@ -27,6 +27,7 @@ const FISH_FRAME = { frameWidth: 84, frameHeight: 64 };
 const FISHBAG_FRAME = { frameWidth: 64, frameHeight: 76 };
 const SQUIRREL_FRAME = { frameWidth: 56, frameHeight: 60 };
 const FOX_FRAME = { frameWidth: 72, frameHeight: 72 };
+const ANTELOPE_FRAME = { frameWidth: 72, frameHeight: 100 };
 const ANIMAL_SOUNDS = {
   sheep: 'animal_sheep.wav',
   cat: 'animal_cat.wav',
@@ -56,6 +57,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
     this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
+    this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
     this.load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu

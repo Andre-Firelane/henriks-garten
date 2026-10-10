@@ -12,6 +12,7 @@ const SHEETS = {
   frog: [56, 52, 4, 0],
   mole: [56, 52, 4, 0],
   heron: [88, 108, 4, 0],
+  antelope: [72, 100, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)

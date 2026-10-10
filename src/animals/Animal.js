@@ -50,6 +50,23 @@ export const SPECIES = {
     catchWith: ['lasso', 'trap'], // scheu: nur mit dem Lasso aus der Entfernung oder in der Falle
     trapWeight: 1.2, // wie gern es in die Falle geht
   },
+  // Antilope (Savanne): wie das Reh, lebt aber in kleinen Gruppen (siehe Antelope.js); nur mit dem Lasso
+  antelope: {
+    texture: 'antelope',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 96 / 100,
+    speed: 30,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 1.5,
+    footW: 8,
+    shadowW: 26,
+    fleeDist: 70,
+    fleeSpeed: 95,
+    catchWith: ['lasso'],
+  },
   // Hirsch: verhält sich wie das Reh, ist aber sehr selten
   stag: {
     texture: 'stag',

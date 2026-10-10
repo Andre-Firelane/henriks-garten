@@ -30,6 +30,7 @@ import Squirrel from '../animals/Squirrel.js';
 import Frog from '../animals/Frog.js';
 import Mole from '../animals/Mole.js';
 import Heron from '../animals/Heron.js';
+import Antelope from '../animals/Antelope.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
@@ -43,7 +44,7 @@ import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -61,6 +62,7 @@ const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS
 const LIFETIME = [90, 240]; // Sekunden, die ein wildes Tier bleibt (zufällig)
 const SPAWN_INTERVAL = [5, 12]; // so oft schaut der Spawner, ob Tiere fehlen
 const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
+const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -87,7 +89,7 @@ const TOOLS = {
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'sheep', 'heron'])} aus der Ferne`,
+    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'antelope', 'sheep', 'heron'])} aus der Ferne`,
   },
   trap: {
     create: (scene, player) => new TrapTool(scene, player),
@@ -299,7 +301,9 @@ export default class GardenScene extends Phaser.Scene {
               ? new Mole(this, this.animals)
               : species === 'heron'
                 ? new Heron(this, x, y)
-                : new Animal(this, x, y, species);
+                : species === 'antelope'
+                  ? new Antelope(this, x, y, this.animals)
+                  : new Animal(this, x, y, species);
     a.x = x;
     a.y = y;
     this.animals.push(a);
@@ -310,9 +314,11 @@ export default class GardenScene extends Phaser.Scene {
   // nicht aufeinander. Ihre Lebenszeit ist gestaffelt, damit sie nicht alle gleichzeitig verschwinden.
   spawnAnimals(arrive) {
     const taken = [arrive, ...TOOL_SPOTS];
-    for (let i = 0; i < LEVEL.spawn.population; i++) {
-      const a = this.spawnOne(taken);
-      a.life = Phaser.Math.FloatBetween(20, LIFETIME[1]);
+    for (let n = 0; n < LEVEL.spawn.population; ) {
+      const group = this.spawnOne(taken);
+      const life = Phaser.Math.FloatBetween(20, LIFETIME[1]);
+      for (const a of group) a.life = life; // eine Gruppe verschwindet gemeinsam
+      n += group.length;
     }
   }
 
@@ -325,25 +331,50 @@ export default class GardenScene extends Phaser.Scene {
 
   // Ein zufälliges wildes Tier erzeugen. Fische, Eichhörnchen und Maulwürfe suchen sich ihre Plätze selbst
   // (Wasser, Baum, Wiese), alle anderen kommen auf eine freie Kachel mit Abstand zu "taken" (siehe randomFreeTile).
+  // Gibt die neuen Tiere zurück (meist eins, Antilopen kommen in kleinen Gruppen).
   spawnOne(taken, fadeIn = false) {
     const species = this.pickSpecies();
-    let a;
+    const group = [];
     if (species === 'fish' || species === 'squirrel' || species === 'mole') {
-      a = this.createAnimal(species, 0, 0);
+      const a = this.createAnimal(species, 0, 0);
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
+      group.push(a);
     } else {
       // Frösche meistens nah am Wasser
       const tile = (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileNearWater(taken)) || this.randomFreeTile(taken);
       taken.push(tile);
       const p = tileToWorld(tile.tx, tile.ty);
-      a = this.createAnimal(species, p.x, p.y);
+      group.push(this.createAnimal(species, p.x, p.y));
+      // Antilopen: noch 1 bis 3 weitere dicht daneben
+      if (species === 'antelope') {
+        const more = Phaser.Math.Between(...HERD_SIZE) - 1;
+        for (let i = 0; i < more; i++) {
+          const spot = this.freeSpotNear(p.x, p.y, 28);
+          if (spot) group.push(this.createAnimal(species, spot.x, spot.y));
+        }
+      }
     }
-    a.life = Phaser.Math.FloatBetween(...LIFETIME);
-    if (fadeIn) {
-      a.sprite.setAlpha(0);
-      this.tweens.add({ targets: a.sprite, alpha: 1, duration: 800 });
+    const life = Phaser.Math.FloatBetween(...LIFETIME);
+    for (const a of group) {
+      a.life = life;
+      if (fadeIn) {
+        a.sprite.setAlpha(0);
+        this.tweens.add({ targets: a.sprite, alpha: 1, duration: 800 });
+      }
     }
-    return a;
+    return group;
+  }
+
+  // Freier Punkt höchstens r Pixel von x/y entfernt (nicht im Gehege, nicht auf Hindernissen), oder null
+  freeSpotNear(x, y, r) {
+    for (let i = 0; i < 20; i++) {
+      const sx = x + Phaser.Math.FloatBetween(-r, r);
+      const sy = y + Phaser.Math.FloatBetween(-r / 2, r / 2);
+      const { tx, ty } = worldToTile(sx, sy);
+      if (isBlocked(tx, ty) || (PEN && tx >= PEN.tx0 - 1 && tx <= PEN.tx1 + 1 && ty >= PEN.ty0 - 1 && ty <= PEN.ty1 + 2)) continue;
+      if (!blockedAt(sx, sy, 12, 5)) return { x: sx, y: sy };
+    }
+    return null;
   }
 
   // Freie Kachel am Wasser mit Abstand zu "taken" (gleiche Regel wie randomFreeTile), oder null

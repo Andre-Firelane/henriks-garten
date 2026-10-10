@@ -209,8 +209,9 @@ export const LEVELS = {
       { tool: 'empty', tx: 18, ty: 22 }, // "Hände frei": hier legt man das getragene Werkzeug ab
     ],
     exits: [{ tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' }],
-    // Eigene Savannentiere gibt es noch nicht; bis dahin leben hier Tiere, die ans Wasserloch passen
-    spawn: { population: 9, weights: { fish: 3, frog: 2, cat: 1 } },
+    // Antilopen kommen in Gruppen zu 2 bis 4: mit dieser Wahrscheinlichkeit sind etwa ein Drittel der Tiere
+    // Antilopen, so wie die Rehe im Wald
+    spawn: { population: 12, weights: { antelope: 1.2, fish: 3, frog: 2, cat: 1 } },
     herons: { every: [50, 110], landChance: 0.6 },
   },
 };
