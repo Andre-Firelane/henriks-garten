@@ -1,0 +1,17 @@
+import Phaser from 'phaser';
+import BootScene from './scenes/BootScene.js';
+import GardenScene from './scenes/GardenScene.js';
+import { setupTouchControls } from './ui/touch.js';
+
+setupTouchControls();
+
+new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: 'game',
+  backgroundColor: '#4f8a2f',
+  roundPixels: true,
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+  },
+  scene: [BootScene, GardenScene],
+});

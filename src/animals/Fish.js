@@ -1,0 +1,190 @@
+// Fische: In den wilden Teichen steigen ab und zu Blasen auf, danach taucht ein Fisch kurz auf.
+// Nur solange er oben ist, kann man ihn mit dem Kescher fangen; danach taucht er woanders wieder auf.
+// Gefangen wird er zum Beutel und folgt dem Spieler. Am Fischteich wird er freigelassen und schwimmt dort.
+import Phaser from 'phaser';
+import Animal from './Animal.js';
+import { tileToWorld } from '../world/iso.js';
+import { FISH_SPOTS, FISHPOND_TILES, isFishpond } from '../world/map.js';
+import { footTiles } from '../world/collision.js';
+
+// Bilder im Spritesheet "fish"
+const FISH_FRAME = { peek: 0, right: 1, left: 2, jump: 3 };
+const FISH_ORIGIN_Y = 60 / 64;
+
+const HIDDEN_TIME = [2, 6]; // so lange ist nichts zu sehen
+const BUBBLE_TIME = [1, 3]; // so lange blubbert es, bevor er auftaucht
+const UP_TIME = [2, 4]; // so lange bleibt er oben
+const PEEK_TIME = 0.25; // kurzes Auf- und Abtauchen
+const HOME_DIST = 50; // so nah muss der Beutel an den Fischteich, damit der Fisch hineinspringt
+
+// Phasen im wilden Teich: hidden → bubbling → rising → up → sinking → hidden
+const SURFACED = ['rising', 'up', 'sinking'];
+
+export default class Fish extends Animal {
+  // allFish: alle Fische, damit nicht zwei an derselben Stelle auftauchen
+  constructor(scene, allFish) {
+    super(scene, 0, 0, 'fish');
+    this.allFish = allFish;
+    this.useWaterLook();
+    this.setPhase('hidden', Phaser.Math.FloatBetween(0.5, 4));
+  }
+
+  useWaterLook() {
+    this.sprite.setTexture(this.kind.texture, FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y);
+    this.shadow.setVisible(false);
+  }
+
+  useBagLook() {
+    this.sprite.setTexture(this.kind.bagTexture, this.kind.frames.downRight).setOrigin(0.5, this.kind.originY);
+    this.sprite.setVisible(true);
+    this.shadow.setVisible(true);
+  }
+
+  setPhase(phase, time) {
+    this.phase = phase;
+    this.phaseTime = time;
+  }
+
+  // Eine freie Uferstelle aussuchen, an der gerade kein anderer Fisch ist
+  pickSpot() {
+    const used = this.allFish.filter((f) => f !== this && f.phase !== 'hidden').map((f) => f.spot);
+    const free = FISH_SPOTS.filter((s) => !used.includes(s));
+    this.spot = Phaser.Utils.Array.GetRandom(free.length ? free : FISH_SPOTS);
+    const p = tileToWorld(this.spot.tx, this.spot.ty);
+    this.x = p.x + Phaser.Math.Between(-8, 8);
+    this.y = p.y + Phaser.Math.Between(-3, 3);
+  }
+
+  canDespawn() {
+    return this.phase === 'hidden';
+  }
+
+  canBeCaughtNow() {
+    return this.state === 'wild' && SURFACED.includes(this.phase);
+  }
+
+  updateFree(dt) {
+    if (this.state === 'penned') return super.updateFree(dt, null); // schwimmt im Fischteich herum
+    this.phaseTime -= dt;
+    if (this.phase === 'bubbling') {
+      this.bubbleTimer -= dt;
+      if (this.bubbleTimer <= 0) {
+        this.spawnBubble();
+        this.bubbleTimer = Phaser.Math.FloatBetween(0.2, 0.45);
+      }
+    }
+    if (this.phaseTime > 0) return false;
+
+    switch (this.phase) {
+      case 'hidden':
+        this.pickSpot();
+        this.bubbleTimer = 0;
+        this.setPhase('bubbling', Phaser.Math.FloatBetween(...BUBBLE_TIME));
+        break;
+      case 'bubbling':
+        this.faceX = Math.random() < 0.5 ? -1 : 1;
+        this.setPhase('rising', PEEK_TIME);
+        this.splash();
+        break;
+      case 'rising':
+        this.setPhase('up', Phaser.Math.FloatBetween(...UP_TIME));
+        break;
+      case 'up':
+        this.setPhase('sinking', PEEK_TIME);
+        break;
+      default:
+        this.splash();
+        this.setPhase('hidden', Phaser.Math.FloatBetween(...HIDDEN_TIME));
+    }
+    return false;
+  }
+
+  // Der Beutel ist angekommen, wenn er nah genug am Fischteich ist
+  arrivedHome() {
+    return FISHPOND_TILES.some(({ tx, ty }) => {
+      const p = tileToWorld(tx, ty);
+      return Math.hypot(this.x - p.x, (this.y - p.y) * 2) < HOME_DIST;
+    });
+  }
+
+  // Im Fischteich bleibt er im Wasser
+  blocked(x, y) {
+    if (this.state !== 'penned') return false;
+    return !footTiles(x, y, this.kind.footW, 2).every(({ tx, ty }) => isFishpond(tx, ty));
+  }
+
+  catch() {
+    super.catch();
+    this.useBagLook();
+  }
+
+  restore(state) {
+    super.restore(state);
+    if (state === 'following') this.useBagLook();
+  }
+
+  enterPen() {
+    const t = Phaser.Utils.Array.GetRandom(FISHPOND_TILES);
+    const p = tileToWorld(t.tx, t.ty);
+    this.x = p.x;
+    this.y = p.y;
+    this.useWaterLook();
+    this.splash();
+    super.enterPen();
+  }
+
+  render(moving) {
+    if (this.state === 'following') {
+      super.render(moving);
+      return;
+    }
+
+    let frame = this.faceX > 0 ? FISH_FRAME.right : FISH_FRAME.left;
+    let visible = true;
+    if (this.state === 'wild') {
+      visible = SURFACED.includes(this.phase);
+      if (this.phase !== 'up') frame = FISH_FRAME.peek;
+    }
+    // sanftes Schaukeln auf dem Wasser
+    const bob = Math.sin(this.scene.time.now / 250 + this.x) * 1;
+    this.sprite.setVisible(visible);
+    this.sprite.setFrame(frame);
+    this.sprite.setPosition(this.x, this.y + 4 + bob);
+    this.sprite.setAngle(0);
+    this.sprite.setDepth(this.y);
+  }
+
+  spawnBubble() {
+    const x = this.x + Phaser.Math.Between(-10, 10);
+    const y = this.y + Phaser.Math.Between(-3, 3);
+    const bubble = this.scene.add
+      .circle(x, y, Phaser.Math.FloatBetween(1.5, 3), 0xd8f2ff, 0.9)
+      .setStrokeStyle(1, 0x2f7fbf)
+      .setDepth(y + 1);
+    this.scene.tweens.add({
+      targets: bubble,
+      y: y - Phaser.Math.Between(6, 12),
+      scale: 1.5,
+      alpha: 0,
+      duration: Phaser.Math.Between(500, 800),
+      ease: 'Quad.easeOut',
+      onComplete: () => bubble.destroy(),
+    });
+  }
+
+  // Kleiner Ring auf dem Wasser beim Auf- und Abtauchen
+  splash() {
+    const ring = this.scene.add
+      .ellipse(this.x, this.y + 2, 16, 6)
+      .setStrokeStyle(1.5, 0xffffff, 0.9)
+      .setDepth(this.y - 1);
+    this.scene.tweens.add({
+      targets: ring,
+      scale: 2,
+      alpha: 0,
+      duration: 500,
+      ease: 'Quad.easeOut',
+      onComplete: () => ring.destroy(),
+    });
+  }
+}

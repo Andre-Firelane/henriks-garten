@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Henriks Garten</title>
+    <style>
+      html, body {
+        margin: 0; height: 100%; background: #2d4a22; overflow: hidden;
+        touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #game { width: 100%; height: 100%; }
+      #hud {
+        position: fixed; top: 16px; left: 16px; padding: 8px 14px;
+        font: bold 18px/1.2 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14; border-radius: 10px;
+        pointer-events: none;
+      }
+      #tools { position: fixed; left: 16px; bottom: 16px; display: flex; gap: 10px; pointer-events: none; }
+      .tool {
+        display: flex; align-items: center; gap: 6px; padding: 4px 12px 4px 4px;
+        font: 16px/1.2 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14; border-radius: 10px;
+      }
+      .tool img { width: 44px; height: 44px; }
+      .tool b {
+        display: inline-block; min-width: 14px; padding: 1px 5px; margin-right: 6px; text-align: center;
+        color: #2b1d14; background: #fff8e6; border-radius: 5px;
+      }
+      #toast {
+        position: fixed; top: 20%; left: 50%; transform: translateX(-50%); max-width: 80%; padding: 10px 18px;
+        font: bold 20px/1.3 "Trebuchet MS", Arial, sans-serif; color: #fff8e6; text-align: center;
+        background: rgba(60, 40, 20, 0.85); border: 2px solid #2b1d14; border-radius: 12px;
+        opacity: 0; pointer-events: none;
+      }
+      #toast.show { animation: toast 4s ease forwards; }
+      #sign {
+        position: fixed; right: 16px; bottom: 16px; padding: 10px 16px; min-width: 260px;
+        font: 16px/1.6 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
+        background: #e8c48a; border: 3px solid #6b4224; border-radius: 10px;
+        box-shadow: 0 4px 0 #8a5a30; pointer-events: none;
+        opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s;
+      }
+      #sign.show { opacity: 1; transform: none; }
+      #sign b { display: block; margin-bottom: 4px; font-size: 18px; }
+      #sign .arrow { display: inline-block; width: 28px; font-weight: bold; font-size: 20px; color: #6b4224; }
+      .animal {
+        display: inline-block; vertical-align: middle; margin: -0.5em 0;
+        background-repeat: no-repeat; image-rendering: auto;
+      }
+      #hud .count { margin-right: 10px; }
+      /* Touch-Steuerung (nur sichtbar, wenn body.touch) */
+      #stick-zone, #btn-action, #btn-reset { display: none; }
+      body.touch #stick-zone { display: block; position: fixed; left: 0; top: 0; bottom: 0; width: 50%; }
+      #stick {
+        position: fixed; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%;
+        background: rgba(255, 248, 230, 0.18); border: 3px solid rgba(255, 248, 230, 0.55);
+        pointer-events: none; opacity: 0; transition: opacity 0.15s;
+      }
+      #stick.show { opacity: 1; }
+      #stick-knob {
+        position: absolute; left: 35px; top: 35px; width: 60px; height: 60px; border-radius: 50%;
+        background: rgba(255, 248, 230, 0.75); border: 3px solid #2b1d14;
+      }
+      body.touch #btn-action {
+        display: block; position: fixed; right: 28px; bottom: 28px; width: 110px; height: 110px; border-radius: 50%;
+        background: rgba(60, 40, 20, 0.75) center / 70% no-repeat; border: 4px solid #fff8e6;
+        box-shadow: 0 5px 0 #2b1d14;
+      }
+      body.touch #btn-action.pressed { transform: translateY(4px); box-shadow: 0 1px 0 #2b1d14; }
+      body.touch #btn-action.empty { opacity: 0.35; }
+      body.touch #btn-reset {
+        display: block; position: fixed; right: 16px; top: 16px; width: 52px; height: 52px; border-radius: 12px;
+        font: bold 28px/1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
+      }
+      /* Auf dem Tablet zeigt der Aktionsknopf das Werkzeug; der Wegweiser rückt nach oben */
+      body.touch #tools { display: none; }
+      body.touch #sign { bottom: auto; top: 84px; }
+      body.touch #hud { font-size: 15px; max-width: calc(100% - 120px); }
+      @keyframes toast { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <div id="hud"></div>
+    <div id="tools"></div>
+    <div id="toast"></div>
+    <div id="sign"></div>
+    <div id="stick-zone"></div>
+    <div id="stick"><div id="stick-knob"></div></div>
+    <button id="btn-action" aria-label="Aktion"></button>
+    <button id="btn-reset" aria-label="Neustart">↺</button>
+    <script>
+      // Tablet/Handy schon beim Laden erkennen, damit die Steuerung sofort da ist
+      if (matchMedia("(pointer: coarse)").matches || location.search.includes("touch")) document.body.classList.add("touch");
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

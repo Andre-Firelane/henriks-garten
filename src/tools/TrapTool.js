@@ -1,0 +1,29 @@
+// Die Falle in der Hand: der Spieler trägt sie an der Seite und legt sie mit der Aktionstaste vor sich ab.
+// Was danach passiert (Warten, Tier geht hinein, Abholen), steuert die Szene (siehe placeTrap in GardenScene).
+
+export default class TrapTool {
+  constructor(scene, player) {
+    this.scene = scene;
+    this.player = player;
+    this.sprite = scene.add.image(0, 0, 'trap').setScale(0.3);
+  }
+
+  use() {
+    this.scene.placeTrap();
+  }
+
+  update() {
+    const p = this.player;
+    this.sprite.setPosition(p.x - p.faceX * 10, p.sprite.y - 12);
+    this.sprite.setDepth(p.y + (p.faceY > 0 ? 0.1 : -0.1));
+  }
+
+  // Die Falle fängt nicht direkt beim Einsetzen
+  caughtBy() {
+    return [];
+  }
+
+  destroy() {
+    this.sprite.destroy();
+  }
+}
