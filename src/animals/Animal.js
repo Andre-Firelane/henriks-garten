@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate } from '../world/map.js';
+import { inPen, isGate, enclosureAt, accepts } from '../world/map.js';
+import { worldToTile } from '../world/iso.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -295,9 +296,12 @@ export default class Animal {
     return moved;
   }
 
-  // Ist ein folgendes Tier an seinem Ziel angekommen?
+  // Ist ein folgendes Tier an seinem Ziel angekommen? Nur in einem Gehege, das diese Tierart aufnimmt.
   arrivedHome() {
-    return this.fullyInPen(this.x, this.y);
+    const enclosure = this.enclosureFullyAt(this.x, this.y);
+    if (!enclosure || !accepts(enclosure, this.species)) return false;
+    this.enclosure = enclosure;
+    return true;
   }
 
   // Darf der Spawner es gerade entfernen? (Fische, Eichhörnchen und Maulwürfe nur, wenn man sie nicht sieht)
@@ -356,14 +360,17 @@ export default class Animal {
     if (this.state === 'following') return false;
     if (blockedAt(x, y, this.kind.footW, FOOT_H)) return true;
     // Im Gehege bleibt es drin, wilde Tiere laufen nicht von selbst hinein
-    if (this.state === 'penned') return !this.fullyInPen(x, y);
+    if (this.state === 'penned') return this.enclosureFullyAt(x, y) !== this.enclosure;
     return footTiles(x, y, this.kind.footW, FOOT_H).some(
       ({ tx, ty }) => inPen(tx, ty) || isGate(tx, ty),
     );
   }
 
-  fullyInPen(x, y) {
-    return footTiles(x, y, this.kind.footW, FOOT_H).every(({ tx, ty }) => inPen(tx, ty));
+  // Das Gehege, in dem das Tier mit allen Füßen steht (oder null)
+  enclosureFullyAt(x, y) {
+    const tiles = footTiles(x, y, this.kind.footW, FOOT_H);
+    const enclosure = enclosureAt(tiles[0].tx, tiles[0].ty);
+    return enclosure && tiles.every(({ tx, ty }) => enclosureAt(tx, ty) === enclosure) ? enclosure : null;
   }
 
   // Bewegt das Tier; gibt zurück, ob es sich bewegt hat
@@ -408,7 +415,11 @@ export default class Animal {
   // Zustand ohne Effekte setzen (beim Betreten eines Levels)
   restore(state) {
     this.state = state;
-    if (state === 'penned') this.pickWander();
+    if (state === 'penned') {
+      const { tx, ty } = worldToTile(this.x, this.y);
+      this.enclosure = enclosureAt(tx, ty);
+      this.pickWander();
+    }
   }
 
   enterPen() {

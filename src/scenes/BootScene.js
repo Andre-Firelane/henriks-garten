@@ -7,10 +7,13 @@ const PIXEL_ART = [
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
   'signpost', 'shed_log',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft', 'shed_tent',
+  'planks', 'cat_tree', 'mesh_x', 'mesh_y', 'gate_y', 'net_x', 'net_y',
+  'chain_x', 'chain_y', 'post_wood', 'post_mesh', 'post_net', 'post_chain',
+  'gate_chain_x', 'gate_chain_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x', 'gate_net_y',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };

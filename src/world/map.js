@@ -3,7 +3,8 @@
 import { LEVELS } from './levels.js';
 import { tileToWorld, worldToTile } from './iso.js';
 
-const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond' };
+// w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden
+const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks' };
 const PATH_CHARS = '#GX'; // Weg, Tor und Übergang liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
@@ -20,8 +21,9 @@ export const OBJECTS = {
   L: { key: 'log', originY: 44 / 64, solid: true },
   n: { key: 'fern', originY: 24 / 32, solid: false },
   m: { key: 'mushroom', originY: 18 / 24, solid: false },
-  '-': { key: 'fence_x', originY: 44 / 64, solid: true },
-  '|': { key: 'fence_y', originY: 44 / 64, solid: true },
+  // Zäune: fence = Zaunart und Richtung (x = entlang tx, y = entlang ty), siehe addFence in GardenScene
+  '-': { key: 'fence_x', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'x' } },
+  '|': { key: 'fence_y', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'y' } },
   S: { key: 'sign_fish', originY: 54 / 56, solid: true },
   W: { key: 'signpost', originY: 60 / 64, solid: true },
   // Savanne
@@ -29,6 +31,16 @@ export const OBJECTS = {
   R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
   v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 12 },
   y: { key: 'tuft', originY: 18 / 24, solid: false },
+  // Gehege: Kratzbaum, hoher Gitterzaun der Voliere (entlang tx bzw. ty)
+  C: { key: 'cat_tree', originY: 73 / 80, solid: true, hitbox: 10 },
+  _: { key: 'mesh_x', originY: 44 / 64, solid: true, fence: { kind: 'mesh', axis: 'x' } },
+  '!': { key: 'mesh_y', originY: 44 / 64, solid: true, fence: { kind: 'mesh', axis: 'y' } },
+  // Netz der Voliere (entlang tx bzw. ty)
+  '^': { key: 'net_x', originY: 44 / 64, solid: true, fence: { kind: 'net', axis: 'x' } },
+  ';': { key: 'net_y', originY: 44 / 64, solid: true, fence: { kind: 'net', axis: 'y' } },
+  // dichter Maschendraht (Teich)
+  '{': { key: 'chain_x', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'x' } },
+  '}': { key: 'chain_y', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'y' } },
 };
 
 export let LEVEL_ID;
@@ -36,11 +48,12 @@ export let LEVEL;
 export let MAP_W;
 export let MAP_H;
 export let START;
-export let PEN; // Innenfläche des Geheges
+// Gehege: { id, name, area (Innenfläche), species (erlaubte Tierarten, null = alle), gates, sign (Schild-Kachel) }
+export let ENCLOSURES;
 export let SHED;
 export let TOOL_SPOTS;
 export let EXITS;
-export let GATE_TILES;
+export let GATE_TILES; // { tx, ty, vertical }: vertical = Tor in einem Zaun entlang ty
 export let FISHPOND_TILES;
 export let FISH_SPOTS; // Stellen, an denen wilde Fische auftauchen
 export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Teich entfernt (für Frösche)
@@ -58,11 +71,21 @@ export function setLevel(id) {
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
   START = LEVEL.start;
-  PEN = LEVEL.pen;
   SHED = LEVEL.shed;
   TOOL_SPOTS = LEVEL.toolSpots;
   EXITS = LEVEL.exits;
-  GATE_TILES = tilesWith('G');
+  GATE_TILES = tilesWith('G').map((t) => ({ ...t, vertical: '|!;}'.includes(charAt(t.tx, t.ty - 1)) || '|!;}'.includes(charAt(t.tx, t.ty + 1)) }));
+  // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
+  const list = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
+  ENCLOSURES = list.map((e) => {
+    const a = e.area;
+    // Tore liegen im Zaun rund um die Innenfläche
+    const gates = GATE_TILES.filter(({ tx, ty }) => tx >= a.tx0 - 1 && tx <= a.tx1 + 1 && ty >= a.ty0 - 1 && ty <= a.ty1 + 1);
+    // Schild hängt am Zaunstück direkt vor dem ersten Torflügel
+    const g = gates[0];
+    const sign = e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty - 1 } : { tx: g.tx - 1, ty: g.ty }) : null;
+    return { ...e, gates, sign };
+  });
   FISHPOND_TILES = tilesWith('o');
   // Wasser in den wilden Teichen direkt am begehbaren Ufer, damit man sie mit dem Kescher erreicht
   FISH_SPOTS = tilesWith('~').filter(({ tx, ty }) =>
@@ -101,8 +124,24 @@ function charAt(tx, ty) {
   return ROWS[ty]?.[tx] ?? '.';
 }
 
+// Das Gehege, zu dessen Innenfläche diese Kachel gehört (oder null)
+export function enclosureAt(tx, ty) {
+  return ENCLOSURES.find(({ area: a }) => tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1) ?? null;
+}
+
+// Liegt die Kachel in irgendeinem Gehege?
 export function inPen(tx, ty) {
-  return !!PEN && tx >= PEN.tx0 && tx <= PEN.tx1 && ty >= PEN.ty0 && ty <= PEN.ty1;
+  return !!enclosureAt(tx, ty);
+}
+
+// Kachel in einem Gehege oder direkt daneben (dort sollen keine wilden Tiere erscheinen)
+export function nearEnclosure(tx, ty) {
+  return ENCLOSURES.some(({ area: a }) => tx >= a.tx0 - 1 && tx <= a.tx1 + 1 && ty >= a.ty0 - 1 && ty <= a.ty1 + 2);
+}
+
+// Darf diese Tierart in dieses Gehege?
+export function accepts(enclosure, species) {
+  return !enclosure.species || enclosure.species.includes(species);
 }
 
 export function isGate(tx, ty) {
@@ -138,11 +177,19 @@ export function grassAt(tx, ty) {
 export const CORNER = { top: 1, right: 2, bottom: 4, left: 8 };
 export function outerWaterCorners(tx, ty) {
   const c = charAt(tx, ty);
-  if (c !== '~' && c !== 'o') return 0;
+  if (!'~ow'.includes(c)) return 0;
   const land = (x, y) => charAt(x, y) !== c;
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
+}
+
+// Richtung eines Zaunstücks oder Tors an dieser Kachel ('x', 'y') oder null
+export function fenceAxisAt(tx, ty) {
+  const fence = objectAt(tx, ty)?.fence;
+  if (fence) return fence.axis;
+  const gate = GATE_TILES.find((g) => g.tx === tx && g.ty === ty);
+  return gate ? (gate.vertical ? 'y' : 'x') : null;
 }
 
 export function objectAt(tx, ty) {
@@ -160,7 +207,7 @@ export function isBlockedPoint(x, y) {
 
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
-  if ('~oH'.includes(charAt(tx, ty))) return true;
+  if ('~owH'.includes(charAt(tx, ty))) return true;
   return objectAt(tx, ty)?.solid ?? false;
 }
 

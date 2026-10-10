@@ -6,8 +6,7 @@ import {
   MAP_W,
   MAP_H,
   START,
-  PEN,
-  GATE_TILES,
+  ENCLOSURES,
   TOOL_SPOTS,
   SHED,
   EXITS,
@@ -19,8 +18,12 @@ import {
   grassAt,
   outerWaterCorners,
   objectAt,
+  fenceAxisAt,
   isBlocked,
   exitAt,
+  inPen,
+  nearEnclosure,
+  accepts,
 } from '../world/map.js';
 import { LEVELS } from '../world/levels.js';
 import { game, resetGame } from '../state.js';
@@ -50,6 +53,17 @@ const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'he
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
+const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
+
+// Für die Schilder an den Gehegetoren: Name und was man an der Fußspur erkennt (zum Lernen)
+const ANIMAL_INFO = {
+  sheep: ['Schaf', 'Paarhufer: Jeder Fuß hat zwei Hufhälften.'],
+  mole: ['Maulwurf', 'Breite Grabhände mit fünf kräftigen Krallen.'],
+  cat: ['Katze', 'Vier Zehen und ein großer Ballen. Die Krallen bleiben beim Laufen eingezogen.'],
+  frog: ['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'],
+  fish: ['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'],
+  heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
+};
 
 // Falle: wie lange es dauert, bis ein Tier hineingeht, und aus welcher Umgebung Tiere kommen
 const TRAP_TIME = [20, 180]; // Sekunden (zufällig)
@@ -136,7 +150,8 @@ export default class GardenScene extends Phaser.Scene {
         }
 
         const obj = objectAt(tx, ty);
-        if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
+        if (obj?.fence) this.addFence(tx, ty, obj);
+        else if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
         if (obj?.key === 'signpost') {
           this.signs.push({ x, y });
           this.labelSignpost(x, y);
@@ -144,13 +159,29 @@ export default class GardenScene extends Phaser.Scene {
       }
     }
 
-    // Tor zum Gehege: verschwindet kurz, solange jemand durchgeht
-    this.gate = GATE_TILES.map(({ tx, ty }) => {
-      const { x, y } = tileToWorld(tx, ty);
-      return this.add.image(x, y, 'gate_x').setOrigin(0.5, 44 / 64).setDepth(y);
+    // Tore der Gehege: jedes verschwindet kurz, solange jemand hindurchgeht
+    this.gateGroups = ENCLOSURES.filter((e) => e.gates.length).map((e) => ({
+      sprites: e.gates.map(({ tx, ty, vertical }, i) => {
+        const { x, y } = tileToWorld(tx, ty);
+        let style = e.gate && e.gate !== 'wood' ? `gate_${e.gate}_` : 'gate_';
+        if (e.gate === 'glass' && i === Math.floor(e.gates.length / 2)) style = 'gate_glassflap_'; // Katzenklappe in der Mitte
+        return this.add.image(x, y, style + (vertical ? 'y' : 'x')).setOrigin(0.5, 44 / 64).setDepth(y);
+      }),
+      open: false,
+      closeTimer: 0,
+    }));
+    // Schilder mit den Fußspuren der erlaubten Tiere, am Zaun neben dem Tor
+    this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
+      const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
+      // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt
+      const front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
+      this.add.image(x, y - 20, `esign_${e.id}`).setScale(0.5).setDepth(front);
+      return { x, y, enclosure: e };
     });
-    this.gateOpen = false;
-    this.gateCloseTimer = 0;
+    this.wrongHomeTimer = 0;
+    // Netzdach über Gehegen wie der Voliere
+    for (const e of ENCLOSURES) if (e.netRoof) this.drawNetRoof(e.area);
+    this.shownSign = null; // welches Schild die Tafel gerade zeigt
 
     // Werkzeughütte: Bild sitzt mit der Mitte seiner Grundfläche auf der gemeinsamen Ecke der 4 Kacheln
     if (SHED) {
@@ -283,6 +314,37 @@ export default class GardenScene extends Phaser.Scene {
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
   }
 
+  // Zaunstück zeichnen: nur die Hälften, die zu einem Nachbarzaun (oder Tor) führen. So ragt an Ecken
+  // nichts über, und dort steht ein Eckpfosten.
+  addFence(tx, ty, obj) {
+    const { kind, axis } = obj.fence;
+    const { x, y } = tileToWorld(tx, ty);
+    // Verbindung in Richtung dx/dy entlang der Achse a: der Nachbar ist ein Zaun oder Tor, und einer von beiden läuft in diese Richtung
+    const joins = (dx, dy, a) => {
+      const other = fenceAxisAt(tx + dx, ty + dy);
+      return !!other && (axis === a || other === a);
+    };
+    const xl = joins(-1, 0, 'x');
+    const xr = joins(1, 0, 'x');
+    const yu = joins(0, -1, 'y');
+    const yd = joins(0, 1, 'y');
+    const prefix = obj.key.slice(0, -2); // z. B. fence, mesh, net, chain
+    const piece = (a, crop) => {
+      const img = this.add.image(x, y, `${prefix}_${a}`).setOrigin(0.5, obj.originY).setDepth(y);
+      if (crop === 'left') img.setCrop(0, 0, 34, 64);
+      if (crop === 'right') img.setCrop(30, 0, 34, 64);
+    };
+    // entlang tx: links geht es zu tx-1, rechts zu tx+1; entlang ty (gespiegelt): rechts zu ty-1, links zu ty+1
+    if (xl && xr) piece('x');
+    else if (xl) piece('x', 'left');
+    else if (xr) piece('x', 'right');
+    if (yu && yd) piece('y');
+    else if (yu) piece('y', 'right');
+    else if (yd) piece('y', 'left');
+    if (!xl && !xr && !yu && !yd) piece(axis); // einzelnes Stück
+    if ((xl || xr) && (yu || yd)) this.add.image(x, y, `post_${kind}`).setOrigin(0.5, obj.originY).setDepth(y + 0.01);
+  }
+
   // Namen auf die drei Bretter des Wegweisers schreiben (Brettmitten siehe signpost() in make-sprites.js)
   labelSignpost(x, y) {
     const boards = [[13, -47], [-13, -33], [13, -19]];
@@ -386,7 +448,7 @@ export default class GardenScene extends Phaser.Scene {
       const sx = x + Phaser.Math.FloatBetween(-r, r);
       const sy = y + Phaser.Math.FloatBetween(-r / 2, r / 2);
       const { tx, ty } = worldToTile(sx, sy);
-      if (isBlocked(tx, ty) || (PEN && tx >= PEN.tx0 - 1 && tx <= PEN.tx1 + 1 && ty >= PEN.ty0 - 1 && ty <= PEN.ty1 + 2)) continue;
+      if (isBlocked(tx, ty) || nearEnclosure(tx, ty)) continue;
       if (!blockedAt(sx, sy, 12, 5)) return { x: sx, y: sy };
     }
     return null;
@@ -476,8 +538,7 @@ export default class GardenScene extends Phaser.Scene {
       const tx = Phaser.Math.Between(1, MAP_W - 2);
       const ty = Phaser.Math.Between(1, MAP_H - 2);
       if (isBlocked(tx, ty)) continue;
-      const nearPen = PEN && tx >= PEN.tx0 - 1 && tx <= PEN.tx1 + 1 && ty >= PEN.ty0 - 1 && ty <= PEN.ty1 + 2;
-      if (nearPen) continue;
+      if (nearEnclosure(tx, ty)) continue;
       const p = tileToWorld(tx, ty);
       if (blockedAt(p.x, p.y, 12, 5)) continue;
       const tooClose = taken.some((t, i) => Math.max(Math.abs(t.tx - tx), Math.abs(t.ty - ty)) < (i === 0 ? 5 : 2));
@@ -818,16 +879,15 @@ export default class GardenScene extends Phaser.Scene {
       const species = ALL_SPECIES.filter((s) => LEVELS[exit.to].spawn.weights[s]);
       entries.push([tileToWorld(exit.tx, exit.ty), `${exit.label} – ${animalIcons(species)}`]);
     }
-    if (PEN) {
+    for (const { area: a, name, species } of ENCLOSURES) {
       entries.push([
-        tileToWorld((PEN.tx0 + PEN.tx1) / 2, (PEN.ty0 + PEN.ty1) / 2),
-        `Gehege – alle Tiere außer ${animalIcon('fish')}`,
+        tileToWorld((a.tx0 + a.tx1) / 2, (a.ty0 + a.ty1) / 2),
+        species ? `${name} – ${animalIcons(species)}` : `${name} – alle Tiere außer ${animalIcon('fish')}`,
       ]);
     }
-    if (FISHPOND_TILES.length) {
-      const mid = FISHPOND_TILES[Math.floor(FISHPOND_TILES.length / 2)];
-      entries.push([tileToWorld(mid.tx, mid.ty), `Fischteich – für ${animalIcon('fish')}`]);
-    }
+    // eigener Fischteich nur, wenn er nicht schon in einem Gehege liegt
+    const mid = FISHPOND_TILES[Math.floor(FISHPOND_TILES.length / 2)];
+    if (mid && !inPen(mid.tx, mid.ty)) entries.push([tileToWorld(mid.tx, mid.ty), `Fischteich – für ${animalIcon('fish')}`]);
     if (SHED) entries.push([tileToWorld(SHED.tx + 1, SHED.ty + 1), 'Werkzeughütte – Kescher und Lasso']);
 
     const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
@@ -837,35 +897,83 @@ export default class GardenScene extends Phaser.Scene {
     });
   }
 
+  // Seilnetz über einem Gehege, auf Höhe der Netzstangen. Es liegt über allem, was im Gehege ist,
+  // aber hinter allem, was davor steht.
+  drawNetRoof({ tx0, tx1, ty0, ty1 }) {
+    const H = 32; // Höhe der Netzstangen
+    const g = this.add.graphics().setDepth(tileToWorld(tx1 + 0.5, ty1 + 0.5).y + 1);
+    const at = (tx, ty) => {
+      const p = tileToWorld(tx, ty);
+      return [p.x, p.y - H];
+    };
+    g.lineStyle(1, 0xd8c89a, 0.55);
+    for (let t = tx0 - 0.5; t <= tx1 + 0.5; t += 0.5) g.lineBetween(...at(t, ty0 - 0.5), ...at(t, ty1 + 0.5));
+    for (let t = ty0 - 0.5; t <= ty1 + 0.5; t += 0.5) g.lineBetween(...at(tx0 - 0.5, t), ...at(tx1 + 0.5, t));
+    // Knoten an den Kreuzungen
+    g.fillStyle(0x8a7a5a, 0.6);
+    for (let a = tx0 - 0.5; a <= tx1 + 0.5; a += 0.5) for (let c = ty0 - 0.5; c <= ty1 + 0.5; c += 0.5) g.fillRect(...at(a, c), 1, 1);
+  }
+
+  // Tafel unten rechts: am Wegweiser die Richtungen, an einem Gehege-Schild die erlaubten Tiere mit ihren Fußspuren
   updateSign() {
     const p = this.player;
-    const sign = this.signs.find((s) => Math.hypot(p.x - s.x, (p.y - s.y) * 2) < SIGN_DIST);
-    if (sign && !this.signPanel.classList.contains('show')) {
-      this.signPanel.innerHTML = `<b>Wegweiser · ${LEVEL.name}</b>${this.signEntries(sign).join('')}`;
-      this.signPanel.classList.add('show');
-    } else if (!sign) {
+    const near = (s) => Math.hypot(p.x - s.x, (p.y - s.y) * 2) < SIGN_DIST;
+    const sign = this.signs.find(near) ?? this.enclosureSigns.find(near) ?? null;
+    if (sign === this.shownSign) return;
+    this.shownSign = sign;
+    if (!sign) {
       this.signPanel.classList.remove('show');
+      return;
+    }
+    this.signPanel.innerHTML = sign.enclosure
+      ? this.enclosureInfo(sign.enclosure)
+      : `<b>Wegweiser · ${LEVEL.name}</b>${this.signEntries(sign).join('')}`;
+    this.signPanel.classList.add('show');
+  }
+
+  enclosureInfo(enclosure) {
+    const rows = enclosure.species.map((s) => {
+      const [name, text] = ANIMAL_INFO[s] ?? [s, ''];
+      return `<div class="print-row"><img class="print" src="assets/print_${s}.png" alt="">${animalIcon(s)}<span><b>${name}</b>${text}</span></div>`;
+    });
+    return `<b>${enclosure.name} · Hier wohnen:</b>${rows.join('')}`;
+  }
+
+  // Läuft man mit einem Tier in ein Gehege, das nicht zu ihm passt: kurzer Hinweis
+  checkWrongHome(dt) {
+    this.wrongHomeTimer -= dt;
+    if (this.wrongHomeTimer > 0) return;
+    for (const a of this.followers) {
+      const enclosure = a.enclosureFullyAt(a.x, a.y);
+      if (!enclosure || accepts(enclosure, a.species)) continue;
+      this.showToast(
+        `${animalIcon(a.species, 3)} wohnt nicht hier! Hier (${enclosure.name}) dürfen nur ${animalIcons(enclosure.species)} hinein. Schau aufs Schild am Tor!`,
+      );
+      this.wrongHomeTimer = WRONG_HOME_HINT;
+      return;
     }
   }
 
   // Spieler und folgende Tiere öffnen das Tor; ist der Eingang frei, schließt es sich wieder
   updateGate(dt) {
     const walkers = [this.player, ...this.followers];
-    // Abstand in Kachel-Proportionen (Kacheln sind halb so hoch wie breit)
-    const near = walkers.some((w) => this.gate.some((g) => Math.hypot(w.x - g.x, (w.y - g.y) * 2) < GATE_OPEN_DIST));
-    if (near) {
-      this.gateCloseTimer = GATE_CLOSE_DELAY;
-      if (!this.gateOpen) this.setGateOpen(true);
-    } else if (this.gateOpen) {
-      this.gateCloseTimer -= dt;
-      if (this.gateCloseTimer <= 0) this.setGateOpen(false);
+    for (const group of this.gateGroups) {
+      // Abstand in Kachel-Proportionen (Kacheln sind halb so hoch wie breit)
+      const near = walkers.some((w) => group.sprites.some((g) => Math.hypot(w.x - g.x, (w.y - g.y) * 2) < GATE_OPEN_DIST));
+      if (near) {
+        group.closeTimer = GATE_CLOSE_DELAY;
+        if (!group.open) this.setGateOpen(group, true);
+      } else if (group.open) {
+        group.closeTimer -= dt;
+        if (group.closeTimer <= 0) this.setGateOpen(group, false);
+      }
     }
   }
 
-  setGateOpen(open) {
-    this.gateOpen = open;
-    this.tweens.killTweensOf(this.gate);
-    this.tweens.add({ targets: this.gate, alpha: open ? 0 : 1, duration: open ? 150 : 300 });
+  setGateOpen(group, open) {
+    group.open = open;
+    this.tweens.killTweensOf(group.sprites);
+    this.tweens.add({ targets: group.sprites, alpha: open ? 0 : 1, duration: open ? 150 : 300 });
   }
 
   update(_time, delta) {
@@ -901,6 +1009,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateHerons(dt);
     this.updateGate(dt);
     this.updateSign();
+    this.checkWrongHome(dt);
 
     // Tiere, die zuhause angekommen sind, folgen nicht mehr
     const before = this.followers.length;

@@ -820,6 +820,18 @@ function trap() {
 }
 
 const fenceX = fence();
+const meshX = meshFence();
+const netX = netFence();
+// Gemeinsame Geometrie der Zaunstücke entlang der tx-Achse (Kachelmitte bei 32/44)
+const ZA = [16, 36];
+const ZB = [48, 52];
+const chainX = chainFence();
+const chainGateX = chainGate();
+const glassDoorX = glassDoor(false);
+const glassFlapX = glassDoor(true);
+const netGateX = netGate();
+// Tierarten mit Fußspur-Bild (muss vor dem sprites-Objekt stehen)
+const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish'];
 const sprites = {
   'grass0.png': grassTile(0),
   'grass1.png': grassTile(1),
@@ -867,6 +879,35 @@ const sprites = {
   'tuft.png': tuft(),
   'shed_tent.png': tent(),
   'food.png': food(),
+  // Gehege der Wiese: Holzboden, Kratzbaum, Gitterzaun der Voliere, Tor quer, Fußspuren und Torschilder
+  'planks.png': planksTile(),
+  'cat_tree.png': catTree(),
+  'mesh_x.png': meshX,
+  'mesh_y.png': meshX.flipped(),
+  'gate_y.png': gate().flipped(),
+  ...Object.fromEntries(PRINT_KINDS.map((k) => [`print_${k}.png`, printImage(k)])),
+  'esign_pasture.png': enclosureSign(['sheep', 'mole']),
+  'esign_cats.png': enclosureSign(['cat']),
+  'esign_pond.png': enclosureSign(['frog', 'fish']),
+  'esign_aviary.png': enclosureSign(['heron']),
+  // Netz-Zaun der Voliere (entlang tx bzw. ty)
+  'net_x.png': netX,
+  'net_y.png': netX.flipped(),
+  // Maschendraht (Teich), Eckpfosten je Zaunart, Tore je Gehege
+  'chain_x.png': chainX,
+  'chain_y.png': chainX.flipped(),
+  'post_wood.png': fencePost('wood'),
+  'post_mesh.png': fencePost('mesh'),
+  'post_net.png': fencePost('net'),
+  'post_chain.png': fencePost('chain'),
+  'gate_chain_x.png': chainGateX,
+  'gate_chain_y.png': chainGateX.flipped(),
+  'gate_glass_x.png': glassDoorX,
+  'gate_glass_y.png': glassDoorX.flipped(),
+  'gate_glassflap_x.png': glassFlapX, // mittlerer Türflügel mit Katzenklappe
+  'gate_glassflap_y.png': glassFlapX.flipped(),
+  'gate_net_x.png': netGateX,
+  'gate_net_y.png': netGateX.flipped(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1097,6 +1138,334 @@ function food() {
   const c = new Canvas(64, 64);
   c.draw(o, 0, 0);
   return c;
+}
+
+// ---------- Gehege der Wiese ----------
+
+// Holzboden (Bretter entlang der tx-Achse, Fugen passen über die Kachelgrenzen)
+function planksTile() {
+  return tile((x, y) => {
+    const k = y - 0.5 * x;
+    const m = ((k % 6) + 6) % 6;
+    if (m < 1) return hex('#7a4e2d');
+    const board = Math.floor(k / 6);
+    const base = [hex('#c8935a'), hex('#b8834c'), hex('#d29c62')][((board % 3) + 3) % 3];
+    return rand() < 0.06 ? hex('#a8743f') : base;
+  });
+}
+
+// Kratzbaum: Sisalstamm mit zwei Plüsch-Ebenen und Spielball; Fuß bei (24, 72)
+function catTree() {
+  const o = new Canvas(48, 80);
+  o.ellipse(24, 72, 16, 6, hex('#a8957a')); // Bodenplatte
+  o.ellipse(24, 70.5, 15, 5, hex('#c9b28a'), true);
+  // Sisalstamm
+  o.rect(20, 26, 8, 46, hex('#d8c08a'));
+  for (let y = 27; y < 71; y += 3) o.rect(20, y, 8, 1, hex('#b89c62'));
+  o.rect(20, 26, 2, 46, hex('#e8d4a4'));
+  // untere Ebene mit Spielball an einer Schnur
+  o.ellipse(24, 50, 15, 5, hex('#8a7a8a'));
+  o.ellipse(24, 48.5, 14, 4, hex('#a898a8'), true);
+  o.line(37, 51, 37, 60, hex('#6a5a4a'));
+  o.circle(37, 62, 2.5, hex('#e8483f'));
+  // obere Ebene: weiches Kissen
+  o.ellipse(24, 26, 16, 6, hex('#8a7a8a'));
+  o.ellipse(24, 24, 15, 5, hex('#b8a8b8'), true);
+  o.ellipse(21, 23, 6, 2, hex('#d8c8d8'), true);
+  o.outline(INK);
+  return withShadow(48, 80, 24, 73, 17, 5, o);
+}
+
+// Hoher Gitterzaun der Voliere entlang der tx-Achse (gleiche Grundlinie wie der Zaun); Kachelmitte bei (32, 44)
+function meshFence() {
+  const a = [16, 36];
+  const b = [48, 52];
+  const H = 32;
+  // Drahtgitter zwischen den Pfosten (eigene Ebene ohne dicke Kontur)
+  const mesh = new Canvas(64, 64);
+  mesh.poly([[a[0], a[1] - 1], [b[0], b[1] - 1], [b[0], b[1] - H], [a[0], a[1] - H]], hex('#c8d0d8', 30));
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      const u = x - a[0];
+      const v = y - (a[1] + u * 0.5);
+      const p = (((Math.round(u + v * 1.2) % 6) + 6) % 6) === 0 || (((Math.round(u - v * 1.2) % 6) + 6) % 6) === 0;
+      if (p) mesh.paint(x, y, hex('#9aa4ae', 220));
+    }
+  }
+  // Pfosten und Oberkante
+  const o = new Canvas(64, 64);
+  for (let k = 0; k < 2; k++) o.line(a[0], a[1] - H + k, b[0], b[1] - H + k, k === 0 ? hex('#c8935a') : hex('#8a5a30'));
+  for (const [x, y] of [a, b]) {
+    o.rect(x - 2, y - H - 2, 4, H + 3, hex('#b07a42'));
+    o.rect(x - 2, y - H - 2, 1, H + 3, hex('#d29c62'));
+    o.rect(x + 1, y - H - 2, 1, H + 3, hex('#8a5a30'));
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.line(a[0], a[1] + 1, b[0], b[1] + 1, SHADOW);
+  c.draw(mesh, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Fußspuren (und beim Fisch ein Umriss, weil Fische keine Füße haben).
+// Gezeichnet in einem Raster von etwa -20..20 um die Mitte (cx, cy), skaliert mit s.
+function drawPrint(kind, c, cx, cy, s, col = hex('#5a3a22')) {
+  const E = (x, y, rx, ry) => c.ellipse(cx + x * s, cy + y * s, Math.max(0.7, rx * s), Math.max(0.7, ry * s), col);
+  // dicker Strich aus aneinandergereihten Kreisen; r0 am Anfang, r1 am Ende
+  const stroke = (x0, y0, x1, y1, r0, r1 = r0) => {
+    for (let t = 0; t <= 1; t += 0.05) E(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, r0 + (r1 - r0) * t, r0 + (r1 - r0) * t);
+  };
+  const ray = (x, y, deg, len, r0, r1) => {
+    const a = (deg * Math.PI) / 180;
+    stroke(x, y, x + Math.cos(a) * len, y + Math.sin(a) * len, r0, r1);
+    return [x + Math.cos(a) * len, y + Math.sin(a) * len];
+  };
+  switch (kind) {
+    case 'sheep': // Paarhufer: zwei Hufhälften
+      for (const side of [-1, 1]) {
+        E(side * 6, 5, 5, 10);
+        E(side * 5.5, -5, 3.8, 7);
+        E(side * 4.5, -12, 2.2, 3);
+      }
+      break;
+    case 'mole': // breite Grabhand mit fünf Krallen
+      E(0, 6, 10, 8);
+      for (let i = 0; i < 5; i++) {
+        const [tx, ty] = ray(0, 4, -160 + i * 35, 13, 3, 2);
+        E(tx, ty, 1.4, 1.4);
+      }
+      break;
+    case 'cat': // großer Ballen und vier Zehen, keine Krallenspuren
+      E(0, 9, 8, 6);
+      E(-5, 11, 4, 4.5);
+      E(5, 11, 4, 4.5);
+      for (const [x, y] of [[-11, -2], [-4, -9], [4, -9], [11, -2]]) E(x, y, 3.4, 4.4);
+      break;
+    case 'frog': // lange, dünne Finger mit runden Haftscheiben
+      E(0, 9, 4.5, 4);
+      for (const deg of [-150, -112, -68, -30]) {
+        const [tx, ty] = ray(0, 8, deg, 17, 1.4, 1.1);
+        E(tx, ty, 2.6, 2.6);
+      }
+      break;
+    case 'heron': // drei lange Zehen nach vorne, eine nach hinten
+      E(0, 6, 2.6, 2.6);
+      for (const deg of [-128, -90, -52]) ray(0, 6, deg, 21, 1.6, 0.8);
+      ray(0, 6, 90, 11, 1.6, 0.8);
+      break;
+    case 'fish': { // Fischumriss mit Wellen darunter
+      E(-3, -2, 12, 6.5);
+      c.poly([[cx + 7 * s, cy - 2 * s], [cx + 18 * s, cy - 9 * s], [cx + 18 * s, cy + 5 * s]], col);
+      c.ellipse(cx - 10 * s, cy - 3.5 * s, Math.max(0.7, 1.4 * s), Math.max(0.7, 1.4 * s), hex('#f2e2c0'));
+      for (const x of [-14, -2, 10]) {
+        stroke(x - 4, 13, x, 11, 1, 1);
+        stroke(x, 11, x + 4, 13, 1, 1);
+      }
+      break;
+    }
+  }
+}
+
+// Große Fußspur für die Anzeige-Tafel (doppelte Auflösung, 48x48)
+function printImage(kind) {
+  const c = new Canvas(48, 48);
+  drawPrint(kind, c, 24, 25, 1);
+  return c;
+}
+
+// Holzschild für das Gehegetor mit den Fußspuren der erlaubten Tiere (doppelte Auflösung)
+function enclosureSign(kinds) {
+  const o = new Canvas(96, 72);
+  o.rect(5, 12, 86, 56, hex('#a8743f'));
+  o.rect(5, 12, 86, 3, hex('#c8935a'));
+  o.rect(10, 18, 76, 45, hex('#e8c48a'));
+  for (const x of [9, 85]) o.rect(x, 14, 3, 3, hex('#5e5a54')); // Nägel
+  // Schnüre, an denen es am Zaun hängt
+  o.line(18, 12, 26, 0, hex('#6a5a4a'));
+  o.line(78, 12, 70, 0, hex('#6a5a4a'));
+  o.outline(INK);
+  const step = 76 / kinds.length;
+  kinds.forEach((k, i) => drawPrint(k, o, 10 + step * (i + 0.5), 40, kinds.length > 1 ? 0.82 : 1));
+  return o;
+}
+
+// Netz-Zaun der Voliere entlang der tx-Achse: dünne Stangen mit geknotetem Seilnetz, oben durchhängend
+function netFence() {
+  const a = [16, 36];
+  const b = [48, 52];
+  const H = 32;
+  const sag = (u) => 3 * Math.sin((Math.PI * u) / (b[0] - a[0])); // so weit hängt das obere Seil durch
+  const net = new Canvas(64, 64);
+  for (let y = 0; y < 64; y++) {
+    for (let x = a[0]; x <= b[0]; x++) {
+      const u = x - a[0];
+      const v = y - (a[1] + u * 0.5); // Höhe über der Grundlinie (negativ = oben)
+      if (v > 0 || v < -H + sag(u)) continue;
+      const k1 = (((Math.round(u + v * 1.4) % 7) + 7) % 7) === 0;
+      const k2 = (((Math.round(u - v * 1.4) % 7) + 7) % 7) === 0;
+      if (k1 && k2) net.set(x, y, hex('#8a7a5a')); // Knoten
+      else if (k1 || k2) net.set(x, y, hex('#d8c89a', 230));
+    }
+  }
+  const o = new Canvas(64, 64);
+  // oberes Halteseil
+  for (let u = 0; u <= b[0] - a[0]; u++) o.set(a[0] + u, a[1] + u * 0.5 - H + sag(u), hex('#7a6a4a'));
+  // dünne Stangen
+  for (const [x, y] of [a, b]) {
+    o.rect(x - 1, y - H - 3, 2, H + 4, hex('#7a5a3a'));
+    o.set(x - 1, y - H - 3, hex('#a8845a'));
+  }
+  const c = new Canvas(64, 64);
+  c.line(a[0], a[1] + 1, b[0], b[1] + 1, SHADOW);
+  c.draw(net, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Fläche zwischen den Enden in Höhe h0..h1 über der Grundlinie mit einem Muster füllen
+function fillPanel(c, h0, h1, colorAt) {
+  for (let y = 0; y < 64; y++) {
+    for (let x = ZA[0]; x <= ZB[0]; x++) {
+      const u = x - ZA[0];
+      const v = ZA[1] + u * 0.5 - y; // Höhe über der Grundlinie
+      if (v < h0 || v > h1) continue;
+      const col = colorAt(u, v);
+      if (col) c.set(x, y, col);
+    }
+  }
+}
+
+// Dichter Maschendrahtzaun (Teich): Metallpfosten, Oberrohr und feines Rautengeflecht
+function chainFence() {
+  const H = 22;
+  const mesh = new Canvas(64, 64);
+  fillPanel(mesh, 1, H, (u, v) => {
+    const k1 = (((Math.round(u + v * 1.3) % 3) + 3) % 3) === 0;
+    const k2 = (((Math.round(u - v * 1.3) % 3) + 3) % 3) === 0;
+    return k1 || k2 ? hex('#b8c0c8', 235) : hex('#d8e0e8', 50);
+  });
+  const o = new Canvas(64, 64);
+  for (let k = 0; k < 2; k++) o.line(ZA[0], ZA[1] - H + k, ZB[0], ZB[1] - H + k, k === 0 ? hex('#c8d0d8') : hex('#7a828a'));
+  for (const [x, y] of [ZA, ZB]) {
+    o.rect(x - 1, y - H - 1, 3, H + 2, hex('#8a9298'));
+    o.rect(x - 1, y - H - 1, 1, H + 2, hex('#c0c8d0'));
+  }
+  o.outline(hex('#3a4046'));
+  const c = new Canvas(64, 64);
+  c.line(ZA[0], ZA[1] + 1, ZB[0], ZB[1] + 1, SHADOW);
+  c.draw(mesh, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Tor aus Maschendraht mit Metallrahmen
+function chainGate() {
+  const H = 21;
+  const mesh = new Canvas(64, 64);
+  fillPanel(mesh, 2, H - 1, (u, v) => {
+    const k1 = (((Math.round(u + v * 1.3) % 3) + 3) % 3) === 0;
+    const k2 = (((Math.round(u - v * 1.3) % 3) + 3) % 3) === 0;
+    return k1 || k2 ? hex('#b8c0c8', 235) : null;
+  });
+  const o = new Canvas(64, 64);
+  for (const h of [1, H]) for (let k = 0; k < 2; k++) o.line(ZA[0], ZA[1] - h + k, ZB[0], ZB[1] - h + k, k === 0 ? hex('#c8d0d8') : hex('#7a828a'));
+  for (const [x, y] of [[ZA[0] + 1, ZA[1] + 0.5], [ZB[0] - 1, ZB[1] - 0.5], [32, 44]]) o.rect(Math.round(x) - 1, Math.round(y) - H, 2, H, hex('#8a9298'));
+  o.outline(hex('#3a4046'));
+  const c = new Canvas(64, 64);
+  c.line(ZA[0], ZA[1] + 1, ZB[0], ZB[1] + 1, SHADOW);
+  c.draw(mesh, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Glastür für das Katzenhaus: Holzrahmen, Glasscheiben mit Spiegelung und eine kleine Katzenklappe
+// withFlap: mit Katzenklappe (nur der mittlere Flügel)
+function glassDoor(withFlap) {
+  const H = 32; // so hoch wie die Gitterwände
+  const glass = new Canvas(64, 64);
+  fillPanel(glass, 2, H - 2, (u, v) => {
+    if ((u + Math.round(v * 0.8)) % 13 === 4 || (u + Math.round(v * 0.8)) % 13 === 5) return hex('#ffffff', 200); // Spiegelung
+    return hex('#bfe6f5', 150);
+  });
+  // Katzenklappe unten in der Mitte
+  if (withFlap) fillPanel(glass, 2, 9, (u, v) => (u >= 12 && u <= 20 ? (v >= 8 || u === 12 || u === 20 ? hex('#5e3a20') : hex('#8a6a4a')) : null));
+  const o = new Canvas(64, 64);
+  const at = (t, h) => [Math.round(ZA[0] + (ZB[0] - ZA[0]) * t), Math.round(ZA[1] + (ZB[1] - ZA[1]) * t - h)];
+  for (const h of [1, H, 16]) {
+    const [x0, y0] = at(0, h);
+    const [x1, y1] = at(1, h);
+    for (let k = 0; k < 2; k++) o.line(x0, y0 + k, x1, y1 + k, k === 0 ? hex('#c8935a') : hex('#8a5a30'));
+  }
+  for (const t of [0, 1]) {
+    const [x, y] = at(t, 0);
+    o.rect(x - 1, y - H - 1, 3, H + 2, hex('#a8743f'));
+  }
+  const [hx, hy] = at(0.82, 15);
+  o.rect(hx, hy, 2, 2, hex('#f0c040')); // Türgriff
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.line(ZA[0], ZA[1] + 1, ZB[0], ZB[1] + 1, SHADOW);
+  c.draw(glass, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Großes Tor der Voliere: so hoch wie das Netz, Holzrahmen mit Strebe und Netz darin
+function netGate() {
+  const H = 32;
+  const net = new Canvas(64, 64);
+  fillPanel(net, 2, H - 2, (u, v) => {
+    const k1 = (((Math.round(u + v * 1.4) % 7) + 7) % 7) === 0;
+    const k2 = (((Math.round(u - v * 1.4) % 7) + 7) % 7) === 0;
+    return k1 && k2 ? hex('#8a7a5a') : k1 || k2 ? hex('#d8c89a', 230) : null;
+  });
+  const o = new Canvas(64, 64);
+  const at = (t, h) => [Math.round(ZA[0] + (ZB[0] - ZA[0]) * t), Math.round(ZA[1] + (ZB[1] - ZA[1]) * t - h)];
+  for (const h of [2, H]) {
+    const [x0, y0] = at(0, h);
+    const [x1, y1] = at(1, h);
+    for (let k = 0; k < 2; k++) o.line(x0, y0 + k, x1, y1 + k, k === 0 ? hex('#c8935a') : hex('#8a5a30'));
+  }
+  for (const t of [0.03, 0.97]) {
+    const [x, y] = at(t, 0);
+    o.rect(x - 1, y - H, 2, H, hex('#a8743f'));
+  }
+  const [dx0, dy0] = at(0.05, 3);
+  const [dx1, dy1] = at(0.95, H - 1);
+  for (let k = 0; k < 2; k++) o.line(dx0, dy0 + k, dx1, dy1 + k, k === 0 ? hex('#c8935a') : hex('#8a5a30'));
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.line(ZA[0], ZA[1] + 1, ZB[0], ZB[1] + 1, SHADOW);
+  c.draw(net, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Eckpfosten (steht in der Kachelmitte), passend zur Zaunart
+function fencePost(kind) {
+  const o = new Canvas(64, 64);
+  const [x, y] = [32, 44];
+  if (kind === 'wood') {
+    o.rect(x - 2, y - 18, 4, 19, hex('#b07a42'));
+    o.rect(x - 2, y - 18, 1, 19, hex('#d29c62'));
+    o.rect(x + 1, y - 18, 1, 19, hex('#8a5a30'));
+    o.rect(x - 2, y - 18, 4, 1, hex('#e0b07a'));
+    o.outline(INK);
+  } else if (kind === 'mesh') {
+    o.rect(x - 2, y - 34, 4, 35, hex('#b07a42'));
+    o.rect(x - 2, y - 34, 1, 35, hex('#d29c62'));
+    o.rect(x + 1, y - 34, 1, 35, hex('#8a5a30'));
+    o.outline(INK);
+  } else if (kind === 'net') {
+    o.rect(x - 1, y - 35, 2, 36, hex('#7a5a3a'));
+    o.set(x - 1, y - 35, hex('#a8845a'));
+  } else {
+    o.rect(x - 1, y - 23, 3, 24, hex('#8a9298'));
+    o.rect(x - 1, y - 23, 1, 24, hex('#c0c8d0'));
+    o.outline(hex('#3a4046'));
+  }
+  return o;
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {
