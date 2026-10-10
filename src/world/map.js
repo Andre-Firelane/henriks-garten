@@ -44,6 +44,7 @@ export let GATE_TILES;
 export let FISHPOND_TILES;
 export let FISH_SPOTS; // Stellen, an denen wilde Fische auftauchen
 export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Teich entfernt (für Frösche)
+export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
 let ROWS;
@@ -67,15 +68,8 @@ export function setLevel(id) {
   FISH_SPOTS = tilesWith('~').filter(({ tx, ty }) =>
     [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !isBlocked(tx + dx, ty + dy)),
   );
-  NEAR_WATER = [];
-  for (let ty = 1; ty < MAP_H - 1; ty++) {
-    for (let tx = 1; tx < MAP_W - 1; tx++) {
-      if (isBlocked(tx, ty) || inPen(tx, ty) || exitAt(tx, ty)) continue;
-      let near = false;
-      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = charAt(tx + dx, ty + dy) === '~';
-      if (near) NEAR_WATER.push({ tx, ty });
-    }
-  }
+  NEAR_WATER = freeTilesNear('~');
+  NEAR_TREES = freeTilesNear('ATPD');
   MOLE_SPOTS = tilesWith('.').filter(
     ({ tx, ty }) => tx > 1 && ty > 1 && tx < MAP_W - 2 && ty < MAP_H - 2 && !inPen(tx, ty) && !isBlocked(tx, ty),
   );
@@ -87,6 +81,20 @@ export function setLevel(id) {
       .find((t) => !isBlocked(t.tx, t.ty) && !inPen(t.tx, t.ty) && !exitAt(t.tx, t.ty));
     return free ? [{ tx, ty, ground: free }] : [];
   });
+}
+
+// Freie Kacheln im Inneren (nicht im Gehege, kein Übergang), höchstens 2 Kacheln von einem der Zeichen entfernt
+function freeTilesNear(chars) {
+  const tiles = [];
+  for (let ty = 1; ty < MAP_H - 1; ty++) {
+    for (let tx = 1; tx < MAP_W - 1; tx++) {
+      if (isBlocked(tx, ty) || inPen(tx, ty) || exitAt(tx, ty)) continue;
+      let near = false;
+      for (let dy = -2; dy <= 2 && !near; dy++) for (let dx = -2; dx <= 2 && !near; dx++) near = chars.includes(charAt(tx + dx, ty + dy));
+      if (near) tiles.push({ tx, ty });
+    }
+  }
+  return tiles;
 }
 
 function charAt(tx, ty) {

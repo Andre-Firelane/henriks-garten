@@ -13,6 +13,7 @@ import {
   EXITS,
   FISHPOND_TILES,
   NEAR_WATER,
+  NEAR_TREES,
   setLevel,
   groundAt,
   grassAt,
@@ -24,7 +25,7 @@ import {
 import { LEVELS } from '../world/levels.js';
 import { game, resetGame } from '../state.js';
 import Player from '../player/Player.js';
-import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP } from '../animals/Animal.js';
+import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable } from '../animals/Animal.js';
 import Fish from '../animals/Fish.js';
 import Squirrel from '../animals/Squirrel.js';
 import Frog from '../animals/Frog.js';
@@ -44,7 +45,7 @@ import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'giraffe'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -62,6 +63,7 @@ const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS
 const LIFETIME = [90, 240]; // Sekunden, die ein wildes Tier bleibt (zufällig)
 const SPAWN_INTERVAL = [5, 12]; // so oft schaut der Spawner, ob Tiere fehlen
 const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
+const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines Baums erscheinen
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
@@ -73,9 +75,11 @@ const AMBIENT_FADE = 1500; // Millisekunden zum Einblenden
 // Das laufende Hintergrundgeräusch überdauert Levelwechsel (die Szene startet dabei neu)
 let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor seinen Augen)
 
-// Reihenfolge der Tierarten im Zähler: alle, die in irgendeinem Level vorkommen
-const SPECIES_ORDER = ALL_SPECIES.filter((s) =>
-  Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
+// Reihenfolge der Tierarten im Zähler: alle fangbaren, die in irgendeinem Level vorkommen
+const SPECIES_ORDER = ALL_SPECIES.filter(
+  (s) =>
+    isCatchable(SPECIES[s]) &&
+    Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -340,8 +344,11 @@ export default class GardenScene extends Phaser.Scene {
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
       group.push(a);
     } else {
-      // Frösche meistens nah am Wasser
-      const tile = (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileNearWater(taken)) || this.randomFreeTile(taken);
+      // Frösche meistens nah am Wasser, Giraffen meistens nah an Bäumen
+      const tile =
+        (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileFrom(NEAR_WATER, taken)) ||
+        (species === 'giraffe' && Math.random() < GIRAFFE_NEAR_TREES && this.tileFrom(NEAR_TREES, taken)) ||
+        this.randomFreeTile(taken);
       taken.push(tile);
       const p = tileToWorld(tile.tx, tile.ty);
       group.push(this.createAnimal(species, p.x, p.y));
@@ -377,9 +384,9 @@ export default class GardenScene extends Phaser.Scene {
     return null;
   }
 
-  // Freie Kachel am Wasser mit Abstand zu "taken" (gleiche Regel wie randomFreeTile), oder null
-  tileNearWater(taken) {
-    const free = NEAR_WATER.filter(
+  // Freie Kachel aus der Liste (z. B. am Wasser oder an Bäumen) mit Abstand zu "taken" (gleiche Regel wie randomFreeTile), oder null
+  tileFrom(list, taken) {
+    const free = list.filter(
       ({ tx, ty }) => !taken.some((t, i) => Math.max(Math.abs(t.tx - tx), Math.abs(t.ty - ty)) < (i === 0 ? 5 : 2)),
     );
     return free.length ? Phaser.Utils.Array.GetRandom(free) : null;

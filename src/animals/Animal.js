@@ -67,6 +67,21 @@ export const SPECIES = {
     fleeSpeed: 95,
     catchWith: ['lasso'],
   },
+  // Giraffe (Savanne): viel größer als die anderen Tiere, läuft gemächlich herum; kann man (noch) nicht fangen
+  giraffe: {
+    texture: 'giraffe',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 164 / 168,
+    speed: 16,
+    restChance: 0.6,
+    restTime: [2, 6],
+    walkTime: [1.5, 4],
+    stepRate: 6,
+    hop: 1,
+    footW: 11,
+    shadowW: 40,
+    catchWith: [],
+  },
   // Hirsch: verhält sich wie das Reh, ist aber sehr selten
   stag: {
     texture: 'stag',

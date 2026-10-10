@@ -209,7 +209,8 @@ export const LEVELS = {
       { tool: 'empty', tx: 18, ty: 22 }, // "Hände frei": hier legt man das getragene Werkzeug ab
     ],
     exits: [{ tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' }],
-    // Vorerst leben hier nur Antilopen (Gazellen), in Gruppen zu 2 bis 4; keine Fischreiher
-    spawn: { population: 8, weights: { antelope: 1 } },
+    // Hier leben Antilopen (Gazellen) in Gruppen zu 2 bis 4 und Giraffen; keine Fischreiher
+    // Giraffen sind viel seltener (im Schnitt etwa eine) und erscheinen meist an Bäumen
+    spawn: { population: 9, weights: { antelope: 1, giraffe: 0.4 } },
   },
 };

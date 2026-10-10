@@ -13,6 +13,7 @@ const SHEETS = {
   mole: [56, 52, 4, 0],
   heron: [88, 108, 4, 0],
   antelope: [72, 100, 4, 0],
+  giraffe: [104, 168, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)

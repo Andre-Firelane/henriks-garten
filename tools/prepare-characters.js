@@ -38,6 +38,8 @@ const CHARACTERS = [
   { src: 'Sprites/Fuchs.png', out: 'fox.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64, byComponents: true },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (hoch wegen der Hörner)
   { src: 'Sprites/Antilope.png', out: 'antelope.png', frameW: 72, frameH: 100, feetY: 96, figureH: 88 },
+  // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (viel größer als die anderen Tiere)
+  { src: 'Sprites/Giraffe.png', out: 'giraffe.png', frameW: 104, frameH: 168, feetY: 164, figureH: 156 },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)
