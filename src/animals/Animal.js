@@ -67,6 +67,43 @@ export const SPECIES = {
     fleeDist: 70,
     fleeSpeed: 95,
     catchWith: ['lasso'],
+    herd: true, // erscheint in kleinen Gruppen
+  },
+  // Zebra (Savanne): Herdentier wie die Antilope, etwas weniger scheu; trinkt ab und zu am Wasserloch
+  // und ist dann auch durch Berühren fangbar (siehe Zebra.js)
+  zebra: {
+    texture: 'zebra',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 100 / 104,
+    speed: 28,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 28,
+    fleeDist: 55, // weniger scheu als die Antilope (70)
+    fleeSpeed: 88,
+    catchWith: ['lasso', 'touch'], // Berühren nur beim Trinken
+    herd: true,
+  },
+  // Erdmännchen (Savanne): Kolonie aus 3 bis 5 mit einem Wächter (siehe Meerkat.js); nur mit dem Kescher
+  meerkat: {
+    texture: 'meerkat',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 52 / 56,
+    speed: 22,
+    restChance: 0.5,
+    restTime: [1, 3],
+    walkTime: [1, 2],
+    stepRate: 12,
+    hop: 1.5,
+    footW: 5,
+    shadowW: 16,
+    catchWith: ['net'],
+    herd: true,
+    groupSize: [3, 5], // so viele erscheinen zusammen (statt HERD_SIZE)
   },
   // Giraffe (Savanne): viel größer als die anderen Tiere, läuft gemächlich herum; zahm wird sie nur mit Grünfutter
   // (siehe feedGiraffe in GardenScene)
@@ -312,6 +349,11 @@ export default class Animal {
   // Kann der Spieler es in diesem Moment fangen?
   canBeCaughtNow() {
     return this.state === 'wild';
+  }
+
+  // ... und mit diesem Werkzeug ('touch' = Berühren)?
+  canBeCaughtWith(tool) {
+    return this.canBeCaughtNow() && this.kind.catchWith.includes(tool);
   }
 
   // Bild, Blickrichtung und Wippen beim Laufen

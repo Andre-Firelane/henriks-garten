@@ -51,7 +51,7 @@ export default class ZoneTool {
   caughtBy(animals) {
     if (!this.active || this.progress < this.catchFrom || this.progress > this.catchTo) return [];
     return animals.filter(
-      (a) => a.canBeCaughtNow() && a.kind.catchWith.includes(this.id) && this.zoneDistance(a) < this.radius,
+      (a) => a.canBeCaughtWith(this.id) && this.zoneDistance(a) < this.radius,
     );
   }
 

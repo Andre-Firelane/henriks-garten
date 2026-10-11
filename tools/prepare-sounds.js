@@ -17,6 +17,9 @@ const SOUNDS = [
   ['Sounds/eichhörnchen.wav', 'public/assets/sounds/animal_squirrel.wav', 0, 1.15, 0.8],
   ['Sounds/frosch.mp3', 'public/assets/sounds/animal_frog.mp3'],
   ['Sounds/Fisch.mp3', 'public/assets/sounds/animal_fish.wav', 1.15, 0.9, 0.8], // nur der erste Platscher
+  ['Sounds/Zebra.mp3', 'public/assets/sounds/animal_zebra.wav', 0.15, 1.45, 0.8], // erstes Wiehern, ohne den Knack am Anfang
+  // Warnruf des Erdmännchen-Wächters (die ersten Rufe, ohne Knack und Stille davor)
+  ['Sounds/Erdmännchen Alarm.mp3', 'public/assets/sounds/meerkat_alarm.wav', 2.5, 1.6, 0.8],
   // Schwung beim Einsetzen eines Werkzeugs
   ['Sounds/whoosh.wav', 'public/assets/sounds/whoosh.wav', 0, 0.2, 0.8],
   // Falle schnappt zu, wenn ein Tier hineingeht

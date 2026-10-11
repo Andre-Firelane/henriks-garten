@@ -41,6 +41,13 @@ export const OBJECTS = {
   // dichter Maschendraht (Teich)
   '{': { key: 'chain_x', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'x' } },
   '}': { key: 'chain_y', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'y' } },
+  // Erdhöhle im Fuchsbau
+  U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
+  // Erdmännchenbau (Savanne, sandfarben)
+  u: { key: 'den_sand', originY: 44 / 56, solid: true, hitbox: 16 },
+  // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
+  '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
+  ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
 };
 
 export let LEVEL_ID;
@@ -58,6 +65,7 @@ export let FISHPOND_TILES;
 export let FISH_SPOTS; // Stellen, an denen wilde Fische auftauchen
 export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Teich entfernt (für Frösche)
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
+export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
 let ROWS;
@@ -74,16 +82,18 @@ export function setLevel(id) {
   SHED = LEVEL.shed;
   TOOL_SPOTS = LEVEL.toolSpots;
   EXITS = LEVEL.exits;
-  GATE_TILES = tilesWith('G').map((t) => ({ ...t, vertical: '|!;}'.includes(charAt(t.tx, t.ty - 1)) || '|!;}'.includes(charAt(t.tx, t.ty + 1)) }));
+  GATE_TILES = tilesWith('G').map((t) => ({ ...t, vertical: '|!;}]'.includes(charAt(t.tx, t.ty - 1)) || '|!;}]'.includes(charAt(t.tx, t.ty + 1)) }));
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const list = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
   ENCLOSURES = list.map((e) => {
     const a = e.area;
     // Tore liegen im Zaun rund um die Innenfläche
     const gates = GATE_TILES.filter(({ tx, ty }) => tx >= a.tx0 - 1 && tx <= a.tx1 + 1 && ty >= a.ty0 - 1 && ty <= a.ty1 + 1);
-    // Schild hängt am Zaunstück direkt vor dem ersten Torflügel
-    const g = gates[0];
-    const sign = e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty - 1 } : { tx: g.tx - 1, ty: g.ty }) : null;
+    // Schild hängt am Zaunstück direkt vor dem ersten Torflügel (signSide: 'right' = hinter dem letzten)
+    const right = e.signSide === 'right';
+    const g = right ? gates[gates.length - 1] : gates[0];
+    const d = right ? 1 : -1;
+    const sign = e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null;
     return { ...e, gates, sign };
   });
   FISHPOND_TILES = tilesWith('o');
@@ -93,6 +103,14 @@ export function setLevel(id) {
   );
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
+  SHORE_TILES = [];
+  for (let ty = 1; ty < MAP_H - 1; ty++) {
+    for (let tx = 1; tx < MAP_W - 1; tx++) {
+      if (isBlocked(tx, ty) || inPen(tx, ty) || exitAt(tx, ty)) continue;
+      const w = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => charAt(tx + dx, ty + dy) === '~');
+      if (w) SHORE_TILES.push({ tx, ty, water: { tx: tx + w[0], ty: ty + w[1] } });
+    }
+  }
   MOLE_SPOTS = tilesWith('.').filter(
     ({ tx, ty }) => tx > 1 && ty > 1 && tx < MAP_W - 2 && ty < MAP_H - 2 && !inPen(tx, ty) && !isBlocked(tx, ty),
   );

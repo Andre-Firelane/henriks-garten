@@ -830,8 +830,14 @@ const chainGateX = chainGate();
 const glassDoorX = glassDoor(false);
 const glassFlapX = glassDoor(true);
 const netGateX = netGate();
+// Wildzaun der Savanne: höher, daher 16 Pixel nach unten versetzt (siehe tallFence)
+const TALL_DY = 16;
+const TA = [ZA[0], ZA[1] + TALL_DY];
+const TB = [ZB[0], ZB[1] + TALL_DY];
+const tallX = tallFence();
+const tallGateX = tallGate();
 // Tierarten mit Fußspur-Bild (muss vor dem sprites-Objekt stehen)
-const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish'];
+const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat'];
 const sprites = {
   'grass0.png': grassTile(0),
   'grass1.png': grassTile(1),
@@ -908,6 +914,21 @@ const sprites = {
   'gate_glassflap_y.png': glassFlapX.flipped(),
   'gate_net_x.png': netGateX,
   'gate_net_y.png': netGateX.flipped(),
+  // Savannengehege: hoher Wildzaun, großes Tor, Schild
+  'tall_x.png': tallX,
+  'tall_y.png': tallX.flipped(),
+  'post_tall.png': fencePost('tall'),
+  'gate_tall_x.png': tallGateX,
+  'gate_tall_y.png': tallGateX.flipped(),
+  'esign_savanna.png': enclosureSign(['antelope', 'zebra', 'giraffe']),
+  // Wald: Hirschgehege, Fuchsbau, Voliere; Erdhöhle für den Fuchsbau
+  'esign_deerpark.png': enclosureSign(['deer', 'stag']),
+  'esign_foxden.png': enclosureSign(['fox']),
+  'esign_forestaviary.png': enclosureSign(['squirrel', 'heron']),
+  'den.png': foxDen(),
+  // Erdmännchen: Torschild und sandfarbener Bau
+  'esign_meerkat.png': enclosureSign(['meerkat']),
+  'den_sand.png': foxDen(true),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1254,6 +1275,65 @@ function drawPrint(kind, c, cx, cy, s, col = hex('#5a3a22')) {
       for (const deg of [-128, -90, -52]) ray(0, 6, deg, 21, 1.6, 0.8);
       ray(0, 6, 90, 11, 1.6, 0.8);
       break;
+    case 'antelope': // schmale, spitze Hufhälften (Paarhufer, zum schnellen Laufen)
+      for (const side of [-1, 1]) {
+        E(side * 3.5, 6, 3.4, 9);
+        E(side * 3.2, -3, 2.6, 7);
+        E(side * 2.6, -10, 1.6, 4);
+      }
+      break;
+    case 'giraffe': // große, runde Hufhälften
+      for (const side of [-1, 1]) {
+        E(side * 8, 4, 7.5, 12);
+        E(side * 7, -7, 5.5, 6);
+      }
+      break;
+    case 'deer': // zwei schmale Hufhälften, vorne spitz
+      for (const side of [-1, 1]) {
+        E(side * 4.5, 6, 4, 9.5);
+        E(side * 4, -4, 3, 7);
+        E(side * 3.2, -11, 1.8, 3.5);
+      }
+      break;
+    case 'stag': // wie beim Reh, größer, dahinter zwei kleine Afterklauen
+      for (const side of [-1, 1]) {
+        E(side * 6, 3, 5.5, 11);
+        E(side * 5.2, -8, 4, 7);
+        E(side * 4.2, -15, 2.2, 3.2);
+        E(side * 7.5, 17, 1.8, 1.8);
+      }
+      break;
+    case 'fox': // vier schmale Zehen mit Krallen und ein kleiner Ballen
+      E(0, 7, 6, 5);
+      E(0, 11, 3, 2);
+      for (const [x, y] of [[-7, -4], [-2.5, -10], [2.5, -10], [7, -4]]) {
+        E(x, y, 2.6, 3.6);
+        E(x * 1.15, y - 5.5, 0.9, 1.4); // Kralle
+      }
+      break;
+    case 'squirrel': // lange, dünne Finger mit spitzen Krallen
+      E(0, 9, 4.5, 4);
+      for (const deg of [-150, -110, -70, -30]) {
+        const [tx, ty] = ray(0, 8, deg, 13, 1.7, 1.1);
+        ray(tx, ty, deg, 4, 0.9, 0.5); // Kralle
+      }
+      break;
+    case 'zebra': { // Unpaarhufer wie das Pferd: ein einziger runder Huf, hinten offen, innen der Strahl
+      for (let a = -200; a <= 20; a += 6) {
+        const r = (a * Math.PI) / 180;
+        E(Math.cos(r) * 10, Math.sin(r) * 12 + 1, 3, 3);
+      }
+      stroke(0, -3, -4, 10, 1.6, 1.1);
+      stroke(0, -3, 4, 10, 1.6, 1.1);
+      break;
+    }
+    case 'meerkat': // vier Zehen mit langen Grabkrallen
+      E(0, 8, 5.5, 5);
+      for (const deg of [-140, -105, -75, -40]) {
+        const [tx, ty] = ray(0, 6, deg, 8, 2.4, 1.8);
+        ray(tx, ty, deg, 7, 1.1, 0.5); // lange Kralle
+      }
+      break;
     case 'fish': { // Fischumriss mit Wellen darunter
       E(-3, -2, 12, 6.5);
       c.poly([[cx + 7 * s, cy - 2 * s], [cx + 18 * s, cy - 9 * s], [cx + 18 * s, cy + 5 * s]], col);
@@ -1286,7 +1366,8 @@ function enclosureSign(kinds) {
   o.line(78, 12, 70, 0, hex('#6a5a4a'));
   o.outline(INK);
   const step = 76 / kinds.length;
-  kinds.forEach((k, i) => drawPrint(k, o, 10 + step * (i + 0.5), 40, kinds.length > 1 ? 0.82 : 1));
+  const size = kinds.length === 1 ? 1 : kinds.length === 2 ? 0.82 : 0.6;
+  kinds.forEach((k, i) => drawPrint(k, o, 10 + step * (i + 0.5), 40, size));
   return o;
 }
 
@@ -1457,6 +1538,15 @@ function fencePost(kind) {
     o.rect(x - 2, y - 34, 1, 35, hex('#d29c62'));
     o.rect(x + 1, y - 34, 1, 35, hex('#8a5a30'));
     o.outline(INK);
+  } else if (kind === 'tall') {
+    // eigene, höhere Fläche (siehe tallFence)
+    const t = new Canvas(64, 80);
+    t.rect(x - 3, 60 - 42, 6, 43, hex('#8a6440'));
+    t.rect(x - 3, 60 - 42, 2, 43, hex('#a8845a'));
+    t.rect(x + 2, 60 - 42, 1, 43, hex('#5e4228'));
+    t.rect(x - 3, 60 - 42, 6, 1, hex('#c8a47a'));
+    t.outline(INK);
+    return t;
   } else if (kind === 'net') {
     o.rect(x - 1, y - 35, 2, 36, hex('#7a5a3a'));
     o.set(x - 1, y - 35, hex('#a8845a'));
@@ -1466,6 +1556,88 @@ function fencePost(kind) {
     o.outline(hex('#3a4046'));
   }
   return o;
+}
+
+// Hoher Wildzaun (Savanne): dicke Holzpfähle mit gespannten Drähten, oben ein Balken.
+// Höher als die anderen Zäune, daher auf einer 80 Pixel hohen Fläche (Kachelmitte bei 32/60).
+function tallFence() {
+  const H = 42;
+  const o = new Canvas(64, 80);
+  // Drähte
+  for (const h of [6, 14, 22, 30]) o.line(TA[0], TA[1] - h, TB[0], TB[1] - h, hex('#9aa0a6'));
+  // oberer Balken
+  for (let k = 0; k < 3; k++) o.line(TA[0], TA[1] - H + 3 + k, TB[0], TB[1] - H + 3 + k, k === 0 ? hex('#c8a47a') : k === 1 ? hex('#a8845a') : hex('#6e4c2e'));
+  for (const [x, y] of [TA, TB]) {
+    o.rect(x - 3, y - H, 6, H + 1, hex('#8a6440'));
+    o.rect(x - 3, y - H, 2, H + 1, hex('#a8845a'));
+    o.rect(x + 2, y - H, 1, H + 1, hex('#5e4228'));
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 80);
+  c.line(TA[0], TA[1] + 1, TB[0], TB[1] + 1, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Großes Tor im Wildzaun: Holzrahmen so hoch wie der Zaun, Strebe und Drahtgitter
+function tallGate() {
+  const H = 42;
+  const mesh = new Canvas(64, 80);
+  for (let y = 0; y < 80; y++) {
+    for (let x = TA[0]; x <= TB[0]; x++) {
+      const u = x - TA[0];
+      const v = TA[1] + u * 0.5 - y;
+      if (v < 2 || v > H - 2) continue;
+      const k1 = (((Math.round(u + v * 1.3) % 6) + 6) % 6) === 0;
+      const k2 = (((Math.round(u - v * 1.3) % 6) + 6) % 6) === 0;
+      if (k1 || k2) mesh.set(x, y, hex('#a8b0b6', 220));
+    }
+  }
+  const o = new Canvas(64, 80);
+  const at = (t, h) => [Math.round(TA[0] + (TB[0] - TA[0]) * t), Math.round(TA[1] + (TB[1] - TA[1]) * t - h)];
+  for (const h of [2, H / 2, H]) {
+    const [x0, y0] = at(0, h);
+    const [x1, y1] = at(1, h);
+    for (let k = 0; k < 2; k++) o.line(x0, y0 + k, x1, y1 + k, k === 0 ? hex('#c8a47a') : hex('#6e4c2e'));
+  }
+  for (const t of [0.03, 0.97]) {
+    const [x, y] = at(t, 0);
+    o.rect(x - 1, y - H, 3, H, hex('#8a6440'));
+  }
+  const [dx0, dy0] = at(0.05, 3);
+  const [dx1, dy1] = at(0.95, H / 2 - 1);
+  for (let k = 0; k < 2; k++) o.line(dx0, dy0 + k, dx1, dy1 + k, k === 0 ? hex('#c8a47a') : hex('#6e4c2e'));
+  o.outline(INK);
+  const c = new Canvas(64, 80);
+  c.line(TA[0], TA[1] + 1, TB[0], TB[1] + 1, SHADOW);
+  c.draw(mesh, 0, 0);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Kleine Erdhöhle (Fuchsbau): Erdhügel mit dunklem Eingang, Wurzeln und Grasbüscheln; Mitte bei (32, 44)
+// sand: sandfarbene Variante für die Savanne (Erdmännchenbau)
+function foxDen(sand = false) {
+  const o = new Canvas(64, 56);
+  o.ellipse(32, 36, 26, 15, hex(sand ? '#a8844e' : '#6b4a2c')); // Erdhügel
+  o.ellipse(30, 32, 22, 11, hex(sand ? '#c8a46a' : '#8a6440'), true);
+  o.ellipse(26, 28, 11, 5, hex(sand ? '#e0c48c' : '#a8845a'), true);
+  o.ellipse(36, 41, 11, 8, hex('#2a1a10')); // Eingang
+  o.ellipse(36, 42, 8, 5.5, hex('#120a06'), true);
+  // Wurzeln über dem Eingang
+  o.line(26, 34, 30, 38, hex('#4e3220'));
+  o.line(44, 33, 41, 38, hex('#4e3220'));
+  o.line(35, 32, 36, 36, hex('#4e3220'));
+  // Steine und Gras am Rand
+  o.ellipse(13, 41, 3, 2, hex('#8a8a80'));
+  o.ellipse(52, 43, 2.5, 1.8, hex('#8a8a80'));
+  for (const [x, y] of [[18, 25], [44, 24], [32, 21], [10, 36], [55, 37]]) {
+    o.line(x, y, x - 2, y - 4, hex('#4f8a2f'));
+    o.line(x, y, x + 1, y - 5, hex('#66a23a'));
+    o.line(x, y, x + 3, y - 3, hex('#4f8a2f'));
+  }
+  o.outline(INK);
+  return withShadow(64, 56, 32, 48, 27, 5, o);
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {

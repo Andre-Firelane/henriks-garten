@@ -10,13 +10,13 @@ const HERD_SPREAD = 0.5; // so stark (Bogenmaß) weicht jede von der gemeinsamen
 const ALARM_TIME = 1.2; // so lange (Sekunden) flieht die Gruppe mit, nachdem eine den Spieler bemerkt hat
 
 export default class Antelope extends Animal {
-  // allAnimals: alle Tiere des Levels, darin sucht sie ihre Gruppe
-  constructor(scene, x, y, allAnimals) {
-    super(scene, x, y, 'antelope');
+  // allAnimals: alle Tiere des Levels, darin sucht sie ihre Gruppe; species: für Herdentiere, die davon erben (Zebra)
+  constructor(scene, x, y, allAnimals, species = 'antelope') {
+    super(scene, x, y, species);
     this.allAnimals = allAnimals;
     // einer Gruppe in der Nähe anschließen oder eine neue gründen
     const near = allAnimals.find(
-      (a) => a.herd && a.state === 'wild' && Math.hypot(a.x - x, (a.y - y) * 2) < HERD_JOIN,
+      (a) => a.herd && a.species === species && a.state === 'wild' && Math.hypot(a.x - x, (a.y - y) * 2) < HERD_JOIN,
     );
     this.herd = near ? near.herd : { heading: 0, rest: true, until: 0, alarm: 0 };
   }

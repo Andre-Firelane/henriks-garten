@@ -43,6 +43,13 @@ const CHARACTERS = [
   { src: 'Sprites/Antilope.png', out: 'antelope.png', frameW: 72, frameH: 100, feetY: 96, figureH: 88 },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (viel größer als die anderen Tiere)
   { src: 'Sprites/Giraffe.png', out: 'giraffe.png', frameW: 104, frameH: 168, feetY: 164, figureH: 156 },
+  // Zebra stehend und trinkend (Kopf unten); gleicher Maßstab für beide: 92/328 Pixel, beim Trinken ist die Figur 212 statt 328 hoch
+  { src: 'Sprites/Zebra.png', out: 'zebra.png', frameW: 80, frameH: 104, feetY: 100, figureH: 92 },
+  { src: 'Sprites/Zebra trinkt.png', out: 'zebra_drink.png', frameW: 80, frameH: 104, feetY: 100, figureH: 59.5 },
+  // Erdmännchen stehend und eingegraben (Erdloch ist im Bild); gleicher Maßstab: 52/310 Pixel, eingegraben 156 statt 310 hoch.
+  // Stehend freigestellt mit npm run cutout -- ... 636,367 885,367 (Lücken zwischen den Beinen)
+  { src: 'Sprites/Erdmännchen.png', out: 'meerkat.png', frameW: 40, frameH: 56, feetY: 52, figureH: 52 },
+  { src: 'Sprites/Erdmännchen eingegraben.png', out: 'meerkat_hole.png', frameW: 48, frameH: 32, feetY: 30, figureH: 26.2 },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)

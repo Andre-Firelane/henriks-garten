@@ -35,6 +35,8 @@ import Frog from '../animals/Frog.js';
 import Mole from '../animals/Mole.js';
 import Heron from '../animals/Heron.js';
 import Antelope from '../animals/Antelope.js';
+import Zebra from '../animals/Zebra.js';
+import Meerkat from '../animals/Meerkat.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
@@ -49,7 +51,7 @@ import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'giraffe'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'giraffe'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -62,6 +64,14 @@ const ANIMAL_INFO = {
   cat: ['Katze', 'Vier Zehen und ein großer Ballen. Die Krallen bleiben beim Laufen eingezogen.'],
   frog: ['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'],
   fish: ['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'],
+  deer: ['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'],
+  stag: ['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'],
+  fox: ['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'],
+  squirrel: ['Eichhörnchen', 'Lange, dünne Finger mit spitzen Krallen – perfekt zum Klettern.'],
+  antelope: ['Antilope', 'Paarhufer: zwei schmale, spitze Hufhälften – gut zum schnellen Rennen.'],
+  zebra: ['Zebra', 'Unpaarhufer wie das Pferd: ein einziger runder Huf statt zwei Hälften.'],
+  meerkat: ['Erdmännchen', 'Vier Zehen mit langen Grabkrallen – damit buddeln sie ihre Höhlen.'],
+  giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
   heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
 };
 
@@ -81,7 +91,7 @@ const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
 const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines Baums erscheinen
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
-const FEED_CHANCE = 1 / 5; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
+const FEED_CHANCE = 1 / 3; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -105,12 +115,12 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: 'Kescher',
-    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'frog', 'mole', 'squirrel', 'heron'])}`,
+    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'frog', 'mole', 'squirrel', 'heron', 'meerkat'])}`,
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'antelope', 'sheep', 'heron'])} aus der Ferne`,
+    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'antelope', 'zebra', 'sheep', 'heron'])} aus der Ferne`,
   },
   trap: {
     create: (scene, player) => new TrapTool(scene, player),
@@ -165,7 +175,9 @@ export default class GardenScene extends Phaser.Scene {
         const { x, y } = tileToWorld(tx, ty);
         let style = e.gate && e.gate !== 'wood' ? `gate_${e.gate}_` : 'gate_';
         if (e.gate === 'glass' && i === Math.floor(e.gates.length / 2)) style = 'gate_glassflap_'; // Katzenklappe in der Mitte
-        return this.add.image(x, y, style + (vertical ? 'y' : 'x')).setOrigin(0.5, 44 / 64).setDepth(y);
+        const img = this.add.image(x, y, style + (vertical ? 'y' : 'x'));
+        // Kachelmitte liegt 20 Pixel über dem unteren Bildrand (bei hohen Toren wie dem Wildzaun-Tor ebenso)
+        return img.setOrigin(0.5, (img.height - 20) / img.height).setDepth(y);
       }),
       open: false,
       closeTimer: 0,
@@ -175,7 +187,7 @@ export default class GardenScene extends Phaser.Scene {
       const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
       // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt
       const front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
-      this.add.image(x, y - 20, `esign_${e.id}`).setScale(0.5).setDepth(front);
+      this.add.image(x, y - 20, `esign_${e.signKey ?? e.id}`).setScale(0.5).setDepth(front);
       return { x, y, enclosure: e };
     });
     this.wrongHomeTimer = 0;
@@ -331,8 +343,8 @@ export default class GardenScene extends Phaser.Scene {
     const prefix = obj.key.slice(0, -2); // z. B. fence, mesh, net, chain
     const piece = (a, crop) => {
       const img = this.add.image(x, y, `${prefix}_${a}`).setOrigin(0.5, obj.originY).setDepth(y);
-      if (crop === 'left') img.setCrop(0, 0, 34, 64);
-      if (crop === 'right') img.setCrop(30, 0, 34, 64);
+      if (crop === 'left') img.setCrop(0, 0, 34, img.height);
+      if (crop === 'right') img.setCrop(30, 0, 34, img.height);
     };
     // entlang tx: links geht es zu tx-1, rechts zu tx+1; entlang ty (gespiegelt): rechts zu ty-1, links zu ty+1
     if (xl && xr) piece('x');
@@ -377,6 +389,10 @@ export default class GardenScene extends Phaser.Scene {
                 ? new Heron(this, x, y)
                 : species === 'antelope'
                   ? new Antelope(this, x, y, this.animals)
+                  : species === 'zebra'
+                    ? new Zebra(this, x, y, this.animals)
+                    : species === 'meerkat'
+                      ? new Meerkat(this, x, y, this.animals)
                   : new Animal(this, x, y, species);
     a.x = x;
     a.y = y;
@@ -423,8 +439,8 @@ export default class GardenScene extends Phaser.Scene {
       const p = tileToWorld(tile.tx, tile.ty);
       group.push(this.createAnimal(species, p.x, p.y));
       // Antilopen: noch 1 bis 3 weitere dicht daneben
-      if (species === 'antelope') {
-        const more = Phaser.Math.Between(...HERD_SIZE) - 1;
+      if (SPECIES[species].herd) {
+        const more = Phaser.Math.Between(...(SPECIES[species].groupSize ?? HERD_SIZE)) - 1;
         for (let i = 0; i < more; i++) {
           const spot = this.freeSpotNear(p.x, p.y, 28);
           if (spot) group.push(this.createAnimal(species, spot.x, spot.y));
@@ -997,7 +1013,7 @@ export default class GardenScene extends Phaser.Scene {
 
     // Wilde Tiere fangen, die der Spieler berührt oder mit einem Werkzeug erwischt
     for (const a of this.animals) {
-      if (a.canBeCaughtNow() && a.kind.catchWith.includes('touch') && Math.hypot(this.player.x - a.x, this.player.y - a.y) < CATCH_DIST) this.catchAnimal(a);
+      if (a.canBeCaughtWith('touch') && Math.hypot(this.player.x - a.x, this.player.y - a.y) < CATCH_DIST) this.catchAnimal(a);
     }
     if (this.tool) for (const a of this.tool.caughtBy(this.animals)) this.catchAnimal(a);
     this.followers.forEach((s, i) => (s.followGap = FOLLOW_GAP * (i + 1)));

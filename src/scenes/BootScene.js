@@ -10,10 +10,11 @@ const PIXEL_ART = [
   'planks', 'cat_tree', 'mesh_x', 'mesh_y', 'gate_y', 'net_x', 'net_y',
   'chain_x', 'chain_y', 'post_wood', 'post_mesh', 'post_net', 'post_chain',
   'gate_chain_x', 'gate_chain_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x', 'gate_net_y',
+  'tall_x', 'tall_y', 'post_tall', 'gate_tall_x', 'gate_tall_y', 'den', 'den_sand',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -31,12 +32,16 @@ const FISHBAG_FRAME = { frameWidth: 64, frameHeight: 76 };
 const SQUIRREL_FRAME = { frameWidth: 56, frameHeight: 60 };
 const FOX_FRAME = { frameWidth: 72, frameHeight: 72 };
 const ANTELOPE_FRAME = { frameWidth: 72, frameHeight: 100 };
+const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
+const MEERKAT_FRAME = { frameWidth: 40, frameHeight: 56 };
+const MEERKAT_HOLE_FRAME = { frameWidth: 48, frameHeight: 32 };
 const GIRAFFE_FRAME = { frameWidth: 104, frameHeight: 168 };
 const ANIMAL_SOUNDS = {
   sheep: 'animal_sheep.wav',
   cat: 'animal_cat.wav',
   squirrel: 'animal_squirrel.wav',
   frog: 'animal_frog.mp3',
+  zebra: 'animal_zebra.wav',
   fish: 'animal_fish.wav',
 };
 
@@ -65,6 +70,11 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
     this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
     this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
+    this.load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
+    this.load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
+    this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
+    this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
+    this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs

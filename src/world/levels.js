@@ -11,6 +11,8 @@
 //          -  Zaun (entlang tx)   |  Zaun (entlang ty)
 //          _  Gitterwand (tx)     !  Gitterwand (ty)      ^  Netz (tx)   ;  Netz (ty)
 //          {  Maschendraht (tx)   }  Maschendraht (ty)
+//          [  Wildzaun (tx)       ]  Wildzaun (ty)        (hoher Zaun der Savanne)
+//          U  Erdhöhle (Fuchsbau)   u  Erdmännchenbau
 //          C  Kratzbaum   ,  Holzboden   w  Teich in einem Gehege (keine wilden Fische)
 //          G  Tor zum Gehege (auf Weg, öffnet sich beim Durchgehen)
 //          H  Werkzeughütte (2x2 Kacheln, siehe shed)
@@ -101,16 +103,16 @@ export const LEVELS = {
     rows: [
       'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
       'PkPPPPPDkPDP..DDkPPPPPPDkkkDDkPPDDDDkPkP',
-      'Pk.......D.....k.D....knm..-----------kP',
-      'PP....P........P.D....Pmn..|.........|kP',
-      'P...P.......D....D......n..|.........|kP',
-      'Pk...............nnnn.#.n..|.........|kP',
-      'P...................D.#.n..|.........|kP',
-      'PD..P....~~~~~...D....#D...|.nn.....m|kP',
-      'PP......~~~~~~~.n.PPPP#P...|.........|DP',
-      'P.......~~~~~~~...PPP.#....|.........|.P',
-      'Pk...P..~~~~~~~..PPPP.#....|...n.....|kP',
-      'Pkkk....~~~~~~~.nL....#.P..---GGG-----PP',
+      'Pk.......D.....k.D....knm..-------D...kP',
+      'PP....P........P.D....Pmn..|.....|..k.kP',
+      'P...P.......D....D......n..|.....|.n..kP',
+      'Pk...............nnnn.#.n..|.n...-----kP',
+      'P...................D.#.n..|.....|...|kP',
+      'PD..P....~~~~~...D....#D...|.....|...|kP',
+      'PP......~~~~~~~.n.PPPP#P...|...m.|.U.|DP',
+      'P.......~~~~~~~...PPP.#....|.....|...|.P',
+      'Pk...P..~~~~~~~..PPPP.#....|.....|...|kP',
+      'Pkkk....~~~~~~~.nL....#.P..---GGG--G--PP',
       'PP..n....~~~~~.########LD...nHH#......PP',
       'Pk.......n.....L.Dk...#.P....HH#......PP',
       'PD..P...k..n...P.Pk...#........#......PP',
@@ -118,23 +120,23 @@ export const LEVELS = {
       'PP......k......P.P..D.#.D......#.......P',
       'PPPPD.Dnkmn...D.......#........#......DP',
       'PD......###############################X',
-      'Pkn.......DnnnnD.#......#....m........kP',
-      'PD..P....PkD.....#m..P..#......Soooo..PP',
-      'PP..D.....Pm.....#......#n.k...oooooo.PP',
-      'PDn............D.#......#n.m....oooo..PP',
-      'PD.....D.......D.#.P..D.#n......oooo..PP',
-      'PD.............D.#......#n.P....oooo..PP',
-      'PD...D....~....D.#P.....#.............DP',
-      'PPnnnnn..~~~~~..m#n...~~~...D.kL....nDDP',
-      'PP..n...~~~~~~~###...~~~~~~.DD.PDm..n.DP',
-      'PDPPPPP..~~~~~..D....~~~~~~....PP.....PP',
-      'P........~~~~~.......~~~~~~....P......PP',
-      'P........~~~~~.......~~~~~~....P......PP',
-      'PPkkkkkn..~......D...~~~~~~...n......DPP',
-      'Pkkk....D.....n.......~~~...mP.D.n..PkkP',
-      'PD..P........Pn............n.PP.nD..kkPP',
-      'PD............n.P..P.........PP......k.P',
-      'PD............n...........P..PP......k.P',
+      'Pkn.......DnnnnD.#......#....{{{GGG{{{.P',
+      'PD..P....PkD.....#m..P..#.D..}.......}.P',
+      'PP..D.....Pm.....#......#....}..ooo..}kP',
+      'PDn............D.#......#..P.}..ooo..}.P',
+      'PD.....D.......D.#.P..D.#.k..}.......}.P',
+      'PD.............D.#......#....{{{{{{{{{.P',
+      'PD...D....~....D.#P.....############...P',
+      'PPnnnnn..~~~~~..m#n...~~~.n.^^^GGGGG^^DP',
+      'PP..n...~~~~~~~###...~~~~...;........;.P',
+      'PDPPPPP..~~~~~..D....~~~~..P;........;.P',
+      'P........~~~~~.......~~~~...;.P......;.P',
+      'P........~~~~~.......~~~~...;...www..;kP',
+      'PPkkkkkn..~......D...~~~~.D.;...www..;.P',
+      'Pkkk....D.....n.......~~~...;......P.;.P',
+      'PD..P........Pn.............;........;.P',
+      'PD............n.P..P.......k^^^^^^^^^^PP',
+      'PD............n..............D..n...k..P',
       'PD....Pn......n...m......n..LLP.PPPPDkDP',
       'PD..D...PDn....L.....PD.PD.n.P..PkkkkkDP',
       'PPkkkkkDPDDkkkkDkDDDDDkPPD.PkDPDDDDDkkPP',
@@ -143,7 +145,13 @@ export const LEVELS = {
     grass: ['fgrass0', 'fgrass1', 'fgrass2'],
     path: 'forest_path',
     start: { tx: 37, ty: 18 },
-    pen: { tx0: 28, tx1: 36, ty0: 3, ty1: 10 },
+    // Gehege des Waldes; signKey: welches Torschild (sonst esign_<id>)
+    enclosures: [
+      { id: 'deerpark', name: 'Hirschgehege', area: { tx0: 28, tx1: 32, ty0: 3, ty1: 10 }, species: ['deer', 'stag'], signSide: 'right' }, // links vom Tor steht die Hütte
+      { id: 'foxden', name: 'Fuchsbau', area: { tx0: 34, tx1: 36, ty0: 6, ty1: 10 }, species: ['fox'] },
+      { id: 'forestpond', name: 'Teich', area: { tx0: 30, tx1: 36, ty0: 20, ty1: 23 }, species: ['frog', 'fish'], gate: 'chain', signKey: 'pond' },
+      { id: 'forestaviary', name: 'Voliere', area: { tx0: 29, tx1: 36, ty0: 27, ty1: 33 }, species: ['squirrel', 'heron'], netRoof: true, gate: 'net' },
+    ],
     shed: { tx: 29, ty: 12 },
     shedTexture: 'shed_log', // rustikale Blockhütte
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
@@ -167,18 +175,18 @@ export const LEVELS = {
     rows: [
       'AvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvv',
       'R......................................v',
-      'v.y.....v..y.....y.....................v',
-      'v.....v.......y.........-------------..v',
-      'v.........y..v......R...|...........|..v',
-      'v...............A...y...|...........|..v',
-      'v.v..........v....y.....|...........|..A',
-      'v.....~~.~~.....y.......|...........|..R',
-      'v....~~~~~~....y........|...........|..v',
-      'A.....~~~~~~y...........|...........|..v',
-      'R..v.~~~~~~..y.......y..|...........|..v',
-      'v.......~~......Ry.y....|...........|..v',
-      'v......y.....vy...y.....-----GGG-----..v',
-      'v....y.....y........#.........#........v',
+      'v.y.....v..y.....y.....[[[[[[[[[[[[[[[.v',
+      'v.....v.......y.------.].............].v',
+      'v.........y..v..|....|.].........A...]yv',
+      'v...............|.u..|.]..A..........].v',
+      'v.v..........v..|....|y]......A...y..].A',
+      'v.....~~.~~.....|....|.].............].R',
+      'v....~~~~~~....y---GG-.].y...........].v',
+      'A.....~~~~~~y.......#..]...A.......A.].v',
+      'R..v.~~~~~~..y......#y.].......y.....].v',
+      'v.......~~......Ry.y#..].............].v',
+      'v......y.....vy...y.#..[[[[[GGGGG[[[[[.v',
+      'v....y.....y........#.........#......y.v',
       'v.v.......v.........#.........#........v',
       'v................R..#.........#....y...A',
       'v.................y.#.y.......#....A...R',
@@ -188,9 +196,9 @@ export const LEVELS = {
       'v...............HH..#..................v',
       'v...............HH..#.y.....y.R........v',
       'v...y.y.............#............y.....v',
-      'v...R........A......#.Soooo.........R..v',
-      'v.......v...........#.oooooo...y.......A',
-      'v................yy.#..oooo............R',
+      'v...R........A......#...............R..v',
+      'v.......v...........#..........y.......A',
+      'v................yy.#..................R',
       'v..y...........R....#..................v',
       'A....A..~~...y...v..#..R...........y...v',
       'R......~~~~~..y.....#........~~~~~.A...v',
@@ -209,7 +217,11 @@ export const LEVELS = {
     grass: ['sgrass0', 'sgrass1', 'sgrass2'],
     path: 'savanna_path',
     start: { tx: 2, ty: 19 },
-    pen: { tx0: 25, tx1: 35, ty0: 4, ty1: 11 },
+    // ein großes Gehege für Antilopen, Zebras und Giraffen: hoher Wildzaun, großes Tor, ein paar Akazien
+    enclosures: [
+      { id: 'meerkat', name: 'Erdmännchenbau', area: { tx0: 17, tx1: 20, ty0: 4, ty1: 7 }, species: ['meerkat'] },
+      { id: 'savanna', name: 'Savannengehege', area: { tx0: 24, tx1: 36, ty0: 3, ty1: 11 }, species: ['antelope', 'zebra', 'giraffe'], gate: 'tall' },
+    ],
     shed: { tx: 16, ty: 20 },
     shedTexture: 'shed_tent', // Ranger-Zelt
     hero: 'hero_savanna', // Kleidung der Spielfigur in diesem Gebiet (Safari)
@@ -222,8 +234,9 @@ export const LEVELS = {
       { tool: 'food', tx: 19, ty: 20 }, // Grünfutter für die Giraffen
     ],
     exits: [{ tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' }],
-    // Hier leben Antilopen (Gazellen) in Gruppen zu 2 bis 4 und Giraffen; keine Fischreiher
-    // Giraffen sind viel seltener (im Schnitt etwa eine) und erscheinen meist an Bäumen
-    spawn: { population: 9, weights: { antelope: 1, giraffe: 0.4 } },
+    // Hier leben Antilopen (Gazellen) und Zebras in Gruppen zu 2 bis 4, etwa gleich häufig, und Giraffen;
+    // keine Fischreiher. Giraffen sind viel seltener und erscheinen meist an Bäumen
+    // Erdmännchen kommen als Kolonie (3 bis 5), seltener als Antilopen und Zebras
+    spawn: { population: 13, weights: { antelope: 0.6, zebra: 0.6, giraffe: 0.4, meerkat: 0.3 } },
   },
 };
