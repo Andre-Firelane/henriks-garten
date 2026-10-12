@@ -444,7 +444,7 @@ export default class GardenScene extends Phaser.Scene {
       const group = this.spawnOne(taken);
       const life = Phaser.Math.FloatBetween(20, LIFETIME[1]);
       for (const a of group) a.life = life; // eine Gruppe verschwindet gemeinsam
-      n += group.length;
+      n += 1; // eine Herde oder Kolonie zählt als ein Platz
     }
   }
 
@@ -517,6 +517,16 @@ export default class GardenScene extends Phaser.Scene {
 
   // Wilde Tiere rotieren: abgelaufene verschwinden (nicht in der Nähe des Spielers, Fische nur abgetaucht,
   // Eichhörnchen nur oben im Baum), und fehlen Tiere, kommt ab und zu ein neues dazu.
+  // Wie viele Plätze sind belegt? Eine Herde oder Kolonie zählt als einer, damit seltene Einzeltiere
+  // (Giraffe, Löwe ...) neben den großen Gruppen noch eine Chance haben. Fischreiher zählen nicht.
+  wildUnits() {
+    const units = new Set();
+    for (const a of this.animals) {
+      if (a.state === 'wild' && a.species !== 'heron') units.add(a.herd ?? a.colony ?? a);
+    }
+    return units.size;
+  }
+
   updateSpawner(dt) {
     const p = this.player;
     for (const a of [...this.animals]) {
@@ -530,8 +540,7 @@ export default class GardenScene extends Phaser.Scene {
     this.spawnTimer -= dt;
     if (this.spawnTimer > 0) return;
     this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
-    const wild = this.animals.filter((a) => a.state === 'wild' && a.species !== 'heron').length;
-    if (wild < LEVEL.spawn.population) this.spawnOne([worldToTile(p.x, p.y), ...TOOL_SPOTS], true);
+    if (this.wildUnits() < LEVEL.spawn.population) this.spawnOne([worldToTile(p.x, p.y), ...TOOL_SPOTS], true);
   }
 
   // Fischreiher: alle paar Sekunden fliegt einer über die Karte; manche landen an einer Uferstelle

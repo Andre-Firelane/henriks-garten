@@ -41,6 +41,11 @@ export const OBJECTS = {
   // dichter Maschendraht (Teich)
   '{': { key: 'chain_x', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'x' } },
   '}': { key: 'chain_y', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'y' } },
+  // Füller im Gehege-Streifen hinter dem Kartenrand: sperren die ganze Kachel (ohne hitbox), damit niemand
+  // zwischen den Gehegen hinter den Rand gelangt
+  1: { key: 'tree', originY: 82 / 96, solid: true },
+  2: { key: 'pine', originY: 100 / 112, solid: true },
+  3: { key: 'dry_bush', originY: 33 / 40, solid: true },
   // Erdhöhle im Fuchsbau
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
