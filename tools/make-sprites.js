@@ -837,7 +837,7 @@ const TB = [ZB[0], ZB[1] + TALL_DY];
 const tallX = tallFence();
 const tallGateX = tallGate();
 // Tierarten mit Fußspur-Bild (muss vor dem sprites-Objekt stehen)
-const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion'];
+const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
   'grass1.png': grassTile(1),
@@ -930,6 +930,7 @@ const sprites = {
   'esign_meerkat.png': enclosureSign(['meerkat']),
   'den_sand.png': foxDen(true),
   'esign_lion.png': enclosureSign(['lion']),
+  'esign_crocodile.png': enclosureSign(['crocodile']),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1340,6 +1341,15 @@ function drawPrint(kind, c, cx, cy, s, col = hex('#5a3a22')) {
       E(-6, 12, 4.5, 5);
       E(6, 12, 4.5, 5);
       for (const [x, y] of [[-12, -3], [-4.5, -10.5], [4.5, -10.5], [12, -3]]) E(x, y, 3.8, 5);
+      break;
+    case 'crocodile': // fünf gespreizte Zehen mit Krallen und die Schleifspur des Schwanzes
+      E(0, 2, 6, 5);
+      for (const deg of [-165, -125, -90, -55, -15]) {
+        const [tx, ty] = ray(0, 1, deg, 9, 2, 1.4);
+        ray(tx, ty, deg, 4, 0.9, 0.5);
+      }
+      stroke(-16, 16, 0, 13, 1.4, 1.4);
+      stroke(0, 13, 16, 16, 1.4, 1.4);
       break;
     case 'fish': { // Fischumriss mit Wellen darunter
       E(-3, -2, 12, 6.5);

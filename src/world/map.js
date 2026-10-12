@@ -29,7 +29,7 @@ export const OBJECTS = {
   // Savanne
   A: { key: 'acacia', originY: 87 / 96, solid: true, hitbox: 12 },
   R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
-  v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 12 },
+  v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 8 },
   y: { key: 'tuft', originY: 18 / 24, solid: false },
   // Gehege: Kratzbaum, hoher Gitterzaun der Voliere (entlang tx bzw. ty)
   C: { key: 'cat_tree', originY: 73 / 80, solid: true, hitbox: 10 },

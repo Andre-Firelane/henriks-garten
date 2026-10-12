@@ -120,6 +120,21 @@ export const SPECIES = {
     shadowW: 36,
     catchWith: ['touch'],
   },
+  // Krokodil (Savanne): taucht wie der Fisch in Wasserlöchern auf; nur mit dem Lasso (siehe Crocodile.js)
+  crocodile: {
+    texture: 'croc', // an Land (gefangen); im Wasser "croc_water"
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 88 / 92,
+    speed: 12, // gemütliches Schwimmen im Krokodilteich
+    restChance: 0.4,
+    restTime: [1, 3],
+    walkTime: [1, 3],
+    stepRate: 7,
+    hop: 1,
+    footW: 6,
+    shadowW: 32,
+    catchWith: ['lasso'],
+  },
   // Giraffe (Savanne): viel größer als die anderen Tiere, läuft gemächlich herum; zahm wird sie nur mit Grünfutter
   // (siehe feedGiraffe in GardenScene)
   giraffe: {

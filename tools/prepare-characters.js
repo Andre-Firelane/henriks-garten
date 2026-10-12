@@ -53,6 +53,10 @@ const CHARACTERS = [
   // Löwe stehend; die Rückansichten berühren sich am Schwanz, daher nach zusammenhängenden Flächen trennen.
   // Freigestellt mit npm run cutout -- ... 659,336 866,336 127,340 423,340 169,350 379,350 (Lücken zwischen den Beinen)
   { src: 'Sprites/Löwe.png', out: 'lion.png', frameW: 72, frameH: 96, feetY: 92, figureH: 88, byComponents: true },
+  // Krokodil an Land (unten-rechts, unten-links, oben-rechts, oben-links) und im Wasser (nur der Kopf schaut heraus;
+  // im Bild als 2×2-Raster). Gleicher Maßstab 0,273: an Land 84/308 Pixel, im Wasser samt Wellen 132 Pixel hoch
+  { src: 'Sprites/Krokodil.png', out: 'croc.png', frameW: 72, frameH: 92, feetY: 88, figureH: 84 },
+  { src: 'Sprites/Krokodil Wasser.png', out: 'croc_water.png', frameW: 64, frameH: 44, feetY: 40, figureH: 36, grid: [2, 2] },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)
@@ -141,8 +145,23 @@ function figuresByComponents(W, H, alpha) {
   return edge;
 }
 
-function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false, byComponents = false }) {
-  const img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
+// Ansichten, die im Raster liegen (cols × rows, zeilenweise gelesen), zu einer Reihe nebeneinander umlegen
+function gridToRow(img, cols, rows) {
+  const cw = Math.floor(img.width / cols);
+  const ch = Math.floor(img.height / rows);
+  const row = new PNG({ width: cw * cols * rows, height: ch });
+  for (let i = 0; i < cols * rows; i++) {
+    const sx = (i % cols) * cw;
+    const sy = Math.floor(i / cols) * ch;
+    PNG.bitblt(img, row, sx, sy, cw, ch, i * cw, 0);
+  }
+  return row;
+}
+
+// grid: [cols, rows], falls die vier Ansichten im Raster statt nebeneinander liegen
+function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false, byComponents = false, grid = null }) {
+  let img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
+  if (grid) img = gridToRow(img, ...grid);
   const { width: W, height: H, data } = img;
 
   // Hellgraue, ungesättigte Pixel sind der gemalte Schatten: das Spiel zeichnet seinen eigenen

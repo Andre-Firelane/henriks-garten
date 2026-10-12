@@ -14,7 +14,7 @@ const PIXEL_ART = [
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -37,6 +37,8 @@ const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
 const MEERKAT_FRAME = { frameWidth: 40, frameHeight: 56 };
 const MEERKAT_HOLE_FRAME = { frameWidth: 48, frameHeight: 32 };
 const LION_FRAME = { frameWidth: 72, frameHeight: 96 };
+const CROC_FRAME = { frameWidth: 72, frameHeight: 92 };
+const CROC_WATER_FRAME = { frameWidth: 64, frameHeight: 44 };
 const GIRAFFE_FRAME = { frameWidth: 104, frameHeight: 168 };
 const ANIMAL_SOUNDS = {
   sheep: 'animal_sheep.wav',
@@ -84,6 +86,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
     this.load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
     this.load.audio('lion_roar', 'assets/sounds/lion_roar.wav');
+    this.load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);
+    this.load.spritesheet('croc_water', 'assets/croc_water.png', CROC_WATER_FRAME); // nur der Kopf schaut aus dem Wasser
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs

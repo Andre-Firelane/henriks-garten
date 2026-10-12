@@ -193,12 +193,12 @@ export const LEVELS = {
       'v.yv....A..R........#...A.....#.].....]v',
       'A...................#.........#.[[[GGG[v',
       'X#####################################.v',
-      'v...............HH..#..................v',
-      'v...............HH..#.y.....y.R........v',
-      'v...y.y.............#............y.....v',
-      'v...R........A......#...............R..v',
-      'v.......v...........#..........y.......A',
-      'v................yy.#..................R',
+      'v...............HH..#.{{{GGG{{.........v',
+      'v...............HH..#.}......}R........v',
+      'v...y.y.............#.}.oooo.}...y.....v',
+      'v...R........A......#.}.oooo.}......R..v',
+      'v.......v...........#.}......}.y.......A',
+      'v................yy.#.{{{{{{{{.........R',
       'v..y...........R....#..................v',
       'A....A..~~...y...v..#..R...........y...v',
       'R......~~~~~..y.....#........~~~~~.A...v',
@@ -219,6 +219,7 @@ export const LEVELS = {
     start: { tx: 2, ty: 19 },
     // ein großes Gehege für Antilopen, Zebras und Giraffen: hoher Wildzaun, großes Tor, ein paar Akazien
     enclosures: [
+      { id: 'crocodile', name: 'Krokodilteich', area: { tx0: 23, tx1: 28, ty0: 21, ty1: 24 }, species: ['crocodile'], gate: 'chain' },
       { id: 'lion', name: 'Löwengehege', area: { tx0: 33, tx1: 37, ty0: 14, ty1: 17 }, species: ['lion'], gate: 'tall' },
       { id: 'meerkat', name: 'Erdmännchenbau', area: { tx0: 17, tx1: 20, ty0: 4, ty1: 7 }, species: ['meerkat'] },
       { id: 'savanna', name: 'Savannengehege', area: { tx0: 24, tx1: 36, ty0: 3, ty1: 11 }, species: ['antelope', 'zebra', 'giraffe'], gate: 'tall' },
@@ -228,6 +229,7 @@ export const LEVELS = {
     hero: 'hero_savanna', // Kleidung der Spielfigur in diesem Gebiet (Safari)
     background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
     ambient: 'ambient_savanna', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
+    ambientVolume: 0.35, // etwas leiser als in den anderen Gebieten (0.55)
     toolSpots: [
       // alle nebeneinander an der offenen Zeltseite, davor eine freie Spur zum Weg
       { tool: 'net', tx: 18, ty: 20 },
@@ -239,7 +241,8 @@ export const LEVELS = {
     // Hier leben Antilopen (Gazellen) und Zebras in Gruppen zu 2 bis 4, etwa gleich häufig, und Giraffen;
     // keine Fischreiher. Giraffen sind viel seltener und erscheinen meist an Bäumen
     // Erdmännchen kommen als Kolonie (3 bis 5), seltener als Antilopen und Zebras
-    // Löwen sind selten (meist höchstens einer) und dösen immer unter einer Akazie
-    spawn: { population: 13, weights: { antelope: 0.6, zebra: 0.6, giraffe: 0.4, meerkat: 0.3, lion: 0.15 } },
+    // Löwen sind selten (meist höchstens einer) und dösen immer unter einer Akazie; Krokodile tauchen
+    // wie Fische in den Wasserlöchern auf, sind aber deutlich seltener
+    spawn: { population: 13, weights: { antelope: 0.6, zebra: 0.6, giraffe: 0.4, meerkat: 0.3, lion: 0.15, crocodile: 0.2 } },
   },
 };

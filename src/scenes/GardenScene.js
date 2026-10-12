@@ -38,6 +38,7 @@ import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
 import Meerkat from '../animals/Meerkat.js';
 import Lion from '../animals/Lion.js';
+import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
@@ -53,7 +54,7 @@ import { openJournal, isJournalOpen } from '../ui/journal.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'giraffe'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -79,6 +80,7 @@ const CATCH_TIPS = {
   zebra: 'Beim Trinken am Wasserloch flieht es nicht, dann kannst du es auch berühren.',
   meerkat: 'Schleich dich von hinten an – der Wächter sieht nur, was vor ihm ist.',
   lion: 'Kraulen, solange er schnarcht (Zzz). Hören die Zzz auf, bleib stehen und warte weit weg!',
+  crocodile: 'Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.',
   giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
 };
 
@@ -97,6 +99,7 @@ const ANIMAL_INFO = {
   zebra: ['Zebra', 'Unpaarhufer wie das Pferd: ein einziger runder Huf statt zwei Hälften.'],
   meerkat: ['Erdmännchen', 'Vier Zehen mit langen Grabkrallen – damit buddeln sie ihre Höhlen.'],
   lion: ['Löwe', 'Wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren.'],
+  crocodile: ['Krokodil', 'Fünf gespreizte Zehen mit Krallen – und dazwischen die Schleifspur vom Schwanz.'],
   giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
   heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
 };
@@ -146,7 +149,7 @@ const TOOLS = {
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'antelope', 'zebra', 'sheep', 'heron'])} aus der Ferne`,
+    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron'])} aus der Ferne`,
   },
   trap: {
     create: (scene, player) => new TrapTool(scene, player),
@@ -408,6 +411,8 @@ export default class GardenScene extends Phaser.Scene {
     const a =
       species === 'fish'
         ? new Fish(this, this.animals)
+        : species === 'crocodile'
+          ? new Crocodile(this, this.animals)
         : species === 'squirrel'
           ? new Squirrel(this, this.animals)
           : species === 'frog'
@@ -456,7 +461,7 @@ export default class GardenScene extends Phaser.Scene {
   spawnOne(taken, fadeIn = false) {
     const species = this.pickSpecies();
     const group = [];
-    if (species === 'fish' || species === 'squirrel' || species === 'mole') {
+    if (species === 'fish' || species === 'crocodile' || species === 'squirrel' || species === 'mole') {
       const a = this.createAnimal(species, 0, 0);
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
       group.push(a);
@@ -926,7 +931,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     ambient = this.sound.add(key, { loop: true, volume: 0 });
     ambient.play();
-    this.tweens.add({ targets: ambient, volume: AMBIENT_VOLUME, duration: AMBIENT_FADE });
+    // Lautstärke je Gebiet (ambientVolume in levels.js), sonst die normale
+    this.tweens.add({ targets: ambient, volume: LEVEL.ambientVolume ?? AMBIENT_VOLUME, duration: AMBIENT_FADE });
   }
 
   // Level verlassen: Stand merken, folgende Tiere mitnehmen. Jedes Level hat seine eigenen Werkzeuge:

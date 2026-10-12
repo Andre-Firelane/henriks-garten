@@ -21,9 +21,9 @@ const HOME_DIST = 50; // so nah muss der Beutel an den Fischteich, damit der Fis
 const SURFACED = ['rising', 'up', 'sinking'];
 
 export default class Fish extends Animal {
-  // allFish: alle Fische, damit nicht zwei an derselben Stelle auftauchen
-  constructor(scene, allFish) {
-    super(scene, 0, 0, 'fish');
+  // allFish: alle Fische, damit nicht zwei an derselben Stelle auftauchen; species: für Wassertiere, die davon erben (Krokodil)
+  constructor(scene, allFish, species = 'fish') {
+    super(scene, 0, 0, species);
     this.allFish = allFish;
     this.useWaterLook();
     this.setPhase('hidden', Phaser.Math.FloatBetween(0.5, 4));
