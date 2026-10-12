@@ -626,7 +626,7 @@ export default class GardenScene extends Phaser.Scene {
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
       return `<div class="card${n ? ' has' : ''}">
-        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">Zuhause: ${n}</span></div></div>
+        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">Zuhause: <span class="num">${n}</span></span></div></div>
         <div class="where">${places.join(', ')}</div>
         <div class="tools">${tools}</div>
         <div class="tip">${CATCH_TIPS[s] ?? ''}</div>
@@ -638,7 +638,7 @@ export default class GardenScene extends Phaser.Scene {
     });
     const total = Object.values(home).reduce((s, x) => s + x, 0);
     const html = `<div class="journal-box">
-      <h2>Tierbuch · ${total} Tiere zuhause</h2>
+      <h2>Tierbuch · <span class="num">${total}</span> Tiere zuhause</h2>
       <div class="cards">${cards.join('')}</div>
       <h3>Womit fängst du was?</h3>
       <div class="tool-list">${toolRows.join('')}</div>

@@ -223,6 +223,12 @@ export function isBlockedPoint(x, y) {
   return Math.hypot(x - c.x, (y - c.y) * 2) < hitbox; // Abstand in Kachel-Proportionen
 }
 
+// Nur Gelände sperrt (Kartenrand, Wasser, Hütte), keine Objekte wie Felsen, Büsche oder Bäume
+export function isTerrainBlocked(tx, ty) {
+  if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
+  return '~owH'.includes(charAt(tx, ty));
+}
+
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
   if ('~owH'.includes(charAt(tx, ty))) return true;

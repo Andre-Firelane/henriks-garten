@@ -1,11 +1,12 @@
 // Löwe (Savanne) – „Ochs am Berg“: döst im Schatten einer Akazie, über ihm steigen „Zzz“ auf.
-// Ab und zu schaut er auf. Ist der Spieler dann in der Nähe, brüllt er (kein Angriff!) und trottet zu einer
+// Ab und zu schaut er auf. Ist der Spieler dann in der Nähe, brüllt er (nur der Ton, kein Angriff!) und trottet zu einer
 // anderen Akazie. Wer ihn erreicht, solange er schnarcht, krault ihn (Berühren) – dann läuft er mit.
 // Kurz bevor er aufschaut, hören die „Zzz“ auf: das ist die Warnung.
 import Phaser from 'phaser';
 import Animal, { SPRITE_SINK } from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { NEAR_TREES } from '../world/map.js';
+import { NEAR_TREES, isTerrainBlocked, inPen, isGate, fenceAxisAt } from '../world/map.js';
+import { footTiles } from '../world/collision.js';
 
 const SLEEP_TIME = [5, 10]; // so lange schläft er am Stück
 const ALERT_TIME = [2, 3]; // so lange schaut er auf
@@ -84,11 +85,10 @@ export default class Lion extends Animal {
     }
   }
 
-  // Brüllen (ohne Angriff) und zu einer Akazie weit weg vom Spieler trotten
+  // Brüllen (nur der Ton, kein Angriff) und zu einer Akazie weit weg vom Spieler trotten
   roar(player) {
     const scene = this.scene;
     if (scene.cache.audio.exists('lion_roar')) scene.sound.play('lion_roar', { volume: ROAR_VOLUME });
-    this.speech('ROAAR!');
     scene.showToast('Der Löwe hat dich bemerkt und trottet davon. Schleich dich an, solange er schnarcht (Zzz)!');
     // unter den Plätzen an Bäumen die am weitesten vom Spieler entfernten
     const spots = NEAR_TREES.map((t) => {
@@ -125,16 +125,13 @@ export default class Lion extends Animal {
     });
   }
 
-  // kurze Sprechblase über dem Kopf
-  speech(text) {
-    const bubble = this.scene.add
-      .text(this.x, this.y - 44, text, {
-        fontFamily: 'Trebuchet MS, Arial', fontSize: '13px', fontStyle: 'bold', color: '#2b1d14',
-        backgroundColor: '#fff8e6', padding: { x: 5, y: 2 }, resolution: 4,
-      })
-      .setOrigin(0.5)
-      .setDepth(100001);
-    this.scene.tweens.add({ targets: bubble, y: bubble.y - 10, alpha: 0, delay: 900, duration: 600, onComplete: () => bubble.destroy() });
+  // Der Löwe läuft einfach durch Felsen, Büsche und Bäume hindurch; nur Wasser, Zäune und fremde Gehege halten ihn auf
+  blocked(x, y) {
+    if (this.state === 'following') return false;
+    const tiles = footTiles(x, y, this.kind.footW, 3);
+    if (tiles.some(({ tx, ty }) => isTerrainBlocked(tx, ty) || fenceAxisAt(tx, ty))) return true;
+    if (this.state === 'penned') return this.enclosureFullyAt(x, y) !== this.enclosure;
+    return tiles.some(({ tx, ty }) => inPen(tx, ty) || isGate(tx, ty));
   }
 
   catch() {
