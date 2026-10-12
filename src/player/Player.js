@@ -15,6 +15,7 @@ const TRAIL_MAX = 400;
 const STEP_VOLUME = 0.065; // Lautstärke der Schritte
 const STEP_INTERVAL = 0.35; // Sekunden zwischen zwei Schritt-Geräuschen
 const STEP_DETUNE = 150; // Tonhöhe schwankt um so viele Cent, damit nicht jeder Schritt gleich klingt
+const ANIMATED_HERO = false; // Lauf- und Stehanimation der Figur (Test, vorerst aus; true = an)
 
 export default class Player {
   // texture: Spritesheet der Figur (je Gebiet andere Kleidung)
@@ -25,6 +26,9 @@ export default class Player {
     this.faceY = 1;
     this.walkTime = 0;
     this.scene = scene;
+    this.texture = texture;
+    // Lauf- und Stehanimation (Test): gibt es bisher nur in der Wiesen-Kleidung
+    this.canWalkAnim = ANIMATED_HERO && texture === 'hero' && ['hero_walk', 'hero_walk_back', 'hero_idle'].every((key) => scene.anims.exists(key));
     this.stepTimer = 0; // Zeit bis zum nächsten Schritt-Geräusch
     // Spur der letzten Positionen, neueste zuletzt: daran laufen gefangene Tiere entlang
     this.trail = [{ x, y }];
@@ -51,9 +55,9 @@ export default class Player {
     }
 
     const moving = vx !== 0 || vy !== 0;
+    const len = Math.hypot(vx, vy);
     if (moving) {
       // Die Figur hat nur schräge Ansichten: die jeweils andere Achse merken wir uns
-      const len = Math.hypot(vx, vy);
       if (Math.abs(vx) > len * 0.25) this.faceX = Math.sign(vx);
       if (Math.abs(vy) > len * 0.25) this.faceY = Math.sign(vy);
 
@@ -78,17 +82,37 @@ export default class Player {
       this.stepTimer = 0;
     }
 
-    this.sprite.setFrame(
-      this.faceY > 0
-        ? this.faceX < 0 ? FRAME.downLeft : FRAME.downRight
-        : this.faceX > 0 ? FRAME.upRight : FRAME.upLeft,
-    );
+    // Echte Animationen von vorne bzw. hinten (nach links gespiegelt), sonst Standbild mit Hüpfen
+    const animated = this.canWalkAnim;
+    if (animated) {
+      this.sprite.setFlipX(this.faceX < 0);
+      if (moving) {
+        this.sprite.play(this.faceY > 0 ? 'hero_walk' : 'hero_walk_back', true);
+        this.sprite.anims.timeScale = Math.min(1, len); // Joystick wenig ausgelenkt: kleinere Schritte
+      } else if (this.faceY > 0) {
+        this.sprite.play('hero_idle', true);
+        this.sprite.anims.timeScale = 1;
+      } else {
+        // Stehen von hinten gibt es noch nicht: erstes Bild der Rückansicht
+        this.sprite.stop();
+        this.sprite.setTexture('hero_walk_back', 0);
+      }
+    } else {
+      this.sprite.stop();
+      this.sprite.setFlipX(false);
+      this.sprite.setTexture(
+        this.texture,
+        this.faceY > 0
+          ? this.faceX < 0 ? FRAME.downLeft : FRAME.downRight
+          : this.faceX > 0 ? FRAME.upRight : FRAME.upLeft,
+      );
+    }
 
-    // Laufen andeuten: leichtes Hüpfen und Wippen
+    // Laufen andeuten: leichtes Hüpfen und Wippen (die Laufanimation bewegt sich selbst)
     const phase = this.walkTime * STEP_RATE;
-    const hop = moving ? Math.abs(Math.sin(phase)) * HOP : 0;
+    const hop = moving && !animated ? Math.abs(Math.sin(phase)) * HOP : 0;
     this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
-    this.sprite.setAngle(moving ? Math.sin(phase) * 3 : 0);
+    this.sprite.setAngle(moving && !animated ? Math.sin(phase) * 3 : 0);
     this.shadow.setPosition(this.x, this.y);
     this.shadow.setScale(1 - hop * 0.04);
 

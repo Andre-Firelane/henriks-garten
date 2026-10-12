@@ -37,6 +37,12 @@ export default class Zebra extends Antelope {
   }
 
   updateFree(dt, player) {
+    // nach einem Fang aus der Herde: Trinken abbrechen und davonrennen
+    const scattering = this.state === 'wild' ? this.updateScatter(dt, player) : null;
+    if (scattering !== null) {
+      this.drinking = false;
+      return scattering;
+    }
     if (this.state !== 'wild') {
       this.drinking = false;
       return super.updateFree(dt, player);

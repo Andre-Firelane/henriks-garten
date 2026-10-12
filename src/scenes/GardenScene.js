@@ -37,6 +37,7 @@ import Heron from '../animals/Heron.js';
 import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
 import Meerkat from '../animals/Meerkat.js';
+import Lion from '../animals/Lion.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
@@ -46,16 +47,40 @@ import TrapTool from '../tools/TrapTool.js';
 import FoodTool from '../tools/FoodTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIcons } from '../ui/icons.js';
-import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
+import { touchHandlers, setTouchTool } from '../ui/touch.js';
+import { openJournal, isJournalOpen } from '../ui/journal.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'giraffe'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'giraffe'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
+
+// Für die Übersicht: womit man fängt (Bild, Name) und besondere Tipps je Tierart
+const CATCH_TOOLS = {
+  touch: ['hand', 'Berühren'],
+  net: ['net', 'Kescher'],
+  lasso: ['lasso', 'Lasso'],
+  trap: ['trap', 'Falle'],
+  food: ['food', 'Grünfutter'],
+};
+const CATCH_TIPS = {
+  fish: 'Nur wenn er nach den Luftblasen auftaucht.',
+  mole: 'Nur wenn er aus seinem Hügel schaut.',
+  squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
+  heron: 'Nur wenn er am Wasser gelandet ist.',
+  deer: 'Scheu: aus der Ferne mit dem Lasso.',
+  stag: 'Selten und scheu: aus der Ferne mit dem Lasso.',
+  fox: 'Nur mit der Falle.',
+  antelope: 'Lebt in Herden – fängst du eine, rennen die anderen weg.',
+  zebra: 'Beim Trinken am Wasserloch flieht es nicht, dann kannst du es auch berühren.',
+  meerkat: 'Schleich dich von hinten an – der Wächter sieht nur, was vor ihm ist.',
+  lion: 'Kraulen, solange er schnarcht (Zzz). Hören die Zzz auf, bleib stehen und warte weit weg!',
+  giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
+};
 
 // Für die Schilder an den Gehegetoren: Name und was man an der Fußspur erkennt (zum Lernen)
 const ANIMAL_INFO = {
@@ -71,6 +96,7 @@ const ANIMAL_INFO = {
   antelope: ['Antilope', 'Paarhufer: zwei schmale, spitze Hufhälften – gut zum schnellen Rennen.'],
   zebra: ['Zebra', 'Unpaarhufer wie das Pferd: ein einziger runder Huf statt zwei Hälften.'],
   meerkat: ['Erdmännchen', 'Vier Zehen mit langen Grabkrallen – damit buddeln sie ihre Höhlen.'],
+  lion: ['Löwe', 'Wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren.'],
   giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
   heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
 };
@@ -315,6 +341,9 @@ export default class GardenScene extends Phaser.Scene {
     };
     this.input.keyboard.on(`keydown-${ACTION_KEY}`, useTool);
     this.input.keyboard.on('keydown-ENTER', useTool);
+    // Übersicht über Tiere und Werkzeuge (Taste I oder Tippen auf das Abzeichen oben links)
+    this.input.keyboard.on('keydown-I', () => this.showJournal());
+    this.hud.onclick = () => this.showJournal(); // ganzer Tipp, damit derselbe Tipp die Tafel nicht gleich wieder schließt
     touchHandlers.action = useTool;
     touchHandlers.reset = restart;
     cam.setBounds(
@@ -393,6 +422,8 @@ export default class GardenScene extends Phaser.Scene {
                     ? new Zebra(this, x, y, this.animals)
                     : species === 'meerkat'
                       ? new Meerkat(this, x, y, this.animals)
+                      : species === 'lion'
+                        ? new Lion(this, x, y)
                   : new Animal(this, x, y, species);
     a.x = x;
     a.y = y;
@@ -434,6 +465,7 @@ export default class GardenScene extends Phaser.Scene {
       const tile =
         (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileFrom(NEAR_WATER, taken)) ||
         (species === 'giraffe' && Math.random() < GIRAFFE_NEAR_TREES && this.tileFrom(NEAR_TREES, taken)) ||
+        (species === 'lion' && this.tileFrom(NEAR_TREES, taken)) || // Löwen dösen immer im Schatten eines Baums
         this.randomFreeTile(taken);
       taken.push(tile);
       const p = tileToWorld(tile.tx, tile.ty);
@@ -575,10 +607,45 @@ export default class GardenScene extends Phaser.Scene {
     return counts;
   }
 
+  // Abzeichen oben links: Gebiet und wie viele Tiere schon zuhause sind; die Einzelheiten zeigt die Übersicht (I)
   updateHud() {
+    const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
+    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b><span class="key">I</span>`;
+  }
+
+  // Große Übersicht: alle Tierarten mit Anzahl zuhause, Lebensraum und womit man sie fängt, dazu die Werkzeuge
+  showJournal() {
+    if (isJournalOpen() || this.leaving) return;
     const home = this.homeCounts();
-    const parts = SPECIES_ORDER.map((species) => `<span class="count">${animalIcon(species)} ${home[species] ?? 0}</span>`);
-    this.hud.innerHTML = `${LEVEL.name} · Zuhause: ${parts.join('')}`;
+    const toolImg = (t) => `<img class="tool-img" src="assets/${CATCH_TOOLS[t][0]}.png" alt="">`;
+    const cards = SPECIES_ORDER.map((s) => {
+      const [name] = ANIMAL_INFO[s] ?? [s];
+      const places = Object.values(LEVELS)
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons))
+        .map((l) => l.name);
+      const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
+      const n = home[s] ?? 0;
+      return `<div class="card${n ? ' has' : ''}">
+        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">Zuhause: ${n}</span></div></div>
+        <div class="where">${places.join(', ')}</div>
+        <div class="tools">${tools}</div>
+        <div class="tip">${CATCH_TIPS[s] ?? ''}</div>
+      </div>`;
+    });
+    const toolRows = Object.keys(CATCH_TOOLS).map((t) => {
+      const animals = SPECIES_ORDER.filter((s) => SPECIES[s].catchWith.includes(t));
+      return `<div class="tool-row">${toolImg(t)}<b>${CATCH_TOOLS[t][1]}</b><span>${animalIcons(animals, 2.2)}</span></div>`;
+    });
+    const total = Object.values(home).reduce((s, x) => s + x, 0);
+    const html = `<div class="journal-box">
+      <h2>Tierbuch · ${total} Tiere zuhause</h2>
+      <div class="cards">${cards.join('')}</div>
+      <h3>Womit fängst du was?</h3>
+      <div class="tool-list">${toolRows.join('')}</div>
+      <p class="close-hint">Beliebige Taste oder Tippen zum Schließen</p>
+    </div>`;
+    this.scene.pause();
+    openJournal(html, () => this.scene.resume());
   }
 
   updateToolbar() {
@@ -619,21 +686,17 @@ export default class GardenScene extends Phaser.Scene {
     this.toolId = null;
     this.returnTool(id);
     this.updateToolbar();
-    this.showToast(`Hände frei! ${TOOLS[id].name} liegt wieder an seinem Platz.`);
   }
 
   // Werkzeug in die Hand nehmen (ein getragenes kommt zurück an die Hütte)
-  equipTool(id, verb = 'genommen') {
-    let dropped = '';
+  equipTool(id) {
     if (this.tool) {
       this.tool.destroy();
       this.returnTool(this.toolId);
-      dropped = ` (${TOOLS[this.toolId].name} zurückgelegt)`;
     }
     this.tool = TOOLS[id].create(this, this.player);
     this.toolId = id;
     this.updateToolbar();
-    this.showToast(`${TOOLS[id].name} ${verb}${dropped}! ${TOOLS[id].hint}: ${isTouch() ? 'Knopf rechts unten' : `Taste ${ACTION_KEY} oder Enter`}`);
   }
 
   // Getragene Falle vor dem Spieler auslegen
@@ -725,7 +788,7 @@ export default class GardenScene extends Phaser.Scene {
     this.traps.get(t.id)?.destroy();
     this.traps.delete(t.id);
     game.traps = game.traps.filter((g) => g !== t);
-    this.equipTool('trap', 'wieder aufgenommen');
+    this.equipTool('trap');
     return true;
   }
 
@@ -833,6 +896,12 @@ export default class GardenScene extends Phaser.Scene {
   catchAnimal(animal) {
     animal.catch();
     this.followers.push(animal);
+    // Herdentiere: die anderen der Herde rennen vor Schreck davon und verschwinden
+    if (animal.herd) {
+      const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild' && a.scatter);
+      for (const a of mates) a.scatter();
+      if (mates.length) this.showToast(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`);
+    }
     // kurzer Tierruf (falls es für diese Art einen gibt)
     const sound = `animal_${animal.species}`;
     if (this.cache.audio.exists(sound)) this.sound.play(sound, { volume: ANIMAL_VOLUME });

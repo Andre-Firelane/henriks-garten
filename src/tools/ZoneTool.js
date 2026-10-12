@@ -4,7 +4,8 @@
 // damit auch Tiere direkt vor den Füßen gefangen werden.
 
 export default class ZoneTool {
-  constructor(scene, player, { id, reach, radius, duration, catchFrom, catchTo }) {
+  // maxCatch: höchstens so viele Tiere pro Einsatz (z. B. 1 beim Lasso); ohne Angabe beliebig viele
+  constructor(scene, player, { id, reach, radius, duration, catchFrom, catchTo, maxCatch = Infinity }) {
     this.scene = scene;
     this.player = player;
     this.id = id;
@@ -13,6 +14,8 @@ export default class ZoneTool {
     this.duration = duration;
     this.catchFrom = catchFrom;
     this.catchTo = catchTo;
+    this.maxCatch = maxCatch;
+    this.caughtCount = 0; // so viele hat der laufende Einsatz schon gefangen
     this.time = -1; // < 0: gerade nicht im Einsatz
     this.zone = null; // Fangzone des laufenden Einsatzes
   }
@@ -32,6 +35,7 @@ export default class ZoneTool {
     this.time = 0;
     this.zone = this.zoneAhead();
     this.zoneStart = { x: this.player.x, y: this.player.y };
+    this.caughtCount = 0;
     return true;
   }
 
@@ -50,9 +54,13 @@ export default class ZoneTool {
   // Tiere, die der laufende Einsatz gerade erwischt
   caughtBy(animals) {
     if (!this.active || this.progress < this.catchFrom || this.progress > this.catchTo) return [];
-    return animals.filter(
-      (a) => a.canBeCaughtWith(this.id) && this.zoneDistance(a) < this.radius,
-    );
+    if (this.caughtCount >= this.maxCatch) return [];
+    const caught = animals
+      .filter((a) => a.canBeCaughtWith(this.id) && this.zoneDistance(a) < this.radius)
+      .sort((a, b) => this.zoneDistance(a) - this.zoneDistance(b)) // die nächsten zuerst
+      .slice(0, this.maxCatch - this.caughtCount);
+    this.caughtCount += caught.length;
+    return caught;
   }
 
   // Abstand eines Tiers zur Strecke Spieler → Zonenmitte (in Kachel-Proportionen, y doppelt gewichtet)

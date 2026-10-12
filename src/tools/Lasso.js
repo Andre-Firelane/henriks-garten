@@ -10,7 +10,8 @@ const ROPE_LIGHT = 0xd9b072;
 export default class Lasso extends ZoneTool {
   constructor(scene, player) {
     // reach 70 = etwa 100 in Kachel-Abstand, also weiter weg als die Fluchtdistanz der Rehe (70)
-    super(scene, player, { id: 'lasso', reach: 70, radius: 34, duration: 0.75, catchFrom: FLY, catchTo: HOLD });
+    // maxCatch 1: ein Wurf fängt nur ein Tier, auch wenn eine ganze Herde in der Schlinge steht
+    super(scene, player, { id: 'lasso', reach: 70, radius: 34, duration: 0.75, catchFrom: FLY, catchTo: HOLD, maxCatch: 1 });
     this.coil = scene.add.image(0, 0, 'lasso').setScale(0.4);
     this.rope = scene.add.graphics();
   }

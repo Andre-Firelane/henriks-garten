@@ -14,10 +14,11 @@ const PIXEL_ART = [
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
+const HERO_WALK_FRAME = { frameWidth: 88, frameHeight: 116 };
 const SHEEP_FRAME = { frameWidth: 80, frameHeight: 88 };
 const CAT_FRAME = { frameWidth: 72, frameHeight: 80 };
 const DEER_FRAME = { frameWidth: 72, frameHeight: 96 };
@@ -35,6 +36,7 @@ const ANTELOPE_FRAME = { frameWidth: 72, frameHeight: 100 };
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
 const MEERKAT_FRAME = { frameWidth: 40, frameHeight: 56 };
 const MEERKAT_HOLE_FRAME = { frameWidth: 48, frameHeight: 32 };
+const LION_FRAME = { frameWidth: 72, frameHeight: 96 };
 const GIRAFFE_FRAME = { frameWidth: 104, frameHeight: 168 };
 const ANIMAL_SOUNDS = {
   sheep: 'animal_sheep.wav',
@@ -56,6 +58,9 @@ export default class BootScene extends Phaser.Scene {
     // Kleidung je Gebiet (siehe hero in levels.js)
     this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
     this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
+    this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
+    this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
+    this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
@@ -75,6 +80,10 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
     this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
     this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
+    this.load.spritesheet('lion', 'assets/lion.png', LION_FRAME);
+    this.load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
+    this.load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
+    this.load.audio('lion_roar', 'assets/sounds/lion_roar.wav');
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
@@ -86,6 +95,8 @@ export default class BootScene extends Phaser.Scene {
   create() {
     // Pixel-Art scharf vergrößern; Figuren und gedrehte Gegenstände bleiben weich
     for (const key of PIXEL_ART) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    for (const key of ['hero_walk', 'hero_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 14, repeat: -1 });
+    this.anims.create({ key: 'hero_idle', frames: this.anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
     this.scene.start('Garden');
   }
 }

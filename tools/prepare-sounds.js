@@ -20,6 +20,8 @@ const SOUNDS = [
   ['Sounds/Zebra.mp3', 'public/assets/sounds/animal_zebra.wav', 0.15, 1.45, 0.8], // erstes Wiehern, ohne den Knack am Anfang
   // Warnruf des Erdmännchen-Wächters (die ersten Rufe, ohne Knack und Stille davor)
   ['Sounds/Erdmännchen Alarm.mp3', 'public/assets/sounds/meerkat_alarm.wav', 2.5, 1.6, 0.8],
+  // Brüllen des Löwen, wenn er den Spieler bemerkt (ohne den Knack am Anfang)
+  ['Sounds/Löwe.mp3', 'public/assets/sounds/lion_roar.wav', 0.15, 1.9, 0.8],
   // Schwung beim Einsetzen eines Werkzeugs
   ['Sounds/whoosh.wav', 'public/assets/sounds/whoosh.wav', 0, 0.2, 0.8],
   // Falle schnappt zu, wenn ein Tier hineingeht

@@ -1,19 +1,17 @@
 // Erdmännchen (Savanne): leben in Kolonien. Ein Wächter steht aufrecht und dreht sich alle 15 Sekunden im Uhrzeigersinn;
-// sein Blickfeld ist die ganze vordere Hälfte (180°). Die anderen buddeln in ihren Löchern und tauchen auf und ab.
-// Sieht der Wächter den Spieler, warnt er mit einem Pfiff, und die ganze Kolonie verschwindet.
-// Fangen: nur mit dem Kescher und nur die buddelnden, solange sie oben sind (nicht den Wächter).
+// sein Blickfeld ist die ganze vordere Hälfte (180°). Die anderen schauen aus ihren Löchern und sehen sich um.
+// Sieht der Wächter den Spieler, warnt er mit einem Pfiff, und die ganze Kolonie verschwindet. Ebenso nach dem ersten
+// Fang: dann schlägt er Alarm und die übrigen verschwinden.
+// Fangen: nur mit dem Kescher und nur die im Loch (nicht den Wächter).
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 
 const COLONY_JOIN = 70; // so nah muss ein Erdmännchen an einer Kolonie sein, um dazuzugehören
 const TURN_TIME = 15; // alle so viele Sekunden dreht sich der Wächter eine Richtung weiter (im Uhrzeigersinn)
 const VIEW_DIST = 140; // so weit sieht er (in Kachel-Proportionen, etwa 4 bis 5 Kacheln)
-const HIDDEN_TIME = [1.5, 4]; // so lange ist ein buddelndes Erdmännchen unten
-const UP_TIME = [2.5, 5]; // so lange schaut es aus dem Loch
-const RISE_TIME = 0.3; // Auftauchen und Abtauchen
+const PEEK_TIME = [2, 4]; // so lange schaut ein Erdmännchen im Loch in eine Richtung
 const HOLE_ORIGIN_Y = 26 / 32; // Mitte des Erdlochs im Bild "meerkat_hole"
 const ALARM_VOLUME = 0.5;
-const SURFACED = ['rising', 'up', 'sinking'];
 // Blickrichtungen des Wächters (faceX, faceY) im Uhrzeigersinn: oben rechts, unten rechts, unten links, oben links
 const CLOCKWISE = [[1, -1], [1, 1], [-1, 1], [-1, -1]];
 
@@ -31,10 +29,7 @@ export default class Meerkat extends Animal {
     this.turnIndex = Phaser.Math.Between(0, 3);
     [this.faceX, this.faceY] = CLOCKWISE[this.turnIndex];
     this.lookTime = Phaser.Math.FloatBetween(0, TURN_TIME);
-    if (!this.isGuard()) {
-      this.useHoleLook();
-      this.setPhase('hidden', Phaser.Math.FloatBetween(0.3, HIDDEN_TIME[1]));
-    }
+    if (!this.isGuard()) this.useHoleLook();
   }
 
   isGuard() {
@@ -52,15 +47,9 @@ export default class Meerkat extends Animal {
     this.shadow.setVisible(true);
   }
 
-  setPhase(phase, time) {
-    this.phase = phase;
-    this.phaseTime = time;
-    this.phaseLength = time;
-  }
-
-  // Nur buddelnde, die gerade oben sind, und nur mit dem Kescher
+  // Nur die im Loch, nicht den Wächter (Werkzeug: Kescher, siehe catchWith)
   canBeCaughtNow() {
-    return this.state === 'wild' && !this.isGuard() && SURFACED.includes(this.phase);
+    return this.state === 'wild' && !this.isGuard();
   }
 
   updateFree(dt, player) {
@@ -79,23 +68,12 @@ export default class Meerkat extends Animal {
       return false;
     }
 
-    // Buddeln: wie beim Maulwurf auf- und abtauchen
-    this.phaseTime -= dt;
-    if (this.phaseTime > 0) return false;
-    switch (this.phase) {
-      case 'hidden':
-        this.faceX = Math.random() < 0.5 ? -1 : 1;
-        this.faceY = Math.random() < 0.7 ? 1 : -1;
-        this.setPhase('rising', RISE_TIME);
-        break;
-      case 'rising':
-        this.setPhase('up', Phaser.Math.FloatBetween(...UP_TIME));
-        break;
-      case 'up':
-        this.setPhase('sinking', RISE_TIME);
-        break;
-      default:
-        this.setPhase('hidden', Phaser.Math.FloatBetween(...HIDDEN_TIME));
+    // Im Loch: schaut sich ab und zu in eine andere Richtung um
+    this.lookTime -= dt;
+    if (this.lookTime <= 0) {
+      this.faceX = Math.random() < 0.5 ? -1 : 1;
+      this.faceY = Math.random() < 0.7 ? 1 : -1;
+      this.lookTime = Phaser.Math.FloatBetween(...PEEK_TIME);
     }
     return false;
   }
@@ -108,14 +86,18 @@ export default class Meerkat extends Animal {
     return dx * this.faceX + dy * this.faceY > 0;
   }
 
-  // Warnpfiff: die ganze Kolonie verschwindet
-  raiseAlarm() {
+  // Warnpfiff: die ganze Kolonie verschwindet. reason: 'seen' (Wächter hat den Spieler gesehen) oder 'catch' (eins gefangen)
+  raiseAlarm(reason = 'seen') {
     const colony = this.colony;
     if (colony.alarmed) return;
     colony.alarmed = true;
     const scene = this.scene;
     if (scene.cache.audio.exists('meerkat_alarm')) scene.sound.play('meerkat_alarm', { volume: ALARM_VOLUME });
-    scene.showToast('Der Wächter hat dich gesehen – alle Erdmännchen sind weg! Tipp: Schleich dich von hinten an, er sieht nur, was vor ihm ist.');
+    scene.showToast(
+      reason === 'catch'
+        ? 'Gefangen! Aber der Wächter hat Alarm geschlagen – die anderen Erdmännchen sind weg.'
+        : 'Der Wächter hat dich gesehen – alle Erdmännchen sind weg! Tipp: Schleich dich von hinten an, er sieht nur, was vor ihm ist.',
+    );
     for (const a of [...this.allAnimals]) {
       if (a.colony === colony && a.state === 'wild') scene.despawn(a);
     }
@@ -124,6 +106,7 @@ export default class Meerkat extends Animal {
   catch() {
     super.catch();
     this.useStandLook();
+    this.raiseAlarm('catch'); // die übrigen der Kolonie verschwinden
   }
 
   restore(state) {
@@ -136,16 +119,13 @@ export default class Meerkat extends Animal {
       super.render(moving);
       return;
     }
-    // buddelndes Erdmännchen im Loch: schiebt sich heraus und verschwindet wieder
+    // Erdmännchen im Loch: schaut dauerhaft heraus
     const f = this.kind.frames;
     this.sprite.setFrame(
       this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft,
     );
-    let grow = 1;
-    if (this.phase === 'rising') grow = 1 - this.phaseTime / this.phaseLength;
-    if (this.phase === 'sinking') grow = this.phaseTime / this.phaseLength;
-    this.sprite.setVisible(SURFACED.includes(this.phase));
-    this.sprite.setScale(0.5, 0.5 * Math.max(0.1, grow));
+    this.sprite.setVisible(true);
+    this.sprite.setScale(0.5);
     this.sprite.setPosition(this.x, this.y);
     this.sprite.setAngle(0);
     this.sprite.setDepth(this.y);

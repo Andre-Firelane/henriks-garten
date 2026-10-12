@@ -8,6 +8,7 @@ const HERD_JOIN = 90; // so nah muss eine neue Antilope an einer Gruppe sein, um
 const HERD_RADIUS = 45; // weiter weg von der Gruppenmitte: zurücklaufen
 const HERD_SPREAD = 0.5; // so stark (Bogenmaß) weicht jede von der gemeinsamen Laufrichtung ab
 const ALARM_TIME = 1.2; // so lange (Sekunden) flieht die Gruppe mit, nachdem eine den Spieler bemerkt hat
+const SCATTER_TIME = 2.5; // wird eine aus der Herde gefangen, rennen die anderen so lange weg und verschwinden dann
 
 export default class Antelope extends Animal {
   // allAnimals: alle Tiere des Levels, darin sucht sie ihre Gruppe; species: für Herdentiere, die davon erben (Zebra)
@@ -23,6 +24,29 @@ export default class Antelope extends Animal {
 
   now() {
     return this.scene.time.now / 1000;
+  }
+
+  // Vor Schreck davonrennen (weil ein Tier der Herde gefangen wurde) und danach verschwinden
+  scatter() {
+    if (this.state === 'wild' && !this.scatterUntil) this.scatterUntil = this.now() + SCATTER_TIME;
+  }
+
+  // Läuft gerade die Flucht nach einem Fang? Dann gibt sie zurück, ob es sich bewegt hat, sonst null
+  updateScatter(dt, player) {
+    if (!this.scatterUntil) return null;
+    if (this.now() >= this.scatterUntil) {
+      this.scatterUntil = Infinity; // nur einmal verschwinden
+      this.scene.despawn(this);
+      return false;
+    }
+    this.fleeing = true;
+    return this.flee(dt, player);
+  }
+
+  updateFree(dt, player) {
+    const scattering = this.state === 'wild' ? this.updateScatter(dt, player) : null;
+    if (scattering !== null) return scattering;
+    return super.updateFree(dt, player);
   }
 
   herdMates() {

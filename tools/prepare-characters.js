@@ -50,6 +50,9 @@ const CHARACTERS = [
   // Stehend freigestellt mit npm run cutout -- ... 636,367 885,367 (Lücken zwischen den Beinen)
   { src: 'Sprites/Erdmännchen.png', out: 'meerkat.png', frameW: 40, frameH: 56, feetY: 52, figureH: 52 },
   { src: 'Sprites/Erdmännchen eingegraben.png', out: 'meerkat_hole.png', frameW: 48, frameH: 32, feetY: 30, figureH: 26.2 },
+  // Löwe stehend; die Rückansichten berühren sich am Schwanz, daher nach zusammenhängenden Flächen trennen.
+  // Freigestellt mit npm run cutout -- ... 659,336 866,336 127,340 423,340 169,350 379,350 (Lücken zwischen den Beinen)
+  { src: 'Sprites/Löwe.png', out: 'lion.png', frameW: 72, frameH: 96, feetY: 92, figureH: 88, byComponents: true },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)
@@ -172,48 +175,113 @@ function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false
   const scale = figureH / Math.max(...boxes.map((b) => b.y1 - b.y0 + 1));
   const sheet = new PNG({ width: frameW * 4, height: frameH });
 
-  // Flächenmittelung mit vormultipliziertem Alpha: glatte Kanten ohne dunkle Ränder
   boxes.forEach((b, i) => {
     const bw = (b.x1 - b.x0 + 1) * scale;
     const bh = (b.y1 - b.y0 + 1) * scale;
     const offX = i * frameW + Math.round((frameW - bw) / 2);
     const offY = Math.round(feetY - bh);
-    const step = 1 / scale;
-    for (let ty = 0; ty < Math.ceil(bh); ty++) {
-      for (let tx = 0; tx < Math.ceil(bw); tx++) {
-        const sx0 = b.x0 + tx * step;
-        const sy0 = b.y0 + ty * step;
-        let r = 0, g = 0, bl = 0, a = 0, n = 0;
-        for (let sy = Math.floor(sy0); sy < Math.max(Math.floor(sy0 + step), Math.floor(sy0) + 1); sy++) {
-          for (let sx = Math.floor(sx0); sx < Math.max(Math.floor(sx0 + step), Math.floor(sx0) + 1); sx++) {
-            if (sx > b.x1 || sy > b.y1) continue;
-            const k = (sy * W + sx) * 4;
-            const al = owner[sy * W + sx] === i ? data[k + 3] / 255 : 0; // Teile anderer Figuren ausblenden
-            r += data[k] * al;
-            g += data[k + 1] * al;
-            bl += data[k + 2] * al;
-            a += al;
-            n++;
-          }
-        }
-        if (n === 0 || a === 0) continue;
-        const dx = offX + tx;
-        const dy = offY + ty;
-        if (dx < 0 || dy < 0 || dx >= sheet.width || dy >= sheet.height) continue;
-        const o = (dy * sheet.width + dx) * 4;
-        sheet.data[o] = r / a;
-        sheet.data[o + 1] = g / a;
-        sheet.data[o + 2] = bl / a;
-        sheet.data[o + 3] = (a / n) * 255;
-      }
-    }
+    drawScaled(sheet, img, b, scale, offX, offY, (sx, sy) => owner[sy * W + sx] === i); // Teile anderer Figuren ausblenden
     if (bw > frameW) console.warn(`${src}: Figur ${i} ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
   });
 
-  const file = path.resolve('public/assets', out);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, PNG.sync.write(sheet));
+  writeSheet(out, sheet);
   console.log(`${out}: 4 Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
 }
 
+// Ausschnitt "b" des Bildes verkleinert bei (offX, offY) ins Sheet zeichnen; keep(x, y) wählt die Pixel aus.
+// Flächenmittelung mit vormultipliziertem Alpha: glatte Kanten ohne dunkle Ränder
+function drawScaled(sheet, img, b, scale, offX, offY, keep) {
+  const { width: W, data } = img;
+  const bw = (b.x1 - b.x0 + 1) * scale;
+  const bh = (b.y1 - b.y0 + 1) * scale;
+  const step = 1 / scale;
+  for (let ty = 0; ty < Math.ceil(bh); ty++) {
+    for (let tx = 0; tx < Math.ceil(bw); tx++) {
+      const sx0 = b.x0 + tx * step;
+      const sy0 = b.y0 + ty * step;
+      let r = 0, g = 0, bl = 0, a = 0, n = 0;
+      for (let sy = Math.floor(sy0); sy < Math.max(Math.floor(sy0 + step), Math.floor(sy0) + 1); sy++) {
+        for (let sx = Math.floor(sx0); sx < Math.max(Math.floor(sx0 + step), Math.floor(sx0) + 1); sx++) {
+          if (sx > b.x1 || sy > b.y1) continue;
+          const k = (sy * W + sx) * 4;
+          const al = keep(sx, sy) ? data[k + 3] / 255 : 0;
+          r += data[k] * al;
+          g += data[k + 1] * al;
+          bl += data[k + 2] * al;
+          a += al;
+          n++;
+        }
+      }
+      if (n === 0 || a === 0) continue;
+      const dx = offX + tx;
+      const dy = offY + ty;
+      if (dx < 0 || dy < 0 || dx >= sheet.width || dy >= sheet.height) continue;
+      const o = (dy * sheet.width + dx) * 4;
+      sheet.data[o] = r / a;
+      sheet.data[o + 1] = g / a;
+      sheet.data[o + 2] = bl / a;
+      sheet.data[o + 3] = (a / n) * 255;
+    }
+  }
+}
+
+function writeSheet(out, sheet) {
+  const file = path.resolve('public/assets', out);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, PNG.sync.write(sheet));
+}
+
+// Animationen: Bilder liegen im Raster (cols × rows gleich große Zellen), gelesen zeilenweise von links nach rechts;
+// count: Anzahl der Bilder, falls die letzten Zellen leer sind.
+// Alle Bilder bekommen denselben Maßstab und Versatz (gemeinsamer Rahmen über alle Zellen), damit die Figur nicht zittert.
+const ANIMATIONS = [
+  // Hauptfigur läuft nach unten-rechts (nach links wird im Spiel gespiegelt); gleiche Höhe und Füße wie hero.png
+  { src: 'Animation/Character_Walking.png', out: 'hero_walk.png', cols: 5, rows: 2, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // Hauptfigur läuft nach oben-rechts (Rückansicht; nach links wird gespiegelt)
+  { src: 'Animation/Character_Walking_Back.png', out: 'hero_walk_back.png', cols: 5, rows: 3, count: 13, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // Hauptfigur steht (Blick nach unten-rechts, atmet und blinzelt)
+  { src: 'Animation/Character_Idle.png', out: 'hero_idle.png', cols: 5, rows: 8, count: 38, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // Löwe liegend (ein Bild, Kopf nach rechts; nach links spiegelt das Spiel). Maßstab 0,23, damit die Mähne
+  // so groß ist wie beim stehenden Löwen: schlafend 184 Pixel hoch, aufmerksam 242
+  { src: 'Sprites/Löwe schlafend.png', out: 'lion_sleep.png', cols: 1, rows: 1, frameW: 108, frameH: 52, feetY: 48, figureH: 42.3 },
+  { src: 'Sprites/Löwe aufmerksam.png', out: 'lion_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
+];
+
+function prepareGrid({ src, out, cols, rows, count = cols * rows, frameW, frameH, feetY, figureH }) {
+  const img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
+  const { width: W, height: H, data } = img;
+  const cw = W / cols;
+  const ch = H / rows;
+
+  // gemeinsamer Rahmen der sichtbaren Pixel, in Zellkoordinaten
+  const box = { x0: cw, x1: 0, y0: ch, y1: 0 };
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (data[(y * W + x) * 4 + 3] <= 20) continue;
+      const cx = x % cw;
+      const cy = y % ch;
+      box.x0 = Math.min(box.x0, cx);
+      box.x1 = Math.max(box.x1, cx);
+      box.y0 = Math.min(box.y0, cy);
+      box.y1 = Math.max(box.y1, cy);
+    }
+  }
+
+  const scale = figureH / (box.y1 - box.y0 + 1);
+  const bw = (box.x1 - box.x0 + 1) * scale;
+  const bh = (box.y1 - box.y0 + 1) * scale;
+  const sheet = new PNG({ width: frameW * count, height: frameH });
+  for (let i = 0; i < count; i++) {
+    const ox = (i % cols) * cw;
+    const oy = Math.floor(i / cols) * ch;
+    const b = { x0: ox + box.x0, x1: ox + box.x1, y0: oy + box.y0, y1: oy + box.y1 };
+    drawScaled(sheet, img, b, scale, i * frameW + Math.round((frameW - bw) / 2), Math.round(feetY - bh), () => true);
+  }
+  if (bw > frameW) console.warn(`${src}: Figur ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
+
+  writeSheet(out, sheet);
+  console.log(`${out}: ${count} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
+}
+
 CHARACTERS.forEach(prepare);
+ANIMATIONS.forEach(prepareGrid);

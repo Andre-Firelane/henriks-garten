@@ -15,6 +15,7 @@ const SHEETS = {
   antelope: [72, 100, 4, 0],
   zebra: [80, 104, 4, 0],
   meerkat: [40, 56, 4, 0],
+  lion: [72, 96, 4, 0],
   giraffe: [104, 168, 4, 0],
 };
 

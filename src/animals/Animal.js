@@ -105,6 +105,21 @@ export const SPECIES = {
     herd: true,
     groupSize: [3, 5], // so viele erscheinen zusammen (statt HERD_SIZE)
   },
+  // Löwe (Savanne): döst unter Akazien, nur durch Kraulen fangbar, solange er schläft (siehe Lion.js)
+  lion: {
+    texture: 'lion',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 26,
+    restChance: 0.6,
+    restTime: [2, 5],
+    walkTime: [1.5, 3],
+    stepRate: 8,
+    hop: 1.5,
+    footW: 10,
+    shadowW: 36,
+    catchWith: ['touch'],
+  },
   // Giraffe (Savanne): viel größer als die anderen Tiere, läuft gemächlich herum; zahm wird sie nur mit Grünfutter
   // (siehe feedGiraffe in GardenScene)
   giraffe: {
