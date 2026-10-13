@@ -38,6 +38,9 @@ import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
 import Meerkat from '../animals/Meerkat.js';
 import Lion from '../animals/Lion.js';
+import Giraffe from '../animals/Giraffe.js';
+import Cat from '../animals/Cat.js';
+import Fox from '../animals/Fox.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
@@ -429,7 +432,13 @@ export default class GardenScene extends Phaser.Scene {
                       ? new Meerkat(this, x, y, this.animals)
                       : species === 'lion'
                         ? new Lion(this, x, y)
-                  : new Animal(this, x, y, species);
+                        : species === 'giraffe'
+                          ? new Giraffe(this, x, y)
+                          : species === 'cat'
+                            ? new Cat(this, x, y, this.animals)
+                            : species === 'fox'
+                              ? new Fox(this, x, y)
+                              : new Animal(this, x, y, species);
     a.x = x;
     a.y = y;
     this.animals.push(a);

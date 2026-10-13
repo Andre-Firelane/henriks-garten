@@ -18,6 +18,8 @@ const CHARACTERS = [
   { src: 'Sprites/Schaf.png', out: 'sheep.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
   // unten-rechts, unten-links, oben-rechts, oben-links; der gemalte graue Bodenschatten wird entfernt
   { src: 'Sprites/Katze.png', out: 'cat.png', frameW: 72, frameH: 80, feetY: 76, figureH: 60, stripShadow: true },
+  // Katze schlafend (eingerollt, auf dem Kratzbaum); gleicher Maßstab wie oben (0,214). Freigestellt mit npm run cutout
+  { src: 'Sprites/Katze schlafend.png', out: 'cat_sleep.png', frameW: 56, frameH: 60, feetY: 56, figureH: 54.3, stripShadow: true },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout
   { src: 'Sprites/Reh.png', out: 'deer.png', frameW: 72, frameH: 96, feetY: 92, figureH: 84 },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (höher wegen des Geweihs)
@@ -39,10 +41,16 @@ const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout.
   // Der Schwanz der 3. Figur ragt in die Spalten der 2., daher nach zusammenhängenden Flächen trennen
   { src: 'Sprites/Fuchs.png', out: 'fox.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64, byComponents: true },
+  // Fuchs schlafend (eingerollt). Im Bild schauen 1. und 2. Figur beide nach links, 3. und 4. beide nach oben links:
+  // 1. und 3. werden gespiegelt. Gleicher Maßstab wie oben (0,210). Freigestellt mit npm run cutout
+  { src: 'Sprites/Fuchs schlafend.png', out: 'fox_sleep.png', frameW: 56, frameH: 44, feetY: 41, figureH: 39.5, mirror: [0, 2] },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (hoch wegen der Hörner)
   { src: 'Sprites/Antilope.png', out: 'antelope.png', frameW: 72, frameH: 100, feetY: 96, figureH: 88 },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (viel größer als die anderen Tiere)
   { src: 'Sprites/Giraffe.png', out: 'giraffe.png', frameW: 104, frameH: 168, feetY: 164, figureH: 156 },
+  // Giraffe frisst (Kopf hoch in die Akazie): unten-rechts, unten-links (falsch herum gemalt, wird gespiegelt), oben-rechts, oben-links.
+  // Gleicher Maßstab wie oben (156/333 Pixel): die gestreckte Figur ist 431 Pixel hoch. Freigestellt mit npm run cutout
+  { src: 'Sprites/Giraffe frisst.png', out: 'giraffe_eat.png', frameW: 112, frameH: 212, feetY: 208, figureH: 202, mirror: [1] },
   // Zebra stehend und trinkend (Kopf unten); gleicher Maßstab für beide: 92/328 Pixel, beim Trinken ist die Figur 212 statt 328 hoch
   { src: 'Sprites/Zebra.png', out: 'zebra.png', frameW: 80, frameH: 104, feetY: 100, figureH: 92 },
   { src: 'Sprites/Zebra trinkt.png', out: 'zebra_drink.png', frameW: 80, frameH: 104, feetY: 100, figureH: 59.5 },
@@ -158,8 +166,9 @@ function gridToRow(img, cols, rows) {
   return row;
 }
 
-// grid: [cols, rows], falls die vier Ansichten im Raster statt nebeneinander liegen
-function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false, byComponents = false, grid = null }) {
+// grid: [cols, rows], falls die vier Ansichten im Raster statt nebeneinander liegen;
+// mirror: Nummern der Figuren, die falsch herum gemalt sind und gespiegelt werden
+function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false, byComponents = false, grid = null, mirror = [] }) {
   let img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (grid) img = gridToRow(img, ...grid);
   const { width: W, height: H, data } = img;
@@ -200,6 +209,7 @@ function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false
     const offX = i * frameW + Math.round((frameW - bw) / 2);
     const offY = Math.round(feetY - bh);
     drawScaled(sheet, img, b, scale, offX, offY, (sx, sy) => owner[sy * W + sx] === i); // Teile anderer Figuren ausblenden
+    if (mirror.includes(i)) mirrorFrame(sheet, i * frameW, frameW);
     if (bw > frameW) console.warn(`${src}: Figur ${i} ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
   });
 
@@ -240,6 +250,17 @@ function drawScaled(sheet, img, b, scale, offX, offY, keep) {
       sheet.data[o + 1] = g / a;
       sheet.data[o + 2] = bl / a;
       sheet.data[o + 3] = (a / n) * 255;
+    }
+  }
+}
+
+// Frame ab Spalte x0 (Breite w) waagerecht spiegeln
+function mirrorFrame(sheet, x0, w) {
+  for (let y = 0; y < sheet.height; y++) {
+    for (let x = 0; x < w / 2; x++) {
+      const a = (y * sheet.width + x0 + x) * 4;
+      const b = (y * sheet.width + x0 + w - 1 - x) * 4;
+      for (let c = 0; c < 4; c++) [sheet.data[a + c], sheet.data[b + c]] = [sheet.data[b + c], sheet.data[a + c]];
     }
   }
 }

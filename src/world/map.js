@@ -46,6 +46,8 @@ export const OBJECTS = {
   1: { key: 'tree', originY: 82 / 96, solid: true },
   2: { key: 'pine', originY: 100 / 112, solid: true },
   3: { key: 'dry_bush', originY: 33 / 40, solid: true },
+  4: { key: 'bush', originY: 33 / 40, solid: true }, // niedrige Füller rechts neben den Gehegen, damit man hineinsieht
+  5: { key: 'dark_bush', originY: 36 / 44, solid: true },
   // Erdhöhle im Fuchsbau
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
@@ -71,6 +73,7 @@ export let FISH_SPOTS; // Stellen, an denen wilde Fische auftauchen
 export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Teich entfernt (für Frösche)
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
+export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
 let ROWS;
@@ -109,11 +112,13 @@ export function setLevel(id) {
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
   SHORE_TILES = [];
+  PEN_SHORE_TILES = [];
   for (let ty = 1; ty < MAP_H - 1; ty++) {
     for (let tx = 1; tx < MAP_W - 1; tx++) {
-      if (isBlocked(tx, ty) || inPen(tx, ty) || exitAt(tx, ty)) continue;
-      const w = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => charAt(tx + dx, ty + dy) === '~');
-      if (w) SHORE_TILES.push({ tx, ty, water: { tx: tx + w[0], ty: ty + w[1] } });
+      if (isBlocked(tx, ty) || exitAt(tx, ty)) continue;
+      const pen = inPen(tx, ty);
+      const w = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => charAt(tx + dx, ty + dy) === (pen ? 'w' : '~'));
+      if (w) (pen ? PEN_SHORE_TILES : SHORE_TILES).push({ tx, ty, water: { tx: tx + w[0], ty: ty + w[1] } });
     }
   }
   MOLE_SPOTS = tilesWith('.').filter(

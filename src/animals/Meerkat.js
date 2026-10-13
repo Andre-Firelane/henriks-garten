@@ -3,6 +3,7 @@
 // Sieht der Wächter den Spieler, warnt er mit einem Pfiff, und die ganze Kolonie verschwindet. Ebenso nach dem ersten
 // Fang: dann schlägt er Alarm und die übrigen verschwinden.
 // Fangen: nur mit dem Kescher und nur die im Loch (nicht den Wächter).
+// Im Gehege läuft es herum und gräbt sich ab und zu ein Loch, aus dem es eine Weile herausschaut.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 
@@ -12,6 +13,8 @@ const VIEW_DIST = 140; // so weit sieht er (in Kachel-Proportionen, etwa 4 bis 5
 const PEEK_TIME = [2, 4]; // so lange schaut ein Erdmännchen im Loch in eine Richtung
 const HOLE_ORIGIN_Y = 26 / 32; // Mitte des Erdlochs im Bild "meerkat_hole"
 const ALARM_VOLUME = 0.5;
+const DIG_EVERY = [8, 18]; // im Gehege: so lange läuft es herum, bevor es sich eingräbt
+const DIG_TIME = [5, 10]; // ... und so lange schaut es dann aus dem Loch
 // Blickrichtungen des Wächters (faceX, faceY) im Uhrzeigersinn: oben rechts, unten rechts, unten links, oben links
 const CLOCKWISE = [[1, -1], [1, 1], [-1, 1], [-1, -1]];
 
@@ -53,7 +56,8 @@ export default class Meerkat extends Animal {
   }
 
   updateFree(dt, player) {
-    if (this.state !== 'wild') return super.updateFree(dt, player); // im Gehege läuft es herum
+    if (this.state === 'penned') return this.updatePen(dt, player);
+    if (this.state !== 'wild') return super.updateFree(dt, player);
 
     if (this.isGuard()) {
       // Wache halten: alle TURN_TIME Sekunden eine Richtung weiter im Uhrzeigersinn drehen
@@ -76,6 +80,51 @@ export default class Meerkat extends Animal {
       this.lookTime = Phaser.Math.FloatBetween(...PEEK_TIME);
     }
     return false;
+  }
+
+  // Im Gehege: herumlaufen, dann eine Weile eingegraben aus dem Loch schauen
+  updatePen(dt, player) {
+    this.digTime = (this.digTime ?? Phaser.Math.FloatBetween(2, DIG_EVERY[1])) - dt;
+    if (!this.digging) {
+      if (this.digTime > 0) return super.updateFree(dt, player);
+      this.digging = true;
+      this.digTime = Phaser.Math.FloatBetween(...DIG_TIME);
+      this.lookTime = 0;
+      this.useHoleLook();
+      this.dustPuff();
+      return false;
+    }
+    if (this.digTime <= 0) {
+      this.digging = false;
+      this.digTime = Phaser.Math.FloatBetween(...DIG_EVERY);
+      this.useStandLook();
+      this.pickWander();
+      return false;
+    }
+    // im Loch umschauen
+    this.lookTime -= dt;
+    if (this.lookTime <= 0) {
+      this.faceX = Math.random() < 0.5 ? -1 : 1;
+      this.faceY = Math.random() < 0.7 ? 1 : -1;
+      this.lookTime = Phaser.Math.FloatBetween(...PEEK_TIME);
+    }
+    return false;
+  }
+
+  // ein paar Erdkrümel beim Eingraben
+  dustPuff() {
+    for (let i = 0; i < 6; i++) {
+      const dot = this.scene.add.circle(this.x, this.y - 2, Phaser.Math.FloatBetween(1, 2), 0x9a6b3c, 1).setDepth(this.y + 1);
+      this.scene.tweens.add({
+        targets: dot,
+        x: this.x + Phaser.Math.Between(-12, 12),
+        y: this.y - Phaser.Math.Between(4, 12),
+        alpha: 0,
+        duration: Phaser.Math.Between(350, 600),
+        ease: 'Quad.easeOut',
+        onComplete: () => dot.destroy(),
+      });
+    }
   }
 
   // Steht der Spieler im Blickfeld des Wächters? Die vordere Hälfte (180°) bis VIEW_DIST weit.
@@ -105,6 +154,7 @@ export default class Meerkat extends Animal {
 
   catch() {
     super.catch();
+    this.digging = false;
     this.useStandLook();
     this.raiseAlarm('catch'); // die übrigen der Kolonie verschwinden
   }
@@ -115,11 +165,12 @@ export default class Meerkat extends Animal {
   }
 
   render(moving) {
-    if (this.state !== 'wild' || this.isGuard()) {
+    const inHole = this.state === 'wild' ? !this.isGuard() : this.state === 'penned' && this.digging;
+    if (!inHole) {
       super.render(moving);
       return;
     }
-    // Erdmännchen im Loch: schaut dauerhaft heraus
+    // Erdmännchen im Loch: schaut heraus
     const f = this.kind.frames;
     this.sprite.setFrame(
       this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft,

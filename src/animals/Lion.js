@@ -2,6 +2,7 @@
 // Ab und zu schaut er auf. Ist der Spieler dann in der Nähe, brüllt er (nur der Ton, kein Angriff!) und trottet zu einer
 // anderen Akazie. Wer ihn erreicht, solange er schnarcht, krault ihn (Berühren) – dann läuft er mit.
 // Kurz bevor er aufschaut, hören die „Zzz“ auf: das ist die Warnung.
+// Im Gehege läuft er umher, legt sich zwischendurch hin und schaut sich um oder schläft (Zzz).
 import Phaser from 'phaser';
 import Animal, { SPRITE_SINK } from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
@@ -16,6 +17,9 @@ const ZZZ_EVERY = 0.9; // so oft steigt ein „Z“ auf
 const WALK_SPEED = 1.3; // trottet etwas zügiger als beim normalen Umherlaufen
 const WALK_TIMEOUT = 25; // kommt er nicht an, legt er sich trotzdem hin
 const ROAR_VOLUME = 0.55;
+const PEN_ROAM = [6, 12]; // im Gehege: so lange läuft er herum ...
+const PEN_LIE = [5, 9]; // ... so lange liegt er und schaut ...
+const PEN_SLEEP = [8, 15]; // ... und so lange schläft er
 // Liegebilder: Kopf nach rechts; Fußlinie im Bild
 const LIE = { lion_sleep: 48 / 52, lion_alert: 60 / 64 };
 
@@ -43,7 +47,8 @@ export default class Lion extends Animal {
   }
 
   updateFree(dt, player) {
-    if (this.state !== 'wild') return super.updateFree(dt, player); // im Gehege läuft er herum
+    if (this.state === 'penned') return this.updatePen(dt, player);
+    if (this.state !== 'wild') return super.updateFree(dt, player);
 
     this.phaseTime -= dt;
     switch (this.phase) {
@@ -83,6 +88,33 @@ export default class Lion extends Animal {
         return false;
       }
     }
+  }
+
+  // Im Gehege: herumlaufen → hinlegen und schauen → manchmal einschlafen → wieder aufstehen
+  updatePen(dt, player) {
+    if (!['roam', 'alert', 'sleep'].includes(this.phase)) this.startPenPhase('roam');
+    this.phaseTime -= dt;
+    if (this.phase === 'sleep') {
+      this.zzzTime -= dt;
+      if (this.zzzTime <= 0) {
+        this.spawnZ();
+        this.zzzTime = ZZZ_EVERY;
+      }
+    }
+    if (this.phaseTime <= 0) {
+      if (this.phase === 'roam') this.startPenPhase(Math.random() < 0.5 ? 'sleep' : 'alert');
+      else if (this.phase === 'alert' && Math.random() < 0.5) this.startPenPhase('sleep');
+      else this.startPenPhase('roam');
+    }
+    if (this.phase !== 'roam') return false;
+    return super.updateFree(dt, player);
+  }
+
+  startPenPhase(phase) {
+    this.phase = phase;
+    this.phaseTime = Phaser.Math.FloatBetween(...(phase === 'roam' ? PEN_ROAM : phase === 'alert' ? PEN_LIE : PEN_SLEEP));
+    if (phase === 'roam') this.pickWander();
+    else this.faceX = Math.random() < 0.5 ? -1 : 1;
   }
 
   // Brüllen (nur der Ton, kein Angriff) und zu einer Akazie weit weg vom Spieler trotten
@@ -142,10 +174,16 @@ export default class Lion extends Animal {
   restore(state) {
     super.restore(state);
     if (state === 'wild') this.lieDown();
+    if (state === 'penned') this.startPenPhase('roam');
+  }
+
+  enterPen() {
+    super.enterPen();
+    this.startPenPhase('roam');
   }
 
   render(moving) {
-    const lying = this.state === 'wild' && (this.phase === 'sleep' || this.phase === 'alert');
+    const lying = (this.state === 'wild' || this.state === 'penned') && (this.phase === 'sleep' || this.phase === 'alert');
     if (!lying) {
       // stehend (beim Trotten, Folgen und im Gehege)
       if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);

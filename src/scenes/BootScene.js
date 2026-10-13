@@ -21,6 +21,7 @@ const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
 const HERO_WALK_FRAME = { frameWidth: 88, frameHeight: 116 };
 const SHEEP_FRAME = { frameWidth: 80, frameHeight: 88 };
 const CAT_FRAME = { frameWidth: 72, frameHeight: 80 };
+const CAT_SLEEP_FRAME = { frameWidth: 56, frameHeight: 60 };
 const DEER_FRAME = { frameWidth: 72, frameHeight: 96 };
 const STAG_FRAME = { frameWidth: 80, frameHeight: 112 };
 const FROG_FRAME = { frameWidth: 56, frameHeight: 52 };
@@ -32,6 +33,7 @@ const FISH_FRAME = { frameWidth: 84, frameHeight: 64 };
 const FISHBAG_FRAME = { frameWidth: 64, frameHeight: 76 };
 const SQUIRREL_FRAME = { frameWidth: 56, frameHeight: 60 };
 const FOX_FRAME = { frameWidth: 72, frameHeight: 72 };
+const FOX_SLEEP_FRAME = { frameWidth: 56, frameHeight: 44 };
 const ANTELOPE_FRAME = { frameWidth: 72, frameHeight: 100 };
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
 const MEERKAT_FRAME = { frameWidth: 40, frameHeight: 56 };
@@ -40,6 +42,7 @@ const LION_FRAME = { frameWidth: 72, frameHeight: 96 };
 const CROC_FRAME = { frameWidth: 72, frameHeight: 92 };
 const CROC_WATER_FRAME = { frameWidth: 64, frameHeight: 44 };
 const GIRAFFE_FRAME = { frameWidth: 104, frameHeight: 168 };
+const GIRAFFE_EAT_FRAME = { frameWidth: 112, frameHeight: 212 };
 const ANIMAL_SOUNDS = {
   sheep: 'animal_sheep.wav',
   cat: 'animal_cat.wav',
@@ -65,6 +68,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
+    this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
     this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
     this.load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
@@ -76,6 +80,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
     this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
+    this.load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
     this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
     this.load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
     this.load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
@@ -89,6 +94,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);
     this.load.spritesheet('croc_water', 'assets/croc_water.png', CROC_WATER_FRAME); // nur der Kopf schaut aus dem Wasser
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
+    this.load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
     this.load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu

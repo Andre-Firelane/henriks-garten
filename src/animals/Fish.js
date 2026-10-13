@@ -1,6 +1,7 @@
 // Fische: In den wilden Teichen steigen ab und zu Blasen auf, danach taucht ein Fisch kurz auf.
 // Nur solange er oben ist, kann man ihn mit dem Kescher fangen; danach taucht er woanders wieder auf.
-// Gefangen wird er zum Beutel und folgt dem Spieler. Am Fischteich wird er freigelassen und schwimmt dort.
+// Gefangen wird er zum Beutel und folgt dem Spieler. Am Fischteich wird er freigelassen und schwimmt dort;
+// ab und zu taucht er ab, und bevor er wieder auftaucht, blubbert es wie draußen.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
@@ -16,6 +17,9 @@ const BUBBLE_TIME = [1, 3]; // so lange blubbert es, bevor er auftaucht
 const UP_TIME = [2, 4]; // so lange bleibt er oben
 const PEEK_TIME = 0.25; // kurzes Auf- und Abtauchen
 const HOME_DIST = 50; // so nah muss der Beutel an den Fischteich, damit der Fisch hineinspringt
+const POND_SWIM = [4, 10]; // im Teich: so lange schwimmt er sichtbar ...
+const POND_UNDER = [3, 6]; // ... und so lange ist er abgetaucht (die letzten BUBBLE_LEAD Sekunden blubbert es)
+const BUBBLE_LEAD = 1.8;
 
 // Phasen im wilden Teich: hidden → bubbling → rising → up → sinking → hidden
 const SURFACED = ['rising', 'up', 'sinking'];
@@ -64,7 +68,10 @@ export default class Fish extends Animal {
   }
 
   updateFree(dt) {
-    if (this.state === 'penned') return super.updateFree(dt, null); // schwimmt im Fischteich herum
+    if (this.state === 'penned') {
+      if (this.species === 'fish') this.updateDive(dt);
+      return super.updateFree(dt, null); // schwimmt im Fischteich herum
+    }
     this.phaseTime -= dt;
     if (this.phase === 'bubbling') {
       this.bubbleTimer -= dt;
@@ -97,6 +104,25 @@ export default class Fish extends Animal {
         this.setPhase('hidden', Phaser.Math.FloatBetween(...HIDDEN_TIME));
     }
     return false;
+  }
+
+  // Im Teich: abtauchen, unter Wasser weiterschwimmen, kurz vor dem Auftauchen Blasen
+  updateDive(dt) {
+    this.dive ??= { under: false, time: Phaser.Math.FloatBetween(...POND_SWIM), bubble: 0 };
+    const d = this.dive;
+    d.time -= dt;
+    if (d.under && d.time < BUBBLE_LEAD) {
+      d.bubble -= dt;
+      if (d.bubble <= 0) {
+        this.spawnBubble();
+        d.bubble = Phaser.Math.FloatBetween(0.2, 0.45);
+      }
+    }
+    if (d.time > 0) return;
+    this.splash();
+    d.under = !d.under;
+    d.time = Phaser.Math.FloatBetween(...(d.under ? POND_UNDER : POND_SWIM));
+    d.bubble = 0;
   }
 
   // Der Beutel ist angekommen, wenn er nah genug am Fischteich ist
@@ -140,7 +166,7 @@ export default class Fish extends Animal {
     }
 
     let frame = this.faceX > 0 ? FISH_FRAME.right : FISH_FRAME.left;
-    let visible = true;
+    let visible = !(this.state === 'penned' && this.dive?.under);
     if (this.state === 'wild') {
       visible = SURFACED.includes(this.phase);
       if (this.phase !== 'up') frame = FISH_FRAME.peek;

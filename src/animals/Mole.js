@@ -1,10 +1,11 @@
 // Maulwurf: wie ein Fisch, nur an Land. Unter der Erde ist er unsichtbar; an einer zufälligen Wiesenstelle
 // fliegen erst Erdkrümel, dann schiebt er sich mit seinem Hügel heraus und bleibt kurz oben.
 // Nur dann kann man ihn fangen. Gefangen läuft er zu Fuß hinter dem Spieler her (Bild "mole").
+// Im Gehege läuft er herum, buddelt sich ab und zu ein und taucht an einer anderen Stelle mit seinem Hügel wieder auf.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { MOLE_SPOTS } from '../world/map.js';
+import { MOLE_SPOTS, isBlocked } from '../world/map.js';
 
 const MOUND_ORIGIN_Y = 48 / 52;
 const HIDDEN_TIME = [3, 8]; // so lange ist nichts zu sehen
@@ -12,6 +13,7 @@ const DIG_TIME = [1, 3]; // so lange fliegen Erdkrümel, bevor er auftaucht
 const UP_TIME = [2, 4]; // so lange bleibt er oben
 const RISE_TIME = 0.3; // Herausschieben und Verschwinden
 const AWAY_FROM_PLAYER = 60; // taucht nicht direkt unter dem Spieler auf
+const PEN_WALK = [8, 15]; // im Gehege: so lange läuft er herum, bevor er sich eingräbt
 
 // Phasen: hidden → digging → rising → up → sinking → hidden
 const SURFACED = ['rising', 'up', 'sinking'];
@@ -67,7 +69,7 @@ export default class Mole extends Animal {
   }
 
   updateFree(dt, player) {
-    if (this.state === 'penned') return super.updateFree(dt, player); // läuft im Gehege herum
+    if (this.state === 'penned') return this.updatePen(dt, player);
     this.phaseTime -= dt;
     if (this.phase === 'digging') {
       this.dirtTimer -= dt;
@@ -99,6 +101,75 @@ export default class Mole extends Animal {
     return false;
   }
 
+  // Im Gehege: laufen → eingraben (Krümel, Hügel sinkt ein) → unter der Erde zu einer anderen Stelle → Krümel → auftauchen
+  updatePen(dt, player) {
+    if (this.phase !== 'walk' && !this.penPhases) {
+      this.penPhases = true;
+      this.useWalkLook();
+      this.setPhase('walk', Phaser.Math.FloatBetween(...PEN_WALK));
+    }
+    this.phaseTime -= dt;
+    if (this.phase === 'walk') {
+      if (this.phaseTime > 0) return super.updateFree(dt, player);
+      this.useMoundLook();
+      this.dirtTimer = 0;
+      this.setPhase('burrowing', Phaser.Math.FloatBetween(...DIG_TIME));
+      return false;
+    }
+    if (this.phase === 'burrowing' || this.phase === 'digging') {
+      this.dirtTimer -= dt;
+      if (this.dirtTimer <= 0) {
+        this.spawnDirt();
+        this.dirtTimer = Phaser.Math.FloatBetween(0.15, 0.35);
+      }
+    }
+    if (this.phaseTime > 0) return false;
+    switch (this.phase) {
+      case 'burrowing':
+        this.setPhase('sinking', RISE_TIME);
+        break;
+      case 'sinking':
+        this.setPhase('hidden', Phaser.Math.FloatBetween(...HIDDEN_TIME));
+        break;
+      case 'hidden':
+        this.moveToPenSpot();
+        this.dirtTimer = 0;
+        this.setPhase('digging', Phaser.Math.FloatBetween(...DIG_TIME));
+        break;
+      case 'digging':
+        this.setPhase('rising', RISE_TIME);
+        break;
+      case 'rising':
+        this.setPhase('up', Phaser.Math.FloatBetween(...UP_TIME));
+        break;
+      default: // 'up': wieder herauskrabbeln
+        this.useWalkLook();
+        this.setPhase('walk', Phaser.Math.FloatBetween(...PEN_WALK));
+        this.pickWander();
+    }
+    return false;
+  }
+
+  // freie Stelle im eigenen Gehege
+  moveToPenSpot() {
+    const a = this.enclosure?.area;
+    if (!a) return;
+    const spots = [];
+    for (let ty = a.ty0; ty <= a.ty1; ty++) {
+      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+        if (isBlocked(tx, ty)) continue;
+        const p = tileToWorld(tx, ty);
+        if (this.enclosureFullyAt(p.x, p.y) === this.enclosure) spots.push(p);
+      }
+    }
+    if (!spots.length) return;
+    const p = Phaser.Utils.Array.GetRandom(spots);
+    this.x = p.x;
+    this.y = p.y;
+    this.faceX = Math.random() < 0.5 ? -1 : 1;
+    this.faceY = Math.random() < 0.7 ? 1 : -1;
+  }
+
   catch() {
     super.catch();
     this.useWalkLook();
@@ -110,7 +181,8 @@ export default class Mole extends Animal {
   }
 
   render(moving) {
-    if (this.state !== 'wild') {
+    const underground = this.state === 'penned' && this.penPhases && this.phase !== 'walk';
+    if (this.state !== 'wild' && !underground) {
       super.render(moving);
       return;
     }
@@ -122,7 +194,7 @@ export default class Mole extends Animal {
     let grow = 1;
     if (this.phase === 'rising') grow = 1 - this.phaseTime / this.phaseLength;
     if (this.phase === 'sinking') grow = this.phaseTime / this.phaseLength;
-    this.sprite.setVisible(SURFACED.includes(this.phase));
+    this.sprite.setVisible(SURFACED.includes(this.phase) || this.phase === 'burrowing');
     this.sprite.setScale(0.5, 0.5 * Math.max(0.1, grow));
     this.sprite.setPosition(this.x, this.y);
     this.sprite.setAngle(0);
