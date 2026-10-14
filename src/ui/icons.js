@@ -1,12 +1,13 @@
 // Kleine Tierbilder für die Anzeige (HUD, Meldungen, Wegweiser) statt Tiernamen.
 // Ein Bild ist ein Ausschnitt aus dem Spritesheet der Tierart (Bildgrößen wie in BootScene).
 const SHEETS = {
-  // Bildbreite, Bildhöhe, Anzahl Bilder im Sheet, welches Bild gezeigt wird
+  // Bildbreite, Bildhöhe, Anzahl Bilder im Sheet, welches Bild gezeigt wird (und die Datei, falls sie anders heißt)
   sheep: [80, 88, 4, 0],
   cat: [72, 80, 4, 0],
   deer: [72, 96, 4, 0],
   stag: [80, 112, 4, 0],
   fish: [84, 64, 4, 1], // Fisch nach rechts schwimmend
+  koi: [88, 52, 4, 0], // rot-weißer Koi
   squirrel: [56, 60, 4, 0],
   fox: [72, 72, 4, 0],
   frog: [56, 52, 4, 0],
@@ -16,18 +17,18 @@ const SHEETS = {
   zebra: [80, 104, 4, 0],
   meerkat: [40, 56, 4, 0],
   lion: [72, 96, 4, 0],
-  crocodile: [72, 92, 4, 0],
+  crocodile: [72, 92, 4, 0, 'croc'],
   giraffe: [104, 168, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)
 export function animalIcon(species, size = 2.6) {
-  const [w, h, count, frame] = SHEETS[species];
+  const [w, h, count, frame, file = species] = SHEETS[species];
   const k = size / h;
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${size}em`,
-    `background-image:url(assets/${species}.png)`,
+    `background-image:url(assets/${file}.png)`,
     `background-size:${(w * count * k).toFixed(3)}em ${size}em`,
     `background-position:${(-w * frame * k).toFixed(3)}em 0`,
   ].join(';');

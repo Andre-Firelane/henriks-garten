@@ -68,6 +68,13 @@ const CHARACTERS = [
   // im Bild als 2×2-Raster). Gleicher Maßstab 0,273: an Land 84/308 Pixel, im Wasser samt Wellen 132 Pixel hoch
   { src: 'Sprites/Krokodil.png', out: 'croc.png', frameW: 72, frameH: 92, feetY: 88, figureH: 84 },
   { src: 'Sprites/Krokodil Wasser.png', out: 'croc_water.png', frameW: 64, frameH: 44, feetY: 40, figureH: 36, grid: [2, 2] },
+  // Koi beim Auftauchen (Maul offen, Wellen drumherum), drei Farbmuster; im Bild als 2×2-Raster:
+  // unten-rechts, unten-links, oben-rechts, oben-links. Freigestellt mit npm run cutout
+  { src: 'Sprites/Koi1.png', out: 'koi1.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
+  { src: 'Sprites/Koi2.png', out: 'koi2.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
+  { src: 'Sprites/Koi3.png', out: 'koi3.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
+  // dasselbe rot-weiße Bild noch einmal als "koi": daraus kommt das Tierbild in der Anzeige
+  { src: 'Sprites/Koi2.png', out: 'koi.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)

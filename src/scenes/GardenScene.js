@@ -24,6 +24,10 @@ import {
   inPen,
   nearEnclosure,
   accepts,
+  BRIDGES,
+  KOI_WATER,
+  enclosureAt,
+  bridgeArch,
 } from '../world/map.js';
 import { LEVELS } from '../world/levels.js';
 import { game, resetGame } from '../state.js';
@@ -42,6 +46,8 @@ import Giraffe from '../animals/Giraffe.js';
 import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
+import Koi from '../animals/Koi.js';
+import KoiFoodTool from '../tools/KoiFoodTool.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
@@ -58,7 +64,7 @@ import { openJournal, isJournalOpen } from '../ui/journal.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -74,6 +80,7 @@ const CATCH_TOOLS = {
 };
 const CATCH_TIPS = {
   fish: 'Nur wenn er nach den Luftblasen auftaucht.',
+  koi: 'Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!',
   mole: 'Nur wenn er aus seinem Hügel schaut.',
   squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
   heron: 'Nur wenn er am Wasser gelandet ist.',
@@ -95,6 +102,7 @@ const ANIMAL_INFO = {
   cat: ['Katze', 'Vier Zehen und ein großer Ballen. Die Krallen bleiben beim Laufen eingezogen.'],
   frog: ['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'],
   fish: ['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'],
+  koi: ['Koi', 'Hat keine Füße – Koi schwimmen mit ihren Flossen. Am Maul haben sie zwei Barteln.'],
   deer: ['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'],
   stag: ['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'],
   fox: ['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'],
@@ -114,6 +122,7 @@ const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekun
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
 const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
+const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
 const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS-Pixel)
 
@@ -125,6 +134,10 @@ const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines 
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
 const FEED_CHANCE = 1 / 3; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
+const KOI_FEED_DIST = 70; // so nah muss Wasser vor dem Spieler sein, um Fischfutter zu streuen
+const KOI_CALLED = 3; // so viele wilde Koi kommen zum Futter (die nächsten)
+const KOI_CALL_DIST = 200; // Koi im Gehege in diesem Umkreis kommen auch
+const KOI_FEED_PAUSE = 1500; // Millisekunden bis zum nächsten Streuen
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -148,7 +161,7 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: 'Kescher',
-    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'frog', 'mole', 'squirrel', 'heron', 'meerkat'])}`,
+    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'koi', 'frog', 'mole', 'squirrel', 'heron', 'meerkat'])}`,
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
@@ -159,6 +172,11 @@ const TOOLS = {
     create: (scene, player) => new TrapTool(scene, player),
     name: 'Falle',
     hint: 'Leg sie aus und warte, bis ein Tier hineingeht',
+  },
+  koifood: {
+    create: (scene, player) => new KoiFoodTool(scene, player),
+    name: 'Fischfutter',
+    hint: `Streu es am Ufer ins Wasser – dann kommen die ${animalIcon('koi')} hoch`,
   },
   food: {
     create: (scene, player) => new FoodTool(scene, player),
@@ -193,8 +211,8 @@ export default class GardenScene extends Phaser.Scene {
         }
 
         const obj = objectAt(tx, ty);
-        if (obj?.bridge) this.addBridge(x, y);
-        else if (obj?.fence) this.addFence(tx, ty, obj);
+        if (obj?.bridge) continue; // Brücken werden unten am Stück gezeichnet
+        if (obj?.fence) this.addFence(tx, ty, obj);
         else if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
         if (obj?.key === 'signpost') {
           this.signs.push({ x, y });
@@ -285,7 +303,7 @@ export default class GardenScene extends Phaser.Scene {
     this.animals = [];
     if (saved) {
       for (const s of saved.animals) {
-        const a = this.createAnimal(s.species, s.x, s.y);
+        const a = this.createAnimal(s.species, s.x, s.y, s.variant);
         a.restore(s.state);
         a.life = s.life ?? Phaser.Math.FloatBetween(...LIFETIME);
       }
@@ -306,8 +324,8 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere, die dem Spieler aus dem letzten Level gefolgt sind
     this.followers = [];
-    for (const species of game.followers) {
-      const a = this.createAnimal(species, start.x, start.y);
+    for (const { species, variant } of game.followers) {
+      const a = this.createAnimal(species, start.x, start.y, variant);
       a.restore('following');
       this.followers.push(a);
     }
@@ -336,6 +354,7 @@ export default class GardenScene extends Phaser.Scene {
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     this.startAmbient();
     this.startSteam();
+    this.drawBridges();
 
     // ESC (oder der Neustart-Knopf auf dem Tablet) setzt das ganze Spiel zurück
     const restart = () => {
@@ -366,11 +385,63 @@ export default class GardenScene extends Phaser.Scene {
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
   }
 
-  // Brücke: Bohlen liegen auf dem Wasser, das hintere Geländer wird hinter, das vordere vor dem Spieler gezeichnet
-  addBridge(x, y) {
-    this.add.image(x, y, 'bridge_deck').setDepth(-99999);
-    this.add.image(x, y, 'bridge_rail_back').setOrigin(0.5, 32 / 48).setDepth(y - 10);
-    this.add.image(x, y, 'bridge_rail_front').setOrigin(0.5, 32 / 48).setDepth(y + 10);
+  // Bogenbrücken: Bohlen als geschwungenes Band über dem Wasser, rote Geländer an beiden Seiten.
+  // Das hintere Geländer liegt hinter, das vordere vor allem, was auf der Brücke steht.
+  drawBridges() {
+    const STEP = 0.125; // in Kacheln
+    for (const br of BRIDGES) {
+      const arch = bridgeArch(br);
+      const len = br.to + 1 - br.from;
+      // Punkt auf der Brücke: u entlang (in Kacheln ab Brückenanfang), v quer (0 = hinten, 1 = vorne), h über dem Deck
+      const pt = (u, v, h = 0) => {
+        const along = br.from + u;
+        const cross = br.at + v;
+        const [txf, tyf] = br.axis === 'y' ? [cross, along] : [along, cross];
+        const lift = Math.sin((Math.PI * u) / len) * arch;
+        return { x: (txf - tyf) * (TILE_W / 2), y: (txf + tyf) * (TILE_H / 2) - lift - h };
+      };
+      const deck = this.add.graphics().setDepth(-99998);
+      for (let u = 0, i = 0; u < len - 1e-6; u += STEP, i++) {
+        const quad = [pt(u, 0), pt(u + STEP, 0), pt(u + STEP, 1), pt(u, 1)];
+        deck.fillStyle(i % 2 ? 0x9c5a38 : 0xb06640, 1);
+        deck.fillPoints(quad, true);
+        deck.lineStyle(1, 0x6e3a22, 1);
+        deck.lineBetween(quad[0].x, quad[0].y, quad[3].x, quad[3].y);
+      }
+      // Seitenkante des Decks (vorne), damit der Bogen Dicke bekommt
+      for (let u = 0; u < len - 1e-6; u += STEP) {
+        const a = pt(u, 1), b = pt(u + STEP, 1);
+        deck.fillStyle(0x6e3a22, 1);
+        deck.fillPoints([a, b, { x: b.x, y: b.y + 3 }, { x: a.x, y: a.y + 3 }], true);
+      }
+      const ys = [pt(0, 0).y, pt(len, 1).y, pt(0, 1).y, pt(len, 0).y];
+      const rail = (v, depth) => {
+        const g = this.add.graphics().setDepth(depth);
+        const line = (h, w, col) => {
+          g.lineStyle(w, col, 1);
+          g.beginPath();
+          for (let u = 0; u <= len + 1e-6; u += STEP) {
+            const p = pt(u, v, h);
+            if (u === 0) g.moveTo(p.x, p.y);
+            else g.lineTo(p.x, p.y);
+          }
+          g.strokePath();
+        };
+        // Pfosten
+        for (let u = 0; u <= len + 1e-6; u += 0.5) {
+          const a = pt(u, v, 0), b = pt(u, v, 13);
+          g.lineStyle(4, 0x2b1d14, 1).lineBetween(a.x, a.y, b.x, b.y - 1);
+          g.lineStyle(2, 0x9c2e20, 1).lineBetween(a.x, a.y, b.x, b.y);
+          g.fillStyle(0xe8b84a, 1).fillRect(b.x - 1, b.y - 1, 3, 2);
+        }
+        line(12, 4, 0x2b1d14); // Handlauf mit dunkler Kontur
+        line(12, 2, 0xd64a32);
+        line(6, 3, 0x2b1d14); // Mittellatte
+        line(6, 1.5, 0xc8402c);
+      };
+      rail(0, Math.min(...ys) - 24);
+      rail(1, Math.max(...ys) + 24);
+    }
   }
 
   // Dampf über heißen Quellen: kleine Wölkchen steigen auf und verblassen
@@ -449,10 +520,13 @@ export default class GardenScene extends Phaser.Scene {
     });
   }
 
-  createAnimal(species, x, y) {
+  // variant: Farbmuster (nur Koi), sonst zufällig
+  createAnimal(species, x, y, variant) {
     const a =
       species === 'fish'
         ? new Fish(this, this.animals)
+        : species === 'koi'
+          ? new Koi(this, this.animals, variant)
         : species === 'crocodile'
           ? new Crocodile(this, this.animals)
         : species === 'squirrel'
@@ -511,9 +585,10 @@ export default class GardenScene extends Phaser.Scene {
   spawnOne(taken, fadeIn = false) {
     const species = this.pickSpecies();
     const group = [];
-    if (species === 'fish' || species === 'crocodile' || species === 'squirrel' || species === 'mole') {
+    if (species === 'fish' || species === 'koi' || species === 'crocodile' || species === 'squirrel' || species === 'mole') {
       const a = this.createAnimal(species, 0, 0);
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
+      if (species === 'koi') a.placeRandom(); // irgendwo in den Koi-Teich
       group.push(a);
     } else {
       // Frösche meistens nah am Wasser, Giraffen meistens nah an Bäumen
@@ -740,6 +815,7 @@ export default class GardenScene extends Phaser.Scene {
   // Werkzeug aufnehmen; ein getragenes kommt zurück auf seinen Platz an der Hütte (Tausch)
   takeTool(pickup) {
     this.equipTool(pickup.tool);
+    this.toolLockUntil = this.time.now + TOOL_SWITCH_LOCK;
   }
 
   // Hände frei: das getragene Werkzeug kommt zurück an seinen Platz an der Hütte
@@ -789,6 +865,67 @@ export default class GardenScene extends Phaser.Scene {
       this.showToast(`${animalIcon('giraffe', 3.2)} Die Giraffe mag dich! Sie läuft dir jetzt hinterher.`);
     } else {
       this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter liegt an der Hütte.`);
+    }
+  }
+
+  // Fischfutter am Ufer ins Wasser streuen: die Koi in der Nähe (wild oder im Gehege) kommen herbei und schnappen
+  feedKoi() {
+    const now = this.time.now;
+    if (now < (this.koiFedAt ?? -Infinity) + KOI_FEED_PAUSE) return;
+    const p = this.player;
+    const aim = { x: p.x + p.faceX * 24, y: p.y + p.faceY * 12 };
+    // Wasser direkt vor dem Spieler: wilder Koi-Teich oder Teich in einem Koi-Gehege
+    const water = [
+      ...KOI_WATER,
+      ...FISHPOND_TILES.filter(({ tx, ty }) => ENCLOSURES.some((e) => e.species?.includes('koi') && enclosureAt(tx, ty) === e)),
+    ]
+      .map((t) => tileToWorld(t.tx, t.ty))
+      .map((w) => ({ ...w, d: Math.hypot(w.x - aim.x, (w.y - aim.y) * 2) }))
+      .sort((u, v) => u.d - v.d)[0];
+    if (!water || water.d > KOI_FEED_DIST) {
+      this.showToast(`Geh ans Ufer und streu das Futter ins Wasser – dann kommen die ${animalIcon('koi')}.`);
+      return;
+    }
+    this.koiFedAt = now;
+    // das Futter landet mitten auf der Wasserkachel vor dem Ufer, damit man die Koi gut sieht
+    const spot = { x: water.x, y: water.y };
+    this.scatterFood(p, spot);
+    // die nächsten wilden Koi des Teichs und alle Koi im Gehege, an dessen Teich man steht
+    const dist = (a) => Math.hypot(a.x - spot.x, a.y - spot.y);
+    const wild = this.animals.filter((a) => a.species === 'koi' && a.state === 'wild' && a.phase !== 'up').sort((u, v) => dist(u) - dist(v));
+    const penned = this.animals.filter((a) => a.species === 'koi' && a.state === 'penned' && dist(a) < KOI_CALL_DIST);
+    const koi = [...wild.slice(0, KOI_CALLED), ...penned];
+    for (const a of koi) a.call(spot);
+    if (!koi.length) this.showToast('Das Futter treibt auf dem Wasser … gerade ist hier kein Koi in der Nähe.');
+  }
+
+  // bunte Futterflocken fliegen in einem Bogen aufs Wasser, dann kleine Ringe
+  scatterFood(from, spot) {
+    const colors = [0xf08a2c, 0xe8483f, 0xf2c84a];
+    for (let i = 0; i < 12; i++) {
+      const tx = spot.x + Phaser.Math.Between(-14, 14);
+      const ty = spot.y + Phaser.Math.Between(-5, 5);
+      const flake = this.add.rectangle(from.x, from.y - 18, 2, 2, colors[i % 3]).setDepth(100000);
+      this.tweens.add({ targets: flake, x: tx, duration: 450 + i * 25, ease: 'Linear' });
+      this.tweens.add({
+        targets: flake,
+        y: { value: from.y - 34, duration: 200 + i * 12, ease: 'Quad.easeOut', yoyo: false },
+        onComplete: () =>
+          this.tweens.add({
+            targets: flake,
+            y: ty,
+            duration: 260 + i * 13,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+              flake.setDepth(-99998.5);
+              this.tweens.add({ targets: flake, alpha: 0, delay: 1800, duration: 800, onComplete: () => flake.destroy() });
+              if (i % 4 === 0) {
+                const ring = this.add.ellipse(tx, ty, 8, 3).setStrokeStyle(1, 0xffffff, 0.8).setDepth(-99998.5);
+                this.tweens.add({ targets: ring, scale: 2.5, alpha: 0, duration: 600, onComplete: () => ring.destroy() });
+              }
+            },
+          }),
+      });
     }
   }
 
@@ -1009,10 +1146,10 @@ export default class GardenScene extends Phaser.Scene {
     game.levels[LEVEL_ID] = {
       animals: this.animals
         .filter((a) => a.state !== 'following' && !(a.species === 'heron' && a.state === 'wild')) // wilde Reiher fliegen weiter
-        .map((a) => ({ species: a.species, state: a.state, x: a.x, y: a.y, life: a.life })),
+        .map((a) => ({ species: a.species, variant: a.variant, state: a.state, x: a.x, y: a.y, life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
     };
-    game.followers = this.followers.map((a) => a.species);
+    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant }));
     game.tool = null;
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
@@ -1140,8 +1277,11 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
 
-    for (const p of [...this.pickups]) if (p.checkCollect(this.player)) this.takeTool(p);
-    if (this.tool && this.handSpots.some((h) => Math.hypot(this.player.x - h.x, this.player.y - h.y) < HAND_DIST)) this.dropTool();
+    // kurz nach dem Aufheben kein Tausch: sonst wechselt man aus Versehen, wenn man über die Werkzeuge daneben läuft
+    if (this.time.now >= (this.toolLockUntil ?? 0)) {
+      for (const p of [...this.pickups]) if (p.checkCollect(this.player)) this.takeTool(p);
+      if (this.tool && this.handSpots.some((h) => Math.hypot(this.player.x - h.x, this.player.y - h.y) < HAND_DIST)) this.dropTool();
+    }
     this.pickups = this.pickups.filter((p) => !p.collected);
     this.tool?.update(dt);
 

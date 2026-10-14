@@ -21,7 +21,7 @@
 //          1  Laubbaum   2  Tanne   3  trockener Strauch   (dichte Füller im Gehege-Streifen hinter dem oberen Kartenrand)
 //          Q  Bambus     q  hohes Gras (Versteck)   J  Dschungelbaum   K  Kirschbaum   O  Sonnenfelsen
 //          l  Steinlaterne   I  rotes Tor (Torii) über dem Weg   h  heiße Quelle   B  Brücke über den Teich
-//          4  Busch      5  dichter Busch   (niedrige Füller rechts neben den Gehegen, damit sie die Tiere nicht verdecken)
+//          4  Busch      5  dichter Busch   6  Bambus (Füller)   (niedrige Füller rechts neben den Gehegen, damit sie die Tiere nicht verdecken)
 
 export const LEVELS = {
   meadow: {
@@ -99,7 +99,7 @@ export const LEVELS = {
     exits: [
       { tx: 0, ty: 26, to: 'forest', arrive: { tx: 37, ty: 29 }, label: 'Wald' },
       { tx: 39, ty: 26, to: 'savanna', arrive: { tx: 1, ty: 31 }, label: 'Savanne' },
-      { tx: 20, ty: 46, to: 'asia', arrive: { tx: 20, ty: 46 }, label: 'Asien' },
+      { tx: 20, ty: 46, to: 'asia', arrive: { tx: 20, ty: 53 }, label: 'Asien' },
     ],
     // Beschriftung der drei Bretter am Wegweiser (oben, Mitte, unten)
     signLabels: ['Gehege', 'Wald', 'Savanne', 'Asien'],
@@ -286,8 +286,15 @@ export const LEVELS = {
     name: 'Asien',
     rows: [
       'JQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQk',
-      'Q.....nqnq....q.q.......qqq.QQ.Q..QQQQqk',
-      'Q......nJ.n.Jn.J.J......qqQ..QQQq.QQq.Qk',
+      '666666666666666-----------55666666666666',
+      '666666666666666|K.ooooo.l|55666666666666',
+      '666666666666666|.ooooooo.|55666666666666',
+      '666666666666666|..ooooo..|55666666666666',
+      '666666666666666|l.......K|55666666666666',
+      '666666666666666----GGG----55666666666666',
+      'Q.............#############............k',
+      'Q.....nqnq....q.q...#...qqq.QQ.Q..QQQQqk',
+      'Q......nJ.n.Jn.J.J..#...qqQ..QQQq.QQq.Qk',
       'J..J.J........nnn...#..Q...QQ...qqQQq.Qk',
       'Q..nq..n..qqn.......#...qq.Qqq.Qq.QQqqQk',
       'Q.....q...n.J.....n.#..QqqQ.qqQ.q.Q.q.Qk',
@@ -302,20 +309,20 @@ export const LEVELS = {
       'Q..n.n.n...q....q...#..................k',
       'J.J....n....J.....J.#..Q.QqqqqQQ.Q.Q.qqk',
       'Qnq....q.n.....K....#..qqKQQQQQ..q....qk',
-      'Q.J..J..n.qqnn...J..#..qqq..QQQ.qqQQ.QQk',
-      'J..n..q.J..Kn..J.qn.#..................k',
-      'Q.................~~B~~......K.........k',
-      'Q...q..........~~~~~B~~~~~.............k',
-      'J........q....~~~~~~B~~~~~~...q........k',
-      'Q............~~~~~~~B~~~~~~~...........k',
-      'Q............~~~~~~~B~~~~~~~...........k',
-      'J.......q....~~~~~~~B~~~~~~~.........q.k',
-      'Q.............~~~~~~B~~~~~~......q.....k',
-      'Q..............~~~~~B~~~~~.........q...k',
-      'J.........K.......~~B~~.......K.q......k',
-      'Q...................#..................k',
-      'Q............q......#..................k',
-      'J...................#..................k',
+      'Q.J..J..............#...q.........QQ.QQk',
+      'J..n..q...K.........#...~~~~...........k',
+      'Q........~~~~~~.....#..~~~~~~..........k',
+      'Q...q...~~~~~~~~~~~~B~~~~~~~...........k',
+      'J.......~~~.K.~~~~~~B~~~~~.....K.......k',
+      'Q.......~~~...EEEEE.#.~~~..............k',
+      'Q........~~~~~~~~~..#..~~~..~~~........k',
+      'J...........~~~~~~.l#.K~~~~~~~~~.....q.k',
+      'Q........K...~~~~~~.#.~~~~~~~~~~~......k',
+      'Q..............~~~~~B~~~~~~~~~~~~n.q...k',
+      'J.............~~~~~~B~~~~r~~~~~~.......k',
+      'Q............~~~~~..#......~~~~........k',
+      'Q............~~~~~..#.........q........k',
+      'J................K..#..................k',
       'Q....###############################...k',
       'Q...................#..................k',
       'J..q......r.l....q.l#l....O.........O..k',
@@ -337,21 +344,23 @@ export const LEVELS = {
     grass: ['agrass0', 'agrass1', 'agrass2'],
     path: 'asia_path',
     water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], // Koi-Teich, ab und zu Seerosen und Lotus
-    start: { tx: 20, ty: 45 },
-    enclosures: [], // Gehege kommen später
-    shed: { tx: 16, ty: 37 },
+    start: { tx: 20, ty: 52 },
+    // Koi-Teich: Holzzaun, Teich mit Kirschbaum und Laterne; hier tauchen die Koi von selbst regelmäßig auf
+    enclosures: [{ id: 'koipond', name: 'Koi-Teich', area: { tx0: 16, tx1: 24, ty0: 2, ty1: 5 }, species: ['koi'], signKey: 'koi' }],
+    shed: { tx: 16, ty: 44 },
     shedTexture: 'shed_pagoda', // Pagode
     hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
-    ambient: 'ambient_meadow', // vorerst dieselben Hintergrundgeräusche wie auf der Wiese
+    ambient: 'ambient_asia', // Asien-Geräusche, leise über die Wiesengeräusche gelegt (siehe tools/prepare-sounds.js)
     background: '#3f7a35',
     toolSpots: [
-      { tool: 'net', tx: 18, ty: 37 },
-      { tool: 'lasso', tx: 18, ty: 38 },
-      { tool: 'empty', tx: 18, ty: 39 }, // "Hände frei": hier legt man das getragene Werkzeug ab
+      { tool: 'net', tx: 18, ty: 44 },
+      { tool: 'lasso', tx: 18, ty: 45 },
+      { tool: 'koifood', tx: 18, ty: 46 }, // Fischfutter für die Koi
+      { tool: 'empty', tx: 18, ty: 47 }, // "Hände frei": hier legt man das getragene Werkzeug ab
     ],
     // Eingang im Süden: unten am Hauptweg, unter dem roten Tor hindurch
-    exits: [{ tx: 20, ty: 47, to: 'meadow', arrive: { tx: 20, ty: 45 }, label: 'Wiese' }],
-    // Tiere kommen später
-    spawn: { population: 0, weights: {} },
+    exits: [{ tx: 20, ty: 54, to: 'meadow', arrive: { tx: 20, ty: 45 }, label: 'Wiese' }],
+    // Koi leben im Koi-Teich (nur als Schatten zu sehen, bis man sie mit Fischfutter anlockt)
+    spawn: { population: 5, weights: { koi: 1 } },
   },
 };

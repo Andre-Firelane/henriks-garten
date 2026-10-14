@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate, enclosureAt, accepts } from '../world/map.js';
+import { inPen, isGate, enclosureAt, accepts, bridgeLift } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
@@ -253,6 +253,23 @@ export const SPECIES = {
     catchWith: ['touch', 'net', 'lasso'],
   },
   // Fische leben im Wasser (siehe Fish.js); frames/originY gelten für den Beutel beim Tragen
+  // Koi (Asien): unter Wasser nur bunte Schatten, mit Fischfutter lockt man sie hoch (siehe Koi.js).
+  // Gefangen wie der Fisch als Beutel; texture ist eines der drei Farbmuster (koi1 bis koi3)
+  koi: {
+    texture: 'koi2',
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 }, // im Beutel wie beim Fisch
+    originY: 68 / 72,
+    speed: 14,
+    restChance: 0.4,
+    restTime: [1, 3],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 20,
+    catchWith: ['net'],
+  },
   fish: {
     texture: 'fish',
     bagTexture: 'fishbag',
@@ -396,9 +413,10 @@ export default class Animal {
 
     const phase = this.walkTime * this.kind.stepRate;
     const hop = moving ? Math.abs(Math.sin(phase)) * this.kind.hop : 0;
-    this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
+    const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
+    this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK);
     this.sprite.setAngle(moving ? Math.sin(phase) * 2 : 0);
-    this.shadow.setPosition(this.x, this.y);
+    this.shadow.setPosition(this.x, this.y - lift);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
   }

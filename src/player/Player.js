@@ -1,6 +1,7 @@
 import { blockedAt } from '../world/collision.js';
 import { touch } from '../ui/touch.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
+import { bridgeLift } from '../world/map.js';
 
 // Bilder im Spritesheet "hero": Blickrichtung je nach Laufrichtung
 const FRAME = { downLeft: 1, downRight: 0, upRight: 2, upLeft: 3 };
@@ -111,9 +112,10 @@ export default class Player {
     // Laufen andeuten: leichtes Hüpfen und Wippen (die Laufanimation bewegt sich selbst)
     const phase = this.walkTime * STEP_RATE;
     const hop = moving && !animated ? Math.abs(Math.sin(phase)) * HOP : 0;
-    this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
+    const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
+    this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK);
     this.sprite.setAngle(moving && !animated ? Math.sin(phase) * 3 : 0);
-    this.shadow.setPosition(this.x, this.y);
+    this.shadow.setPosition(this.x, this.y - lift);
     this.shadow.setScale(1 - hop * 0.04);
 
     // Wer weiter unten steht, wird weiter vorne gezeichnet

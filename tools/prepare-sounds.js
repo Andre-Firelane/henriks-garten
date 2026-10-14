@@ -121,3 +121,20 @@ for (const [src, dest, start, seconds, peak] of SOUNDS) {
   writeWav(dest, rate, out);
   console.log(`${dest}: ${(out.length / rate).toFixed(2)} s, verstärkt x${(peak / max).toFixed(1)}`);
 }
+
+// Asien: ein Stück aus dem (einstündigen) Asien-Ambient, genau so lang wie das Wiesen-Ambient und als nahtlose
+// Schleife (das Ende wird in den Anfang übergeblendet), leiser darübergelegt über die Wiesengeräusche.
+// Weil beide gleich lang sind, liegen ihre Schleifenstellen übereinander.
+const ASIA_MIX = { src: 'Sounds/Asien Ambient.mp3', base: 'public/assets/sounds/ambient_meadow.mp3', dest: 'public/assets/sounds/ambient_asia.mp3', fade: 3, gainDb: -18 };
+{
+  const { src, base, dest, fade, gainDb } = ASIA_MIX;
+  const len = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', base]).toString().trim());
+  const end = len + fade;
+  const filter =
+    `[0:a]atrim=0:${end},asetpts=PTS-STARTPTS,asplit[a1][a2];` +
+    `[a1]atrim=${fade}:${end},asetpts=PTS-STARTPTS[tail];[a2]atrim=0:${fade},asetpts=PTS-STARTPTS[head];` +
+    `[tail][head]acrossfade=d=${fade}:c1=tri:c2=tri,volume=${gainDb}dB[asia];` +
+    '[asia][1:a]amix=inputs=2:normalize=0:duration=shortest[out]';
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', src, '-i', base, '-filter_complex', filter, '-map', '[out]', '-c:a', 'libmp3lame', '-b:a', '128k', dest]);
+  console.log(`${dest}: ${len.toFixed(2)} s, Asien über Wiese gemischt`);
+}

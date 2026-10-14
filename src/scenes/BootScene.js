@@ -13,18 +13,19 @@ const PIXEL_ART = [
   'tall_x', 'tall_y', 'post_tall', 'gate_tall_x', 'gate_tall_y', 'den', 'den_sand',
   // Asien
   'agrass0', 'agrass1', 'agrass2', 'asia_path', 'asia_water0', 'asia_water1', 'asia_water2', 'hotspring',
-  'bridge_deck', 'bridge_rail_back', 'bridge_rail_front', 'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree',
+  'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree',
   'sun_rock', 'stone_lantern', 'torii', 'shed_pagoda',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
 const HERO_WALK_FRAME = { frameWidth: 88, frameHeight: 116 };
 const SHEEP_FRAME = { frameWidth: 80, frameHeight: 88 };
 const CAT_FRAME = { frameWidth: 72, frameHeight: 80 };
+const KOI_FRAME = { frameWidth: 88, frameHeight: 52 };
 const CAT_SLEEP_FRAME = { frameWidth: 56, frameHeight: 60 };
 const DEER_FRAME = { frameWidth: 72, frameHeight: 96 };
 const STAG_FRAME = { frameWidth: 80, frameHeight: 112 };
@@ -54,6 +55,7 @@ const ANIMAL_SOUNDS = {
   frog: 'animal_frog.mp3',
   zebra: 'animal_zebra.wav',
   fish: 'animal_fish.wav',
+  koi: 'animal_fish.wav', // derselbe Platscher wie beim Fisch
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -74,6 +76,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
+    for (const k of ['koi1', 'koi2', 'koi3']) this.load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
     this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);

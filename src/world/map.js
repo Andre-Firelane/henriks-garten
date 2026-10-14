@@ -1,11 +1,11 @@
 // Die Karte des aktuellen Levels. Die Level selbst stehen in levels.js; setLevel() wechselt.
 // Alle exportierten Werte zeigen immer auf das aktuelle Level.
 import { LEVELS } from './levels.js';
-import { tileToWorld, worldToTile } from './iso.js';
+import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
-// h: heiße Quelle (Asien); B: Brücke über den Teich (darunter Wasser)
-const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water' };
+// h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser)
+const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water' };
 const PATH_CHARS = '#GXI'; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
@@ -49,6 +49,7 @@ export const OBJECTS = {
   3: { key: 'dry_bush', originY: 33 / 40, solid: true },
   4: { key: 'bush', originY: 33 / 40, solid: true }, // niedrige Füller rechts neben den Gehegen, damit man hineinsieht
   5: { key: 'dark_bush', originY: 36 / 44, solid: true },
+  6: { key: 'bamboo', originY: 118 / 128, solid: true }, // Bambus als Füller (Asien)
   // Erdhöhle im Fuchsbau
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
@@ -61,7 +62,9 @@ export const OBJECTS = {
   O: { key: 'sun_rock', originY: 40 / 48, solid: true, hitbox: 20 },
   l: { key: 'stone_lantern', originY: 50 / 56, solid: true, hitbox: 8 },
   I: { key: 'torii', originY: 100 / 128, solid: false }, // rotes Tor über dem Weg
-  B: { key: 'bridge_deck', solid: false, bridge: true }, // Brücke: Bohlen und Geländer, siehe addBridge in GardenScene
+  // Bogenbrücken: B entlang ty, E entlang tx; gezeichnet werden sie am Stück (siehe drawBridges in GardenScene)
+  B: { solid: false, bridge: 'y' },
+  E: { solid: false, bridge: 'x' },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
@@ -80,10 +83,12 @@ export let EXITS;
 export let GATE_TILES; // { tx, ty, vertical }: vertical = Tor in einem Zaun entlang ty
 export let FISHPOND_TILES;
 export let FISH_SPOTS; // Stellen, an denen wilde Fische auftauchen
+export let KOI_WATER; // Wasser des wilden Koi-Teichs (alle Kacheln, nicht im Gehege)
 export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Teich entfernt (für Frösche)
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
+export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
 let ROWS;
@@ -116,11 +121,29 @@ export function setLevel(id) {
   });
   FISHPOND_TILES = tilesWith('o');
   // Wasser in den wilden Teichen direkt am begehbaren Ufer, damit man sie mit dem Kescher erreicht
+  KOI_WATER = tilesWith('~').filter(({ tx, ty }) => !inPen(tx, ty));
   FISH_SPOTS = tilesWith('~').filter(({ tx, ty }) =>
     [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !isBlocked(tx + dx, ty + dy)),
   );
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
+  // Brücken: zusammenhängende Kacheln derselben Brückenart in einer Linie
+  BRIDGES = [];
+  for (let ty = 0; ty < MAP_H; ty++) {
+    for (let tx = 0; tx < MAP_W; tx++) {
+      const c = charAt(tx, ty);
+      if (c === 'B' && charAt(tx, ty - 1) !== 'B') {
+        let end = ty;
+        while (charAt(tx, end + 1) === 'B') end++;
+        BRIDGES.push({ axis: 'y', at: tx, from: ty, to: end });
+      }
+      if (c === 'E' && charAt(tx - 1, ty) !== 'E') {
+        let end = tx;
+        while (charAt(end + 1, ty) === 'E') end++;
+        BRIDGES.push({ axis: 'x', at: ty, from: tx, to: end });
+      }
+    }
+  }
   SHORE_TILES = [];
   PEN_SHORE_TILES = [];
   for (let ty = 1; ty < MAP_H - 1; ty++) {
@@ -198,9 +221,9 @@ export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
   if (PATH_CHARS.includes(c)) return LEVEL.path;
   const g = GROUND[c];
-  if (g === 'fishpond') return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
+  if (g === 'fishpond' && !LEVEL.water) return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
   // eigenes Teichwasser des Gebiets (z. B. Koi-Teich mit Seerosen), fest pro Kachel verteilt
-  if (g === 'water' && LEVEL.water) return LEVEL.water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % LEVEL.water.length];
+  if ((g === 'water' || g === 'fishpond') && LEVEL.water) return LEVEL.water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % LEVEL.water.length];
   if (g) return g;
   return grassAt(tx, ty);
 }
@@ -219,7 +242,7 @@ export function outerWaterCorners(tx, ty) {
   const c = charAt(tx, ty);
   if (!'~owh'.includes(c)) return 0;
   // unter der Brücke geht das Wasser weiter
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && charAt(x, y) === 'B');
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BE'.includes(charAt(x, y)));
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
@@ -231,6 +254,27 @@ export function fenceAxisAt(tx, ty) {
   if (fence) return fence.axis;
   const gate = GATE_TILES.find((g) => g.tx === tx && g.ty === ty);
   return gate ? (gate.vertical ? 'y' : 'x') : null;
+}
+
+// Höhe des Brückenbogens (Höchststand) je nach Länge der Brücke
+export function bridgeArch(b) {
+  return Math.min(14, 3 + (b.to - b.from + 1) * 2.5);
+}
+
+// So hoch steht man an dieser Stelle auf einer Bogenbrücke (0 = nicht auf einer Brücke)
+export function bridgeLift(x, y) {
+  if (!BRIDGES?.length) return 0;
+  const a = x / (TILE_W / 2);
+  const b = y / (TILE_H / 2);
+  const txf = (a + b) / 2;
+  const tyf = (b - a) / 2;
+  for (const br of BRIDGES) {
+    const [along, cross] = br.axis === 'y' ? [tyf, txf] : [txf, tyf];
+    if (cross < br.at || cross >= br.at + 1 || along < br.from || along >= br.to + 1) continue;
+    const t = (along - br.from) / (br.to + 1 - br.from);
+    return Math.sin(Math.PI * t) * bridgeArch(br);
+  }
+  return 0;
 }
 
 export function objectAt(tx, ty) {

@@ -941,9 +941,6 @@ const sprites = {
   'asia_water1.png': asiaWater(1),
   'asia_water2.png': asiaWater(2),
   'hotspring.png': hotSpring(),
-  'bridge_deck.png': bridgeDeck(),
-  'bridge_rail_back.png': bridgeRail(true),
-  'bridge_rail_front.png': bridgeRail(false),
   'bamboo.png': bamboo(),
   'tall_grass.png': tallGrass(),
   'jungle_tree.png': jungleTree(),
@@ -952,6 +949,10 @@ const sprites = {
   'stone_lantern.png': stoneLantern(),
   'torii.png': torii(),
   'shed_pagoda.png': pagoda(),
+  // Koi: Fischfutter (Werkzeug), Fußspur-Tafel und Torschild für den Koi-Teich
+  'koifood.png': koiFood(),
+  'print_koi.png': printImage('koi'),
+  'esign_koi.png': enclosureSign(['koi']),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1376,6 +1377,7 @@ function drawPrint(kind, c, cx, cy, s, col = hex('#5a3a22')) {
       stroke(-16, 16, 0, 13, 1.4, 1.4);
       stroke(0, 13, 16, 16, 1.4, 1.4);
       break;
+    case 'koi': // Koi: wie beim Fisch, keine Füße
     case 'fish': { // Fischumriss mit Wellen darunter
       E(-3, -2, 12, 6.5);
       c.poly([[cx + 7 * s, cy - 2 * s], [cx + 18 * s, cy - 9 * s], [cx + 18 * s, cy + 5 * s]], col);
@@ -1761,40 +1763,6 @@ function hotSpring() {
   return c;
 }
 
-// Brücke über den Koi-Teich (der Weg läuft entlang ty): Bohlen als Bodenauflage ...
-function bridgeDeck() {
-  const c = new Canvas(TW, TH);
-  for (let y = 0; y < TH; y++) {
-    for (let x = 0; x < TW; x++) {
-      if (!inDiamond(x, y)) continue;
-      // Bohlen quer zum Weg: Fugen laufen entlang tx (Steigung +1/2)
-      const k = (((Math.floor(y - 0.5 * x) % 6) + 6) % 6);
-      c.set(x, y, k === 0 ? hex('#6e3a22') : k === 1 ? hex('#b8704a') : hex('#9c5a38'));
-    }
-  }
-  return c;
-}
-
-// ... und rote Geländer an beiden Seiten (Kachelmitte bei (32, 32)); back = hintere Seite (oben links)
-function bridgeRail(back) {
-  const o = new Canvas(64, 48);
-  const [a, b] = back ? [[0, 32], [32, 16]] : [[32, 48], [64, 32]];
-  const H = 11;
-  const red = hex('#c8402c');
-  // Handlauf und Mittellatte
-  for (let k = 0; k < 2; k++) o.line(a[0], a[1] - H - k, b[0], b[1] - H - k, k ? hex('#e8705a') : red);
-  o.line(a[0], a[1] - 5, b[0], b[1] - 5, red);
-  // Pfosten an den Kachelecken und in der Mitte
-  for (const t of [0.04, 0.5, 0.96]) {
-    const x = Math.round(a[0] + (b[0] - a[0]) * t);
-    const y = Math.round(a[1] + (b[1] - a[1]) * t);
-    o.rect(x - 1, y - H - 2, 3, H + 3, hex('#9c2e20'));
-    o.rect(x - 1, y - H - 3, 3, 2, hex('#e8b84a')); // goldene Kappe
-  }
-  o.outline(INK);
-  return o;
-}
-
 // Bambus: ein Büschel hoher Halme mit Knoten und schmalen Blättern; Fuß bei (24, 118)
 function bamboo() {
   const o = new Canvas(48, 128);
@@ -2034,6 +2002,23 @@ function pagoda() {
   c.poly([[g.L[0] - 6, g.L[1] + 2], [g.T[0], g.T[1]], [g.R[0] + 6, g.R[1] + 2], [g.B[0], g.B[1] + 8]], SHADOW);
   c.draw(o, 0, 0);
   return c;
+}
+
+// Fischfutter: kleine Papiertüte mit roter Aufschrift, oben offen, bunte Futterflocken (doppelte Auflösung)
+function koiFood() {
+  const o = new Canvas(64, 64);
+  o.poly([[18, 22], [46, 22], [50, 58], [14, 58]], hex('#e8d4a8')); // Tüte
+  o.poly([[18, 22], [46, 22], [47, 30], [17, 30]], hex('#d4bc8c')); // umgeknickter Rand
+  o.rect(14, 56, 36, 2, hex('#c8b080'));
+  o.circle(32, 42, 8, hex('#d63a2a')); // roter Kreis mit Fisch
+  o.ellipse(31, 42, 5, 2.5, hex('#ffffff'));
+  o.poly([[35, 42], [39, 39], [39, 45]], hex('#ffffff'));
+  // Flocken, die oben herausschauen
+  for (const [x, y, c] of [[22, 19, '#f08a2c'], [27, 17, '#e8483f'], [32, 19, '#f2c84a'], [37, 16, '#f08a2c'], [42, 19, '#e8483f'], [30, 14, '#f2c84a']]) {
+    o.rect(x, y, 4, 3, hex(c));
+  }
+  o.outline(INK);
+  return o;
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {
