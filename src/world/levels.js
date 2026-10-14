@@ -19,6 +19,8 @@
 //          o  Fischteich (hierhin bringt man gefangene Fische)   S  Schild am Fischteich
 //          W  Wegweiser
 //          1  Laubbaum   2  Tanne   3  trockener Strauch   (dichte Füller im Gehege-Streifen hinter dem oberen Kartenrand)
+//          Q  Bambus     q  hohes Gras (Versteck)   J  Dschungelbaum   K  Kirschbaum   O  Sonnenfelsen
+//          l  Steinlaterne   I  rotes Tor (Torii) über dem Weg   h  heiße Quelle   B  Brücke über den Teich
 //          4  Busch      5  dichter Busch   (niedrige Füller rechts neben den Gehegen, damit sie die Tiere nicht verdecken)
 
 export const LEVELS = {
@@ -71,7 +73,7 @@ export const LEVELS = {
       'b...................#................T.T',
       'T...g...............#.........b........T',
       'T..........f........#..................b',
-      'TTbbTTTTTTbTTTTTbTTTTTbbbTTTTTbTTTbbbTTT',
+      'TTbbTTTTTTbTTTTTbTTTXTbbbTTTTTbTTTbbbTTT',
     ],
     grass: ['grass0', 'grass1', 'grass2'],
     path: 'path',
@@ -97,9 +99,10 @@ export const LEVELS = {
     exits: [
       { tx: 0, ty: 26, to: 'forest', arrive: { tx: 37, ty: 29 }, label: 'Wald' },
       { tx: 39, ty: 26, to: 'savanna', arrive: { tx: 1, ty: 31 }, label: 'Savanne' },
+      { tx: 20, ty: 46, to: 'asia', arrive: { tx: 20, ty: 46 }, label: 'Asien' },
     ],
     // Beschriftung der drei Bretter am Wegweiser (oben, Mitte, unten)
-    signLabels: ['Gehege', 'Wald', 'Savanne'],
+    signLabels: ['Gehege', 'Wald', 'Savanne', 'Asien'],
     // Spawner: so viele wilde Tiere sind ungefähr gleichzeitig unterwegs; die Zahlen dahinter sind die
     // Wahrscheinlichkeiten (je größer, desto häufiger). Tiere verschwinden nach einer Weile und neue kommen.
     spawn: { population: 14, weights: { sheep: 6, cat: 2, fish: 2, frog: 1.6, mole: 0.6 } },
@@ -122,7 +125,7 @@ export const LEVELS = {
       '222|.....|5|...|5}.......}5;........;552',
       '222--GGG--5--G--5{{{GGG{{{5^^GGGGG^^^552',
       'P######################################P',
-      'P...P.....n....D.....m#.....P....n.....P',
+      'P...P.....n..........m#.....P....n.....P',
       'Pk.......D.....k.D....#nm.........D...kP',
       'PP....P........P.D....#mn...n..n....k.kP',
       'P...P.......D....D....#.n......P...n..kP',
@@ -277,5 +280,77 @@ export const LEVELS = {
     // wie Fische in den Wasserlöchern auf, sind aber deutlich seltener
     // population zählt hier Plätze: eine Herde oder Kolonie belegt nur einen
     spawn: { population: 8, weights: { antelope: 0.6, zebra: 0.6, giraffe: 0.4, meerkat: 0.3, lion: 0.25, crocodile: 0.2 } },
+  },
+
+  asia: {
+    name: 'Asien',
+    rows: [
+      'JQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQk',
+      'Q.....nqnq....q.q.......qqq.QQ.Q..QQQQqk',
+      'Q......nJ.n.Jn.J.J......qqQ..QQQq.QQq.Qk',
+      'J..J.J........nnn...#..Q...QQ...qqQQq.Qk',
+      'Q..nq..n..qqn.......#...qq.Qqq.Qq.QQqqQk',
+      'Q.....q...n.J.....n.#..QqqQ.qqQ.q.Q.q.Qk',
+      'J.J..nJ..J...qJ..J..#..QQQQQ.qqQ.QqqQQQk',
+      'Qn..........q.......#...Q.QQ.qqQQQqq.QQk',
+      'Qq....JnJ...J....J..#.....qqqQ.QQQqqq.qk',
+      'J.J.q.....nq..J.....#..QqqqqqqQqqqqqQqqk',
+      'Qn...nn.n...........#...qqQQqqq.qqQQ...k',
+      'Q...........Jq....q.#..QQ.Q.Q....qQQQQqk',
+      'J.....n.n.n.n...n...#..................k',
+      'Q.....#############################....k',
+      'Q..n.n.n...q....q...#..................k',
+      'J.J....n....J.....J.#..Q.QqqqqQQ.Q.Q.qqk',
+      'Qnq....q.n.....K....#..qqKQQQQQ..q....qk',
+      'Q.J..J..n.qqnn...J..#..qqq..QQQ.qqQQ.QQk',
+      'J..n..q.J..Kn..J.qn.#..................k',
+      'Q.................~~B~~......K.........k',
+      'Q...q..........~~~~~B~~~~~.............k',
+      'J........q....~~~~~~B~~~~~~...q........k',
+      'Q............~~~~~~~B~~~~~~~...........k',
+      'Q............~~~~~~~B~~~~~~~...........k',
+      'J.......q....~~~~~~~B~~~~~~~.........q.k',
+      'Q.............~~~~~~B~~~~~~......q.....k',
+      'Q..............~~~~~B~~~~~.........q...k',
+      'J.........K.......~~B~~.......K.q......k',
+      'Q...................#..................k',
+      'Q............q......#..................k',
+      'J...................#..................k',
+      'Q....###############################...k',
+      'Q...................#..................k',
+      'J..q......r.l....q.l#l....O.........O..k',
+      'Q.......hhhrr.......#..........O.......k',
+      'Q....r.hhhhh........#.......O..........k',
+      'J.....hhhhhhhr......#l..........q.O....k',
+      'Q......hhhhh.r..HH###...q..............k',
+      'Q.......hhh.r...HH###........O.n.......k',
+      'J...................#............O.....k',
+      'Q............q......#..................k',
+      'Q...............q..l#l..........q......k',
+      'J...................#...K..q...q.......k',
+      'Q..............K....#..................k',
+      'Q..q................I...........q......k',
+      'J..........n........#.....K............k',
+      'Q............K......#..................k',
+      'kkkkkkkkkkkkkkkkkkkkXkkkkkkkkkkkkkkkkkkk',
+    ],
+    grass: ['agrass0', 'agrass1', 'agrass2'],
+    path: 'asia_path',
+    water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], // Koi-Teich, ab und zu Seerosen und Lotus
+    start: { tx: 20, ty: 45 },
+    enclosures: [], // Gehege kommen später
+    shed: { tx: 16, ty: 37 },
+    shedTexture: 'shed_pagoda', // Pagode
+    hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
+    background: '#3f7a35',
+    toolSpots: [
+      { tool: 'net', tx: 18, ty: 37 },
+      { tool: 'lasso', tx: 18, ty: 38 },
+      { tool: 'empty', tx: 18, ty: 39 }, // "Hände frei": hier legt man das getragene Werkzeug ab
+    ],
+    // Eingang im Süden: unten am Hauptweg, unter dem roten Tor hindurch
+    exits: [{ tx: 20, ty: 47, to: 'meadow', arrive: { tx: 20, ty: 45 }, label: 'Wiese' }],
+    // Tiere kommen später
+    spawn: { population: 0, weights: {} },
   },
 };

@@ -14,8 +14,11 @@ const CHARACTERS = [
   // Kleidung je Gebiet (gleiche Maße wie oben); freigestellt mit npm run cutout
   { src: 'Sprites/Charakter Wald.png', out: 'hero_forest.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
   { src: 'Sprites/Charakter Savanne.png', out: 'hero_savanna.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Sprites/Charakter Asien.png', out: 'hero_asia.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Schaf.png', out: 'sheep.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
+  // Schaf beim Grasen (Kopf unten); gleicher Maßstab wie oben (0,243). Freigestellt mit npm run cutout
+  { src: 'Sprites/Schaf fressend.png', out: 'sheep_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 61.2 },
   // unten-rechts, unten-links, oben-rechts, oben-links; der gemalte graue Bodenschatten wird entfernt
   { src: 'Sprites/Katze.png', out: 'cat.png', frameW: 72, frameH: 80, feetY: 76, figureH: 60, stripShadow: true },
   // Katze schlafend (eingerollt, auf dem Kratzbaum); gleicher Maßstab wie oben (0,214). Freigestellt mit npm run cutout
@@ -49,8 +52,8 @@ const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (viel größer als die anderen Tiere)
   { src: 'Sprites/Giraffe.png', out: 'giraffe.png', frameW: 104, frameH: 168, feetY: 164, figureH: 156 },
   // Giraffe frisst (Kopf hoch in die Akazie): unten-rechts, unten-links (falsch herum gemalt, wird gespiegelt), oben-rechts, oben-links.
-  // Gleicher Maßstab wie oben (156/333 Pixel): die gestreckte Figur ist 431 Pixel hoch. Freigestellt mit npm run cutout
-  { src: 'Sprites/Giraffe frisst.png', out: 'giraffe_eat.png', frameW: 112, frameH: 212, feetY: 208, figureH: 202, mirror: [1] },
+  // Etwas kleiner als die laufende Giraffe (0,40 statt 0,47), sonst wirkt sie neben der Akazie zu groß. Freigestellt mit npm run cutout
+  { src: 'Sprites/Giraffe frisst.png', out: 'giraffe_eat.png', frameW: 96, frameH: 180, feetY: 176, figureH: 172, mirror: [1] },
   // Zebra stehend und trinkend (Kopf unten); gleicher Maßstab für beide: 92/328 Pixel, beim Trinken ist die Figur 212 statt 328 hoch
   { src: 'Sprites/Zebra.png', out: 'zebra.png', frameW: 80, frameH: 104, feetY: 100, figureH: 92 },
   { src: 'Sprites/Zebra trinkt.png', out: 'zebra_drink.png', frameW: 80, frameH: 104, feetY: 100, figureH: 59.5 },

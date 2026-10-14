@@ -3,9 +3,10 @@
 import { LEVELS } from './levels.js';
 import { tileToWorld, worldToTile } from './iso.js';
 
-// w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden
-const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks' };
-const PATH_CHARS = '#GX'; // Weg, Tor und Übergang liegen auf dem Weg-Boden
+// w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
+// h: heiße Quelle (Asien); B: Brücke über den Teich (darunter Wasser)
+const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water' };
+const PATH_CHARS = '#GXI'; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
@@ -27,7 +28,7 @@ export const OBJECTS = {
   S: { key: 'sign_fish', originY: 54 / 56, solid: true },
   W: { key: 'signpost', originY: 60 / 64, solid: true },
   // Savanne
-  A: { key: 'acacia', originY: 87 / 96, solid: true, hitbox: 12 },
+  A: { key: 'acacia', originY: 116 / 128, solid: true, hitbox: 12 },
   R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
   v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 8 },
   y: { key: 'tuft', originY: 18 / 24, solid: false },
@@ -52,6 +53,15 @@ export const OBJECTS = {
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
   u: { key: 'den_sand', originY: 44 / 56, solid: true, hitbox: 16 },
+  // Asien
+  Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
+  q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
+  J: { key: 'jungle_tree', originY: 150 / 160, solid: true, hitbox: 14 },
+  K: { key: 'cherry_tree', originY: 82 / 96, solid: true, hitbox: 10 },
+  O: { key: 'sun_rock', originY: 40 / 48, solid: true, hitbox: 20 },
+  l: { key: 'stone_lantern', originY: 50 / 56, solid: true, hitbox: 8 },
+  I: { key: 'torii', originY: 100 / 128, solid: false }, // rotes Tor über dem Weg
+  B: { key: 'bridge_deck', solid: false, bridge: true }, // Brücke: Bohlen und Geländer, siehe addBridge in GardenScene
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
@@ -189,6 +199,8 @@ export function groundAt(tx, ty) {
   if (PATH_CHARS.includes(c)) return LEVEL.path;
   const g = GROUND[c];
   if (g === 'fishpond') return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
+  // eigenes Teichwasser des Gebiets (z. B. Koi-Teich mit Seerosen), fest pro Kachel verteilt
+  if (g === 'water' && LEVEL.water) return LEVEL.water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % LEVEL.water.length];
   if (g) return g;
   return grassAt(tx, ty);
 }
@@ -205,8 +217,9 @@ export function grassAt(tx, ty) {
 export const CORNER = { top: 1, right: 2, bottom: 4, left: 8 };
 export function outerWaterCorners(tx, ty) {
   const c = charAt(tx, ty);
-  if (!'~ow'.includes(c)) return 0;
-  const land = (x, y) => charAt(x, y) !== c;
+  if (!'~owh'.includes(c)) return 0;
+  // unter der Brücke geht das Wasser weiter
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && charAt(x, y) === 'B');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
@@ -236,7 +249,7 @@ export function isBlockedPoint(x, y) {
 // Nur Gelände sperrt (Kartenrand, Wasser, Hütte), keine Objekte wie Felsen, Büsche oder Bäume
 export function isTerrainBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
-  return '~owH'.includes(charAt(tx, ty));
+  return '~owHh'.includes(charAt(tx, ty));
 }
 
 export function isBlocked(tx, ty) {

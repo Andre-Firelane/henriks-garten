@@ -41,6 +41,7 @@ import Lion from '../animals/Lion.js';
 import Giraffe from '../animals/Giraffe.js';
 import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
+import Sheep from '../animals/Sheep.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
@@ -192,7 +193,8 @@ export default class GardenScene extends Phaser.Scene {
         }
 
         const obj = objectAt(tx, ty);
-        if (obj?.fence) this.addFence(tx, ty, obj);
+        if (obj?.bridge) this.addBridge(x, y);
+        else if (obj?.fence) this.addFence(tx, ty, obj);
         else if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
         if (obj?.key === 'signpost') {
           this.signs.push({ x, y });
@@ -230,9 +232,11 @@ export default class GardenScene extends Phaser.Scene {
     // Werkzeughütte: Bild sitzt mit der Mitte seiner Grundfläche auf der gemeinsamen Ecke der 4 Kacheln
     if (SHED) {
       const shedCenter = tileToWorld(SHED.tx + 1, SHED.ty + 1);
+      // Mitte der Grundfläche liegt 38 Pixel über der Unterkante (auch bei höheren Hütten wie der Pagode)
+      const shedH = this.textures.get(LEVEL.shedTexture).getSourceImage().height;
       this.add
         .image(shedCenter.x, shedCenter.y - TILE_H / 2, LEVEL.shedTexture)
-        .setOrigin(72 / 144, 90 / 128)
+        .setOrigin(72 / 144, (shedH - 38) / shedH)
         .setDepth(shedCenter.y - TILE_H / 2);
     }
 
@@ -331,6 +335,7 @@ export default class GardenScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.scale.off('resize', this.fitZoom, this));
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     this.startAmbient();
+    this.startSteam();
 
     // ESC (oder der Neustart-Knopf auf dem Tablet) setzt das ganze Spiel zurück
     const restart = () => {
@@ -359,6 +364,40 @@ export default class GardenScene extends Phaser.Scene {
       (MAP_W + MAP_H) * (TILE_H / 2) + TILE_H * 4,
     );
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
+  }
+
+  // Brücke: Bohlen liegen auf dem Wasser, das hintere Geländer wird hinter, das vordere vor dem Spieler gezeichnet
+  addBridge(x, y) {
+    this.add.image(x, y, 'bridge_deck').setDepth(-99999);
+    this.add.image(x, y, 'bridge_rail_back').setOrigin(0.5, 32 / 48).setDepth(y - 10);
+    this.add.image(x, y, 'bridge_rail_front').setOrigin(0.5, 32 / 48).setDepth(y + 10);
+  }
+
+  // Dampf über heißen Quellen: kleine Wölkchen steigen auf und verblassen
+  startSteam() {
+    const hot = [];
+    for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) if (groundAt(tx, ty) === 'hotspring') hot.push(tileToWorld(tx, ty));
+    if (!hot.length) return;
+    this.time.addEvent({
+      delay: 140,
+      loop: true,
+      callback: () => {
+        const p = Phaser.Utils.Array.GetRandom(hot);
+        const x = p.x + Phaser.Math.Between(-20, 20);
+        const y = p.y + Phaser.Math.Between(-6, 6);
+        const puff = this.add.circle(x, y, Phaser.Math.FloatBetween(4, 7), 0xffffff, 0.35).setDepth(y + 40);
+        this.tweens.add({
+          targets: puff,
+          x: x + Phaser.Math.Between(-8, 8),
+          y: y - Phaser.Math.Between(26, 44),
+          scale: 2.2,
+          alpha: 0,
+          duration: Phaser.Math.Between(1400, 2200),
+          ease: 'Sine.easeOut',
+          onComplete: () => puff.destroy(),
+        });
+      },
+    });
   }
 
   // Zaunstück zeichnen: nur die Hälften, die zu einem Nachbarzaun (oder Tor) führen. So ragt an Ecken
@@ -392,9 +431,9 @@ export default class GardenScene extends Phaser.Scene {
     if ((xl || xr) && (yu || yd)) this.add.image(x, y, `post_${kind}`).setOrigin(0.5, obj.originY).setDepth(y + 0.01);
   }
 
-  // Namen auf die drei Bretter des Wegweisers schreiben (Brettmitten siehe signpost() in make-sprites.js)
+  // Namen auf die Bretter des Wegweisers schreiben (Brettmitten siehe signpost() in make-sprites.js)
   labelSignpost(x, y) {
-    const boards = [[13, -47], [-13, -33], [13, -19]];
+    const boards = [[13, -51], [-13, -38], [13, -25], [-13, -12]];
     (LEVEL.signLabels ?? []).forEach((text, i) => {
       const [dx, dy] = boards[i];
       this.add
@@ -438,7 +477,9 @@ export default class GardenScene extends Phaser.Scene {
                             ? new Cat(this, x, y, this.animals)
                             : species === 'fox'
                               ? new Fox(this, x, y)
-                              : new Animal(this, x, y, species);
+                              : species === 'sheep'
+                                ? new Sheep(this, x, y)
+                                : new Animal(this, x, y, species);
     a.x = x;
     a.y = y;
     this.animals.push(a);
@@ -986,7 +1027,7 @@ export default class GardenScene extends Phaser.Scene {
     const entries = [];
     for (const exit of EXITS) {
       const species = ALL_SPECIES.filter((s) => LEVELS[exit.to].spawn.weights[s]);
-      entries.push([tileToWorld(exit.tx, exit.ty), `${exit.label} – ${animalIcons(species)}`]);
+      entries.push([tileToWorld(exit.tx, exit.ty), species.length ? `${exit.label} – ${animalIcons(species)}` : exit.label]);
     }
     for (const { area: a, name, species } of ENCLOSURES) {
       entries.push([

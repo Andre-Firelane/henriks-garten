@@ -788,9 +788,10 @@ function signpost() {
     o.rect(Math.min(x0, x1) + 1, y + 1, len - 2, 1, hex('#f2d4a0'));
     o.rect(Math.min(x0, x1) + 1, y + 9, len - 2, 1, hex('#b8874c'));
   };
-  board(8, true, 26);
-  board(22, false, 26);
-  board(36, true, 26);
+  board(4, true, 26);
+  board(17, false, 26);
+  board(30, true, 26);
+  board(43, false, 26);
   o.outline(INK);
   const c = new Canvas(80, 64);
   c.ellipse(40, 60, 9, 2.5, SHADOW);
@@ -931,6 +932,26 @@ const sprites = {
   'den_sand.png': foxDen(true),
   'esign_lion.png': enclosureSign(['lion']),
   'esign_crocodile.png': enclosureSign(['crocodile']),
+  // Asien (hinten angehängt, damit sich der Zufall der älteren Grafiken nicht verschiebt)
+  'agrass0.png': asiaGrass(0),
+  'agrass1.png': asiaGrass(1),
+  'agrass2.png': asiaGrass(2),
+  'asia_path.png': asiaPath(),
+  'asia_water0.png': asiaWater(0),
+  'asia_water1.png': asiaWater(1),
+  'asia_water2.png': asiaWater(2),
+  'hotspring.png': hotSpring(),
+  'bridge_deck.png': bridgeDeck(),
+  'bridge_rail_back.png': bridgeRail(true),
+  'bridge_rail_front.png': bridgeRail(false),
+  'bamboo.png': bamboo(),
+  'tall_grass.png': tallGrass(),
+  'jungle_tree.png': jungleTree(),
+  'cherry_tree.png': cherryTree(),
+  'sun_rock.png': sunRock(),
+  'stone_lantern.png': stoneLantern(),
+  'torii.png': torii(),
+  'shed_pagoda.png': pagoda(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1001,32 +1022,36 @@ function savannaPath() {
   return c;
 }
 
-// Schirmakazie: dünner, gegabelter Stamm und flache, breite Krone; Fuß des Stamms bei (48, 86)
+// Schirmakazie: dünner, gegabelter Stamm und flache, breite Krone.
+// Um den Faktor S vergrößert gezeichnet (Stammfuß bei (64, 116)), damit fressende Giraffen an die Krone reichen
 function acacia() {
-  const o = new Canvas(96, 96);
+  const S = 1.3;
+  const X = (x) => 64 + (x - 48) * S;
+  const Y = (y) => 116 - (87 - y) * S;
+  const o = new Canvas(128, 128);
   // Stamm mit zwei Ästen
-  for (let k = -2; k <= 2; k++) {
-    const col = k < 0 ? hex('#8a6440') : k === 0 ? hex('#6e4c2e') : hex('#563a22');
-    o.line(48 + k, 86, 47 + k, 60, col);
-    o.line(47 + k, 62, 34 + k, 40, col);
-    o.line(47 + k, 62, 62 + k, 41, col);
+  for (let k = -3; k <= 3; k++) {
+    const col = k < -1 ? hex('#8a6440') : k <= 0 ? hex('#6e4c2e') : hex('#563a22');
+    o.line(X(48) + k, Y(86), X(47) + k, Y(60), col);
+    o.line(X(47) + k, Y(62), X(34) + k, Y(40), col);
+    o.line(X(47) + k, Y(62), X(62) + k, Y(41), col);
   }
-  o.line(40, 50, 26, 42, hex('#6e4c2e'));
-  o.line(56, 50, 70, 43, hex('#6e4c2e'));
+  o.line(X(40), Y(50), X(26), Y(42), hex('#6e4c2e'));
+  o.line(X(56), Y(50), X(70), Y(43), hex('#6e4c2e'));
   // flache Krone in Schichten, unten dunkler
-  o.ellipse(48, 37, 42, 11, hex('#4f6a26'));
-  o.ellipse(47, 34, 39, 9, hex('#66852f'));
-  o.ellipse(44, 31, 30, 6, hex('#7f9c3c'));
-  o.ellipse(38, 29, 14, 3.5, hex('#9cb650'));
-  o.ellipse(60, 30, 10, 3, hex('#9cb650'));
+  o.ellipse(X(48), Y(37), 42 * S, 11 * S, hex('#4f6a26'));
+  o.ellipse(X(47), Y(34), 39 * S, 9 * S, hex('#66852f'));
+  o.ellipse(X(44), Y(31), 30 * S, 6 * S, hex('#7f9c3c'));
+  o.ellipse(X(38), Y(29), 14 * S, 3.5 * S, hex('#9cb650'));
+  o.ellipse(X(60), Y(30), 10 * S, 3 * S, hex('#9cb650'));
   // Blattbüschel als Sprenkel
   for (let n = 0; n < 70; n++) {
-    const x = randInt(8, 88);
-    const y = randInt(26, 46);
+    const x = Math.round(X(randInt(8, 88)));
+    const y = Math.round(Y(randInt(26, 46)));
     o.paint(x, y, rand() < 0.5 ? hex('#3f5820') : hex('#a8c25a'));
   }
   o.outline(INK);
-  return withShadow(96, 96, 48, 87, 30, 6, o);
+  return withShadow(128, 128, 64, 116, 36, 7, o);
 }
 
 // Großer Felsbrocken mit einem kleinen Stein daneben; Kachelmitte bei (32, 46)
@@ -1655,6 +1680,360 @@ function foxDen(sand = false) {
   }
   o.outline(INK);
   return withShadow(64, 56, 32, 48, 27, 5, o);
+}
+
+// ---------- Asien ----------
+
+// sattes, moosiges Gras; Variante 2 mit ein paar Kirschblütenblättern
+function asiaGrass(variant) {
+  const base = hex('#5fae4a');
+  const light = hex('#78c45c');
+  const dark = hex('#4c963c');
+  const c = tile(() => {
+    const r = rand();
+    return r < 0.09 ? dark : r < 0.15 ? light : base;
+  });
+  const blades = variant === 0 ? 9 : 13;
+  for (let n = 0; n < blades; n++) {
+    const x = randInt(6, 57);
+    const y = randInt(4, 28);
+    if (!inDiamond(x, y) || !inDiamond(x, y - 2)) continue;
+    c.paint(x, y, hex('#3a7a2f'));
+    c.paint(x, y - 1, hex('#4a8c36'));
+    c.paint(x + (rand() < 0.5 ? -1 : 1), y - 2, hex('#9cd870'));
+  }
+  if (variant === 2) {
+    for (let n = 0; n < 4; n++) {
+      const x = randInt(12, 50);
+      const y = randInt(8, 24);
+      c.paint(x, y, hex('#f6b8d0'));
+      c.paint(x + 1, y, hex('#ffd8e6'));
+    }
+  }
+  return c;
+}
+
+// Weg aus hellen Trittsteinen mit Moos in den Fugen
+function asiaPath() {
+  const c = tile(() => (rand() < 0.15 ? hex('#6f8a4a') : hex('#7d965a')));
+  const stones = [[16, 16, 9, 5], [32, 9, 9, 4.5], [48, 16, 9, 5], [32, 23, 10, 5], [22, 10, 5, 3], [42, 22, 5, 3]];
+  for (const [x, y, rx, ry] of stones) {
+    c.ellipse(x, y, rx, ry, hex('#9a9488'), true);
+    c.ellipse(x - 1, y - 1, rx - 1.5, ry - 1.2, hex('#bdb6a6'), true);
+    c.ellipse(x - 2.5, y - 1.8, rx * 0.4, ry * 0.35, hex('#d6d0c0'), true);
+  }
+  return c;
+}
+
+// Wasser des Koi-Teichs: dunkleres Grünblau, Variante 1 mit Seerosenblättern, Variante 2 mit Lotusblüte
+function asiaWater(variant) {
+  const c = tile(() => (rand() < 0.06 ? hex('#2f7f9c') : hex('#3b8fae')));
+  for (let n = 0; n < 5; n++) {
+    const x = randInt(10, 50);
+    const y = randInt(6, 25);
+    for (let i = 0; i < randInt(3, 6); i++) c.paint(x + i, y, hex('#7fc8de'));
+  }
+  if (variant > 0) {
+    const pads = variant === 1 ? [[22, 13], [41, 20]] : [[30, 17]];
+    for (const [x, y] of pads) {
+      c.ellipse(x, y, 6, 3.5, hex('#2f7a2f'), true);
+      c.ellipse(x - 1, y - 0.5, 4.5, 2.5, hex('#4f9c3c'), true);
+      c.line(x, y, x + 5, y - 1, hex('#3b8fae'));
+    }
+    if (variant === 2) {
+      // Lotusblüte
+      c.ellipse(30, 14, 3, 2, hex('#e888b0'), true);
+      c.ellipse(29, 13, 1.5, 1.5, hex('#ffd0e4'), true);
+      c.paint(30, 12, hex('#ffe680'));
+    }
+  }
+  return c;
+}
+
+// heiße Quelle: milchig türkises Wasser mit hellen Schlieren (der Dampf kommt im Spiel dazu)
+function hotSpring() {
+  const c = tile(() => (rand() < 0.1 ? hex('#7fcfc6') : hex('#94dcd2')));
+  for (let n = 0; n < 7; n++) {
+    const x = randInt(8, 52);
+    const y = randInt(6, 25);
+    for (let i = 0; i < randInt(3, 7); i++) c.paint(x + i, y, hex('#d8f6f0'));
+  }
+  return c;
+}
+
+// Brücke über den Koi-Teich (der Weg läuft entlang ty): Bohlen als Bodenauflage ...
+function bridgeDeck() {
+  const c = new Canvas(TW, TH);
+  for (let y = 0; y < TH; y++) {
+    for (let x = 0; x < TW; x++) {
+      if (!inDiamond(x, y)) continue;
+      // Bohlen quer zum Weg: Fugen laufen entlang tx (Steigung +1/2)
+      const k = (((Math.floor(y - 0.5 * x) % 6) + 6) % 6);
+      c.set(x, y, k === 0 ? hex('#6e3a22') : k === 1 ? hex('#b8704a') : hex('#9c5a38'));
+    }
+  }
+  return c;
+}
+
+// ... und rote Geländer an beiden Seiten (Kachelmitte bei (32, 32)); back = hintere Seite (oben links)
+function bridgeRail(back) {
+  const o = new Canvas(64, 48);
+  const [a, b] = back ? [[0, 32], [32, 16]] : [[32, 48], [64, 32]];
+  const H = 11;
+  const red = hex('#c8402c');
+  // Handlauf und Mittellatte
+  for (let k = 0; k < 2; k++) o.line(a[0], a[1] - H - k, b[0], b[1] - H - k, k ? hex('#e8705a') : red);
+  o.line(a[0], a[1] - 5, b[0], b[1] - 5, red);
+  // Pfosten an den Kachelecken und in der Mitte
+  for (const t of [0.04, 0.5, 0.96]) {
+    const x = Math.round(a[0] + (b[0] - a[0]) * t);
+    const y = Math.round(a[1] + (b[1] - a[1]) * t);
+    o.rect(x - 1, y - H - 2, 3, H + 3, hex('#9c2e20'));
+    o.rect(x - 1, y - H - 3, 3, 2, hex('#e8b84a')); // goldene Kappe
+  }
+  o.outline(INK);
+  return o;
+}
+
+// Bambus: ein Büschel hoher Halme mit Knoten und schmalen Blättern; Fuß bei (24, 118)
+function bamboo() {
+  const o = new Canvas(48, 128);
+  const stalks = [[14, 22], [20, 8], [27, 14], [33, 4], [38, 26]];
+  for (const [x, top] of stalks) {
+    o.rect(x, top, 4, 118 - top, hex('#6aa83a'));
+    o.rect(x, top, 1, 118 - top, hex('#a6d468'));
+    o.rect(x + 3, top, 1, 118 - top, hex('#3f7a2a'));
+    for (let y = top + 10; y < 116; y += 13) o.rect(x - 1, y, 6, 2, hex('#4a8a30')); // Knoten
+  }
+  // Blätter: schmale, schräg hängende Ellipsen oben
+  for (let n = 0; n < 26; n++) {
+    const [x, top] = stalks[n % stalks.length];
+    const y = top + randInt(4, 50);
+    const dir = rand() < 0.5 ? -1 : 1;
+    for (let i = 0; i < 9; i++) {
+      o.paint(x + 2 + dir * (2 + i), y + Math.floor(i / 2), i < 6 ? hex('#3f8a2a') : hex('#5aa83a'));
+      o.paint(x + 2 + dir * (2 + i), y + Math.floor(i / 2) + 1, hex('#2f6a22'));
+    }
+  }
+  o.outline(INK);
+  return withShadow(48, 128, 24, 118, 14, 4, o);
+}
+
+// hohes Gras (Versteck): dichte, lange Halme, man kann hindurchgehen; Fuß bei (32, 40)
+function tallGrass() {
+  const o = new Canvas(64, 48);
+  for (let n = 0; n < 46; n++) {
+    const x = randInt(8, 56);
+    const base = 40 - Math.abs(x - 32) * 0.25 + randInt(-2, 2);
+    const h = randInt(18, 30);
+    const lean = (rand() * 2 - 1) * 6;
+    const col = [hex('#4f8a2f'), hex('#5f9c36'), hex('#76b244')][n % 3];
+    o.line(x, base, Math.round(x + lean), Math.round(base - h), col);
+    o.paint(Math.round(x + lean), Math.round(base - h), hex('#b8e07a'));
+  }
+  o.outline(hex('#2f5a1f'));
+  return o;
+}
+
+// hoher Dschungelbaum: langer Stamm mit Brettwurzeln und Lianen, große dunkle Krone; Fuß bei (48, 150)
+function jungleTree() {
+  const o = new Canvas(96, 160);
+  o.rect(42, 64, 12, 86, hex('#6b5a48'));
+  o.rect(42, 64, 3, 86, hex('#8a7660'));
+  o.rect(51, 64, 3, 86, hex('#4f4234'));
+  // Brettwurzeln
+  o.poly([[42, 128], [30, 151], [42, 151]], hex('#5e4e3e'));
+  o.poly([[54, 128], [66, 151], [54, 151]], hex('#4f4234'));
+  o.poly([[46, 136], [44, 153], [52, 153], [50, 136]], hex('#6b5a48'));
+  foliage(
+    o,
+    [
+      [48, 40, 26],
+      [24, 52, 16],
+      [72, 52, 16],
+      [32, 26, 16],
+      [64, 26, 16],
+      [48, 16, 14],
+      [48, 60, 16],
+    ],
+    ['#1f5a2a', '#2c7232', '#3f8a3c', '#5aa84c'],
+  );
+  // Lianen
+  for (const [x, len] of [[30, 34], [60, 44], [40, 26]]) {
+    o.line(x, 60, x + 1, 60 + len, hex('#3f7a2a'));
+    for (let y = 64; y < 60 + len; y += 6) o.paint(x + (y % 12 ? 1 : -1), y, hex('#5aa83a'));
+  }
+  o.outline(INK);
+  return withShadow(96, 160, 48, 150, 28, 8, o);
+}
+
+// Kirschbaum: wie der Apfelbaum, aber mit rosa Blüten; Fuß bei (32, 82)
+function cherryTree() {
+  const o = new Canvas(64, 96);
+  o.rect(29, 56, 6, 26, hex('#5a3a30'));
+  o.rect(29, 56, 2, 26, hex('#7a5246'));
+  o.line(32, 60, 20, 48, hex('#5a3a30'));
+  o.line(32, 58, 44, 46, hex('#5a3a30'));
+  foliage(
+    o,
+    [
+      [32, 34, 19],
+      [17, 44, 12],
+      [47, 44, 12],
+      [23, 24, 12],
+      [41, 24, 12],
+      [32, 15, 10],
+    ],
+    ['#c25a86', '#e07ca4', '#f2a6c4', '#ffd6e6'],
+  );
+  for (let n = 0; n < 16; n++) o.paint(randInt(14, 50), randInt(12, 52), hex('#ffffff'));
+  o.outline(INK);
+  const c = withShadow(64, 96, 32, 82, 20, 7, o);
+  // ein paar Blütenblätter am Boden
+  for (let n = 0; n < 8; n++) c.paint(randInt(14, 50), randInt(78, 88), hex('#f6b8d0'));
+  return c;
+}
+
+// flacher, sonnenwarmer Felsen zum Sonnen; Fuß bei (40, 40)
+function sunRock() {
+  const o = new Canvas(80, 48);
+  o.ellipse(40, 32, 34, 13, hex('#9a8e7a'));
+  o.ellipse(39, 29, 31, 10, hex('#bfb29a'), true);
+  o.ellipse(34, 26, 20, 5, hex('#dcd0b6'), true);
+  o.ellipse(30, 25, 9, 2, hex('#f2e8cc'), true);
+  o.line(52, 30, 60, 35, hex('#7a6e5c'));
+  o.line(20, 33, 28, 35, hex('#7a6e5c'));
+  o.outline(hex('#3b3226'));
+  return withShadow(80, 48, 40, 40, 34, 6, o);
+}
+
+// Steinlaterne; Fuß bei (16, 50)
+function stoneLantern() {
+  const o = new Canvas(32, 56);
+  const stone = hex('#a8a296');
+  const light = hex('#c8c2b4');
+  o.rect(8, 44, 16, 6, stone); // Sockel
+  o.rect(8, 44, 16, 2, light);
+  o.rect(13, 30, 6, 14, stone); // Säule
+  o.rect(13, 30, 2, 14, light);
+  o.rect(9, 26, 14, 4, stone);
+  o.rect(10, 16, 12, 10, hex('#8a8478')); // Lichtkasten
+  o.rect(13, 18, 6, 6, hex('#ffd86a')); // Licht
+  o.rect(14, 19, 2, 2, hex('#fff2b8'));
+  o.poly([[4, 16], [16, 7], [28, 16]], stone); // Dach
+  o.line(4, 16, 28, 16, light);
+  o.rect(15, 3, 3, 4, stone); // Knauf
+  o.outline(INK);
+  return withShadow(32, 56, 16, 50, 9, 3, o);
+}
+
+// rotes Tor (Torii) quer über dem Weg: der Weg läuft entlang ty, das Tor steht entlang tx.
+// Kachelmitte bei (64, 100); die Pfosten stehen auf den Nachbarkacheln links oben und rechts unten.
+function torii() {
+  const o = new Canvas(128, 128);
+  const P1 = [32, 84];
+  const P2 = [96, 116];
+  const red = hex('#d63a2a');
+  const beam = (dy, ext, thick, col) => {
+    for (let k = 0; k < thick; k++) {
+      o.line(P1[0] - ext, P1[1] - dy - ext / 2 + k, P2[0] + ext, P2[1] - dy + ext / 2 + k, col);
+    }
+  };
+  // Pfosten mit schwarzem Fuß
+  for (const [x, y] of [P1, P2]) {
+    o.rect(x - 3, y - 66, 7, 66, red);
+    o.rect(x - 3, y - 66, 2, 66, hex('#f06a50'));
+    o.rect(x + 2, y - 66, 2, 66, hex('#a82a1e'));
+    o.rect(x - 4, y - 7, 9, 7, hex('#2b2b2b'));
+  }
+  beam(50, 6, 4, red); // untere Querlatte (nuki)
+  beam(64, 14, 5, red); // obere Querlatte (shimaki)
+  beam(70, 18, 4, hex('#2b2b2b')); // schwarzer Deckbalken (kasagi)
+  // nach oben geschwungene Enden des Deckbalkens
+  o.line(P1[0] - 18, P1[1] - 79, P1[0] - 22, P1[1] - 84, hex('#2b2b2b'));
+  o.line(P2[0] + 18, P2[1] - 61, P2[0] + 22, P2[1] - 66, hex('#2b2b2b'));
+  // Namenstafel in der Mitte
+  o.rect(61, 100 - 64 - 12, 6, 12, hex('#2b2b2b'));
+  o.rect(62, 100 - 64 - 11, 4, 10, hex('#e8b84a'));
+  o.outline(INK);
+  const c = new Canvas(128, 128);
+  for (const [x, y] of [P1, P2]) c.ellipse(x + 1, y, 7, 2.5, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Pagode als Werkzeughütte: rote Holzwände, offene Vorderseite mit Regal, zwei geschwungene Dächer.
+// Gleiche Grundfläche wie die anderen Hütten (2x2 Kacheln); Mitte der Grundfläche bei (72, 138)
+function pagoda() {
+  const W = 144, Hc = 176, cx = 72, cy = 138;
+  const sq = (s, h) => ({ L: [cx - 64 * s, cy - h], T: [cx, cy - 32 * s - h], R: [cx + 64 * s, cy - h], B: [cx, cy + 32 * s - h] });
+  const o = new Canvas(W, Hc);
+  const H = 34;
+  const g = sq(1, 0);
+  const w = sq(1, H);
+  // Steinsockel
+  o.poly([[g.L[0] - 3, g.L[1]], [g.B[0], g.B[1] + 3], [g.R[0] + 3, g.R[1]], [g.B[0], g.B[1] + 7], [g.L[0] - 3, g.L[1] + 4]], hex('#9a9488'));
+  // linke Wand: rot mit dunklen Säulen und einem hellen Papierfenster
+  o.poly([g.L, g.B, w.B, w.L], hex('#c0392b'));
+  const along = (P, Q, t, h) => [P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t - h];
+  o.poly([along(g.L, g.B, 0.3, 10), along(g.L, g.B, 0.7, 10), along(g.L, g.B, 0.7, 26), along(g.L, g.B, 0.3, 26)], hex('#f2e2c0'));
+  for (const t of [0.5]) {
+    const [x0, y0] = along(g.L, g.B, 0.3, 18);
+    const [x1, y1] = along(g.L, g.B, 0.7, 18);
+    o.line(x0, y0, x1, y1, hex('#8a5a30'));
+    const [mx, my] = along(g.L, g.B, t, 10);
+    o.line(mx, my, mx, my - 16, hex('#8a5a30'));
+  }
+  for (const t of [0, 1]) {
+    const [x, y] = along(g.L, g.B, t, 0);
+    o.rect(x - (t ? 3 : 0), y - H, 3, H, hex('#7a1e18'));
+  }
+  // offene Vorderseite: dunkles Inneres mit Regal und Töpfen
+  o.poly([g.B, g.R, w.R, w.B], hex('#3a1e14'));
+  o.poly([along(g.B, g.R, 0, 15), along(g.B, g.R, 1, 15), along(g.B, g.R, 1, 18), along(g.B, g.R, 0, 18)], hex('#a8743f'));
+  for (const [t, col] of [[0.25, '#9aa0a8'], [0.42, '#c49a62'], [0.65, '#6aa84f']]) {
+    const [x, y] = along(g.B, g.R, t, 18);
+    o.rect(x - 3, y - 7, 6, 7, hex(col));
+  }
+  for (const P of [g.B, g.R]) o.rect(P[0] - (P === g.R ? 4 : 0), P[1] - H, 4, H + 1, hex('#c0392b'));
+  o.poly([along(g.B, g.R, 0, H - 4), along(g.B, g.R, 1, H - 4), along(g.B, g.R, 1, H), along(g.B, g.R, 0, H)], hex('#c0392b'));
+
+  // Dach: Walmdach mit Überstand und hochgezogenen Ecken
+  const roof = (sLow, hLow, sUp, hUp) => {
+    const lo = sq(sLow, hLow);
+    const up = sq(sUp, hUp);
+    const r = new Canvas(W, Hc);
+    r.poly([lo.L, lo.B, lo.R, up.R, up.T, up.L], hex('#3f4a52'));
+    r.poly([lo.B, lo.R, up.R, up.B], hex('#55636c'), true); // rechte Fläche heller (Sonne)
+    for (let y = 0; y < Hc; y++) for (let x = 0; x < W; x++) if (y % 4 === 0) r.paint(x, y, hex('#323b42')); // Ziegelreihen
+    for (const P of ['L', 'B', 'R']) r.line(lo[P][0], lo[P][1], up[P][0], up[P][1], hex('#262e33')); // Grate
+    r.line(lo.L[0], lo.L[1], lo.B[0], lo.B[1], hex('#262e33'));
+    r.line(lo.B[0], lo.B[1], lo.R[0], lo.R[1], hex('#262e33'));
+    o.draw(r, 0, 0);
+    // geschwungene Ecken
+    o.poly([[lo.L[0] + 6, lo.L[1] + 1], [lo.L[0] - 6, lo.L[1] - 7], [lo.L[0] + 2, lo.L[1] - 3]], hex('#3f4a52'));
+    o.poly([[lo.R[0] - 6, lo.R[1] + 1], [lo.R[0] + 6, lo.R[1] - 7], [lo.R[0] - 2, lo.R[1] - 3]], hex('#55636c'));
+    o.poly([[lo.B[0] - 5, lo.B[1] - 1], [lo.B[0], lo.B[1] - 7], [lo.B[0] + 5, lo.B[1] - 1]], hex('#3f4a52'));
+    for (const P of ['L', 'R']) o.rect(lo[P][0] + (P === 'L' ? -7 : 5), lo[P][1] - 9, 2, 2, hex('#e8b84a')); // goldene Spitzen
+  };
+  roof(1.25, H - 2, 0.55, H + 16);
+  // oberes Stockwerk
+  const g2 = sq(0.55, H + 16);
+  const w2 = sq(0.55, H + 30);
+  o.poly([g2.L, g2.B, w2.B, w2.L], hex('#c0392b'));
+  o.poly([g2.B, g2.R, w2.R, w2.B], hex('#a8301f'));
+  o.poly([along(g2.L, g2.B, 0.3, 4), along(g2.L, g2.B, 0.7, 4), along(g2.L, g2.B, 0.7, 11), along(g2.L, g2.B, 0.3, 11)], hex('#f2e2c0'));
+  roof(0.78, H + 32, 0.1, H + 52);
+  // goldene Spitze
+  const top = sq(0, H + 52).T;
+  o.rect(top[0] - 1, top[1] - 14, 3, 14, hex('#c8962a'));
+  for (const dy of [4, 8, 12]) o.rect(top[0] - 2, top[1] - dy, 5, 2, hex('#e8b84a'));
+  o.outline(INK);
+
+  const c = new Canvas(W, Hc);
+  c.poly([[g.L[0] - 6, g.L[1] + 2], [g.T[0], g.T[1]], [g.R[0] + 6, g.R[1] + 2], [g.B[0], g.B[1] + 8]], SHADOW);
+  c.draw(o, 0, 0);
+  return c;
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {

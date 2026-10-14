@@ -10,10 +10,13 @@ const EAT_CHANCE_PEN = 0.6; // im Gehege öfter: dort hat sie ja ihre eigenen Ak
 const TREE_RANGE = 4; // so viele Kacheln weit sucht sie nach einer Akazie
 const EAT_TIME = [5, 9]; // so lange frisst sie
 const WALK_TIMEOUT = 12; // kommt sie nicht an den Baum, lässt sie es bleiben
-const STAND_X = 20; // so weit seitlich ...
-const STAND_Y = 8; // ... und so weit hinter dem Stamm steht sie beim Fressen
+// Beim Fressen steht sie schräg vor dem Baum und schaut zu ihm hin. Ihr Maul ist im Bild "giraffe_eat" etwa
+// 18 Pixel seitlich und 82 Pixel über den Füßen; die Akazienkrone beginnt etwa 51 Pixel über dem Stammfuß.
+// So landet das Maul vorne unten an der Krone:
+const STAND_X = 32; // so weit seitlich ...
+const STAND_FRONT = 18; // ... und so weit vor dem Stamm steht sie beim Fressen
 // Fress-Bilder wie beim Laufen: unten-rechts, unten-links, oben-rechts, oben-links
-const EAT_ORIGIN_Y = 208 / 212;
+const EAT_ORIGIN_Y = 176 / 180;
 
 export default class Giraffe extends Animal {
   constructor(scene, x, y) {
@@ -27,9 +30,9 @@ export default class Giraffe extends Animal {
     if (this.state !== 'following' && Math.random() < chance) {
       const tree = this.nearestAcacia();
       if (tree) {
-        // Platz schräg hinter dem Stamm (auf der Seite, von der sie kommt): so ragt der Kopf über die Krone
+        // Platz schräg vor dem Stamm, auf der Seite, von der sie kommt
         const side = Math.sign(this.x - tree.x) || 1;
-        const spot = { x: tree.x + side * STAND_X, y: tree.y - STAND_Y };
+        const spot = { x: tree.x + side * STAND_X, y: tree.y + STAND_FRONT };
         this.eating = { tree, spot, phase: 'walk', time: WALK_TIMEOUT };
         this.dirX = 0;
         this.dirY = 0;
@@ -76,15 +79,14 @@ export default class Giraffe extends Animal {
         return false;
       }
       const step = Math.min(d, this.kind.speed * dt);
-      const moved = this.move((dx / d) * step, (dy / d) * step);
-      if (moved) {
-        this.faceX = Math.sign(dx) || this.faceX;
-        this.faceY = Math.sign(dy) || this.faceY;
-      } else {
-        eat.phase = 'eat'; // am Hindernis hängen geblieben: dann frisst sie eben von hier aus
-        eat.time = Phaser.Math.FloatBetween(...EAT_TIME);
+      const angle = Math.atan2(dy, dx);
+      for (const turn of [0, 0.5, -0.5, 1, -1]) {
+        if (this.move(Math.cos(angle + turn) * step, Math.sin(angle + turn) * step)) return true;
       }
-      return moved;
+      // kommt nicht an den Platz vor dem Baum (verstellt): dann lässt sie es, sonst wäre das Maul nicht an der Krone
+      this.eating = null;
+      super.pickWander();
+      return false;
     }
     if (eat.time <= 0) {
       this.eating = null;

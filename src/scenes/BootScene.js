@@ -11,6 +11,10 @@ const PIXEL_ART = [
   'chain_x', 'chain_y', 'post_wood', 'post_mesh', 'post_net', 'post_chain',
   'gate_chain_x', 'gate_chain_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x', 'gate_net_y',
   'tall_x', 'tall_y', 'post_tall', 'gate_tall_x', 'gate_tall_y', 'den', 'den_sand',
+  // Asien
+  'agrass0', 'agrass1', 'agrass2', 'asia_path', 'asia_water0', 'asia_water1', 'asia_water2', 'hotspring',
+  'bridge_deck', 'bridge_rail_back', 'bridge_rail_front', 'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree',
+  'sun_rock', 'stone_lantern', 'torii', 'shed_pagoda',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
@@ -42,7 +46,7 @@ const LION_FRAME = { frameWidth: 72, frameHeight: 96 };
 const CROC_FRAME = { frameWidth: 72, frameHeight: 92 };
 const CROC_WATER_FRAME = { frameWidth: 64, frameHeight: 44 };
 const GIRAFFE_FRAME = { frameWidth: 104, frameHeight: 168 };
-const GIRAFFE_EAT_FRAME = { frameWidth: 112, frameHeight: 212 };
+const GIRAFFE_EAT_FRAME = { frameWidth: 96, frameHeight: 180 };
 const ANIMAL_SOUNDS = {
   sheep: 'animal_sheep.wav',
   cat: 'animal_cat.wav',
@@ -63,10 +67,12 @@ export default class BootScene extends Phaser.Scene {
     // Kleidung je Gebiet (siehe hero in levels.js)
     this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
     this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
+    this.load.spritesheet('hero_asia', 'assets/hero_asia.png', HERO_FRAME);
     this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
     this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
     this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
+    this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
