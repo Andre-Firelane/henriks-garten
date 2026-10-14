@@ -134,10 +134,11 @@ const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines 
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
 const FEED_CHANCE = 1 / 3; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
-const KOI_FEED_DIST = 70; // so nah muss Wasser vor dem Spieler sein, um Fischfutter zu streuen
-const KOI_CALLED = 3; // so viele wilde Koi kommen zum Futter (die nächsten)
-const KOI_CALL_DIST = 200; // Koi im Gehege in diesem Umkreis kommen auch
+const KOI_FEED_DIST = 50; // so nah muss Wasser vor dem Spieler sein, um Fischfutter zu streuen
+const KOI_CALLED = 3; // höchstens so viele wilde Koi kommen zum Futter (die nächsten)
+const KOI_CALL_DIST = 170; // nur Koi in diesem Umkreis (Welt-Pixel, etwa 5 Kacheln) riechen das Futter
 const KOI_FEED_PAUSE = 1500; // Millisekunden bis zum nächsten Streuen
+const KOI_FOOD_FLOAT = 15000; // Millisekunden, die das Futter auf dem Wasser treibt
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -886,17 +887,30 @@ export default class GardenScene extends Phaser.Scene {
       this.showToast(`Geh ans Ufer und streu das Futter ins Wasser – dann kommen die ${animalIcon('koi')}.`);
       return;
     }
-    this.koiFedAt = now;
     // das Futter landet mitten auf der Wasserkachel vor dem Ufer, damit man die Koi gut sieht
     const spot = { x: water.x, y: water.y };
-    this.scatterFood(p, spot);
-    // die nächsten wilden Koi des Teichs und alle Koi im Gehege, an dessen Teich man steht
+    // die nächsten wilden Koi in der Nähe und alle Koi im Gehege, an dessen Teich man steht
     const dist = (a) => Math.hypot(a.x - spot.x, a.y - spot.y);
-    const wild = this.animals.filter((a) => a.species === 'koi' && a.state === 'wild' && a.phase !== 'up').sort((u, v) => dist(u) - dist(v));
+    const wild = this.animals
+      .filter((a) => a.species === 'koi' && a.state === 'wild' && a.phase !== 'up' && dist(a) < KOI_CALL_DIST)
+      .sort((u, v) => dist(u) - dist(v));
     const penned = this.animals.filter((a) => a.species === 'koi' && a.state === 'penned' && dist(a) < KOI_CALL_DIST);
     const koi = [...wild.slice(0, KOI_CALLED), ...penned];
+    // kein Koi in der Nähe: das Futter nicht verschwenden
+    if (!koi.length) {
+      this.showToast(`Hier ist gerade kein ${animalIcon('koi')} in der Nähe. Stell dich ans Ufer, wo du bunte Schatten im Wasser siehst.`);
+      return;
+    }
+    this.koiFedAt = now;
+    // das Futter ist verbraucht (wie beim Grünfutter): Hände frei für den Kescher, neues liegt wieder an seinem Platz
+    this.tool.destroy();
+    this.tool = null;
+    this.toolId = null;
+    this.returnTool('koifood');
+    this.updateToolbar();
+    this.scatterFood(p, spot);
     for (const a of koi) a.call(spot);
-    if (!koi.length) this.showToast('Das Futter treibt auf dem Wasser … gerade ist hier kein Koi in der Nähe.');
+    this.showToast(`Die ${animalIcon('koi')} kommen! Schnell den Kescher holen – sie fressen eine Weile.`);
   }
 
   // bunte Futterflocken fliegen in einem Bogen aufs Wasser, dann kleine Ringe
@@ -918,7 +932,8 @@ export default class GardenScene extends Phaser.Scene {
             ease: 'Quad.easeIn',
             onComplete: () => {
               flake.setDepth(-99998.5);
-              this.tweens.add({ targets: flake, alpha: 0, delay: 1800, duration: 800, onComplete: () => flake.destroy() });
+              // das Futter treibt so lange auf dem Wasser, wie die Koi daran schnappen
+              this.tweens.add({ targets: flake, alpha: 0, delay: KOI_FOOD_FLOAT, duration: 1500, onComplete: () => flake.destroy() });
               if (i % 4 === 0) {
                 const ring = this.add.ellipse(tx, ty, 8, 3).setStrokeStyle(1, 0xffffff, 0.8).setDepth(-99998.5);
                 this.tweens.add({ targets: ring, scale: 2.5, alpha: 0, duration: 600, onComplete: () => ring.destroy() });

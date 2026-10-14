@@ -357,6 +357,10 @@ export const LEVELS = {
       { tool: 'lasso', tx: 18, ty: 45 },
       { tool: 'koifood', tx: 18, ty: 46 }, // Fischfutter für die Koi
       { tool: 'empty', tx: 18, ty: 47 }, // "Hände frei": hier legt man das getragene Werkzeug ab
+      // auf der Insel mitten im Koi-Teich: Kescher und Fischfutter nebeneinander, damit man nach dem Füttern
+      // gleich zum Kescher greifen kann (man trägt ja immer nur eins)
+      { tool: 'net', tx: 21, ty: 30 },
+      { tool: 'koifood', tx: 22, ty: 30 },
     ],
     // Eingang im Süden: unten am Hauptweg, unter dem roten Tor hindurch
     exits: [{ tx: 20, ty: 54, to: 'meadow', arrive: { tx: 20, ty: 45 }, label: 'Wiese' }],

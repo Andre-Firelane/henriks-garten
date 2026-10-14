@@ -1,5 +1,6 @@
 // Fischfutter in der Hand: mit der Aktionstaste streut man es am Ufer ins Wasser. Koi in der Nähe kommen dann
-// herbei und schnappen an der Oberfläche (siehe feedKoi in GardenScene). Das Futter geht nicht aus.
+// herbei und schnappen an der Oberfläche (siehe feedKoi in GardenScene). Nach einem Wurf ist es verbraucht
+// (wie das Grünfutter), neues liegt dann wieder an seinem Platz.
 
 export default class KoiFoodTool {
   constructor(scene, player) {
