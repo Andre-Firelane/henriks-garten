@@ -342,6 +342,7 @@ export const LEVELS = {
     shed: { tx: 16, ty: 37 },
     shedTexture: 'shed_pagoda', // Pagode
     hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
+    ambient: 'ambient_meadow', // vorerst dieselben Hintergrundgeräusche wie auf der Wiese
     background: '#3f7a35',
     toolSpots: [
       { tool: 'net', tx: 18, ty: 37 },
