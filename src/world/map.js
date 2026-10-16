@@ -88,7 +88,9 @@ export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Te
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
-export let CAR_TILES = []; // Kacheln, die das Auto belegt (es ist knapp zwei Kacheln lang)
+// Grundfläche des Autos (Schnellreise): Strecke vom Vorderrad links unten bis zum Anhänger rechts oben (Welt-Pixel)
+export let CAR_BODY = null;
+const CAR_HALF_WIDTH = 13; // so weit neben dieser Strecke ist es noch fest
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
@@ -107,7 +109,8 @@ export function setLevel(id) {
   TOOL_SPOTS = LEVEL.toolSpots;
   EXITS = LEVEL.exits;
   const car = LEVEL.car;
-  CAR_TILES = car ? [[car.tx, car.ty], [car.tx - 1, car.ty + 1], [car.tx + 1, car.ty - 1]] : [];
+  const c = car && tileToWorld(car.tx, car.ty);
+  CAR_BODY = c ? { ax: c.x - 44, ay: c.y - 4, bx: c.x + 48, by: c.y - 24 } : null;
   const beyondGate = (tx, ty, dy) => {
     while (charAt(tx, ty) === 'G') ty += dy;
     return charAt(tx, ty);
@@ -299,11 +302,19 @@ export function objectAt(tx, ty) {
 
 // Ist genau dieser Punkt fest? Wie isBlocked, aber Bäume und Büsche sind nur um den Stamm herum fest.
 export function isBlockedPoint(x, y) {
+  if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_HALF_WIDTH) return true;
   const { tx, ty } = worldToTile(x, y);
   const hitbox = objectAt(tx, ty)?.hitbox;
   if (!hitbox) return isBlocked(tx, ty);
   const c = tileToWorld(tx, ty);
   return Math.hypot(x - c.x, (y - c.y) * 2) < hitbox; // Abstand in Kachel-Proportionen
+}
+
+// Abstand eines Punkts von der Strecke a–b
+function nearSegment(x, y, { ax, ay, bx, by }) {
+  const dx = bx - ax, dy = by - ay;
+  const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(x - (ax + dx * t), y - (ay + dy * t));
 }
 
 // Nur Gelände sperrt (Kartenrand, Wasser, Hütte), keine Objekte wie Felsen, Büsche oder Bäume
@@ -315,7 +326,6 @@ export function isTerrainBlocked(tx, ty) {
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
   if ('~owH'.includes(charAt(tx, ty))) return true;
-  if (CAR_TILES.some(([x, y]) => x === tx && y === ty)) return true;
   return objectAt(tx, ty)?.solid ?? false;
 }
 

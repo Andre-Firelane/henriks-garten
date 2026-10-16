@@ -27,6 +27,7 @@ import {
   accepts,
   BRIDGES,
   KOI_WATER,
+  CAR_BODY,
   enclosureAt,
   bridgeArch,
 } from '../world/map.js';
@@ -281,7 +282,7 @@ export default class GardenScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setDepth(100000)
         .setVisible(false);
-      this.car = { x, y, label };
+      this.car = { x, y, label, img };
     }
     this.nearCar = false;
 
@@ -1414,6 +1415,13 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
 
+    // Auto und Anhänger stehen schräg: als Tiefe gilt die Grundlinie dort, wo die Spielfigur gerade ist.
+    // So steht man vor dem Anhänger davor und hinter dem Auto dahinter.
+    if (this.car && CAR_BODY) {
+      const b = CAR_BODY;
+      const t = Phaser.Math.Clamp((this.player.x - b.ax) / (b.bx - b.ax), 0, 1);
+      this.car.img.setDepth(b.ay + (b.by - b.ay) * t);
+    }
     // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
     const near = !!this.car && Math.hypot((this.player.x - this.car.x) / 1.6, (this.player.y - this.car.y) * 2) < CAR_DIST;
     if (near !== this.nearCar) {
