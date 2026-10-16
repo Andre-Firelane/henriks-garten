@@ -73,6 +73,12 @@ const CHARACTERS = [
   { src: 'Sprites/Koi1.png', out: 'koi1.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
   { src: 'Sprites/Koi2.png', out: 'koi2.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
   { src: 'Sprites/Koi3.png', out: 'koi3.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
+  // Autos für die Schnellreise (an den Hütten und im Tierpark), je als 2×2-Raster. Im Tierpark-Bild sind zwei Autos:
+  // Bild 0 grün (steht auf der Wiese), Bild 1 sandfarben (Tierpark). Freigestellt mit npm run cutout
+  { src: 'Sprites/Auto Tierpark.png', out: 'car_park.png', frameW: 240, frameH: 140, feetY: 136, figureH: 132, grid: [2, 2] },
+  { src: 'Sprites/Auto Wald.png', out: 'car_forest.png', frameW: 240, frameH: 140, feetY: 136, figureH: 132, grid: [2, 2] },
+  { src: 'Sprites/Auto Savanne.png', out: 'car_savanna.png', frameW: 240, frameH: 140, feetY: 136, figureH: 132, grid: [2, 2] },
+  { src: 'Sprites/Auto Asien.png', out: 'car_asia.png', frameW: 240, frameH: 140, feetY: 136, figureH: 132, grid: [2, 2] },
   // dasselbe rot-weiße Bild noch einmal als "koi": daraus kommt das Tierbild in der Anzeige
   { src: 'Sprites/Koi2.png', out: 'koi.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
 ];

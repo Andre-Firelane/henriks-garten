@@ -8,6 +8,7 @@ const SHEETS = {
   stag: [80, 112, 4, 0],
   fish: [84, 64, 4, 1], // Fisch nach rechts schwimmend
   koi: [88, 52, 4, 0], // rot-weißer Koi
+  hero: [72, 116, 4, 0], // die Spielfigur (Tierpark auf der Weltkarte)
   squirrel: [56, 60, 4, 0],
   fox: [72, 72, 4, 0],
   frog: [56, 52, 4, 0],

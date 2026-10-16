@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { FISH_SPOTS, FISHPOND_TILES, isFishpond } from '../world/map.js';
+import { FISH_SPOTS, FISHPOND_TILES, isFishpond, enclosureAt, accepts } from '../world/map.js';
 import { footTiles } from '../world/collision.js';
 
 // Bilder im Spritesheet "fish"
@@ -125,12 +125,16 @@ export default class Fish extends Animal {
     d.bubble = 0;
   }
 
-  // Der Beutel ist angekommen, wenn er nah genug am Fischteich ist
+  // Der Beutel ist angekommen, wenn er nah genug an einem Teich ist, der diese Art aufnimmt
   arrivedHome() {
-    return FISHPOND_TILES.some(({ tx, ty }) => {
+    const home = FISHPOND_TILES.find(({ tx, ty }) => {
+      const e = enclosureAt(tx, ty);
+      if (e && !accepts(e, this.species)) return false;
       const p = tileToWorld(tx, ty);
       return Math.hypot(this.x - p.x, (this.y - p.y) * 2) < HOME_DIST;
     });
+    if (home) this.enclosure = enclosureAt(home.tx, home.ty);
+    return !!home;
   }
 
   // Im Fischteich bleibt er im Wasser
@@ -150,7 +154,9 @@ export default class Fish extends Animal {
   }
 
   enterPen() {
-    const t = Phaser.Utils.Array.GetRandom(FISHPOND_TILES);
+    // in den Teich des eigenen Geheges (falls es eins gibt), sonst irgendeinen
+    const own = FISHPOND_TILES.filter(({ tx, ty }) => this.enclosure && enclosureAt(tx, ty) === this.enclosure);
+    const t = Phaser.Utils.Array.GetRandom(own.length ? own : FISHPOND_TILES);
     const p = tileToWorld(t.tx, t.ty);
     this.x = p.x;
     this.y = p.y;

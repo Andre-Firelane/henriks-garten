@@ -98,8 +98,10 @@ export function isTouch() {
 }
 
 // Aktionsknopf zeigt das getragene Werkzeug (oder ist ausgegraut)
-export function setTouchTool(id) {
+// id: Werkzeug (Bild assets/<id>.png); image: anderes Bild, z. B. die Weltkarte am Auto
+export function setTouchTool(id, image) {
   if (!ui) return;
-  ui.action.classList.toggle('empty', !id);
-  ui.action.style.backgroundImage = id ? `url(assets/${id}.png)` : '';
+  const src = image ?? (id ? `assets/${id}.png` : null);
+  ui.action.classList.toggle('empty', !src);
+  ui.action.style.backgroundImage = src ? `url(${src})` : '';
 }

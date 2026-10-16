@@ -42,6 +42,28 @@
       }
       #toast .animal { font-size: 14px; }
       #toast.show { animation: toast 3.5s ease forwards; }
+      /* Weltkarte für die Schnellreise (am Auto) */
+      #travel {
+        position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
+        background: rgba(20, 14, 8, 0.6); font: 15px/1.3 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
+      }
+      #travel.show { display: flex; }
+      .travel-box { width: min(98vw, calc(92vh * 1024 / 572)); text-align: center; }
+      .travel-map {
+        position: relative; width: 100%; aspect-ratio: 1024 / 572; border-radius: 12px;
+        background: url(assets/worldmap.jpg) center / 100% 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+      }
+      .travel-map .place {
+        position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center;
+        padding: 3px 6px 4px; border: 3px solid #6b4224; border-radius: 12px; background: rgba(244, 220, 174, 0.92);
+        font: bold 13px "Trebuchet MS", Arial, sans-serif; color: #3a2414; cursor: pointer; transition: transform 0.12s;
+      }
+      .travel-map .place small { display: block; font-size: 11px; font-weight: normal; }
+      .travel-map .place:hover, .travel-map .place.selected {
+        transform: translate(-50%, -50%) scale(1.15); border-color: #e8a830; box-shadow: 0 0 0 4px rgba(255, 210, 90, 0.8);
+      }
+      .travel-map .place.here { opacity: 0.75; cursor: default; border-style: dashed; }
+      .travel-hint { margin: 6px 0 0; color: #fff8e6; font-size: 16px; text-shadow: 0 1px 2px #000; }
       /* Übersicht (Taste I) */
       #journal {
         position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
@@ -152,6 +174,7 @@
     <div id="toast"></div>
     <div id="sign"></div>
     <div id="journal"></div>
+    <div id="travel"></div>
     <div id="markers"></div>
     <div id="stick-zone"></div>
     <div id="stick"><div id="stick-knob"></div></div>

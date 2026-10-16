@@ -774,31 +774,6 @@ function mushroom() {
 // Wegweiser mit drei Pfeilbrettern; Fuß des Pfostens bei (24, 60)
 // Die Bretter sind breit genug für eine Beschriftung, die das Spiel darüberlegt
 // (Brettmitten relativ zum Fuß: oben +13/-47, Mitte -13/-33, unten +13/-19; siehe GardenScene)
-function signpost() {
-  const o = new Canvas(80, 64);
-  o.rect(38, 4, 4, 57, hex('#8a5a30'));
-  o.rect(38, 4, 1, 57, hex('#a8743f'));
-  const board = (y, toRight, len) => {
-    const x0 = toRight ? 40 : 40 - len;
-    const x1 = toRight ? 40 + len : 40;
-    const tip = toRight ? x1 + 6 : x0 - 6;
-    const base = toRight ? x0 : x1; // Seite am Pfosten
-    const end = toRight ? x1 : x0; // Seite mit der Pfeilspitze
-    o.poly([[base, y], [end, y], [tip, y + 5], [end, y + 10], [base, y + 10]], hex('#e0b57a'));
-    o.rect(Math.min(x0, x1) + 1, y + 1, len - 2, 1, hex('#f2d4a0'));
-    o.rect(Math.min(x0, x1) + 1, y + 9, len - 2, 1, hex('#b8874c'));
-  };
-  board(4, true, 26);
-  board(17, false, 26);
-  board(30, true, 26);
-  board(43, false, 26);
-  o.outline(INK);
-  const c = new Canvas(80, 64);
-  c.ellipse(40, 60, 9, 2.5, SHADOW);
-  c.draw(o, 0, 0);
-  return c;
-}
-
 // Falle: Käfig mit Karotte als Köder (doppelte Auflösung). Boden bei (32, 52).
 function trap() {
   const o = new Canvas(64, 56);
@@ -871,7 +846,6 @@ const sprites = {
   'log.png': log(),
   'fern.png': fern(),
   'mushroom.png': mushroom(),
-  'signpost.png': signpost(),
   'shed_log.png': shed('log'),
   'trap.png': trap(),
   'hand.png': hand(),
@@ -953,6 +927,12 @@ const sprites = {
   'koifood.png': koiFood(),
   'print_koi.png': printImage('koi'),
   'esign_koi.png': enclosureSign(['koi']),
+  // leeres Torschild: die Tierbilder legt das Spiel darauf (siehe enclosureSigns in GardenScene)
+  'esign_board.png': enclosureSign([]),
+  // Pflaster im Tierpark
+  'park_path.png': parkPath(),
+  // Wegweiser-Pfosten ohne Bretter: die schrägen Bretter zeichnet das Spiel (siehe drawSignBoards)
+  'signpost_post.png': signpostPost(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -2019,6 +1999,39 @@ function koiFood() {
   }
   o.outline(INK);
   return o;
+}
+
+// Pfosten des Wegweisers ohne Bretter (gleicher Ankerpunkt wie signpost: Fuß bei (40, 60)), mit Kappe
+function signpostPost() {
+  const o = new Canvas(80, 64);
+  o.rect(38, 4, 4, 57, hex('#8a5a30'));
+  o.rect(38, 4, 1, 57, hex('#a8743f'));
+  o.rect(37, 2, 6, 3, hex('#6e4424'));
+  o.outline(INK);
+  const c = new Canvas(80, 64);
+  c.ellipse(40, 60, 9, 2.5, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Pflaster im Tierpark: helle Steine im Verband entlang der Iso-Achsen. Das Muster wiederholt sich alle 64 Pixel
+// entlang beider Achsen, so passen benachbarte Kacheln nahtlos aneinander.
+function parkPath() {
+  const S = 16; // Steingröße entlang der Achsen
+  const shades = ['#bcb6a8', '#aca698', '#c8c2b2', '#b2ac9e'];
+  return tile((x, y) => {
+    const a = x + 2 * y; // entlang tx
+    let b = 2 * y - x; // entlang ty
+    const ca = Math.floor(a / S);
+    b += (((ca % 2) + 2) % 2) * (S / 2); // Reihen versetzt wie bei Pflastersteinen
+    const cb = Math.floor(b / S);
+    const ma = ((a % S) + S) % S;
+    const mb = ((b % S) + S) % S;
+    if (ma < 2 || mb < 2) return hex('#8e887c'); // Fugen
+    if (ma < 4 || mb < 4) return hex('#d8d2c2'); // helle Kante oben links
+    const k = (((ca % 4) + 4) % 4) * 4 + (((cb % 4) + 4) % 4);
+    return hex(shades[(k * 7 + 3) % shades.length]);
+  });
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {

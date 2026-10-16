@@ -26,7 +26,7 @@ export const OBJECTS = {
   '-': { key: 'fence_x', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'x' } },
   '|': { key: 'fence_y', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'y' } },
   S: { key: 'sign_fish', originY: 54 / 56, solid: true },
-  W: { key: 'signpost', originY: 60 / 64, solid: true },
+  W: { key: 'signpost_post', originY: 60 / 64, solid: true }, // Wegweiser: die schrägen Bretter zeichnet die Szene (drawSignBoards)
   // Savanne
   A: { key: 'acacia', originY: 116 / 128, solid: true, hitbox: 12 },
   R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
@@ -88,6 +88,7 @@ export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Te
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
+export let CAR_TILES = []; // Kacheln, die das Auto belegt (es ist knapp zwei Kacheln lang)
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
@@ -105,7 +106,16 @@ export function setLevel(id) {
   SHED = LEVEL.shed;
   TOOL_SPOTS = LEVEL.toolSpots;
   EXITS = LEVEL.exits;
-  GATE_TILES = tilesWith('G').map((t) => ({ ...t, vertical: '|!;}]'.includes(charAt(t.tx, t.ty - 1)) || '|!;}]'.includes(charAt(t.tx, t.ty + 1)) }));
+  const car = LEVEL.car;
+  CAR_TILES = car ? [[car.tx, car.ty], [car.tx - 1, car.ty + 1], [car.tx + 1, car.ty - 1]] : [];
+  const beyondGate = (tx, ty, dy) => {
+    while (charAt(tx, ty) === 'G') ty += dy;
+    return charAt(tx, ty);
+  };
+  GATE_TILES = tilesWith('G').map((t) => ({
+    ...t,
+    vertical: '|!;}]'.includes(beyondGate(t.tx, t.ty - 1, -1)) || '|!;}]'.includes(beyondGate(t.tx, t.ty + 1, 1)),
+  }));
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const list = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
   ENCLOSURES = list.map((e) => {
@@ -220,10 +230,13 @@ export function exitAt(tx, ty) {
 export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
   if (PATH_CHARS.includes(c)) return LEVEL.path;
+  // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel
+  if (c === 'W' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => PATH_CHARS.includes(charAt(tx + dx, ty + dy)))) return LEVEL.path;
   const g = GROUND[c];
-  if (g === 'fishpond' && !LEVEL.water) return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
-  // eigenes Teichwasser des Gebiets (z. B. Koi-Teich mit Seerosen), fest pro Kachel verteilt
-  if ((g === 'water' || g === 'fishpond') && LEVEL.water) return LEVEL.water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % LEVEL.water.length];
+  // eigenes Teichwasser des Gehege bzw. Gebiets (z. B. Koi-Teich mit Seerosen), fest pro Kachel verteilt
+  const water = enclosureAt(tx, ty)?.water ?? LEVEL.water;
+  if (g === 'fishpond' && !water) return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
+  if ((g === 'water' || g === 'fishpond') && water) return water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % water.length];
   if (g) return g;
   return grassAt(tx, ty);
 }
@@ -232,7 +245,10 @@ export function groundAt(tx, ty) {
 export function grassAt(tx, ty) {
   const h = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
   const n = h % 10;
-  return LEVEL.grass[n < 6 ? 0 : n < 9 ? 1 : 2];
+  // im Tierpark hat jedes Gehege und jeder Randstreifen den Boden seiner Welt
+  const zone = LEVEL.grounds?.find(({ area: a }) => tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1);
+  const grass = enclosureAt(tx, ty)?.ground ?? zone?.ground ?? LEVEL.grass;
+  return grass[n < 6 ? 0 : n < 9 ? 1 : 2];
 }
 
 // Wasserecken, die nach außen ins Land ragen (beide angrenzenden Nachbarn sind kein Wasser derselben Art).
@@ -299,6 +315,7 @@ export function isTerrainBlocked(tx, ty) {
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
   if ('~owH'.includes(charAt(tx, ty))) return true;
+  if (CAR_TILES.some(([x, y]) => x === tx && y === ty)) return true;
   return objectAt(tx, ty)?.solid ?? false;
 }
 

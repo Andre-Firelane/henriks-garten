@@ -20,6 +20,7 @@ import {
   objectAt,
   fenceAxisAt,
   isBlocked,
+  isFishpond,
   exitAt,
   inPen,
   nearEnclosure,
@@ -60,6 +61,7 @@ import Trap from '../world/Trap.js';
 import { animalIcon, animalIcons } from '../ui/icons.js';
 import { touchHandlers, setTouchTool } from '../ui/touch.js';
 import { openJournal, isJournalOpen } from '../ui/journal.js';
+import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
@@ -69,6 +71,8 @@ const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
+const SIGN_INNER_W = 38; // helle Tafel des Torschilds (Welt-Pixel), darauf die Tierbilder
+const SIGN_ICON_H = 22;
 
 // Für die Übersicht: womit man fängt (Bild, Name) und besondere Tipps je Tierart
 const CATCH_TOOLS = {
@@ -122,6 +126,7 @@ const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekun
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
 const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
+const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
 const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
 const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS-Pixel)
@@ -214,11 +219,10 @@ export default class GardenScene extends Phaser.Scene {
         const obj = objectAt(tx, ty);
         if (obj?.bridge) continue; // Brücken werden unten am Stück gezeichnet
         if (obj?.fence) this.addFence(tx, ty, obj);
-        else if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
-        if (obj?.key === 'signpost') {
+        else if (obj?.key === 'signpost_post') {
           this.signs.push({ x, y });
-          this.labelSignpost(x, y);
-        }
+          this.drawSignBoards(x, y, tx, ty);
+        } else if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
       }
     }
 
@@ -235,12 +239,19 @@ export default class GardenScene extends Phaser.Scene {
       open: false,
       closeTimer: 0,
     }));
-    // Schilder mit den Fußspuren der erlaubten Tiere, am Zaun neben dem Tor
+    // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
     this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
       const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
       // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt
       const front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
-      this.add.image(x, y - 20, `esign_${e.signKey ?? e.id}`).setScale(0.5).setDepth(front);
+      this.add.image(x, y - 20, 'esign_board').setScale(0.5).setDepth(front);
+      // Tierbilder nebeneinander auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
+      const list = e.species ?? [];
+      const step = SIGN_INNER_W / list.length;
+      list.forEach((s, i) => {
+        const icon = this.add.image(x - SIGN_INNER_W / 2 + step * (i + 0.5), y - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
+        icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
+      });
       return { x, y, enclosure: e };
     });
     this.wrongHomeTimer = 0;
@@ -258,6 +269,21 @@ export default class GardenScene extends Phaser.Scene {
         .setOrigin(72 / 144, (shedH - 38) / shedH)
         .setDepth(shedCenter.y - TILE_H / 2);
     }
+
+    // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
+    this.car = null;
+    if (LEVEL.car) {
+      const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
+      const img = this.add.sprite(x, y + 4, LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5).setDepth(y);
+      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openCarMap());
+      const label = this.add
+        .text(x, y - 76, 'Schnellreise ▸', { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
+        .setOrigin(0.5)
+        .setDepth(100000)
+        .setVisible(false);
+      this.car = { x, y, label };
+    }
+    this.nearCar = false;
 
     // Beschriftung über den Übergängen in andere Level
     for (const exit of EXITS) {
@@ -325,12 +351,14 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere, die dem Spieler aus dem letzten Level gefolgt sind
     this.followers = [];
-    for (const { species, variant } of game.followers) {
+    for (const { species, variant, origin } of game.followers) {
       const a = this.createAnimal(species, start.x, start.y, variant);
       a.restore('following');
+      a.origin = origin;
       this.followers.push(a);
     }
     game.followers = [];
+    const moved = LEVEL_ID === 'park' ? this.moveFollowersIntoPens() : ''; // im Tierpark ziehen sie gleich ein
 
     this.hud = document.getElementById('hud');
     this.toolbar = document.getElementById('tools');
@@ -344,7 +372,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateToolbar();
     if (data.level) {
       const back = data.returned ? `<br><small>${data.returned} liegt wieder in der Hütte im anderen Gebiet</small>` : '';
-      this.showToast(`${LEVEL.name}${back}`);
+      this.showToast(`${LEVEL.name}${back}${moved}`);
     }
 
     const cam = this.cameras.main;
@@ -365,6 +393,10 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', restart);
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
     const useTool = () => {
+      if (this.nearCar && !this.leaving) {
+        this.openCarMap(); // am Auto: Weltkarte statt Werkzeug
+        return;
+      }
       const tool = this.tool;
       if (this.leaving || !tool || tool.active) return; // läuft schon ein Schwung, zählt der Druck nicht
       tool.use();
@@ -503,21 +535,46 @@ export default class GardenScene extends Phaser.Scene {
     if ((xl || xr) && (yu || yd)) this.add.image(x, y, `post_${kind}`).setOrigin(0.5, obj.originY).setDepth(y + 0.01);
   }
 
-  // Namen auf die Bretter des Wegweisers schreiben (Brettmitten siehe signpost() in make-sprites.js)
-  labelSignpost(x, y) {
-    const boards = [[13, -51], [-13, -38], [13, -25], [-13, -12]];
-    (LEVEL.signLabels ?? []).forEach((text, i) => {
-      const [dx, dy] = boards[i];
-      this.add
-        .text(x + dx, y + dy, text, {
-          fontFamily: 'Trebuchet MS, Arial',
-          fontSize: text.length > 6 ? '6px' : '7px', // längere Namen etwas kleiner, damit sie aufs Brett passen
-          fontStyle: 'bold',
-          color: '#3a2414',
-          resolution: 8,
-        })
-        .setOrigin(0.5)
-        .setDepth(y + 0.1);
+  // Wegweiser mit schrägen Brettern: jedes Ziel bekommt ein Brett, das entlang einer der vier Wegrichtungen zeigt
+  // (schräg wie die Wege) – in die Richtung, in die man vom Schild aus losgeht. Ziele sind die Bereiche des Levels
+  // (sections, z. B. im Tierpark) oder sonst seine Ausgänge. signScale macht einen Wegweiser größer.
+  drawSignBoards(x, y, tx, ty) {
+    const k = LEVEL.signScale ?? 1;
+    this.add.image(x, y, 'signpost_post').setOrigin(0.5, 60 / 64).setScale(k).setDepth(y);
+    // Richtungen auf dem Bildschirm: entlang ty nach oben rechts bzw. unten links, entlang tx nach unten rechts bzw. oben links
+    const DIRS = { 'ty-': [2, -1], 'tx-': [-2, -1], 'tx+': [2, 1], 'ty+': [-2, 1] };
+    const targets = LEVEL.sections ?? EXITS.map(({ label, tx, ty }) => ({ label, tx, ty }));
+    const boards = targets.map((s) => {
+      const dtx = s.tx - tx;
+      const dty = s.ty - ty;
+      const key = Math.abs(dtx) >= Math.abs(dty) ? (dtx > 0 ? 'tx+' : 'tx-') : dty > 0 ? 'ty+' : 'ty-';
+      const [dx, dy] = DIRS[key];
+      const n = Math.hypot(dx, dy);
+      return { label: s.label, ux: dx / n, uy: dy / n };
+    });
+    boards.sort((a, b) => a.uy - b.uy); // nach oben zeigende Bretter oben am Pfosten
+    const HEIGHTS = [52, 41, 30, 19];
+    boards.forEach((b, i) => {
+      const h = (HEIGHTS[i] ?? 19) * k;
+      const text = this.add
+        .text(0, 0, b.label, { fontFamily: 'Trebuchet MS, Arial', fontSize: `${Math.round(7 * k)}px`, fontStyle: 'bold', color: '#3a2414', resolution: 8 })
+        .setOrigin(0.5);
+      const L = text.width + 8 * k; // Brettlänge passend zum Namen
+      const half = 5 * k; // halbe Brettbreite
+      const bx = x + b.ux * 2;
+      const by = y - h;
+      const along = (t, off) => ({ x: bx + b.ux * t, y: by + b.uy * t + off });
+      const pts = [along(0, -half), along(L, -half), along(L + half, 0), along(L, half), along(0, half)];
+      const depth = y + (b.uy < 0 ? -0.2 : 0.2); // nach hinten zeigende Bretter hinter, nach vorne zeigende vor dem Pfosten
+      const g = this.add.graphics().setDepth(depth);
+      g.fillStyle(0xe0b57a, 1).fillPoints(pts, true);
+      g.lineStyle(1, 0xf2d4a0, 1).lineBetween(pts[0].x, pts[0].y + 1, pts[1].x, pts[1].y + 1);
+      g.lineStyle(1, 0x2b1d14, 1).strokePoints(pts, true);
+      const mid = along(L / 2, 0);
+      // schräge Schrift entlang des Bretts, immer von links nach rechts lesbar
+      let angle = Math.atan2(b.uy, b.ux);
+      if (b.ux < 0) angle += Math.PI;
+      text.setPosition(mid.x, mid.y).setRotation(angle).setDepth(depth + 0.01);
     });
   }
 
@@ -789,6 +846,12 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateToolbar() {
+    if (this.nearCar) {
+      // am Auto zeigt die Aktionstaste die Schnellreise
+      setTouchTool(null, 'assets/worldmap.jpg');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/worldmap.jpg" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Schnellreise</span></div>`;
+      return;
+    }
     const id = this.toolId;
     setTouchTool(id);
     this.toolbar.innerHTML = id
@@ -1108,8 +1171,66 @@ export default class GardenScene extends Phaser.Scene {
     this.showToast(`${surprise}Die Falle liegt wieder an der Hütte.`);
   }
 
+  // Weltkarte öffnen (am Auto): das Spiel pausiert, bis man losfährt oder die Karte schließt
+  openCarMap() {
+    if (this.leaving || isTravelMapOpen() || isJournalOpen()) return;
+    const places = Object.entries(LEVELS)
+      .filter(([, l]) => l.car && l.map)
+      .map(([id, l]) => ({ id, name: l.name, icon: l.map.icon, x: l.map.x, y: l.map.y }));
+    this.scene.pause();
+    openTravelMap(
+      places,
+      LEVEL_ID,
+      (id) => {
+        this.scene.resume();
+        this.travelTo(id);
+      },
+      () => this.scene.resume(),
+    );
+  }
+
+  // Schnellreise: wie ein Gebietswechsel (Tiere kommen mit), Ankunft vor dem Auto im Zielgebiet
+  travelTo(id) {
+    const car = LEVELS[id].car;
+    this.leaveLevel({ to: id, arrive: { tx: car.tx + 1, ty: car.ty + 1 }, label: LEVELS[id].name });
+  }
+
+  // Tierpark: alle Tiere, die einem folgen, ziehen sofort in ihr Gehege ein – bevorzugt in das ihrer Herkunftswelt.
+  // Gibt den Zusatz für die Meldung beim Ankommen zurück.
+  moveFollowersIntoPens() {
+    const moved = [];
+    for (const a of [...this.followers]) {
+      const fitting = ENCLOSURES.filter((e) => accepts(e, a.species));
+      const e = fitting.find((f) => f.world === a.origin) ?? fitting[0];
+      if (!e) continue;
+      this.placeInPen(a, e);
+      this.followers.splice(this.followers.indexOf(a), 1);
+      moved.push(a.species);
+    }
+    return moved.length ? `<br>${animalIcons(moved, 2.6)}<br>${moved.length === 1 ? 'Dein Tier ist in sein Gehege gezogen.' : 'Deine Tiere sind in ihre Gehege gezogen.'}` : '';
+  }
+
+  // Ein Tier an eine freie Stelle in diesem Gehege setzen (Wassertiere in dessen Teich) und einziehen lassen
+  placeInPen(animal, e) {
+    const a = e.area;
+    const water = ['fish', 'koi', 'crocodile'].includes(animal.species);
+    const tiles = [];
+    for (let ty = a.ty0; ty <= a.ty1; ty++) {
+      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+        if (water ? isFishpond(tx, ty) : !isBlocked(tx, ty)) tiles.push({ tx, ty });
+      }
+    }
+    const t = Phaser.Utils.Array.GetRandom(tiles) ?? { tx: a.tx0, ty: a.ty0 };
+    const p = tileToWorld(t.tx, t.ty);
+    animal.x = p.x + Phaser.Math.Between(-6, 6);
+    animal.y = p.y + Phaser.Math.Between(-3, 3);
+    animal.enclosure = e;
+    animal.enterPen();
+  }
+
   // Ein wildes Tier fangen: es stellt sich hinten in die Reihe
   catchAnimal(animal) {
+    animal.origin ??= LEVEL_ID; // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     animal.catch();
     this.followers.push(animal);
     // Herdentiere: die anderen der Herde rennen vor Schreck davon und verschwinden
@@ -1164,7 +1285,7 @@ export default class GardenScene extends Phaser.Scene {
         .map((a) => ({ species: a.species, variant: a.variant, state: a.state, x: a.x, y: a.y, life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
     };
-    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant }));
+    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, origin: a.origin }));
     game.tool = null;
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
@@ -1181,10 +1302,11 @@ export default class GardenScene extends Phaser.Scene {
       const species = ALL_SPECIES.filter((s) => LEVELS[exit.to].spawn.weights[s]);
       entries.push([tileToWorld(exit.tx, exit.ty), species.length ? `${exit.label} – ${animalIcons(species)}` : exit.label]);
     }
-    for (const { area: a, name, species } of ENCLOSURES) {
+    for (const { area: a, name, species, world } of ENCLOSURES) {
+      const where = world ? `${LEVELS[world].name}: ` : ''; // im Tierpark: zu welcher Welt das Gehege gehört
       entries.push([
         tileToWorld((a.tx0 + a.tx1) / 2, (a.ty0 + a.ty1) / 2),
-        species ? `${name} – ${animalIcons(species)}` : `${name} – alle Tiere außer ${animalIcon('fish')}`,
+        species ? `${where}${name} – ${animalIcons(species)}` : `${name} – alle Tiere außer ${animalIcon('fish')}`,
       ]);
     }
     // eigener Fischteich nur, wenn er nicht schon in einem Gehege liegt
@@ -1292,6 +1414,13 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
 
+    // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
+    const near = !!this.car && Math.hypot((this.player.x - this.car.x) / 1.6, (this.player.y - this.car.y) * 2) < CAR_DIST;
+    if (near !== this.nearCar) {
+      this.nearCar = near;
+      this.car.label.setVisible(near);
+      this.updateToolbar();
+    }
     // kurz nach dem Aufheben kein Tausch: sonst wechselt man aus Versehen, wenn man über die Werkzeuge daneben läuft
     if (this.time.now >= (this.toolLockUntil ?? 0)) {
       for (const p of [...this.pickups]) if (p.checkCollect(this.player)) this.takeTool(p);
