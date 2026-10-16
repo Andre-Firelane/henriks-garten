@@ -36,6 +36,20 @@ export function animalIcon(species, size = 2.6) {
   return `<span class="animal" style="${style}"></span>`;
 }
 
+// Tierbild in einem quadratischen Feld (size em): breite und hohe Tiere passen gleichermaßen hinein
+export function animalIconSquare(species, size = 3) {
+  const [w, h, count, frame, file = species] = SHEETS[species];
+  const k = size / Math.max(w, h);
+  const style = [
+    `width:${(w * k).toFixed(3)}em`,
+    `height:${(h * k).toFixed(3)}em`,
+    `background-image:url(assets/${file}.png)`,
+    `background-size:${(w * count * k).toFixed(3)}em ${(h * k).toFixed(3)}em`,
+    `background-position:${(-w * frame * k).toFixed(3)}em 0`,
+  ].join(';');
+  return `<span class="animal-box" style="width:${size}em;height:${size}em"><span class="animal" style="${style}"></span></span>`;
+}
+
 export function animalIcons(list, size) {
   return list.map((s) => animalIcon(s, size)).join('');
 }

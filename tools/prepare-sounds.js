@@ -24,6 +24,8 @@ const SOUNDS = [
   ['Sounds/Löwe.mp3', 'public/assets/sounds/lion_roar.wav', 0.15, 1.9, 0.8],
   // Schwung beim Einsetzen eines Werkzeugs
   ['Sounds/whoosh.wav', 'public/assets/sounds/whoosh.wav', 0, 0.2, 0.8],
+  // Auto springt an und fährt los (Schnellreise)
+  ['Sounds/Auto.mp3', 'public/assets/sounds/car.wav', 0, 4.5, 0.8],
   // Falle schnappt zu, wenn ein Tier hineingeht
   ['Sounds/Falle.wav', 'public/assets/sounds/trap.wav', 0, 0.5, 0.8],
   // Hintergrundgeräusche der Level (laufen in Dauerschleife, siehe ambient in levels.js)

@@ -42,6 +42,28 @@
       }
       #toast .animal { font-size: 14px; }
       #toast.show { animation: toast 3.5s ease forwards; }
+      /* Werkzeug-Kiste in der Hütte */
+      #chest {
+        position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
+        background: rgba(20, 14, 8, 0.55); font: 15px/1.3 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
+      }
+      #chest.show { display: flex; }
+      .chest-box {
+        padding: 14px 18px 10px; text-align: center; max-width: 96vw;
+        background: #f4dcae; border: 4px solid #6b4224; border-radius: 14px; box-shadow: 0 6px 0 #8a5a30;
+      }
+      .chest-box h2 { margin: 0 0 12px; font-size: 22px; }
+      .chest-items { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+      .chest-item {
+        width: 120px; padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+        border: 3px solid #a8743f; border-radius: 12px; background: #e8c48a; cursor: pointer;
+        font: bold 16px "Trebuchet MS", Arial, sans-serif; color: #3a2414; transition: transform 0.12s;
+      }
+      .chest-item img { width: 72px; height: 72px; object-fit: contain; image-rendering: pixelated; }
+      .chest-item small { font-size: 12px; font-weight: normal; }
+      .chest-item.carried { border-style: dashed; }
+      .chest-item:hover, .chest-item.selected { transform: scale(1.08); border-color: #e8a830; box-shadow: 0 0 0 4px rgba(255, 210, 90, 0.8); }
+      .chest-hint { margin: 10px 0 0; font-size: 14px; }
       /* Weltkarte für die Schnellreise (am Auto) */
       #travel {
         position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
@@ -59,6 +81,9 @@
         font: bold 13px "Trebuchet MS", Arial, sans-serif; color: #3a2414; cursor: pointer; transition: transform 0.12s;
       }
       .travel-map .place small { display: block; font-size: 11px; font-weight: normal; }
+      /* alle Schilder gleich groß und quadratisch, das Tierbild mittig im Quadrat */
+      .travel-map .place { width: 5.6em; height: 5.6em; justify-content: center; box-sizing: border-box; }
+      .animal-box { display: inline-flex; align-items: flex-end; justify-content: center; }
       .travel-map .place:hover, .travel-map .place.selected {
         transform: translate(-50%, -50%) scale(1.15); border-color: #e8a830; box-shadow: 0 0 0 4px rgba(255, 210, 90, 0.8);
       }
@@ -175,6 +200,7 @@
     <div id="sign"></div>
     <div id="journal"></div>
     <div id="travel"></div>
+    <div id="chest"></div>
     <div id="markers"></div>
     <div id="stick-zone"></div>
     <div id="stick"><div id="stick-knob"></div></div>

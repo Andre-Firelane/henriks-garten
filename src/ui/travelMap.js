@@ -1,10 +1,12 @@
 // Weltkarte für die Schnellreise (am Auto): jedes Gebiet ist mit einem typischen Tier und seinem Namen eingezeichnet.
 // Tablet: aufs Gebiet tippen. Laptop: mit WASD (oder Pfeiltasten) auswählen, mit E, Enter oder Leertaste losfahren.
 // Esc oder ein Tipp neben die Gebiete schließt die Karte.
-import { animalIcon } from './icons.js';
+import { animalIconSquare } from './icons.js';
 
 let panel = null;
 let state = null;
+let openedAt = 0;
+const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nichts tun
 
 export function isTravelMapOpen() {
   return !!panel?.classList.contains('show');
@@ -17,7 +19,7 @@ export function openTravelMap(places, current, onTravel, onClose) {
   const markers = places
     .map(
       (p) => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%">
-        ${animalIcon(p.icon, 3.6)}<span>${p.name}${p.id === current ? '<small>Du bist hier</small>' : ''}</span>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? '<small>Du bist hier</small>' : ''}</span>
       </button>`,
     )
     .join('');
@@ -26,6 +28,7 @@ export function openTravelMap(places, current, onTravel, onClose) {
       <p class="travel-hint">Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.</p>
     </div>`;
   panel.classList.add('show');
+  openedAt = performance.now();
   const targets = places.filter((p) => p.id !== current);
   state = { places: targets, selected: 0, onTravel, onClose };
   highlight();
@@ -73,6 +76,8 @@ function onKey(e) {
 }
 
 function onClick(e) {
+  // auf dem Tablet kommt nach dem Antippen, das die Tafel geöffnet hat, noch ein Klick hinterher: nicht gleich wieder schließen
+  if (performance.now() - openedAt < OPEN_GRACE) return;
   const place = e.target.closest('.place');
   if (place && !place.classList.contains('here')) travel(place.dataset.id);
   else if (!place) close(true);

@@ -15,7 +15,7 @@
 //          U  Erdhöhle (Fuchsbau)   u  Erdmännchenbau
 //          C  Kratzbaum   ,  Holzboden   w  Teich in einem Gehege (keine wilden Fische)
 //          G  Tor zum Gehege (auf Weg, öffnet sich beim Durchgehen)
-//          H  Werkzeughütte (2x2 Kacheln, siehe shed)
+//          M  Hüttenwand (tx)  N  Hüttenwand (ty)  s  Schrank  p  Schreibtisch  c  Werkzeug-Kiste  e  kleine Kiste (siehe hut, chests)
 //          o  Fischteich (hierhin bringt man gefangene Fische)   S  Schild am Fischteich
 //          W  Wegweiser
 //          1  Laubbaum   2  Tanne   3  trockener Strauch   (dichte Füller im Gehege-Streifen hinter dem oberen Kartenrand)
@@ -26,9 +26,9 @@
 export const LEVELS = {
   meadow: {
     name: 'Wiese',
-    // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 15, ty: 24, texture: 'car_park', frame: 0 },
-    map: { x: 51, y: 30, icon: 'sheep' },
+    // Schnellreise: Auto (Kachel, Bild, Größe) und Lage auf der Weltkarte (in Prozent)
+    car: { tx: 12, ty: 27, texture: 'car_park', frame: 0, scale: 1.26 },
+    map: { x: 51.5, y: 34, icon: 'sheep' },
     rows: [
       'TTbbTTTTbbTTTTTTbTTTXTTTTbTTTTTbTTTTTbTT',
       'T...................#..................T',
@@ -51,10 +51,10 @@ export const LEVELS = {
       'T..................W#..................b',
       'X######################################X',
       'T.......g...........#..................T',
-      'T...fffgfff.....HH###..................T',
-      'b...fggfggf....bHH###......g......~~~..T',
-      'T...fffgfff.........#............~~~~~.T',
-      'T..........r........#...T........~~~~~.T',
+      'T...fffgfff..MMMMM..#..................T',
+      'b...fggfggf..Ns,pN..#......g......~~~..T',
+      'T...fffgfff..Nc,,G###............~~~~~.T',
+      'T..........r.MMMMM..#...T........~~~~~.T',
       'T...b...............#............~~~~~.T',
       'T...................#............~~~~~.T',
       'T...................#.......f.....~~~..T',
@@ -75,15 +75,13 @@ export const LEVELS = {
     path: 'path',
     start: { tx: 20, ty: 20 },
     enclosures: [], // die Gehege sind im Tierpark
-    shed: { tx: 16, ty: 21 }, // obere Kachel der 2x2-Hütte; die offene Seite zeigt nach vorne rechts
-    shedTexture: 'shed',
-    ambient: 'ambient_meadow', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
-    // jedes Werkzeug hat einen festen Platz; hierhin kommt es auch zurück
-    toolSpots: [
-      { tool: 'net', tx: 18, ty: 21 },
-      { tool: 'lasso', tx: 18, ty: 22 },
-      { tool: 'empty', tx: 18, ty: 23 }, // "Hände frei": hier legt man das getragene Werkzeug ab
+    // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
+    hut: { tx0: 13, ty0: 21, tx1: 17, ty1: 24, style: 'meadow' },
+    chests: [
+      { tx: 14, ty: 23, tools: ['net', 'lasso'] },
     ],
+    ambient: 'ambient_meadow', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
+    toolSpots: [],
     // Übergänge: wer auf die Kachel tritt, kommt im Ziel-Level an der Kachel "arrive" heraus
     exits: [
       { tx: 20, ty: 0, to: 'park', arrive: { tx: 25, ty: 31 }, label: 'Tierpark' },
@@ -101,8 +99,8 @@ export const LEVELS = {
   forest: {
     name: 'Wald',
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 25, ty: 14, texture: 'car_forest', frame: 1 },
-    map: { x: 53, y: 19, icon: 'stag' },
+    car: { tx: 30, ty: 20, texture: 'car_forest', frame: 1, scale: 1.1 },
+    map: { x: 53, y: 16, icon: 'stag' },
     rows: [
       'PPPPPPPPPPPPPPPPPPPPPPXPPPPPPPPPPPPPPPPP',
       'P...P.....n..........m#.....P....n.....P',
@@ -115,11 +113,11 @@ export const LEVELS = {
       'PP......~~~~~~~.n.PPPP#P..............DP',
       'P.......~~~~~~~...PPP.#................P',
       'Pk...P..~~~~~~~..PPPP.#.........mm....kP',
-      'Pkkk....~~~~~~~.nL....#.P.............PP',
-      'PP..n....~~~~~.########LD...nHH#......PP',
-      'Pk.......n.....L.Dk...#.P....HH#......PP',
-      'PD..P...k..n...P.Pk...#........#......PP',
-      'PP.....kk.PD..PPDP...n#..n..n..#..P...kP',
+      'Pkkk....~~~~~~~.nL....#.PMMMMM........PP',
+      'PP..n....~~~~~.########LDNs,pN.#......PP',
+      'Pk.......n.....L.Dk...#.PNc,,G##......PP',
+      'PD..P...k..n...P.Pk...#..MMMMM.#......PP',
+      'PP.....kk.PD..PPDP...n#........#..P...kP',
       'PP......k......P.P..D.#.D......#.......P',
       'PPPPD.Dnkmn...D.......#........#......DP',
       'PD......###############################X',
@@ -149,19 +147,14 @@ export const LEVELS = {
     path: 'forest_path',
     start: { tx: 37, ty: 18 },
     enclosures: [], // die Gehege sind im Tierpark
-    shed: { tx: 29, ty: 12 },
-    shedTexture: 'shed_log', // rustikale Blockhütte
+    // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
+    hut: { tx0: 25, ty0: 11, tx1: 29, ty1: 14, style: 'forest' },
+    chests: [
+      { tx: 26, ty: 13, tools: ['net', 'lasso', 'trap'] },
+    ],
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
     ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
-    toolSpots: [
-      // vor der Hütte, neben dem Weg zum Gehege
-      { tool: 'empty', tx: 28, ty: 14 }, // "Hände frei": hier legt man das getragene Werkzeug ab
-      { tool: 'net', tx: 29, ty: 14 },
-      { tool: 'lasso', tx: 30, ty: 14 },
-      // die beiden Fallen eine Reihe tiefer, damit man zwischen ihnen und Kescher/Lasso durchlaufen kann
-      { tool: 'trap', tx: 29, ty: 16 },
-      { tool: 'trap', tx: 30, ty: 16 },
-    ],
+    toolSpots: [],
     exits: [
       { tx: 22, ty: 0, to: 'park', arrive: { tx: 25, ty: 31 }, label: 'Tierpark' },
       { tx: 39, ty: 18, to: 'meadow', arrive: { tx: 1, ty: 19 }, label: 'Wiese' },
@@ -173,7 +166,7 @@ export const LEVELS = {
   savanna: {
     name: 'Savanne',
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 15, ty: 23, texture: 'car_savanna', frame: 0 },
+    car: { tx: 14, ty: 26, texture: 'car_savanna', frame: 0, scale: 1.15 },
     map: { x: 58, y: 63, icon: 'giraffe' },
     rows: [
       'AvvvvvvRvAvvvvvvRvAvXvvvvRvAvvvvvvRvAvvv',
@@ -196,15 +189,15 @@ export const LEVELS = {
       'v.yv....A..R........#...A........y.....v',
       'A...................#.............y.yA.v',
       'X##############################........v',
-      'v...............HH..#..................v',
-      'v...............HH..#...v.....R........v',
-      'v...y.y.............#.....A......y.....v',
-      'v...R........A......#...............R..v',
+      'v............MMMMM..#..................v',
+      'v............Ns,pN..#...v.....R........v',
+      'v...y.y......Nc,,G###.....A......y.....v',
+      'v...R........MMMMM..#...............R..v',
       'v.......v...........#...v..A...y.......A',
       'v................yy.#..................R',
-      'v..y...........R....#..................v',
-      'A....A..~~...y...v..#..R...........y...v',
-      'R......~~~~~..y.....#........~~~~~.A...v',
+      'v..y................#..................v',
+      'A....A..~~.......v..#..R...........y...v',
+      'R......~~~~~........#........~~~~~.A...v',
       'v......~~~~~........#.......~~~~~~..y..v',
       'v......~~~~~........#..v...~~~~~~~~.y..v',
       'v...R..~~~~~y.A..R..#........~~~~~.....v',
@@ -221,19 +214,16 @@ export const LEVELS = {
     path: 'savanna_path',
     start: { tx: 2, ty: 19 },
     enclosures: [], // die Gehege sind im Tierpark
-    shed: { tx: 16, ty: 20 },
-    shedTexture: 'shed_tent', // Ranger-Zelt
+    // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
+    hut: { tx0: 13, ty0: 20, tx1: 17, ty1: 23, style: 'savanna' },
+    chests: [
+      { tx: 14, ty: 22, tools: ['net', 'lasso', 'food'] },
+    ],
     hero: 'hero_savanna', // Kleidung der Spielfigur in diesem Gebiet (Safari)
     background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
     ambient: 'ambient_savanna', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     ambientVolume: 0.35, // etwas leiser als in den anderen Gebieten (0.55)
-    toolSpots: [
-      // alle nebeneinander an der offenen Zeltseite, davor eine freie Spur zum Weg
-      { tool: 'net', tx: 18, ty: 20 },
-      { tool: 'lasso', tx: 18, ty: 21 },
-      { tool: 'food', tx: 18, ty: 22 }, // Grünfutter für die Giraffen
-      { tool: 'empty', tx: 18, ty: 23 }, // "Hände frei": hier legt man das getragene Werkzeug ab
-    ],
+    toolSpots: [],
     exits: [
       { tx: 20, ty: 0, to: 'park', arrive: { tx: 25, ty: 31 }, label: 'Tierpark' },
       { tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' },
@@ -250,7 +240,7 @@ export const LEVELS = {
   asia: {
     name: 'Asien',
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 15, ty: 40, texture: 'car_asia', frame: 1 },
+    car: { tx: 11, ty: 42, texture: 'car_asia', frame: 1, scale: 1.3 },
     map: { x: 78, y: 37, icon: 'koi' },
     rows: [
       'JQQJQQJQQJQQJQQJQQJQXJQQJQQJQQJQQJQQJQQk',
@@ -276,7 +266,7 @@ export const LEVELS = {
       'Q...q...~~~~~~~~~~~~B~~~~~~~...........k',
       'J.......~~~.K.~~~~~~B~~~~~.....K.......k',
       'Q.......~~~...EEEEE.#.~~~..............k',
-      'Q........~~~~~~~~~..#..~~~..~~~........k',
+      'Q........~~~~~~~~~.e#..~~~..~~~........k',
       'J...........~~~~~~.l#.K~~~~~~~~~.....q.k',
       'Q........K...~~~~~~.#.~~~~~~~~~~~......k',
       'Q..............~~~~~B~~~~~~~~~~~~n.q...k',
@@ -289,10 +279,10 @@ export const LEVELS = {
       'J..q......r.l....q.l#l....O.........O..k',
       'Q.......hhhrr.......#..........O.......k',
       'Q....r.hhhhh........#.......O..........k',
-      'J.....hhhhhhhr......#l..........q.O....k',
-      'Q......hhhhh.r..HH###...q..............k',
-      'Q.......hhh.r...HH###........O.n.......k',
-      'J...................#............O.....k',
+      'J.....hhhhhhhrMMMMM.#l..........q.O....k',
+      'Q......hhhhh.rNs,pN.#...q..............k',
+      'Q.......hhh.r.Nc,,G##........O.n.......k',
+      'J.............MMMMM.#............O.....k',
       'Q............q......#..................k',
       'Q...............q..l#l..........q......k',
       'J...................#...K..q...q.......k',
@@ -307,21 +297,16 @@ export const LEVELS = {
     water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], // Koi-Teich, ab und zu Seerosen und Lotus
     start: { tx: 20, ty: 45 },
     enclosures: [], // die Gehege sind im Tierpark
-    shed: { tx: 16, ty: 37 },
-    shedTexture: 'shed_pagoda', // Pagode
+    // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
+    hut: { tx0: 14, ty0: 36, tx1: 18, ty1: 39, style: 'asia' },
+    chests: [
+      { tx: 15, ty: 38, tools: ['net', 'lasso', 'koifood'] },
+      { tx: 19, ty: 23, tools: ['net', 'koifood'] },
+    ],
     hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
     ambient: 'ambient_asia', // Asien-Geräusche, leise über die Wiesengeräusche gelegt (siehe tools/prepare-sounds.js)
     background: '#3f7a35',
-    toolSpots: [
-      { tool: 'net', tx: 18, ty: 37 },
-      { tool: 'lasso', tx: 18, ty: 38 },
-      { tool: 'koifood', tx: 18, ty: 39 }, // Fischfutter für die Koi
-      { tool: 'empty', tx: 18, ty: 40 }, // "Hände frei": hier legt man das getragene Werkzeug ab
-      // auf der Insel mitten im Koi-Teich: Kescher und Fischfutter nebeneinander, damit man nach dem Füttern
-      // gleich zum Kescher greifen kann (man trägt ja immer nur eins)
-      { tool: 'net', tx: 19, ty: 23 }, // links vom Weg, damit der Kirschbaum ihn nicht verdeckt
-      { tool: 'koifood', tx: 22, ty: 23 },
-    ],
+    toolSpots: [],
     // Eingang im Süden: unten am Hauptweg, unter dem roten Tor hindurch
     exits: [
       { tx: 20, ty: 0, to: 'park', arrive: { tx: 25, ty: 31 }, label: 'Tierpark' },
@@ -336,8 +321,8 @@ export const LEVELS = {
   park: {
     name: 'Tierpark',
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 22, ty: 33, texture: 'car_park', frame: 1 },
-    map: { x: 43.5, y: 31, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur
+    car: { tx: 22, ty: 33, texture: 'car_park', frame: 1, scale: 1.26 },
+    map: { x: 42, y: 32, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur
     // jede Welt hat ihre eigene Seite: Savanne oben, Wald links, Wiese rechts, Asien unten. Die Gehege sind in den
     // Rand eingelassen, ihre Tore zeigen zum Rundweg; der Ausgang in eine Welt liegt mitten in deren Seite.
     rows: [

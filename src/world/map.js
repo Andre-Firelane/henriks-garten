@@ -54,6 +54,13 @@ export const OBJECTS = {
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
   u: { key: 'den_sand', originY: 44 / 56, solid: true, hitbox: 16 },
+  // begehbare Hütte: Wände wie Zäune (Bild je Stil, siehe addFence), Schrank, Schreibtisch, Werkzeug-Kisten
+  M: { key: 'hutwall_x', originY: 60 / 80, solid: true, fence: { kind: 'hut', axis: 'x' } },
+  N: { key: 'hutwall_y', originY: 60 / 80, solid: true, fence: { kind: 'hut', axis: 'y' } },
+  s: { key: 'hut_cupboard', originY: 80 / 96, solid: true, hitbox: 12 },
+  p: { key: 'hut_desk', originY: 44 / 64, solid: true, hitbox: 14 },
+  c: { key: 'hut_chest', originY: 44 / 64, solid: true, hitbox: 12, chest: true },
+  e: { key: 'hut_chest_small', originY: 44 / 64, solid: true, hitbox: 10, chest: true },
   // Asien
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
@@ -77,7 +84,6 @@ export let MAP_H;
 export let START;
 // Gehege: { id, name, area (Innenfläche), species (erlaubte Tierarten, null = alle), gates, sign (Schild-Kachel) }
 export let ENCLOSURES;
-export let SHED;
 export let TOOL_SPOTS;
 export let EXITS;
 export let GATE_TILES; // { tx, ty, vertical }: vertical = Tor in einem Zaun entlang ty
@@ -105,19 +111,19 @@ export function setLevel(id) {
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
   START = LEVEL.start;
-  SHED = LEVEL.shed;
   TOOL_SPOTS = LEVEL.toolSpots;
   EXITS = LEVEL.exits;
   const car = LEVEL.car;
   const c = car && tileToWorld(car.tx, car.ty);
-  CAR_BODY = c ? { ax: c.x - 44, ay: c.y - 4, bx: c.x + 48, by: c.y - 24 } : null;
+  const k = car?.scale ?? 1; // größere Autos haben eine längere Grundfläche
+  CAR_BODY = c ? { ax: c.x - 44 * k, ay: c.y - 4 * k, bx: c.x + 48 * k, by: c.y - 24 * k } : null;
   const beyondGate = (tx, ty, dy) => {
     while (charAt(tx, ty) === 'G') ty += dy;
     return charAt(tx, ty);
   };
   GATE_TILES = tilesWith('G').map((t) => ({
     ...t,
-    vertical: '|!;}]'.includes(beyondGate(t.tx, t.ty - 1, -1)) || '|!;}]'.includes(beyondGate(t.tx, t.ty + 1, 1)),
+    vertical: '|!;}]N'.includes(beyondGate(t.tx, t.ty - 1, -1)) || '|!;}]N'.includes(beyondGate(t.tx, t.ty + 1, 1)),
   }));
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const list = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
@@ -210,7 +216,14 @@ export function inPen(tx, ty) {
 
 // Kachel in einem Gehege oder direkt daneben (dort sollen keine wilden Tiere erscheinen)
 export function nearEnclosure(tx, ty) {
+  if (inHut(tx, ty, 1)) return true; // auch an und in der Hütte erscheinen keine wilden Tiere
   return ENCLOSURES.some(({ area: a }) => tx >= a.tx0 - 1 && tx <= a.tx1 + 1 && ty >= a.ty0 - 1 && ty <= a.ty1 + 2);
+}
+
+// Liegt die Kachel in der Hütte (samt Wänden), mit margin Kacheln Rand drumherum?
+export function inHut(tx, ty, margin = 0) {
+  const h = LEVEL.hut;
+  return !!h && tx >= h.tx0 - margin && tx <= h.tx1 + margin && ty >= h.ty0 - margin && ty <= h.ty1 + margin;
 }
 
 // Darf diese Tierart in dieses Gehege?
@@ -232,6 +245,7 @@ export function exitAt(tx, ty) {
 
 export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
+  if (inHut(tx, ty)) return 'planks'; // die ganze Hütte hat Holzboden, auch unter Wänden und Tür
   if (PATH_CHARS.includes(c)) return LEVEL.path;
   // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel
   if (c === 'W' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => PATH_CHARS.includes(charAt(tx + dx, ty + dy)))) return LEVEL.path;

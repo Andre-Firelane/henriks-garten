@@ -8,7 +8,6 @@ import {
   START,
   ENCLOSURES,
   TOOL_SPOTS,
-  SHED,
   EXITS,
   FISHPOND_TILES,
   NEAR_WATER,
@@ -28,6 +27,7 @@ import {
   BRIDGES,
   KOI_WATER,
   CAR_BODY,
+  GATE_TILES,
   enclosureAt,
   bridgeArch,
 } from '../world/map.js';
@@ -63,6 +63,7 @@ import { animalIcon, animalIcons } from '../ui/icons.js';
 import { touchHandlers, setTouchTool } from '../ui/touch.js';
 import { openJournal, isJournalOpen } from '../ui/journal.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
+import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
@@ -127,6 +128,9 @@ const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekun
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
 const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
+const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen
+const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
+const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
 const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
@@ -149,6 +153,7 @@ const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
+const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
 const AMBIENT_VOLUME = 0.55; // Lautstärke der Hintergrundgeräusche (z. B. Wald)
 const AMBIENT_FADE = 1500; // Millisekunden zum Einblenden
 
@@ -204,6 +209,7 @@ export default class GardenScene extends Phaser.Scene {
     setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'meadow'));
     this.leaving = false;
     this.signs = [];
+    this.hutFront = [];
 
     for (let ty = 0; ty < MAP_H; ty++) {
       for (let tx = 0; tx < MAP_W; tx++) {
@@ -219,11 +225,19 @@ export default class GardenScene extends Phaser.Scene {
 
         const obj = objectAt(tx, ty);
         if (obj?.bridge) continue; // Brücken werden unten am Stück gezeichnet
-        if (obj?.fence) this.addFence(tx, ty, obj);
+        if (obj?.fence) {
+          const imgs = this.addFence(tx, ty, obj);
+          // vordere Hüttenwände (zur Kamera hin) werden durchsichtig, wenn man drin ist
+          const h = LEVEL.hut;
+          if (obj.fence.kind === 'hut' && (ty === h.ty1 || tx === h.tx1)) this.hutFront.push(...imgs);
+        }
         else if (obj?.key === 'signpost_post') {
           this.signs.push({ x, y });
           this.drawSignBoards(x, y, tx, ty);
-        } else if (obj) this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
+        } else if (obj) {
+          const img = this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
+          if (obj.chest) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openChest(this.chestAt(tx, ty)));
+        }
       }
     }
 
@@ -240,6 +254,29 @@ export default class GardenScene extends Phaser.Scene {
       open: false,
       closeTimer: 0,
     }));
+    // Hütte: Tür (geht auf wie ein Gehegetor) und Dach über dem ganzen Raum
+    this.hut = null;
+    if (LEVEL.hut) {
+      const h = LEVEL.hut;
+      const doors = GATE_TILES.filter(({ tx, ty }) => tx >= h.tx0 && tx <= h.tx1 && ty >= h.ty0 && ty <= h.ty1);
+      const group = {
+        sprites: doors.map(({ tx, ty, vertical }) => {
+          const { x, y } = tileToWorld(tx, ty);
+          const img = this.add.image(x, y, `gate_door_${h.style}_${vertical ? 'y' : 'x'}`);
+          return img.setOrigin(0.5, (img.height - 20) / img.height).setDepth(y);
+        }),
+        open: false,
+        closeTimer: 0,
+      };
+      this.gateGroups.push(group);
+      this.hutFront.push(...group.sprites);
+      // obere Ecke der Grundfläche liegt im Dachbild bei (184, 100)
+      const top = tileToWorld(h.tx0, h.ty0);
+      const bottom = tileToWorld(h.tx1, h.ty1);
+      const roof = this.add.image(top.x, top.y - TILE_H / 2, `hutroof_${h.style}`).setOrigin(184 / 384, 100 / 310).setDepth(bottom.y + TILE_H / 2 + 1);
+      this.hut = { roof, inside: false };
+    }
+
     // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
     this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
       const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
@@ -260,29 +297,20 @@ export default class GardenScene extends Phaser.Scene {
     for (const e of ENCLOSURES) if (e.netRoof) this.drawNetRoof(e.area);
     this.shownSign = null; // welches Schild die Tafel gerade zeigt
 
-    // Werkzeughütte: Bild sitzt mit der Mitte seiner Grundfläche auf der gemeinsamen Ecke der 4 Kacheln
-    if (SHED) {
-      const shedCenter = tileToWorld(SHED.tx + 1, SHED.ty + 1);
-      // Mitte der Grundfläche liegt 38 Pixel über der Unterkante (auch bei höheren Hütten wie der Pagode)
-      const shedH = this.textures.get(LEVEL.shedTexture).getSourceImage().height;
-      this.add
-        .image(shedCenter.x, shedCenter.y - TILE_H / 2, LEVEL.shedTexture)
-        .setOrigin(72 / 144, (shedH - 38) / shedH)
-        .setDepth(shedCenter.y - TILE_H / 2);
-    }
 
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
     this.car = null;
     if (LEVEL.car) {
       const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
-      const img = this.add.sprite(x, y + 4, LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5).setDepth(y);
+      const k = LEVEL.car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
+      const img = this.add.sprite(x, y + 4, LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
       img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openCarMap());
       const label = this.add
-        .text(x, y - 76, 'Schnellreise ▸', { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
+        .text(x, y - 76 * k, 'Schnellreise ▸', { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
         .setOrigin(0.5)
         .setDepth(100000)
         .setVisible(false);
-      this.car = { x, y, label, img };
+      this.car = { x, y, label, img, k };
     }
     this.nearCar = false;
 
@@ -372,7 +400,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateHud();
     this.updateToolbar();
     if (data.level) {
-      const back = data.returned ? `<br><small>${data.returned} liegt wieder in der Hütte im anderen Gebiet</small>` : '';
+      const back = data.returned ? `<br><small>${data.returned} ist wieder in der Kiste im anderen Gebiet</small>` : '';
       this.showToast(`${LEVEL.name}${back}${moved}`);
     }
 
@@ -394,6 +422,10 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', restart);
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
     const useTool = () => {
+      if (this.nearChest && !this.leaving) {
+        this.openChest(this.nearChest); // an der Kiste: Werkzeug auswählen
+        return;
+      }
       if (this.nearCar && !this.leaving) {
         this.openCarMap(); // am Auto: Weltkarte statt Werkzeug
         return;
@@ -519,11 +551,14 @@ export default class GardenScene extends Phaser.Scene {
     const xr = joins(1, 0, 'x');
     const yu = joins(0, -1, 'y');
     const yd = joins(0, 1, 'y');
-    const prefix = obj.key.slice(0, -2); // z. B. fence, mesh, net, chain
+    const hut = kind === 'hut' ? `hutwall_${LEVEL.hut.style}` : null; // Hüttenwand im Stil des Gebiets
+    const prefix = hut ?? obj.key.slice(0, -2); // z. B. fence, mesh, net, chain
+    const imgs = [];
     const piece = (a, crop) => {
       const img = this.add.image(x, y, `${prefix}_${a}`).setOrigin(0.5, obj.originY).setDepth(y);
       if (crop === 'left') img.setCrop(0, 0, 34, img.height);
       if (crop === 'right') img.setCrop(30, 0, 34, img.height);
+      imgs.push(img);
     };
     // entlang tx: links geht es zu tx-1, rechts zu tx+1; entlang ty (gespiegelt): rechts zu ty-1, links zu ty+1
     if (xl && xr) piece('x');
@@ -533,7 +568,8 @@ export default class GardenScene extends Phaser.Scene {
     else if (yu) piece('y', 'right');
     else if (yd) piece('y', 'left');
     if (!xl && !xr && !yu && !yd) piece(axis); // einzelnes Stück
-    if ((xl || xr) && (yu || yd)) this.add.image(x, y, `post_${kind}`).setOrigin(0.5, obj.originY).setDepth(y + 0.01);
+    if ((xl || xr) && (yu || yd)) imgs.push(this.add.image(x, y, `post_${hut ?? kind}`).setOrigin(0.5, obj.originY).setDepth(y + 0.01));
+    return imgs;
   }
 
   // Wegweiser mit schrägen Brettern: jedes Ziel bekommt ein Brett, das entlang einer der vier Wegrichtungen zeigt
@@ -847,6 +883,11 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateToolbar() {
+    if (this.nearChest) {
+      setTouchTool(null, 'assets/hut_chest.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/hut_chest.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Kiste öffnen</span></div>`;
+      return;
+    }
     if (this.nearCar) {
       // am Auto zeigt die Aktionstaste die Schnellreise
       setTouchTool(null, 'assets/worldmap.jpg');
@@ -868,7 +909,8 @@ export default class GardenScene extends Phaser.Scene {
     this.toast.classList.add('show');
   }
 
-  // Jedes Werkzeug hat einen festen Platz an der Hütte (toolSpots im Level). Gibt es mehrere gleiche
+  // Werkzeuge kommen zurück in die Kiste (dort gibt es beliebig viele). Nur Werkzeuge mit einem festen Platz
+  // am Boden (toolSpots im Level) werden dort wieder hingelegt. Gibt es mehrere gleiche
   // (die zwei Fallen), kommt es auf den ersten freien davon.
   returnTool(id) {
     const spots = TOOL_SPOTS.filter((s) => s.tool === id).map(({ tx, ty }) => tileToWorld(tx, ty));
@@ -929,7 +971,7 @@ export default class GardenScene extends Phaser.Scene {
       this.catchAnimal(giraffe);
       this.showToast(`${animalIcon('giraffe', 3.2)} Die Giraffe mag dich! Sie läuft dir jetzt hinterher.`);
     } else {
-      this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter liegt an der Hütte.`);
+      this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter gibt es in der Kiste in der Hütte.`);
     }
   }
 
@@ -1169,7 +1211,32 @@ export default class GardenScene extends Phaser.Scene {
     this.traps.delete(t.id);
     game.traps = game.traps.filter((g) => g !== t);
     this.returnTool('trap');
-    this.showToast(`${surprise}Die Falle liegt wieder an der Hütte.`);
+    this.showToast(`${surprise}Die Falle ist wieder in der Kiste.`);
+  }
+
+  // Kiste an dieser Kachel (aus LEVEL.chests)
+  chestAt(tx, ty) {
+    return (LEVEL.chests ?? []).find((c) => c.tx === tx && c.ty === ty) ?? null;
+  }
+
+  // Werkzeug-Kiste öffnen: Werkzeuge dieses Gebiets und "Hände frei"; das Spiel pausiert so lange
+  openChest(chest) {
+    if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
+    const items = [...chest.tools.map((id) => ({ id, name: TOOLS[id].name, image: id })), { id: null, name: 'Hände frei', image: 'hand' }];
+    this.scene.pause();
+    openToolChest(
+      items,
+      this.toolId,
+      (id) => {
+        this.scene.resume();
+        if (id === this.toolId) return;
+        if (id) {
+          this.equipTool(id); // das getragene Werkzeug kommt zurück in die Kiste
+          this.showToast(`${TOOLS[id].name} genommen. ${TOOLS[id].hint}`);
+        } else if (this.tool) this.dropTool();
+      },
+      () => this.scene.resume(),
+    );
   }
 
   // Weltkarte öffnen (am Auto): das Spiel pausiert, bis man losfährt oder die Karte schließt
@@ -1192,6 +1259,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Schnellreise: wie ein Gebietswechsel (Tiere kommen mit), Ankunft vor dem Auto im Zielgebiet
   travelTo(id) {
+    if (this.cache.audio.exists('car')) this.sound.play('car', { volume: CAR_VOLUME }); // Motor springt an
     const car = LEVELS[id].car;
     this.leaveLevel({ to: id, arrive: { tx: car.tx + 1, ty: car.ty + 1 }, label: LEVELS[id].name });
   }
@@ -1313,7 +1381,8 @@ export default class GardenScene extends Phaser.Scene {
     // eigener Fischteich nur, wenn er nicht schon in einem Gehege liegt
     const mid = FISHPOND_TILES[Math.floor(FISHPOND_TILES.length / 2)];
     if (mid && !inPen(mid.tx, mid.ty)) entries.push([tileToWorld(mid.tx, mid.ty), `Fischteich – für ${animalIcon('fish')}`]);
-    if (SHED) entries.push([tileToWorld(SHED.tx + 1, SHED.ty + 1), 'Werkzeughütte – Kescher und Lasso']);
+    const h = LEVEL.hut;
+    if (h) entries.push([tileToWorld((h.tx0 + h.tx1) / 2, (h.ty0 + h.ty1) / 2), 'Hütte – Werkzeuge in der Kiste']);
 
     const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
     return entries.map(([p, text]) => {
@@ -1422,8 +1491,28 @@ export default class GardenScene extends Phaser.Scene {
       const t = Phaser.Math.Clamp((this.player.x - b.ax) / (b.bx - b.ax), 0, 1);
       this.car.img.setDepth(b.ay + (b.by - b.ay) * t);
     }
+    // an einer Kiste: die Aktionstaste öffnet sie
+    const chest = (LEVEL.chests ?? []).find((c) => {
+      const p = tileToWorld(c.tx, c.ty);
+      return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 1.6;
+    }) ?? null;
+    if (chest !== this.nearChest) {
+      this.nearChest = chest;
+      this.updateToolbar();
+    }
+    // in der Hütte: Dach und vordere Wände durchsichtig, damit man das Innere sieht
+    if (this.hut) {
+      const h = LEVEL.hut;
+      const { tx: px, ty: py } = worldToTile(this.player.x, this.player.y);
+      const inside = px > h.tx0 && px <= h.tx1 && py > h.ty0 && py < h.ty1; // samt Tür
+      if (inside !== this.hut.inside) {
+        this.hut.inside = inside;
+        this.tweens.add({ targets: this.hut.roof, alpha: inside ? HUT_ROOF_ALPHA : 1, duration: 250 });
+        this.tweens.add({ targets: this.hutFront, alpha: inside ? HUT_FRONT_ALPHA : 1, duration: 250 });
+      }
+    }
     // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
-    const near = !!this.car && Math.hypot((this.player.x - this.car.x) / 1.6, (this.player.y - this.car.y) * 2) < CAR_DIST;
+    const near = !!this.car && Math.hypot((this.player.x - this.car.x) / (1.6 * this.car.k), (this.player.y - this.car.y) * 2) < CAR_DIST;
     if (near !== this.nearCar) {
       this.nearCar = near;
       this.car.label.setVisible(near);

@@ -479,96 +479,6 @@ function lasso() {
 
 // Werkzeughütte auf 2x2 Kacheln, nach vorne rechts offen. Mitte der Grundfläche bei (72, 90)
 // style: 'meadow' (Bretter und rote Ziegel) oder 'log' (dicke Baumstämme und bemoostes Schindeldach)
-function shed(style = 'meadow') {
-  const rustic = style === 'log';
-  const cx = 72, cy = 90;
-  const H = 40; // Wandhöhe
-  const R = 28; // Dachhöhe über der Wand
-  const L = [cx - 64, cy], T = [cx, cy - 32], Rt = [cx + 64, cy], B = [cx, cy + 32];
-  const up = ([x, y], h) => [x, y - h];
-  const ridgeBack = [cx - 32, cy - 16 - H - R];
-  const ridgeFront = [cx + 32, cy + 16 - H - R];
-
-  const o = new Canvas(144, 128);
-  // Rückseitige Dachfläche (größtenteils verdeckt)
-  o.poly([up(T, H), up(Rt, H), ridgeFront, ridgeBack], hex(rustic ? '#4f3c2c' : '#a8432f'));
-  // Linke Wand (eigene Ebene, damit das Muster nur auf der Wand landet)
-  const wall = new Canvas(144, 128);
-  wall.poly([L, B, up(B, H), up(L, H)], hex('#b07a42'));
-  if (rustic) {
-    // waagerechte, runde Stämme: Höhe über der Grundlinie bestimmt den Stamm und die Schattierung
-    const LOG = 8;
-    for (let y = 0; y < 128; y++) {
-      for (let x = 0; x < 144; x++) {
-        const h = L[1] + (x - L[0]) * 0.5 - y;
-        const p = ((Math.floor(h) % LOG) + LOG) % LOG;
-        const col = p === 0 ? '#3a2414' : p <= 2 ? '#6b4224' : p <= 4 ? '#8a5a30' : p <= 6 ? '#a8743f' : '#7a4e2d';
-        wall.paint(x, y, hex(col));
-      }
-    }
-    o.draw(wall, 0, 0);
-    // Stammenden an den Ecken
-    for (let h = LOG / 2; h < H; h += LOG) {
-      for (const P of [L, B]) {
-        o.ellipse(P[0], P[1] - h, 3.5, 4, hex('#d8b07a'));
-        o.ellipse(P[0], P[1] - h, 1.5, 2, hex('#a8743f'));
-      }
-    }
-  } else {
-    for (let y = 0; y < 128; y++) {
-      for (let x = 0; x < 144; x++) {
-        if (x % 6 === 0) wall.paint(x, y, hex('#8a5a30'));
-        else if (x % 6 === 1) wall.paint(x, y, hex('#c8935a'));
-      }
-    }
-    wall.poly([L, B, up(B, 4), up(L, 4)], hex('#7a4e2d'), true); // Sockel
-    o.draw(wall, 0, 0);
-  }
-  // Offene Vorderseite: dunkles Inneres mit Regal
-  o.poly([B, Rt, up(Rt, H), up(B, H)], hex('#3a2414'));
-  o.poly([up(B, 18), up(Rt, 18), up(Rt, 21), up(B, 21)], hex('#a8743f'));
-  for (const [x, h, col] of [[cx + 14, 21, '#9aa0a8'], [cx + 24, 21, '#c49a62'], [cx + 40, 21, '#6aa84f']]) {
-    const y = cy + 32 - (x - cx) / 2 - h;
-    o.rect(x - 3, y - 7, 6, 7, hex(col)); // Töpfe und Kisten auf dem Regal
-  }
-  // Pfosten und Querbalken der Öffnung (im Wald dicke Stämme)
-  const postW = rustic ? 6 : 3;
-  const postCol = hex(rustic ? '#8a5a30' : '#c8935a');
-  for (const P of [B, Rt]) o.rect(P[0] - (P === Rt ? postW : 0), P[1] - H, postW, H + 1, postCol);
-  if (rustic) for (const P of [B, Rt]) o.rect(P[0] - (P === Rt ? postW : 0) + 1, P[1] - H, 2, H + 1, hex('#a8743f'));
-  o.poly([up(B, H - postW), up(Rt, H - postW), up(Rt, H), up(B, H)], postCol);
-  // Giebel über der Öffnung
-  o.poly([up(B, H), up(Rt, H), ridgeFront], hex(rustic ? '#7a4e2d' : '#b07a42'));
-  o.poly([up(B, H), up(Rt, H), ridgeFront], hex(rustic ? '#8a5a30' : '#c8935a'), true);
-  // Vordere Dachfläche: rote Ziegel bzw. dunkle, bemooste Holzschindeln
-  const roof = [[L[0] - 4, L[1] - H + 2], [B[0], B[1] - H + 4], ridgeFront, [ridgeBack[0] - 4, ridgeBack[1]]];
-  const tiles = new Canvas(144, 128);
-  tiles.poly(roof, hex(rustic ? '#6b5340' : '#c8553d'));
-  for (let y = 0; y < 128; y++) {
-    for (let x = 0; x < 144; x++) {
-      const k = (((Math.floor(y - 0.5 * x) % 7) + 7) % 7);
-      if (k === 0) tiles.paint(x, y, hex(rustic ? '#3f2f22' : '#9c3a28'));
-      else if (k === 1) tiles.paint(x, y, hex(rustic ? '#8a6e50' : '#e07a5f'));
-      else if (rustic && (x * 7 + Math.floor(y - 0.5 * x) * 3) % 11 === 0) tiles.paint(x, y, hex('#4f3c2c')); // Schindelfugen
-    }
-  }
-  if (rustic) {
-    // Moosflecken
-    for (const [mx, my, r] of [[30, 50, 6], [55, 62, 5], [44, 38, 4], [78, 44, 5], [20, 62, 4]]) {
-      tiles.ellipse(mx, my, r, r * 0.6, hex('#5f8a3a'), true);
-      tiles.ellipse(mx - 1, my - 1, r * 0.5, r * 0.3, hex('#7aa84c'), true);
-    }
-  }
-  tiles.line(roof[2][0], roof[2][1], roof[3][0], roof[3][1], hex(rustic ? '#a8865e' : '#e89a7f')); // First
-  o.draw(tiles, 0, 0);
-  o.outline(INK);
-
-  const c = new Canvas(144, 128);
-  c.poly([[L[0] - 4, L[1] + 2], [T[0], T[1]], [Rt[0] + 4, Rt[1] + 2], [B[0], B[1] + 6]], SHADOW);
-  c.draw(o, 0, 0);
-  return c;
-}
-
 // Holzschild mit Fisch; Fuß des Pfostens bei (20, 54)
 function signFish() {
   const o = new Canvas(40, 56);
@@ -813,6 +723,189 @@ const TB = [ZB[0], ZB[1] + TALL_DY];
 const tallX = tallFence();
 const tallGateX = tallGate();
 // Tierarten mit Fußspur-Bild (muss vor dem sprites-Objekt stehen)
+// ---------- Begehbare Hütten ----------
+// Wände laufen wie die Zäune durch die Mitten der Randkacheln (Fläche 64x80, Kachelmitte bei 32/60).
+const HUT_A = [16, 52];
+const HUT_B = [48, 68];
+const HUT_H = 44; // Wandhöhe
+const HUT_STYLES = {
+  meadow: { wall: '#c8935a', dark: '#8a5a30', light: '#e0b07a', cap: '#7a4e2d' },
+  forest: { wall: '#8a5a30', dark: '#4f3422', light: '#a8743f', cap: '#3f2a1a' },
+  savanna: { wall: '#d4bc84', dark: '#a08a58', light: '#e8d8a8', cap: '#8a6a40' },
+  asia: { wall: '#c0392b', dark: '#7a1e18', light: '#e05a48', cap: '#2b2b2b' },
+};
+
+// Wandstück entlang tx (die Version entlang ty ist gespiegelt); door: Tür statt Wand
+function hutWall(style, door = false) {
+  const s = HUT_STYLES[style];
+  const a = HUT_A, b = HUT_B, H = HUT_H;
+  const up = ([x, y], h) => [x, y - h];
+  const at = (t, h) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t - h];
+  const w = new Canvas(64, 80);
+  w.poly([a, b, up(b, H), up(a, H)], hex(s.wall));
+  for (let y = 0; y < 80; y++) {
+    for (let x = 0; x < 64; x++) {
+      const h = a[1] + (x - a[0]) * 0.5 - y; // Höhe über der Grundlinie
+      if (style === 'meadow' && x % 6 === 0) w.paint(x, y, hex(s.dark)); // senkrechte Bretter
+      if (style === 'meadow' && x % 6 === 1) w.paint(x, y, hex(s.light));
+      if (style === 'forest') {
+        const p = ((Math.floor(h) % 8) + 8) % 8; // runde, liegende Stämme
+        w.paint(x, y, hex(p === 0 ? '#2f1e12' : p <= 2 ? '#6b4224' : p <= 5 ? s.wall : s.light));
+      }
+      if (style === 'savanna' && x % 16 === 0) w.paint(x, y, hex(s.dark)); // Nähte der Plane
+      if (style === 'asia' && (h < 4 || (h > 14 && h < 30 && x % 16 > 3 && x % 16 < 13))) {
+        w.paint(x, y, hex(h < 4 ? '#5a1810' : '#f2e2c0')); // Sockel und Papierfenster
+      }
+    }
+  }
+  w.poly([up(a, H), up(b, H), up(b, H - 3), up(a, H - 3)], hex(s.cap)); // obere Kante
+  const o = new Canvas(64, 80);
+  o.draw(w, 0, 0);
+  if (door) {
+    // Tür in der Mitte des Wandstücks
+    const [x0, y0] = at(0.2, 0);
+    const [x1, y1] = at(0.8, 0);
+    const D = 34;
+    o.poly([[x0, y0], [x1, y1], [x1, y1 - D], [x0, y0 - D]], hex(style === 'asia' ? '#2b2b2b' : '#6b4224'));
+    o.poly([[x0 + 2, y0 - 2], [x1 - 2, y1 - 2], [x1 - 2, y1 - D + 3], [x0 + 2, y0 - D + 3]], hex(style === 'asia' ? '#c8962a' : '#a8743f'));
+    const [kx, ky] = at(0.7, 16);
+    o.rect(kx - 1, ky - 1, 2, 2, hex('#e8b84a')); // Türknauf
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 80);
+  c.line(a[0], a[1] + 1, b[0], b[1] + 1, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+function hutPost(style) {
+  const s = HUT_STYLES[style];
+  const o = new Canvas(64, 80);
+  const [x, y] = [32, 60];
+  o.rect(x - 3, y - HUT_H - 2, 6, HUT_H + 3, hex(s.dark));
+  o.rect(x - 3, y - HUT_H - 2, 2, HUT_H + 3, hex(s.light));
+  o.outline(INK);
+  return o;
+}
+
+// Dach über der ganzen Hütte (5x4 Kacheln): Walmdach, Stil wie die alten Hütten.
+// Ankerpunkt: die obere Ecke der Grundfläche liegt im Bild bei (HUT_ROOF_OX, HUT_ROOF_OY).
+const HUT_ROOF_OX = 184;
+const HUT_ROOF_OY = 100;
+function hutRoof(style, A = 5, B = 4) {
+  const W = 384, Hc = 310;
+  const P = (a, b, h = 0) => [HUT_ROOF_OX + (a - b) * 32, HUT_ROOF_OY + (a + b) * 16 - h];
+  const H = HUT_H + 2;
+  const R = style === 'asia' ? 46 : 40; // Dachhöhe über der Traufe
+  const ov = 0.25; // Überstand in Kacheln
+  const E = { t: P(-ov, -ov, H), r: P(A + ov, -ov, H), b: P(A + ov, B + ov, H), l: P(-ov, B + ov, H) };
+  const R1 = P(B / 2, B / 2, H + R);
+  const R2 = P(A - B / 2, B / 2, H + R);
+  const colors = {
+    meadow: ['#9c3a28', '#c8553d', '#e07a5f', '#7a2a1c'],
+    forest: ['#4f3c2c', '#6b5340', '#8a6e50', '#3f2f22'],
+    savanna: ['#b8a26c', '#dccb96', '#efe2b8', '#a08a58'],
+    asia: ['#323b42', '#3f4a52', '#55636c', '#262e33'],
+  }[style].map((c) => hex(c));
+  const [back, front, lightC, line] = colors;
+  const r = new Canvas(W, Hc);
+  r.poly([E.t, E.r, R2, R1], back); // hintere Fläche
+  r.poly([E.t, E.l, R1], back);
+  r.poly([E.l, E.b, R2, R1], front); // vordere Fläche
+  r.poly([E.r, E.b, R2], lightC); // Seite in der Sonne
+  // Ziegelreihen bzw. Nähte parallel zur Traufe
+  for (let y = 0; y < Hc; y++) for (let x = 0; x < W; x++) {
+    if (style === 'savanna' ? (x * 50 + y * 32) % 640 < 30 : (((Math.floor(y - 0.5 * x) % 7) + 7) % 7) === 0) r.paint(x, y, line);
+  }
+  for (const [p, q] of [[E.l, R1], [E.b, R2], [E.t, R1], [E.r, R2], [R1, R2]]) r.line(p[0], p[1], q[0], q[1], line); // Grate
+  r.line(E.l[0], E.l[1], E.b[0], E.b[1], line);
+  r.line(E.b[0], E.b[1], E.r[0], E.r[1], line);
+  if (style === 'forest') {
+    for (const [mx, my, rr] of [[150, 160, 10], [200, 180, 8], [250, 150, 9], [120, 140, 7], [220, 120, 7]]) {
+      r.ellipse(mx, my, rr, rr * 0.6, hex('#5f8a3a'), true);
+      r.ellipse(mx - 1, my - 1, rr * 0.5, rr * 0.3, hex('#7aa84c'), true);
+    }
+  }
+  const o = new Canvas(W, Hc);
+  o.draw(r, 0, 0);
+  if (style === 'asia') {
+    // hochgezogene Ecken und goldene Spitze
+    for (const [p, dx] of [[E.l, -1], [E.b, 0], [E.r, 1]]) {
+      o.poly([[p[0] - 8 * (dx || 1), p[1] + 2], [p[0] + dx * 8, p[1] - 10], [p[0] + 8 * (dx || -1), p[1] + 2]], hex('#3f4a52'));
+      o.rect(p[0] + dx * 8 - 1, p[1] - 12, 3, 3, hex('#e8b84a'));
+    }
+    const mx = (R1[0] + R2[0]) / 2, my = (R1[1] + R2[1]) / 2;
+    o.rect(mx - 1, my - 18, 3, 18, hex('#c8962a'));
+    for (const dy of [5, 10, 15]) o.rect(mx - 3, my - dy, 7, 2, hex('#e8b84a'));
+  }
+  if (style === 'savanna') {
+    o.rect(R2[0] - 1, R2[1] - 16, 2, 16, hex('#6e4c2e')); // Fähnchen
+    o.poly([[R2[0] + 1, R2[1] - 16], [R2[0] + 13, R2[1] - 12], [R2[0] + 1, R2[1] - 8]], hex('#3f8a3f'));
+  }
+  if (style === 'meadow') {
+    // kleiner Schornstein
+    o.rect(R1[0] + 20, R1[1] - 6, 10, 18, hex('#8a6a5a'));
+    o.rect(R1[0] + 19, R1[1] - 8, 12, 3, hex('#5a4a40'));
+  }
+  o.outline(INK);
+  return o;
+}
+
+// Kasten in Iso-Ansicht: Grundfläche a x b Kacheln um (cx, cy), Höhe h; Farben oben, links vorne, rechts vorne
+function isoBox(o, cx, cy, a, b, h, top, left, right) {
+  const P = (u, v, z = 0) => [cx + (u - v) * 32, cy + (u + v) * 16 - z];
+  const [u0, u1, v0, v1] = [-a / 2, a / 2, -b / 2, b / 2];
+  o.poly([P(u0, v1), P(u1, v1), P(u1, v1, h), P(u0, v1, h)], hex(left));
+  o.poly([P(u1, v0), P(u1, v1), P(u1, v1, h), P(u1, v0, h)], hex(right));
+  o.poly([P(u0, v0, h), P(u1, v0, h), P(u1, v1, h), P(u0, v1, h)], hex(top));
+  return P;
+}
+
+// Schreibtisch mit Papieren und Lampe; Kachelmitte bei (32, 44)
+function hutDesk() {
+  const o = new Canvas(64, 64);
+  const P = isoBox(o, 32, 44, 0.8, 0.5, 18, '#c8935a', '#8a5a30', '#a8743f');
+  o.poly([P(-0.2, -0.15, 18.5), P(0.15, -0.15, 18.5), P(0.15, 0.1, 18.5), P(-0.2, 0.1, 18.5)], hex('#f4f0e0')); // Papier
+  o.line(...P(-0.15, -0.05, 19), ...P(0.1, -0.05, 19), hex('#8a8a8a'));
+  const [lx, ly] = P(0.3, -0.1, 18);
+  o.rect(lx - 1, ly - 8, 2, 8, hex('#4a4a4a')); // Lampe
+  o.poly([[lx - 5, ly - 8], [lx + 5, ly - 8], [lx + 2, ly - 13], [lx - 2, ly - 13]], hex('#3f8a3f'));
+  o.outline(INK);
+  return o;
+}
+
+// hoher Schrank mit zwei Türen; Kachelmitte bei (32, 80)
+function hutCupboard() {
+  const o = new Canvas(64, 96);
+  const P = isoBox(o, 32, 80, 0.7, 0.45, 50, '#a8743f', '#8a5a30', '#6e4424');
+  const [x0, y0] = P(-0.35, 0.225, 6);
+  const [x1, y1] = P(0.35, 0.225, 6);
+  o.line(x0, y0, x0, y0 - 40, hex('#5a3a20'));
+  const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+  o.line(mx, my, mx, my - 40, hex('#5a3a20')); // Türspalt
+  o.rect(mx - 3, my - 22, 2, 2, hex('#e8b84a'));
+  o.rect(mx + 2, my - 22 + 1, 2, 2, hex('#e8b84a'));
+  o.outline(INK);
+  return o;
+}
+
+// große Holzkiste mit Eisenbeschlägen; small: kleinere Kiste (Insel-Station). Kachelmitte bei (32, 44)
+function hutChest(small = false) {
+  const o = new Canvas(64, 64);
+  const k = small ? 0.75 : 1;
+  const P = isoBox(o, 32, 44, 0.75 * k, 0.5 * k, 22 * k, '#b07a42', '#8a5a30', '#6e4424');
+  for (const t of [-0.25, 0.25]) {
+    const u = t * 0.75 * k;
+    o.line(...P(u, 0.25 * k, 0), ...P(u, 0.25 * k, 22 * k), hex('#5a5a5a')); // Eisenbänder
+    o.line(...P(u, -0.25 * k, 22 * k), ...P(u, 0.25 * k, 22 * k), hex('#5a5a5a'));
+  }
+  o.line(...P(-0.375 * k, 0.25 * k, 12 * k), ...P(0.375 * k, 0.25 * k, 12 * k), hex('#5a3a20')); // Deckelspalt
+  const [lx, ly] = P(0, 0.25 * k, 12 * k);
+  o.rect(lx - 2, ly - 2, 4, 5, hex('#e8b84a')); // Schloss
+  o.outline(INK);
+  return o;
+}
+
 const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
@@ -829,7 +922,6 @@ const sprites = {
   'fence_x.png': fenceX,
   'fence_y.png': fenceX.flipped(),
   'gate_x.png': gate(),
-  'shed.png': shed(),
   'sign_fish.png': signFish(),
   'fishpond0.png': fishpondTile(0),
   'fishpond1.png': fishpondTile(1),
@@ -846,7 +938,6 @@ const sprites = {
   'log.png': log(),
   'fern.png': fern(),
   'mushroom.png': mushroom(),
-  'shed_log.png': shed('log'),
   'trap.png': trap(),
   'hand.png': hand(),
   // Savanne (hinten angehängt, damit sich der Zufall der älteren Grafiken nicht verschiebt)
@@ -858,7 +949,6 @@ const sprites = {
   'boulder.png': boulder(),
   'dry_bush.png': dryBush(),
   'tuft.png': tuft(),
-  'shed_tent.png': tent(),
   'food.png': food(),
   // Gehege der Wiese: Holzboden, Kratzbaum, Gitterzaun der Voliere, Tor quer, Fußspuren und Torschilder
   'planks.png': planksTile(),
@@ -922,7 +1012,6 @@ const sprites = {
   'sun_rock.png': sunRock(),
   'stone_lantern.png': stoneLantern(),
   'torii.png': torii(),
-  'shed_pagoda.png': pagoda(),
   // Koi: Fischfutter (Werkzeug), Fußspur-Tafel und Torschild für den Koi-Teich
   'koifood.png': koiFood(),
   'print_koi.png': printImage('koi'),
@@ -933,6 +1022,35 @@ const sprites = {
   'park_path.png': parkPath(),
   // Wegweiser-Pfosten ohne Bretter: die schrägen Bretter zeichnet das Spiel (siehe drawSignBoards)
   'signpost_post.png': signpostPost(),
+  // begehbare Hütten: Wände, Eckpfosten, Tür und Dach je Stil, dazu die Möbel
+  'hutwall_meadow_x.png': hutWall('meadow'),
+  'hutwall_meadow_y.png': hutWall('meadow').flipped(),
+  'post_hutwall_meadow.png': hutPost('meadow'),
+  'gate_door_meadow_x.png': hutWall('meadow', true),
+  'gate_door_meadow_y.png': hutWall('meadow', true).flipped(),
+  'hutroof_meadow.png': hutRoof('meadow'),
+  'hutwall_forest_x.png': hutWall('forest'),
+  'hutwall_forest_y.png': hutWall('forest').flipped(),
+  'post_hutwall_forest.png': hutPost('forest'),
+  'gate_door_forest_x.png': hutWall('forest', true),
+  'gate_door_forest_y.png': hutWall('forest', true).flipped(),
+  'hutroof_forest.png': hutRoof('forest'),
+  'hutwall_savanna_x.png': hutWall('savanna'),
+  'hutwall_savanna_y.png': hutWall('savanna').flipped(),
+  'post_hutwall_savanna.png': hutPost('savanna'),
+  'gate_door_savanna_x.png': hutWall('savanna', true),
+  'gate_door_savanna_y.png': hutWall('savanna', true).flipped(),
+  'hutroof_savanna.png': hutRoof('savanna'),
+  'hutwall_asia_x.png': hutWall('asia'),
+  'hutwall_asia_y.png': hutWall('asia').flipped(),
+  'post_hutwall_asia.png': hutPost('asia'),
+  'gate_door_asia_x.png': hutWall('asia', true),
+  'gate_door_asia_y.png': hutWall('asia', true).flipped(),
+  'hutroof_asia.png': hutRoof('asia'),
+  'hut_desk.png': hutDesk(),
+  'hut_cupboard.png': hutCupboard(),
+  'hut_chest.png': hutChest(),
+  'hut_chest_small.png': hutChest(true),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -1078,68 +1196,6 @@ function tuft() {
 }
 
 // Ranger-Zelt: Leinwandzelt mit hochgerollter Vorderplane, gleiche Grundfläche und Bildgröße wie die Hütten
-function tent() {
-  const cx = 72, cy = 90;
-  const H = 34; // Wandhöhe
-  const R = 34; // Dachhöhe über der Wand
-  const L = [cx - 64, cy], T = [cx, cy - 32], Rt = [cx + 64, cy], B = [cx, cy + 32];
-  const up = ([x, y], h) => [x, y - h];
-  const ridgeBack = [cx - 32, cy - 16 - H - R];
-  const ridgeFront = [cx + 32, cy + 16 - H - R];
-
-  const o = new Canvas(144, 128);
-  // Rückseitige Dachfläche
-  o.poly([up(T, H), up(Rt, H), ridgeFront, ridgeBack], hex('#a8925e'));
-  // Linke Wand aus Leinwand mit Nähten und erdigem Saum
-  const wall = new Canvas(144, 128);
-  wall.poly([L, B, up(B, H), up(L, H)], hex('#c9b07a'));
-  for (let y = 0; y < 128; y++) for (let x = 0; x < 144; x++) if (x % 16 === 0) wall.paint(x, y, hex('#a08a58'));
-  wall.poly([L, B, up(B, 4), up(L, 4)], hex('#8a6a40'), true);
-  o.draw(wall, 0, 0);
-  // Offene Vorderseite: dunkles Inneres mit Regal und Kisten
-  o.poly([B, Rt, up(Rt, H), up(B, H)], hex('#3a2a18'));
-  o.poly([up(B, 15), up(Rt, 15), up(Rt, 18), up(B, 18)], hex('#a8743f'));
-  for (const [x, h, col] of [[cx + 14, 18, '#6a7a4a'], [cx + 24, 18, '#c49a62'], [cx + 40, 18, '#9aa0a8']]) {
-    const y = cy + 32 - (x - cx) / 2 - h;
-    o.rect(x - 3, y - 7, 6, 7, hex(col));
-  }
-  // Holzstangen an den Ecken der Öffnung
-  for (const P of [B, Rt]) o.rect(P[0] - (P === Rt ? 3 : 0), P[1] - H - 2, 3, H + 3, hex('#7a4e2d'));
-  // Hochgerollte Plane über der Öffnung
-  o.poly([up(B, H - 6), up(Rt, H - 6), up(Rt, H), up(B, H)], hex('#d8c48c'));
-  o.line(B[0], B[1] - H + 6, Rt[0], Rt[1] - H + 6, hex('#a08a58'));
-  // Giebel
-  o.poly([up(B, H), up(Rt, H), ridgeFront], hex('#c9b07a'));
-  o.line(ridgeFront[0], ridgeFront[1] + 2, ridgeFront[0], B[1] - H - 14, hex('#a08a58')); // Naht in der Mitte
-  // Vordere Dachfläche mit Überstand und Nähten vom Rand zum First
-  const roof = [[L[0] - 6, L[1] - H + 4], [B[0] - 4, B[1] - H + 6], ridgeFront, [ridgeBack[0] - 6, ridgeBack[1]]];
-  const cloth = new Canvas(144, 128);
-  cloth.poly(roof, hex('#dccb96'));
-  for (let y = 0; y < 128; y++) {
-    for (let x = 0; x < 144; x++) {
-      if ((((x * 50 + y * 32) % 640) + 640) % 640 < 40) cloth.paint(x, y, hex('#b8a26c')); // Nähte
-      const eave = y - 0.5 * x - (L[1] - H + 4 - 0.5 * (L[0] - 6)); // Abstand zur Traufe
-      if (eave > -4) cloth.paint(x, y, hex('#b8a26c')); // dunkler Saum an der Traufe
-    }
-  }
-  cloth.line(roof[2][0], roof[2][1], roof[3][0], roof[3][1], hex('#efe2b8')); // First
-  o.draw(cloth, 0, 0);
-  // Fähnchen auf der vorderen Firststange
-  o.rect(ridgeFront[0] - 1, ridgeFront[1] - 12, 2, 12, hex('#6e4c2e'));
-  o.poly([[ridgeFront[0] + 1, ridgeFront[1] - 12], [ridgeFront[0] + 11, ridgeFront[1] - 9], [ridgeFront[0] + 1, ridgeFront[1] - 6]], hex('#3f8a3f'));
-  o.outline(INK);
-
-  const c = new Canvas(144, 128);
-  c.poly([[L[0] - 4, L[1] + 2], [T[0], T[1]], [Rt[0] + 4, Rt[1] + 2], [B[0], B[1] + 6]], SHADOW);
-  c.draw(o, 0, 0);
-  // Spannseile von den Dachecken zu Heringen im Boden (nach der Kontur, damit sie dünn bleiben)
-  for (const [from, peg] of [[[L[0] - 6, L[1] - H + 4], [L[0] - 4, L[1] + 14]], [[B[0] - 4, B[1] - H + 6], [B[0] - 14, B[1] + 8]]]) {
-    c.line(from[0], from[1], peg[0], peg[1], hex('#8a7a5a'));
-    c.rect(peg[0] - 1, peg[1] - 1, 2, 3, hex('#5e3a20'));
-  }
-  return c;
-}
-
 // Grünfutter: gebundenes Bündel Akazienzweige (Gegenstand in doppelter Auflösung)
 function food() {
   const o = new Canvas(64, 64);
@@ -1906,80 +1962,6 @@ function torii() {
   o.outline(INK);
   const c = new Canvas(128, 128);
   for (const [x, y] of [P1, P2]) c.ellipse(x + 1, y, 7, 2.5, SHADOW);
-  c.draw(o, 0, 0);
-  return c;
-}
-
-// Pagode als Werkzeughütte: rote Holzwände, offene Vorderseite mit Regal, zwei geschwungene Dächer.
-// Gleiche Grundfläche wie die anderen Hütten (2x2 Kacheln); Mitte der Grundfläche bei (72, 138)
-function pagoda() {
-  const W = 144, Hc = 176, cx = 72, cy = 138;
-  const sq = (s, h) => ({ L: [cx - 64 * s, cy - h], T: [cx, cy - 32 * s - h], R: [cx + 64 * s, cy - h], B: [cx, cy + 32 * s - h] });
-  const o = new Canvas(W, Hc);
-  const H = 34;
-  const g = sq(1, 0);
-  const w = sq(1, H);
-  // Steinsockel
-  o.poly([[g.L[0] - 3, g.L[1]], [g.B[0], g.B[1] + 3], [g.R[0] + 3, g.R[1]], [g.B[0], g.B[1] + 7], [g.L[0] - 3, g.L[1] + 4]], hex('#9a9488'));
-  // linke Wand: rot mit dunklen Säulen und einem hellen Papierfenster
-  o.poly([g.L, g.B, w.B, w.L], hex('#c0392b'));
-  const along = (P, Q, t, h) => [P[0] + (Q[0] - P[0]) * t, P[1] + (Q[1] - P[1]) * t - h];
-  o.poly([along(g.L, g.B, 0.3, 10), along(g.L, g.B, 0.7, 10), along(g.L, g.B, 0.7, 26), along(g.L, g.B, 0.3, 26)], hex('#f2e2c0'));
-  for (const t of [0.5]) {
-    const [x0, y0] = along(g.L, g.B, 0.3, 18);
-    const [x1, y1] = along(g.L, g.B, 0.7, 18);
-    o.line(x0, y0, x1, y1, hex('#8a5a30'));
-    const [mx, my] = along(g.L, g.B, t, 10);
-    o.line(mx, my, mx, my - 16, hex('#8a5a30'));
-  }
-  for (const t of [0, 1]) {
-    const [x, y] = along(g.L, g.B, t, 0);
-    o.rect(x - (t ? 3 : 0), y - H, 3, H, hex('#7a1e18'));
-  }
-  // offene Vorderseite: dunkles Inneres mit Regal und Töpfen
-  o.poly([g.B, g.R, w.R, w.B], hex('#3a1e14'));
-  o.poly([along(g.B, g.R, 0, 15), along(g.B, g.R, 1, 15), along(g.B, g.R, 1, 18), along(g.B, g.R, 0, 18)], hex('#a8743f'));
-  for (const [t, col] of [[0.25, '#9aa0a8'], [0.42, '#c49a62'], [0.65, '#6aa84f']]) {
-    const [x, y] = along(g.B, g.R, t, 18);
-    o.rect(x - 3, y - 7, 6, 7, hex(col));
-  }
-  for (const P of [g.B, g.R]) o.rect(P[0] - (P === g.R ? 4 : 0), P[1] - H, 4, H + 1, hex('#c0392b'));
-  o.poly([along(g.B, g.R, 0, H - 4), along(g.B, g.R, 1, H - 4), along(g.B, g.R, 1, H), along(g.B, g.R, 0, H)], hex('#c0392b'));
-
-  // Dach: Walmdach mit Überstand und hochgezogenen Ecken
-  const roof = (sLow, hLow, sUp, hUp) => {
-    const lo = sq(sLow, hLow);
-    const up = sq(sUp, hUp);
-    const r = new Canvas(W, Hc);
-    r.poly([lo.L, lo.B, lo.R, up.R, up.T, up.L], hex('#3f4a52'));
-    r.poly([lo.B, lo.R, up.R, up.B], hex('#55636c'), true); // rechte Fläche heller (Sonne)
-    for (let y = 0; y < Hc; y++) for (let x = 0; x < W; x++) if (y % 4 === 0) r.paint(x, y, hex('#323b42')); // Ziegelreihen
-    for (const P of ['L', 'B', 'R']) r.line(lo[P][0], lo[P][1], up[P][0], up[P][1], hex('#262e33')); // Grate
-    r.line(lo.L[0], lo.L[1], lo.B[0], lo.B[1], hex('#262e33'));
-    r.line(lo.B[0], lo.B[1], lo.R[0], lo.R[1], hex('#262e33'));
-    o.draw(r, 0, 0);
-    // geschwungene Ecken
-    o.poly([[lo.L[0] + 6, lo.L[1] + 1], [lo.L[0] - 6, lo.L[1] - 7], [lo.L[0] + 2, lo.L[1] - 3]], hex('#3f4a52'));
-    o.poly([[lo.R[0] - 6, lo.R[1] + 1], [lo.R[0] + 6, lo.R[1] - 7], [lo.R[0] - 2, lo.R[1] - 3]], hex('#55636c'));
-    o.poly([[lo.B[0] - 5, lo.B[1] - 1], [lo.B[0], lo.B[1] - 7], [lo.B[0] + 5, lo.B[1] - 1]], hex('#3f4a52'));
-    for (const P of ['L', 'R']) o.rect(lo[P][0] + (P === 'L' ? -7 : 5), lo[P][1] - 9, 2, 2, hex('#e8b84a')); // goldene Spitzen
-  };
-  roof(1.25, H - 2, 0.55, H + 16);
-  // oberes Stockwerk
-  const g2 = sq(0.55, H + 16);
-  const w2 = sq(0.55, H + 30);
-  o.poly([g2.L, g2.B, w2.B, w2.L], hex('#c0392b'));
-  o.poly([g2.B, g2.R, w2.R, w2.B], hex('#a8301f'));
-  o.poly([along(g2.L, g2.B, 0.3, 4), along(g2.L, g2.B, 0.7, 4), along(g2.L, g2.B, 0.7, 11), along(g2.L, g2.B, 0.3, 11)], hex('#f2e2c0'));
-  roof(0.78, H + 32, 0.1, H + 52);
-  // goldene Spitze
-  const top = sq(0, H + 52).T;
-  o.rect(top[0] - 1, top[1] - 14, 3, 14, hex('#c8962a'));
-  for (const dy of [4, 8, 12]) o.rect(top[0] - 2, top[1] - dy, 5, 2, hex('#e8b84a'));
-  o.outline(INK);
-
-  const c = new Canvas(W, Hc);
-  c.poly([[g.L[0] - 6, g.L[1] + 2], [g.T[0], g.T[1]], [g.R[0] + 6, g.R[1] + 2], [g.B[0], g.B[1] + 8]], SHADOW);
   c.draw(o, 0, 0);
   return c;
 }

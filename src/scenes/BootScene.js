@@ -3,10 +3,9 @@ import Phaser from 'phaser';
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
   'grass0', 'grass1', 'grass2', 'path', 'soil', 'water',
-  'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'fence_x', 'fence_y', 'gate_x', 'shed', 'sign_fish', 'fishpond0', 'fishpond1',
+  'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'fence_x', 'fence_y', 'gate_x', 'sign_fish', 'fishpond0', 'fishpond1',
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
-  'shed_log',
-  'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft', 'shed_tent',
+  'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',
   'planks', 'cat_tree', 'mesh_x', 'mesh_y', 'gate_y', 'net_x', 'net_y',
   'chain_x', 'chain_y', 'post_wood', 'post_mesh', 'post_net', 'post_chain',
   'gate_chain_x', 'gate_chain_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x', 'gate_net_y',
@@ -14,9 +13,15 @@ const PIXEL_ART = [
   // Asien
   'agrass0', 'agrass1', 'agrass2', 'asia_path', 'asia_water0', 'asia_water1', 'asia_water2', 'hotspring',
   'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree',
-  'sun_rock', 'stone_lantern', 'torii', 'shed_pagoda',
+  'sun_rock', 'stone_lantern', 'torii',
   // Tierpark
   'park_path', 'signpost_post',
+  // begehbare Hütten
+  'hutwall_meadow_x', 'hutwall_meadow_y', 'post_hutwall_meadow', 'gate_door_meadow_x', 'gate_door_meadow_y', 'hutroof_meadow',
+  'hutwall_forest_x', 'hutwall_forest_y', 'post_hutwall_forest', 'gate_door_forest_x', 'gate_door_forest_y', 'hutroof_forest',
+  'hutwall_savanna_x', 'hutwall_savanna_y', 'post_hutwall_savanna', 'gate_door_savanna_x', 'gate_door_savanna_y', 'hutroof_savanna',
+  'hutwall_asia_x', 'hutwall_asia_y', 'post_hutwall_asia', 'gate_door_asia_x', 'gate_door_asia_y', 'hutroof_asia',
+  'hut_desk', 'hut_cupboard', 'hut_chest', 'hut_chest_small',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
@@ -111,6 +116,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
     this.load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu
+    this.load.audio('car', 'assets/sounds/car.wav'); // Auto fährt los (Schnellreise)
     // Tierrufe beim Fangen; Tierarten ohne Eintrag bleiben still
     for (const [species, file] of Object.entries(ANIMAL_SOUNDS)) this.load.audio(`animal_${species}`, `assets/sounds/${file}`);
   }
