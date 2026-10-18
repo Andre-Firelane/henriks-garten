@@ -21,6 +21,8 @@ const SOUNDS = [
   ['Sounds/Kuh.mp3', 'public/assets/sounds/animal_cow.wav', 0.36, 2.4, 0.8],
   ['Sounds/Schwein.mp3', 'public/assets/sounds/animal_pig.wav', 0.2, 1.45, 0.8],
   ['Sounds/Ziege.mp3', 'public/assets/sounds/animal_goat.wav', 0.24, 0.85, 0.8],
+  ['Sounds/Affe.mp3', 'public/assets/sounds/animal_macaque.wav', 0, 1.0, 0.8], // erste kurze Rufe
+  ['Sounds/Panda.mp3', 'public/assets/sounds/animal_panda.wav', 0.7, 1.3, 0.8], // erster Laut
   ['Sounds/Flamingo.mp3', 'public/assets/sounds/animal_flamingo.wav', 0.18, 1.25, 0.8], // erster Ruf
   ['Sounds/Zebra.mp3', 'public/assets/sounds/animal_zebra.wav', 0.15, 1.45, 0.8], // erstes Wiehern, ohne den Knack am Anfang
   // Warnruf des Erdmännchen-Wächters (die ersten Rufe, ohne Knack und Stille davor)

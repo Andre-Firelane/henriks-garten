@@ -31,6 +31,9 @@ const PIXEL_ART = [
   'floor_office', 'office_desk', 'office_chair', 'office_plant_monstera', 'office_plant_strelitzia',
   'office_sofa', 'office_table', 'office_armchair', 'office_rug',
   'icecream_stand', // Eisstand-Event
+  'tire_swing', 'toy_ball', // Spielzeug im Pandagehege
+  'climb_tree', // Kletterbaum im Affengehege
+  'hay_shelter', 'hay_rack', 'reeds', 'fountain', 'nest_box', 'lion_rock', // Ausstattung ausgebauter Gehege
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
@@ -72,6 +75,8 @@ const ANIMAL_SOUNDS = {
   frog: 'animal_frog.mp3',
   zebra: 'animal_zebra.wav',
   flamingo: 'animal_flamingo.wav',
+  panda: 'animal_panda.wav',
+  macaque: 'animal_macaque.wav',
   cow: 'animal_cow.wav', // Bauernhof-Event
   pig: 'animal_pig.wav',
   goat: 'animal_goat.wav',
@@ -98,8 +103,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
     // Bauernhof-Event: Schafe sehen aus wie Kuh, Schwein oder Ziege (Platzhalter, gleiches Format wie das Schaf)
     for (const k of ['cow', 'pig', 'goat']) {
-      this.load.spritesheet(`farm_${k}`, `assets/farm_${k}.png`, SHEEP_FRAME);
-      this.load.spritesheet(`farm_${k}_eat`, `assets/farm_${k}_eat.png`, SHEEP_FRAME);
+      const frame = k === 'cow' ? { frameWidth: 96, frameHeight: 88 } : SHEEP_FRAME; // die Kuh ist breiter
+      this.load.spritesheet(`farm_${k}`, `assets/farm_${k}.png`, frame);
+      this.load.spritesheet(`farm_${k}_eat`, `assets/farm_${k}_eat.png`, frame);
     }
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
     this.load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
@@ -118,6 +124,10 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
     this.load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
     this.load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
+    this.load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
+    this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
+    this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
+    this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
     this.load.spritesheet('flamingo', 'assets/flamingo.png', HERON_FRAME); // Flamingo-Flug (Event)
     this.load.spritesheet('flamingo_fly', 'assets/flamingo_fly.png', { frameWidth: 104, frameHeight: 100 });
     this.load.spritesheet('flamingo_baby', 'assets/flamingo_baby.png', HERON_FRAME); // Küken (Tierbabys)

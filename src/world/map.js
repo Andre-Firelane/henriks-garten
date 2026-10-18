@@ -6,7 +6,7 @@ import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser)
-const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water' };
+const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', office: 'floor_office' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -81,6 +81,17 @@ export const OBJECTS = {
   i: { key: 'office_table', originY: 52 / 60, solid: true, hitbox: 12 },
   x: { key: 'office_armchair', originY: 52 / 60, solid: true, hitbox: 12 },
   t: { key: 'office_rug', originY: 30 / 84, solid: false, floor: true },
+  // Pandagehege: Reifenschaukel und Spielball
+  7: { key: 'tire_swing', originY: 84 / 96, solid: true, hitbox: 10 },
+  8: { key: 'toy_ball', originY: 26 / 32, solid: false },
+  // Ausstattung ausgebauter Gehege: Unterstand mit Heu, Futterkrippe, Schilf (begehbar), Springbrunnen, Nistkasten
+  '@': { key: 'hay_shelter', originY: 96 / 112, solid: true, hitbox: 14 },
+  '&': { key: 'hay_rack', originY: 52 / 64, solid: true, hitbox: 10 },
+  '%': { key: 'reeds', originY: 52 / 64, solid: false },
+  0: { key: 'fountain', originY: 64 / 80, solid: true, hitbox: 12 },
+  $: { key: 'lion_rock', originY: 104 / 128, solid: true, hitbox: 22 }, // großer Löwenfelsen
+  '*': { key: 'nest_box', originY: 84 / 96, solid: true, hitbox: 6 },
+  9: { key: 'climb_tree', originY: 84 / 96, solid: true, hitbox: 9 }, // Kletterbaum im Affengehege
   F: { key: 'feeder', originY: 52 / 64, solid: true, hitbox: 10, feeder: true }, // Futterautomat im Tierpark
   // Asien
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
@@ -112,6 +123,9 @@ export let FISHPOND_TILES;
 export let FISH_SPOTS; // Stellen, an denen wilde Fische auftauchen
 export let KOI_WATER; // Wasser des wilden Koi-Teichs (alle Kacheln, nicht im Gehege)
 export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Teich entfernt (für Frösche)
+export let HOT_SPRING_TILES; // heiße Quellen (dort baden die Japanmakaken)
+export let HOT_SPRINGS; // dieselben, nach zusammenhängenden Quellen getrennt: [[{ tx, ty }, ...], ...]
+export let NEAR_BAMBOO; // freie Kacheln höchstens 2 Kacheln von Bambus oder hohem Gras (für Pandas)
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
@@ -136,6 +150,13 @@ export function setLevel(id) {
       const patch = u.rows[y - u.ty];
       return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
     });
+  }
+  // Gehege vor dem Ausbau: Innenzaun bzw. ohne die Ausstattung, die erst der Ausbau bringt (basic in levels.js)
+  for (const e of LEVEL.enclosures ?? []) {
+    if (!e.basic || isUpgraded(e)) continue;
+    const rows = ROWS.map((r) => [...r]);
+    for (const [tx, ty, c] of e.basic) rows[ty][tx] = c;
+    ROWS = rows.map((r) => r.join(''));
   }
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
@@ -187,6 +208,28 @@ export function setLevel(id) {
   );
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
+  NEAR_BAMBOO = freeTilesNear('Qq');
+  HOT_SPRING_TILES = tilesWith('h');
+  HOT_SPRINGS = [];
+  const seen = new Set();
+  for (const t of HOT_SPRING_TILES) {
+    if (seen.has(t.tx + ',' + t.ty)) continue;
+    const group = [];
+    const todo = [t];
+    seen.add(t.tx + ',' + t.ty);
+    while (todo.length) {
+      const c = todo.pop();
+      group.push(c);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k = c.tx + dx + ',' + (c.ty + dy);
+        if (!seen.has(k) && charAt(c.tx + dx, c.ty + dy) === 'h') {
+          seen.add(k);
+          todo.push({ tx: c.tx + dx, ty: c.ty + dy });
+        }
+      }
+    }
+    HOT_SPRINGS.push(group);
+  }
   // Brücken: zusammenhängende Kacheln derselben Brückenart in einer Linie
   BRIDGES = [];
   for (let ty = 0; ty < MAP_H; ty++) {
@@ -243,6 +286,18 @@ function freeTilesNear(chars) {
 
 export function charAt(tx, ty) {
   return ROWS[ty]?.[tx] ?? '.';
+}
+
+// Gehegeausbau: ist das Gehege ausgebaut? Wie viele Tiere passen hinein (ohne Babys)?
+export function isUpgraded(e) {
+  return !!game.penLevel[e.id];
+}
+export function penCapacity(e) {
+  return e.slots ? e.slots[isUpgraded(e) ? 1 : 0] : Infinity;
+}
+// Kosten des nächsten Ausbaus: der erste 40 Herzen, jeder weitere 10 mehr
+export function upgradeCost() {
+  return 40 + 10 * game.upgrades;
 }
 
 // Das Gehege, zu dessen Innenfläche diese Kachel gehört (oder null)

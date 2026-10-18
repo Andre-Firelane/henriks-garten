@@ -19,7 +19,7 @@ export const EVENTS = [
     text: '10 Minuten reitest du in den Welten: schneller unterwegs und überall Werkzeug wechseln.',
     cost: 50,
     duration: 10 * MINUTE,
-    cooldown: 10 * MINUTE,
+    cooldown: 5 * MINUTE,
   },
   {
     id: 'flamingo',
@@ -27,7 +27,7 @@ export const EVENTS = [
     text: '5 Minuten lang fliegen Flamingos über Wiese, Wald und Savanne. Fang einen für den Tierpark!',
     cost: 100,
     duration: 5 * MINUTE,
-    cooldown: 8 * MINUTE,
+    cooldown: 5 * MINUTE,
   },
   {
     id: 'farm',
@@ -40,10 +40,10 @@ export const EVENTS = [
   {
     id: 'icecream',
     name: 'Eisstand',
-    text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt ein Herz.',
+    text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.',
     cost: 30,
     duration: 8 * MINUTE,
-    cooldown: 8 * MINUTE,
+    cooldown: 5 * MINUTE,
   },
 ];
 
@@ -82,7 +82,7 @@ export function formatTime(ms) {
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
 // ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen und Frösche bekommen Babys; Maulwürfe, Vögel und
 // Wassertiere nicht.
-const BABY_OF = { flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
+const BABY_OF = { macaque: 'macaque', panda: 'panda', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
 
 // animals: [{ species, enclosure, ... }] (nur Tiere in Gehegen, ohne Babys). Ergebnis: [{ enclosure, species, parent }]
 export function babyPlan(animals) {

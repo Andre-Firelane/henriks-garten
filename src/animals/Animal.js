@@ -258,6 +258,36 @@ export const SPECIES = {
     shadowW: 26,
     catchWith: ['touch', 'net', 'lasso'],
   },
+  // Japanmakak (Asien): badet in der heißen Quelle, rennt selten wild herum (dann mit dem Lasso), siehe Macaque.js
+  macaque: {
+    texture: 'macaque',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 30,
+    restChance: 0.4,
+    restTime: [1, 3],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 2,
+    footW: 6,
+    shadowW: 22,
+    catchWith: ['lasso'],
+  },
+  // Panda (Asien): bleibt beim Bambus, sitzt und frisst; fangen mit Grünfutter (siehe Panda.js)
+  panda: {
+    texture: 'panda',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 18,
+    restChance: 0.55,
+    restTime: [2, 5],
+    walkTime: [1, 3],
+    stepRate: 6,
+    hop: 1,
+    footW: 9,
+    shadowW: 34,
+    catchWith: ['food'],
+  },
   // Flamingo (Event „Flamingo-Flug“): verhält sich wie der Reiher; babyTexture: graues Küken beim Tierbaby-Event
   flamingo: {
     texture: 'flamingo',

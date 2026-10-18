@@ -7,7 +7,7 @@ import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
 import { LEVEL } from '../world/map.js';
-import { BABY_BONUS, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
+import { BABY_BONUS, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
 const LOOKS = 8; // Besucher-Bilder visitor1 ... visitor8
 const FRAMES = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
@@ -25,6 +25,7 @@ const ICE_CHANCE = 0.6;
 const ICE_BUY_TIME = [2, 3.5];
 const ICE_EAT_TIME = [40, 70]; // so lange hält er das Eis, dann ist es aufgegessen
 const ICE_LOOKS = ['icecream', 'icecream2', 'icecream3'];
+const ICE_HEARTS = 2; // so viele Herzen bringt jedes verkaufte Eis
 // Bewunderungsherzen: jeder Besucher gibt beim Stehenbleiben vor einem Gehege mit Tieren genau ein Herz
 // (mehr Herzen gibt es nur durch mehr Besucher, also durch mehr und seltenere Tiere)
 
@@ -102,7 +103,7 @@ export class Visitor {
         this.heartsLeft--;
         this.heartAt -= this.heartStep;
         this.popHeart();
-        this.scene.addHearts(1);
+        this.scene.addHearts(1, heartSpecies(this.scene.animals, this.pen));
       }
       if (this.timer <= 0) {
         if (Math.random() < FEED_CHANCE) this.crowd.feed(this);
@@ -129,11 +130,12 @@ export class Visitor {
     this.render(moving);
   }
 
-  // Eis bekommen: ein Herz, und das Eis kommt in die Hand
+  // Eis bekommen: Herzen, und das Eis kommt in die Hand
   takeIce() {
     this.ice = true;
     this.popHeart();
-    this.scene.addHearts(1);
+    this.scene.time.delayedCall(250, () => this.popHeart()); // zweites Herz kurz danach
+    this.scene.addHearts(ICE_HEARTS, 'icecream');
     this.iceSprite = this.scene.add.image(this.x, this.y, Phaser.Utils.Array.GetRandom(ICE_LOOKS)).setScale(0.5).setOrigin(0.5, 1);
     this.iceTime = Phaser.Math.FloatBetween(...ICE_EAT_TIME);
   }

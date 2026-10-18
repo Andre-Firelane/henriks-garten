@@ -1,18 +1,24 @@
-// Events am Hauptrechner im Haupthaus: Kacheln mit allen Events, ihren Herzkosten und ihrem Zustand (startbar, läuft,
-// Pause mit Countdown). Tablet: antippen. Laptop: mit A/D wählen, mit E, Enter oder Leertaste starten. Esc schließt.
+// Hauptrechner im Haupthaus: zwei Reiter – "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown) und
+// "Gehege" (gegen Herzen ausbauen: mehr Plätze und neue Ausstattung). Tablet: Reiter und Kacheln antippen.
+// Laptop: Q/Tab wechselt den Reiter, A/D wählt, E/Enter/Leertaste bestätigt, Esc schließt.
 import { formatTime } from '../world/events.js';
+import { animalIcons } from './icons.js';
 
 let panel = null;
 let state = null;
 let openedAt = 0;
 let timer = null;
 const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nichts tun
+const TABS = [
+  ['events', 'Events'],
+  ['pens', 'Gehege ausbauen'],
+];
 
 export function isEventsOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// Vorschaubilder aus den vorhandenen Sprites: [Bild, Breite, Höhe eines Frames, Frame, Größe, links, unten]
+// Vorschaubilder aus den vorhandenen Sprites: [Bild, Breite, Höhe eines Frames, Frame, Größe, links, unten, Anzahl Frames (4)]
 const THUMBS = {
   babies: [
     ['sheep', 80, 88, 0, 0.62, 6, 10],
@@ -26,12 +32,11 @@ const THUMBS = {
     ['flamingo', 88, 108, 0, 0.5, 66, 2],
   ],
   icecream: [
-    ['icecream_stand', 128, 128, 0, 0.78, 40, -6],
-    ['icecream_seller', 72, 116, 0, 0.62, 6, 2],
-    ['icecream', 24, 36, 0, 0.9, 140, 40],
+    ['icecream_seller', 72, 116, 0, 0.8, 22, 0],
+    ['icecream', 24, 36, 0, 2, 108, 4, 1],
   ],
   farm: [
-    ['farm_cow', 80, 88, 0, 0.75, 2, 4],
+    ['farm_cow', 96, 88, 0, 0.7, 0, 4],
     ['farm_goat', 80, 88, 1, 0.65, 108, 6],
     ['farm_pig', 80, 88, 0, 0.6, 62, 0],
   ],
@@ -41,23 +46,24 @@ const THUMBS = {
   ],
 };
 
-function thumb(id) {
-  const parts = (THUMBS[id] ?? [])
-    .map(([img, w, h, frame, k, left, bottom]) => {
+function thumb(item) {
+  if (item.species) return `<div class="ev-thumb pen-thumb">${animalIcons(item.species, 3.4)}</div>`; // Gehege: seine Tiere
+  const parts = (THUMBS[item.id] ?? [])
+    .map(([img, w, h, frame, k, left, bottom, frames = 4]) => {
       const style = `width:${w}px;height:${h}px;left:${left}px;bottom:${bottom}px;transform:scale(${k});`
-        + `background:url(assets/${img}.png) -${frame * w}px 0 / ${w * 4}px ${h}px no-repeat;`;
+        + `background:url(assets/${img}.png) -${frame * w}px 0 / ${w * frames}px ${h}px no-repeat;`;
       return `<span class="ev-sprite" style="${style}"></span>`;
     })
     .join('');
-  const love = id === 'babies' ? '<span class="ev-love" style="left:40px;top:6px">♥</span><span class="ev-love" style="left:120px;top:16px">♥</span><span class="ev-love small" style="left:72px;top:30px">♥</span>' : '';
+  const love = item.id === 'babies' ? '<span class="ev-love" style="left:40px;top:6px">♥</span><span class="ev-love" style="left:120px;top:16px">♥</span><span class="ev-love small" style="left:72px;top:30px">♥</span>' : '';
   return `<div class="ev-thumb">${parts}${love}</div>`;
 }
 
-// getInfo(): [{ id, name, text, cost, state: 'ready'|'active'|'cooldown', left, blocked }] (blocked: warum man es nicht
-// starten kann, sonst null) und das Herzkonto; onStart(id) startet ein Event
-export function openEvents(getInfo, onStart, onClose) {
+// getInfo(): { hearts, events: [...], pens: [...] }. Ein Event: { id, name, text, cost, state, left, blocked };
+// ein Gehege: { id, name, text, cost, species, done, blocked }. onPick(tab, id) startet bzw. baut aus.
+export function openEvents(getInfo, onPick, onClose) {
   panel = document.getElementById('events');
-  state = { getInfo, onStart, onClose, selected: 0 };
+  state = { getInfo, onPick, onClose, tab: 'events', selected: 0 };
   render();
   panel.classList.add('show');
   openedAt = performance.now();
@@ -69,57 +75,79 @@ export function openEvents(getInfo, onStart, onClose) {
   }, 0);
 }
 
-function status(ev) {
-  if (ev.state === 'active') return `<span class="ev-status on">läuft noch ${formatTime(ev.left)}</span>`;
-  if (ev.state === 'cooldown') return `<span class="ev-status wait">wieder in ${formatTime(ev.left)}</span>`;
-  if (ev.blocked) return `<span class="ev-status wait">${ev.blocked}</span>`;
-  return '<span class="ev-status go">Starten</span>';
+// was die Kachel unten anzeigt und ob man sie wählen kann
+function status(item) {
+  if (state.tab === 'pens') {
+    if (item.done) return ['<span class="ev-status on">ausgebaut ✓</span>', false];
+    if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
+    return ['<span class="ev-status go">Ausbauen</span>', true];
+  }
+  if (item.state === 'active') return [`<span class="ev-status on">läuft noch ${formatTime(item.left)}</span>`, false];
+  if (item.state === 'cooldown') return [`<span class="ev-status wait">wieder in ${formatTime(item.left)}</span>`, false];
+  if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
+  return ['<span class="ev-status go">Starten</span>', true];
 }
 
-// ganze Tafel aufbauen
+function items() {
+  const info = state.getInfo();
+  return { hearts: info.hearts, list: info[state.tab] };
+}
+
+// ganze Tafel aufbauen (auch beim Wechsel des Reiters)
 function render() {
-  const { events, hearts } = state.getInfo();
-  state.events = events;
+  const { hearts, list } = items();
+  state.list = list;
+  state.selected = Math.min(state.selected, Math.max(0, list.length - 1));
+  const tabs = TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
+  const hint = state.tab === 'pens' ? 'Ein ausgebautes Gehege hat mehr Plätze und neue Ausstattung.' : 'Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.';
   panel.innerHTML = `<div class="chest-box ev-box">
-      <h2>Events</h2>
+      <div class="ev-tabs">${tabs}</div>
       <p class="ev-hearts">Dein Konto: <span class="heart">♥</span> <b>${hearts}</b></p>
-      <div class="chest-items">${events
+      <div class="chest-items">${list
         .map(
-          (ev, i) => `<button class="chest-item ev-item" data-i="${i}">
-            ${thumb(ev.id)}<span class="ev-name">${ev.name}</span><small>${ev.text}</small>
-            <span class="ev-cost"><span class="heart">♥</span> ${ev.cost}</span><span class="ev-state"></span>
+          (it, i) => `<button class="chest-item ev-item" data-i="${i}">
+            ${thumb(it)}<span class="ev-name">${it.name}</span><small>${it.text}</small>
+            ${it.done ? '' : `<span class="ev-cost"><span class="heart">♥</span> ${it.cost}</span>`}<span class="ev-state"></span>
           </button>`,
         )
         .join('')}</div>
-      <p class="chest-hint">Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.</p>
+      <p class="chest-hint">${hint} <b>Q</b> wechselt zwischen Events und Gehegen.</p>
     </div>`;
   tick();
 }
 
 // nur Zustand, Countdown und Auswahl auffrischen (die Knöpfe bleiben dieselben, damit kein Antippen verloren geht)
 function tick() {
-  const { events, hearts } = state.getInfo();
-  state.events = events;
+  const { hearts, list } = items();
+  state.list = list;
   panel.querySelector('.ev-hearts b').textContent = hearts;
   panel.querySelectorAll('.ev-item').forEach((b, i) => {
-    const ev = events[i];
-    b.classList.toggle('off', !(ev.state === 'ready' && !ev.blocked));
+    const it = list[i];
+    if (!it) return;
+    const [html, can] = status(it);
+    b.classList.toggle('off', !can);
     b.classList.toggle('selected', i === state.selected);
-    b.querySelector('.ev-cost').classList.toggle('short', hearts < ev.cost && ev.state === 'ready');
-    const html = status(ev);
+    b.querySelector('.ev-cost')?.classList.toggle('short', hearts < it.cost && !it.done);
     const box = b.querySelector('.ev-state');
     if (box.innerHTML !== html) box.innerHTML = html;
   });
+}
+
+function switchTab(tab) {
+  state.tab = tab ?? (state.tab === 'events' ? 'pens' : 'events');
+  state.selected = 0;
+  render();
 }
 
 function onKey(e) {
   e.preventDefault();
   e.stopPropagation(); // die Taste soll im Spiel nichts auslösen
   const k = e.key.toLowerCase();
-  const n = state.events.length;
+  const n = state.list.length;
+  if (k === 'q' || k === 'tab') return switchTab();
   if (k === 'a' || k === 'arrowleft' || k === 'w' || k === 'arrowup') state.selected = (state.selected + n - 1) % n;
   else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = (state.selected + 1) % n;
-  else if (k === 'e' || k === 'enter' || k === ' ') return start(state.selected);
+  else if (k === 'e' || k === 'enter' || k === ' ') return pick(state.selected);
   else if (k === 'escape') return close(true);
   tick();
 }
@@ -135,17 +163,19 @@ function onHover(e) {
 function onClick(e) {
   // auf dem Tablet kommt nach dem Antippen, das die Tafel geöffnet hat, noch ein Klick hinterher
   if (performance.now() - openedAt < OPEN_GRACE) return;
+  const t = e.target.closest('.ev-tab');
+  if (t) return switchTab(t.dataset.tab);
   const b = e.target.closest('.ev-item');
-  if (b) start(Number(b.dataset.i));
-  else close(true);
+  if (b) pick(Number(b.dataset.i));
+  else if (!e.target.closest('.ev-box')) close(true); // Tipp neben die Tafel schließt
 }
 
-function start(i) {
-  const ev = state.events[i];
-  if (!ev || ev.state !== 'ready' || ev.blocked) return; // gesperrte Kachel: nichts tun
-  const cb = state.onStart;
+function pick(i) {
+  const it = state.list[i];
+  if (!it || !status(it)[1]) return; // gesperrte Kachel: nichts tun
+  const { onPick, tab } = state;
   close(false);
-  cb(ev.id);
+  onPick(tab, it.id);
 }
 
 function close(cancelled) {

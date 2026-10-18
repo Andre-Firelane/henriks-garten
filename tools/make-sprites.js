@@ -1358,6 +1358,283 @@ function iceCone(top = '#f4c0d0', second = '#f2e2a0') {
   return o;
 }
 
+// ---------- Panda (Asien): Platzhalter, laufend und sitzend mit Bambus (4 Ansichten à 88x96, Füße bei 92) ----------
+function pandaSprite(sitting = false) {
+  const W = '#f4f2ec', B = '#2b2b2b';
+  const view = (back) => {
+    const o = new Canvas(88, 96);
+    const g = 92;
+    if (!sitting) {
+      // auf allen Vieren: schwarze Beine, weißer Körper mit schwarzem Schulterband
+      for (const [x, d] of [[22, 0], [30, 2], [54, 0], [62, 2]]) o.rect(x - 4, g - 18 - d, 9, 18, hex(B));
+      o.ellipse(42, g - 26, 26, 17, hex(W));
+      o.poly([[30, g - 42], [40, g - 42], [36, g - 12], [26, g - 14]], hex(B), true); // Schulterband
+      const hx = back ? 58 : 64, hy = g - 36;
+      o.circle(hx, hy, 13, hex(W));
+      for (const ex of [-9, 8]) o.circle(hx + ex, hy - 11, 4.5, hex(B)); // Ohren
+      if (!back) {
+        o.ellipse(hx - 4, hy - 1, 3.5, 4.5, hex(B));
+        o.ellipse(hx + 5, hy - 1, 3.5, 4.5, hex(B));
+        o.set(hx - 4, hy - 2, hex('#ffffff'));
+        o.set(hx + 5, hy - 2, hex('#ffffff'));
+        o.ellipse(hx + 1, hy + 5, 2.5, 1.8, hex(B)); // Nase
+      }
+      o.circle(16, g - 30, 4, hex(W)); // Schwänzchen
+    } else {
+      // sitzend, hält einen Bambusstängel und kaut
+      o.ellipse(44, g - 10, 18, 9, hex(B)); // Beine vorne
+      o.ellipse(44, g - 26, 21, 22, hex(W));
+      o.poly([[24, g - 40], [64, g - 40], [62, g - 30], [26, g - 30]], hex(B), true); // Arme/Schultern
+      const hx = 44, hy = g - 54;
+      o.circle(hx, hy, 14, hex(W));
+      for (const ex of [-10, 10]) o.circle(hx + ex, hy - 12, 4.5, hex(B));
+      if (!back) {
+        o.ellipse(hx - 5, hy, 3.5, 4.5, hex(B));
+        o.ellipse(hx + 5, hy, 3.5, 4.5, hex(B));
+        o.set(hx - 5, hy - 1, hex('#ffffff'));
+        o.set(hx + 5, hy - 1, hex('#ffffff'));
+        o.ellipse(hx, hy + 6, 2.5, 1.8, hex(B));
+      }
+      // Bambus in den Pfoten
+      o.rect(56, g - 66, 3, 36, hex('#6aa84a'));
+      for (const y of [g - 58, g - 46]) o.rect(55, y, 5, 2, hex('#4f8a3a'));
+      o.ellipse(62, g - 66, 6, 2.5, hex('#7ac05a'));
+      o.ellipse(52, g - 62, 5, 2, hex('#7ac05a'));
+      o.ellipse(60, g - 30, 6, 4, hex(B)); // Pfote
+    }
+    o.outline(INK);
+    return o;
+  };
+  const sheet = new Canvas(352, 96);
+  const front = view(false), back = view(true);
+  sheet.draw(front, 0, 0);
+  sheet.draw(front, 88, 0, true);
+  sheet.draw(back, 176, 0);
+  sheet.draw(back, 264, 0, true);
+  return sheet;
+}
+
+// ---------- Pandagehege: Reifenschaukel an einem Holzgestell und ein bunter Ball ----------
+// Reifenschaukel: Kachelmitte bei (32, 84)
+function tireSwing() {
+  const o = new Canvas(64, 96);
+  const g = 84;
+  // Holzgestell: zwei schräge Pfosten und ein Querbalken
+  for (const [x0, x1] of [[10, 18], [54, 46]]) {
+    o.line(x0, g, x1, g - 66, hex('#6b4224'));
+    o.line(x0 + 1, g, x1 + 1, g - 66, hex('#8a5a30'));
+    o.line(x0 + 2, g, x1 + 2, g - 66, hex('#6b4224'));
+  }
+  o.rect(14, g - 70, 38, 5, hex('#8a5a30'));
+  o.rect(14, g - 70, 38, 2, hex('#a8743f'));
+  // Seil und Reifen
+  o.line(32, g - 65, 32, g - 32, hex('#c8a060'));
+  o.line(33, g - 65, 33, g - 32, hex('#a8843f'));
+  o.ellipse(32, g - 22, 11, 12, hex('#2b2b2b'));
+  o.ellipse(32, g - 22, 6, 7, [0, 0, 0, 0]);
+  for (let y = 0; y < 96; y++) for (let x = 0; x < 64; x++) {
+    const dx = (x + 0.5 - 32) / 6, dy = (y + 0.5 - (g - 22)) / 7;
+    if (dx * dx + dy * dy < 1) o.d[(y * 64 + x) * 4 + 3] = 0; // Loch im Reifen
+  }
+  o.ellipse(29, g - 28, 3, 2, hex('#5a5a5a'), true); // Glanz
+  o.outline(INK);
+  const c = new Canvas(64, 96);
+  c.ellipse(32, g, 22, 6, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// bunter Spielball im Gras; Kachelmitte bei (16, 26)
+function toyBall() {
+  const o = new Canvas(32, 32);
+  o.circle(16, 19, 8, hex('#e8483f'));
+  o.poly([[8, 19], [24, 19], [22, 25], [10, 25]], hex('#f2c84a'), true);
+  o.poly([[10, 13], [22, 13], [24, 19], [8, 19]], hex('#4f84b8'), true);
+  o.circle(13, 15, 2, hex('#ffffff', 170));
+  o.outline(INK);
+  const c = new Canvas(32, 32);
+  c.ellipse(16, 26, 9, 3, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// ---------- Affengehege: kleiner, knorriger Kletterbaum mit einer Sitzplattform; Kachelmitte bei (32, 84) ----------
+function climbTree() {
+  const o = new Canvas(64, 96);
+  const g = 84;
+  // knorriger Stamm
+  o.poly([[26, g], [38, g], [36, g - 30], [34, g - 46], [28, g - 46], [27, g - 30]], hex('#6b4a32'));
+  o.line(29, g - 2, 30, g - 44, hex('#8a6448'));
+  o.line(35, g - 2, 33, g - 40, hex('#4f3624'));
+  // zwei Äste zum Hangeln
+  o.line(30, g - 30, 14, g - 40, hex('#6b4a32'));
+  o.line(30, g - 31, 14, g - 41, hex('#6b4a32'));
+  o.line(34, g - 36, 50, g - 46, hex('#6b4a32'));
+  o.line(34, g - 37, 50, g - 47, hex('#6b4a32'));
+  // Plattform oben (dort sitzt der Affe)
+  o.ellipse(31, g - 48, 14, 4.5, hex('#8a6448'));
+  o.ellipse(31, g - 49, 12, 3.5, hex('#a8805a'), true);
+  // ein paar Kiefernbüschel
+  for (const [x, y, r] of [[14, g - 44, 7], [50, g - 50, 8], [24, g - 58, 7], [40, g - 60, 6]]) {
+    o.ellipse(x, y, r, r * 0.6, hex('#3f6a3a'));
+    o.ellipse(x - 1, y - 1, r * 0.6, r * 0.35, hex('#5a8a4a'), true);
+  }
+  // Seil zum Hochklettern
+  o.line(46, g - 46, 46, g - 14, hex('#c8a060'));
+  o.outline(INK);
+  const c = new Canvas(64, 96);
+  c.ellipse(32, g, 18, 5, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// ---------- Ausstattung ausgebauter Gehege ----------
+// Unterstand mit Heu (Weide, Savanne): vier Pfosten, Satteldach, darunter Heuballen. Kachelmitte bei (64, 96)
+function hayShelter() {
+  const o = new Canvas(128, 112);
+  const P = (u, v, z = 0) => [64 + (u - v) * 32, 96 + (u + v) * 16 - z];
+  const H = 30;
+  // Heu am Boden und ein Ballen
+  o.ellipse(...P(0, 0), 30, 11, hex('#d8b84a'));
+  for (let k = 0; k < 40; k++) {
+    const [x, y] = P(rand() * 1.2 - 0.6, rand() * 0.9 - 0.45);
+    o.line(x, y, x + (rand() * 6 - 3), y - rand() * 3, hex(rand() < 0.5 ? '#c8a03a' : '#e8d070'));
+  }
+  const bale = (u, v) => {
+    const pb = isoBox(o, ...P(u, v), 0.36, 0.26, 10, '#e8cc6a', '#c8a03a', '#d8b450');
+    o.line(...pb(-0.18, 0.13, 3), ...pb(0.18, 0.13, 3), hex('#a88030'));
+    o.line(...pb(-0.18, 0.13, 7), ...pb(0.18, 0.13, 7), hex('#a88030'));
+  };
+  bale(-0.15, 0.1);
+  bale(0.25, -0.15);
+  // Pfosten
+  for (const [u, v] of [[-0.65, -0.5], [0.65, -0.5], [-0.65, 0.5], [0.65, 0.5]]) {
+    const [x, y] = P(u, v);
+    o.rect(Math.round(x) - 2, Math.round(y) - H, 4, H, hex('#8a5a30'));
+    o.rect(Math.round(x) - 2, Math.round(y) - H, 1, H, hex('#a8743f'));
+  }
+  // Satteldach (First entlang u)
+  const ridge = (u) => P(u, 0, H + 18);
+  const eave = (u, v) => P(u, v, H);
+  o.poly([eave(-0.8, -0.6), eave(0.8, -0.6), ridge(0.8), ridge(-0.8)], hex('#7a4e2d'));
+  o.poly([eave(-0.8, 0.6), eave(0.8, 0.6), ridge(0.8), ridge(-0.8)], hex('#a8743f'));
+  for (let u = -0.7; u < 0.8; u += 0.25) o.line(...eave(u, 0.6), ...ridge(u), hex('#8a5a30'));
+  o.poly([eave(0.8, -0.6), eave(0.8, 0.6), ridge(0.8)], hex('#6b4224'));
+  o.outline(INK);
+  const c = new Canvas(128, 112);
+  c.ellipse(64, 97, 44, 14, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Futterkrippe mit Heu (Rehe): Holzgestell mit schrägen Latten. Kachelmitte bei (32, 52)
+function hayRack() {
+  const o = new Canvas(64, 64);
+  const P = (u, v, z = 0) => [32 + (u - v) * 32, 52 + (u + v) * 16 - z];
+  for (const u of [-0.4, 0.4]) {
+    o.line(...P(u, -0.1, 0), ...P(u, -0.1, 24), hex('#6b4224'));
+    o.line(...P(u, 0.15, 0), ...P(u, 0.15, 24), hex('#8a5a30'));
+  }
+  o.poly([P(-0.4, -0.15, 24), P(0.4, -0.15, 24), P(0.4, 0.2, 14), P(-0.4, 0.2, 14)], hex('#e0c060')); // Heu
+  for (let k = 0; k < 18; k++) {
+    const [x, y] = P(rand() * 0.8 - 0.4, rand() * 0.3 - 0.1, 22);
+    o.line(x, y, x + (rand() * 4 - 2), y - 3 - rand() * 3, hex('#c8a03a'));
+  }
+  for (let u = -0.4; u <= 0.41; u += 0.16) o.line(...P(u, 0.2, 14), ...P(u, -0.15, 26), hex('#8a5a30')); // Latten
+  o.line(...P(-0.4, 0.2, 14), ...P(0.4, 0.2, 14), hex('#6b4224'));
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.ellipse(32, 53, 18, 5, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Schilf am Teichufer (Fische und Frösche): Halme und braune Rohrkolben, man geht hindurch. Kachelmitte bei (32, 52)
+function reeds() {
+  const o = new Canvas(64, 64);
+  const stalks = [[-14, 30], [-9, 38], [-4, 34], [1, 42], [6, 36], [11, 40], [16, 28], [-18, 24], [20, 22]];
+  for (const [dx, h] of stalks) {
+    const bend = dx * 0.15;
+    o.line(32 + dx, 54, 32 + dx + bend, 54 - h, hex('#5a8a3a'));
+    o.line(32 + dx + 1, 54, 32 + dx + bend + 1, 54 - h + 4, hex('#7aa84a'));
+    if (h > 30) {
+      o.rect(Math.round(32 + dx + bend) - 1, 54 - h + 2, 3, 7, hex('#7a4e2d')); // Rohrkolben
+      o.rect(Math.round(32 + dx + bend), 54 - h + 3, 1, 4, hex('#9a6a40'));
+    }
+  }
+  for (const [dx, dy] of [[-12, -16], [8, -20], [14, -12]]) o.ellipse(32 + dx, 54 + dy, 5, 1.5, hex('#6a9a4a')); // Blätter
+  o.outline(INK);
+  return o;
+}
+
+// Springbrunnen im Flamingosee: steinerne Schale mit Wasserstrahl. Kachelmitte bei (32, 64)
+function fountain() {
+  const o = new Canvas(64, 80);
+  const g = 64;
+  o.ellipse(32, g - 2, 22, 9, hex('#9a9a92'));
+  o.ellipse(32, g - 4, 19, 7, hex('#6ab0d0'));
+  o.rect(29, g - 22, 6, 18, hex('#a8a8a0')); // Säule
+  o.ellipse(32, g - 22, 11, 4, hex('#b8b8b0')); // obere Schale
+  o.ellipse(32, g - 23, 9, 3, hex('#7ac0e0'));
+  // Wasserstrahl und Tropfen
+  o.line(32, g - 24, 32, g - 46, hex('#cfeaf4'));
+  o.line(31, g - 24, 31, g - 44, hex('#ffffff', 200));
+  for (const [dx, dy] of [[-6, -40], [6, -40], [-10, -32], [10, -32], [-13, -24], [13, -24]]) {
+    o.line(32 + dx * 0.4, g - 45, 32 + dx, g + dy, hex('#cfeaf4', 210));
+  }
+  o.outline(INK);
+  return o;
+}
+
+// Nistkasten auf einem Pfahl (Volieren). Kachelmitte bei (32, 84)
+function nestBox() {
+  const o = new Canvas(64, 96);
+  const g = 84;
+  o.rect(30, g - 50, 4, 50, hex('#8a5a30'));
+  o.rect(30, g - 50, 1, 50, hex('#a8743f'));
+  const P = isoBox(o, 32, g - 50, 0.5, 0.4, 20, '#c8935a', '#a8743f', '#8a5a30');
+  o.poly([P(-0.32, -0.26, 20), P(0.32, -0.26, 20), P(0.32, 0.26, 20), P(-0.32, 0.26, 20), [32, g - 82]], hex('#6b8a3a')); // Dach
+  const [hx, hy] = P(-0.05, 0.2, 12);
+  o.circle(hx, hy, 3, hex('#2b1d14')); // Flugloch
+  o.rect(Math.round(hx) - 1, Math.round(hy) + 4, 3, 2, hex('#6b4224')); // Sitzstange
+  // ein paar Zweige als Sitzast
+  o.line(32, g - 34, 16, g - 40, hex('#6b4224'));
+  o.line(32, g - 28, 48, g - 34, hex('#6b4224'));
+  o.outline(INK);
+  const c = new Canvas(64, 96);
+  c.ellipse(32, g, 10, 3, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// großer Löwenfelsen (ausgebautes Löwengehege): breite Felsplatte mit Stufen und vorspringender Spitze.
+// Kachelmitte bei (80, 104)
+function lionRock() {
+  const o = new Canvas(160, 128);
+  const base = '#a8906a', light = '#c8b08a', lighter = '#dcc8a4', dark = '#7a6448', crack = '#5e4c36';
+  // unterer, breiter Sockel
+  o.ellipse(78, 96, 58, 22, hex(dark));
+  o.ellipse(76, 92, 55, 20, hex(base), true);
+  // mittlere Stufe
+  o.poly([[34, 92], [44, 66], [70, 56], [104, 60], [124, 74], [128, 92]], hex(base));
+  o.poly([[40, 86], [48, 68], [70, 60], [96, 62], [112, 72], [100, 80], [70, 82]], hex(light), true);
+  // obere Platte mit vorspringender Spitze (dort liegt der Löwe gern)
+  o.poly([[56, 66], [64, 42], [88, 32], [118, 36], [140, 30], [132, 46], [112, 56], [84, 62]], hex(base));
+  o.poly([[64, 58], [70, 44], [90, 36], [116, 40], [134, 34], [126, 44], [108, 50], [84, 56]], hex(lighter), true);
+  // Risse und Kanten
+  for (const [x0, y0, x1, y1] of [[60, 70, 66, 86], [98, 64, 94, 80], [112, 44, 104, 56], [80, 40, 78, 54], [44, 96, 58, 104], [104, 94, 118, 100]]) o.line(x0, y0, x1, y1, hex(crack));
+  o.line(64, 62, 112, 56, hex(dark)); // Schattenkante unter der Platte
+  // ein paar Grasbüschel am Fuß
+  for (const [x, y] of [[26, 100], [132, 98], [70, 110], [100, 108]]) {
+    for (const dx of [-3, 0, 3]) o.line(x + dx, y, x + dx * 1.5, y - 7, hex('#8a8a3a'));
+  }
+  o.outline(INK);
+  const c = new Canvas(160, 128);
+  c.ellipse(80, 104, 64, 18, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
 const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
@@ -1544,6 +1821,16 @@ const sprites = {
   'office_armchair.png': officeArmchair(),
   'office_rug.png': officeRug(),
   'icecream_stand.png': iceStand(),
+  'tire_swing.png': tireSwing(),
+  'toy_ball.png': toyBall(),
+  'climb_tree.png': climbTree(),
+  // Ausstattung ausgebauter Gehege
+  'hay_shelter.png': hayShelter(),
+  'hay_rack.png': hayRack(),
+  'reeds.png': reeds(),
+  'fountain.png': fountain(),
+  'nest_box.png': nestBox(),
+  'lion_rock.png': lionRock(),
   'icecream.png': iceCone(),
   'icecream2.png': iceCone('#8a5a30', '#f4f0e6'),
   'icecream3.png': iceCone('#a8e0b0', '#f4c0d0'),

@@ -9,7 +9,11 @@ import path from 'node:path';
 // frameW/frameH/feetY müssen zu den Werten in src/scenes/BootScene.js und den Figuren-Klassen passen.
 // Reihenfolge der Ansichten steht als Kommentar dabei (Original von links nach rechts).
 // Maßstab der Kuh (wie farm_cow.png), damit sie beim Fressen gleich groß bleibt
-const COW_SCALE = 0.3;
+// Maßstab des Pandas (laufend und sitzend gleich groß)
+const PANDA_SCALE = 0.3;
+// Maßstab des Japanmakaken (laufend und badend gleich groß)
+const MACAQUE_SCALE = 0.27;
+const COW_SCALE = 0.36;
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
@@ -117,14 +121,23 @@ const CHARACTERS = [
   // normalen Bild. Freigestellt mit npm run cutout
   // Kuh: die 3. Ansicht ist im Bild größer gemalt, daher für beide Rückansichten die 4. (oben-links gespiegelt, oben-rechts
   // wieder zurückgespiegelt); fester Maßstab, damit sie etwas größer als das Schaf ist
-  { src: 'Sprites/Kuh.png', out: 'farm_cow.png', frameW: 80, frameH: 88, feetY: 84, scale: COW_SCALE, mirror: [3], copyMirror: { 2: 3 } },
-  { src: 'Sprites/Kuh frisst.png', out: 'farm_cow_eat.png', frameW: 80, frameH: 88, feetY: 84, scale: COW_SCALE, mirror: [3], copyMirror: { 2: 3 } },
+  // im Bild schauen beide Vorderansichten nach rechts: unten-links = unten-rechts gespiegelt
+  { src: 'Sprites/Kuh.png', out: 'farm_cow.png', frameW: 96, frameH: 88, feetY: 84, scale: COW_SCALE, mirror: [3], copyMirror: { 2: 3, 1: 0 } },
+  { src: 'Sprites/Kuh frisst.png', out: 'farm_cow_eat.png', frameW: 96, frameH: 88, feetY: 84, scale: COW_SCALE, mirror: [3], copyMirror: { 2: 3 } },
   { src: 'Sprites/Schwein.png', out: 'farm_pig.png', frameW: 80, frameH: 88, feetY: 84, figureH: 50, copyMirror: { 3: 2 } },
   { src: 'Sprites/Schwein.png', out: 'farm_pig_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 50, copyMirror: { 3: 2 } },
   { src: 'Sprites/Ziege.png', out: 'farm_goat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 58, copyMirror: { 3: 2 } },
   { src: 'Sprites/Ziege.png', out: 'farm_goat_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 58, copyMirror: { 3: 2 } },
   // Eisverkäuferin am Eiswagen (Eisstand-Event), Format wie die Besucher. Freigestellt mit npm run cutout
   { src: 'Sprites/Eisverkäuferin.png', out: 'icecream_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  // Panda (Asien): laufend und sitzend mit Bambus, gleicher Maßstab; beide Rückansichten schauen nach rechts,
+  // daher oben-links = oben-rechts gespiegelt. Freigestellt mit npm run cutout
+  { src: 'Sprites/Panda.png', out: 'panda.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE * 1.2, copyMirror: { 3: 2 } }, // laufend etwas größer
+  { src: 'Sprites/Panda frisst.png', out: 'panda_eat.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE, copyMirror: { 3: 2 } },
+  // Japanmakak (Asien): laufend und badend (in der heißen Quelle, mit Handtuch), gleicher Maßstab; beide Rückansichten
+  // schauen nach rechts, daher oben-links = oben-rechts gespiegelt. Freigestellt mit npm run cutout
+  { src: 'Sprites/Affe.png', out: 'macaque.png', frameW: 72, frameH: 72, feetY: 68, scale: MACAQUE_SCALE, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Affe badet.png', out: 'macaque_bath.png', frameW: 72, frameH: 72, feetY: 66, scale: MACAQUE_SCALE, copyMirror: { 3: 2 } },
   { src: 'Sprites/Flamingo.png', out: 'flamingo.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },
   { src: 'Sprites/Flamingo fliegend.png', out: 'flamingo_fly.png', frameW: 104, frameH: 100, feetY: 96, figureH: 88, byComponents: true }, // Flügel reichen in die Nachbarspalten
   { src: 'Sprites/Flamingo Baby.png', out: 'flamingo_baby.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },

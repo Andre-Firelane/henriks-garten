@@ -72,6 +72,13 @@
       }
       #events.show { display: flex; }
       .ev-hearts { margin: -6px 0 12px; font-size: 16px; }
+      .ev-tabs { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
+      .ev-tab {
+        padding: 6px 16px; border: 3px solid #a8743f; border-radius: 10px; background: #e8c48a; cursor: pointer;
+        font: bold 18px "Trebuchet MS", Arial, sans-serif; color: #3a2414;
+      }
+      .ev-tab.on { background: #6b4224; border-color: #6b4224; color: #fff8e6; }
+      .pen-thumb { display: flex; align-items: center; justify-content: center; gap: 2px; background: linear-gradient(#bfe4f0 0 30%, #8cc65a 30% 100%); }
       .heart { color: #e8508a; }
       .ev-item { width: 210px; gap: 6px; }
       .ev-item small { font-size: 13px; line-height: 1.25; }
@@ -173,6 +180,15 @@
         background-repeat: no-repeat; image-rendering: auto;
       }
       #hud .count { margin-right: 10px; }
+      /* Übersicht: Herzen je Tierart */
+      .hs-list { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 10px; }
+      .hs-row { display: grid; grid-template-columns: 34px 120px 1fr 70px; align-items: center; gap: 8px; font-size: 14px; }
+      .hs-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .hs-bar { height: 12px; border-radius: 6px; background: rgba(107, 66, 36, 0.18); overflow: hidden; }
+      .hs-bar span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #ff8fb8, #e8508a); }
+      .hs-num { text-align: right; font-weight: bold; }
+      .hs-ice { font-size: 22px; text-align: center; }
+      .hs-empty { margin: 2px 0 10px; font-size: 14px; }
       /* Bewunderungsherzen der Besucher */
       #hud .hearts { display: inline-block; color: #ff8fb8; }
       #hud .hearts b { color: #fff8e6; }
