@@ -46,7 +46,7 @@ export default class Meerkat extends Animal {
 
   useStandLook() {
     this.sprite.setTexture(this.kind.texture, this.sprite.frame.name).setOrigin(0.5, this.kind.originY);
-    this.sprite.setVisible(true).setScale(0.5);
+    this.sprite.setVisible(true).setScale(this.baby ? 0.3 : 0.5);
     this.shadow.setVisible(true);
   }
 
@@ -183,7 +183,7 @@ export default class Meerkat extends Animal {
       this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft,
     );
     this.sprite.setVisible(true);
-    this.sprite.setScale(0.5);
+    this.sprite.setScale(this.baby ? 0.3 : 0.5);
     this.sprite.setPosition(this.x, this.y);
     this.sprite.setAngle(0);
     this.sprite.setDepth(this.y);

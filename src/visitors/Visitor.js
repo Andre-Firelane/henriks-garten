@@ -5,7 +5,7 @@ import Phaser from 'phaser';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
-import { BABY_HEARTS, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
+import { BABY_BONUS, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
 const LOOKS = 8; // Besucher-Bilder visitor1 ... visitor8
 const FRAMES = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
@@ -114,7 +114,8 @@ export class Visitor {
     // ein Herz für dieses Gehege, nach einem Viertel der Zeit
     // während der Tierbabys gibt es an Gehegen mit Babys mehr Herzen (die Kleinen sind so süß)
     const babies = this.scene.animals.some((a) => a.baby && a.enclosure === this.pen);
-    this.heartsLeft = score > 0 ? (babies ? BABY_HEARTS : 1) : 0;
+    const bonus = Math.floor(BABY_BONUS) + (Math.random() < BABY_BONUS % 1 ? 1 : 0); // 2,5 im Schnitt: 2 oder 3
+    this.heartsLeft = score > 0 ? 1 + (babies ? bonus : 0) : 0;
     this.heartStep = (this.timer * 0.75) / Math.max(1, this.heartsLeft);
     this.heartAt = this.timer * 0.75;
     this.faceTowardsPen();

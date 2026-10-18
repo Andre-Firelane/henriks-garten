@@ -27,10 +27,10 @@ export const APPEAL = {
 
 const MAX_VISITORS = 12;
 // Tierbaby-Event: Babys sind besonders süß. Es kommen nicht mehr Besucher als sonst, aber sie gehen lieber zu den
-// Gehegen mit Babys (BABY_APPEAL zählt bei der Wahl mit), und wer dort stehen bleibt, gibt 6 Herzen statt 1.
-// Mit einigen Tierpaaren bringt das Event so deutlich mehr ein, als es kostet (50 Herzen).
+// Gehegen mit Babys (BABY_APPEAL zählt bei der Wahl mit), und wer dort stehen bleibt, gibt zusätzlich im Schnitt
+// 2,5 Herzen (abwechselnd 2 oder 3). Mit einigen Tierpaaren bringt das Event so mehr ein, als es kostet (50 Herzen).
 export const BABY_APPEAL = 3;
-export const BABY_HEARTS = 6;
+export const BABY_BONUS = 2.5;
 
 const appeal = (a) => (a.baby ? BABY_APPEAL : APPEAL[a.species] ?? 1);
 
@@ -62,7 +62,7 @@ export function awayHearts(score, ms, eventMs = 0, babies = 0) {
   const minutes = Math.min(AWAY_MAX_MINUTES, Math.max(0, ms) / 60000);
   const eventMinutes = babies ? Math.min(minutes, Math.max(0, eventMs) / 60000) : 0;
   const normal = (minutes - eventMinutes) * maxVisitors(score) * AWAY_HEARTS_PER_VISITOR_MINUTE;
-  const event = eventMinutes * maxVisitors(score + babies * BABY_APPEAL) * AWAY_HEARTS_PER_VISITOR_MINUTE * BABY_HEARTS;
+  const event = eventMinutes * maxVisitors(score + babies * BABY_APPEAL) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS);
   return Math.floor(normal + event);
 }
 

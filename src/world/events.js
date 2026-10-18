@@ -48,8 +48,8 @@ export function formatTime(ms) {
 }
 
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
-// ihr Baby ist ein Rehkitz. Kleine Tiere, Vögel und Wassertiere bekommen keine Babys.
-const BABY_OF = { sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox' };
+// ihr Baby ist ein Rehkitz. Erdmännchen bekommen auch Babys; sonst haben kleine Tiere, Vögel und Wassertiere keine.
+const BABY_OF = { sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat' };
 
 // animals: [{ species, enclosure, ... }] (nur Tiere in Gehegen, ohne Babys). Ergebnis: [{ enclosure, species, parent }]
 export function babyPlan(animals) {

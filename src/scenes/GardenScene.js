@@ -1553,6 +1553,9 @@ export default class GardenScene extends Phaser.Scene {
 
   // Ein wildes Tier fangen: es stellt sich hinten in die Reihe
   catchAnimal(animal) {
+    // schon weg oder schon gefangen (z. B. Erdmännchen: nach dem ersten Fang verschwindet der Rest der Kolonie, auch die,
+    // die im selben Kescherschwung mit erwischt wurden) – so fängt man wirklich nur eins
+    if (animal.state !== 'wild' || !this.animals.includes(animal)) return;
     animal.origin ??= LEVEL_ID; // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     animal.catch();
     this.followers.push(animal);
