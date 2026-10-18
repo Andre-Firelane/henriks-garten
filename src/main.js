@@ -10,6 +10,7 @@ new Phaser.Game({
   parent: 'game',
   backgroundColor: '#4f8a2f',
   roundPixels: true,
+  powerPreference: 'high-performance', // auf dem Tablet die schnellere Grafik nutzen
   scale: {
     mode: Phaser.Scale.RESIZE,
   },

@@ -233,6 +233,8 @@ export default class GardenScene extends Phaser.Scene {
     this.signs = [];
     this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
 
+    const ground = []; // Bodenkacheln [x, y, Bild]: werden unten in wenige große Flächen gemalt (schneller auf dem Tablet)
+    const firstStatic = this.children.list.length; // ab hier: feste Dinge der Karte (werden außerhalb des Bildes ausgeblendet)
     for (let ty = 0; ty < MAP_H; ty++) {
       for (let tx = 0; tx < MAP_W; tx++) {
         if (charAt(tx, ty) === ' ') continue; // außerhalb der Karte: nichts (die Karte muss nicht rechteckig sein)
@@ -240,10 +242,10 @@ export default class GardenScene extends Phaser.Scene {
         // Boden liegt immer ganz unten. Wasserecken, die ins Land ragen, werden abgerundet; darunter Gras.
         const corners = outerWaterCorners(tx, ty);
         if (corners) {
-          this.add.image(x, y, grassAt(tx, ty)).setDepth(-100001);
-          this.add.image(x, y, roundedTexture(this, groundAt(tx, ty), corners)).setDepth(-100000);
+          ground.push([x, y, grassAt(tx, ty)]);
+          ground.push([x, y, roundedTexture(this, groundAt(tx, ty), corners)]);
         } else {
-          this.add.image(x, y, groundAt(tx, ty)).setDepth(-100000);
+          ground.push([x, y, groundAt(tx, ty)]);
         }
 
         const obj = objectAt(tx, ty);
@@ -263,8 +265,12 @@ export default class GardenScene extends Phaser.Scene {
           this.signs.push({ x, y });
           this.drawSignBoards(x, y, tx, ty);
         } else if (obj) {
-          const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty)?.style}` : obj.key; // Einrichtung passend zur Hütte
+          const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : obj.key; // Einrichtung passend zur Hütte (auch außen an der Wand)
           const img = this.add.image(x, y, key).setOrigin(0.5, obj.originY).setDepth(obj.floor ? -99990 : y + (obj.depthShift ?? 0));
+          if (obj.chest && obj.styled && !buildingAt(tx, ty)) {
+            // Regal außen vor der Hütte: ein Stück vor die Wand gerückt, damit der Dachüberstand Kescher und Lasso nicht verdeckt
+            img.setPosition(x - 19, y + 10).setDepth(y - 4);
+          }
           if (obj.corner) {
             // in die Ecke rücken: ein Stück zu den Wänden hin, die neben der Kachel stehen
             const wall = (dx, dy) => objectAt(tx + dx, ty + dy)?.fence?.kind === 'hut';
@@ -272,11 +278,22 @@ export default class GardenScene extends Phaser.Scene {
             const dv = wall(0, 1) ? 1 : wall(0, -1) ? -1 : 0;
             img.setPosition(x + (du - dv) * 32 * 0.35, y + (du + dv) * 16 * 0.35);
           }
-          if (obj.chest) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openChest(this.chestAt(tx, ty)));
-          if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openEventsPanel());
+          // Antippen geht nur, wenn man direkt daneben steht (wie mit der Aktionstaste)
+          if (obj.chest) {
+            img.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+              const chest = this.chestAt(tx, ty);
+              if (chest && this.nearChest === chest) this.openChest(chest);
+              else this.tooFar();
+            });
+          }
+          if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearComputer ? this.openEventsPanel() : this.tooFar()));
         }
       }
     }
+
+    this.cullables = this.children.list.slice(firstStatic).filter((o) => o.type === 'Image' || o.type === 'Text');
+    this.cullView = null;
+    this.bakeGround(ground);
 
     // Tore der Gehege: jedes verschwindet kurz, solange jemand hindurchgeht
     this.gateGroups = ENCLOSURES.filter((e) => e.gates.length).map((e) => ({
@@ -355,7 +372,7 @@ export default class GardenScene extends Phaser.Scene {
       const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
       const k = LEVEL.car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
       const img = this.add.sprite(x, y + 4, LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
-      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openCarMap());
+      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearCar ? this.openCarMap() : this.tooFar()));
       const label = this.add
         .text(x, y - 76 * k, 'Schnellreise ▸', { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
         .setOrigin(0.5)
@@ -889,6 +906,45 @@ export default class GardenScene extends Phaser.Scene {
     return this.mapEdgePoint(away + Phaser.Math.FloatBetween(-0.8, 0.8));
   }
 
+  // Antippen aus der Ferne: erst hingehen
+  tooFar() {
+    if (!this.leaving) this.showToast('Geh erst direkt daneben.');
+  }
+
+  // Boden einmal in große Flächen (je 1024 x 1024 Pixel) malen statt tausender einzelner Kacheln, die sonst in jedem Bild
+  // neu gezeichnet würden
+  bakeGround(list) {
+    const CHUNK = 1024;
+    const minX = Math.min(...list.map(([x]) => x)) - TILE_W / 2;
+    const minY = Math.min(...list.map(([, y]) => y)) - TILE_H / 2;
+    const chunks = new Map();
+    const chunk = (i, j) => {
+      const k = i + ',' + j;
+      if (!chunks.has(k)) chunks.set(k, this.add.renderTexture(minX + i * CHUNK, minY + j * CHUNK, CHUNK, CHUNK).setOrigin(0).setDepth(-100000));
+      return chunks.get(k);
+    };
+    for (const [x, y, key] of list) {
+      // eine Kachel kann über den Rand einer Fläche reichen: dann in beide malen
+      const i0 = Math.floor((x - TILE_W / 2 - minX) / CHUNK), i1 = Math.floor((x + TILE_W / 2 - minX) / CHUNK);
+      const j0 = Math.floor((y - TILE_H / 2 - minY) / CHUNK), j1 = Math.floor((y + TILE_H / 2 - minY) / CHUNK);
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+        const rt = chunk(i, j);
+        rt.stamp(key, undefined, x - rt.x, y - rt.y);
+      }
+    }
+  }
+
+  // feste Dinge (Bäume, Zäune, Büsche ...) außerhalb des Bildausschnitts ausblenden, damit sie nicht gezeichnet werden.
+  // Nur neu rechnen, wenn sich die Kamera bewegt hat. Bilder ragen vom Fußpunkt nach oben, daher unten mehr Rand
+  cullStatic() {
+    const v = this.cameras.main.worldView;
+    const last = this.cullView;
+    if (last && Math.abs(last.x - v.x) < 16 && Math.abs(last.y - v.y) < 16 && last.width === v.width) return;
+    this.cullView = { x: v.x, y: v.y, width: v.width };
+    const x0 = v.x - 200, x1 = v.right + 200, y0 = v.y - 60, y1 = v.bottom + 320;
+    for (const o of this.cullables) o.setVisible(o.x > x0 && o.x < x1 && o.y > y0 && o.y < y1);
+  }
+
   despawn(a) {
     // dieselbe Liste behalten: Fische und Eichhörnchen schauen darin nach freien Plätzen
     this.animals.splice(this.animals.indexOf(a), 1);
@@ -1068,7 +1124,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (this.nearChest) {
       // in der Hütte das Werkzeug-Regal, sonst (z. B. auf der Teichinsel) eine kleine Kiste
-      const house = buildingAt(this.nearChest.tx, this.nearChest.ty);
+      const house = buildingAt(this.nearChest.tx, this.nearChest.ty, 1); // Regal in oder an der Hütte
       const img = house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${house ? 'Regal' : 'Kiste'} öffnen</span></div>`;
@@ -1555,7 +1611,8 @@ export default class GardenScene extends Phaser.Scene {
   catchAnimal(animal) {
     // schon weg oder schon gefangen (z. B. Erdmännchen: nach dem ersten Fang verschwindet der Rest der Kolonie, auch die,
     // die im selben Kescherschwung mit erwischt wurden) – so fängt man wirklich nur eins
-    if (animal.state !== 'wild' || !this.animals.includes(animal)) return;
+    // (Tiere aus der Falle sind 'trapped' und dürfen natürlich mit)
+    if (animal.state === 'following' || animal.state === 'penned' || !this.animals.includes(animal)) return;
     animal.origin ??= LEVEL_ID; // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     animal.catch();
     this.followers.push(animal);
@@ -1837,6 +1894,7 @@ export default class GardenScene extends Phaser.Scene {
 
     for (const a of this.animals) a.update(dt, this.player);
     this.visitors?.update(dt);
+    this.cullStatic();
     this.eventTimer -= dt;
     if (this.eventTimer <= 0) {
       this.eventTimer = 0.5;

@@ -52,10 +52,10 @@ export const LEVELS = {
       'X######################################X',
       'T.......g..#........#..................T',
       'T...fffgfff#.MMMMM..#..................T',
-      'b...fggfggf#.NapcN..#......g......~~~..T',
+      'b...fggfggf#.Nap,N..#......g......~~~..T',
       'T...fffgfff#.N,j,G###............~~~~~.T',
       'T..........##MMMMM..#...T........~~~~~.T',
-      'T...b......###......#............~~~~~.T',
+      'T...b......###.c....#............~~~~~.T',
       'T..........##.......#............~~~~~.T',
       'T..........##.......#.......f.....~~~..T',
       'T..........#........#..................b',
@@ -78,7 +78,7 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 13, ty0: 21, tx1: 17, ty1: 24, style: 'meadow' },
     chests: [
-      { tx: 16, ty: 22, tools: ['net', 'lasso'] },
+      { tx: 15, ty: 25, tools: ['net', 'lasso'] },
     ],
     ambient: 'ambient_meadow', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [],
@@ -114,10 +114,10 @@ export const LEVELS = {
       'P.......~~~~~~~...PPP.#................P',
       'Pk...P..~~~~~~~..PPPP.#.........mm....kP',
       'Pkkk....~~~~~~~.nL....#.PMMMMM........PP',
-      'PP..n....~~~~~.########LDNapcN.#......PP',
+      'PP..n....~~~~~.########LDNap,N.#......PP',
       'Pk.......n.....L.Dk...#.PN,j,G##......PP',
       'PD..P...k..n...P.Pk...#.#MMMMM.#......PP',
-      'PP.....kk.PD..PPDP...n####.....#..P...kP',
+      'PP.....kk.PD..PPDP...n####.c...#..P...kP',
       'PP......k......P.P..D.###......#.......P',
       'PPPPD.Dnkmn...D.......###......#......DP',
       'PD......###############################X',
@@ -150,7 +150,7 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 25, ty0: 11, tx1: 29, ty1: 14, style: 'forest' },
     chests: [
-      { tx: 28, ty: 12, tools: ['net', 'lasso', 'trap'] },
+      { tx: 27, ty: 15, tools: ['net', 'lasso', 'trap'] },
     ],
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
     ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
@@ -190,10 +190,10 @@ export const LEVELS = {
       'A...................#.............y.yA.v',
       'X##############################........v',
       'v..........#.MMMMM..#..................v',
-      'v..........#.NapcN..#...v.....R........v',
+      'v..........#.Nap,N..#...v.....R........v',
       'v...y.y....#.N,j,G###.....A......y.....v',
       'v...R......##MMMMM..#...............R..v',
-      'v.......v..###......#...v..A...y.......A',
+      'v.......v..###.c....#...v..A...y.......A',
       'v..........##....yy.#..................R',
       'v..y.......##.......#..................v',
       'A....A..~~.......v..#..R...........y...v',
@@ -217,7 +217,7 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 13, ty0: 20, tx1: 17, ty1: 23, style: 'savanna' },
     chests: [
-      { tx: 16, ty: 21, tools: ['net', 'lasso', 'food'] },
+      { tx: 15, ty: 24, tools: ['net', 'lasso', 'food'] },
     ],
     hero: 'hero_savanna', // Kleidung der Spielfigur in diesem Gebiet (Safari)
     background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
@@ -280,10 +280,10 @@ export const LEVELS = {
       'Q.......hhhrr.......#..........O.......k',
       'Q....r.hhhhh........#.......O..........k',
       'J.....hhhhhhhrMMMMM.#l..........q.O....k',
-      'Q......hhhhh.rNapcN.#...q..............k',
+      'Q......hhhhh.rNap,N.#...q..............k',
       'Q.......hhh.r.N,j,G##........O.n.......k',
       'J............#MMMMM.#............O.....k',
-      'Q...........#########..................k',
+      'Q...........####c####..................k',
       'Q...........##..q..l#l..........q......k',
       'J...........##......#...K..q...q.......k',
       'Q...........#..K....#..................k',
@@ -300,7 +300,7 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 14, ty0: 36, tx1: 18, ty1: 39, style: 'asia' },
     chests: [
-      { tx: 17, ty: 37, tools: ['net', 'lasso', 'koifood'] },
+      { tx: 16, ty: 40, tools: ['net', 'lasso', 'koifood'] },
       { tx: 19, ty: 23, tools: ['net', 'koifood'] },
     ],
     hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
@@ -364,7 +364,7 @@ export const LEVELS = {
       '      2.################.NVt.....N..###|...........|.b#b',
       '      2.------GG---.km.#.Ndix....N..###|....T......---#b',
       '      2k|.........|k.n.#.Ns.....ZN..###|.............|#b',
-      '      2.|....D....----k#.MMMMGMMMM.####|.............|#b',
+      '      2.|....D....----k#.MMMMGGMMM.####|.............|#b',
       '      2.|............|m#bg.#####.fb####|...f......T..|#b',
       '      2.|.P..........|.#..f#####g..####G.............|#X',
       '      2.|.m......D..n|k#############W##G.............|.b',

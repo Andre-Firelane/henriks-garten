@@ -65,7 +65,8 @@ export const OBJECTS = {
   a: { key: 'hut_plant', styled: true, originY: 60 / 80, solid: true, hitbox: 10 },
   // Regal an der Wand: nicht fest (die Wand dahinter hält auf), weiter hinten gezeichnet, damit man davor steht
   c: { key: 'hut_shelf', styled: true, originY: 80 / 96, solid: false, depthShift: -14, chest: true },
-  e: { key: 'hut_chest_small', originY: 44 / 64, solid: true, hitbox: 10, chest: true },
+  // kleine Werkzeug-Kiste (Teichinsel in Asien): steht neben der Bogenbrücke und wird vor deren Geländer gezeichnet
+  e: { key: 'hut_chest_small', originY: 44 / 64, solid: true, hitbox: 10, chest: true, depthShift: 30 },
   // Haupthaus im Tierpark: großer Schreibtisch über drei Kacheln (Y in der Mitte, V daneben: unsichtbar, aber fest)
   // und Bürostuhl dahinter
   Y: { key: 'office_desk', originY: 72 / 96, solid: true, computer: true }, // Hauptrechner: hier startet man Events

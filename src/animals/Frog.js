@@ -70,6 +70,6 @@ export default class Frog extends Animal {
     if (this.state !== 'wild') return;
     // Sprung: Frosch hebt ab, Schatten bleibt am Boden und wird kleiner
     this.sprite.setPosition(this.x, this.y - this.jump);
-    this.shadow.setScale(1 - this.jump / 20);
+    this.shadow.setScale((this.baby ? 0.6 : 1) * (1 - this.jump / 20));
   }
 }
