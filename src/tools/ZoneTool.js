@@ -48,7 +48,7 @@ export default class ZoneTool {
   // Hand des Spielers (in Blickrichtung)
   hand() {
     const p = this.player;
-    return { x: p.x + p.faceX * 8, y: p.sprite.y - 20 };
+    return { x: p.x + p.faceX * 8, y: p.sprite.y - 20 - p.handLift }; // beim Reiten höher
   }
 
   // Tiere, die der laufende Einsatz gerade erwischt

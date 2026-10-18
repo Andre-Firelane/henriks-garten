@@ -8,6 +8,8 @@ import path from 'node:path';
 
 // frameW/frameH/feetY müssen zu den Werten in src/scenes/BootScene.js und den Figuren-Klassen passen.
 // Reihenfolge der Ansichten steht als Kommentar dabei (Original von links nach rechts).
+// Maßstab der Kuh (wie farm_cow.png), damit sie beim Fressen gleich groß bleibt
+const COW_SCALE = 0.3;
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
@@ -103,6 +105,29 @@ const CHARACTERS = [
   { src: 'Sprites/Besucher 6.png', out: 'visitor6.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
   { src: 'Sprites/Besucher 7.png', out: 'visitor7.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
   { src: 'Sprites/Besucher 8.png', out: 'visitor8.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  // Reittiere (Event): Henrik auf Esel (Wiese), Pferd (Wald), Elefant (Savanne), Wasserbüffel (Asien), je in der Kleidung
+  // der Welt. Gleicher Frame für alle; die Größe so, dass Henrik auf allen etwa gleich groß aussieht. Freigestellt mit npm run cutout
+  { src: 'Sprites/Character Esel.png', out: 'ride_meadow.png', frameW: 160, frameH: 230, feetY: 224, figureH: 132 },
+  { src: 'Sprites/Character Pferd.png', out: 'ride_forest.png', frameW: 160, frameH: 230, feetY: 224, figureH: 150 },
+  { src: 'Sprites/Character Elefant.png', out: 'ride_savanna.png', frameW: 160, frameH: 230, feetY: 224, figureH: 196 },
+  { src: 'Sprites/Character Wasserbüffel.png', out: 'ride_asia.png', frameW: 160, frameH: 230, feetY: 224, figureH: 160 },
+  // Flamingo (Event „Flamingo-Flug“): stehend wie der Reiher, fliegend, und das graue Küken (Tierbabys). Freigestellt mit npm run cutout
+  // Bauernhof-Event: Kuh, Schwein, Ziege im Format des Schafs (80x88, Füße bei 84). Beide Rückansichten schauen im Bild
+  // nach rechts, daher oben-links = oben-rechts gespiegelt. Fress-Bild nur für die Kuh; Schwein und Ziege grasen im
+  // normalen Bild. Freigestellt mit npm run cutout
+  // Kuh: die 3. Ansicht ist im Bild größer gemalt, daher für beide Rückansichten die 4. (oben-links gespiegelt, oben-rechts
+  // wieder zurückgespiegelt); fester Maßstab, damit sie etwas größer als das Schaf ist
+  { src: 'Sprites/Kuh.png', out: 'farm_cow.png', frameW: 80, frameH: 88, feetY: 84, scale: COW_SCALE, mirror: [3], copyMirror: { 2: 3 } },
+  { src: 'Sprites/Kuh frisst.png', out: 'farm_cow_eat.png', frameW: 80, frameH: 88, feetY: 84, scale: COW_SCALE, mirror: [3], copyMirror: { 2: 3 } },
+  { src: 'Sprites/Schwein.png', out: 'farm_pig.png', frameW: 80, frameH: 88, feetY: 84, figureH: 50, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Schwein.png', out: 'farm_pig_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 50, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Ziege.png', out: 'farm_goat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 58, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Ziege.png', out: 'farm_goat_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 58, copyMirror: { 3: 2 } },
+  // Eisverkäuferin am Eiswagen (Eisstand-Event), Format wie die Besucher. Freigestellt mit npm run cutout
+  { src: 'Sprites/Eisverkäuferin.png', out: 'icecream_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Flamingo.png', out: 'flamingo.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },
+  { src: 'Sprites/Flamingo fliegend.png', out: 'flamingo_fly.png', frameW: 104, frameH: 100, feetY: 96, figureH: 88, byComponents: true }, // Flügel reichen in die Nachbarspalten
+  { src: 'Sprites/Flamingo Baby.png', out: 'flamingo_baby.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)

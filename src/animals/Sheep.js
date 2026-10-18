@@ -2,9 +2,14 @@
 // Am Fangen ändert das nichts.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
+import { isActive } from '../world/events.js';
 
 const GRAZE_EVERY = [6, 12]; // Sekunden zwischen zwei Grasepausen
 const GRAZE_TIME = [3, 6]; // so lange grast es
+// Bauernhof-Event: freie Schafe sehen reihum aus wie Kuh, Schwein oder Ziege (verhalten sich aber weiter wie Schafe).
+// Wer so gefangen wird, behält das Aussehen für immer; nach dem Event sind die freien wieder Schafe.
+const FARM_LOOKS = ['cow', 'pig', 'goat'];
+let farmCounter = 0;
 
 export default class Sheep extends Animal {
   constructor(scene, x, y) {
@@ -48,8 +53,17 @@ export default class Sheep extends Animal {
     super.catch();
   }
 
+  // Bauernhof-Event: welches Tier das Schaf spielt (oder null). Gefangene behalten es, freie nur während des Events
+  farmLook() {
+    if (this.state !== 'wild') return this.farm ?? null; // gefangen, in der Falle oder im Gehege: bleibt, wie es ist
+    if (!isActive('farm')) return (this.farm = null);
+    this.farm ??= FARM_LOOKS[farmCounter++ % FARM_LOOKS.length];
+    return this.farm;
+  }
+
   render(moving) {
-    const key = this.grazing ? 'sheep_eat' : this.kind.texture;
+    const farm = this.farmLook();
+    const key = farm ? `farm_${farm}${this.grazing ? '_eat' : ''}` : this.grazing ? 'sheep_eat' : this.kind.texture;
     if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
     super.render(moving);
   }

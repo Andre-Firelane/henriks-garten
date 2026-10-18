@@ -17,6 +17,11 @@ const SOUNDS = [
   ['Sounds/eichhörnchen.wav', 'public/assets/sounds/animal_squirrel.wav', 0, 1.15, 0.8],
   ['Sounds/frosch.mp3', 'public/assets/sounds/animal_frog.mp3'],
   ['Sounds/Fisch.mp3', 'public/assets/sounds/animal_fish.wav', 1.15, 0.9, 0.8], // nur der erste Platscher
+  // Bauernhof-Event: die Schafe sehen aus und klingen wie Kühe, Schweine und Ziegen (je der erste Ruf)
+  ['Sounds/Kuh.mp3', 'public/assets/sounds/animal_cow.wav', 0.36, 2.4, 0.8],
+  ['Sounds/Schwein.mp3', 'public/assets/sounds/animal_pig.wav', 0.2, 1.45, 0.8],
+  ['Sounds/Ziege.mp3', 'public/assets/sounds/animal_goat.wav', 0.24, 0.85, 0.8],
+  ['Sounds/Flamingo.mp3', 'public/assets/sounds/animal_flamingo.wav', 0.18, 1.25, 0.8], // erster Ruf
   ['Sounds/Zebra.mp3', 'public/assets/sounds/animal_zebra.wav', 0.15, 1.45, 0.8], // erstes Wiehern, ohne den Knack am Anfang
   // Warnruf des Erdmännchen-Wächters (die ersten Rufe, ohne Knack und Stille davor)
   ['Sounds/Erdmännchen Alarm.mp3', 'public/assets/sounds/meerkat_alarm.wav', 2.5, 1.6, 0.8],

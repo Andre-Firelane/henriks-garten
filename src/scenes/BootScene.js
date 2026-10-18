@@ -30,10 +30,11 @@ const PIXEL_ART = [
   'hutwall_office_x', 'hutwall_office_y', 'post_hutwall_office', 'gate_door_office_x', 'gate_door_office_y', 'hutroof_office',
   'floor_office', 'office_desk', 'office_chair', 'office_plant_monstera', 'office_plant_strelitzia',
   'office_sofa', 'office_table', 'office_armchair', 'office_rug',
+  'icecream_stand', // Eisstand-Event
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -70,6 +71,10 @@ const ANIMAL_SOUNDS = {
   squirrel: 'animal_squirrel.wav',
   frog: 'animal_frog.mp3',
   zebra: 'animal_zebra.wav',
+  flamingo: 'animal_flamingo.wav',
+  cow: 'animal_cow.wav', // Bauernhof-Event
+  pig: 'animal_pig.wav',
+  goat: 'animal_goat.wav',
   fish: 'animal_fish.wav',
   koi: 'animal_fish.wav', // derselbe Platscher wie beim Fisch
 };
@@ -91,10 +96,17 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
+    // Bauernhof-Event: Schafe sehen aus wie Kuh, Schwein oder Ziege (Platzhalter, gleiches Format wie das Schaf)
+    for (const k of ['cow', 'pig', 'goat']) {
+      this.load.spritesheet(`farm_${k}`, `assets/farm_${k}.png`, SHEEP_FRAME);
+      this.load.spritesheet(`farm_${k}_eat`, `assets/farm_${k}_eat.png`, SHEEP_FRAME);
+    }
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
     this.load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
     for (const k of ['koi1', 'koi2', 'koi3']) this.load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
+    this.load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
     for (let n = 1; n <= 8; n++) this.load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
+    for (const w of ['meadow', 'forest', 'savanna', 'asia']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
@@ -106,6 +118,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
     this.load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
     this.load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
+    this.load.spritesheet('flamingo', 'assets/flamingo.png', HERON_FRAME); // Flamingo-Flug (Event)
+    this.load.spritesheet('flamingo_fly', 'assets/flamingo_fly.png', { frameWidth: 104, frameHeight: 100 });
+    this.load.spritesheet('flamingo_baby', 'assets/flamingo_baby.png', HERON_FRAME); // Küken (Tierbabys)
     this.load.spritesheet('fish', 'assets/fish.png', FISH_FRAME);
     this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);

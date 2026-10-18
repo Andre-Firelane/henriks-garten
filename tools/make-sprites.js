@@ -1245,6 +1245,119 @@ function officeRug() {
   return o;
 }
 
+// ---------- Bauernhof-Event: Platzhalter für Kuh, Schwein und Ziege (gleiches Format wie das Schaf: 4 Bilder à 80x88,
+// Füße bei y 84; Reihenfolge unten-rechts, unten-links, oben-rechts, oben-links). eat: Kopf unten zum Grasen ----------
+function farmAnimal(kind, eat = false) {
+  const look = {
+    cow: { body: '#f4f0e6', spot: '#3a3330', head: '#f4f0e6', nose: '#e8a0a0', leg: '#3a3330', bw: 24, bh: 14, hr: 8.5, legH: 14, horn: '#e8dcc4', tail: '#3a3330' },
+    pig: { body: '#f2a8b0', spot: null, head: '#f2a8b0', nose: '#e07a8a', leg: '#d88a96', bw: 21, bh: 13, hr: 8, legH: 8, horn: null, tail: '#e07a8a' },
+    goat: { body: '#d8c4a0', spot: '#a8906a', head: '#d8c4a0', nose: '#a8906a', leg: '#8a7050', bw: 18, bh: 11, hr: 7, legH: 15, horn: '#6a5a4a', tail: '#a8906a' },
+  }[kind];
+  // eine Ansicht nach rechts (vorne: Kopf vorne, hinten: Rücken zur Kamera, Kopf weiter weg)
+  const side = (back) => {
+    const o = new Canvas(80, 88);
+    const ground = 84;
+    const by = ground - look.legH - look.bh + 2; // Mitte des Körpers
+    const cx = 38;
+    // Beine
+    for (const [lx, d] of [[cx - look.bw + 6, 0], [cx - look.bw + 12, 1], [cx + look.bw - 12, 0], [cx + look.bw - 6, 1]]) {
+      o.rect(lx - 2, by + look.bh - 4 - d, 5, look.legH + 2, hex(look.leg));
+      if (kind !== 'pig') o.rect(lx - 2, ground - 3 - d, 5, 3, hex('#2b2420'));
+    }
+    // Schwanz
+    o.line(cx - look.bw, by - 2, cx - look.bw - 5, by + (kind === 'pig' ? -4 : 8), hex(look.tail));
+    if (kind === 'pig') o.circle(cx - look.bw - 5, by - 5, 2, hex(look.tail));
+    // Körper
+    o.ellipse(cx, by, look.bw, look.bh, hex(look.body));
+    o.ellipse(cx - 4, by - 4, look.bw * 0.6, look.bh * 0.45, hex('#ffffff', 60), true);
+    if (look.spot) for (const [dx, dy, r] of [[-8, -3, 6], [7, 2, 5], [14, -5, 4]]) o.ellipse(cx + dx, by + dy, r, r * 0.75, hex(look.spot), true);
+    // Kopf
+    const hx = cx + look.bw - 2 + (back ? -4 : 2);
+    const hy = eat ? by + look.bh + 2 : by - look.bh + 2;
+    o.ellipse(hx, hy, look.hr, look.hr * 0.9, hex(look.head));
+    if (kind === 'goat' && !eat) o.line(hx + 2, hy + look.hr, hx + 1, hy + look.hr + 6, hex('#8a7050')); // Bart
+    // Ohren und Hörner
+    o.ellipse(hx - look.hr + 1, hy - 3, 3.5, 2, hex(kind === 'pig' ? '#e07a8a' : look.head));
+    if (look.horn) {
+      o.line(hx - 2, hy - look.hr + 1, hx - 4, hy - look.hr - 5, hex(look.horn));
+      o.line(hx + 2, hy - look.hr + 1, hx + 1, hy - look.hr - 5, hex(look.horn));
+    }
+    if (!back) {
+      // Schnauze und Auge (nur von vorne zu sehen)
+      o.ellipse(hx + look.hr - 2, hy + 2, kind === 'pig' ? 4 : 3.5, kind === 'pig' ? 3.5 : 3, hex(look.nose));
+      if (kind === 'pig') { o.set(hx + look.hr - 3, hy + 2, hex('#7a3a44')); o.set(hx + look.hr - 1, hy + 2, hex('#7a3a44')); }
+      o.rect(hx + 1, hy - 3, 2, 2, hex('#2b1d14'));
+    } else {
+      o.ellipse(hx, hy - 1, look.hr * 0.8, look.hr * 0.5, hex(look.spot ?? look.nose), true); // Hinterkopf etwas dunkler
+    }
+    o.outline(INK);
+    return o;
+  };
+  const sheet = new Canvas(320, 88);
+  const front = side(false), back = side(true);
+  sheet.draw(front, 0, 0); // unten-rechts
+  sheet.draw(front, 80, 0, true); // unten-links (gespiegelt)
+  sheet.draw(back, 160, 0); // oben-rechts
+  sheet.draw(back, 240, 0, true); // oben-links
+  return sheet;
+}
+
+// ---------- Eisstand-Event: mobiler Eiswagen mit Sonnenschirm und eine Eistüte (Platzhalter) ----------
+// Eiswagen: Kachelmitte bei (64, 100); Vorderseite (Theke) zeigt nach unten links zum Rundweg
+function iceStand() {
+  const o = new Canvas(128, 128);
+  const P = isoBox(o, 64, 100, 1.2, 0.6, 26, '#f4f0e6', '#6ab8d8', '#4f9cc0');
+  // Theke mit Eissorten unter Glas (vorne links)
+  const tub = [['#f4c0d0', -0.4], ['#f2e2a0', -0.1], ['#8a5a30', 0.2], ['#a8e0b0', 0.45]];
+  for (const [c, u] of tub) {
+    const [x, y] = P(u, 0.1, 26);
+    o.ellipse(x, y + 1, 6, 3, hex(c));
+    o.ellipse(x - 1, y, 3, 1.5, hex('#ffffff', 140), true);
+  }
+  o.poly([P(-0.6, -0.05, 27), P(0.6, -0.05, 27), P(0.6, -0.05, 33), P(-0.6, -0.05, 33)], hex('#cfeaf4', 150)); // Glasscheibe
+  // Streifen und Schriftband an der Front
+  o.poly([P(-0.6, 0.3, 6), P(0.6, 0.3, 6), P(0.6, 0.3, 12), P(-0.6, 0.3, 12)], hex('#f4f0e6'));
+  for (let u = -0.55; u < 0.6; u += 0.2) o.poly([P(u, 0.3, 14), P(u + 0.1, 0.3, 14), P(u + 0.1, 0.3, 24), P(u, 0.3, 24)], hex('#e8508a'));
+  // Räder
+  for (const u of [-0.42, 0.42]) {
+    const [x, y] = P(u, 0.3, 0);
+    o.circle(x, y - 1, 5, hex('#3a3a3a'));
+    o.circle(x, y - 1, 2, hex('#b8b8b8'));
+  }
+  // Sonnenschirm: Stange und gestreiftes Dach
+  const [sx, sy] = P(0.35, -0.2, 26);
+  o.rect(Math.round(sx) - 1, Math.round(sy) - 66, 2, 66, hex('#8a8a8a'));
+  const cx = sx, cy = sy - 68; // hoch genug, dass man die Mütze der Verkäuferin darunter sieht
+  for (let k = 0; k < 8; k++) {
+    const a0 = Math.PI + (k * Math.PI) / 8, a1 = Math.PI + ((k + 1) * Math.PI) / 8;
+    o.poly([[cx, cy - 12], [cx + Math.cos(a0) * 34, cy + Math.sin(a0) * -1 + 6], [cx + Math.cos(a1) * 34, cy + Math.sin(a1) * -1 + 6]], hex(k % 2 ? '#f4f0e6' : '#e8508a'));
+  }
+  o.circle(cx, cy - 12, 2, hex('#e8b84a'));
+  // Schild mit Eistüte auf dem Wagen
+  const [bx, by] = P(-0.45, -0.2, 26);
+  o.rect(Math.round(bx) - 1, Math.round(by) - 16, 2, 16, hex('#8a5a30'));
+  o.circle(bx, by - 22, 8, hex('#fff8e6'));
+  o.poly([[bx - 4, by - 23], [bx + 4, by - 23], [bx, by - 15]], hex('#d29c62'));
+  o.circle(bx, by - 25, 3.5, hex('#f4c0d0'));
+  o.outline(INK);
+  const c = new Canvas(128, 128);
+  c.ellipse(64, 101, 40, 13, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Eistüte in der Hand (doppelte Auflösung, wird halb so groß gezeigt): Waffel mit zwei Kugeln
+function iceCone(top = '#f4c0d0', second = '#f2e2a0') {
+  const o = new Canvas(24, 36);
+  o.poly([[5, 16], [19, 16], [12, 34]], hex('#d29c62'));
+  for (let k = 0; k < 4; k++) o.line(7 + k * 3, 17, 12, 33, hex('#a8743f'));
+  o.circle(12, 14, 6.5, hex(second));
+  o.circle(12, 8, 6, hex(top));
+  o.circle(10, 6, 2, hex('#ffffff', 170));
+  o.outline(INK);
+  return o;
+}
+
 const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
@@ -1430,6 +1543,10 @@ const sprites = {
   'office_table.png': officeCoffeeTable(),
   'office_armchair.png': officeArmchair(),
   'office_rug.png': officeRug(),
+  'icecream_stand.png': iceStand(),
+  'icecream.png': iceCone(),
+  'icecream2.png': iceCone('#8a5a30', '#f4f0e6'),
+  'icecream3.png': iceCone('#a8e0b0', '#f4c0d0'),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")

@@ -14,6 +14,7 @@ const SHEETS = {
   frog: [56, 52, 4, 0],
   mole: [56, 52, 4, 0],
   heron: [88, 108, 4, 0],
+  flamingo: [88, 108, 4, 0],
   antelope: [72, 100, 4, 0],
   zebra: [80, 104, 4, 0],
   meerkat: [40, 56, 4, 0],

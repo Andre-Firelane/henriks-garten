@@ -1,6 +1,7 @@
 // Die Karte des aktuellen Levels. Die Level selbst stehen in levels.js; setLevel() wechselt.
 // Alle exportierten Werte zeigen immer auf das aktuelle Level.
 import { LEVELS } from './levels.js';
+import { game } from '../state.js';
 import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
@@ -14,13 +15,13 @@ const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'p
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
 export const OBJECTS = {
   T: { key: 'tree', originY: 82 / 96, solid: true, hitbox: 12 },
-  b: { key: 'bush', originY: 33 / 40, solid: true, hitbox: 13 },
+  b: { key: 'bush', originY: 33 / 40, solid: true, hitbox: 4 }, // Büsche und Sträucher: nur ein kleiner Kern ist fest, sonst bleibt man hängen
   r: { key: 'rock', originY: 18 / 24, solid: true, hitbox: 12 },
   f: { key: 'flowers_red', originY: 22 / 32, solid: false },
   g: { key: 'flowers_yellow', originY: 22 / 32, solid: false },
   P: { key: 'pine', originY: 100 / 112, solid: true, hitbox: 12 },
   D: { key: 'dark_tree', originY: 90 / 104, solid: true, hitbox: 12 },
-  k: { key: 'dark_bush', originY: 36 / 44, solid: true, hitbox: 14 },
+  k: { key: 'dark_bush', originY: 36 / 44, solid: true, hitbox: 4 },
   L: { key: 'log', originY: 44 / 64, solid: true },
   n: { key: 'fern', originY: 24 / 32, solid: false },
   m: { key: 'mushroom', originY: 18 / 24, solid: false },
@@ -32,7 +33,7 @@ export const OBJECTS = {
   // Savanne
   A: { key: 'acacia', originY: 116 / 128, solid: true, hitbox: 12 },
   R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
-  v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 8 },
+  v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 4 },
   y: { key: 'tuft', originY: 18 / 24, solid: false },
   // Gehege: Kratzbaum, hoher Gitterzaun der Voliere (entlang tx bzw. ty)
   C: { key: 'cat_tree', originY: 73 / 80, solid: true, hitbox: 10 },
@@ -128,6 +129,14 @@ export function setLevel(id) {
   LEVEL_ID = id;
   LEVEL = LEVELS[id];
   ROWS = LEVEL.rows;
+  // freigeschaltete Teile (z. B. das Flamingo-Gehege) über die Karte legen: { id, tx, ty, rows }
+  for (const u of LEVEL.unlocks ?? []) {
+    if (!game.unlocked.includes(u.id)) continue;
+    ROWS = ROWS.map((row, y) => {
+      const patch = u.rows[y - u.ty];
+      return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
+    });
+  }
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
   START = LEVEL.start;
@@ -146,7 +155,8 @@ export function setLevel(id) {
     vertical: '|!;}]N'.includes(beyondGate(t.tx, t.ty - 1, -1)) || '|!;}]N'.includes(beyondGate(t.tx, t.ty + 1, 1)),
   }));
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
-  const list = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
+  const all = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
+  const list = all.filter((e) => !e.unlock || game.unlocked.includes(e.unlock)); // noch nicht gebaute Gehege fehlen
   ENCLOSURES = list.map((e) => {
     // Kacheln der Innenfläche: entweder ein Rechteck (area) oder alles, was vom Startpunkt (seed) aus erreichbar ist,
     // ohne über Zaun, Wand oder Tor zu gehen. So sind auch L-Formen und unregelmäßige Gehege möglich.
@@ -386,9 +396,11 @@ export function objectAt(tx, ty) {
 }
 
 // Ist genau dieser Punkt fest? Wie isBlocked, aber Bäume und Büsche sind nur um den Stamm herum fest.
-export function isBlockedPoint(x, y) {
+// wade: durch Wasser waten (Wasserbüffel beim Reittier-Event in Asien)
+export function isBlockedPoint(x, y, wade = false) {
   if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_HALF_WIDTH) return true;
   const { tx, ty } = worldToTile(x, y);
+  if (wade && charAt(tx, ty) === '~') return false;
   const hitbox = objectAt(tx, ty)?.hitbox;
   if (!hitbox) return isBlocked(tx, ty);
   const c = tileToWorld(tx, ty);

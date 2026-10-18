@@ -33,6 +33,7 @@ export function openToolChest(items, current, onPick, onClose) {
   setTimeout(() => {
     window.addEventListener('keydown', onKey, true);
     panel.addEventListener('click', onClick);
+    panel.addEventListener('pointerover', onHover);
   }, 0);
 }
 
@@ -49,6 +50,14 @@ function onKey(e) {
   else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = (state.selected + 1) % n;
   else if (k === 'e' || k === 'enter' || k === ' ') return pick(state.selected);
   else if (k === 'escape') return close(true);
+  highlight();
+}
+
+// Maus über einem Werkzeug: es wird die Auswahl (so ist immer nur eins hervorgehoben, auch zusammen mit A/D)
+function onHover(e) {
+  const b = e.target.closest('.chest-item');
+  if (!b || e.pointerType === 'touch') return;
+  state.selected = Number(b.dataset.i);
   highlight();
 }
 
@@ -70,6 +79,7 @@ function pick(i) {
 function close(cancelled) {
   window.removeEventListener('keydown', onKey, true);
   panel.removeEventListener('click', onClick);
+  panel.removeEventListener('pointerover', onHover);
   panel.classList.remove('show');
   const cb = state.onClose;
   state = null;

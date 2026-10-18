@@ -411,6 +411,7 @@ export const LEVELS = {
       { id: 'cats', name: 'Katzenhaus', species: ['cat'], gate: 'glass', world: 'meadow', signOnRoof: true, seed: { tx: 50, ty: 25 } },
       { id: 'pasture', name: 'Weide', species: ['sheep', 'mole'], world: 'meadow', seed: { tx: 40, ty: 34 } },
       { id: 'aviary', name: 'Voliere', species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 46, ty: 50 } },
+      { id: 'flamingos', name: 'Flamingos', species: ['flamingo'], netRoof: true, gate: 'net', world: 'park', unlock: 'flamingo', seed: { tx: 27, ty: 50 } },
       { id: 'koipond', name: 'Koi-Teich', area: { tx0: 28, tx1: 36, ty0: 61, ty1: 64 }, species: ['koi'], signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'] },
     ],
     // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
@@ -421,6 +422,11 @@ export const LEVELS = {
     ],
     // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
     buildings: [{ tx0: 48, ty0: 24, tx1: 52, ty1: 27, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
+    // freischaltbar: das Flamingo-Gehege entsteht, sobald man den ersten Flamingo fängt (Event „Flamingo-Flug“)
+    unlocks: [
+      { id: 'flamingo', tx: 24, ty: 43, rows: ['#....##..###', '.....##..###', '.....##..###', '.....##.....', 'b^^^^GG^^^^^', '.;.........;', '.;.f.....g.;', '.;...www...;', '.;..wwwww..;', '.;..wwwww..;', '.;..wwwww..;', '.;...www...;', '.;.g.....f.;', '.;.........;', 'b^^^^^^^^^^^', '............'] },
+    ],
+    iceStand: { tx: 25, ty: 40 }, // Eisstand-Event: der Eiswagen steht mitten im Park vor dem Haupthaus, links am Vorplatz
     computers: [{ tx: 29, ty: 34 }], // Hauptrechner im Haupthaus (Events)
     feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 37, ty: 14, world: 'savanna' }, { tx: 22, ty: 45, world: 'forest' }],
     toolSpots: [],

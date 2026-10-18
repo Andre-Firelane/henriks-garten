@@ -56,7 +56,7 @@ import Koi from '../animals/Koi.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { awayHearts, parkScore } from '../world/visitors.js';
+import { AWAY_ICE_PER_VISITOR_MINUTE, awayHearts, maxVisitors, parkScore } from '../world/visitors.js';
 import { EVENTS, activeOverlap, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
@@ -77,7 +77,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe'];
+const ALL_SPECIES = ['sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -99,6 +99,7 @@ const CATCH_TIPS = {
   mole: 'Nur wenn er aus seinem Hügel schaut.',
   squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
   heron: 'Nur wenn er am Wasser gelandet ist.',
+  flamingo: 'Nur beim Flamingo-Flug – und nur, wenn er gelandet ist.',
   deer: 'Scheu: aus der Ferne mit dem Lasso.',
   stag: 'Selten und scheu: aus der Ferne mit dem Lasso.',
   fox: 'Nur mit der Falle.',
@@ -129,10 +130,11 @@ const ANIMAL_INFO = {
   crocodile: ['Krokodil', 'Fünf gespreizte Zehen mit Krallen – und dazwischen die Schleifspur vom Schwanz.'],
   giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
   heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
+  flamingo: ['Flamingo', 'Drei Zehen nach vorne mit Schwimmhäuten dazwischen.'],
 };
 
 // Falle: wie lange es dauert, bis ein Tier hineingeht, und aus welcher Umgebung Tiere kommen
-const TRAP_TIME = [20, 180]; // Sekunden (zufällig)
+const TRAP_TIME = [10, 90]; // Sekunden (zufällig)
 const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekunden erneut versuchen
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
@@ -142,7 +144,7 @@ const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Fut
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['fish', 'koi', 'crocodile', 'heron', 'frog'];
+const NO_PEN_FEED = ['fish', 'koi', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
@@ -168,6 +170,12 @@ const KOI_FEED_PAUSE = 1500; // Millisekunden bis zum nächsten Streuen
 const KOI_FOOD_FLOAT = 15000; // Millisekunden, die das Futter auf dem Wasser treibt
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
+// Tierpark-Atmosphäre: ab und zu ruft ein Tier aus dem Gehege, an dem man gerade steht (leiser als beim Fangen)
+const PEN_CALL_EVERY = [7, 14]; // Sekunden zwischen zwei Rufen
+const PEN_CALL_DIST = 190; // so nah muss man am Gehege sein (in Kachel-Proportionen, etwa 6 Kacheln)
+const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
+// welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
+const PEN_CALLS = { lion: 'lion_roar', stag: null, deer: null };
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -181,11 +189,17 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
+    s === 'flamingo' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
 const ACTION_KEY = 'E';
+// Reittier-Event: Henrik reitet in jeder Welt ein anderes Tier (nicht im Tierpark)
+// Flamingo-Flug (Event): in diesen Welten fliegen Flamingos ein, etwa neunmal so oft wie Reiher
+const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
+const FLAMINGO_EVERY = [6, 12]; // Sekunden zwischen zwei Flamingos (Reiher: 50–110)
+const FLAMINGO_LAND = 0.6; // so oft landen sie (am Wasser)
+const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_savanna', asia: 'ride_asia' };
 const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
@@ -428,6 +442,7 @@ export default class GardenScene extends Phaser.Scene {
     if (saved) {
       for (const s of saved.animals) {
         const a = this.createAnimal(s.species, s.x, s.y, s.variant);
+        a.farm = s.farm ?? null; // Bauernhof-Event: gefangene Kuh, Schwein oder Ziege bleibt es
         a.restore(s.state);
         a.life = s.life ?? Phaser.Math.FloatBetween(...LIFETIME);
       }
@@ -436,6 +451,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
     this.heronTimer = LEVEL.herons ? Phaser.Math.FloatBetween(5, LEVEL.herons.every[0]) : Infinity;
+    this.flamingoTimer = Phaser.Math.FloatBetween(2, FLAMINGO_EVERY[0]);
 
     // Ausgelegte Fallen in diesem Level (gefangene Tiere stehen schon als 'trapped' in der Tierliste)
     this.traps = new Map();
@@ -448,8 +464,9 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere, die dem Spieler aus dem letzten Level gefolgt sind
     this.followers = [];
-    for (const { species, variant, origin } of game.followers) {
+    for (const { species, variant, origin, farm } of game.followers) {
       const a = this.createAnimal(species, start.x, start.y, variant);
+      a.farm = farm ?? null;
       a.restore('following');
       a.origin = origin;
       this.followers.push(a);
@@ -461,6 +478,9 @@ export default class GardenScene extends Phaser.Scene {
       const now = Date.now();
       const babies = babyPlan(this.animals.filter((a) => a.state === 'penned')).length;
       away = awayHearts(parkScore(this.animals), now - game.parkLeftAt, activeOverlap('babies', game.parkLeftAt, now), babies);
+      // Eisstand: auch während man weg war, haben sich Besucher Eis geholt
+      const iceMin = Math.min(60, activeOverlap('icecream', game.parkLeftAt, now) / 60000);
+      away += Math.floor(iceMin * maxVisitors(parkScore(this.animals)) * AWAY_ICE_PER_VISITOR_MINUTE);
       game.hearts += away;
       game.parkLeftAt = null;
     }
@@ -472,9 +492,9 @@ export default class GardenScene extends Phaser.Scene {
     this.visitors = LEVEL_ID === 'park' ? new VisitorCrowd(this) : null;
     this.eventTimer = 0;
     this.eventBanner = document.getElementById('event-banner');
-    this.updateEventBanner();
 
     this.hud = document.getElementById('hud');
+    this.updateEventBanner();
     this.toolbar = document.getElementById('tools');
     this.toast = document.getElementById('toast');
     this.signPanel = document.getElementById('sign');
@@ -534,6 +554,19 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ENTER', useTool);
     // Übersicht über Tiere und Werkzeuge (Taste I oder Tippen auf das Abzeichen oben links)
     this.input.keyboard.on('keydown-I', () => this.showJournal());
+    // beim Reiten: Werkzeug wechseln (Q bzw. der Werkzeug-Knopf auf dem Tablet) – überall, ohne zur Hütte zu gehen
+    this.input.keyboard.on('keydown-Q', () => this.openRideChest());
+    // Cheat zum Testen: L gibt 50 Bewunderungsherzen
+    this.input.keyboard.on('keydown-L', () => {
+      this.addHearts(50);
+      this.showToast('Cheat: <span class="heart">♥</span> +50');
+    });
+    document.getElementById('btn-swap').onclick = (e) => {
+      e.stopPropagation();
+      this.openRideChest();
+    };
+    this.riding = false;
+    this.updateMount();
     this.hud.onclick = () => this.showJournal(); // ganzer Tipp, damit derselbe Tipp die Tafel nicht gleich wieder schließt
     touchHandlers.action = useTool;
     touchHandlers.reset = restart;
@@ -682,7 +715,7 @@ export default class GardenScene extends Phaser.Scene {
     this.add.image(x, y, 'signpost_post').setOrigin(0.5, 60 / 64).setScale(k).setDepth(y);
     // Richtungen auf dem Bildschirm: entlang ty nach oben rechts bzw. unten links, entlang tx nach unten rechts bzw. oben links
     const DIRS = { 'ty-': [2, -1], 'tx-': [-2, -1], 'tx+': [2, 1], 'ty+': [-2, 1] };
-    const targets = LEVEL.sections ?? EXITS.map(({ label, tx, ty }) => ({ label, tx, ty }));
+    const targets = (LEVEL.sections ?? EXITS.map(({ label, tx, ty }) => ({ label, tx, ty }))).filter((s) => !s.unlock || game.unlocked.includes(s.unlock));
     const boards = targets.map((s) => {
       const dtx = s.tx - tx;
       const dty = s.ty - ty;
@@ -732,8 +765,8 @@ export default class GardenScene extends Phaser.Scene {
             ? new Frog(this, x, y)
             : species === 'mole'
               ? new Mole(this, this.animals)
-              : species === 'heron'
-                ? new Heron(this, x, y)
+              : species === 'heron' || species === 'flamingo'
+                ? new Heron(this, x, y, species)
                 : species === 'antelope'
                   ? new Antelope(this, x, y, this.animals)
                   : species === 'zebra'
@@ -873,11 +906,23 @@ export default class GardenScene extends Phaser.Scene {
       this.animals.splice(this.animals.indexOf(a), 1);
       a.destroy();
     }
+    // Flamingo-Flug: Flamingos fliegen ein wie Reiher, nur öfter
+    if (isActive('flamingo') && FLAMINGO_WORLDS.includes(LEVEL_ID)) {
+      this.flamingoTimer -= dt;
+      if (this.flamingoTimer <= 0) {
+        this.flamingoTimer = Phaser.Math.FloatBetween(...FLAMINGO_EVERY);
+        this.flyIn('flamingo', FLAMINGO_LAND);
+      }
+    }
     this.heronTimer -= dt;
     if (this.heronTimer > 0) return;
     const { every, landChance } = LEVEL.herons;
     this.heronTimer = Phaser.Math.FloatBetween(...every);
+    this.flyIn('heron', landChance);
+  }
 
+  // ein Vogel fliegt über die Karte; manche landen an einer Uferstelle
+  flyIn(species, landChance) {
     const angle = Math.random() * Math.PI * 2;
     const from = this.mapEdgePoint(angle);
     const land = Math.random() < landChance && NEAR_WATER.length > 0;
@@ -888,8 +933,8 @@ export default class GardenScene extends Phaser.Scene {
     } else {
       to = this.mapEdgePoint(angle + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6)); // quer hinüber
     }
-    const heron = this.createAnimal('heron', from.x, from.y);
-    heron.startFlight(from, to, land);
+    const bird = this.createAnimal(species, from.x, from.y);
+    bird.startFlight(from, to, land);
   }
 
   // Punkt außerhalb der Karte in Richtung angle (von der Kartenmitte aus gesehen)
@@ -906,6 +951,32 @@ export default class GardenScene extends Phaser.Scene {
     return this.mapEdgePoint(away + Phaser.Math.FloatBetween(-0.8, 0.8));
   }
 
+  // Ruf eines Tiers (beim Bauernhof-Event muhen, grunzen und meckern die Schafe)
+  callOf(a) {
+    return a.farm ? `animal_${a.farm}` : `animal_${a.species}`;
+  }
+
+  // Tierpark: ab und zu ein Ruf aus dem nächsten Gehege mit Tieren, die einen Ruf haben
+  updatePenCalls(dt) {
+    if (LEVEL_ID !== 'park') return;
+    this.penCallTimer = (this.penCallTimer ?? Phaser.Math.FloatBetween(2, PEN_CALL_EVERY[0])) - dt;
+    if (this.penCallTimer > 0) return;
+    this.penCallTimer = Phaser.Math.FloatBetween(...PEN_CALL_EVERY);
+    const p = this.player;
+    const callers = this.animals
+      .filter((a) => a.state === 'penned')
+      .map((a) => ({ a, key: a.species in PEN_CALLS ? PEN_CALLS[a.species] : this.callOf(a) }))
+      .filter(({ key }) => key && this.cache.audio.exists(key))
+      .map((c) => ({ ...c, d: Math.hypot(c.a.x - p.x, (c.a.y - p.y) * 2) }))
+      .filter(({ d }) => d < PEN_CALL_DIST);
+    if (!callers.length) return;
+    // eher die Tiere ganz in der Nähe, aber nicht immer dasselbe
+    callers.sort((u, v) => u.d - v.d);
+    const { key, d } = callers[Math.floor(Math.random() * Math.min(3, callers.length))];
+    const near = 1 - d / PEN_CALL_DIST;
+    this.sound.play(key, { volume: PEN_CALL_VOLUME * (0.35 + 0.65 * near), detune: Phaser.Math.Between(-120, 120) });
+  }
+
   // Antippen aus der Ferne: erst hingehen
   tooFar() {
     if (!this.leaving) this.showToast('Geh erst direkt daneben.');
@@ -915,18 +986,24 @@ export default class GardenScene extends Phaser.Scene {
   // neu gezeichnet würden
   bakeGround(list) {
     const CHUNK = 1024;
+    const PAD = 4; // die Flächen überlappen ein wenig, damit an den Nahtstellen keine feine Linie durchscheint
     const minX = Math.min(...list.map(([x]) => x)) - TILE_W / 2;
     const minY = Math.min(...list.map(([, y]) => y)) - TILE_H / 2;
     const chunks = new Map();
     const chunk = (i, j) => {
       const k = i + ',' + j;
-      if (!chunks.has(k)) chunks.set(k, this.add.renderTexture(minX + i * CHUNK, minY + j * CHUNK, CHUNK, CHUNK).setOrigin(0).setDepth(-100000));
+      if (!chunks.has(k)) {
+        const rt = this.add.renderTexture(minX + i * CHUNK - PAD, minY + j * CHUNK - PAD, CHUNK + 2 * PAD, CHUNK + 2 * PAD);
+        rt.setOrigin(0).setDepth(-100000 + (i + j) * 0.001);
+        rt.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // scharfe Kanten, keine weichgezeichneten Ränder
+        chunks.set(k, rt);
+      }
       return chunks.get(k);
     };
     for (const [x, y, key] of list) {
-      // eine Kachel kann über den Rand einer Fläche reichen: dann in beide malen
-      const i0 = Math.floor((x - TILE_W / 2 - minX) / CHUNK), i1 = Math.floor((x + TILE_W / 2 - minX) / CHUNK);
-      const j0 = Math.floor((y - TILE_H / 2 - minY) / CHUNK), j1 = Math.floor((y + TILE_H / 2 - minY) / CHUNK);
+      // eine Kachel kann über den Rand einer Fläche (samt Überlappung) reichen: dann in alle betroffenen malen
+      const i0 = Math.floor((x - TILE_W / 2 - PAD - minX) / CHUNK), i1 = Math.floor((x + TILE_W / 2 + PAD - minX) / CHUNK);
+      const j0 = Math.floor((y - TILE_H / 2 - PAD - minY) / CHUNK), j1 = Math.floor((y + TILE_H / 2 + PAD - minY) / CHUNK);
       for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
         const rt = chunk(i, j);
         rt.stamp(key, undefined, x - rt.x, y - rt.y);
@@ -998,6 +1075,10 @@ export default class GardenScene extends Phaser.Scene {
         this.scene.resume();
         startEvent(id);
         this.updateHud();
+        if (id === 'icecream') this.showToast('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt ein Herz.');
+        if (id === 'farm') this.showToast('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!');
+        if (id === 'flamingo') this.showToast('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.');
+        if (id === 'ride') this.showToast('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.');
         if (id === 'babies') {
           this.spawnBabies(true);
           this.visitors?.updateScore();
@@ -1007,6 +1088,26 @@ export default class GardenScene extends Phaser.Scene {
       },
       () => this.scene.resume(),
     );
+  }
+
+  // Reittier: in den Welten aufsitzen (in Gebäuden steigt Henrik ab), im Tierpark zu Fuß
+  updateMount() {
+    const key = isActive('ride') ? RIDES[LEVEL_ID] ?? null : null;
+    const { tx, ty } = worldToTile(this.player.x, this.player.y);
+    const mount = key && !buildingAt(tx, ty) ? key : null;
+    if (mount && !this.player.mount && !this.riding) {
+      this.showToast('🐴 Du reitest! Schneller unterwegs – Werkzeug wechseln mit Q bzw. dem Werkzeug-Knopf.');
+    }
+    this.riding = !!key;
+    this.player.setMount(mount);
+    document.body.classList.toggle('riding', !!key);
+  }
+
+  // Werkzeug wechseln vom Reittier aus: dieselbe Auswahl wie am Regal dieser Welt
+  openRideChest() {
+    if (!this.riding) return;
+    const chest = (LEVEL.chests ?? [])[0];
+    if (chest) this.openChest(chest);
   }
 
   // warum ein Event gerade nicht startbar ist (sonst null)
@@ -1020,6 +1121,7 @@ export default class GardenScene extends Phaser.Scene {
   spawnBabies(pop) {
     for (const { enclosure, species, parent } of babyPlan(this.animals.filter((a) => a.state === 'penned'))) {
       const a = this.createAnimal(species, parent.x, parent.y);
+      a.farm = parent.farm ?? null; // Kalb, Ferkel oder Zicklein
       a.makeBaby();
       // an die nächste Stelle im Gehege, an der es ganz hineinpasst (nicht halb im Zaun, wenn die Eltern am Rand stehen)
       const spots = enclosure.tiles
@@ -1047,7 +1149,30 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Start und Ende der Events (auch wenn man zwischendurch woanders war) und die Restzeit oben
+  // Eisstand-Event: Eiswagen mit Eisverkäuferin mitten im Park, solange es läuft
+  updateIceStand() {
+    const on = LEVEL_ID === 'park' && !!LEVEL.iceStand && isActive('icecream');
+    if (on && !this.iceStand) {
+      const { x, y } = tileToWorld(LEVEL.iceStand.tx, LEVEL.iceStand.ty);
+      const cart = this.add.image(x, y, 'icecream_stand').setOrigin(0.5, 100 / 128).setScale(0.7).setDepth(y);
+      const seller = this.add.sprite(x + 8, y - 10, 'icecream_seller', 1).setOrigin(0.5, 112 / 116).setScale(0.5).setDepth(y - 6);
+      this.iceStand = [cart, seller];
+      for (const o of this.iceStand) {
+        o.setAlpha(0);
+        this.tweens.add({ targets: o, alpha: 1, duration: 600 });
+      }
+    }
+    if (!on && this.iceStand) {
+      const parts = this.iceStand;
+      this.iceStand = null;
+      this.tweens.add({ targets: parts, alpha: 0, duration: 600, onComplete: () => parts.forEach((o) => o.destroy()) });
+    }
+  }
+
   updateEvents() {
+    this.updateIceStand();
+    if (this.riding && !isActive('ride')) this.showToast('Das Reittier ist zurück im Stall.');
+    this.updateMount();
     const on = isActive('babies');
     if (LEVEL_ID === 'park' && on && !this.babiesOn) this.spawnBabies(false);
     if (LEVEL_ID === 'park' && !on && this.babiesOn) {
@@ -1059,9 +1184,16 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateEventBanner() {
-    const s = eventState('babies');
-    this.eventBanner.classList.toggle('show', s.state === 'active');
-    if (s.state === 'active') this.eventBanner.textContent = `🍼 Tierbabys · noch ${formatTime(s.left)}`;
+    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦' };
+    const lines = EVENTS.map((ev) => ({ ev, s: eventState(ev.id) }))
+      .filter(({ s }) => s.state === 'active')
+      .map(({ ev, s }) => `${icons[ev.id] ?? '★'} ${ev.name} · noch ${formatTime(s.left)}`);
+    this.eventBanner.classList.toggle('show', lines.length > 0);
+    if (lines.length) {
+      this.eventBanner.innerHTML = lines.join('<br>');
+      // direkt unter den Zähler oben links (auf dem Tablet ist er größer und kann umbrechen)
+      this.eventBanner.style.top = `${Math.round(this.hud.getBoundingClientRect().bottom + 6)}px`;
+    }
   }
 
   // Bewunderungsherzen der Besucher aufs Konto; der Zähler oben hüpft kurz
@@ -1084,7 +1216,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons))
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')))
         .map((l) => l.name);
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -1436,7 +1568,9 @@ export default class GardenScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     const top = Math.max(MARKER_MARGIN, this.hud.getBoundingClientRect().bottom + 26);
-    for (const t of game.traps) {
+    // Hinweise auf ausgelegte Fallen nur im Wald (dort gibt es die Falle); woanders keine
+    const traps = LEVEL_ID === 'forest' ? game.traps : [];
+    for (const t of traps) {
       let target = t;
       if (t.level !== LEVEL_ID) {
         // direkter Übergang dorthin, sonst der Weg über die Wiese (sie verbindet alle Gebiete)
@@ -1473,9 +1607,9 @@ export default class GardenScene extends Phaser.Scene {
       el.classList.toggle('caught', t.caught);
       el.classList.toggle('elsewhere', t.level !== LEVEL_ID);
     }
-    // Hinweise zu Fallen, die es nicht mehr gibt, entfernen
+    // Hinweise zu Fallen, die es nicht mehr gibt (oder außerhalb des Waldes), entfernen
     for (const [id, el] of this.markers) {
-      if (game.traps.some((t) => t.id === id)) continue;
+      if (traps.some((t) => t.id === id)) continue;
       el.remove();
       this.markers.delete(id);
     }
@@ -1613,7 +1747,12 @@ export default class GardenScene extends Phaser.Scene {
     // die im selben Kescherschwung mit erwischt wurden) – so fängt man wirklich nur eins
     // (Tiere aus der Falle sind 'trapped' und dürfen natürlich mit)
     if (animal.state === 'following' || animal.state === 'penned' || !this.animals.includes(animal)) return;
-    animal.origin ??= LEVEL_ID; // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
+    animal.origin ??= LEVEL_ID;
+    // der erste Flamingo: im Tierpark entsteht das Flamingo-Gehege
+    if (animal.species === 'flamingo' && !game.unlocked.includes('flamingo')) {
+      game.unlocked.push('flamingo');
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.`));
+    } // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     animal.catch();
     this.followers.push(animal);
     // Herdentiere: die anderen der Herde rennen vor Schreck davon und verschwinden
@@ -1623,7 +1762,7 @@ export default class GardenScene extends Phaser.Scene {
       if (mates.length) this.showToast(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`);
     }
     // kurzer Tierruf (falls es für diese Art einen gibt)
-    const sound = `animal_${animal.species}`;
+    const sound = this.callOf(animal);
     if (this.cache.audio.exists(sound)) this.sound.play(sound, { volume: ANIMAL_VOLUME });
   }
 
@@ -1665,11 +1804,11 @@ export default class GardenScene extends Phaser.Scene {
     if (LEVEL_ID === 'park') game.parkLeftAt = Date.now(); // ab jetzt zählen die Herzen der Abwesenheit
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(a.species === 'heron' && a.state === 'wild')) // wilde Reiher fliegen weiter, Babys gibt es nur beim Event
-        .map((a) => ({ species: a.species, variant: a.variant, state: a.state, x: a.x, y: a.y, life: a.life })),
+        .filter((a) => a.state !== 'following' && !a.baby && !((a.species === 'heron' || a.species === 'flamingo') && a.state === 'wild')) // wilde Reiher fliegen weiter, Babys gibt es nur beim Event
+        .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, state: a.state, x: a.x, y: a.y, life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
     };
-    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, origin: a.origin }));
+    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, origin: a.origin }));
     game.tool = null;
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
@@ -1894,7 +2033,9 @@ export default class GardenScene extends Phaser.Scene {
 
     for (const a of this.animals) a.update(dt, this.player);
     this.visitors?.update(dt);
+    this.updatePenCalls(dt);
     this.cullStatic();
+    if (this.riding) this.updateMount(); // in Gebäuden ab-, draußen wieder aufsteigen
     this.eventTimer -= dt;
     if (this.eventTimer <= 0) {
       this.eventTimer = 0.5;

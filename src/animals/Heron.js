@@ -19,8 +19,9 @@ const PEN_MIN_DIST = 50; // so weit soll der Flug mindestens gehen
 
 // Phasen: flying (zum Ziel) → landed → leaving (zum Kartenrand); ohne Landung: flying direkt zum Rand
 export default class Heron extends Animal {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'heron');
+  // species: 'heron' oder 'flamingo' (gleiches Verhalten, andere Bilder)
+  constructor(scene, x, y, species = 'heron') {
+    super(scene, x, y, species);
     this.altitude = 0;
     this.gone = false; // true: ist aus der Karte hinausgeflogen, die Szene entfernt ihn
   }
@@ -86,6 +87,7 @@ export default class Heron extends Animal {
   // In der Voliere: herumstaksen, ab und zu kurz zu einer anderen Stelle fliegen
   updatePen(dt, player) {
     const f = this.penFlight;
+    if (this.baby) return super.updateFree(dt, player); // Küken fliegen noch nicht
     if (!f) {
       this.penFlyTime = (this.penFlyTime ?? Phaser.Math.FloatBetween(3, PEN_FLY_EVERY[1])) - dt;
       if (this.penFlyTime > 0) return super.updateFree(dt, player);
@@ -148,7 +150,8 @@ export default class Heron extends Animal {
     const penFlying = this.state === 'penned' && this.penFlight;
     if (!penFlying && (this.state !== 'wild' || this.phase === 'landed')) {
       // stehend (auch beim Folgen und im Gehege)
-      if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture).setOrigin(0.5, this.kind.originY);
+      const key = this.baby && this.kind.babyTexture ? this.kind.babyTexture : this.kind.texture;
+      if (this.sprite.texture.key !== key) this.sprite.setTexture(key).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       this.shadow.setScale(1);
       return;

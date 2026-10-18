@@ -14,7 +14,7 @@ export default class ParkFoodTool {
 
   update() {
     const p = this.player;
-    this.sprite.setPosition(p.x - p.faceX * 10, p.sprite.y - 14);
+    this.sprite.setPosition(p.x - p.faceX * 10, p.sprite.y - 14 - p.handLift);
     this.sprite.setDepth(p.y + (p.faceY > 0 ? 0.1 : -0.1));
   }
 

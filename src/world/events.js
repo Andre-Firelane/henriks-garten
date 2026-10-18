@@ -13,6 +13,38 @@ export const EVENTS = [
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE, // danach so lange Pause, bevor man es wieder starten kann
   },
+  {
+    id: 'ride',
+    name: 'Reittier',
+    text: '10 Minuten reitest du in den Welten: schneller unterwegs und überall Werkzeug wechseln.',
+    cost: 50,
+    duration: 10 * MINUTE,
+    cooldown: 10 * MINUTE,
+  },
+  {
+    id: 'flamingo',
+    name: 'Flamingo-Flug',
+    text: '5 Minuten lang fliegen Flamingos über Wiese, Wald und Savanne. Fang einen für den Tierpark!',
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 8 * MINUTE,
+  },
+  {
+    id: 'farm',
+    name: 'Bauernhof',
+    text: '5 Minuten lang sind die Schafe auf der Wiese Kühe, Schweine und Ziegen. Gefangene bleiben es!',
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
+    id: 'icecream',
+    name: 'Eisstand',
+    text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt ein Herz.',
+    cost: 30,
+    duration: 8 * MINUTE,
+    cooldown: 8 * MINUTE,
+  },
 ];
 
 // Zustand eines Events: 'ready' (startbar), 'active' (läuft, left = Restzeit) oder 'cooldown' (left = bis wieder startbar)
@@ -48,9 +80,9 @@ export function formatTime(ms) {
 }
 
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
-// ihr Baby ist ein Rehkitz. Auch Katzen, Erdmännchen, Eichhörnchen und Frösche bekommen Babys; Maulwürfe, Vögel und
+// ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen und Frösche bekommen Babys; Maulwürfe, Vögel und
 // Wassertiere nicht.
-const BABY_OF = { cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
+const BABY_OF = { flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
 
 // animals: [{ species, enclosure, ... }] (nur Tiere in Gehegen, ohne Babys). Ergebnis: [{ enclosure, species, parent }]
 export function babyPlan(animals) {

@@ -5,6 +5,8 @@ import Phaser from 'phaser';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
+import { isActive } from '../world/events.js';
+import { LEVEL } from '../world/map.js';
 import { BABY_BONUS, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
 const LOOKS = 8; // Besucher-Bilder visitor1 ... visitor8
@@ -17,6 +19,12 @@ const FEED_CHANCE = 0.25; // so oft füttert er am Ende des Schauens
 const PEN_FEED_PAUSE = 40; // Sekunden, bevor dasselbe Gehege wieder gefüttert wird
 const SPREAD = 8; // so weit stehen und laufen Besucher neben der Kachelmitte (damit sie sich nicht überlagern)
 const SCORE_EVERY = 3; // Sekunden zwischen zwei Neuberechnungen der Anziehung
+// Eisstand-Event: wer noch kein Eis hatte, geht mit dieser Wahrscheinlichkeit zum Eiswagen (beim Ankommen bzw. nach
+// einem Gehege); dort wartet er kurz, bekommt sein Eis (ein Herz) und trägt es eine Weile in der Hand
+const ICE_CHANCE = 0.6;
+const ICE_BUY_TIME = [2, 3.5];
+const ICE_EAT_TIME = [40, 70]; // so lange hält er das Eis, dann ist es aufgegessen
+const ICE_LOOKS = ['icecream', 'icecream2', 'icecream3'];
 // Bewunderungsherzen: jeder Besucher gibt beim Stehenbleiben vor einem Gehege mit Tieren genau ein Herz
 // (mehr Herzen gibt es nur durch mehr Besucher, also durch mehr und seltenere Tiere)
 
@@ -100,13 +108,51 @@ export class Visitor {
         if (Math.random() < FEED_CHANCE) this.crowd.feed(this);
         this.next();
       }
+    } else if (this.phase === 'buy') {
+      // am Eiswagen: warten, dann gibt es das Eis
+      this.timer -= dt;
+      this.faceTowards(LEVEL.iceStand);
+      if (this.timer <= 0) {
+        this.takeIce();
+        this.crowd.release(this);
+        if (!this.crowd.sendToPen(this)) this.crowd.sendHome(this);
+      }
+    }
+    if (this.iceSprite) {
+      this.iceTime -= dt;
+      if (this.iceTime <= 0) {
+        this.iceSprite.destroy(); // aufgegessen
+        this.iceSprite = null;
+      }
     }
     this.walkTime += moving ? dt : 0;
     this.render(moving);
   }
 
-  // am Aussichtsplatz angekommen: stehen bleiben und schauen
+  // Eis bekommen: ein Herz, und das Eis kommt in die Hand
+  takeIce() {
+    this.ice = true;
+    this.popHeart();
+    this.scene.addHearts(1);
+    this.iceSprite = this.scene.add.image(this.x, this.y, Phaser.Utils.Array.GetRandom(ICE_LOOKS)).setScale(0.5).setOrigin(0.5, 1);
+    this.iceTime = Phaser.Math.FloatBetween(...ICE_EAT_TIME);
+  }
+
+  faceTowards(t) {
+    if (!t) return;
+    const p = tileToWorld(t.tx, t.ty);
+    this.faceX = Math.sign(p.x - this.x) || this.faceX;
+    this.faceY = Math.sign(p.y - this.y) || this.faceY;
+  }
+
+  // am Ziel angekommen: am Eiswagen anstellen bzw. am Gehege stehen bleiben und schauen
   arrive() {
+    if (this.goal === 'ice') {
+      this.goal = null;
+      this.phase = 'buy';
+      this.timer = Phaser.Math.FloatBetween(...ICE_BUY_TIME);
+      return;
+    }
     this.phase = 'look';
     const score = penScore(this.scene.animals, this.pen);
     this.timer = Phaser.Math.FloatBetween(...LOOK_TIME) + Math.min(8, score);
@@ -131,6 +177,7 @@ export class Visitor {
   // zum nächsten Gehege oder, wenn genug gesehen, nach Hause
   next() {
     this.crowd.release(this);
+    if (this.crowd.maybeIce(this)) return; // erst noch ein Eis holen
     this.visitsLeft--;
     if (this.visitsLeft > 0 && this.crowd.sendToPen(this)) return;
     this.crowd.sendHome(this);
@@ -145,6 +192,8 @@ export class Visitor {
     this.shadow.setPosition(this.x, this.y);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
+    // Eis in der Hand: vorne seitlich auf Handhöhe, von hinten gesehen hinter dem Körper
+    if (this.iceSprite) this.iceSprite.setPosition(this.x + this.faceX * 8, this.y - hop - 14).setDepth(this.y + (this.faceY > 0 ? 0.2 : -0.2));
   }
 
   // Bewunderungsherz über dem Kopf (rosa, wie im Zähler oben)
@@ -159,6 +208,7 @@ export class Visitor {
   destroy() {
     this.sprite.destroy();
     this.shadow.destroy();
+    this.iceSprite?.destroy();
   }
 }
 
@@ -244,6 +294,24 @@ export class VisitorCrowd {
     v.spot = null;
   }
 
+  // Eisstand-Event: ab und zu (wer noch keins hatte) zum Eiswagen statt zum nächsten Gehege
+  maybeIce(v) {
+    if (v.ice || !isActive('icecream') || Math.random() > ICE_CHANCE) return false;
+    const free = this.grid.ice.filter((s) => !s.taken);
+    if (!free.length) return false;
+    const set = new Set(free.map((s) => s.tx + ',' + s.ty));
+    const route = findRoute(this.grid, v.tile, (tx, ty) => set.has(tx + ',' + ty));
+    if (!route) return false;
+    const end = route.length ? route[route.length - 1] : v.tile;
+    const spot = free.find((s) => s.tx === end.tx && s.ty === end.ty);
+    spot.taken = v;
+    v.spot = spot;
+    v.goal = 'ice';
+    v.phase = 'walk';
+    v.setRoute(route, this.standPoint(spot));
+    return true;
+  }
+
   sendHome(v) {
     const exits = new Set(this.grid.exits.map((t) => t.tx + ',' + t.ty));
     const route = findRoute(this.grid, v.tile, (tx, ty) => exits.has(tx + ',' + ty));
@@ -260,6 +328,7 @@ export class VisitorCrowd {
     this.visitors.push(v);
     v.sprite.setAlpha(0);
     this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
+    if (this.maybeIce(v)) return; // erst zum Eiswagen
     if (!this.sendToPen(v)) this.remove(v);
   }
 
@@ -295,6 +364,6 @@ export class VisitorCrowd {
   remove(v) {
     this.release(v);
     this.visitors.splice(this.visitors.indexOf(v), 1);
-    this.scene.tweens.add({ targets: [v.sprite, v.shadow], alpha: 0, duration: 400, onComplete: () => v.destroy() });
+    this.scene.tweens.add({ targets: [v.sprite, v.shadow, v.iceSprite].filter(Boolean), alpha: 0, duration: 400, onComplete: () => v.destroy() });
   }
 }

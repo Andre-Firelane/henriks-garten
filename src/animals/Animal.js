@@ -258,6 +258,23 @@ export const SPECIES = {
     shadowW: 26,
     catchWith: ['touch', 'net', 'lasso'],
   },
+  // Flamingo (Event „Flamingo-Flug“): verhält sich wie der Reiher; babyTexture: graues Küken beim Tierbaby-Event
+  flamingo: {
+    texture: 'flamingo',
+    flyTexture: 'flamingo_fly',
+    babyTexture: 'flamingo_baby',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 104 / 108,
+    speed: 25,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2],
+    stepRate: 7,
+    hop: 1,
+    footW: 7,
+    shadowW: 26,
+    catchWith: ['touch', 'net', 'lasso'],
+  },
   // Fische leben im Wasser (siehe Fish.js); frames/originY gelten für den Beutel beim Tragen
   // Koi (Asien): unter Wasser nur bunte Schatten, mit Fischfutter lockt man sie hoch (siehe Koi.js).
   // Gefangen wie der Fisch als Beutel; texture ist eines der drei Farbmuster (koi1 bis koi3)
@@ -362,7 +379,8 @@ export default class Animal {
       const dy = ty - this.y;
       const d = Math.hypot(dx, dy);
       if (d > stop) {
-        const step = Math.min(FOLLOW_SPEED * dt, d - stop);
+        // beim Reiten ist der Spieler schneller: dann laufen sie entsprechend schneller hinterher
+        const step = Math.min(Math.max(FOLLOW_SPEED, (player.speed ?? 0) * 1.25) * dt, d - stop);
         // Die Spur ist begehbar, daher ohne Kollision: so bleibt es nirgends hängen
         moving = this.move((dx / d) * step, (dy / d) * step);
       }

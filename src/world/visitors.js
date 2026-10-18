@@ -21,6 +21,7 @@ export const APPEAL = {
   meerkat: 3.5,
   stag: 4,
   giraffe: 4,
+  flamingo: 4,
   lion: 5,
   crocodile: 5,
 };
@@ -66,6 +67,9 @@ export function awayHearts(score, ms, eventMs = 0, babies = 0) {
   return Math.floor(normal + event);
 }
 
+// Eisstand-Event: so viele Eis holen sich die Besucher pro Minute, während man nicht im Tierpark ist
+export const AWAY_ICE_PER_VISITOR_MINUTE = 0.25;
+
 const key = (tx, ty) => tx + ',' + ty;
 
 // Wegnetz: alle begehbaren Wegkacheln, ohne Gehegetore und Gebäudetüren (dort gehen nur Tiere bzw. der Spieler durch)
@@ -109,7 +113,18 @@ export function buildPathGrid() {
       }
     }
   }
-  return { walk, exits, spots };
+  // Eisstand: Plätze auf dem Weg direkt am Wagen (dort warten die Besucher auf ihr Eis)
+  let ice = [];
+  const stand = LEVEL.iceStand;
+  if (stand) {
+    for (const k of walk) {
+      const [tx, ty] = k.split(',').map(Number);
+      const d = Math.max(Math.abs(tx - stand.tx), Math.abs(ty - stand.ty));
+      if (d >= 1 && d <= 2) ice.push({ tx, ty, d: Math.hypot(tx - stand.tx, ty - stand.ty), taken: null });
+    }
+    ice = ice.sort((a, b) => a.d - b.d).slice(0, 5);
+  }
+  return { walk, exits, spots, ice };
 }
 
 // kürzester Weg über das Wegnetz (Breitensuche); goal(tx, ty) sagt, ob eine Kachel ein Ziel ist.

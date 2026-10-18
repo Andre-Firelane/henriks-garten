@@ -22,7 +22,7 @@ export default class Lasso extends ZoneTool {
 
     // Aufgerolltes Lasso an der Hüfte (auf der anderen Seite als die Hand), beim Werfen ist es draußen
     this.coil.setVisible(!this.active);
-    this.coil.setPosition(p.x - p.faceX * 9, p.sprite.y - 14);
+    this.coil.setPosition(p.x - p.faceX * 9, p.sprite.y - 14 - p.handLift);
     this.coil.setScale(0.4 * p.faceX, 0.4);
     this.coil.setDepth(p.y + (p.faceY > 0 ? 0.1 : -0.1));
 
