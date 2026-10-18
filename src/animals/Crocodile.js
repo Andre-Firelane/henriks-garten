@@ -23,10 +23,9 @@ export default class Crocodile extends Fish {
     const { tx, ty } = worldToTile(this.x, this.y);
     const pen = enclosureAt(tx, ty);
     if (!pen) return [];
-    const a = pen.area;
     const spots = [];
-    for (let y = a.ty0; y <= a.ty1; y++) {
-      for (let x = a.tx0; x <= a.tx1; x++) {
+    for (const { tx: x, ty: y } of pen.tiles) {
+      { // nur Kacheln, die wirklich zum Gehege gehören
         if (isBlocked(x, y)) continue;
         const w = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => isFishpond(x + dx, y + dy));
         if (w) spots.push({ land: tileToWorld(x, y), water: tileToWorld(x + w[0], y + w[1]) });

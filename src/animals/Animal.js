@@ -22,6 +22,7 @@ export const SPECIES = {
   },
   cat: {
     texture: 'cat',
+    eatTexture: 'cat_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 60, // flink, aber noch langsamer als der Spieler
@@ -36,6 +37,7 @@ export const SPECIES = {
   },
   deer: {
     texture: 'deer',
+    eatTexture: 'deer_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 30,
@@ -54,6 +56,7 @@ export const SPECIES = {
   // Antilope (Savanne): wie das Reh, lebt aber in kleinen Gruppen (siehe Antelope.js); nur mit dem Lasso
   antelope: {
     texture: 'antelope',
+    eatTexture: 'antelope_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 96 / 100,
     speed: 30,
@@ -108,6 +111,7 @@ export const SPECIES = {
   // Löwe (Savanne): döst unter Akazien, nur durch Kraulen fangbar, solange er schläft (siehe Lion.js)
   lion: {
     texture: 'lion',
+    eatTexture: 'lion_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 26,
@@ -154,6 +158,7 @@ export const SPECIES = {
   // Hirsch: verhält sich wie das Reh, ist aber sehr selten
   stag: {
     texture: 'stag',
+    eatTexture: 'stag_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 108 / 112,
     speed: 30,
@@ -188,6 +193,7 @@ export const SPECIES = {
   // Füchse sind noch scheuer als Rehe und lassen sich nur mit der Falle fangen
   fox: {
     texture: 'fox',
+    eatTexture: 'fox_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 35,
@@ -298,6 +304,7 @@ export const CATCH_DIST = 22; // so nah muss der Spieler ran, um es zu fangen
 const FOOT_H = 3;
 // Die Füße stehen etwas unterhalb der Schattenmitte, sonst wirkt die Figur, als schwebe sie über dem Schatten
 export const SPRITE_SINK = 3;
+const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort, wo es gerade steht
 
 // Zustände: 'wild' läuft frei herum, 'following' folgt dem Spieler, 'penned' ist im Gehege, 'trapped' sitzt in der Falle
 export default class Animal {
@@ -360,6 +367,8 @@ export default class Animal {
         moving = this.move((dx / d) * step, (dy / d) * step);
       }
       if (this.arrivedHome()) this.enterPen();
+    } else if (this.feed) {
+      moving = this.updateFeed(dt); // im Tierpark: zum Futter laufen und fressen
     } else {
       moving = this.updateFree(dt, player);
     }
@@ -378,6 +387,60 @@ export default class Animal {
     const moved = this.move(this.dirX * this.kind.speed * dt, this.dirY * this.kind.speed * dt);
     if (!moved) this.pickWander(); // gegen etwas gelaufen: neue Richtung
     return moved;
+  }
+
+  // Futter im Gehege: Kann das Tier gerade zum Futter kommen? (z. B. nicht, während es auf dem Kratzbaum schläft)
+  canFeed() {
+    return this.state === 'penned';
+  }
+
+  // zum Futterplatz laufen und dort time Sekunden fressen; food: Mitte des Futters (dorthin schaut es)
+  eatAt(spot, food, time) {
+    this.startFeed();
+    this.feed = { spot, food, time, phase: 'walk', timeout: FEED_WALK_TIMEOUT };
+  }
+
+  // Unterklassen beenden hier besondere Zustände (schlafen, trinken ...), bevor das Tier zum Futter läuft
+  startFeed() {}
+
+  // beim Fressen das Fress-Bild (kind.eatTexture, Kopf unten); das Schaf grast stattdessen (siehe Sheep.js)
+  setEating(on) {
+    this.eatingLook = on && !!this.kind.eatTexture;
+  }
+
+  // Bild für Stehen und Laufen: beim Fressen am Futter das Fress-Bild
+  lookTexture() {
+    return this.eatingLook ? this.kind.eatTexture : this.kind.texture;
+  }
+
+  updateFeed(dt) {
+    const f = this.feed;
+    if (f.phase === 'walk') {
+      f.timeout -= dt;
+      const dx = f.spot.x - this.x;
+      const dy = f.spot.y - this.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 3 || f.timeout <= 0) {
+        f.phase = 'eat';
+        this.faceX = Math.sign(f.food.x - this.x) || this.faceX;
+        this.faceY = Math.sign(f.food.y - this.y) || this.faceY;
+        this.setEating(true);
+        return false;
+      }
+      const step = Math.min(d, this.kind.speed * 1.3 * dt);
+      const angle = Math.atan2(dy, dx);
+      for (const turn of [0, 0.5, -0.5, 1, -1]) {
+        if (this.move(Math.cos(angle + turn) * step, Math.sin(angle + turn) * step)) return true;
+      }
+      return false;
+    }
+    f.time -= dt;
+    if (f.time <= 0) {
+      this.feed = null;
+      this.setEating(false);
+      this.pickWander();
+    }
+    return false;
   }
 
   // Ist ein folgendes Tier an seinem Ziel angekommen? Nur in einem Gehege, das diese Tierart aufnimmt.
@@ -405,6 +468,12 @@ export default class Animal {
 
   // Bild, Blickrichtung und Wippen beim Laufen
   render(moving) {
+    // zwischen Lauf- und Fress-Bild wechseln (andere Bilder wie Schlafen setzen die Unterklassen selbst)
+    if (this.kind.eatTexture) {
+      const key = this.lookTexture();
+      const other = key === this.kind.texture ? this.kind.eatTexture : this.kind.texture;
+      if (this.sprite.texture.key === other) this.sprite.setTexture(key, this.sprite.frame.name);
+    }
     this.sprite.setFrame(
       this.faceY > 0
         ? this.faceX < 0 ? this.kind.frames.downLeft : this.kind.frames.downRight
@@ -483,6 +552,8 @@ export default class Animal {
 
   catch() {
     this.state = 'following';
+    this.feed = null; // mitten beim Fressen gefangen
+    this.eatingLook = false;
     this.sprite.setVisible(true);
     this.shadow.setVisible(true);
     this.popHeart();
@@ -516,6 +587,13 @@ export default class Animal {
     this.state = 'penned';
     this.pickWander();
     this.popHeart();
+  }
+
+  // Tierbaby (beim Event im Tierpark): dasselbe Bild, nur kleiner; wird nicht gespeichert und nicht gezählt
+  makeBaby() {
+    this.baby = true;
+    this.sprite.setScale(0.3);
+    this.shadow.setScale(0.6);
   }
 
   popHeart() {

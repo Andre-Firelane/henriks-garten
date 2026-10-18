@@ -17,8 +17,10 @@ import {
   grassAt,
   outerWaterCorners,
   objectAt,
+  charAt,
   fenceAxisAt,
   isBlocked,
+  isBlockedPoint,
   isFishpond,
   exitAt,
   inPen,
@@ -26,6 +28,8 @@ import {
   accepts,
   BRIDGES,
   KOI_WATER,
+  buildings,
+  buildingAt,
   CAR_BODY,
   GATE_TILES,
   enclosureAt,
@@ -50,6 +54,11 @@ import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
+import ParkFoodTool from '../tools/ParkFoodTool.js';
+import { VisitorCrowd } from '../visitors/Visitor.js';
+import { awayHearts, parkScore } from '../world/visitors.js';
+import { EVENTS, activeOverlap, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
+import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
@@ -128,9 +137,17 @@ const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekun
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
 const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
-const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen
+const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen (auch am Futterautomaten)
+const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Futter hineinzuwerfen
+const FEED_TIME = [8, 12]; // so lange fressen die Tiere
+const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
+// Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
+const NO_PEN_FEED = ['fish', 'koi', 'crocodile', 'heron', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
+const ROOF_ALPHA = { cathouse: 0.55 };
+// obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
+const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
 const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
 const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
@@ -185,6 +202,11 @@ const TOOLS = {
     name: 'Falle',
     hint: 'Leg sie aus und warte, bis ein Tier hineingeht',
   },
+  parkfood: {
+    create: (scene, player) => new ParkFoodTool(scene, player),
+    name: 'Futter',
+    hint: 'Wirf es am Zaun ins Gehege – dann kommen die Tiere zum Fressen',
+  },
   koifood: {
     create: (scene, player) => new KoiFoodTool(scene, player),
     name: 'Fischfutter',
@@ -204,15 +226,16 @@ export default class GardenScene extends Phaser.Scene {
 
   // data.level: welches Level; data.arrive: Ankunftskachel nach einem Übergang
   create(data = {}) {
-    // Startlevel lässt sich zum Ausprobieren auch über die Adresse wählen, z. B. ?level=forest
+    // Startlevel lässt sich zum Ausprobieren auch über die Adresse wählen, z. B. ?level=forest (sonst geht es im Tierpark vor dem Haupthaus los)
     const urlLevel = new URLSearchParams(location.search).get('level');
-    setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'meadow'));
+    setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'park'));
     this.leaving = false;
     this.signs = [];
-    this.hutFront = [];
+    this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
 
     for (let ty = 0; ty < MAP_H; ty++) {
       for (let tx = 0; tx < MAP_W; tx++) {
+        if (charAt(tx, ty) === ' ') continue; // außerhalb der Karte: nichts (die Karte muss nicht rechteckig sein)
         const { x, y } = tileToWorld(tx, ty);
         // Boden liegt immer ganz unten. Wasserecken, die ins Land ragen, werden abgerundet; darunter Gras.
         const corners = outerWaterCorners(tx, ty);
@@ -228,15 +251,29 @@ export default class GardenScene extends Phaser.Scene {
         if (obj?.fence) {
           const imgs = this.addFence(tx, ty, obj);
           // vordere Hüttenwände (zur Kamera hin) werden durchsichtig, wenn man drin ist
-          const h = LEVEL.hut;
-          if (obj.fence.kind === 'hut' && (ty === h.ty1 || tx === h.tx1)) this.hutFront.push(...imgs);
+          const h = obj.fence.kind === 'hut' ? buildingAt(tx, ty) : null;
+          if (h && (ty === h.ty1 || tx === h.tx1)) {
+            if (!this.houseFront.has(h)) this.houseFront.set(h, []);
+            this.houseFront.get(h).push(...imgs);
+          }
         }
-        else if (obj?.key === 'signpost_post') {
+        else if (obj?.invisible) {
+          // nur fest, nichts zu sehen (z. B. die Seiten des großen Schreibtischs)
+        } else if (obj?.key === 'signpost_post') {
           this.signs.push({ x, y });
           this.drawSignBoards(x, y, tx, ty);
         } else if (obj) {
-          const img = this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(y);
+          const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty)?.style}` : obj.key; // Einrichtung passend zur Hütte
+          const img = this.add.image(x, y, key).setOrigin(0.5, obj.originY).setDepth(obj.floor ? -99990 : y + (obj.depthShift ?? 0));
+          if (obj.corner) {
+            // in die Ecke rücken: ein Stück zu den Wänden hin, die neben der Kachel stehen
+            const wall = (dx, dy) => objectAt(tx + dx, ty + dy)?.fence?.kind === 'hut';
+            const du = wall(1, 0) ? 1 : wall(-1, 0) ? -1 : 0;
+            const dv = wall(0, 1) ? 1 : wall(0, -1) ? -1 : 0;
+            img.setPosition(x + (du - dv) * 32 * 0.35, y + (du + dv) * 16 * 0.35);
+          }
           if (obj.chest) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openChest(this.chestAt(tx, ty)));
+          if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.openEventsPanel());
         }
       }
     }
@@ -254,11 +291,13 @@ export default class GardenScene extends Phaser.Scene {
       open: false,
       closeTimer: 0,
     }));
-    // Hütte: Tür (geht auf wie ein Gehegetor) und Dach über dem ganzen Raum
-    this.hut = null;
-    if (LEVEL.hut) {
-      const h = LEVEL.hut;
-      const doors = GATE_TILES.filter(({ tx, ty }) => tx >= h.tx0 && tx <= h.tx1 && ty >= h.ty0 && ty <= h.ty1);
+    // Gebäude (Hütte, Katzenhäuschen ...): Tür (geht auf wie ein Gehegetor) und Dach über dem ganzen Raum.
+    // Ist das Gebäude zugleich ein Gehege, gehört die Tür zum Gehege (z. B. die Glastür des Katzenhäuschens).
+    this.houses = [];
+    for (const h of buildings()) {
+      const front = this.houseFront.get(h) ?? [];
+      const penGates = ENCLOSURES.flatMap((e) => e.gates);
+      const doors = GATE_TILES.filter(({ tx, ty }) => tx >= h.tx0 && tx <= h.tx1 && ty >= h.ty0 && ty <= h.ty1 && !penGates.some((g) => g.tx === tx && g.ty === ty));
       const group = {
         sprites: doors.map(({ tx, ty, vertical }) => {
           const { x, y } = tileToWorld(tx, ty);
@@ -269,32 +308,44 @@ export default class GardenScene extends Phaser.Scene {
         closeTimer: 0,
       };
       this.gateGroups.push(group);
-      this.hutFront.push(...group.sprites);
-      // obere Ecke der Grundfläche liegt im Dachbild bei (184, 100)
+      front.push(...group.sprites);
+      // obere Ecke der Grundfläche liegt im Dachbild bei ROOF_ANCHOR (Hütten: 184, 100)
       const top = tileToWorld(h.tx0, h.ty0);
       const bottom = tileToWorld(h.tx1, h.ty1);
-      const roof = this.add.image(top.x, top.y - TILE_H / 2, `hutroof_${h.style}`).setOrigin(184 / 384, 100 / 310).setDepth(bottom.y + TILE_H / 2 + 1);
-      this.hut = { roof, inside: false };
+      const [ax, ay] = ROOF_ANCHOR[h.style] ?? [184, 100];
+      const roof = this.add.image(top.x, top.y - TILE_H / 2, `hutroof_${h.style}`);
+      roof.setOrigin(ax / roof.width, ay / roof.height).setDepth(bottom.y + TILE_H / 2 + 1);
+      roof.setAlpha(ROOF_ALPHA[h.style] ?? 1);
+      this.houses.push({ h, roof, front, inside: false });
     }
 
     // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
     this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
       const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
       // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt
-      const front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
-      this.add.image(x, y - 20, 'esign_board').setScale(0.5).setDepth(front);
+      let front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
+      // signOnRoof: das Schild sitzt oben auf dem Dach des Gebäudes (z. B. Katzenhaus), damit man es von weitem sieht
+      const house = e.signOnRoof ? buildingAt(e.tiles[0].tx, e.tiles[0].ty) : null;
+      let sx = x, sy = y;
+      if (house) {
+        const c = tileToWorld((house.tx0 + house.tx1) / 2, (house.ty0 + house.ty1) / 2);
+        sx = c.x;
+        sy = c.y - 78; // über dem First
+        front = tileToWorld(house.tx1, house.ty1).y + TILE_H + 2; // vor dem Dach
+      }
+      this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
       // Tierbilder nebeneinander auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
       const list = e.species ?? [];
       const step = SIGN_INNER_W / list.length;
       list.forEach((s, i) => {
-        const icon = this.add.image(x - SIGN_INNER_W / 2 + step * (i + 0.5), y - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
+        const icon = this.add.image(sx - SIGN_INNER_W / 2 + step * (i + 0.5), sy - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
         icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
       });
       return { x, y, enclosure: e };
     });
     this.wrongHomeTimer = 0;
     // Netzdach über Gehegen wie der Voliere
-    for (const e of ENCLOSURES) if (e.netRoof) this.drawNetRoof(e.area);
+    for (const e of ENCLOSURES) if (e.netRoof) this.drawNetRoof(e);
     this.shownSign = null; // welches Schild die Tafel gerade zeigt
 
 
@@ -387,7 +438,24 @@ export default class GardenScene extends Phaser.Scene {
       this.followers.push(a);
     }
     game.followers = [];
+    // Herzen, die die Besucher dagelassen haben, während der Spieler woanders war (nach den Tieren, die schon da waren)
+    let away = 0;
+    if (LEVEL_ID === 'park' && game.parkLeftAt) {
+      const now = Date.now();
+      const babies = babyPlan(this.animals.filter((a) => a.state === 'penned')).length;
+      away = awayHearts(parkScore(this.animals), now - game.parkLeftAt, activeOverlap('babies', game.parkLeftAt, now), babies);
+      game.hearts += away;
+      game.parkLeftAt = null;
+    }
     const moved = LEVEL_ID === 'park' ? this.moveFollowersIntoPens() : ''; // im Tierpark ziehen sie gleich ein
+    // Tierbabys, solange das Event läuft (vor den Besuchern, die Babys locken sie an)
+    this.babiesOn = false;
+    if (LEVEL_ID === 'park' && isActive('babies')) this.spawnBabies(false);
+    // Besucher im Tierpark (wie viele, hängt von den Tieren in den Gehegen ab)
+    this.visitors = LEVEL_ID === 'park' ? new VisitorCrowd(this) : null;
+    this.eventTimer = 0;
+    this.eventBanner = document.getElementById('event-banner');
+    this.updateEventBanner();
 
     this.hud = document.getElementById('hud');
     this.toolbar = document.getElementById('tools');
@@ -400,8 +468,9 @@ export default class GardenScene extends Phaser.Scene {
     this.updateHud();
     this.updateToolbar();
     if (data.level) {
-      const back = data.returned ? `<br><small>${data.returned} ist wieder in der Kiste im anderen Gebiet</small>` : '';
-      this.showToast(`${LEVEL.name}${back}${moved}`);
+      const back = data.returned ? `<br><small>${data.returned} ist wieder im Regal im anderen Gebiet</small>` : '';
+      const hearts = away ? `<br><span style="color:#ff8fb8">♥</span> ${away} Bewunderungsherz${away === 1 ? '' : 'en'} haben die Besucher dagelassen, während du weg warst.` : '';
+      this.showToast(`${LEVEL.name}${back}${moved}${hearts}`);
     }
 
     const cam = this.cameras.main;
@@ -422,6 +491,15 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', restart);
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
     const useTool = () => {
+      if (this.nearFeeder && !this.leaving && this.toolId !== 'parkfood') {
+        this.equipTool('parkfood'); // am Futterautomaten: Futter holen
+        this.showToast('Futter genommen! Wirf es am Zaun ins Gehege – dann kommen die Tiere.');
+        return;
+      }
+      if (this.nearComputer && !this.leaving) {
+        this.openEventsPanel(); // am Hauptrechner: Events
+        return;
+      }
       if (this.nearChest && !this.leaving) {
         this.openChest(this.nearChest); // an der Kiste: Werkzeug auswählen
         return;
@@ -542,20 +620,24 @@ export default class GardenScene extends Phaser.Scene {
   addFence(tx, ty, obj) {
     const { kind, axis } = obj.fence;
     const { x, y } = tileToWorld(tx, ty);
-    // Verbindung in Richtung dx/dy entlang der Achse a: der Nachbar ist ein Zaun oder Tor, und einer von beiden läuft in diese Richtung
+    // Verbindung in Richtung dx/dy entlang der Achse a: der Nachbar ist ein Zaun oder Tor, und einer von beiden läuft in diese
+    // Richtung. Ein Nachbar derselben Zaunart wird immer verbunden: so schließen auch Stufen in frei geformten Gehegen.
     const joins = (dx, dy, a) => {
       const other = fenceAxisAt(tx + dx, ty + dy);
-      return !!other && (axis === a || other === a);
+      return !!other && (axis === a || other === a || objectAt(tx + dx, ty + dy)?.fence?.kind === kind);
     };
     const xl = joins(-1, 0, 'x');
     const xr = joins(1, 0, 'x');
     const yu = joins(0, -1, 'y');
     const yd = joins(0, 1, 'y');
-    const hut = kind === 'hut' ? `hutwall_${LEVEL.hut.style}` : null; // Hüttenwand im Stil des Gebiets
+    const hut = kind === 'hut' ? `hutwall_${buildingAt(tx, ty).style}` : null; // Wand im Stil des Gebäudes
     const prefix = hut ?? obj.key.slice(0, -2); // z. B. fence, mesh, net, chain
     const imgs = [];
+    // Gebäudewände können verschieden hoch sein: die Kachelmitte liegt immer 20 Pixel über dem unteren Bildrand
+    const originY = (img) => (hut ? (img.height - 20) / img.height : obj.originY);
     const piece = (a, crop) => {
-      const img = this.add.image(x, y, `${prefix}_${a}`).setOrigin(0.5, obj.originY).setDepth(y);
+      const img = this.add.image(x, y, `${prefix}_${a}`);
+      img.setOrigin(0.5, originY(img)).setDepth(y);
       if (crop === 'left') img.setCrop(0, 0, 34, img.height);
       if (crop === 'right') img.setCrop(30, 0, 34, img.height);
       imgs.push(img);
@@ -568,7 +650,10 @@ export default class GardenScene extends Phaser.Scene {
     else if (yu) piece('y', 'right');
     else if (yd) piece('y', 'left');
     if (!xl && !xr && !yu && !yd) piece(axis); // einzelnes Stück
-    if ((xl || xr) && (yu || yd)) imgs.push(this.add.image(x, y, `post_${hut ?? kind}`).setOrigin(0.5, obj.originY).setDepth(y + 0.01));
+    if ((xl || xr) && (yu || yd)) {
+      const post = this.add.image(x, y, `post_${hut ?? kind}`);
+      imgs.push(post.setOrigin(0.5, originY(post)).setDepth(y + 0.01));
+    }
     return imgs;
   }
 
@@ -834,7 +919,7 @@ export default class GardenScene extends Phaser.Scene {
     const add = (species, state) => {
       if (state === 'penned') counts[species] = (counts[species] ?? 0) + 1;
     };
-    for (const a of this.animals) add(a.species, a.state);
+    for (const a of this.animals) if (!a.baby) add(a.species, a.state);
     for (const [id, saved] of Object.entries(game.levels)) {
       if (id !== LEVEL_ID) for (const s of saved.animals) add(s.species, s.state);
     }
@@ -844,7 +929,95 @@ export default class GardenScene extends Phaser.Scene {
   // Abzeichen oben links: Gebiet und wie viele Tiere schon zuhause sind; die Einzelheiten zeigt die Übersicht (I)
   updateHud() {
     const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
-    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b><span class="key">I</span>`;
+    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span><span class="key">I</span>`;
+  }
+
+  // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
+  openEventsPanel() {
+    if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
+    this.scene.pause();
+    openEvents(
+      () => ({ hearts: game.hearts, events: EVENTS.map((ev) => ({ ...ev, ...eventState(ev.id), blocked: this.eventBlocked(ev) })) }),
+      (id) => {
+        this.scene.resume();
+        startEvent(id);
+        this.updateHud();
+        if (id === 'babies') {
+          this.spawnBabies(true);
+          this.visitors?.updateScore();
+          this.showToast('<span class="heart">♥</span> Tierbabys! Die Besucher strömen herbei.');
+        }
+        this.updateEventBanner();
+      },
+      () => this.scene.resume(),
+    );
+  }
+
+  // warum ein Event gerade nicht startbar ist (sonst null)
+  eventBlocked(ev) {
+    if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length) return 'braucht 2 gleiche größere Tiere in einem Gehege';
+    if (game.hearts < ev.cost) return 'zu wenig Herzen';
+    return null;
+  }
+
+  // Tierbabys: in jedem Gehege auf je 2 größere Tiere ein kleines, neben einem der Eltern
+  spawnBabies(pop) {
+    for (const { enclosure, species, parent } of babyPlan(this.animals.filter((a) => a.state === 'penned'))) {
+      const a = this.createAnimal(species, parent.x, parent.y);
+      a.makeBaby();
+      // an die nächste Stelle im Gehege, an der es ganz hineinpasst (nicht halb im Zaun, wenn die Eltern am Rand stehen)
+      const spots = enclosure.tiles
+        .map((t) => tileToWorld(t.tx, t.ty))
+        .filter((p) => !isBlockedPoint(p.x, p.y) && a.enclosureFullyAt(p.x, p.y) === enclosure)
+        .sort((p, q) => Math.hypot(p.x - parent.x, p.y - parent.y) - Math.hypot(q.x - parent.x, q.y - parent.y));
+      const spot = spots[Phaser.Math.Between(0, Math.min(2, spots.length - 1))];
+      if (spot) {
+        a.x = spot.x + Phaser.Math.Between(-6, 6);
+        a.y = spot.y + Phaser.Math.Between(-3, 3);
+      }
+      a.restore('penned');
+      a.enclosure = enclosure;
+      if (pop) a.popHeart();
+    }
+    this.babiesOn = true;
+  }
+
+  removeBabies() {
+    for (const a of this.animals.filter((b) => b.baby)) {
+      this.animals.splice(this.animals.indexOf(a), 1);
+      this.tweens.add({ targets: [a.sprite, a.shadow], alpha: 0, duration: 800, onComplete: () => a.destroy() });
+    }
+    this.babiesOn = false;
+  }
+
+  // Start und Ende der Events (auch wenn man zwischendurch woanders war) und die Restzeit oben
+  updateEvents() {
+    const on = isActive('babies');
+    if (LEVEL_ID === 'park' && on && !this.babiesOn) this.spawnBabies(false);
+    if (LEVEL_ID === 'park' && !on && this.babiesOn) {
+      this.removeBabies();
+      this.visitors?.updateScore();
+      this.showToast('Das Tierbaby-Event ist vorbei – die Kleinen schlafen jetzt.');
+    }
+    this.updateEventBanner();
+  }
+
+  updateEventBanner() {
+    const s = eventState('babies');
+    this.eventBanner.classList.toggle('show', s.state === 'active');
+    if (s.state === 'active') this.eventBanner.textContent = `🍼 Tierbabys · noch ${formatTime(s.left)}`;
+  }
+
+  // Bewunderungsherzen der Besucher aufs Konto; der Zähler oben hüpft kurz
+  addHearts(n) {
+    game.hearts += n;
+    this.updateHud();
+    const el = this.hud.querySelector('.hearts');
+    if (el) {
+      el.classList.remove('pulse');
+      void el.offsetWidth; // Animation neu starten
+      el.classList.add('pulse');
+    }
   }
 
   // Große Übersicht: alle Tierarten mit Anzahl zuhause, Lebensraum und womit man sie fängt, dazu die Werkzeuge
@@ -883,9 +1056,22 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateToolbar() {
+    if (this.nearFeeder && this.toolId !== 'parkfood') {
+      setTouchTool(null, 'assets/feeder.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Futter holen</span></div>`;
+      return;
+    }
+    if (this.nearComputer) {
+      setTouchTool(null, 'assets/office_desk.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/office_desk.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Computer benutzen</span></div>`;
+      return;
+    }
     if (this.nearChest) {
-      setTouchTool(null, 'assets/hut_chest.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/hut_chest.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Kiste öffnen</span></div>`;
+      // in der Hütte das Werkzeug-Regal, sonst (z. B. auf der Teichinsel) eine kleine Kiste
+      const house = buildingAt(this.nearChest.tx, this.nearChest.ty);
+      const img = house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
+      setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${house ? 'Regal' : 'Kiste'} öffnen</span></div>`;
       return;
     }
     if (this.nearCar) {
@@ -971,7 +1157,7 @@ export default class GardenScene extends Phaser.Scene {
       this.catchAnimal(giraffe);
       this.showToast(`${animalIcon('giraffe', 3.2)} Die Giraffe mag dich! Sie läuft dir jetzt hinterher.`);
     } else {
-      this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter gibt es in der Kiste in der Hütte.`);
+      this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter gibt es im Regal in der Hütte.`);
     }
   }
 
@@ -1017,6 +1203,78 @@ export default class GardenScene extends Phaser.Scene {
     this.scatterFood(p, spot);
     for (const a of koi) a.call(spot);
     this.showToast(`Die ${animalIcon('koi')} kommen! Schnell den Kescher holen – sie fressen eine Weile.`);
+  }
+
+  // Futter am Zaun ins Gehege werfen: die Tiere dort kommen herbei und fressen, jedes an seinem eigenen Platz
+  feedPen() {
+    const p = this.player;
+    const aim = { x: p.x + p.faceX * 30, y: p.y + p.faceY * 15 };
+    // nächste Gehegekachel vor dem Spieler (nur Gehege mit Landtieren)
+    let best = null;
+    for (const e of ENCLOSURES) {
+      if (!e.species?.some((s) => !NO_PEN_FEED.includes(s))) continue;
+      for (const t of e.tiles) {
+        if (isBlocked(t.tx, t.ty)) continue;
+        const w = tileToWorld(t.tx, t.ty);
+        const d = Math.hypot(w.x - aim.x, (w.y - aim.y) * 2);
+        if (!best || d < best.d) best = { e, t, w, d };
+      }
+    }
+    if (!best || best.d > PEN_FEED_DIST) {
+      this.showToast('Stell dich an den Zaun eines Geheges und wirf das Futter hinein.');
+      return;
+    }
+    const e = best.e;
+    // Futter ist verbraucht (wie beim Fischfutter), neues gibt es am Automaten
+    this.tool.destroy();
+    this.tool = null;
+    this.toolId = null;
+    this.updateToolbar();
+    const eaters = this.feedEnclosure(e, p, best.w, true);
+    this.showToast(eaters ? `Die Tiere im Gehege ${e.name} kommen zum Fressen!` : `Lecker Futter im Gehege ${e.name} … aber gerade frisst niemand davon.`);
+  }
+
+  // Futter von "from" aus ins Gehege werfen (Spieler oder Besucher): die Tiere dort kommen herbei und fressen, jedes an
+  // seinem eigenen Platz. food: wohin es fliegt (sonst die Gehegekachel am nächsten bei "from"); always: auch werfen,
+  // wenn gerade niemand frisst. Ergebnis: wie viele Tiere kommen
+  feedEnclosure(e, from, food = null, always = false) {
+    if (!food) {
+      let best = null;
+      for (const t of e.tiles) {
+        if (isBlocked(t.tx, t.ty)) continue;
+        const w = tileToWorld(t.tx, t.ty);
+        const d = Math.hypot(w.x - from.x, (w.y - from.y) * 2);
+        if (!best || d < best.d) best = { w, d };
+      }
+      if (!best) return 0;
+      food = best.w;
+    }
+    const eaters = this.animals.filter((a) => a.enclosure === e && !NO_PEN_FEED.includes(a.species) && a.canFeed());
+    if (!eaters.length && !always) return 0;
+    this.scatterFood(from, food);
+    if (!eaters.length) return 0;
+    // Futterplätze: freie Stellen im Gehege rund ums Futter, mit Abstand zueinander (nichts überlagert sich)
+    const spots = [];
+    const candidates = [];
+    for (const t of e.tiles) {
+      if (isBlocked(t.tx, t.ty)) continue;
+      const c = tileToWorld(t.tx, t.ty);
+      for (const [ox, oy] of [[0, 0], [-14, -5], [14, 5], [14, -5], [-14, 5]]) candidates.push({ x: c.x + ox, y: c.y + oy });
+    }
+    candidates.sort((u, v) => Math.hypot(u.x - food.x, (u.y - food.y) * 2) - Math.hypot(v.x - food.x, (v.y - food.y) * 2));
+    for (const c of candidates) {
+      if (spots.length >= eaters.length) break;
+      if (Math.hypot(c.x - food.x, (c.y - food.y) * 2) < 12) continue; // nicht mitten aufs Futter
+      if (spots.every((s) => Math.hypot(s.x - c.x, (s.y - c.y) * 2) >= FEED_GAP * 1.4)) spots.push(c);
+    }
+    // jedes Tier zum nächsten noch freien Platz
+    const free = [...spots];
+    for (const a of [...eaters].sort((u, v) => Math.hypot(u.x - food.x, u.y - food.y) - Math.hypot(v.x - food.x, v.y - food.y))) {
+      if (!free.length) break;
+      free.sort((u, v) => Math.hypot(u.x - a.x, u.y - a.y) - Math.hypot(v.x - a.x, v.y - a.y));
+      a.eatAt(free.shift(), food, Phaser.Math.FloatBetween(...FEED_TIME));
+    }
+    return eaters.length;
   }
 
   // bunte Futterflocken fliegen in einem Bogen aufs Wasser, dann kleine Ringe
@@ -1211,7 +1469,7 @@ export default class GardenScene extends Phaser.Scene {
     this.traps.delete(t.id);
     game.traps = game.traps.filter((g) => g !== t);
     this.returnTool('trap');
-    this.showToast(`${surprise}Die Falle ist wieder in der Kiste.`);
+    this.showToast(`${surprise}Die Falle ist wieder im Regal.`);
   }
 
   // Kiste an dieser Kachel (aus LEVEL.chests)
@@ -1284,11 +1542,7 @@ export default class GardenScene extends Phaser.Scene {
     const a = e.area;
     const water = ['fish', 'koi', 'crocodile'].includes(animal.species);
     const tiles = [];
-    for (let ty = a.ty0; ty <= a.ty1; ty++) {
-      for (let tx = a.tx0; tx <= a.tx1; tx++) {
-        if (water ? isFishpond(tx, ty) : !isBlocked(tx, ty)) tiles.push({ tx, ty });
-      }
-    }
+    for (const { tx, ty } of e.tiles) if (water ? isFishpond(tx, ty) : !isBlocked(tx, ty)) tiles.push({ tx, ty });
     const t = Phaser.Utils.Array.GetRandom(tiles) ?? { tx: a.tx0, ty: a.ty0 };
     const p = tileToWorld(t.tx, t.ty);
     animal.x = p.x + Phaser.Math.Between(-6, 6);
@@ -1348,9 +1602,10 @@ export default class GardenScene extends Phaser.Scene {
       this.tool = null;
       this.toolId = null;
     }
+    if (LEVEL_ID === 'park') game.parkLeftAt = Date.now(); // ab jetzt zählen die Herzen der Abwesenheit
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !(a.species === 'heron' && a.state === 'wild')) // wilde Reiher fliegen weiter
+        .filter((a) => a.state !== 'following' && !a.baby && !(a.species === 'heron' && a.state === 'wild')) // wilde Reiher fliegen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, state: a.state, x: a.x, y: a.y, life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
     };
@@ -1382,7 +1637,7 @@ export default class GardenScene extends Phaser.Scene {
     const mid = FISHPOND_TILES[Math.floor(FISHPOND_TILES.length / 2)];
     if (mid && !inPen(mid.tx, mid.ty)) entries.push([tileToWorld(mid.tx, mid.ty), `Fischteich – für ${animalIcon('fish')}`]);
     const h = LEVEL.hut;
-    if (h) entries.push([tileToWorld((h.tx0 + h.tx1) / 2, (h.ty0 + h.ty1) / 2), 'Hütte – Werkzeuge in der Kiste']);
+    if (h) entries.push([tileToWorld((h.tx0 + h.tx1) / 2, (h.ty0 + h.ty1) / 2), 'Hütte – Werkzeuge im Regal']);
 
     const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
     return entries.map(([p, text]) => {
@@ -1393,19 +1648,45 @@ export default class GardenScene extends Phaser.Scene {
 
   // Seilnetz über einem Gehege, auf Höhe der Netzstangen. Es liegt über allem, was im Gehege ist,
   // aber hinter allem, was davor steht.
-  drawNetRoof({ tx0, tx1, ty0, ty1 }) {
+  drawNetRoof(e) {
     const H = 32; // Höhe der Netzstangen
-    const g = this.add.graphics().setDepth(tileToWorld(tx1 + 0.5, ty1 + 0.5).y + 1);
-    const at = (tx, ty) => {
-      const p = tileToWorld(tx, ty);
+    // Netzfelder (halbe Kacheln): jede Innenkachel, dazu die halbe Kachel bis zur Zaunmitte daneben
+    const cells = new Set();
+    const add = (a, b) => cells.add(a + ',' + b); // Feld a, b reicht von a/2 bis a/2 + 0.5 (Kachel-Koordinaten)
+    for (const { tx, ty } of e.tiles) {
+      for (const [da, db] of [[0, 0], [1, 0], [0, 1], [1, 1]]) add(2 * tx - 1 + da, 2 * ty - 1 + db);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+        if (e.tileSet.has(tx + dx + ',' + (ty + dy))) continue;
+        // halbe Kachel Richtung Zaun
+        const ca = dx > 0 ? [2 * tx + 1] : dx < 0 ? [2 * tx - 2] : [2 * tx - 1, 2 * tx];
+        const cb = dy > 0 ? [2 * ty + 1] : dy < 0 ? [2 * ty - 2] : [2 * ty - 1, 2 * ty];
+        for (const a of ca) for (const b of cb) add(a, b);
+      }
+    }
+    // Ecke eines Netzfelds: (a/2, b/2) in Kachel-Koordinaten (Kachelmitte = ganze Zahl), auf Höhe der Netzstangen
+    const corner = (a, b) => {
+      const p = tileToWorld(a / 2, b / 2);
       return [p.x, p.y - H];
     };
+    const maxY = Math.max(...e.tiles.map(({ tx, ty }) => tileToWorld(tx, ty).y));
+    const g = this.add.graphics().setDepth(maxY + TILE_H + 1);
     g.lineStyle(1, 0xd8c89a, 0.55);
-    for (let t = tx0 - 0.5; t <= tx1 + 0.5; t += 0.5) g.lineBetween(...at(t, ty0 - 0.5), ...at(t, ty1 + 0.5));
-    for (let t = ty0 - 0.5; t <= ty1 + 0.5; t += 0.5) g.lineBetween(...at(tx0 - 0.5, t), ...at(tx1 + 0.5, t));
-    // Knoten an den Kreuzungen
+    const drawn = new Set();
+    const edge = (a0, b0, a1, b1) => {
+      const key = [a0, b0, a1, b1].join(',');
+      if (drawn.has(key)) return;
+      drawn.add(key);
+      g.lineBetween(...corner(a0, b0), ...corner(a1, b1));
+    };
     g.fillStyle(0x8a7a5a, 0.6);
-    for (let a = tx0 - 0.5; a <= tx1 + 0.5; a += 0.5) for (let c = ty0 - 0.5; c <= ty1 + 0.5; c += 0.5) g.fillRect(...at(a, c), 1, 1);
+    for (const key of cells) {
+      const [a, b] = key.split(',').map(Number);
+      edge(a, b, a + 1, b);
+      edge(a, b, a, b + 1);
+      edge(a + 1, b, a + 1, b + 1);
+      edge(a, b + 1, a + 1, b + 1);
+      g.fillRect(...corner(a, b), 1, 1);
+    }
   }
 
   // Tafel unten rechts: am Wegweiser die Richtungen, an einem Gehege-Schild die erlaubten Tiere mit ihren Fußspuren
@@ -1491,6 +1772,24 @@ export default class GardenScene extends Phaser.Scene {
       const t = Phaser.Math.Clamp((this.player.x - b.ax) / (b.bx - b.ax), 0, 1);
       this.car.img.setDepth(b.ay + (b.by - b.ay) * t);
     }
+    // am Futterautomaten: die Aktionstaste gibt Futter
+    const feeder = (LEVEL.feeders ?? []).find((c) => {
+      const p = tileToWorld(c.tx, c.ty);
+      return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 1.6;
+    }) ?? null;
+    if (feeder !== this.nearFeeder) {
+      this.nearFeeder = feeder;
+      this.updateToolbar();
+    }
+    // am Hauptrechner: die Aktionstaste zeigt die Events
+    const computer = (LEVEL.computers ?? []).some((c) => {
+      const p = tileToWorld(c.tx, c.ty);
+      return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 1.6;
+    });
+    if (computer !== this.nearComputer) {
+      this.nearComputer = computer;
+      this.updateToolbar();
+    }
     // an einer Kiste: die Aktionstaste öffnet sie
     const chest = (LEVEL.chests ?? []).find((c) => {
       const p = tileToWorld(c.tx, c.ty);
@@ -1500,15 +1799,15 @@ export default class GardenScene extends Phaser.Scene {
       this.nearChest = chest;
       this.updateToolbar();
     }
-    // in der Hütte: Dach und vordere Wände durchsichtig, damit man das Innere sieht
-    if (this.hut) {
-      const h = LEVEL.hut;
-      const { tx: px, ty: py } = worldToTile(this.player.x, this.player.y);
-      const inside = px > h.tx0 && px <= h.tx1 && py > h.ty0 && py < h.ty1; // samt Tür
-      if (inside !== this.hut.inside) {
-        this.hut.inside = inside;
-        this.tweens.add({ targets: this.hut.roof, alpha: inside ? HUT_ROOF_ALPHA : 1, duration: 250 });
-        this.tweens.add({ targets: this.hutFront, alpha: inside ? HUT_FRONT_ALPHA : 1, duration: 250 });
+    // in einem Gebäude: Dach und vordere Wände durchsichtig, damit man das Innere sieht
+    const { tx: px, ty: py } = worldToTile(this.player.x, this.player.y);
+    for (const house of this.houses) {
+      const h = house.h;
+      const inside = px >= h.tx0 && px <= h.tx1 && py >= h.ty0 && py <= h.ty1 && !(px === h.tx0 || py === h.ty0); // samt Tür
+      if (inside !== house.inside) {
+        house.inside = inside;
+        this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
+        this.tweens.add({ targets: house.front, alpha: inside ? HUT_FRONT_ALPHA : 1, duration: 250 });
       }
     }
     // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
@@ -1534,6 +1833,12 @@ export default class GardenScene extends Phaser.Scene {
     this.followers.forEach((s, i) => (s.followGap = FOLLOW_GAP * (i + 1)));
 
     for (const a of this.animals) a.update(dt, this.player);
+    this.visitors?.update(dt);
+    this.eventTimer -= dt;
+    if (this.eventTimer <= 0) {
+      this.eventTimer = 0.5;
+      this.updateEvents();
+    }
     this.updateTraps(dt);
     this.updateTrapMarkers();
     this.updateSpawner(dt);

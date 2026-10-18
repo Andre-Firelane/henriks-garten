@@ -152,6 +152,13 @@ export default class Meerkat extends Animal {
     }
   }
 
+  startFeed() {
+    if (this.digging) {
+      this.digging = false;
+      this.useStandLook(); // kommt aus dem Loch
+    }
+  }
+
   catch() {
     super.catch();
     this.digging = false;

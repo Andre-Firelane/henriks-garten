@@ -6,7 +6,9 @@ import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser)
 const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water' };
-const PATH_CHARS = '#GXI'; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
+const PATH_CHARS = '#GXI';
+// Boden in den Hütten je Gebiet (sonst Holzdielen)
+const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', office: 'floor_office' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
@@ -54,13 +56,30 @@ export const OBJECTS = {
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
   u: { key: 'den_sand', originY: 44 / 56, solid: true, hitbox: 16 },
-  // begehbare Hütte: Wände wie Zäune (Bild je Stil, siehe addFence), Schrank, Schreibtisch, Werkzeug-Kisten
+  // begehbare Hütte: Wände wie Zäune (Bild je Stil, siehe addFence). Einrichtung passend zum Gebiet
+  // (styled: Bild <key>_<Stil der Hütte>): Schreibtisch, Stuhl, Zimmerpflanze und Wandregal mit den Werkzeugen
   M: { key: 'hutwall_x', originY: 60 / 80, solid: true, fence: { kind: 'hut', axis: 'x' } },
   N: { key: 'hutwall_y', originY: 60 / 80, solid: true, fence: { kind: 'hut', axis: 'y' } },
-  s: { key: 'hut_cupboard', originY: 80 / 96, solid: true, hitbox: 12 },
-  p: { key: 'hut_desk', originY: 44 / 64, solid: true, hitbox: 14 },
-  c: { key: 'hut_chest', originY: 44 / 64, solid: true, hitbox: 12, chest: true },
+  p: { key: 'hut_desk', styled: true, originY: 44 / 64, solid: true, hitbox: 14 },
+  j: { key: 'hut_chair', styled: true, originY: 44 / 64, solid: true, hitbox: 8 },
+  a: { key: 'hut_plant', styled: true, originY: 60 / 80, solid: true, hitbox: 10 },
+  // Regal an der Wand: nicht fest (die Wand dahinter hält auf), weiter hinten gezeichnet, damit man davor steht
+  c: { key: 'hut_shelf', styled: true, originY: 80 / 96, solid: false, depthShift: -14, chest: true },
   e: { key: 'hut_chest_small', originY: 44 / 64, solid: true, hitbox: 10, chest: true },
+  // Haupthaus im Tierpark: großer Schreibtisch über drei Kacheln (Y in der Mitte, V daneben: unsichtbar, aber fest)
+  // und Bürostuhl dahinter
+  Y: { key: 'office_desk', originY: 72 / 96, solid: true, computer: true }, // Hauptrechner: hier startet man Events
+  V: { invisible: true, solid: true },
+  z: { key: 'office_chair', originY: 44 / 64, solid: true, hitbox: 8 },
+  // Zimmerpflanzen (corner: rücken im Bild in die Ecke zwischen den Wänden) und Sitzecke: Sofa über zwei Kacheln
+  // (d vorne, V dahinter), Couchtisch, Sessel und Teppich (floor: liegt flach auf dem Boden)
+  Z: { key: 'office_plant_monstera', originY: 84 / 96, solid: true, hitbox: 8, corner: true },
+  s: { key: 'office_plant_strelitzia', originY: 84 / 96, solid: true, hitbox: 8, corner: true },
+  d: { key: 'office_sofa', originY: 68 / 80, solid: true },
+  i: { key: 'office_table', originY: 52 / 60, solid: true, hitbox: 12 },
+  x: { key: 'office_armchair', originY: 52 / 60, solid: true, hitbox: 12 },
+  t: { key: 'office_rug', originY: 30 / 84, solid: false, floor: true },
+  F: { key: 'feeder', originY: 52 / 64, solid: true, hitbox: 10, feeder: true }, // Futterautomat im Tierpark
   // Asien
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
@@ -128,15 +147,26 @@ export function setLevel(id) {
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const list = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
   ENCLOSURES = list.map((e) => {
-    const a = e.area;
-    // Tore liegen im Zaun rund um die Innenfläche
-    const gates = GATE_TILES.filter(({ tx, ty }) => tx >= a.tx0 - 1 && tx <= a.tx1 + 1 && ty >= a.ty0 - 1 && ty <= a.ty1 + 1);
+    // Kacheln der Innenfläche: entweder ein Rechteck (area) oder alles, was vom Startpunkt (seed) aus erreichbar ist,
+    // ohne über Zaun, Wand oder Tor zu gehen. So sind auch L-Formen und unregelmäßige Gehege möglich.
+    const tiles = e.seed ? floodPen(e.seed) : rectTiles(e.area);
+    const tileSet = new Set(tiles.map(({ tx, ty }) => tx + ',' + ty));
+    const a = e.area ?? {
+      tx0: Math.min(...tiles.map((t) => t.tx)),
+      tx1: Math.max(...tiles.map((t) => t.tx)),
+      ty0: Math.min(...tiles.map((t) => t.ty)),
+      ty1: Math.max(...tiles.map((t) => t.ty)),
+    };
+    // Tore liegen im Zaun direkt neben der Innenfläche
+    const gates = GATE_TILES.filter(({ tx, ty }) =>
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => tileSet.has(tx + dx + ',' + (ty + dy))),
+    );
     // Schild hängt am Zaunstück direkt vor dem ersten Torflügel (signSide: 'right' = hinter dem letzten)
     const right = e.signSide === 'right';
     const g = right ? gates[gates.length - 1] : gates[0];
     const d = right ? 1 : -1;
     const sign = e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null;
-    return { ...e, gates, sign };
+    return { ...e, area: a, tiles, tileSet, gates, sign };
   });
   FISHPOND_TILES = tilesWith('o');
   // Wasser in den wilden Teichen direkt am begehbaren Ufer, damit man sie mit dem Kescher erreicht
@@ -200,13 +230,42 @@ function freeTilesNear(chars) {
   return tiles;
 }
 
-function charAt(tx, ty) {
+export function charAt(tx, ty) {
   return ROWS[ty]?.[tx] ?? '.';
 }
 
 // Das Gehege, zu dessen Innenfläche diese Kachel gehört (oder null)
 export function enclosureAt(tx, ty) {
-  return ENCLOSURES.find(({ area: a }) => tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1) ?? null;
+  const key = tx + ',' + ty;
+  return ENCLOSURES.find((e) => e.tileSet.has(key)) ?? null;
+}
+
+function rectTiles(a) {
+  const tiles = [];
+  for (let ty = a.ty0; ty <= a.ty1; ty++) for (let tx = a.tx0; tx <= a.tx1; tx++) tiles.push({ tx, ty });
+  return tiles;
+}
+
+// alle Kacheln, die man vom Startpunkt aus erreicht, ohne Zaun, Wand oder Tor zu überqueren
+function floodPen(seed) {
+  const seen = new Set([seed.tx + ',' + seed.ty]);
+  const tiles = [];
+  const todo = [seed];
+  while (todo.length) {
+    const t = todo.pop();
+    tiles.push(t);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { tx: t.tx + dx, ty: t.ty + dy };
+      const key = n.tx + ',' + n.ty;
+      if (seen.has(key) || n.tx < 0 || n.ty < 0 || n.tx >= MAP_W || n.ty >= MAP_H) continue;
+      const c = charAt(n.tx, n.ty);
+      if (c === 'G' || OBJECTS[c]?.fence) continue;
+      seen.add(key);
+      todo.push(n);
+      if (tiles.length > 600) throw new Error(`Gehege bei ${seed.tx},${seed.ty} ist nicht geschlossen`);
+    }
+  }
+  return tiles;
 }
 
 // Liegt die Kachel in irgendeinem Gehege?
@@ -217,13 +276,23 @@ export function inPen(tx, ty) {
 // Kachel in einem Gehege oder direkt daneben (dort sollen keine wilden Tiere erscheinen)
 export function nearEnclosure(tx, ty) {
   if (inHut(tx, ty, 1)) return true; // auch an und in der Hütte erscheinen keine wilden Tiere
-  return ENCLOSURES.some(({ area: a }) => tx >= a.tx0 - 1 && tx <= a.tx1 + 1 && ty >= a.ty0 - 1 && ty <= a.ty1 + 2);
+  for (let dy = -1; dy <= 2; dy++) for (let dx = -1; dx <= 1; dx++) if (enclosureAt(tx - dx, ty - dy)) return true;
+  return false;
 }
 
-// Liegt die Kachel in der Hütte (samt Wänden), mit margin Kacheln Rand drumherum?
+// Begehbare Gebäude des Levels: die Hütte und weitere (z. B. das Katzenhäuschen im Tierpark)
+export function buildings() {
+  return [LEVEL.hut, ...(LEVEL.buildings ?? [])].filter(Boolean);
+}
+
+// Das Gebäude, in dem diese Kachel liegt (samt Wänden), mit margin Kacheln Rand drumherum
+export function buildingAt(tx, ty, margin = 0) {
+  return buildings().find((h) => tx >= h.tx0 - margin && tx <= h.tx1 + margin && ty >= h.ty0 - margin && ty <= h.ty1 + margin) ?? null;
+}
+
+// Liegt die Kachel in der Hütte bzw. einem Gebäude (samt Wänden)?
 export function inHut(tx, ty, margin = 0) {
-  const h = LEVEL.hut;
-  return !!h && tx >= h.tx0 - margin && tx <= h.tx1 + margin && ty >= h.ty0 - margin && ty <= h.ty1 + margin;
+  return !!buildingAt(tx, ty, margin);
 }
 
 // Darf diese Tierart in dieses Gehege?
@@ -245,7 +314,8 @@ export function exitAt(tx, ty) {
 
 export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
-  if (inHut(tx, ty)) return 'planks'; // die ganze Hütte hat Holzboden, auch unter Wänden und Tür
+  const house = buildingAt(tx, ty);
+  if (house) return HUT_FLOOR[house.style] ?? 'planks'; // die ganze Hütte hat Holzboden, auch unter Wänden und Tür
   if (PATH_CHARS.includes(c)) return LEVEL.path;
   // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel
   if (c === 'W' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => PATH_CHARS.includes(charAt(tx + dx, ty + dy)))) return LEVEL.path;
@@ -334,13 +404,13 @@ function nearSegment(x, y, { ax, ay, bx, by }) {
 // Nur Gelände sperrt (Kartenrand, Wasser, Hütte), keine Objekte wie Felsen, Büsche oder Bäume
 export function isTerrainBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
-  return '~owHh'.includes(charAt(tx, ty));
+  return '~owHh '.includes(charAt(tx, ty));
 }
 
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
-  if ('~owH'.includes(charAt(tx, ty))) return true;
+  if ('~owH '.includes(charAt(tx, ty))) return true; // Leerzeichen: außerhalb der Karte (nichts zu sehen, z. B. neben dem Tierpark)
   return objectAt(tx, ty)?.solid ?? false;
 }
 
-setLevel('meadow');
+setLevel('park');

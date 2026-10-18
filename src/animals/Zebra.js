@@ -135,7 +135,7 @@ export default class Zebra extends Antelope {
     // Uferplätze in diesem Gehege, die gerade kein anderes Zebra belegt
     const taken = this.allAnimals.filter((z) => z !== this && z.penDrink).map((z) => z.penDrink.tile);
     const tiles = a
-      ? PEN_SHORE_TILES.filter((s) => s.tx >= a.tx0 && s.tx <= a.tx1 && s.ty >= a.ty0 && s.ty <= a.ty1 && !taken.includes(s))
+      ? PEN_SHORE_TILES.filter((s) => this.enclosure.tileSet.has(s.tx + ',' + s.ty) && !taken.includes(s))
       : [];
     if (!tiles.length) {
       this.penDrinkAt = now + Phaser.Math.FloatBetween(...PEN_DRINK_EVERY);
@@ -185,6 +185,11 @@ export default class Zebra extends Antelope {
     this.drinkSpot = null;
   }
 
+  startFeed() {
+    this.penDrink = null;
+    this.drinking = false;
+  }
+
   catch() {
     this.penDrink = null;
     this.drinking = false;
@@ -193,8 +198,14 @@ export default class Zebra extends Antelope {
   }
 
   // Beim Trinken das Bild mit gesenktem Kopf
+  // beim Fressen am Futter mit gesenktem Kopf wie beim Trinken
+  setEating(on) {
+    this.eatingLook = on;
+  }
+
   render(moving) {
-    const key = this.drinking && (this.state === 'wild' || this.state === 'penned') ? 'zebra_drink' : this.kind.texture;
+    const down = (this.drinking && (this.state === 'wild' || this.state === 'penned')) || this.eatingLook;
+    const key = down ? 'zebra_drink' : this.kind.texture;
     if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
     super.render(moving);
   }

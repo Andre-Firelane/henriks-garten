@@ -81,6 +81,28 @@ const CHARACTERS = [
   { src: 'Sprites/Auto Asien.png', out: 'car_asia.png', frameW: 240, frameH: 140, feetY: 136, figureH: 132, grid: [2, 2] },
   // dasselbe rot-weiße Bild noch einmal als "koi": daraus kommt das Tierbild in der Anzeige
   { src: 'Sprites/Koi2.png', out: 'koi.png', frameW: 88, frameH: 52, feetY: 49, figureH: 46, grid: [2, 2] },
+  // Fress-Bilder (Kopf unten, am Futter im Tierpark): gleicher Frame und gleicher Maßstab wie das jeweilige Laufbild
+  // (scale statt figureH; Katze und Reh sind im Bild größer gemalt, daher kleiner). Freigestellt mit npm run cutout
+  { src: 'Sprites/Antilope frisst.png', out: 'antelope_eat.png', frameW: 72, frameH: 100, feetY: 96, scale: 0.255 },
+  { src: 'Sprites/Fuchs frisst.png', out: 'fox_eat.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.21, byComponents: true },
+  { src: 'Sprites/Hirsch frisst.png', out: 'stag_eat.png', frameW: 80, frameH: 112, feetY: 108, scale: 0.292 },
+  // Katze im 2×2-Raster
+  { src: 'Sprites/Katze frisst.png', out: 'cat_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.175, grid: [2, 2], stripShadow: true },
+  // Löwe: die 2. Figur steht aufrecht statt zu fressen, dafür die 1. gespiegelt
+  { src: 'Sprites/Löwe frisst.png', out: 'lion_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.283, byComponents: true, copyMirror: { 1: 0 } },
+  // Reh im 2×2-Raster: oben die Vorderansichten; unten zwei Seitenansichten nach rechts statt Rückansichten,
+  // daher oben-rechts = Bild 3, oben-links = Bild 3 gespiegelt
+  { src: 'Sprites/Reh frisst.png', out: 'deer_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.235, grid: [2, 2], copyMirror: { 3: 2 } },
+  // Besucher im Tierpark (Kinder, etwas kleiner als die Spielfigur): unten-rechts, unten-links, oben-rechts, oben-links.
+  // Freigestellt mit npm run cutout
+  { src: 'Sprites/Besucher 1.png', out: 'visitor1.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 2.png', out: 'visitor2.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 3.png', out: 'visitor3.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 4.png', out: 'visitor4.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 5.png', out: 'visitor5.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 6.png', out: 'visitor6.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 7.png', out: 'visitor7.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Besucher 8.png', out: 'visitor8.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)
@@ -183,8 +205,10 @@ function gridToRow(img, cols, rows) {
 }
 
 // grid: [cols, rows], falls die vier Ansichten im Raster statt nebeneinander liegen;
-// mirror: Nummern der Figuren, die falsch herum gemalt sind und gespiegelt werden
-function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false, byComponents = false, grid = null, mirror = [] }) {
+// mirror: Nummern der Figuren, die falsch herum gemalt sind und gespiegelt werden;
+// scale: fester Maßstab statt figureH (z. B. gleich groß wie das Laufbild); copyMirror: { Ziel: Quelle } – Bild Ziel
+// wird durch das gespiegelte Bild Quelle ersetzt (falls eine Ansicht fehlt)
+function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, stripShadow = false, byComponents = false, grid = null, mirror = [], copyMirror = {} }) {
   let img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (grid) img = gridToRow(img, ...grid);
   const { width: W, height: H, data } = img;
@@ -216,7 +240,7 @@ function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false
     }
   }
 
-  const scale = figureH / Math.max(...boxes.map((b) => b.y1 - b.y0 + 1));
+  const scale = fixedScale ?? figureH / Math.max(...boxes.map((b) => b.y1 - b.y0 + 1));
   const sheet = new PNG({ width: frameW * 4, height: frameH });
 
   boxes.forEach((b, i) => {
@@ -227,7 +251,17 @@ function prepare({ src, out, frameW, frameH, feetY, figureH, stripShadow = false
     drawScaled(sheet, img, b, scale, offX, offY, (sx, sy) => owner[sy * W + sx] === i); // Teile anderer Figuren ausblenden
     if (mirror.includes(i)) mirrorFrame(sheet, i * frameW, frameW);
     if (bw > frameW) console.warn(`${src}: Figur ${i} ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
+    if (bh > feetY + 0.5) console.warn(`${src}: Figur ${i} ist höher als der Frame (${bh.toFixed(0)} > ${feetY})`);
   });
+  for (const [dst, from] of Object.entries(copyMirror)) {
+    for (let y = 0; y < frameH; y++) {
+      for (let x = 0; x < frameW; x++) {
+        const a = (y * sheet.width + from * frameW + x) * 4;
+        const b = (y * sheet.width + dst * frameW + frameW - 1 - x) * 4;
+        for (let c = 0; c < 4; c++) sheet.data[b + c] = sheet.data[a + c];
+      }
+    }
+  }
 
   writeSheet(out, sheet);
   console.log(`${out}: 4 Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);

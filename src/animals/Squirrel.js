@@ -176,8 +176,8 @@ export default class Squirrel extends Animal {
     if (!a) return null;
     const taken = this.allAnimals.filter((s) => s !== this && s.penClimb).map((s) => s.penClimb.key);
     const trees = [];
-    for (let ty = a.ty0; ty <= a.ty1; ty++) {
-      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+    for (const { tx, ty } of this.enclosure.tiles) {
+      { // nur Kacheln, die wirklich zum Gehege gehören (auch bei L-Formen)
         const key = `${tx},${ty}`;
         if (!TREE_KEYS.includes(objectAt(tx, ty)?.key) || taken.includes(key)) continue;
         const foot = tileToWorld(tx, ty);
@@ -212,6 +212,10 @@ export default class Squirrel extends Animal {
     const onGround = this.phase === 'ground';
     this.shadow.setVisible(onGround);
     if (!onGround) this.sprite.setDepth(this.treeY + 1);
+  }
+
+  canFeed() {
+    return super.canFeed() && !this.penClimb; // erst, wenn es wieder unten ist
   }
 
   catch() {

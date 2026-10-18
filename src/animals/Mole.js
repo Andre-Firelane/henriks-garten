@@ -155,8 +155,8 @@ export default class Mole extends Animal {
     const a = this.enclosure?.area;
     if (!a) return;
     const spots = [];
-    for (let ty = a.ty0; ty <= a.ty1; ty++) {
-      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+    for (const { tx, ty } of this.enclosure.tiles) {
+      { // nur Kacheln, die wirklich zum Gehege gehören (auch bei L-Formen)
         if (isBlocked(tx, ty)) continue;
         const p = tileToWorld(tx, ty);
         if (this.enclosureFullyAt(p.x, p.y) === this.enclosure) spots.push(p);
@@ -168,6 +168,11 @@ export default class Mole extends Animal {
     this.y = p.y;
     this.faceX = Math.random() < 0.5 ? -1 : 1;
     this.faceY = Math.random() < 0.7 ? 1 : -1;
+  }
+
+  // unter der Erde kommt er nicht zum Futter
+  canFeed() {
+    return super.canFeed() && (!this.penPhases || this.phase === 'walk');
   }
 
   catch() {

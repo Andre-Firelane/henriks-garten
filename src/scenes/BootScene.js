@@ -21,11 +21,19 @@ const PIXEL_ART = [
   'hutwall_forest_x', 'hutwall_forest_y', 'post_hutwall_forest', 'gate_door_forest_x', 'gate_door_forest_y', 'hutroof_forest',
   'hutwall_savanna_x', 'hutwall_savanna_y', 'post_hutwall_savanna', 'gate_door_savanna_x', 'gate_door_savanna_y', 'hutroof_savanna',
   'hutwall_asia_x', 'hutwall_asia_y', 'post_hutwall_asia', 'gate_door_asia_x', 'gate_door_asia_y', 'hutroof_asia',
-  'hut_desk', 'hut_cupboard', 'hut_chest', 'hut_chest_small',
+  'hutwall_cathouse_x', 'hutwall_cathouse_y', 'post_hutwall_cathouse', 'hutroof_cathouse',
+  'hut_chest_small', 'feeder',
+  // Einrichtung der Hütten je Gebiet und ihr Boden
+  'hut_desk_meadow', 'hut_chair_meadow', 'hut_plant_meadow', 'hut_shelf_meadow', 'hut_desk_forest', 'hut_chair_forest', 'hut_plant_forest', 'hut_shelf_forest', 'hut_desk_savanna', 'hut_chair_savanna', 'hut_plant_savanna', 'hut_shelf_savanna', 'hut_desk_asia', 'hut_chair_asia', 'hut_plant_asia', 'hut_shelf_asia',
+  'planks_forest', 'planks_savanna', 'planks_asia',
+  // Haupthaus im Tierpark
+  'hutwall_office_x', 'hutwall_office_y', 'post_hutwall_office', 'gate_door_office_x', 'gate_door_office_y', 'hutroof_office',
+  'floor_office', 'office_desk', 'office_chair', 'office_plant_monstera', 'office_plant_strelitzia',
+  'office_sofa', 'office_table', 'office_armchair', 'office_rug',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board'];
+const ITEMS = ['net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -84,11 +92,15 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
+    this.load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
     for (const k of ['koi1', 'koi2', 'koi3']) this.load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
+    for (let n = 1; n <= 8; n++) this.load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
+    this.load.spritesheet('deer_eat', 'assets/deer_eat.png', DEER_FRAME);
     this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
+    this.load.spritesheet('stag_eat', 'assets/stag_eat.png', STAG_FRAME);
     this.load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
     this.load.spritesheet('mole', 'assets/mole.png', MOLE_FRAME);
     this.load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
@@ -98,14 +110,17 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
     this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
+    this.load.spritesheet('fox_eat', 'assets/fox_eat.png', FOX_FRAME);
     this.load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
     this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
+    this.load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
     this.load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
     this.load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
     this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
     this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
     this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
     this.load.spritesheet('lion', 'assets/lion.png', LION_FRAME);
+    this.load.spritesheet('lion_eat', 'assets/lion_eat.png', LION_FRAME);
     this.load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
     this.load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
     this.load.audio('lion_roar', 'assets/sounds/lion_roar.wav');

@@ -733,6 +733,8 @@ const HUT_STYLES = {
   forest: { wall: '#8a5a30', dark: '#4f3422', light: '#a8743f', cap: '#3f2a1a' },
   savanna: { wall: '#d4bc84', dark: '#a08a58', light: '#e8d8a8', cap: '#8a6a40' },
   asia: { wall: '#c0392b', dark: '#7a1e18', light: '#e05a48', cap: '#2b2b2b' },
+  // Katzenhaus im Tierpark: große Glasfronten in einem hellen Holzrahmen, damit man die Katzen von außen sieht
+  cathouse: { wall: '#bfe4f0', dark: '#a8743f', light: '#f4ead8', cap: '#8a5a30', glass: true },
 };
 
 // Wandstück entlang tx (die Version entlang ty ist gespiegelt); door: Tür statt Wand
@@ -742,7 +744,7 @@ function hutWall(style, door = false) {
   const up = ([x, y], h) => [x, y - h];
   const at = (t, h) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t - h];
   const w = new Canvas(64, 80);
-  w.poly([a, b, up(b, H), up(a, H)], hex(s.wall));
+  w.poly([a, b, up(b, H), up(a, H)], hex(s.wall, s.glass ? 95 : 255)); // Glas ist durchsichtig
   for (let y = 0; y < 80; y++) {
     for (let x = 0; x < 64; x++) {
       const h = a[1] + (x - a[0]) * 0.5 - y; // Höhe über der Grundlinie
@@ -753,6 +755,12 @@ function hutWall(style, door = false) {
         w.paint(x, y, hex(p === 0 ? '#2f1e12' : p <= 2 ? '#6b4224' : p <= 5 ? s.wall : s.light));
       }
       if (style === 'savanna' && x % 16 === 0) w.paint(x, y, hex(s.dark)); // Nähte der Plane
+      if (s.glass) {
+        // Rahmen: Sockel, senkrechte Sprossen und ein Querholz; dazwischen große Scheiben mit Lichtreflex
+        const sprosse = (((x - a[0]) % 16) + 16) % 16 < 2;
+        if (h < 6 || sprosse || (h > 24 && h < 27)) w.paint(x, y, hex(sprosse ? s.light : '#e8dcc4'));
+        else if ((x + Math.floor(h)) % 11 === 0 && h > 30) w.paint(x, y, hex('#ffffff', 160)); // Spiegelung
+      }
       if (style === 'asia' && (h < 4 || (h > 14 && h < 30 && x % 16 > 3 && x % 16 < 13))) {
         w.paint(x, y, hex(h < 4 ? '#5a1810' : '#f2e2c0')); // Sockel und Papierfenster
       }
@@ -792,12 +800,12 @@ function hutPost(style) {
 // Ankerpunkt: die obere Ecke der Grundfläche liegt im Bild bei (HUT_ROOF_OX, HUT_ROOF_OY).
 const HUT_ROOF_OX = 184;
 const HUT_ROOF_OY = 100;
-function hutRoof(style, A = 5, B = 4) {
+function hutRoof(style, A = 5, B = 4, ov = 0.25) {
   const W = 384, Hc = 310;
   const P = (a, b, h = 0) => [HUT_ROOF_OX + (a - b) * 32, HUT_ROOF_OY + (a + b) * 16 - h];
   const H = HUT_H + 2;
-  const R = style === 'asia' ? 46 : 40; // Dachhöhe über der Traufe
-  const ov = 0.25; // Überstand in Kacheln
+  const R = style === 'asia' ? 46 : style === 'cathouse' ? 18 : 40; // Dachhöhe über der Traufe (Katzenhaus flach, damit man hineinsieht)
+  // ov: Überstand in Kacheln
   const E = { t: P(-ov, -ov, H), r: P(A + ov, -ov, H), b: P(A + ov, B + ov, H), l: P(-ov, B + ov, H) };
   const R1 = P(B / 2, B / 2, H + R);
   const R2 = P(A - B / 2, B / 2, H + R);
@@ -806,6 +814,7 @@ function hutRoof(style, A = 5, B = 4) {
     forest: ['#4f3c2c', '#6b5340', '#8a6e50', '#3f2f22'],
     savanna: ['#b8a26c', '#dccb96', '#efe2b8', '#a08a58'],
     asia: ['#323b42', '#3f4a52', '#55636c', '#262e33'],
+    cathouse: ['#3f6a8a', '#4f84a8', '#6aa0c4', '#2f5068'],
   }[style].map((c) => hex(c));
   const [back, front, lightC, line] = colors;
   const r = new Canvas(W, Hc);
@@ -903,6 +912,336 @@ function hutChest(small = false) {
   const [lx, ly] = P(0, 0.25 * k, 12 * k);
   o.rect(lx - 2, ly - 2, 4, 5, hex('#e8b84a')); // Schloss
   o.outline(INK);
+  return o;
+}
+
+// ---------- Haupthaus im Tierpark: modern, große Glasfassaden zwischen Holzbalken ----------
+// Wände sind höher als bei den Hütten (64 statt 44): Fläche 64x100, Kachelmitte bei 32/80 (20 Pixel über dem Rand)
+const OFFICE_H = 64;
+function officeWall(door = false) {
+  const a = [16, 72], b = [48, 88], H = OFFICE_H;
+  const at = (t, h) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t - h];
+  const o = new Canvas(64, 100);
+  // Glas (durchscheinend), darin schräge Spiegelungen
+  o.poly([a, b, [b[0], b[1] - H], [a[0], a[1] - H]], hex('#9fd0e4', 120));
+  for (let y = 0; y < 100; y++) {
+    for (let x = a[0]; x <= b[0]; x++) {
+      const h = a[1] + (x - a[0]) * 0.5 - y; // Höhe über der Grundlinie
+      if (h < 0 || h > H) continue;
+      if ((x * 2 + Math.floor(h)) % 19 < 2 && h > 10 && h < H - 8) o.set(x, y, hex('#ffffff', 90));
+    }
+  }
+  // Sockel (Anthrazit), Querriegel aus Holz unter der Decke, schmaler Kämpfer aus Metall
+  const band = (h0, h1, c) => o.poly([at(0, h0), at(1, h0), at(1, h1), at(0, h1)], hex(c));
+  band(0, 4, '#3a3f44');
+  band(H - 6, H, '#c8935a');
+  band(H - 6, H - 5, '#8a5a30');
+  band(38, 39, '#5a646c');
+  // senkrechte Holzbalken (Brettschichtholz) an den Rändern und in der Mitte
+  for (const t of [0, 0.5, 1]) {
+    const [x0, y0] = at(t, 0);
+    o.rect(Math.round(x0) - 2, Math.round(y0) - H, 4, H, hex('#c8935a'));
+    o.rect(Math.round(x0) - 2, Math.round(y0) - H, 1, H, hex('#e0b07a'));
+    o.rect(Math.round(x0) + 1, Math.round(y0) - H, 1, H, hex('#8a5a30'));
+  }
+  if (door) {
+    // Glastür mit zwei Flügeln, Holzrahmen und langen Griffen
+    const [x0, y0] = at(0.12, 0);
+    const [x1, y1] = at(0.88, 0);
+    const D = 46;
+    o.poly([[x0, y0], [x1, y1], [x1, y1 - D], [x0, y0 - D]], hex('#cfeaf4', 170));
+    o.poly([[x0, y0 - D], [x1, y1 - D], [x1, y1 - D - 3], [x0, y0 - D - 3]], hex('#8a5a30'));
+    const [mx, my] = at(0.5, 0);
+    o.rect(Math.round(mx) - 1, Math.round(my) - D, 2, D, hex('#8a5a30'));
+    o.rect(Math.round(mx) - 4, Math.round(my) - 30, 2, 14, hex('#3a3f44'));
+    o.rect(Math.round(mx) + 2, Math.round(my) - 29, 2, 14, hex('#3a3f44'));
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 100);
+  c.line(a[0], a[1] + 1, b[0], b[1] + 1, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Eckbalken
+function officePost() {
+  const o = new Canvas(64, 100);
+  const [x, y] = [32, 80];
+  o.rect(x - 3, y - OFFICE_H - 1, 6, OFFICE_H + 2, hex('#c8935a'));
+  o.rect(x - 3, y - OFFICE_H - 1, 2, OFFICE_H + 2, hex('#e0b07a'));
+  o.rect(x + 2, y - OFFICE_H - 1, 1, OFFICE_H + 2, hex('#8a5a30'));
+  o.outline(INK);
+  return o;
+}
+
+// Flachdach mit Holzblende, begrünt, mit Oberlichtern; Grundfläche A x B Kacheln.
+// Ankerpunkt (obere Ecke der Grundfläche): siehe officeRoofAnchor, muss zu ROOF_ANCHOR in GardenScene passen
+function officeRoofAnchor(A, B, ov) {
+  const OX = Math.round((B + 2 * ov) * 32 + 8);
+  const OY = Math.round(OFFICE_H + 8 + 2 * ov * 16 + 8);
+  const W = Math.round(OX + (A + 2 * ov) * 32 + 8);
+  const Hc = Math.round(OY + (A + B + 2 * ov) * 16 + 12);
+  return { OX, OY, W, Hc };
+}
+function officeRoof(A, B, ov = 0.3) {
+  const { OX, OY, W, Hc } = officeRoofAnchor(A, B, ov);
+  const P = (a, b, h = 0) => [OX + (a - b) * 32, OY + (a + b) * 16 - h];
+  const H = OFFICE_H + 1;
+  const T = 7; // Dicke der Holzblende
+  const o = new Canvas(W, Hc);
+  const E = (h) => ({ t: P(-ov, -ov, h), r: P(A + ov, -ov, h), b: P(A + ov, B + ov, h), l: P(-ov, B + ov, h) });
+  const lo = E(H), hi = E(H + T);
+  // Blende vorne links und vorne rechts
+  o.poly([lo.l, lo.b, hi.b, hi.l], hex('#b8834c'));
+  o.poly([lo.b, lo.r, hi.r, hi.b], hex('#d29c62'));
+  for (let k = 1; k < T; k += 3) {
+    o.line(lo.l[0], lo.l[1] - k, lo.b[0], lo.b[1] - k, hex('#a8743f'));
+    o.line(lo.b[0], lo.b[1] - k, lo.r[0], lo.r[1] - k, hex('#c08a50'));
+  }
+  // Dachfläche: Gründach (Sedum) mit Kiesrand
+  o.poly([hi.t, hi.r, hi.b, hi.l], hex('#9a9a92'));
+  const inset = (u, v) => P(u, v, H + T);
+  const g = 0.35;
+  o.poly([inset(-ov + g, -ov + g), inset(A + ov - g, -ov + g), inset(A + ov - g, B + ov - g), inset(-ov + g, B + ov - g)], hex('#6f8f4a'));
+  for (let y = 0; y < Hc; y++) {
+    for (let x = 0; x < W; x++) {
+      if (o.alpha(x, y) === 0) continue;
+      const r = rand();
+      const [cr, cg] = [o.d[(y * W + x) * 4], o.d[(y * W + x) * 4 + 1]];
+      if (cg > cr + 20) {
+        if (r < 0.12) o.set(x, y, hex('#86a85a'));
+        else if (r < 0.18) o.set(x, y, hex('#5a7a3a'));
+        else if (r < 0.2) o.set(x, y, hex('#e8d26a')); // kleine Blüten
+      } else if (r < 0.2) o.set(x, y, hex('#b0b0a8'));
+    }
+  }
+  // Oberlichter: Glasstreifen über dem Raum
+  for (const a0 of [A * 0.22, A * 0.5, A * 0.78]) {
+    const q = [inset(a0 - 0.35, B * 0.25), inset(a0 + 0.35, B * 0.25), inset(a0 + 0.35, B * 0.75), inset(a0 - 0.35, B * 0.75)];
+    o.poly(q, hex('#cfeaf4'));
+    o.line(...q[0], ...q[3], hex('#8a5a30'));
+    o.line(...q[1], ...q[2], hex('#8a5a30'));
+    o.line(...inset(a0, B * 0.25), ...inset(a0, B * 0.75), hex('#ffffff'));
+  }
+  o.outline(INK);
+  return o;
+}
+
+// heller Steinboden mit Fugen
+function officeFloor() {
+  return tile((x, y) => {
+    const k = y - 0.5 * x;
+    const l = y + 0.5 * x;
+    if (((k % 16) + 16) % 16 < 1 || ((l % 16) + 16) % 16 < 1) return hex('#b8b4aa');
+    return rand() < 0.08 ? hex('#dcd8cc') : hex('#e6e2d6');
+  });
+}
+
+// großer Schreibtisch über drei Kacheln (entlang tx) mit drei Monitoren, Bildschirme zur Kamera; Kachelmitte bei (96, 72)
+function officeDesk() {
+  const o = new Canvas(192, 96);
+  const P = isoBox(o, 96, 72, 2.6, 0.7, 18, '#d8b07a', '#3a3f44', '#555c63');
+  // Holzkante vorne
+  o.poly([P(-1.3, 0.35, 18), P(1.3, 0.35, 18), P(1.3, 0.35, 15), P(-1.3, 0.35, 15)], hex('#b8834c'));
+  // Monitore: Fuß, Hals und Bildschirm mit Diagrammen
+  const screens = [
+    ['#2f6a9a', (sx, sy) => { for (let k = 0; k < 5; k++) o.rect(sx + 3 + k * 4, sy + 13 - k * 2, 3, 3 + k * 2, hex('#7ad07a')); }],
+    ['#244f75', (sx, sy) => { for (let k = 0; k < 18; k++) o.set(sx + 3 + k, sy + 10 - Math.round(Math.sin(k / 2.5) * 4), hex('#f2c24a')); o.rect(sx + 3, sy + 3, 8, 2, hex('#e8eef4')); }],
+    ['#2f6a9a', (sx, sy) => { o.circle(sx + 9, sy + 9, 5, hex('#e8483f')); o.ellipse(sx + 9, sy + 9, 5, 5, hex('#7ad07a'), true); o.rect(sx + 16, sy + 5, 6, 2, hex('#e8eef4')); o.rect(sx + 16, sy + 9, 5, 2, hex('#e8eef4')); }],
+  ];
+  screens.forEach(([bg, draw], i) => {
+    const u = -0.85 + i * 0.85;
+    const [fx, fy] = P(u, -0.1, 18);
+    o.rect(Math.round(fx) - 4, Math.round(fy) - 1, 8, 2, hex('#2b2b2b'));
+    o.rect(Math.round(fx) - 1, Math.round(fy) - 8, 2, 8, hex('#3a3a3a'));
+    // Bildschirm parallel zur Tischkante (leicht schräg wie die Kanten entlang tx)
+    const w = 26, h = 18;
+    const sx = Math.round(fx) - w / 2, sy = Math.round(fy) - 8 - h;
+    o.poly([[sx, sy], [sx + w, sy + w / 2], [sx + w, sy + w / 2 + h], [sx, sy + h]], hex('#2b2b2b'));
+    o.poly([[sx + 2, sy + 2], [sx + w - 2, sy + w / 2], [sx + w - 2, sy + w / 2 + h - 3], [sx + 2, sy + h - 1]], hex(bg));
+    draw(sx, sy + 2);
+  });
+  // Tastatur, Maus, Kaffeetasse
+  o.poly([P(-0.3, 0.12, 18.5), P(0.3, 0.12, 18.5), P(0.3, 0.27, 18.5), P(-0.3, 0.27, 18.5)], hex('#e8e8e0'));
+  const [mx, my] = P(0.45, 0.2, 18);
+  o.rect(Math.round(mx), Math.round(my) - 2, 3, 2, hex('#e8e8e0'));
+  const [cx, cy] = P(-0.9, 0.2, 18);
+  o.rect(Math.round(cx) - 2, Math.round(cy) - 5, 5, 5, hex('#f4f4f4'));
+  o.rect(Math.round(cx) - 1, Math.round(cy) - 5, 3, 1, hex('#6b4224'));
+  o.outline(INK);
+  return o;
+}
+
+// Bürostuhl hinter dem Tisch (schaut zu den Monitoren, die Lehne ist hinten); Kachelmitte bei (32, 44)
+function officeChair() {
+  const o = new Canvas(96, 64);
+  const cx = 48 - 22, cy = 44 + 11; // mittig hinter den Tisch gerückt (Richtung Kamera)
+  const P = (u, v, z = 0) => [cx + (u - v) * 32, cy + (u + v) * 16 - z];
+  // Lehne hinten (v = -0.18)
+  // gepolsterte, oben abgerundete Lehne (blau, damit man sie hinter den Monitoren als Stuhl erkennt)
+  o.poly([P(-0.17, -0.18, 14), P(0.17, -0.18, 14), P(0.17, -0.18, 28), P(0.1, -0.18, 31), P(-0.1, -0.18, 31), P(-0.17, -0.18, 28)], hex('#3f78b0'));
+  o.poly([P(-0.12, -0.17, 17), P(0.12, -0.17, 17), P(0.12, -0.17, 27), P(-0.12, -0.17, 27)], hex('#5a96cc'));
+  for (const u of [-0.2, 0.2]) o.line(...P(u, -0.05, 12), ...P(u, -0.05, 19), hex('#2b2b2b')); // Armlehnen
+  // Fuß mit Rollen, Gasfeder, Sitz
+  for (const [u, v] of [[-0.2, 0], [0.2, 0], [0, -0.2], [0, 0.2]]) o.line(...P(0, 0, 2), ...P(u, v, 1), hex('#3a3a3a'));
+  o.line(...P(0, 0, 2), ...P(0, 0, 11), hex('#5a5a5a'));
+  o.poly([P(-0.18, -0.16, 12), P(0.18, -0.16, 12), P(0.18, 0.18, 12), P(-0.18, 0.18, 12)], hex('#2f5f8a'));
+  o.poly([P(-0.18, 0.18, 12), P(0.18, 0.18, 12), P(0.18, 0.18, 10), P(-0.18, 0.18, 10)], hex('#244a6a'));
+  o.outline(INK);
+  const c = new Canvas(96, 64);
+  c.ellipse(cx, cy + 1, 10, 4, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// ---------- Haupthaus: Zimmerpflanzen und Sitzecke ----------
+// Quader im Raum: u entlang tx, v entlang ty (in Kacheln, relativ zur Kachelmitte), z Höhe; sichtbar sind oben,
+// vorne links (v = v1) und vorne rechts (u = u1)
+function roomBox(o, P, [u0, u1], [v0, v1], [z0, z1], top, left, right) {
+  o.poly([P(u0, v1, z0), P(u1, v1, z0), P(u1, v1, z1), P(u0, v1, z1)], hex(left));
+  o.poly([P(u1, v0, z0), P(u1, v1, z0), P(u1, v1, z1), P(u1, v0, z1)], hex(right));
+  o.poly([P(u0, v0, z1), P(u1, v0, z1), P(u1, v1, z1), P(u0, v1, z1)], hex(top));
+}
+
+// große Zimmerpflanze im hellen Topf: Monstera (breite, geschlitzte Blätter) oder Strelitzie (hohe Paddelblätter).
+// Kachelmitte bei (32, 84)
+function officePlant(kind) {
+  const o = new Canvas(64, 96);
+  const x = 32, y = 84;
+  // runder Topf: weiß (Monstera) bzw. Beton (Strelitzie)
+  const [potC, potL, potD] = kind === 'monstera' ? ['#f2f0ea', '#ffffff', '#c8c4b8'] : ['#9a9a92', '#b8b8b0', '#7a7a72'];
+  o.rect(x - 9, y - 16, 18, 15, hex(potC));
+  o.ellipse(x, y - 1, 9, 3.5, hex(potC));
+  o.rect(x - 9, y - 16, 3, 15, hex(potL));
+  o.rect(x + 6, y - 16, 3, 15, hex(potD));
+  o.ellipse(x, y - 16, 9, 3.5, hex(potD));
+  o.ellipse(x, y - 16.5, 7.5, 2.5, hex('#5a3a20')); // Erde
+  if (kind === 'monstera') {
+    // Stiele und große, herzförmige Blätter mit Schlitzen
+    const leaves = [[-14, -30, 1], [13, -32, -1], [-6, -44, 1], [8, -48, -1], [0, -36, 1], [-16, -46, 1], [16, -44, -1]];
+    for (const [dx, dy] of leaves) o.line(x, y - 17, x + dx * 0.8, y + dy + 4, hex('#3f6a2a'));
+    for (const [dx, dy, dir] of leaves) {
+      const cx = x + dx, cy = y + dy;
+      o.ellipse(cx, cy, 9, 7, hex('#2f6a32'));
+      o.ellipse(cx - dir * 2, cy - 2, 5, 3.5, hex('#3f8a42'), true);
+      for (const k of [-4, 0, 4]) o.line(cx, cy, cx + dir * 9, cy + k, hex('#1f4a22')); // Schlitze zum Rand
+      o.line(cx - dir * 7, cy + 1, cx + dir * 3, cy - 1, hex('#5aa85a')); // Mittelrippe
+    }
+  } else {
+    // Strelitzie: hohe Stiele mit langen, schmalen Blättern, dazu eine orange-blaue Blüte
+    const leaves = [[-12, -62], [-4, -70], [6, -66], [14, -56], [-16, -48], [12, -44]];
+    for (const [dx, dy] of leaves) {
+      const ex = x + dx * 0.55, ey = y + dy + 18;
+      o.line(x + dx * 0.15, y - 17, ex, ey, hex('#4f7a3a'));
+      // Blatt als lange Ellipse entlang des Stiels
+      for (let t = 0; t <= 1; t += 0.05) {
+        const px = ex + (x + dx - ex) * t, py = ey + (y + dy - ey) * t;
+        const w = Math.sin(t * Math.PI) * 4;
+        o.line(px - w, py, px + w, py, hex(t < 0.5 ? '#3f7a3a' : '#4f9a4a'));
+      }
+      o.line(ex, ey, x + dx, y + dy, hex('#2f5a2a'));
+    }
+    const [bx, by] = [x - 2, y - 52];
+    o.poly([[bx - 6, by + 2], [bx + 4, by], [bx + 2, by + 3]], hex('#3f5a8a'));
+    for (const [dx, dy] of [[0, -5], [3, -7], [5, -4]]) o.line(bx, by, bx + dx, by + dy, hex('#f08a2c'));
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 96);
+  c.ellipse(x, y, 11, 4, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Sofa an der linken Wand über zwei Kacheln (entlang ty); gesetzt auf die vordere Kachel. Kachelmitte bei (56, 68)
+function officeSofa() {
+  const o = new Canvas(112, 80);
+  const P = (u, v, z = 0) => [56 + (u - v) * 32, 68 + (u + v) * 16 - z];
+  const U = [-0.85, -0.08], V = [-1.45, 0.45];
+  const fabric = ['#9aa6ac', '#7a868c', '#8a969c'];
+  roomBox(o, P, [U[0], U[0] + 0.22], V, [8, 27], '#aab6bc', '#7a868c', '#8a969c'); // Lehne an der Wand
+  roomBox(o, P, U, [V[0], V[0] + 0.2], [8, 17], ...fabric); // Armlehne hinten
+  roomBox(o, P, [U[0], U[1]], V, [2, 11], '#b4c0c6', '#7a868c', '#8a969c'); // Sitz
+  roomBox(o, P, [U[0] + 0.22, U[1]], [-1.2, -0.48], [11, 13], '#c4ced2', '#9aa6ac', '#a8b4ba'); // zwei Sitzkissen
+  roomBox(o, P, [U[0] + 0.22, U[1]], [-0.42, 0.22], [11, 13], '#c4ced2', '#9aa6ac', '#a8b4ba');
+  // Holzfüße
+  for (const [u, v] of [[U[1] - 0.05, V[1] - 0.05], [U[1] - 0.05, V[0] + 0.05]]) o.rect(...P(u, v, 2).map(Math.round), 2, 3, hex('#8a5a30'));
+  // bunte Zierkissen an der Lehne
+  for (const [v, c] of [[-1.0, '#e8b84a'], [-0.05, '#c8603d']]) {
+    const [kx, ky] = P(U[0] + 0.3, v, 18);
+    o.poly([[kx - 7, ky - 3], [kx + 5, ky - 9], [kx + 7, ky], [kx - 5, ky + 5]], hex(c));
+  }
+  roomBox(o, P, U, [V[1] - 0.2, V[1]], [8, 17], ...fabric); // Armlehne vorne
+  o.outline(INK);
+  const c = new Canvas(112, 80);
+  c.poly([P(U[0], V[0], 0), P(U[1] + 0.05, V[0], 0), P(U[1] + 0.05, V[1] + 0.05, 0), P(U[0], V[1] + 0.05, 0)], SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// runder Couchtisch aus Holz mit Zeitschriften, Tasse und Blumenvase; zwischen die zwei Kacheln gerückt.
+// Kachelmitte bei (40, 52)
+function officeCoffeeTable() {
+  const o = new Canvas(80, 60);
+  const P = (u, v, z = 0) => [40 + (u - v) * 32, 52 + (u + v) * 16 - z];
+  const [cx, cy] = P(0, -0.5, 0);
+  o.rect(Math.round(cx) - 2, Math.round(cy) - 11, 4, 11, hex('#6b4224')); // Fuß
+  o.ellipse(cx, cy, 8, 3, hex('#6b4224'));
+  o.ellipse(cx, cy - 12, 18, 9, hex('#a8743f')); // Platte
+  o.ellipse(cx, cy - 13, 17, 8, hex('#d29c62'));
+  o.ellipse(cx - 4, cy - 15, 7, 3, hex('#e0b07a'), true);
+  // Zeitschriften
+  o.poly([[cx - 12, cy - 13], [cx - 4, cy - 17], [cx + 1, cy - 14], [cx - 7, cy - 10]], hex('#4f84b8'));
+  o.poly([[cx - 10, cy - 14], [cx - 3, cy - 18], [cx + 2, cy - 15], [cx - 5, cy - 11]], hex('#f2e2c0'));
+  o.line(cx - 8, cy - 14, cx - 2, cy - 17, hex('#c8553d'));
+  // Tasse
+  o.rect(Math.round(cx) + 5, Math.round(cy) - 18, 4, 4, hex('#f4f4f4'));
+  o.rect(Math.round(cx) + 5, Math.round(cy) - 18, 4, 1, hex('#6b4224'));
+  // Vase mit Blume
+  o.rect(Math.round(cx) - 1, Math.round(cy) - 20, 3, 6, hex('#3f8a9a'));
+  o.line(cx, cy - 20, cx - 1, cy - 26, hex('#3f7a2a'));
+  o.circle(cx - 1, cy - 27, 2, hex('#e8483f'));
+  o.outline(INK);
+  const c = new Canvas(80, 60);
+  c.ellipse(cx, cy, 15, 5, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Sessel gegenüber dem Sofa (Lehne rechts, schaut zum Tisch); zwischen die zwei Kacheln gerückt. Kachelmitte bei (40, 52)
+function officeArmchair() {
+  const o = new Canvas(80, 60);
+  const P = (u, v, z = 0) => [40 + (u - v) * 32, 52 + (u + v) * 16 - z];
+  const V = [-0.85, -0.15], U = [-0.25, 0.32];
+  roomBox(o, P, U, [V[0], V[0] + 0.14], [6, 16], '#d8986a', '#a8603d', '#b8704a'); // Armlehne hinten
+  roomBox(o, P, U, V, [2, 10], '#e0a070', '#a8603d', '#b8704a'); // Sitz
+  roomBox(o, P, [U[0] + 0.05, U[1] - 0.18], [V[0] + 0.14, V[1] - 0.14], [10, 12], '#ecb488', '#c07850', '#c8805a'); // Kissen
+  roomBox(o, P, [U[1] - 0.18, U[1]], V, [10, 26], '#d8986a', '#a8603d', '#b8704a'); // Lehne
+  roomBox(o, P, U, [V[1] - 0.14, V[1]], [6, 16], '#d8986a', '#a8603d', '#b8704a'); // Armlehne vorne
+  for (const [u, v] of [[U[0] + 0.03, V[1] - 0.03], [U[1] - 0.03, V[1] - 0.03]]) o.rect(...P(u, v, 2).map(Math.round), 2, 3, hex('#6b4224'));
+  o.outline(INK);
+  const c = new Canvas(80, 60);
+  c.poly([P(U[0], V[0], 0), P(U[1] + 0.05, V[0], 0), P(U[1] + 0.05, V[1] + 0.05, 0), P(U[0], V[1] + 0.05, 0)], SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Teppich unter der Sitzecke (liegt flach auf dem Boden); Kachelmitte bei (80, 30)
+function officeRug() {
+  const o = new Canvas(160, 84);
+  const P = (u, v) => [80 + (u - v) * 32, 30 + (u + v) * 16];
+  const U = [-0.95, 1.5], V = [-0.55, 1.45];
+  const quad = (a, b, c) => o.poly([P(U[0] + a, V[0] + a), P(U[1] - a, V[0] + a), P(U[1] - a, V[1] - a), P(U[0] + a, V[1] - a)], hex(c));
+  quad(0, 0, '#c8603d'); // Rand
+  quad(0.1, 0.1, '#f2e2c0');
+  quad(0.18, 0.18, '#d8784a');
+  // Rautenmuster
+  for (let u = U[0] + 0.45; u < U[1] - 0.3; u += 0.5) {
+    for (let v = V[0] + 0.45; v < V[1] - 0.3; v += 0.5) {
+      const [x, y] = P(u, v);
+      o.poly([[x, y - 4], [x + 8, y], [x, y + 4], [x - 8, y]], hex('#f2e2c0'));
+      o.poly([[x, y - 2], [x + 4, y], [x, y + 2], [x - 4, y]], hex('#3f8a9a'));
+    }
+  }
   return o;
 }
 
@@ -1047,10 +1386,50 @@ const sprites = {
   'gate_door_asia_x.png': hutWall('asia', true),
   'gate_door_asia_y.png': hutWall('asia', true).flipped(),
   'hutroof_asia.png': hutRoof('asia'),
-  'hut_desk.png': hutDesk(),
-  'hut_cupboard.png': hutCupboard(),
-  'hut_chest.png': hutChest(),
+  // Katzenhaus im Tierpark: Glaswände, Dach ohne Überstand
+  'hutwall_cathouse_x.png': hutWall('cathouse'),
+  'hutwall_cathouse_y.png': hutWall('cathouse').flipped(),
+  'post_hutwall_cathouse.png': hutPost('cathouse'),
+  'hutroof_cathouse.png': hutRoof('cathouse', 5, 4, 0),
   'hut_chest_small.png': hutChest(true),
+  // Tierpark: Futterautomat und Futtersack
+  'feeder.png': feederSprite(),
+  'parkfood.png': parkFood(),
+  'hut_desk_meadow.png': hutDeskStyled('meadow'),
+  'hut_chair_meadow.png': hutChair('meadow'),
+  'hut_plant_meadow.png': hutPlant('meadow'),
+  'hut_shelf_meadow.png': hutShelf('meadow'),
+  'hut_desk_forest.png': hutDeskStyled('forest'),
+  'hut_chair_forest.png': hutChair('forest'),
+  'hut_plant_forest.png': hutPlant('forest'),
+  'hut_shelf_forest.png': hutShelf('forest'),
+  'hut_desk_savanna.png': hutDeskStyled('savanna'),
+  'hut_chair_savanna.png': hutChair('savanna'),
+  'hut_plant_savanna.png': hutPlant('savanna'),
+  'hut_shelf_savanna.png': hutShelf('savanna'),
+  'hut_desk_asia.png': hutDeskStyled('asia'),
+  'hut_chair_asia.png': hutChair('asia'),
+  'hut_plant_asia.png': hutPlant('asia'),
+  'hut_shelf_asia.png': hutShelf('asia'),
+  'planks_forest.png': hutFloor('forest'),
+  'planks_savanna.png': hutFloor('savanna'),
+  'planks_asia.png': hutFloor('asia'),
+  // Haupthaus im Tierpark (9 x 8 Kacheln)
+  'hutwall_office_x.png': officeWall(),
+  'hutwall_office_y.png': officeWall().flipped(),
+  'post_hutwall_office.png': officePost(),
+  'gate_door_office_x.png': officeWall(true),
+  'gate_door_office_y.png': officeWall(true).flipped(),
+  'hutroof_office.png': officeRoof(9, 8),
+  'floor_office.png': officeFloor(),
+  'office_desk.png': officeDesk(),
+  'office_chair.png': officeChair(),
+  'office_plant_monstera.png': officePlant('monstera'),
+  'office_plant_strelitzia.png': officePlant('strelitzia'),
+  'office_sofa.png': officeSofa(),
+  'office_table.png': officeCoffeeTable(),
+  'office_armchair.png': officeArmchair(),
+  'office_rug.png': officeRug(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -2013,6 +2392,273 @@ function parkPath() {
     if (ma < 4 || mb < 4) return hex('#d8d2c2'); // helle Kante oben links
     const k = (((ca % 4) + 4) % 4) * 4 + (((cb % 4) + 4) % 4);
     return hex(shades[(k * 7 + 3) % shades.length]);
+  });
+}
+
+// Futterautomat im Tierpark: Holzkasten auf einem Pfosten, oben ein Fenster mit Körnern, unten die Ausgabeklappe,
+// vorne ein Pfoten-Schild. Kachelmitte bei (32, 52)
+function feederSprite() {
+  const o = new Canvas(64, 64);
+  o.rect(29, 34, 6, 18, hex('#8a5a30')); // Pfosten
+  o.rect(29, 34, 2, 18, hex('#a8743f'));
+  const P = isoBox(o, 32, 36, 0.55, 0.4, 26, '#c8935a', '#a8743f', '#8a5a30');
+  // Fenster mit Körnern
+  const [wx, wy] = P(-0.27, 0.2, 22);
+  o.poly([[wx + 3, wy + 1], [wx + 15, wy + 7], [wx + 15, wy + 15], [wx + 3, wy + 9]], hex('#cfe8f0'));
+  for (const [dx, dy, c] of [[5, 7, '#e8b84a'], [8, 9, '#c8962a'], [11, 11, '#e8b84a'], [6, 9, '#f2d27a'], [12, 13, '#c8962a'], [9, 12, '#e8b84a']]) o.rect(wx + dx, wy + dy, 2, 2, hex(c));
+  // Ausgabeklappe
+  const [kx, ky] = P(-0.05, 0.2, 6);
+  o.poly([[kx - 3, ky - 1], [kx + 5, ky + 3], [kx + 5, ky + 7], [kx - 3, ky + 3]], hex('#5a3a20'));
+  // Dach
+  o.poly([...[P(-0.33, -0.25, 26), P(0.33, -0.25, 26), P(0.33, 0.25, 26), P(-0.33, 0.25, 26)].map(([x, y]) => [x, y]), [32, 4]], hex('#c8553d'));
+  o.line(...P(-0.33, 0.25, 26), 32, 4, hex('#9c3a28'));
+  o.line(...P(0.33, 0.25, 26), 32, 4, hex('#e07a5f'));
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.ellipse(32, 52, 12, 4, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Futtersack (Werkzeug, doppelte Auflösung): Jutesack mit Körnern, oben zugebunden
+function parkFood() {
+  const o = new Canvas(64, 64);
+  o.ellipse(32, 42, 18, 16, hex('#c8a46a'));
+  o.ellipse(29, 38, 11, 10, hex('#dcbd84'), true);
+  o.poly([[24, 24], [40, 24], [36, 30], [28, 30]], hex('#b08850'));
+  o.rect(26, 22, 12, 3, hex('#8a5a30')); // Schnur
+  for (const [x, y] of [[30, 14], [34, 16], [28, 18], [36, 12], [32, 19]]) o.rect(x, y, 3, 3, hex('#e8b84a')); // Körner
+  for (let k = 0; k < 4; k++) o.line(20 + k * 7, 36, 23 + k * 7, 54, hex('#b08850')); // Webmuster
+  o.outline(INK);
+  return o;
+}
+
+// ---------- Einrichtung der Hütten, je Gebiet passend zu den Wänden ----------
+// Holz, Polster und Akzent je Gebiet (als Funktion statt Konstante, damit es schon im sprites-Objekt gilt)
+function furnitureStyle(style) {
+  return {
+    meadow: { top: '#d29c62', left: '#8a5a30', right: '#a8743f', cushion: '#c8553d', cushion2: '#f2e2c0', accent: '#3f8a3f' },
+    forest: { top: '#8a5a30', left: '#3f2a1a', right: '#5a3a22', cushion: '#5f7a3a', cushion2: '#7a9a4c', accent: '#e8b84a' },
+    savanna: { top: '#e0c890', left: '#a08a58', right: '#c0a670', cushion: '#7a7a3a', cushion2: '#a8a860', accent: '#c8553d' },
+    asia: { top: '#2b2b2b', left: '#7a1e18', right: '#a02a20', cushion: '#c0392b', cushion2: '#e8b84a', accent: '#e8b84a' },
+  }[style];
+}
+
+// Schreibtisch an der hinteren Wand; Kachelmitte bei (32, 44)
+function hutDeskStyled(style) {
+  const s = furnitureStyle(style);
+  const o = new Canvas(64, 64);
+  const P = isoBox(o, 32, 40, 0.85, 0.45, 18, s.top, s.left, s.right); // etwas an die Wand gerückt
+  // Schublade vorne
+  const [dx, dy] = P(-0.3, 0.225, 14);
+  o.poly([[dx, dy], [dx + 14, dy + 7], [dx + 14, dy + 11], [dx, dy + 4]], hex(s.right));
+  o.rect(Math.round(dx) + 6, Math.round(dy) + 5, 2, 2, hex('#e8b84a'));
+  if (style === 'asia') {
+    // Papier mit Schriftzeichen, Pinsel und Tuschestein
+    o.poly([P(-0.3, -0.12, 18.5), P(0.05, -0.12, 18.5), P(0.05, 0.12, 18.5), P(-0.3, 0.12, 18.5)], hex('#f4ead8'));
+    o.line(...P(-0.25, 0, 19), ...P(0, 0, 19), hex('#2b2b2b'));
+    o.line(...P(0.15, -0.1, 19), ...P(0.32, 0.05, 21), hex('#8a5a30'));
+    const [ix, iy] = P(0.25, -0.12, 19);
+    o.rect(Math.round(ix), Math.round(iy), 3, 2, hex('#1a1a1a'));
+  } else {
+    o.poly([P(-0.3, -0.15, 18.5), P(0.05, -0.15, 18.5), P(0.05, 0.1, 18.5), P(-0.3, 0.1, 18.5)], hex('#f4f0e0')); // Papier bzw. Karte
+    if (style === 'savanna') o.line(...P(-0.25, -0.1, 19), ...P(0, 0.05, 19), hex('#c8553d')); // Route auf der Karte
+    else o.line(...P(-0.25, -0.05, 19), ...P(0, -0.05, 19), hex('#8a8a8a'));
+    const [lx, ly] = P(0.3, -0.1, 18);
+    if (style === 'forest') {
+      // Laterne
+      o.rect(lx - 3, ly - 9, 6, 9, hex('#3f3f3f'));
+      o.rect(lx - 2, ly - 8, 4, 6, hex('#f2c24a'));
+      o.rect(lx - 1, ly - 11, 2, 2, hex('#3f3f3f'));
+    } else if (style === 'savanna') {
+      // Fernglas
+      o.rect(lx - 4, ly - 5, 3, 5, hex('#3f3f3f'));
+      o.rect(lx + 1, ly - 5, 3, 5, hex('#3f3f3f'));
+      o.rect(lx - 1, ly - 4, 2, 2, hex('#5a5a5a'));
+    } else {
+      o.rect(lx - 1, ly - 8, 2, 8, hex('#4a4a4a')); // Lampe
+      o.poly([[lx - 5, ly - 8], [lx + 5, ly - 8], [lx + 2, ly - 13], [lx - 2, ly - 13]], hex(s.accent));
+    }
+  }
+  o.outline(INK);
+  return o;
+}
+
+// Stuhl vor dem Schreibtisch, die Lehne zur Kamera; Kachelmitte bei (32, 44)
+function hutChair(style) {
+  const s = furnitureStyle(style);
+  const o = new Canvas(64, 64);
+  const cx = 32 + 15, cy = 44 - 8; // zum Tisch hin gerückt (Richtung hintere Wand)
+  const P = (u, v, z = 0) => [cx + (u - v) * 32, cy + (u + v) * 16 - z];
+  for (const [u, v] of [[-0.14, -0.14], [0.14, -0.14], [-0.14, 0.14], [0.14, 0.14]]) o.line(...P(u, v, 0), ...P(u, v, 10), hex(s.left)); // Beine
+  o.poly([P(-0.17, -0.17, 10), P(0.17, -0.17, 10), P(0.17, 0.17, 10), P(-0.17, 0.17, 10)], hex(s.top)); // Sitz
+  o.poly([P(-0.12, -0.12, 11), P(0.12, -0.12, 11), P(0.12, 0.12, 11), P(-0.12, 0.12, 11)], hex(s.cushion)); // Kissen
+  // Lehne an der Seite zur Kamera (v = +0.17)
+  if (style === 'savanna') {
+    // Safari-Stuhl mit Stoffbespannung
+    o.poly([P(-0.17, 0.17, 12), P(0.17, 0.17, 12), P(0.17, 0.17, 26), P(-0.17, 0.17, 26)], hex(s.cushion));
+    o.line(...P(-0.17, 0.17, 19), ...P(0.17, 0.17, 19), hex(s.cushion2));
+    for (const u of [-0.17, 0.17]) o.line(...P(u, 0.17, 0), ...P(u, 0.17, 27), hex(s.left));
+  } else {
+    for (const u of [-0.17, 0.17]) o.line(...P(u, 0.17, 0), ...P(u, 0.17, 27), hex(s.left));
+    o.poly([P(-0.17, 0.17, 22), P(0.17, 0.17, 22), P(0.17, 0.17, 27), P(-0.17, 0.17, 27)], hex(style === 'asia' ? s.left : s.right));
+    if (style === 'asia') o.line(...P(-0.17, 0.17, 27), ...P(0.17, 0.17, 27), hex(s.accent));
+    else for (const u of [-0.06, 0.06]) o.line(...P(u, 0.17, 11), ...P(u, 0.17, 22), hex(s.right));
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.ellipse(cx, cy + 1, 10, 4, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Zimmerpflanze in der Ecke: Geranie (Wiese), Farn (Wald), Aloe (Savanne), Bonsai (Asien); Kachelmitte bei (32, 60)
+function hutPlant(style) {
+  const o = new Canvas(64, 80);
+  const x = 32, y = 60 - 9; // in die Ecke gerückt
+  const pot = { meadow: ['#c8603d', '#e07a5f'], forest: ['#6b4224', '#8a5a30'], savanna: ['#b8784a', '#d8986a'], asia: ['#3f6a9a', '#e8eef4'] }[style];
+  if (style === 'asia') {
+    // flache Schale mit Bonsai
+    o.poly([[x - 11, y - 6], [x + 11, y - 6], [x + 8, y], [x - 8, y]], hex(pot[0]));
+    o.line(x - 9, y - 4, x + 9, y - 4, hex(pot[1]));
+    o.line(x, y - 6, x - 2, y - 14, hex('#6b4224'));
+    o.line(x - 2, y - 14, x + 4, y - 20, hex('#6b4224'));
+    o.line(x - 1, y - 6, x - 3, y - 14, hex('#5a3a20'));
+    for (const [px, py, r] of [[x - 7, y - 16, 6], [x + 7, y - 22, 7], [x - 1, y - 26, 6]]) {
+      o.ellipse(px, py, r, r * 0.55, hex('#3f7a3a'));
+      o.ellipse(px - 1, py - 1, r * 0.6, r * 0.3, hex('#5f9a4c'), true);
+    }
+  } else {
+    // Topf (im Wald ein Holzeimer)
+    o.poly([[x - 7, y - 12], [x + 7, y - 12], [x + 5, y], [x - 5, y]], hex(pot[0]));
+    o.rect(x - 8, y - 13, 16, 3, hex(pot[1]));
+    if (style === 'forest') for (const yy of [y - 8, y - 3]) o.line(x - 6, yy, x + 6, yy, hex('#3f3f3f')); // Eisenreifen
+    if (style === 'meadow') {
+      for (const [dx, dy] of [[-8, -10], [8, -10], [-4, -16], [5, -17], [0, -12], [-10, -6], [10, -6]]) o.ellipse(x + dx, y - 12 + dy, 5, 3.5, hex('#3f8a3a'));
+      for (const [dx, dy] of [[-6, -18], [6, -19], [0, -24], [-10, -13], [10, -14]]) {
+        o.circle(x + dx, y - 12 + dy, 2.6, hex('#e8483f'));
+        o.set(x + dx - 1, y - 13 + dy, hex('#ff9a8c'));
+      }
+    } else if (style === 'forest') {
+      // Farnwedel: Bögen mit Fiederblättchen
+      for (const dir of [-1, -0.4, 0.4, 1]) {
+        for (let t = 0; t <= 1; t += 0.06) {
+          const px = x + dir * 15 * t, py = y - 13 - 22 * Math.sin(t * Math.PI * 0.55) + 8 * t * t;
+          o.set(px, py, hex('#3f7a2a'));
+          if (t > 0.15) {
+            o.set(px - 1, py - 2, hex('#5f9a3c'));
+            o.set(px + 1, py - 2, hex('#5f9a3c'));
+            o.set(px, py + 1, hex('#2f5a20'));
+          }
+        }
+      }
+      o.line(x, y - 13, x, y - 32, hex('#3f7a2a'));
+      for (let k = 0; k < 6; k++) {
+        o.set(x - 1, y - 16 - k * 3, hex('#5f9a3c'));
+        o.set(x + 1, y - 17 - k * 3, hex('#5f9a3c'));
+      }
+    } else {
+      // Aloe: spitze, fleischige Blätter
+      for (const [dx, h] of [[-11, 14], [-6, 22], [0, 28], [6, 23], [11, 15], [-3, 18], [3, 19]]) {
+        o.poly([[x + dx * 0.3 - 2, y - 13], [x + dx * 0.3 + 2, y - 13], [x + dx, y - 13 - h]], hex(h > 20 ? '#6a9a5a' : '#5a8a4a'));
+        o.line(x + dx * 0.3, y - 13, x + dx * 0.9, y - 13 - h * 0.85, hex('#8ab87a'));
+      }
+    }
+  }
+  o.outline(INK);
+  const c = new Canvas(64, 80);
+  c.ellipse(x, y, 10, 3.5, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Breites Wandregal an der hinteren Wand (darin liegen die Werkzeuge), steht auf dem Boden und ist nicht höher als
+// die Hüttenwand: oben hängen Kescher und Lasso, unten stehen Dosen, ein Futterglas und eine Falle.
+// Kachelmitte bei (64, 80)
+function hutShelf(style) {
+  const s = furnitureStyle(style);
+  const o = new Canvas(128, 96);
+  const V = -0.86; // Rückwand kurz vor der Hüttenwand
+  const P = (u, v, z = 0) => [64 + (u - v) * 32, 80 + (u + v) * 16 - z];
+  const U0 = -0.5, U1 = 0.72;
+  const D = 0.26; // Tiefe der Bretter
+  const TOP = 42; // knapp unter der Oberkante der Wand (44)
+  // Rückwand mit Brettern (in der Savanne Bambus mit Knoten)
+  o.poly([P(U0, V, 0), P(U1, V, 0), P(U1, V, TOP), P(U0, V, TOP)], hex(s.right));
+  for (let u = U0 + 0.15; u < U1; u += 0.15) o.line(...P(u, V, 0), ...P(u, V, TOP), hex(s.left));
+  if (style === 'savanna') o.line(...P(U0, V, 32), ...P(U1, V, 32), hex(s.top));
+  // Seitenwangen bis zum Boden und drei Bretter
+  for (const u of [U0, U1]) o.poly([P(u, V, 0), P(u, V + D, 0), P(u, V + D, TOP), P(u, V, TOP)], hex(s.left));
+  for (const z of [3, 20, TOP]) {
+    o.poly([P(U0, V, z), P(U1, V, z), P(U1, V + D, z), P(U0, V + D, z)], hex(s.top));
+    o.poly([P(U0, V + D, z), P(U1, V + D, z), P(U1, V + D, z - 2), P(U0, V + D, z - 2)], hex(s.left));
+  }
+  // unten: Dosen, ein Glas mit Futter und eine Falle
+  for (const [u, c, h] of [[-0.38, '#c8553d', 9], [-0.24, '#e8b84a', 7], [-0.1, '#cfe8f0', 11]]) {
+    const [x, y] = P(u, V + D / 2, 3);
+    o.rect(Math.round(x) - 3, Math.round(y) - h, 6, h, hex(c));
+    o.rect(Math.round(x) - 3, Math.round(y) - h, 6, 2, hex('#ffffff', 110));
+  }
+  {
+    const [x, y] = P(-0.1, V + D / 2, 3); // Körner im Glas
+    for (const [dx, dy] of [[-1, -3], [1, -4], [0, -6]]) o.rect(Math.round(x) + dx, Math.round(y) + dy, 2, 2, hex('#c8962a'));
+  }
+  {
+    const [x, y] = P(0.42, V + D / 2, 3);
+    o.rect(Math.round(x) - 8, Math.round(y) - 9, 16, 9, hex('#9a9a9a'));
+    for (let k = -7; k <= 7; k += 3) o.line(Math.round(x) + k, Math.round(y) - 9, Math.round(x) + k, Math.round(y) - 1, hex('#5a5a5a'));
+    o.line(Math.round(x) - 8, Math.round(y) - 9, Math.round(x) + 7, Math.round(y) - 9, hex('#5a5a5a'));
+  }
+  // oben rechts: Lasso, aufgerollt an einem Haken, mit Schlinge
+  {
+    const [x, y] = P(0.4, V + 0.04, 31);
+    o.rect(Math.round(x) - 1, Math.round(y) - 10, 2, 3, hex('#4a4a4a')); // Haken
+    for (const [r, c] of [[8, '#8a5a30'], [6.5, '#d8b070'], [5, '#a8743f']]) o.ellipse(x, y, r, r * 0.8, hex(c));
+    o.ellipse(x, y, 3, 2.4, hex(s.right)); // innen sieht man die Rückwand
+    o.line(x + 5, y + 5, x + 7, y + 10, hex('#a8743f')); // loses Ende
+  }
+  // oben links: Kescher mit Netzbeutel, der Stiel steht vorne auf dem Boden
+  {
+    const [hx, hy] = P(-0.2, V + 0.08, 36);
+    o.line(hx + 5, hy + 6, hx + 12, hy + 38, hex('#8a5a30')); // Stiel
+    o.line(hx + 6, hy + 6, hx + 13, hy + 38, hex('#c8935a'));
+    o.poly([[hx - 8, hy], [hx + 8, hy], [hx + 3, hy + 13], [hx - 3, hy + 13]], hex('#e8e8e0')); // Netzbeutel
+    for (let k = -7; k <= 7; k += 3) o.line(hx + k, hy, hx + k * 0.35, hy + 13, hex('#a8a8a0'));
+    o.line(hx - 6, hy + 6, hx + 6, hy + 6, hex('#a8a8a0'));
+    o.ellipse(hx, hy, 9, 3.5, hex('#4a4a4a')); // Ring
+    o.ellipse(hx, hy, 7, 2.2, hex('#e8e8e0'));
+  }
+  if (style === 'asia') for (const u of [U0, U1]) {
+    const [x, y] = P(u, V, TOP);
+    o.rect(Math.round(x) - 1, Math.round(y) - 2, 3, 3, hex(s.accent)); // goldene Ecken
+  }
+  o.outline(INK);
+  // Schatten auf dem Boden vor dem Regal
+  const c = new Canvas(128, 96);
+  c.poly([P(U0, V, 0), P(U1, V, 0), P(U1, V + D + 0.08, 0), P(U0, V + D + 0.08, 0)], SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Boden in den Hütten: dunkle Dielen (Wald), Bastmatte (Savanne), Tatami (Asien)
+function hutFloor(style) {
+  return tile((x, y) => {
+    const k = y - 0.5 * x; // Linien entlang tx
+    const l = y + 0.5 * x; // Linien entlang ty
+    if (style === 'forest') {
+      const m = ((k % 6) + 6) % 6;
+      if (m < 1) return hex('#2f1e12');
+      const base = [hex('#7a4e2d'), hex('#6b4224'), hex('#845533')][((Math.floor(k / 6) % 3) + 3) % 3];
+      return rand() < 0.06 ? hex('#5a3a20') : base;
+    }
+    if (style === 'savanna') {
+      const a = (((Math.floor(k / 3) + Math.floor(l / 3)) % 2) + 2) % 2; // Flechtmuster
+      return rand() < 0.05 ? hex('#b8a26c') : a ? hex('#e0c890') : hex('#cfb47a');
+    }
+    // Tatami: Strohgrün mit dunklen Kanten
+    const m = ((k % 16) + 16) % 16;
+    if (m < 1) return hex('#3f4a2a');
+    return rand() < 0.3 ? hex('#c8c88a') : ((Math.floor(l) % 2) + 2) % 2 ? hex('#bcbc7a') : hex('#c4c482');
   });
 }
 

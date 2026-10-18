@@ -35,6 +35,14 @@ export default class Sheep extends Animal {
     return super.updateFree(dt, player);
   }
 
+  startFeed() {
+    this.grazing = false;
+  }
+
+  setEating(on) {
+    this.grazing = on;
+  }
+
   catch() {
     this.grazing = false;
     super.catch();

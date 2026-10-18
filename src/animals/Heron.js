@@ -4,7 +4,7 @@
 // In der Voliere fliegt er ab und zu eine kurze Strecke zu einer anderen Stelle.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
-import { tileToWorld } from '../world/iso.js';
+import { tileToWorld, worldToTile } from '../world/iso.js';
 import { isBlocked } from '../world/map.js';
 
 const FLY_SPEED = 110; // Welt-Pixel pro Sekunde
@@ -115,11 +115,18 @@ export default class Heron extends Animal {
     const a = this.enclosure?.area;
     if (!a) return null;
     const spots = [];
-    for (let ty = a.ty0; ty <= a.ty1; ty++) {
-      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+    for (const { tx, ty } of this.enclosure.tiles) {
+      { // nur Kacheln, die wirklich zum Gehege gehören (auch bei L-Formen)
         if (isBlocked(tx, ty)) continue;
         const p = tileToWorld(tx, ty);
-        if (Math.hypot(p.x - this.x, p.y - this.y) >= PEN_MIN_DIST && this.enclosureFullyAt(p.x, p.y) === this.enclosure) spots.push(p);
+        if (Math.hypot(p.x - this.x, p.y - this.y) < PEN_MIN_DIST || this.enclosureFullyAt(p.x, p.y) !== this.enclosure) continue;
+        // auf gerader Linie erreichbar, ohne über den Zaun zu fliegen (wichtig bei L-förmigen Volieren)
+        let ok = true;
+        for (let k = 1; k < 10 && ok; k++) {
+          const t = worldToTile(this.x + ((p.x - this.x) * k) / 10, this.y + ((p.y - this.y) * k) / 10);
+          ok = this.enclosure.tileSet.has(t.tx + ',' + t.ty);
+        }
+        if (ok) spots.push(p);
       }
     }
     return spots.length ? Phaser.Utils.Array.GetRandom(spots) : null;

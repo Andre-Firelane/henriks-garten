@@ -23,8 +23,8 @@ export default class Fox extends Animal {
   denSpot() {
     const a = this.enclosure?.area;
     if (!a) return null;
-    for (let ty = a.ty0; ty <= a.ty1; ty++) {
-      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+    for (const { tx, ty } of this.enclosure.tiles) {
+      { // nur Kacheln, die wirklich zum Gehege gehören (auch bei L-Formen)
         if (objectAt(tx, ty)?.key !== 'den') continue;
         const p = tileToWorld(tx, ty);
         // Plätze, an denen schon ein anderer Fuchs schläft oder hinwill, sind belegt
@@ -102,6 +102,11 @@ export default class Fox extends Animal {
     });
   }
 
+  startFeed() {
+    this.sleeping = false; // wacht auf und kommt
+    this.bed = null;
+  }
+
   catch() {
     this.sleeping = false;
     this.bed = null;
@@ -117,7 +122,7 @@ export default class Fox extends Animal {
 
   render(moving) {
     if (!(this.state === 'penned' && this.sleeping)) {
-      if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
+      if (this.sprite.texture.key !== this.lookTexture()) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       return;
     }

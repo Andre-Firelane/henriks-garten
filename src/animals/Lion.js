@@ -110,6 +110,10 @@ export default class Lion extends Animal {
     return super.updateFree(dt, player);
   }
 
+  startFeed() {
+    this.phase = 'roam'; // steht auf und kommt
+  }
+
   startPenPhase(phase) {
     this.phase = phase;
     this.phaseTime = Phaser.Math.FloatBetween(...(phase === 'roam' ? PEN_ROAM : phase === 'alert' ? PEN_LIE : PEN_SLEEP));
@@ -186,7 +190,7 @@ export default class Lion extends Animal {
     const lying = (this.state === 'wild' || this.state === 'penned') && (this.phase === 'sleep' || this.phase === 'alert');
     if (!lying) {
       // stehend (beim Trotten, Folgen und im Gehege)
-      if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
+      if (this.sprite.texture.key !== this.lookTexture()) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       this.sprite.setFlipX(false);
       super.render(moving);
       return;

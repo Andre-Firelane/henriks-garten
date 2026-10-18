@@ -95,6 +95,10 @@ export default class Giraffe extends Animal {
     return false;
   }
 
+  startFeed() {
+    this.eating = null;
+  }
+
   catch() {
     this.eating = null;
     super.catch();

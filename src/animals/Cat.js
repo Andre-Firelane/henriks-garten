@@ -28,8 +28,8 @@ export default class Cat extends Animal {
     if (!a) return [];
     const taken = this.allAnimals.filter((c) => c !== this && c.tree).map((c) => c.tree.key);
     const trees = [];
-    for (let ty = a.ty0; ty <= a.ty1; ty++) {
-      for (let tx = a.tx0; tx <= a.tx1; tx++) {
+    for (const { tx, ty } of this.enclosure.tiles) {
+      { // nur Kacheln, die wirklich zum Gehege gehören (auch bei L-Formen)
         if (objectAt(tx, ty)?.key !== 'cat_tree' || taken.includes(`${tx},${ty}`)) continue;
         trees.push({ key: `${tx},${ty}`, ...tileToWorld(tx, ty) });
       }
@@ -148,6 +148,11 @@ export default class Cat extends Animal {
     });
   }
 
+  // auf dem Kratzbaum (oder im Sprung) kommt sie nicht zum Futter
+  canFeed() {
+    return super.canFeed() && !this.sleeping && !this.jumping && !this.tree;
+  }
+
   // aufräumen, falls sie mitten im Schlaf oder Sprung aus dem Gehege geholt wird
   resetPen() {
     this.scene.tweens.killTweensOf(this);
@@ -170,7 +175,7 @@ export default class Cat extends Animal {
 
   render(moving) {
     if (!this.sleeping) {
-      if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
+      if (this.sprite.texture.key !== this.lookTexture()) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       // beim Sprung angehoben, der Schatten bleibt am Boden
       if (this.lift) this.sprite.setPosition(this.sprite.x, this.sprite.y - this.lift);
