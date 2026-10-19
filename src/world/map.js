@@ -97,6 +97,7 @@ export const OBJECTS = {
   9: { key: 'climb_tree', originY: 84 / 96, solid: true, hitbox: 9 }, // Kletterbaum im Affengehege
   F: { key: 'feeder', originY: 52 / 64, solid: true, hitbox: 10, feeder: true }, // Futterautomat im Tierpark
   // Asien
+  H: { key: 'hammock', originY: 76 / 88, solid: true, hitbox: 10 }, // Hängematte mit Blätternest (Orang-Utan-Gehege)
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
   J: { key: 'jungle_tree', originY: 150 / 160, solid: true, hitbox: 14 },
@@ -129,6 +130,7 @@ export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Te
 export let HOT_SPRING_TILES; // heiße Quellen (dort baden die Japanmakaken)
 export let HOT_SPRINGS; // dieselben, nach zusammenhängenden Quellen getrennt: [[{ tx, ty }, ...], ...]
 export let NEAR_BAMBOO; // freie Kacheln höchstens 2 Kacheln von Bambus oder hohem Gras (für Pandas)
+export let JUNGLE_TREES; // Urwaldbäume (nicht am Kartenrand): dort sitzen die Orang-Utans oben in der Krone
 export let TIGER_ZONE; // Bambus und hohes Gras im Bambuswald (nicht am Kartenrand): dort streift der Tiger als Schemen
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
@@ -213,6 +215,7 @@ export function setLevel(id) {
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
   NEAR_BAMBOO = freeTilesNear('Qq');
+  JUNGLE_TREES = tilesWith('J').filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty));
   TIGER_ZONE = ['Q', 'q']
     .flatMap(tilesWith)
     .filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty))

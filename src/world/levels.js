@@ -313,7 +313,7 @@ export const LEVELS = {
       { tx: 20, ty: 47, to: 'meadow', arrive: { tx: 20, ty: 38 }, label: 'Wiese' },
     ],
     // Koi leben im Koi-Teich (nur als Schatten zu sehen, bis man sie mit Fischfutter anlockt)
-    spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
+    spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
   },
 
   // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein
@@ -393,14 +393,14 @@ export const LEVELS = {
       '            T5;r..hhhhh..;5|K.ooooo.l|5#5]qq.....qq..]5b',
       '            T5^^^^^^^^^^^^5-----------5#5[[[[[[[[[[[[[5b',
       '            bbbbbbbbbbbbbbbbbbbbbbbbbbb#bbbbbbbbbbbbbbbb',
-      '                                bq..K..#5[[[[[[[[[[[[[5b',
-      '                                b.l....#].q..L.....QQQ]b',
-      '                                b......#G......q....QQ]b',
-      '                                b..q..l#G..www.......Q]b',
-      '                                b.K....#].wwwww.8..q.Q]b',
-      '                                b...q..#]..www....r...]b',
-      '                                bq.....#5[[[[[[[[[[[[[5b',
-      '                                bbbbbbbXbbbbbbbbbbbbbbbb',
+      '                        b5[[[[[[[[[[[[5#5[[[[[[[[[[[[[5b',
+      '                        b]..9......J..]#].q..L.....QQQ]b',
+      '                        b]......q.....G#G......q....QQ]b',
+      '                        b].J...H..L...G#G..www.......Q]b',
+      '                        b]....q.....9.]#].wwwww.8..q.Q]b',
+      '                        b]..........r.]#]..www....r...]b',
+      '                        b5[[[[[[[[[[[[5#5[[[[[[[[[[[[[5b',
+      '                        bbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbb',
     ],
     grass: ['grass0', 'grass1', 'grass2'],
     path: 'park_path',
@@ -422,6 +422,7 @@ export const LEVELS = {
       { id: 'pasture', name: 'Weide', species: ['sheep', 'mole'], world: 'meadow', seed: { tx: 40, ty: 34 }, quota: { sheep: [10, 14], mole: [3, 5] }, upgrade: 'Mehr Weide mit Heu-Unterstand', basic: [[42, 38, ':'], [41, 39, '<'], [49, 34, '|'], [49, 35, '|'], [49, 36, '|'], [49, 37, '|'], [49, 38, '|'], [49, 39, '|'], [49, 40, '|'], [49, 41, '|'], [49, 42, '|'], [49, 43, '|'], [49, 44, '|']] },
       { id: 'aviary', name: 'Voliere', species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 47, ty: 55 }, slots: [4, 6], upgrade: 'Zweiter Flügel mit Nistkasten und Wasserstelle', basic: [[47, 50, ':'], [47, 51, '<'], [46, 53, '^'], [47, 53, '^'], [48, 53, '^']] },
       { id: 'flamingos', name: 'Flamingos', species: ['flamingo'], netRoof: true, gate: 'net', world: 'park', unlock: 'flamingo', seed: { tx: 27, ty: 50 }, slots: [6, 9], upgrade: 'Großer See mit Springbrunnen', basic: [[30, 52, 'w'], [28, 51, ':'], [28, 52, '<'], [28, 53, '.'], [32, 51, '.'], [32, 52, '.'], [32, 53, '.'], [29, 50, '.'], [29, 54, '.'], [30, 50, '.'], [30, 54, '.'], [31, 50, '.'], [31, 54, '.'], [27, 49, '.'], [33, 49, '.'], [27, 55, '.'], [33, 55, '.']] },
+      { id: 'orangutans', name: 'Orang-Utan-Gehege', species: ['orangutan'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 30, ty: 69 }, slots: [3, 5], upgrade: 'Hängematte mit Schlafnest', basic: [[31, 70, ':'], [32, 71, '<']] },
       { id: 'tigers', name: 'Tigergehege', species: ['tiger'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 47, ty: 69 }, slots: [3, 5], upgrade: 'Badebecken mit Spielball', basic: [[43, 70, '.'], [44, 70, '.'], [45, 70, '.'], [42, 71, ':'], [43, 71, '.'], [44, 71, '.'], [45, 71, '.'], [46, 71, '.'], [48, 71, '<'], [43, 72, '.'], [44, 72, '.'], [45, 72, '.']] },
       { id: 'pandas', name: 'Pandagehege', species: ['panda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 44, ty: 62 }, slots: [2, 4], upgrade: 'Reifenschaukel und Spielball', basic: [[47, 63, ':'], [45, 62, '<']] },
       { id: 'macaques', name: 'Affenquelle', species: ['macaque'], netRoof: true, gate: 'net', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 17, ty: 62 }, slots: [4, 6], upgrade: 'Großer Badesee', basic: [[19, 63, ':'], [18, 64, '<'], [19, 64, '.'], [22, 64, '.'], [20, 62, '.'], [21, 62, '.']] },
@@ -432,7 +433,7 @@ export const LEVELS = {
       { area: { tx0: 12, tx1: 55, ty0: 0, ty1: 22 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] },
       { area: { tx0: 0, tx1: 22, ty0: 23, ty1: 59 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] },
       { area: { tx0: 13, tx1: 54, ty0: 60, ty1: 65 }, ground: ['agrass0', 'agrass1', 'agrass2'] },
-      { area: { tx0: 32, tx1: 55, ty0: 66, ty1: 74 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Tigergehege und Garten daneben
+      { area: { tx0: 24, tx1: 55, ty0: 66, ty1: 74 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Orang-Utan- und Tigergehege
     ],
     // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
     buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],

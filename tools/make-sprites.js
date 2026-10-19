@@ -1768,6 +1768,92 @@ function tigerPeek(white = false) {
   return c;
 }
 
+// ---------- Orang-Utan (Asien): Platzhalter, 4 Ansichten à 88x88 (Füße bei 84); flange: Flanschen-Männchen ----------
+const ORANG = { fur: '#b8582a', dark: '#8a3e1c', light: '#d47a44', face: '#6a4a3a', faceLight: '#8a6650' };
+
+function orangHead(o, hx, hy, back, flange) {
+  if (flange) o.ellipse(hx, hy + 2, 19, 13, hex(ORANG.face)); // breite Backenwülste
+  o.circle(hx, hy, 11, hex(ORANG.fur));
+  o.ellipse(hx, hy - 9, 7, 4, hex(ORANG.light)); // Haarschopf
+  if (!back) {
+    o.ellipse(hx, hy + 2, 8, 8, hex(flange ? ORANG.faceLight : ORANG.face));
+    for (const ex of [-3, 3]) {
+      o.circle(hx + ex, hy, 1.8, hex('#1a1210'));
+      o.set(hx + ex, hy - 1, hex('#ffffff'));
+    }
+    o.ellipse(hx, hy + 6, 4, 2, hex('#4a3226')); // Mund
+  }
+}
+
+function orangutanSprite(flange = false) {
+  const view = (back) => {
+    const o = new Canvas(88, 88);
+    const g = 84;
+    // lange Arme bis zum Boden, kurze Beine
+    for (const [x, d] of [[22, 0], [64, 2]]) o.rect(x - 4, g - 34 - d, 8, 34, hex(ORANG.dark));
+    for (const [x, d] of [[34, 0], [52, 2]]) o.rect(x - 4, g - 16 - d, 9, 16, hex(ORANG.dark));
+    o.ellipse(43, g - 30, 20, 18, hex(ORANG.fur)); // Körper mit zotteligem Fell
+    for (const [x, y] of [[30, g - 22], [38, g - 16], [50, g - 18], [56, g - 26]]) o.line(x, y, x + 1, y + 6, hex(ORANG.light));
+    orangHead(o, back ? 44 : 48, g - 52, back, flange);
+    o.outline(INK);
+    return o;
+  };
+  const sheet = new Canvas(352, 88);
+  const front = view(false), back = view(true);
+  sheet.draw(front, 0, 0);
+  sheet.draw(front, 88, 0, true);
+  sheet.draw(back, 176, 0);
+  sheet.draw(back, 264, 0, true);
+  return sheet;
+}
+
+// Orang-Utan oben in der Baumkrone: Kopf und Arme schauen aus dem Laub; Mitte bei (32, 40)
+function orangutanTree(flange = false) {
+  const o = new Canvas(64, 64);
+  // Arme halten sich an Ästen fest
+  o.line(10, 18, 22, 36, hex(ORANG.dark));
+  o.line(11, 18, 23, 36, hex(ORANG.dark));
+  o.line(54, 18, 42, 36, hex(ORANG.dark));
+  o.line(53, 18, 41, 36, hex(ORANG.dark));
+  for (const x of [10, 54]) o.circle(x, 17, 3, hex(ORANG.face));
+  o.ellipse(32, 46, 14, 10, hex(ORANG.fur));
+  orangHead(o, 32, 32, false, flange);
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.draw(o, 0, 0);
+  const leaf = hex('#2c7232'), leaf2 = hex('#5aa84c');
+  for (const [x, y, w] of [[6, 52, 10], [20, 58, 10], [44, 58, 10], [58, 50, 9], [2, 30, 6], [62, 30, 6], [32, 60, 8]]) {
+    c.ellipse(x, y, w, 4, leaf);
+    c.ellipse(x - 1, y - 1, w * 0.6, 2, leaf2, true);
+  }
+  c.outline(INK);
+  return c;
+}
+
+// Orang-Utan-Gehege (Ausbau): Hängematte zwischen zwei Pfosten mit einem Blätternest darin; Kachelmitte bei (40, 76)
+function hammock() {
+  const o = new Canvas(80, 88);
+  const g = 76;
+  for (const x of [10, 70]) {
+    o.rect(x - 2, g - 52, 5, 52, hex('#6b4224'));
+    o.rect(x - 2, g - 52, 2, 52, hex('#8a5a30'));
+  }
+  // Tuch hängt durch
+  for (let x = 12; x <= 68; x++) {
+    const t = (x - 12) / 56;
+    const y = g - 44 + Math.sin(t * Math.PI) * 18;
+    o.rect(x, Math.round(y), 1, 5, hex(x % 6 < 3 ? '#e8b84a' : '#d8483f'));
+  }
+  // Blätternest in der Mitte
+  for (const [x, y, w] of [[34, g - 30, 9], [46, g - 30, 9], [40, g - 33, 10]]) o.ellipse(x, y, w, 4, hex('#3f8a3c'));
+  o.ellipse(40, g - 34, 6, 2, hex('#5aa84c'), true);
+  o.outline(INK);
+  const c = new Canvas(80, 88);
+  c.ellipse(40, g, 34, 7, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
 const PRINT_KINDS = ['tiger', 'sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
@@ -1970,6 +2056,12 @@ const sprites = {
   'tiger_peek.png': tigerPeek(false),
   'tiger2_peek.png': tigerPeek(true),
   'ball.png': toyBall(), // Ball als Werkzeug (Bild in der Werkzeugleiste und in der Kiste)
+  // Orang-Utan (Platzhalter) und das Flanschen-Männchen; _tree: oben in der Baumkrone
+  'orangutan.png': orangutanSprite(false),
+  'orangutan2.png': orangutanSprite(true),
+  'orangutan_tree.png': orangutanTree(false),
+  'orangutan2_tree.png': orangutanTree(true),
+  'hammock.png': hammock(), // Orang-Utan-Gehege (Ausbau)
   'build_stakes.png': buildStakes(), // Baustelle in noch nicht ausgebauten Gehegen
   'build_planks.png': buildPlanks(),
   'icecream.png': iceCone(),

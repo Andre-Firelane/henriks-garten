@@ -14,6 +14,7 @@ import {
   NEAR_TREES,
   NEAR_BAMBOO,
   TIGER_ZONE,
+  JUNGLE_TREES,
   HOT_SPRING_TILES,
   setLevel,
   groundAt,
@@ -60,6 +61,7 @@ import Lion from '../animals/Lion.js';
 import Giraffe from '../animals/Giraffe.js';
 import Panda from '../animals/Panda.js';
 import Tiger from '../animals/Tiger.js';
+import Orangutan, { WAVE_DIST } from '../animals/Orangutan.js';
 import Macaque from '../animals/Macaque.js';
 import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
@@ -90,7 +92,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -123,6 +125,7 @@ const CATCH_TIPS = {
   crocodile: 'Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.',
   giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
   panda: 'Mit Grünfutter folgt er dir – aber mach einen Bogen um Bambus und hohes Gras!',
+  orangutan: 'Sitzt oben im Urwaldbaum. Stell dich ohne Werkzeug darunter und warte, bis er winkt – dann schnell zurückwinken! Dreimal geschafft, kommt er herunter.',
   tiger: 'Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!',
   macaque: 'Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!',
 };
@@ -147,6 +150,7 @@ const ANIMAL_INFO = {
   giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
   macaque: ['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'],
   panda: ['Panda', 'Breite Tatzen mit fünf Zehen und einem sechsten „Daumen“ zum Bambushalten.'],
+  orangutan: ['Orang-Utan', 'Lange Hände und Füße mit einem Daumen auch am Fuß – damit hält er sich an Ästen fest.'],
   tiger: ['Tiger', 'Riesige Katzenpfote: vier Zehen und ein breiter Ballen. Die Krallen bleiben eingezogen.'],
   heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
   flamingo: ['Flamingo', 'Drei Zehen nach vorne mit Schwimmhäuten dazwischen.'],
@@ -216,6 +220,7 @@ const ACTION_KEY = 'E';
 // Reittier-Event: Henrik reitet in jeder Welt ein anderes Tier (nicht im Tierpark)
 // Flamingo-Flug (Event): in diesen Welten fliegen Flamingos ein, etwa neunmal so oft wie Reiher
 const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
+const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
 const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
 const BALL_ROLL = [56, 44, 32]; // so weit rollt der Ball auf den Tiger zu (der erste freie Platz)
@@ -608,6 +613,10 @@ export default class GardenScene extends Phaser.Scene {
         this.openCarMap(); // am Auto: Weltkarte statt Werkzeug
         return;
       }
+      if (this.nearOrangutan && !this.tool && !this.leaving) {
+        this.waveAt(this.nearOrangutan); // unter dem Orang-Utan: zurückwinken
+        return;
+      }
       const tool = this.tool;
       if (this.leaving || !tool || tool.active) return; // läuft schon ein Schwung, zählt der Druck nicht
       tool.use();
@@ -844,6 +853,8 @@ export default class GardenScene extends Phaser.Scene {
                           ? new Panda(this, x, y)
                         : species === 'tiger'
                           ? new Tiger(this, x, y)
+                        : species === 'orangutan'
+                          ? new Orangutan(this, x, y)
                         : species === 'giraffe'
                           ? new Giraffe(this, x, y)
                           : species === 'cat'
@@ -896,6 +907,16 @@ export default class GardenScene extends Phaser.Scene {
         group.push(a);
       }
       return group;
+    }
+    // Orang-Utans sitzen oben in den Urwaldbäumen (höchstens MAX_ORANGUTANS gleichzeitig)
+    if (species === 'orangutan') {
+      const wild = this.animals.filter((a) => a.species === 'orangutan' && a.state === 'wild').length;
+      if (wild < MAX_ORANGUTANS && JUNGLE_TREES.length) {
+        const a = this.createAnimal('orangutan', 0, 0);
+        a.placeInTree();
+        group.push(a);
+      }
+      return this.finishSpawn(group, fadeIn);
     }
     // Tiger streifen als Schemen durch den Bambus (höchstens MAX_TIGERS gleichzeitig)
     if (species === 'tiger') {
@@ -1457,6 +1478,11 @@ export default class GardenScene extends Phaser.Scene {
       const img = house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${house ? 'Regal' : 'Kiste'} öffnen</span></div>`;
+      return;
+    }
+    if (this.nearOrangutan && !this.tool) {
+      setTouchTool(null, 'assets/orangutan_tree.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/orangutan_tree.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Zurückwinken 👋</span></div>`;
       return;
     }
     if (this.nearCar) {
@@ -2049,6 +2075,27 @@ export default class GardenScene extends Phaser.Scene {
     animal.enterPen();
   }
 
+  // Orang-Utan: der Spieler winkt zurück (👋 über Henrik); was es bewirkt, entscheidet der Orang-Utan
+  waveAt(o) {
+    const p = this.player;
+    const hand = this.add.text(p.x - p.faceX * 12, p.sprite.y - 44, '👋', { fontSize: '16px', resolution: 4 }).setOrigin(0.5).setDepth(100000);
+    this.tweens.add({ targets: hand, angle: { from: -20, to: 20 }, duration: 150, yoyo: true, repeat: 2, onComplete: () => hand.destroy() });
+    const result = o.playerWaves();
+    if (result === 'happy') this.showToast(`${animalIcon('orangutan', 3.2)} Er freut sich! ${'😊'.repeat(o.waves)} Warte, bis er wieder winkt.`);
+  }
+
+  orangutanMissed(o, reason) {
+    this.showToast(
+      reason === 'early'
+        ? `${animalIcon('orangutan', 3.2)} Zu früh! Warte, bis er zuerst winkt. Jetzt ist er auf einen anderen Baum gesprungen.`
+        : `${animalIcon('orangutan', 3.2)} Zu langsam! Er ist auf einen anderen Baum gesprungen. Wink gleich zurück, wenn er winkt.`,
+    );
+  }
+
+  orangutanDown() {
+    this.showToast(`${animalIcon('orangutan', 3.2)} Dreimal zurückgewinkt! Er klettert herunter – geh hin und streichel ihn.`);
+  }
+
   // Ball (Asien): vor einem Tiger-Schemen im Bambus hinrollen – der Tiger wird neugierig und kommt heraus.
   // auto: der Spieler stand mit dem Ball still (dann ohne Hinweis, wenn kein Tiger in der Nähe ist)
   rollBall(auto) {
@@ -2416,6 +2463,13 @@ export default class GardenScene extends Phaser.Scene {
     if (near !== this.nearCar) {
       this.nearCar = near;
       this.car.label.setVisible(near);
+      this.updateToolbar();
+    }
+    // unter einem Orang-Utan im Baum: die Aktionstaste winkt
+    const p0 = this.player;
+    const orang = this.animals.find((a) => a.species === 'orangutan' && a.inTree?.() && Math.hypot(a.x - p0.x, (a.y - p0.y) * 2) < WAVE_DIST) ?? null;
+    if (orang !== this.nearOrangutan) {
+      this.nearOrangutan = orang;
       this.updateToolbar();
     }
     // kurz nach dem Aufheben kein Tausch: sonst wechselt man aus Versehen, wenn man über die Werkzeuge daneben läuft

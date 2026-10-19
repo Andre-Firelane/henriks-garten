@@ -304,6 +304,21 @@ export const SPECIES = {
     shadowW: 38,
     catchWith: ['lasso'],
   },
+  // Orang-Utan (Asien): sitzt oben in den Urwaldbäumen, kommt nach dem Wink-Spiel herunter (siehe Orangutan.js)
+  orangutan: {
+    texture: 'orangutan',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 16,
+    restChance: 0.6,
+    restTime: [2, 6],
+    walkTime: [1, 2.5],
+    stepRate: 5,
+    hop: 1,
+    footW: 8,
+    shadowW: 30,
+    catchWith: ['touch'],
+  },
   // Flamingo (Event „Flamingo-Flug“): verhält sich wie der Reiher; babyTexture: graues Küken beim Tierbaby-Event
   flamingo: {
     texture: 'flamingo',
@@ -377,6 +392,7 @@ export const SKINS = {
   antelope: { id: 'antelope2', name: 'Oryx-Antilope', male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   fish: { id: 'fish2', name: 'Wels', male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
   tiger: { id: 'tiger2', name: 'weißer Tiger', male: true, wild: 0.1, baby: 0.03 },
+  orangutan: { id: 'orangutan2', name: 'Orang-Utan mit Backenwülsten', male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
   frog: { id: 'frog2', name: 'blauer Frosch', male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
 };
 // seltene Tierarten, die eigentlich eine Variante einer anderen sind (der Hirsch beim Reh): bleiben wie Skins
