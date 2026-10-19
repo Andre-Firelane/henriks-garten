@@ -34,6 +34,7 @@ const PIXEL_ART = [
   'tire_swing', 'toy_ball', // Spielzeug im Pandagehege
   'climb_tree', // Kletterbaum im Affengehege
   'hay_shelter', 'hay_rack', 'reeds', 'fountain', 'nest_box', 'lion_rock', // Ausstattung ausgebauter Gehege
+  'build_stakes', 'build_planks', // Baustelle vor dem Ausbau
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
@@ -115,11 +116,16 @@ export default class BootScene extends Phaser.Scene {
     for (const w of ['meadow', 'forest', 'savanna', 'asia']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
+    // Katze 2 (seltener Skin)
+    this.load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
+    this.load.spritesheet('cat2_eat', 'assets/cat2_eat.png', CAT_FRAME);
+    this.load.spritesheet('cat2_sleep', 'assets/cat2_sleep.png', CAT_SLEEP_FRAME);
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
     this.load.spritesheet('deer_eat', 'assets/deer_eat.png', DEER_FRAME);
     this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
     this.load.spritesheet('stag_eat', 'assets/stag_eat.png', STAG_FRAME);
     this.load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
+    this.load.spritesheet('frog2', 'assets/frog2.png', FROG_FRAME); // seltener blauer Frosch
     this.load.spritesheet('mole', 'assets/mole.png', MOLE_FRAME);
     this.load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
     this.load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
@@ -128,10 +134,16 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
+    // Tiger (Asien, Platzhalter) und der weiße Tiger (seltene Variante); _peek: neugieriges Gesicht im Bambus
+    for (const k of ['tiger', 'tiger2']) {
+      this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 80 });
+      this.load.image(`${k}_peek`, `assets/${k}_peek.png`);
+    }
     this.load.spritesheet('flamingo', 'assets/flamingo.png', HERON_FRAME); // Flamingo-Flug (Event)
     this.load.spritesheet('flamingo_fly', 'assets/flamingo_fly.png', { frameWidth: 104, frameHeight: 100 });
     this.load.spritesheet('flamingo_baby', 'assets/flamingo_baby.png', HERON_FRAME); // Küken (Tierbabys)
     this.load.spritesheet('fish', 'assets/fish.png', FISH_FRAME);
+    this.load.spritesheet('fish2', 'assets/fish2.png', FISH_FRAME); // Wels (seltener Skin)
     this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
     this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
@@ -139,6 +151,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
     this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
     this.load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
+    this.load.spritesheet('antelope2', 'assets/antelope2.png', ANTELOPE_FRAME); // Oryx (seltener Skin)
+    this.load.spritesheet('antelope2_eat', 'assets/antelope2_eat.png', ANTELOPE_FRAME);
     this.load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
     this.load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
     this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);

@@ -34,6 +34,8 @@ const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (höher wegen des Geweihs)
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout
   { src: 'Sprites/Frosch.png', out: 'frog.png', frameW: 56, frameH: 52, feetY: 48, figureH: 44 },
+  // seltener blauer Frosch mit bunten Punkten: gleiches Format und gleicher Maßstab
+  { src: 'Sprites/Frosch2.png', out: 'frog2.png', frameW: 56, frameH: 52, feetY: 48, scale: 0.167 },
   // Maulwurf im Erdhügel (wild) und zu Fuß (gefangen); jeweils unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Maulwurf.png', out: 'mole_mound.png', frameW: 64, frameH: 52, feetY: 48, figureH: 44 },
   { src: 'Sprites/Maulwurf2.png', out: 'mole.png', frameW: 56, frameH: 52, feetY: 48, figureH: 44 },
@@ -43,6 +45,8 @@ const CHARACTERS = [
   { src: 'Sprites/Hirsch.png', out: 'stag.png', frameW: 80, frameH: 112, feetY: 108, figureH: 100 },
   // auftauchen, nach rechts, nach links, Sprung; freigestellt mit npm run cutout
   { src: 'Sprites/Fisch.png', out: 'fish.png', frameW: 84, frameH: 64, feetY: 60, figureH: 56 },
+  // Wels (seltener Skin des Fischs): gleiches Format, etwas größer als der Fisch
+  { src: 'Sprites/Fisch2.png', out: 'fish2.png', frameW: 84, frameH: 64, feetY: 60, scale: 0.39 },
   // unten-rechts, unten-links, oben-links, oben-rechts; freigestellt mit npm run cutout
   { src: 'Sprites/Fisch Beutel.png', out: 'fishbag.png', frameW: 64, frameH: 76, feetY: 72, figureH: 64 },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout
@@ -90,10 +94,17 @@ const CHARACTERS = [
   // Fress-Bilder (Kopf unten, am Futter im Tierpark): gleicher Frame und gleicher Maßstab wie das jeweilige Laufbild
   // (scale statt figureH; Katze und Reh sind im Bild größer gemalt, daher kleiner). Freigestellt mit npm run cutout
   { src: 'Sprites/Antilope frisst.png', out: 'antelope_eat.png', frameW: 72, frameH: 100, feetY: 96, scale: 0.255 },
+  // Oryx-Antilope (seltener Skin der Antilope, lange gerade Hörner): gleiches Format wie die Antilope
+  { src: 'Sprites/Antilope2.png', out: 'antelope2.png', frameW: 72, frameH: 100, feetY: 96, scale: 0.25 },
+  { src: 'Sprites/Antilope2 frisst.png', out: 'antelope2_eat.png', frameW: 72, frameH: 100, feetY: 96, scale: 0.25 },
   { src: 'Sprites/Fuchs frisst.png', out: 'fox_eat.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.21, byComponents: true },
   { src: 'Sprites/Hirsch frisst.png', out: 'stag_eat.png', frameW: 80, frameH: 112, feetY: 108, scale: 0.292 },
   // Katze im 2×2-Raster
   { src: 'Sprites/Katze frisst.png', out: 'cat_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.175, grid: [2, 2], stripShadow: true },
+  // Katze 2 (seltener Skin, schwarz-weiß getigert): gleicher Maßstab und Aufbau wie die normale Katze
+  { src: 'Sprites/Katze2.png', out: 'cat2.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.214, stripShadow: true },
+  { src: 'Sprites/Katze2 schlafend.png', out: 'cat2_sleep.png', frameW: 56, frameH: 60, feetY: 56, scale: 0.214, stripShadow: true },
+  { src: 'Sprites/Katze2 frisst.png', out: 'cat2_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.175, grid: [2, 2], stripShadow: true },
   // Löwe: die 2. Figur steht aufrecht statt zu fressen, dafür die 1. gespiegelt
   { src: 'Sprites/Löwe frisst.png', out: 'lion_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.283, byComponents: true, copyMirror: { 1: 0 } },
   // Reh im 2×2-Raster: oben die Vorderansichten; unten zwei Seitenansichten nach rechts statt Rückansichten,

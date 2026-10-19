@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
 import { inPen, isGate, enclosureAt, accepts, bridgeLift } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
+import { rareChance } from '../world/events.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -288,6 +289,21 @@ export const SPECIES = {
     shadowW: 34,
     catchWith: ['food'],
   },
+  // Tiger (Asien): streift als Schemen durch den Bambus, mit dem Ball lockt man ihn heraus (siehe Tiger.js)
+  tiger: {
+    texture: 'tiger',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 22,
+    restChance: 0.5,
+    restTime: [2, 5],
+    walkTime: [1, 3],
+    stepRate: 7,
+    hop: 1,
+    footW: 9,
+    shadowW: 38,
+    catchWith: ['lasso'],
+  },
   // Flamingo (Event „Flamingo-Flug“): verhält sich wie der Reiher; babyTexture: graues Küken beim Tierbaby-Event
   flamingo: {
     texture: 'flamingo',
@@ -354,6 +370,19 @@ export const SPRITE_SINK = 3;
 const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort, wo es gerade steht
 
 // Zustände: 'wild' läuft frei herum, 'following' folgt dem Spieler, 'penned' ist im Gehege, 'trapped' sitzt in der Falle
+// Seltene Skins: anderes Aussehen derselben Tierart. wild: Anteil draußen, baby: Anteil bei den Tierbabys.
+// Im Gehege locken sie mehr Besucher an (siehe SKIN_APPEAL in world/visitors.js).
+export const SKINS = {
+  cat: { id: 'cat2', name: 'Glöckchen-Katze', male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
+  antelope: { id: 'antelope2', name: 'Oryx-Antilope', male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
+  fish: { id: 'fish2', name: 'Wels', male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
+  tiger: { id: 'tiger2', name: 'weißer Tiger', male: true, wild: 0.1, baby: 0.03 },
+  frog: { id: 'frog2', name: 'blauer Frosch', male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
+};
+// seltene Tierarten, die eigentlich eine Variante einer anderen sind (der Hirsch beim Reh): bleiben wie Skins
+// beim Auszug ins Naturreservat bevorzugt im Gehege
+export const RARE_SPECIES = ['stag'];
+
 export default class Animal {
   constructor(scene, x, y, species) {
     this.scene = scene;
@@ -456,9 +485,27 @@ export default class Animal {
     this.eatingLook = on && !!this.kind.eatTexture;
   }
 
-  // Bild für Stehen und Laufen: beim Fressen am Futter das Fress-Bild
+  // Bild für Stehen und Laufen: beim Fressen am Futter das Fress-Bild; mit Skin dessen Bilder (z. B. cat2, cat2_eat)
+  baseTexture() {
+    return this.skin ?? this.kind.texture;
+  }
+  eatTexture() {
+    return this.skin ? `${this.skin}_eat` : this.kind.eatTexture;
+  }
   lookTexture() {
-    return this.eatingLook ? this.kind.eatTexture : this.kind.texture;
+    return this.eatingLook ? this.eatTexture() : this.baseTexture();
+  }
+
+  // seltene Variante (Skin, Hirsch, weißer Koi): bleibt beim Auszug ins Naturreservat bevorzugt im Gehege
+  isRare() {
+    return !!this.skin || RARE_SPECIES.includes(this.species);
+  }
+
+  // seltener Skin würfeln: from 'wild' (draußen) oder 'baby' (Tierbaby-Event, viel seltener)
+  rollSkin(from) {
+    const s = SKINS[this.species];
+    const chance = from === 'wild' ? rareChance(s?.wild ?? 0) : s?.[from] ?? 0; // Event "Seltene Tiere": 50 %
+    this.skin = s && Math.random() < chance ? s.id : null;
   }
 
   updateFeed(dt) {
@@ -517,10 +564,11 @@ export default class Animal {
   // Bild, Blickrichtung und Wippen beim Laufen
   render(moving) {
     // zwischen Lauf- und Fress-Bild wechseln (andere Bilder wie Schlafen setzen die Unterklassen selbst)
-    if (this.kind.eatTexture) {
+    if (this.kind.eatTexture || this.skin) {
+      // (auch vom normalen Bild auf das des Skins; andere Bilder wie Schlafen setzen die Unterklassen selbst)
       const key = this.lookTexture();
-      const other = key === this.kind.texture ? this.kind.eatTexture : this.kind.texture;
-      if (this.sprite.texture.key === other) this.sprite.setTexture(key, this.sprite.frame.name);
+      const looks = [this.kind.texture, this.kind.eatTexture, this.baseTexture(), this.eatTexture()];
+      if (this.sprite.texture.key !== key && looks.includes(this.sprite.texture.key)) this.sprite.setTexture(key, this.sprite.frame.name);
     }
     this.sprite.setFrame(
       this.faceY > 0

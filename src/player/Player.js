@@ -25,7 +25,8 @@ const RIDE_HOP = 1.5;
 const RIDE_STEP_RATE = 10;
 const RIDE_STEP_INTERVAL = Math.PI / RIDE_STEP_RATE; // ein Hufschritt pro Wippen
 const RIDE_STEP_DETUNE = -350; // Hufe klingen tiefer als Schritte
-const WADE_SINK = 6; // so tief steht der Wasserbüffel im Wasser
+const WADE_SINK = 14; // so tief steht der Wasserbüffel im Wasser (bis zum halben Bauch); darunter wird er abgeschnitten
+const WADE_EASE = 6; // so schnell sinkt er ein bzw. taucht wieder auf
 const WADE_SPEED = 0.6; // im Wasser watet er langsamer
 // so viel höher als zu Fuß hält Henrik auf dem Reittier seine Hände (dort sitzen die Werkzeuge)
 const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31 };
@@ -53,6 +54,17 @@ export default class Player {
     this.mount = null; // Reittier-Bild (z. B. ride_meadow) oder null
     this.speed = SPEED;
     this.handLift = 0; // Werkzeuge: so viel höher als zu Fuß
+    this.sink = 0; // so tief steht der Wasserbüffel gerade im Wasser
+    // heller Ring auf dem Wasser um den watenden Büffel: die hintere Hälfte hinter ihm, die vordere davor
+    this.ripples = [Math.PI, 0].map((from) => {
+      const g = scene.add.graphics().lineStyle(1.5, 0xe8f6ff, 0.6).setVisible(false);
+      const pts = [];
+      for (let i = 0; i <= 16; i++) {
+        const a = from + (Math.PI * i) / 16;
+        pts.push({ x: Math.cos(a) * 24, y: Math.sin(a) * 6 });
+      }
+      return g.strokePoints(pts);
+    });
 
     this.keys = scene.input.keyboard.addKeys('W,A,S,D,UP,LEFT,DOWN,RIGHT');
   }
@@ -143,8 +155,25 @@ export default class Player {
     const hop = moving && !animated ? Math.abs(Math.sin(phase)) * (this.mount ? RIDE_HOP : HOP) : 0;
     const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
     const { tx, ty } = worldToTile(this.x, this.y);
-    const sink = this.wade && charAt(tx, ty) === '~' ? WADE_SINK : 0; // im Wasser steht der Büffel tiefer
+    const target = this.wade && charAt(tx, ty) === '~' ? WADE_SINK : 0; // im Wasser steht der Büffel tiefer
+    this.sink += (target - this.sink) * Math.min(1, dt * WADE_EASE);
+    if (this.sink < 0.3) this.sink = 0;
+    const sink = this.sink;
     this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK + sink);
+    // was unter der Wasserlinie liegt, abschneiden (im Bild gerechnet, Maßstab 0,5)
+    if (sink) {
+      const f = this.sprite.frame;
+      const visible = f.height * this.sprite.originY - (sink - hop) / this.sprite.scaleY;
+      this.sprite.setCrop(0, 0, f.width, Math.max(0, visible));
+    } else if (this.sprite.isCropped) this.sprite.setCrop();
+    this.ripples.forEach((g, i) =>
+      g
+        .setVisible(sink > 2)
+        .setPosition(this.x, this.y + SPRITE_SINK - 1)
+        .setScale(1 + Math.sin(this.scene.time.now / 300) * 0.06, 1)
+        .setAlpha(Math.min(1, sink / WADE_SINK))
+        .setDepth(this.y + (i ? 0.1 : -0.2)), // hinten hinter, vorne vor dem Büffel
+    );
     this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount ? 1.5 : 3) : 0);
     this.shadow.setPosition(this.x, this.y - lift - (this.mount ? RIDE_SHADOW_UP : 0)).setVisible(!sink); // im Wasser kein Schatten
     this.shadow.setScale(1 - hop * 0.04);

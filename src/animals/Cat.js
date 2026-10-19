@@ -183,7 +183,8 @@ export default class Cat extends Animal {
       return;
     }
     // eingerollt oben auf dem Kissen
-    if (this.sprite.texture.key !== 'cat_sleep') this.sprite.setTexture('cat_sleep', 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
+    const sleep = `${this.baseTexture()}_sleep`; // cat_sleep bzw. cat2_sleep
+    if (this.sprite.texture.key !== sleep) this.sprite.setTexture(sleep, 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     this.sprite.setPosition(this.x, this.y - this.lift + SPRITE_SINK);

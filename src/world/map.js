@@ -89,6 +89,9 @@ export const OBJECTS = {
   '&': { key: 'hay_rack', originY: 52 / 64, solid: true, hitbox: 10 },
   '%': { key: 'reeds', originY: 52 / 64, solid: false },
   0: { key: 'fountain', originY: 64 / 80, solid: true, hitbox: 12 },
+  // Baustelle vor dem Ausbau: Pflöcke mit Absperrband, Bretterstapel (begehbar, nur ein Hinweis)
+  ':': { key: 'build_stakes', originY: 52 / 64, solid: false },
+  '<': { key: 'build_planks', originY: 52 / 64, solid: false },
   $: { key: 'lion_rock', originY: 104 / 128, solid: true, hitbox: 22 }, // großer Löwenfelsen
   '*': { key: 'nest_box', originY: 84 / 96, solid: true, hitbox: 6 },
   9: { key: 'climb_tree', originY: 84 / 96, solid: true, hitbox: 9 }, // Kletterbaum im Affengehege
@@ -126,6 +129,7 @@ export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Te
 export let HOT_SPRING_TILES; // heiße Quellen (dort baden die Japanmakaken)
 export let HOT_SPRINGS; // dieselben, nach zusammenhängenden Quellen getrennt: [[{ tx, ty }, ...], ...]
 export let NEAR_BAMBOO; // freie Kacheln höchstens 2 Kacheln von Bambus oder hohem Gras (für Pandas)
+export let TIGER_ZONE; // Bambus und hohes Gras im Bambuswald (nicht am Kartenrand): dort streift der Tiger als Schemen
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
@@ -209,6 +213,10 @@ export function setLevel(id) {
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
   NEAR_BAMBOO = freeTilesNear('Qq');
+  TIGER_ZONE = ['Q', 'q']
+    .flatMap(tilesWith)
+    .filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty))
+    .filter(({ tx, ty }) => [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]].some(([dx, dy]) => charAt(tx + dx, ty + dy) === 'Q')); // nur, wo Bambus wächst
   HOT_SPRING_TILES = tilesWith('h');
   HOT_SPRINGS = [];
   const seen = new Set();
@@ -292,8 +300,22 @@ export function charAt(tx, ty) {
 export function isUpgraded(e) {
   return !!game.penLevel[e.id];
 }
-export function penCapacity(e) {
-  return e.slots ? e.slots[isUpgraded(e) ? 1 : 0] : Infinity;
+// Tierarten, die sich ein Kontingent teilen (der Hirsch ist die seltene Variante des Rehs; Kuh, Schwein und Ziege
+// sind ohnehin Schafe)
+const QUOTA_OF = { stag: 'deer' };
+export const quotaKey = (species) => QUOTA_OF[species] ?? species;
+// Kontingente eines Geheges: in gemeinsamen Gehegen je Tierart eigene Plätze (quota: { Art: [vorher, ausgebaut] }),
+// sonst alle zusammen (slots, key null). i: 0 vor, 1 nach dem Ausbau (Standard: wie es gerade ist)
+export function penQuotas(e, i = isUpgraded(e) ? 1 : 0) {
+  if (e.quota) return Object.entries(e.quota).map(([key, n]) => ({ key, cap: n[i] }));
+  return e.slots ? [{ key: null, cap: e.slots[i] }] : [];
+}
+export function hasSlots(e) {
+  return !!(e.slots || e.quota);
+}
+export function penCapacity(e, i) {
+  const q = penQuotas(e, i);
+  return q.length ? q.reduce((s, x) => s + x.cap, 0) : Infinity;
 }
 // Kosten des nächsten Ausbaus: der erste 40 Herzen, jeder weitere 10 mehr
 export function upgradeCost() {

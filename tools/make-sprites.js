@@ -801,7 +801,7 @@ function hutPost(style) {
 const HUT_ROOF_OX = 184;
 const HUT_ROOF_OY = 100;
 function hutRoof(style, A = 5, B = 4, ov = 0.25) {
-  const W = 384, Hc = 310;
+  const W = 184 + (A + ov) * 32 + 8 > 384 ? 192 + Math.ceil((A + ov) * 32) : 384, Hc = 310; // größere Häuser: breiteres Bild
   const P = (a, b, h = 0) => [HUT_ROOF_OX + (a - b) * 32, HUT_ROOF_OY + (a + b) * 16 - h];
   const H = HUT_H + 2;
   const R = style === 'asia' ? 46 : style === 'cathouse' ? 18 : 40; // Dachhöhe über der Traufe (Katzenhaus flach, damit man hineinsieht)
@@ -1635,7 +1635,140 @@ function lionRock() {
   return c;
 }
 
-const PRINT_KINDS = ['sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
+// ---------- Baustelle (noch nicht ausgebaute Bereiche der Gehege): dezente Hinweise ----------
+// zwei Pflöcke mit rot-weißem Absperrband; Kachelmitte bei (32, 52)
+function buildStakes() {
+  const o = new Canvas(64, 64);
+  const g = 52;
+  const posts = [[18, g - 2], [46, g + 4]];
+  for (const [x, y] of posts) {
+    o.rect(x - 1, y - 18, 3, 18, hex('#c8935a'));
+    o.rect(x - 1, y - 18, 1, 18, hex('#e0b07a'));
+    o.rect(x - 2, y - 20, 5, 3, hex('#8a5a30'));
+  }
+  // Band leicht durchhängend, rot-weiß gestreift
+  for (let t = 0; t <= 1; t += 0.02) {
+    const x = posts[0][0] + (posts[1][0] - posts[0][0]) * t;
+    const y = posts[0][1] - 13 + (posts[1][1] - posts[0][1]) * t + Math.sin(t * Math.PI) * 3;
+    const c = Math.floor(t * 10) % 2 ? '#f4f0e6' : '#e8483f';
+    o.rect(Math.round(x), Math.round(y), 1, 2, hex(c));
+  }
+  o.outline(INK);
+  return o;
+}
+
+// kleiner Stapel Bretter mit Hammer; Kachelmitte bei (32, 52)
+function buildPlanks() {
+  const o = new Canvas(64, 64);
+  const P = (u, v, z = 0) => [32 + (u - v) * 32, 52 + (u + v) * 16 - z];
+  for (let k = 0; k < 3; k++) {
+    const z = k * 3;
+    const off = (k % 2) * 0.04;
+    o.poly([P(-0.35 + off, -0.08, z + 3), P(0.35 + off, -0.08, z + 3), P(0.35 + off, 0.08, z + 3), P(-0.35 + off, 0.08, z + 3)], hex(k % 2 ? '#d29c62' : '#c8935a'));
+    o.poly([P(-0.35 + off, 0.08, z), P(0.35 + off, 0.08, z), P(0.35 + off, 0.08, z + 3), P(-0.35 + off, 0.08, z + 3)], hex('#8a5a30'));
+  }
+  // Hammer obendrauf
+  const [hx, hy] = P(0.05, 0, 10);
+  o.line(hx - 6, hy + 2, hx + 5, hy - 2, hex('#8a5a30'));
+  o.rect(Math.round(hx) + 4, Math.round(hy) - 5, 4, 5, hex('#6a6a6a'));
+  o.outline(INK);
+  const c = new Canvas(64, 64);
+  c.ellipse(32, 53, 14, 4, SHADOW);
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// ---------- Tiger (Asien): Platzhalter, 4 Ansichten à 96x80 (Füße bei 76); white: weißer Tiger (seltene Variante) ----------
+function tigerColors(white) {
+  return white
+    ? { fur: '#f2efe6', dark: '#d8d2c4', stripe: '#3a3a44', belly: '#ffffff' }
+    : { fur: '#e8892c', dark: '#c86a1c', stripe: '#2b2018', belly: '#fbecd4' };
+}
+
+function tigerSprite(white = false) {
+  const C = tigerColors(white);
+  const view = (back) => {
+    const o = new Canvas(96, 80);
+    const g = 76;
+    // Beine
+    for (const [x, d] of [[24, 0], [33, 2], [60, 0], [69, 2]]) {
+      o.rect(x - 4, g - 20 - d, 9, 20 - (d ? 1 : 0), hex(C.dark));
+      o.rect(x - 4, g - 4 - d, 9, 4, hex(C.belly));
+    }
+    // Schwanz mit Ringen
+    for (let i = 0; i < 14; i++) {
+      const tx = 16 - i * 0.6, ty = g - 34 - i * 1.4;
+      o.circle(tx, ty, 2.6, hex(i % 4 < 2 ? C.fur : C.stripe));
+    }
+    // Körper mit Streifen
+    o.ellipse(46, g - 30, 30, 15, hex(C.fur));
+    o.ellipse(46, g - 22, 24, 6, hex(C.belly), true);
+    for (const x of [28, 36, 44, 52, 60]) o.poly([[x, g - 45], [x + 4, g - 45], [x + 1, g - 30], [x - 2, g - 32]], hex(C.stripe), true);
+    // Kopf
+    const hx = back ? 66 : 72, hy = g - 42;
+    o.circle(hx, hy, 14, hex(C.fur));
+    for (const ex of [-10, 9]) {
+      o.circle(hx + ex, hy - 11, 4.5, hex(C.fur));
+      o.circle(hx + ex, hy - 11, 2, hex(C.stripe));
+    }
+    for (const dx of [-6, 0, 6]) o.rect(hx + dx - 1, hy - 13, 2, 6, hex(C.stripe)); // Stirnstreifen
+    if (!back) {
+      o.ellipse(hx + 2, hy + 6, 9, 6, hex(C.belly)); // Schnauze
+      o.circle(hx - 5, hy - 2, 2.4, hex('#2b2b2b'));
+      o.circle(hx + 7, hy - 2, 2.4, hex('#2b2b2b'));
+      o.set(hx - 5, hy - 3, hex('#ffffff'));
+      o.set(hx + 7, hy - 3, hex('#ffffff'));
+      o.ellipse(hx + 2, hy + 3, 2.5, 1.8, hex('#d86a7a')); // Nase
+      for (const dx of [-12, 12]) o.line(hx + dx * 0.6, hy + 4, hx + dx, hy + 2, hex(C.stripe)); // Wangenstreifen
+    }
+    o.outline(INK);
+    return o;
+  };
+  const sheet = new Canvas(384, 80);
+  const front = view(false), back = view(true);
+  sheet.draw(front, 0, 0);
+  sheet.draw(front, 96, 0, true);
+  sheet.draw(back, 192, 0);
+  sheet.draw(back, 288, 0, true);
+  return sheet;
+}
+
+// neugieriges Tigergesicht zwischen Bambusblättern (schaut aus dem Bambus); Mitte unten bei (32, 60)
+function tigerPeek(white = false) {
+  const C = tigerColors(white);
+  const o = new Canvas(64, 64);
+  const hx = 32, hy = 36;
+  o.circle(hx, hy, 18, hex(C.fur));
+  for (const ex of [-13, 13]) {
+    o.circle(hx + ex, hy - 14, 6, hex(C.fur));
+    o.circle(hx + ex, hy - 14, 3, hex('#f4c0b0'));
+  }
+  for (const dx of [-7, 0, 7]) o.rect(hx + dx - 1, hy - 17, 3, 7, hex(C.stripe));
+  for (const s of [-1, 1]) for (const dy of [-2, 4]) o.line(hx + s * 18, hy + dy, hx + s * 11, hy + dy + 1, hex(C.stripe));
+  o.ellipse(hx, hy + 8, 11, 7, hex(C.belly));
+  // große, runde, neugierige Augen mit Lichtpunkt
+  for (const ex of [-7, 7]) {
+    o.circle(hx + ex, hy - 2, 4.5, hex('#ffffff'));
+    o.circle(hx + ex + 1, hy - 1, 3, hex('#3a2a1a'));
+    o.circle(hx + ex, hy - 3, 1.2, hex('#ffffff'));
+  }
+  o.ellipse(hx, hy + 5, 3, 2, hex('#d86a7a'));
+  o.line(hx, hy + 7, hx - 3, hy + 10, hex(C.stripe));
+  o.line(hx, hy + 7, hx + 3, hy + 10, hex(C.stripe));
+  o.outline(INK);
+  // Bambusblätter davor
+  const c = new Canvas(64, 64);
+  c.draw(o, 0, 0);
+  const leaf = hex('#5f9a3a'), leaf2 = hex('#7ab84a');
+  for (const [x, y, w] of [[8, 50, 10], [22, 56, 9], [44, 55, 10], [56, 48, 9], [4, 38, 8], [60, 34, 7]]) {
+    c.ellipse(x, y, w, 3, leaf);
+    c.ellipse(x - 1, y - 1, w * 0.6, 1.5, leaf2, true);
+  }
+  c.outline(INK);
+  return c;
+}
+
+const PRINT_KINDS = ['tiger', 'sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
   'grass1.png': grassTile(1),
@@ -1780,7 +1913,7 @@ const sprites = {
   'hutwall_cathouse_x.png': hutWall('cathouse'),
   'hutwall_cathouse_y.png': hutWall('cathouse').flipped(),
   'post_hutwall_cathouse.png': hutPost('cathouse'),
-  'hutroof_cathouse.png': hutRoof('cathouse', 5, 4, 0),
+  'hutroof_cathouse.png': hutRoof('cathouse', 7, 5, 0),
   'hut_chest_small.png': hutChest(true),
   // Tierpark: Futterautomat und Futtersack
   'feeder.png': feederSprite(),
@@ -1831,6 +1964,14 @@ const sprites = {
   'fountain.png': fountain(),
   'nest_box.png': nestBox(),
   'lion_rock.png': lionRock(),
+  // Tiger (Platzhalter, bis die echten Bilder da sind) und der weiße Tiger; _peek: neugieriges Gesicht im Bambus
+  'tiger.png': tigerSprite(false),
+  'tiger2.png': tigerSprite(true),
+  'tiger_peek.png': tigerPeek(false),
+  'tiger2_peek.png': tigerPeek(true),
+  'ball.png': toyBall(), // Ball als Werkzeug (Bild in der Werkzeugleiste und in der Kiste)
+  'build_stakes.png': buildStakes(), // Baustelle in noch nicht ausgebauten Gehegen
+  'build_planks.png': buildPlanks(),
   'icecream.png': iceCone(),
   'icecream2.png': iceCone('#8a5a30', '#f4f0e6'),
   'icecream3.png': iceCone('#a8e0b0', '#f4c0d0'),
@@ -2181,6 +2322,7 @@ function drawPrint(kind, c, cx, cy, s, col = hex('#5a3a22')) {
         ray(tx, ty, deg, 7, 1.1, 0.5); // lange Kralle
       }
       break;
+    case 'tiger': // wie beim Löwen
     case 'lion': // wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren
       E(0, 9, 9, 7);
       E(-6, 12, 4.5, 5);

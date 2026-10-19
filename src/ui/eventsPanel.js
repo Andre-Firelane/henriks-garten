@@ -40,6 +40,11 @@ const THUMBS = {
     ['farm_goat', 80, 88, 1, 0.65, 108, 6],
     ['farm_pig', 80, 88, 0, 0.6, 62, 0],
   ],
+  rare: [
+    ['antelope2', 72, 100, 0, 0.6, 0, 4],
+    ['cat2', 72, 80, 1, 0.6, 96, 6],
+    ['frog2', 56, 52, 0, 0.7, 66, 0],
+  ],
   ride: [
     ['ride_meadow', 160, 230, 0, 0.38, 2, 0],
     ['ride_savanna', 160, 230, 1, 0.4, 92, 0],
@@ -61,9 +66,10 @@ function thumb(item) {
 
 // getInfo(): { hearts, events: [...], pens: [...] }. Ein Event: { id, name, text, cost, state, left, blocked };
 // ein Gehege: { id, name, text, cost, species, done, blocked }. onPick(tab, id) startet bzw. baut aus.
-export function openEvents(getInfo, onPick, onClose) {
+// opts: { tab: 'pens', only: Gehege-Id } zeigt nur den Ausbau dieses einen Geheges, ohne Reiter (am Gehegeschild)
+export function openEvents(getInfo, onPick, onClose, opts = {}) {
   panel = document.getElementById('events');
-  state = { getInfo, onPick, onClose, tab: 'events', selected: 0 };
+  state = { getInfo, onPick, onClose, tab: opts.tab ?? 'events', only: opts.only ?? null, selected: 0 };
   render();
   panel.classList.add('show');
   openedAt = performance.now();
@@ -90,7 +96,8 @@ function status(item) {
 
 function items() {
   const info = state.getInfo();
-  return { hearts: info.hearts, list: info[state.tab] };
+  const list = state.only ? info[state.tab].filter((it) => it.id === state.only) : info[state.tab];
+  return { hearts: info.hearts, list };
 }
 
 // ganze Tafel aufbauen (auch beim Wechsel des Reiters)
@@ -98,7 +105,9 @@ function render() {
   const { hearts, list } = items();
   state.list = list;
   state.selected = Math.min(state.selected, Math.max(0, list.length - 1));
-  const tabs = TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
+  const tabs = state.only
+    ? `<span class="ev-tab on">${TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege: keine Reiter
+    : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
   const hint = state.tab === 'pens' ? 'Ein ausgebautes Gehege hat mehr Plätze und neue Ausstattung.' : 'Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.';
   panel.innerHTML = `<div class="chest-box ev-box">
       <div class="ev-tabs">${tabs}</div>
@@ -111,7 +120,7 @@ function render() {
           </button>`,
         )
         .join('')}</div>
-      <p class="chest-hint">${hint} <b>Q</b> wechselt zwischen Events und Gehegen.</p>
+      <p class="chest-hint">${hint}${state.only ? ' <b>Esc</b> schließt.' : ' <b>Q</b> wechselt zwischen Events und Gehegen.'}</p>
     </div>`;
   tick();
 }
@@ -144,7 +153,7 @@ function onKey(e) {
   e.stopPropagation(); // die Taste soll im Spiel nichts auslösen
   const k = e.key.toLowerCase();
   const n = state.list.length;
-  if (k === 'q' || k === 'tab') return switchTab();
+  if ((k === 'q' || k === 'tab') && !state.only) return switchTab();
   if (k === 'a' || k === 'arrowleft' || k === 'w' || k === 'arrowup') state.selected = (state.selected + n - 1) % n;
   else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = (state.selected + 1) % n;
   else if (k === 'e' || k === 'enter' || k === ' ') return pick(state.selected);
@@ -164,7 +173,7 @@ function onClick(e) {
   // auf dem Tablet kommt nach dem Antippen, das die Tafel geöffnet hat, noch ein Klick hinterher
   if (performance.now() - openedAt < OPEN_GRACE) return;
   const t = e.target.closest('.ev-tab');
-  if (t) return switchTab(t.dataset.tab);
+  if (t) return state.only ? undefined : switchTab(t.dataset.tab);
   const b = e.target.closest('.ev-item');
   if (b) pick(Number(b.dataset.i));
   else if (!e.target.closest('.ev-box')) close(true); // Tipp neben die Tafel schließt

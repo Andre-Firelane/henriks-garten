@@ -34,7 +34,7 @@ export default class Fish extends Animal {
   }
 
   useWaterLook() {
-    this.sprite.setTexture(this.kind.texture, FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y);
+    this.sprite.setTexture(this.baseTexture(), FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y); // mit Skin: Wels
     this.shadow.setVisible(false);
   }
 
@@ -171,6 +171,7 @@ export default class Fish extends Animal {
       return;
     }
 
+    if (this.skin && this.sprite.texture.key !== this.skin) this.useWaterLook(); // Skin erst nach dem Erzeugen gewürfelt
     let frame = this.faceX > 0 ? FISH_FRAME.right : FISH_FRAME.left;
     let visible = !(this.state === 'penned' && this.dive?.under);
     if (this.state === 'wild') {

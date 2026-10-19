@@ -5,16 +5,24 @@
 // Jeder Koi hat eines von drei Farbmustern (variant) – welches, sieht man erst beim Fangen richtig.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
+import { rareChance } from '../world/events.js';
 import Fish from './Fish.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { KOI_WATER, FISHPOND_TILES, enclosureAt, accepts } from '../world/map.js';
 
-// Farbmuster: Bild, Farbe des Schattens unter Wasser, Name in der Meldung beim Fangen
+// Farbmuster: Bild, Farbe des Schattens unter Wasser, Name in der Meldung beim Fangen, Anteil im wilden Teich.
+// Der weiße mit rotem Punkt ist die seltene Variante (lockt im Tierpark mehr Besucher an, siehe SKIN_APPEAL)
 export const KOI_VARIANTS = {
-  koi1: { color: 0xf08a2c, name: 'goldener Koi mit schwarzen Flecken' },
-  koi2: { color: 0xe8503a, name: 'rot-weißer Koi' },
-  koi3: { color: 0xf4f4f4, name: 'weißer Koi mit rotem Punkt' },
+  koi1: { color: 0xf08a2c, name: 'goldener Koi mit schwarzen Flecken', chance: 0.45 },
+  koi2: { color: 0xe8503a, name: 'rot-weißer Koi', chance: 0.45 },
+  koi3: { color: 0xf4f4f4, name: 'weißer Koi mit rotem Punkt', chance: 0.1, rare: true },
 };
+function randomVariant() {
+  if (Math.random() < rareChance(0)) return 'koi3'; // Event "Seltene Tiere": jeder zweite der weiße
+  let r = Math.random();
+  for (const [id, v] of Object.entries(KOI_VARIANTS)) if ((r -= v.chance) <= 0) return id;
+  return 'koi1';
+}
 
 const SWIM_SPEED = 14; // gemächliches Kreisen unter Wasser
 const CALL_SPEED = 70; // zum Futter eilen sie
@@ -31,7 +39,7 @@ const FRAMES = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
 export default class Koi extends Fish {
   constructor(scene, allFish, variant) {
     super(scene, allFish, 'koi');
-    this.variant = KOI_VARIANTS[variant] ? variant : Phaser.Utils.Array.GetRandom(Object.keys(KOI_VARIANTS));
+    this.variant = KOI_VARIANTS[variant] ? variant : randomVariant();
     // bunter Schatten unter Wasser
     this.blob = scene.add.ellipse(0, 0, 24, 9, KOI_VARIANTS[this.variant].color, 0.7).setDepth(-99999);
     this.useWaterLook();
@@ -178,11 +186,16 @@ export default class Koi extends Fish {
     this.surface(POND_UP_TIME[1]); // zur Begrüßung einmal auftauchen
   }
 
+  isRare() {
+    return !!KOI_VARIANTS[this.variant]?.rare;
+  }
+
   catch() {
     super.catch(); // wird zum Beutel
     this.phase = null;
     this.blob.setVisible(false);
-    this.scene.showToast(`Ein ${KOI_VARIANTS[this.variant].name}!`);
+    const v = KOI_VARIANTS[this.variant];
+    this.scene.showToast(v.rare ? `✨ Ein seltener ${v.name}! Im Tierpark lockt er besonders viele Besucher an.` : `Ein ${v.name}!`);
   }
 
   restore(state) {

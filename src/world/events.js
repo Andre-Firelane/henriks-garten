@@ -38,6 +38,14 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
+    id: 'rare',
+    name: 'Seltene Tiere',
+    text: '5 Minuten lang ist draußen jedes zweite neue Tier eine seltene Variante: Glöckchen-Katze, Oryx, Wels, Hirsch ...',
+    cost: 200,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
     id: 'icecream',
     name: 'Eisstand',
     text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.',
@@ -46,6 +54,12 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
 ];
+
+// Event "Seltene Tiere": so oft ist ein neues wildes Tier eine seltene Variante (sonst etwa 10 %)
+export const RARE_EVENT_CHANCE = 0.5;
+export function rareChance(normal) {
+  return isActive('rare') ? Math.max(normal, RARE_EVENT_CHANCE) : normal;
+}
 
 // Zustand eines Events: 'ready' (startbar), 'active' (läuft, left = Restzeit) oder 'cooldown' (left = bis wieder startbar)
 export function eventState(id, now = Date.now()) {
@@ -82,7 +96,7 @@ export function formatTime(ms) {
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
 // ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen und Frösche bekommen Babys; Maulwürfe, Vögel und
 // Wassertiere nicht.
-const BABY_OF = { macaque: 'macaque', panda: 'panda', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
+const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
 
 // animals: [{ species, enclosure, ... }] (nur Tiere in Gehegen, ohne Babys). Ergebnis: [{ enclosure, species, parent }]
 export function babyPlan(animals) {

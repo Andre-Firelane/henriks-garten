@@ -1,6 +1,6 @@
 // Besucher im Tierpark: wie sehr die Tiere Besucher anlocken, das Wegnetz, auf dem sie laufen, und die Plätze
 // vor den Gehegen, an denen sie stehen bleiben und schauen.
-import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, MAP_H, MAP_W, buildings, groundAt, isBlockedPoint, penCapacity } from './map.js';
+import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, MAP_H, MAP_W, buildings, groundAt, isBlockedPoint, penQuotas, quotaKey } from './map.js';
 import { tileToWorld } from './iso.js';
 
 // Anziehung je Tierart: seltene Tiere (kleines Gewicht in spawn.weights der Welten) und schwer zu fangende
@@ -23,6 +23,7 @@ export const APPEAL = {
   giraffe: 4,
   flamingo: 4,
   panda: 5,
+  tiger: 5,
   macaque: 4,
   lion: 5,
   crocodile: 5,
@@ -35,7 +36,10 @@ const MAX_VISITORS = 12;
 export const BABY_APPEAL = 3;
 export const BABY_BONUS = 2.5;
 
-const appeal = (a) => (a.baby ? BABY_APPEAL : APPEAL[a.species] ?? 1);
+// seltene Skins locken mehr Besucher an als die normale Art (Katze 2: mehr als doppelt so viel wie eine Katze, Oryx 1,5-mal)
+export const SKIN_APPEAL = { cat2: 3, antelope2: 4.5, koi3: 3, fish2: 3, frog2: 3, tiger2: 7 }; // koi3: weißer Koi mit rotem Punkt
+
+const appeal = (a) => (a.baby ? BABY_APPEAL : SKIN_APPEAL[a.skin ?? a.variant] ?? APPEAL[a.species] ?? 1);
 
 // Für die Statistik: welche Tierart ein Herz an diesem Gehege gebracht hat – zufällig, je nach Anziehung
 // (seltene Tiere und Babys öfter)
@@ -64,11 +68,14 @@ export function splitHearts(animals, n) {
 
 // volle Gehege (alle Plätze belegt, Stern am Schild) sind besonders anziehend
 export const FULL_BONUS = 1.5;
-export function penCount(animals, e) {
-  return animals.filter((a) => a.state === 'penned' && a.enclosure === e && !a.baby).length;
+// key: nur die Tiere dieses Kontingents (Tierart, siehe quotaKey), null: alle im Gehege
+export function penCount(animals, e, key = null) {
+  return animals.filter((a) => a.state === 'penned' && a.enclosure === e && !a.baby && (key === null || quotaKey(a.species) === key)).length;
 }
+// voll: alle Kontingente des Geheges belegt
 export function isFull(animals, e) {
-  return penCapacity(e) < Infinity && penCount(animals, e) >= penCapacity(e);
+  const q = penQuotas(e);
+  return q.length > 0 && q.every(({ key, cap }) => penCount(animals, e, key) >= cap);
 }
 
 // Summe der Anziehung aller Tiere in den Gehegen (bzw. in einem Gehege), Babys mitgezählt
@@ -81,8 +88,8 @@ export function penScore(animals, e) {
 }
 
 // Naturreservat: ein überzähliges Tier bringt beim Auswildern 2, 3 oder 4 Herzen, je nach Seltenheit
-export function releaseHearts(species) {
-  const v = APPEAL[species] ?? 1;
+export function releaseHearts(species, skin = null) {
+  const v = SKIN_APPEAL[skin] ?? APPEAL[species] ?? 1;
   return v <= 1.5 ? 2 : v <= 3 ? 3 : 4;
 }
 
