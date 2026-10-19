@@ -123,7 +123,7 @@ const CATCH_TIPS = {
   crocodile: 'Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.',
   giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
   panda: 'Mit Grünfutter folgt er dir – aber mach einen Bogen um Bambus und hohes Gras!',
-  tiger: 'Streift als dunkler Schatten durch den Bambus. Stell dich mit dem Ball davor – dann kommt er heraus und spielt. Jetzt das Lasso!',
+  tiger: 'Streift als dunkler Schatten durch den Bambus. Stell dich mit dem Ball davor und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!',
   macaque: 'Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!',
 };
 
@@ -217,7 +217,9 @@ const ACTION_KEY = 'E';
 // Flamingo-Flug (Event): in diesen Welten fliegen Flamingos ein, etwa neunmal so oft wie Reiher
 const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
-const TIGER_LURE_DIST = 110; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen
+const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
+const BALL_ROLL = [56, 44, 32]; // so weit rollt der Ball auf den Tiger zu (der erste freie Platz)
+const BALL_KEEP = 20000; // so lange bleibt der Ball liegen, wenn der Tiger nicht mehr spielt (Millisekunden)
 const MAX_MACAQUES = 6; // so viele Japanmakaken baden höchstens in den wilden Quellen (sie verteilen sich)
 const FLAMINGO_EVERY = [6, 12]; // Sekunden zwischen zwei Flamingos (Reiher: 50–110)
 const FLAMINGO_LAND = 0.6; // so oft landen sie (am Wasser)
@@ -251,7 +253,7 @@ const TOOLS = {
   ball: {
     create: (scene, player) => new BallTool(scene, player),
     name: 'Ball',
-    hint: `Stell dich damit still vor einen Schatten im Bambus – dann wird der ${animalIcon('tiger')} neugierig`,
+    hint: `Stell dich damit still vor einen Schatten im Bambus – dann wird der ${animalIcon('tiger')} neugierig. Danach hast du gleich das Lasso`,
   },
   food: {
     create: (scene, player) => new FoodTool(scene, player),
@@ -1490,6 +1492,11 @@ export default class GardenScene extends Phaser.Scene {
 
   // Werkzeug aufnehmen; ein getragenes kommt zurück auf seinen Platz an der Hütte (Tausch)
   takeTool(pickup) {
+    const tiger = this.animals.find((a) => a.ballPickup === pickup);
+    if (tiger) {
+      tiger.ballPickup = null;
+      tiger.goBack();
+    }
     this.equipTool(pickup.tool);
     this.toolLockUntil = this.time.now + TOOL_SWITCH_LOCK;
   }
@@ -1620,15 +1627,15 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
     this.koiFedAt = now;
-    // das Futter ist verbraucht (wie beim Grünfutter): Hände frei für den Kescher, neues liegt wieder an seinem Platz
+    // das Futter ist verbraucht (wie beim Grünfutter), neues liegt wieder an seinem Platz; gleich den Kescher in der Hand
     this.tool.destroy();
     this.tool = null;
     this.toolId = null;
     this.returnTool('koifood');
-    this.updateToolbar();
+    this.equipTool('net');
     this.scatterFood(p, spot);
     for (const a of koi) a.call(spot);
-    this.showToast(`Die ${animalIcon('koi')} kommen! Schnell den Kescher holen – sie fressen eine Weile.`);
+    this.showToast(`Die ${animalIcon('koi')} kommen! Du hast jetzt den Kescher in der Hand – sie fressen eine Weile.`);
   }
 
   // Futter am Zaun ins Gehege werfen: die Tiere dort kommen herbei und fressen, jedes an seinem eigenen Platz
@@ -2057,38 +2064,52 @@ export default class GardenScene extends Phaser.Scene {
     // der Ball rollt ein Stück auf den Tiger zu (bis vor den Bambus)
     const t = near.a;
     const angle = Math.atan2(t.y - p.y, t.x - p.x);
-    let spot = { x: p.x + Math.cos(angle) * 26, y: p.y + Math.sin(angle) * 13 };
-    if (blockedAt(spot.x, spot.y, 6, 3)) spot = { x: p.x + p.faceX * 14, y: p.y + 4 };
-    const ball = this.add.image(p.x, p.y, 'toy_ball').setOrigin(0.5, 26 / 32).setScale(0.6).setDepth(p.y);
-    this.tweens.add({ targets: ball, x: spot.x, y: spot.y, angle: 360, duration: 700, ease: 'Quad.easeOut', onUpdate: () => ball.setDepth(ball.y) });
-    // verbraucht (wie das Futter): Hände frei fürs Lasso, ein neuer Ball liegt wieder in der Kiste
+    const spot = BALL_ROLL.map((r) => ({ x: p.x + Math.cos(angle) * r, y: p.y + Math.sin(angle) * r * 0.5 })).find((s) => !blockedAt(s.x, s.y, 6, 3)) ?? { x: p.x + p.faceX * 14, y: p.y + 4 };
+    // der Ball bleibt am Boden liegen (beim Drüberlaufen hebt man ihn wieder auf); er rollt aus der Hand dorthin
+    const ball = new Pickup(this, spot.x, spot.y, 'toy_ball', 'ball', false);
+    ball.temporary = true; // wird nicht gespeichert
+    ball.sprite.setX(p.x);
+    this.tweens.add({ targets: ball.sprite, x: spot.x, angle: 340, duration: 700, ease: 'Quad.easeOut' });
+    this.pickups.push(ball);
+    // gleich das Lasso in der Hand
     if (this.toolId === 'ball') {
       this.tool.destroy();
       this.tool = null;
       this.toolId = null;
-      this.returnTool('ball');
     }
-    this.updateToolbar();
+    this.equipTool('lasso');
     t.lure(spot);
-    t.ballImage = ball;
-    this.showToast(`${animalIcon('tiger', 3.2)} Da schaut jemand neugierig aus dem Bambus …`);
+    t.ballPickup = ball;
+    this.showToast(`${animalIcon('tiger', 3.2)} Da schaut jemand neugierig aus dem Bambus … Bleib auf Abstand! Du hast jetzt das Lasso in der Hand.`);
   }
 
   // der Tiger ist herausgekommen und spielt am Ball
   tigerOut() {
-    this.showToast(`${animalIcon('tiger', 3.2)} Der Tiger spielt mit dem Ball! Hol schnell das Lasso – er bleibt eine Weile.`);
+    this.showToast(`${animalIcon('tiger', 3.2)} Der Tiger spielt mit dem Ball – gleich rennt er wieder los. Schnell das Lasso!`);
   }
 
-  // zurück im Bambus: der Ball verschwindet
+  // zu nah herangekommen: der Tiger ist erschrocken und bleibt im Bambus
+  tigerShy(t) {
+    this.expireBall(t);
+    this.showToast(`${animalIcon('tiger', 3.2)} Zu nah! Der Tiger ist erschrocken. Halt etwas Abstand, wenn er neugierig schaut.`);
+  }
+
+  // zurück im Bambus: der Ball liegt noch eine Weile da
   tigerBack(t) {
-    this.fadeBall(t);
+    this.expireBall(t);
   }
 
-  fadeBall(t, delay = 0) {
-    const b = t.ballImage;
-    if (!b) return;
-    t.ballImage = null;
-    this.tweens.add({ targets: b, alpha: 0, delay, duration: 800, onComplete: () => b.destroy() });
+  // Der Tiger spielt nicht mehr mit dem Ball: noch BALL_KEEP lang aufhebbar, dann ist er weg (neuen aus dem Regal holen)
+  expireBall(t) {
+    const ball = t.ballPickup;
+    t.ballPickup = null;
+    if (!ball || ball.collected) return;
+    this.time.delayedCall(BALL_KEEP, () => {
+      if (ball.collected) return;
+      ball.collected = true;
+      this.tweens.killTweensOf(ball.sprite);
+      this.tweens.add({ targets: [ball.sprite, ball.shadow], alpha: 0, duration: 800, onComplete: () => (ball.sprite.destroy(), ball.shadow.destroy()) });
+    });
   }
 
   // Ein wildes Tier fangen: es stellt sich hinten in die Reihe
@@ -2107,7 +2128,7 @@ export default class GardenScene extends Phaser.Scene {
     const full = LEVEL_ID !== 'park' && this.parkPenFull(animal.species, animal.origin);
     animal.catch();
     this.followers.push(animal);
-    if (animal.species === 'tiger') this.fadeBall(animal, 2000); // der Ball bleibt noch kurz liegen
+    if (animal.species === 'tiger') this.expireBall(animal); // der Ball bleibt noch eine Weile liegen
     const rare = animal.skin && SKINS[animal.species];
     if (rare) this.showToast(`✨ ${rare.male ? 'Ein seltener' : 'Eine seltene'} ${rare.name}! Im Tierpark lockt ${rare.male ? 'er' : 'sie'} besonders viele Besucher an.`);
     if (full) {
@@ -2177,7 +2198,7 @@ export default class GardenScene extends Phaser.Scene {
       animals: this.animals
         .filter((a) => a.state !== 'following' && !a.baby && !((a.species === 'heron' || a.species === 'flamingo') && a.state === 'wild')) // wilde Reiher fliegen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, x: a.x, y: a.y, life: a.life })),
-      pickups: this.pickups.filter((p) => !p.collected).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
+      pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
     };
     game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, origin: a.origin }));
     game.tool = this.toolId; // beim Neuaufbau bleibt das Werkzeug in der Hand (beim Verlassen ist es schon zurückgelegt)

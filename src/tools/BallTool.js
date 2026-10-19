@@ -1,6 +1,6 @@
 // Ball in der Hand (Asien): steht man damit still vor einem Tiger-Schemen im Bambus, wird er neugierig; mit der
-// Aktionstaste rollt man ihn gleich hin. Was dann passiert (Ball liegt am Boden, der Tiger kommt heraus), steuert die
-// Szene (rollBall). Danach ist der Ball verbraucht, ein neuer liegt wieder in der Kiste.
+// Aktionstaste rollt man ihn gleich hin. Was dann passiert, steuert die Szene (rollBall): der Ball liegt am Boden, man hat
+// gleich das Lasso in der Hand, und der Tiger kommt heraus. Den Ball kann man danach noch eine Weile wieder aufheben.
 
 const STILL_TIME = 1.5; // so lange muss man stillstehen, bis der Tiger es bemerkt
 

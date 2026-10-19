@@ -255,7 +255,7 @@ export const LEVELS = {
       'J.J.q.....nq..J.....#..QqqqqqqQqqqqqQqqk',
       'Qn...nn.n...........#...qqQQqqq.qqQQ...k',
       'Q...........Jq....q.#..QQ.Q.Q....qQQQQqk',
-      'J.....n.n.n.n...n...#.e................k',
+      'J.....n.n.n.n...n...#..................k',
       'Q.....#############################....k',
       'Q..n.n.n...q....q...#..................k',
       'J.J....n....J.....J.#..Q.QqqqqQQ.Q.Q.qqk',
@@ -300,9 +300,8 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 14, ty0: 36, tx1: 18, ty1: 39, style: 'asia' },
     chests: [
-      { tx: 16, ty: 40, tools: ['net', 'lasso', 'koifood', 'food'] }, // Grünfutter für die Pandas
+      { tx: 16, ty: 40, tools: ['net', 'lasso', 'koifood', 'food', 'ball'] }, // Grünfutter für die Pandas, Ball zum Anlocken des Tigers
       { tx: 19, ty: 23, tools: ['net', 'koifood'] },
-      { tx: 22, ty: 12, tools: ['ball', 'lasso'] }, // am Bambuswald: Ball zum Anlocken des Tigers, Lasso zum Fangen
     ],
     hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
     ambient: 'ambient_asia', // Asien-Geräusche, leise über die Wiesengeräusche gelegt (siehe tools/prepare-sounds.js)

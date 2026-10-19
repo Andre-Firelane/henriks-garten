@@ -1,7 +1,7 @@
 // Tiger (Asien): streift als dunkler Schemen durch den Bambus – so kann man ihn nicht fangen. Steht man mit dem Ball
 // still davor (oder rollt ihn mit der Aktionstaste hin, siehe rollBall in GardenScene), wird er neugierig: sein Gesicht
-// schaut aus dem Bambus. Ein paar Sekunden später kommt er heraus und spielt eine Weile neben dem Ball – dann kann man
-// ihn mit dem Lasso fangen. Danach verschwindet er wieder im Bambus.
+// schaut aus dem Bambus. Kommt man ihm dabei zu nah, erschrickt er und bleibt drin. Sonst kommt er heraus, spielt ganz
+// kurz am Ball, flitzt dann schnell umher und rennt zurück in den Bambus – bis dahin kann man ihn mit dem Lasso fangen.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
@@ -11,7 +11,12 @@ const PROWL_SPEED = 16; // gemächliches Streifen durch den Bambus
 const PROWL_RANGE = 3; // so viele Kacheln weit sucht er sich sein nächstes Ziel
 const PROWL_ALPHA = 0.4; // so deutlich sieht man den Schemen
 const CURIOUS_TIME = 3; // so lange schaut er neugierig aus dem Bambus
-const PLAY_TIME = 40; // so lange spielt er draußen am Ball (Zeit genug, das Lasso zu holen)
+const SHY_DIST = 80; // näher darf man ihm nicht kommen, während er neugierig schaut (sonst erschrickt er)
+const PLAY_TIME = 3; // so kurz spielt er draußen am Ball ...
+const ROMP_TIME = 4; // ... dann flitzt er so lange kreuz und quer umher ...
+const ROMP_SPEED = 75;
+const ROMP_TURN = [0.4, 0.9]; // so oft schlägt er einen Haken
+const DASH_SPEED = 95; // ... und rennt zurück in den Bambus
 const PEEK_UP = 6; // das Gesicht sitzt etwas über dem Boden
 
 export default class Tiger extends Animal {
@@ -33,7 +38,7 @@ export default class Tiger extends Animal {
   }
 
   canBeCaughtNow() {
-    return this.state === 'wild' && this.phase === 'play';
+    return this.state === 'wild' && ['play', 'romp', 'dash'].includes(this.phase);
   }
 
   canDespawn() {
@@ -44,9 +49,9 @@ export default class Tiger extends Animal {
     return false; // er ist neugierig, nicht scheu
   }
 
-  // als Schemen geht er mitten durch den Bambus
+  // als Schemen (und beim Zurückrennen) geht er mitten durch den Bambus
   blocked(x, y) {
-    return this.isProwling() ? false : super.blocked(x, y);
+    return this.isProwling() || this.phase === 'dash' ? false : super.blocked(x, y);
   }
 
   // vom Ball angelockt: erst neugierig schauen, dann herauskommen
@@ -81,16 +86,72 @@ export default class Tiger extends Animal {
     if (this.phase === 'prowl') return this.prowl(dt);
     this.phaseTime -= dt;
     if (this.phase === 'curious') {
-      if (this.phaseTime <= 0) this.comeOut();
+      // zu nah dran: er erschrickt und bleibt im Bambus
+      if (Math.hypot(player.x - this.x, (player.y - this.y) * 2) < SHY_DIST) this.scare();
+      else if (this.phaseTime <= 0) this.comeOut();
       return false;
     }
-    // draußen am Ball: schaut zum Ball und bleibt sitzen
-    if (this.ball) {
+    if (this.phase === 'play') {
+      // ganz kurz am Ball: schaut zum Ball
       this.faceX = Math.sign(this.ball.x - this.x) || this.faceX;
       this.faceY = Math.sign(this.ball.y - this.y) || this.faceY;
+      if (this.phaseTime <= 0) {
+        this.phase = 'romp';
+        this.phaseTime = ROMP_TIME;
+        this.turnTime = 0;
+      }
+      return false;
     }
-    if (this.phaseTime <= 0) this.goBack();
-    return false;
+    if (this.phase === 'romp') return this.romp(dt);
+    return this.dash(dt);
+  }
+
+  // schnell kreuz und quer umherflitzen, dann zurück in den Bambus
+  romp(dt) {
+    this.fleeing = true; // schnellere Schritte
+    this.turnTime -= dt;
+    if (this.turnTime <= 0) {
+      const a = Math.random() * Math.PI * 2;
+      this.dirX = Math.cos(a);
+      this.dirY = Math.sin(a);
+      this.turnTime = Phaser.Math.FloatBetween(...ROMP_TURN);
+    }
+    const moved = this.move(this.dirX * ROMP_SPEED * dt, this.dirY * ROMP_SPEED * dt);
+    if (!moved) this.turnTime = 0; // gegen etwas gelaufen: gleich ein neuer Haken
+    if (this.phaseTime <= 0) {
+      this.phase = 'dash';
+      this.target = this.nearestHome();
+    }
+    return moved;
+  }
+
+  dash(dt) {
+    const t = this.target;
+    if (!t) return this.goBack(), false;
+    const dx = t.x - this.x;
+    const dy = t.y - this.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 4) {
+      this.goBack();
+      return false;
+    }
+    const step = Math.min(d, DASH_SPEED * dt);
+    return this.move((dx / d) * step, (dy / d) * step);
+  }
+
+  nearestHome() {
+    return [...TIGER_ZONE]
+      .map((t) => tileToWorld(t.tx, t.ty))
+      .sort((p, q) => Math.hypot(p.x - this.x, p.y - this.y) - Math.hypot(q.x - this.x, q.y - this.y))[0];
+  }
+
+  // erschrocken: das Gesicht verschwindet, er bleibt im Bambus
+  scare() {
+    this.clearPeek();
+    this.phase = 'prowl';
+    this.target = null;
+    this.scene.tigerShy(this);
+    this.ball = null;
   }
 
   // von Bambuskachel zu Bambuskachel streifen
@@ -126,12 +187,11 @@ export default class Tiger extends Animal {
     this.scene.tigerOut(this);
   }
 
-  // zurück in den Bambus (der Ball bleibt nicht liegen)
+  // zurück in den Bambus (der Ball bleibt noch eine Weile liegen)
   goBack() {
-    const home = [...TIGER_ZONE]
-      .map((t) => tileToWorld(t.tx, t.ty))
-      .sort((p, q) => Math.hypot(p.x - this.x, p.y - this.y) - Math.hypot(q.x - this.x, q.y - this.y))[0];
+    const home = this.nearestHome();
     if (home) Object.assign(this, home);
+    this.fleeing = false;
     this.phase = 'prowl';
     this.target = null;
     this.scene.tigerBack(this);
