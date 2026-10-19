@@ -14,6 +14,8 @@ import {
   NEAR_TREES,
   NEAR_BAMBOO,
   TIGER_ZONE,
+  NEAR_PATH,
+  NEAR_PATH_TILES,
   JUNGLE_TREES,
   HOT_SPRING_TILES,
   setLevel,
@@ -241,12 +243,14 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: 'Kescher',
-    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'koi', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'])}`,
+    catches: ['cat', 'fish', 'koi', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
+    hint: (list) => `Damit fängst du ${animalIcons(list)}`,
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    hint: `Damit fängst du ${animalIcons(['deer', 'stag', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron', 'tiger'])} aus der Ferne`,
+    catches: ['deer', 'stag', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron', 'tiger'],
+    hint: (list) => `Damit fängst du ${animalIcons(list)} aus der Ferne`,
   },
   trap: {
     create: (scene, player) => new TrapTool(scene, player),
@@ -271,7 +275,8 @@ const TOOLS = {
   food: {
     create: (scene, player) => new FoodTool(scene, player),
     name: 'Grünfutter',
-    hint: `Geh nah an eine ${animalIcon('giraffe')} oder einen ${animalIcon('panda')} heran und füttere sie`,
+    catches: ['giraffe', 'panda'],
+    hint: (list) => `Geh nah an ${list.map((s) => animalIcon(s)).join(' oder ')} heran und füttere sie`,
   },
 };
 
@@ -525,7 +530,13 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere im Gehege, die nicht (mehr) ganz in dessen Innenfläche stehen (z. B. nach einem Ausbau): neu hineinsetzen
     for (const a of this.animals) {
-      if (a.state !== 'penned' || a.enclosure?.free || (a.enclosure && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
+      // freilaufende außerhalb ihres Bereichs (z. B. nach einer Änderung der Karte): neu verteilen
+      if (a.enclosure?.free) {
+        const { tx, ty } = worldToTile(a.x, a.y);
+        if (!NEAR_PATH.has(tx + ',' + ty)) this.placeInPen(a, a.enclosure, true);
+        continue;
+      }
+      if (a.state !== 'penned' || (a.enclosure && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
       const e = a.enclosure ?? ENCLOSURES.find((f) => accepts(f, a.species));
       if (e) this.placeInPen(a, e, true);
     }
@@ -1514,6 +1525,15 @@ export default class GardenScene extends Phaser.Scene {
       : '';
   }
 
+  // Hinweis zum Werkzeug: bei Kescher, Lasso und Futter nur die Tiere, die es in diesem Gebiet gibt
+  toolHint(id) {
+    const t = TOOLS[id];
+    if (!t.catches) return t.hint;
+    const here = (s) => !!LEVEL.spawn.weights[s] || (s === 'heron' && !!LEVEL.herons);
+    const list = t.catches.filter(here);
+    return list.length ? t.hint(list) : '';
+  }
+
   // text darf HTML enthalten (z. B. Tierbilder)
   showToast(text) {
     this.toast.innerHTML = text;
@@ -1967,7 +1987,7 @@ export default class GardenScene extends Phaser.Scene {
         if (id === this.toolId) return;
         if (id) {
           this.equipTool(id); // das getragene Werkzeug kommt zurück in die Kiste
-          this.showToast(`${TOOLS[id].name} genommen. ${TOOLS[id].hint}`);
+          this.showToast(`${TOOLS[id].name} genommen. ${this.toolHint(id)}`);
         } else if (this.tool) this.dropTool();
       },
       () => this.scene.resume(),
@@ -2073,10 +2093,10 @@ export default class GardenScene extends Phaser.Scene {
   // Ein Tier an eine freie Stelle in diesem Gehege setzen (Wassertiere in dessen Teich) und einziehen lassen
   // quiet: ohne Herz (z. B. beim Umsetzen nach einem Ausbau)
   placeInPen(animal, e, quiet = false) {
-    // freilaufend (Pfauen): einfach neben dem Spieler im Park loslassen
+    // freilaufend (Pfauen): irgendwo im Park in der Nähe eines Wegs loslassen, damit sie sich verteilen
     if (e.free) {
-      const p = this.player;
-      const spot = this.freeSpotNear(p.x, p.y, 40) ?? { x: p.x, y: p.y };
+      const t = Phaser.Utils.Array.GetRandom(NEAR_PATH_TILES);
+      const spot = t ? tileToWorld(t.tx, t.ty) : { x: this.player.x, y: this.player.y };
       animal.x = spot.x;
       animal.y = spot.y;
       if (quiet) {

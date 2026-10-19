@@ -8,7 +8,7 @@ import Animal from './Animal.js';
 import { rareChance } from '../world/events.js';
 import Fish from './Fish.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { KOI_WATER, FISHPOND_TILES, enclosureAt, accepts } from '../world/map.js';
+import { KOI_WATER, FISHPOND_TILES, enclosureAt, accepts, underBridge } from '../world/map.js';
 
 // Farbmuster: Bild, Farbe des Schattens unter Wasser, Name in der Meldung beim Fangen, Anteil im wilden Teich.
 // Der weiße mit rotem Punkt ist die seltene Variante (lockt im Tierpark mehr Besucher an, siehe SKIN_APPEAL)
@@ -233,6 +233,7 @@ export default class Koi extends Fish {
     this.sprite.setScale(0.5, 0.5 * (1 + snap));
     this.sprite.setPosition(this.x, this.y + Math.sin(this.scene.time.now / 250 + this.x));
     this.sprite.setAngle(0);
-    this.sprite.setDepth(this.y);
+    // an der Brücke bleibt er unter dem Brückendeck (das Deck liegt bei -99998, darunter Boden und Schatten)
+    this.sprite.setDepth(underBridge(this.x, this.y) ? -99998.5 : this.y);
   }
 }

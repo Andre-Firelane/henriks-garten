@@ -131,6 +131,8 @@ export let NEAR_WATER; // freie Kacheln höchstens 2 Kacheln von einem wilden Te
 export let HOT_SPRING_TILES; // heiße Quellen (dort baden die Japanmakaken)
 export let HOT_SPRINGS; // dieselben, nach zusammenhängenden Quellen getrennt: [[{ tx, ty }, ...], ...]
 export let NEAR_BAMBOO; // freie Kacheln höchstens 2 Kacheln von Bambus oder hohem Gras (für Pandas)
+export let NEAR_PATH; // freie Kacheln höchstens 3 Kacheln neben einem Weg (Set "tx,ty"): dort laufen freilaufende Tiere (Pfauen)
+export let NEAR_PATH_TILES; // dieselben als Liste (zum Verteilen)
 export let JUNGLE_TREES; // Urwaldbäume (nicht am Kartenrand): dort sitzen die Orang-Utans oben in der Krone
 export let TIGER_ZONE; // Bambus und hohes Gras im Bambuswald (nicht am Kartenrand): dort streift der Tiger als Schemen
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
@@ -219,6 +221,16 @@ export function setLevel(id) {
   NEAR_WATER = freeTilesNear('~');
   NEAR_TREES = freeTilesNear('ATPD');
   NEAR_BAMBOO = freeTilesNear('Qq');
+  NEAR_PATH_TILES = [];
+  for (let ty = 0; ty < MAP_H; ty++) {
+    for (let tx = 0; tx < MAP_W; tx++) {
+      if (isBlocked(tx, ty) || inPen(tx, ty) || isGate(tx, ty) || buildingAt(tx, ty, 1) || EXITS.some((e) => Math.abs(e.tx - tx) + Math.abs(e.ty - ty) < 3)) continue;
+      let near = false;
+      for (let dy = -3; dy <= 3 && !near; dy++) for (let dx = -3; dx <= 3 && !near; dx++) near = '#I'.includes(charAt(tx + dx, ty + dy)) && !buildingAt(tx + dx, ty + dy);
+      if (near) NEAR_PATH_TILES.push({ tx, ty });
+    }
+  }
+  NEAR_PATH = new Set(NEAR_PATH_TILES.map(({ tx, ty }) => tx + ',' + ty));
   JUNGLE_TREES = tilesWith('J').filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty));
   TIGER_ZONE = ['Q', 'q']
     .flatMap(tilesWith)
@@ -471,6 +483,20 @@ export function fenceAxisAt(tx, ty) {
   if (fence) return fence.axis;
   const gate = GATE_TILES.find((g) => g.tx === tx && g.ty === ty);
   return gate ? (gate.vertical ? 'y' : 'x') : null;
+}
+
+// Liegt dieser Punkt im Wasser so nah an einer Brücke, dass die Brücke darüber gezeichnet werden muss? (Koi, die
+// neben oder unter der Brücke auftauchen, sollen unter dem Brückendeck bleiben)
+export function underBridge(x, y) {
+  if (!BRIDGES?.length) return false;
+  const a = x / (TILE_W / 2);
+  const b = y / (TILE_H / 2);
+  const txf = (a + b) / 2;
+  const tyf = (b - a) / 2;
+  return BRIDGES.some((br) => {
+    const [along, cross] = br.axis === 'y' ? [tyf, txf] : [txf, tyf];
+    return along >= br.from - 0.7 && along <= br.to + 0.7 && cross >= br.at - 1.6 && cross <= br.at + 1.2;
+  });
 }
 
 // Höhe des Brückenbogens (Höchststand) je nach Länge der Brücke
