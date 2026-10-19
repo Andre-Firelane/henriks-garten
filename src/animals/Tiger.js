@@ -1,6 +1,7 @@
 // Tiger (Asien): streift als dunkler Schemen durch den Bambus – so kann man ihn nicht fangen. Steht man mit dem Ball
-// still davor (oder rollt ihn mit der Aktionstaste hin, siehe rollBall in GardenScene), wird er neugierig: sein Gesicht
-// schaut aus dem Bambus. Kommt man ihm dabei zu nah, erschrickt er und bleibt drin. Sonst kommt er heraus, spielt ganz
+// still davor (oder rollt ihn mit der Aktionstaste hin, siehe rollBall in GardenScene), wartet er. Erst wenn man sich ein
+// Stück entfernt hat, wird er auf den Ball aufmerksam: sein Gesicht schaut neugierig aus dem Bambus. Kommt man ihm dabei
+// wieder zu nah, erschrickt er und bleibt drin. Sonst kommt er heraus, spielt ganz
 // kurz am Ball, flitzt dann schnell umher und rennt zurück in den Bambus – bis dahin kann man ihn mit dem Lasso fangen.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
@@ -11,6 +12,8 @@ const PROWL_SPEED = 16; // gemächliches Streifen durch den Bambus
 const PROWL_RANGE = 3; // so viele Kacheln weit sucht er sich sein nächstes Ziel
 const PROWL_ALPHA = 0.4; // so deutlich sieht man den Schemen
 const CURIOUS_TIME = 3; // so lange schaut er neugierig aus dem Bambus
+const NOTICE_DIST = 120; // so weit muss man sich nach dem Wurf entfernen, damit er auf den Ball aufmerksam wird
+const WAIT_TIME = 15; // geht man so lange nicht weg, verliert er das Interesse
 const SHY_DIST = 80; // näher darf man ihm nicht kommen, während er neugierig schaut (sonst erschrickt er)
 const PLAY_TIME = 3; // so kurz spielt er draußen am Ball ...
 const ROMP_TIME = 4; // ... dann flitzt er so lange kreuz und quer umher ...
@@ -54,11 +57,18 @@ export default class Tiger extends Animal {
     return this.isProwling() || this.phase === 'dash' ? false : super.blocked(x, y);
   }
 
-  // vom Ball angelockt: erst neugierig schauen, dann herauskommen
+  // ein Ball rollt heran: er wartet im Bambus, bis der Spieler sich entfernt hat
   lure(ball) {
+    this.phase = 'wait';
+    this.phaseTime = WAIT_TIME;
+    this.ball = ball;
+  }
+
+  // jetzt neugierig: das Gesicht schaut aus dem Bambus, dann kommt er heraus
+  startCurious() {
+    const ball = this.ball;
     this.phase = 'curious';
     this.phaseTime = CURIOUS_TIME;
-    this.ball = ball;
     this.faceX = Math.sign(ball.x - this.x) || 1;
     this.faceY = 1;
     this.peek = this.scene.add.image(this.x, this.y - PEEK_UP, `${this.baseTexture()}_peek`).setOrigin(0.5, 60 / 64).setScale(0.5).setAlpha(0);
@@ -69,6 +79,7 @@ export default class Tiger extends Animal {
       .setDepth(100000);
     this.scene.tweens.add({ targets: this.peek, alpha: 1, duration: 400 });
     this.scene.tweens.add({ targets: this.question, y: this.question.y - 4, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.scene.tigerCurious(this);
   }
 
   clearPeek() {
@@ -85,9 +96,15 @@ export default class Tiger extends Animal {
     if (this.state !== 'wild') return super.updateFree(dt, player);
     if (this.phase === 'prowl') return this.prowl(dt);
     this.phaseTime -= dt;
+    const dist = Math.hypot(player.x - this.x, (player.y - this.y) * 2);
+    if (this.phase === 'wait') {
+      if (dist >= NOTICE_DIST) this.startCurious();
+      else if (this.phaseTime <= 0) this.scare(false); // man ist nicht weggegangen: kein Interesse mehr
+      return false;
+    }
     if (this.phase === 'curious') {
       // zu nah dran: er erschrickt und bleibt im Bambus
-      if (Math.hypot(player.x - this.x, (player.y - this.y) * 2) < SHY_DIST) this.scare();
+      if (dist < SHY_DIST) this.scare(true);
       else if (this.phaseTime <= 0) this.comeOut();
       return false;
     }
@@ -145,12 +162,12 @@ export default class Tiger extends Animal {
       .sort((p, q) => Math.hypot(p.x - this.x, p.y - this.y) - Math.hypot(q.x - this.x, q.y - this.y))[0];
   }
 
-  // erschrocken: das Gesicht verschwindet, er bleibt im Bambus
-  scare() {
+  // erschrocken (shy) oder gelangweilt: das Gesicht verschwindet, er bleibt im Bambus
+  scare(shy) {
     this.clearPeek();
     this.phase = 'prowl';
     this.target = null;
-    this.scene.tigerShy(this);
+    this.scene.tigerShy(this, shy);
     this.ball = null;
   }
 
@@ -200,7 +217,7 @@ export default class Tiger extends Animal {
 
   render(moving) {
     super.render(moving);
-    const prowl = this.isProwling();
+    const prowl = this.isProwling() || (this.state === 'wild' && this.phase === 'wait'); // beim Warten weiter ein Schemen
     const curious = this.state === 'wild' && this.phase === 'curious';
     // im Bambus nur ein dunkler Schemen, beim neugierigen Schauen nur das Gesicht
     if (prowl) this.sprite.setTintFill(0x1a140e);

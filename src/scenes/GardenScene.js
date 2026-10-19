@@ -123,7 +123,7 @@ const CATCH_TIPS = {
   crocodile: 'Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.',
   giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
   panda: 'Mit Grünfutter folgt er dir – aber mach einen Bogen um Bambus und hohes Gras!',
-  tiger: 'Streift als dunkler Schatten durch den Bambus. Stell dich mit dem Ball davor und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!',
+  tiger: 'Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!',
   macaque: 'Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!',
 };
 
@@ -2080,7 +2080,7 @@ export default class GardenScene extends Phaser.Scene {
     this.equipTool('lasso');
     t.lure(spot);
     t.ballPickup = ball;
-    this.showToast(`${animalIcon('tiger', 3.2)} Da schaut jemand neugierig aus dem Bambus … Bleib auf Abstand! Du hast jetzt das Lasso in der Hand.`);
+    this.showToast(`${animalIcon('tiger', 3.2)} Der Ball rollt zum Bambus. Jetzt geh ein Stück weg – dann wird der Tiger aufmerksam. Du hast das Lasso in der Hand.`);
   }
 
   // der Tiger ist herausgekommen und spielt am Ball
@@ -2088,10 +2088,19 @@ export default class GardenScene extends Phaser.Scene {
     this.showToast(`${animalIcon('tiger', 3.2)} Der Tiger spielt mit dem Ball – gleich rennt er wieder los. Schnell das Lasso!`);
   }
 
-  // zu nah herangekommen: der Tiger ist erschrocken und bleibt im Bambus
-  tigerShy(t) {
+  // nach dem Wurf weggegangen: der Tiger schaut neugierig aus dem Bambus
+  tigerCurious() {
+    this.showToast(`${animalIcon('tiger', 3.2)} Da schaut jemand neugierig aus dem Bambus … nicht näher kommen!`);
+  }
+
+  // zu nah herangekommen (shy) oder nicht weggegangen: der Tiger bleibt im Bambus; den Ball kann man noch aufheben
+  tigerShy(t, shy) {
     this.expireBall(t);
-    this.showToast(`${animalIcon('tiger', 3.2)} Zu nah! Der Tiger ist erschrocken. Halt etwas Abstand, wenn er neugierig schaut.`);
+    this.showToast(
+      shy
+        ? `${animalIcon('tiger', 3.2)} Zu nah! Der Tiger ist erschrocken. Halt Abstand, wenn er neugierig schaut.`
+        : `${animalIcon('tiger', 3.2)} Der Tiger hat das Interesse verloren. Nach dem Werfen musst du ein Stück weggehen.`,
+    );
   }
 
   // zurück im Bambus: der Ball liegt noch eine Weile da
