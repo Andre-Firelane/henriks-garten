@@ -96,7 +96,7 @@ export function formatTime(ms) {
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
 // ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen und Frösche bekommen Babys; Maulwürfe, Vögel und
 // Wassertiere nicht.
-const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
+const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
 
 // animals: [{ species, enclosure, ... }] (nur Tiere in Gehegen, ohne Babys). Ergebnis: [{ enclosure, species, parent }]
 export function babyPlan(animals) {

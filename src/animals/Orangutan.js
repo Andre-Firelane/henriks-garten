@@ -15,6 +15,9 @@ const WAVES_NEEDED = 3; // so oft muss man zurückwinken, dann kommt er herunter
 const DOWN_TIME = 15; // so lange sitzt er unten, dann klettert er wieder hinauf
 const JUMP_RANGE = 5; // so viele Kacheln weit springt er höchstens zum nächsten Baum
 const CROWN_UP = 104; // Höhe der Baumkrone über dem Fuß des Urwaldbaums (Bild "jungle_tree")
+const SWING_MS = 900; // so lange schwingt er von Krone zu Krone
+const SWING_ARC = 36; // so hoch ist der Bogen dabei
+const CALL_VOLUME = 0.5;
 
 export default class Orangutan extends Animal {
   constructor(scene, x, y) {
@@ -47,6 +50,11 @@ export default class Orangutan extends Animal {
     return this.state === 'wild' && (this.phase === 'tree' || this.phase === 'wave');
   }
 
+  // oben zu sehen: im Baum oder auf dem Weg zum nächsten
+  aloft() {
+    return this.inTree() || (this.state === 'wild' && this.phase === 'swing');
+  }
+
   canBeCaughtNow() {
     return this.state === 'wild' && this.phase === 'down';
   }
@@ -62,6 +70,7 @@ export default class Orangutan extends Animal {
   updateFree(dt, player) {
     if (this.state !== 'wild') return super.updateFree(dt, player);
     const near = Math.hypot(player.x - this.x, (player.y - this.y) * 2) < WAVE_DIST;
+    if (this.phase === 'swing') return false; // schwingt gerade zum nächsten Baum
     if (this.phase === 'tree') {
       // er winkt nur, wenn jemand ohne Werkzeug unten steht
       if (near && !this.scene.tool) this.phaseTime -= dt;
@@ -110,16 +119,59 @@ export default class Orangutan extends Animal {
     return null;
   }
 
-  // verpasst: er springt auf einen anderen Baum in der Nähe, das Spiel beginnt von vorn
+  // verpasst: er schwingt sich auf einen anderen Baum in der Nähe, das Spiel beginnt von vorn
   miss(reason) {
     this.waves = 0;
     if (!this.tree) return this.placeInTree();
-    this.rustle();
-    const others = JUNGLE_TREES.filter((t) => (t.tx !== this.tree.tx || t.ty !== this.tree.ty) && Math.hypot(t.tx - this.tree.tx, t.ty - this.tree.ty) <= JUMP_RANGE);
-    this.tree = null;
-    this.placeInTree(Phaser.Utils.Array.GetRandom(others));
-    this.rustle();
+    const taken = this.scene.animals.filter((a) => a !== this && a.species === 'orangutan' && a.tree).map((a) => a.tree);
+    const others = JUNGLE_TREES.filter(
+      (t) => (t.tx !== this.tree.tx || t.ty !== this.tree.ty) && Math.hypot(t.tx - this.tree.tx, t.ty - this.tree.ty) <= JUMP_RANGE && !taken.includes(t),
+    );
+    const next = Phaser.Utils.Array.GetRandom(others);
     this.scene.orangutanMissed?.(this, reason);
+    if (next) this.swingTo(next);
+  }
+
+  // in einem Bogen von Krone zu Krone schwingen (mit Rascheln und Ruf)
+  swingTo(tree) {
+    this.rustle();
+    this.call();
+    const from = { x: this.x, y: this.y };
+    const to = tileToWorld(tree.tx, tree.ty);
+    this.tree = tree; // schon reserviert, damit kein anderer dorthin springt
+    this.phase = 'swing';
+    this.peek?.setFlipX(to.x < from.x);
+    const k = { t: 0 };
+    this.scene.tweens.add({
+      targets: k,
+      t: 1,
+      duration: SWING_MS,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        if (!this.peek?.active) return;
+        const x = from.x + (to.x - from.x) * k.t;
+        const y = from.y + (to.y - from.y) * k.t - CROWN_UP - Math.sin(Math.PI * k.t) * SWING_ARC;
+        this.peek.setPosition(x, y).setDepth(Math.max(from.y, to.y) + 2).setAngle(Math.sin(Math.PI * 2 * k.t) * 15);
+      },
+      onComplete: () => {
+        if (this.state !== 'wild' || this.phase !== 'swing') return;
+        Object.assign(this, to);
+        this.peek?.setAngle(0);
+        this.phase = 'tree';
+        this.phaseTime = Phaser.Math.FloatBetween(...SIT_TIME);
+        this.showInTree();
+        this.rustle();
+      },
+    });
+  }
+
+  // Ruf beim Schwingen: eigener Laut, falls es einen gibt, sonst der Affenruf tiefer (klingt größer) und ein Wusch
+  call() {
+    const sound = this.scene.sound;
+    const audio = this.scene.cache.audio;
+    if (audio.exists('animal_orangutan')) sound.play('animal_orangutan', { volume: CALL_VOLUME });
+    else if (audio.exists('animal_macaque')) sound.play('animal_macaque', { volume: CALL_VOLUME, detune: -700 });
+    if (audio.exists('whoosh')) sound.play('whoosh', { volume: CALL_VOLUME * 0.6, detune: -300 });
   }
 
   // herunterklettern und sich vor den Baum setzen (zum Spieler hin)
@@ -163,7 +215,7 @@ export default class Orangutan extends Animal {
 
   render(moving) {
     super.render(moving);
-    const up = this.inTree();
+    const up = this.aloft();
     this.sprite.setVisible(!up);
     this.shadow.setVisible(!up);
     this.peek?.setVisible(up);

@@ -319,6 +319,23 @@ export const SPECIES = {
     shadowW: 30,
     catchWith: ['touch'],
   },
+  // Pfau (Asien): scheu wie das Zebra, fliegt manchmal ganz davon; beim Rad-Schlagen fangbar (siehe Peacock.js)
+  peacock: {
+    texture: 'peacock',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 24,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 6,
+    shadowW: 24,
+    fleeDist: 55, // so scheu wie das Zebra
+    fleeSpeed: 85,
+    catchWith: ['touch', 'net'], // nur beim Rad-Schlagen
+  },
   // Flamingo (Event „Flamingo-Flug“): verhält sich wie der Reiher; babyTexture: graues Küken beim Tierbaby-Event
   flamingo: {
     texture: 'flamingo',
@@ -392,6 +409,7 @@ export const SKINS = {
   antelope: { id: 'antelope2', name: 'Oryx-Antilope', male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   fish: { id: 'fish2', name: 'Wels', male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
   tiger: { id: 'tiger2', name: 'weißer Tiger', male: true, wild: 0.1, baby: 0.03 },
+  peacock: { id: 'peacock2', name: 'weißer Pfau', male: true, wild: 0.1, baby: 0.03 },
   orangutan: { id: 'orangutan2', name: 'Orang-Utan mit Backenwülsten', male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
   frog: { id: 'frog2', name: 'blauer Frosch', male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
 };

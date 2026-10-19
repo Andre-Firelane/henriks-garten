@@ -61,6 +61,7 @@ import Lion from '../animals/Lion.js';
 import Giraffe from '../animals/Giraffe.js';
 import Panda from '../animals/Panda.js';
 import Tiger from '../animals/Tiger.js';
+import Peacock from '../animals/Peacock.js';
 import Orangutan, { WAVE_DIST } from '../animals/Orangutan.js';
 import Macaque from '../animals/Macaque.js';
 import Cat from '../animals/Cat.js';
@@ -92,7 +93,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -125,10 +126,14 @@ const CATCH_TIPS = {
   crocodile: 'Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.',
   giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
   panda: 'Mit Grünfutter folgt er dir – aber mach einen Bogen um Bambus und hohes Gras!',
+  peacock: 'Scheu – kommst du zu nah, rennt er weg oder fliegt sogar davon. Warte, bis er ein Rad schlägt: dann kannst du ihn berühren oder keschern.',
   orangutan: 'Sitzt oben im Urwaldbaum. Stell dich ohne Werkzeug darunter und warte, bis er winkt – dann schnell zurückwinken! Dreimal geschafft, kommt er herunter.',
   tiger: 'Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!',
   macaque: 'Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!',
 };
+
+// freilaufende Tiere im Tierpark (Pfauen): so viele dürfen es höchstens sein (für die Übersicht), sonst null
+const freeCap = (species) => (LEVELS.park.enclosures ?? []).find((e) => e.free && e.species?.includes(species))?.slots[0] ?? null;
 
 // Für die Schilder an den Gehegetoren: Name und was man an der Fußspur erkennt (zum Lernen)
 const ANIMAL_INFO = {
@@ -150,6 +155,7 @@ const ANIMAL_INFO = {
   giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
   macaque: ['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'],
   panda: ['Panda', 'Breite Tatzen mit fünf Zehen und einem sechsten „Daumen“ zum Bambushalten.'],
+  peacock: ['Pfau', 'Drei lange Zehen nach vorne und eine nach hinten – wie beim Huhn, nur größer.'],
   orangutan: ['Orang-Utan', 'Lange Hände und Füße mit einem Daumen auch am Fuß – damit hält er sich an Ästen fest.'],
   tiger: ['Tiger', 'Riesige Katzenpfote: vier Zehen und ein breiter Ballen. Die Krallen bleiben eingezogen.'],
   heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
@@ -220,6 +226,8 @@ const ACTION_KEY = 'E';
 // Reittier-Event: Henrik reitet in jeder Welt ein anderes Tier (nicht im Tierpark)
 // Flamingo-Flug (Event): in diesen Welten fliegen Flamingos ein, etwa neunmal so oft wie Reiher
 const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
+const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
+const PEACOCK_CALL_VOLUME = 0.35;
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
 const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
@@ -233,7 +241,7 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: 'Kescher',
-    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'koi', 'frog', 'mole', 'squirrel', 'heron', 'meerkat'])}`,
+    hint: `Damit fängst du ${animalIcons(['cat', 'fish', 'koi', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'])}`,
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
@@ -401,6 +409,10 @@ export default class GardenScene extends Phaser.Scene {
         sy = c.y - 78; // über dem First
         front = tileToWorld(house.tx1, house.ty1).y + TILE_H + 2; // vor dem Dach
       }
+      // ohne Zaun (Teich ohne Zaun): das Schild steht auf einem eigenen Holzpfosten
+      if (!e.gates.length && !house) {
+        this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
+      }
       const board = this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
       // im Tierpark: Schild antippen öffnet den Ausbau dieses Geheges (nur wenn man davorsteht)
       if (hasSlots(e)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.penAtSign() === e ? this.openEventsPanel(e.id) : this.tooFar()));
@@ -513,7 +525,7 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere im Gehege, die nicht (mehr) ganz in dessen Innenfläche stehen (z. B. nach einem Ausbau): neu hineinsetzen
     for (const a of this.animals) {
-      if (a.state !== 'penned' || (a.enclosure && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
+      if (a.state !== 'penned' || a.enclosure?.free || (a.enclosure && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
       const e = a.enclosure ?? ENCLOSURES.find((f) => accepts(f, a.species));
       if (e) this.placeInPen(a, e, true);
     }
@@ -855,6 +867,8 @@ export default class GardenScene extends Phaser.Scene {
                           ? new Tiger(this, x, y)
                         : species === 'orangutan'
                           ? new Orangutan(this, x, y)
+                        : species === 'peacock'
+                          ? new Peacock(this, x, y)
                         : species === 'giraffe'
                           ? new Giraffe(this, x, y)
                           : species === 'cat'
@@ -1242,7 +1256,7 @@ export default class GardenScene extends Phaser.Scene {
   // Gehegeausbau: alle Gehege mit Plätzen; noch nicht ausgebaute zuerst
   penUpgrades() {
     const cost = upgradeCost();
-    return ENCLOSURES.filter(hasSlots)
+    return ENCLOSURES.filter((e) => hasSlots(e) && !e.free)
       .map((e) => {
         const done = isUpgraded(e);
         return {
@@ -1356,7 +1370,9 @@ export default class GardenScene extends Phaser.Scene {
   // Erfolg: ein Gehege ist voll – kleine Meldung mit Tierbild und Stern
   showPenFull(e) {
     const box = document.getElementById('success');
-    box.innerHTML = `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div><b>${e.name} ist voll!</b><small>Alle ${penCapacity(e)} Plätze belegt – die Besucher sind begeistert.</small>`;
+    box.innerHTML = e.free
+      ? `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div><b>Alle ${penCapacity(e)} ${e.name} sind da!</b><small>Sie laufen frei durch den Park – die Besucher sind begeistert.</small>`
+      : `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div><b>${e.name} ist voll!</b><small>Alle ${penCapacity(e)} Plätze belegt – die Besucher sind begeistert.</small>`;
     box.classList.remove('show');
     void box.offsetWidth; // Animation neu starten
     box.classList.add('show');
@@ -1419,7 +1435,7 @@ export default class GardenScene extends Phaser.Scene {
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
       return `<div class="card${n ? ' has' : ''}">
-        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">Zuhause: <span class="num">${n}</span></span></div></div>
+        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">Zuhause: <span class="num">${n}${freeCap(s) ? ` / ${freeCap(s)}` : ''}</span></span></div></div>
         <div class="where">${places.join(', ')}</div>
         <div class="tools">${tools}</div>
         <div class="tip">${CATCH_TIPS[s] ?? ''}</div>
@@ -2057,6 +2073,21 @@ export default class GardenScene extends Phaser.Scene {
   // Ein Tier an eine freie Stelle in diesem Gehege setzen (Wassertiere in dessen Teich) und einziehen lassen
   // quiet: ohne Herz (z. B. beim Umsetzen nach einem Ausbau)
   placeInPen(animal, e, quiet = false) {
+    // freilaufend (Pfauen): einfach neben dem Spieler im Park loslassen
+    if (e.free) {
+      const p = this.player;
+      const spot = this.freeSpotNear(p.x, p.y, 40) ?? { x: p.x, y: p.y };
+      animal.x = spot.x;
+      animal.y = spot.y;
+      if (quiet) {
+        animal.restore('penned');
+      } else {
+        animal.penSince = Date.now();
+        animal.enterPen();
+      }
+      animal.enclosure = e;
+      return;
+    }
     const a = e.area;
     const water = ['fish', 'koi', 'crocodile'].includes(animal.species);
     const tiles = [];
@@ -2073,6 +2104,19 @@ export default class GardenScene extends Phaser.Scene {
     }
     animal.penSince = Date.now();
     animal.enterPen();
+  }
+
+  // Ruf eines wilden Pfaus: schallt ab und zu durchs ganze Gebiet (überall gleich laut)
+  updatePeacockCall(dt) {
+    this.peacockCallTimer = (this.peacockCallTimer ?? Phaser.Math.FloatBetween(5, PEACOCK_CALL_EVERY[1])) - dt;
+    if (this.peacockCallTimer > 0) return;
+    this.peacockCallTimer = Phaser.Math.FloatBetween(...PEACOCK_CALL_EVERY);
+    if (!this.animals.some((a) => a.species === 'peacock' && (a.state === 'wild' || a.enclosure?.free))) return;
+    if (this.cache.audio.exists('animal_peacock')) this.sound.play('animal_peacock', { volume: PEACOCK_CALL_VOLUME, detune: Phaser.Math.Between(-80, 80) });
+  }
+
+  peacockFlew() {
+    this.showToast(`${animalIcon('peacock', 3.2)} Zu nah – der Pfau ist davongeflogen! Warte, bis einer ein Rad schlägt.`);
   }
 
   // Orang-Utan: der Spieler winkt zurück (👋 über Henrik); was es bewirkt, entscheidet der Orang-Utan
@@ -2490,6 +2534,7 @@ export default class GardenScene extends Phaser.Scene {
     for (const a of this.animals) a.update(dt, this.player);
     this.visitors?.update(dt);
     this.updatePenCalls(dt);
+    this.updatePeacockCall(dt);
     this.cullStatic();
     if (this.riding) this.updateMount(); // in Gebäuden ab-, draußen wieder aufsteigen
     this.eventTimer -= dt;

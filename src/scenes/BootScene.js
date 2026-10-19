@@ -12,7 +12,7 @@ const PIXEL_ART = [
   'tall_x', 'tall_y', 'post_tall', 'gate_tall_x', 'gate_tall_y', 'den', 'den_sand',
   // Asien
   'agrass0', 'agrass1', 'agrass2', 'asia_path', 'asia_water0', 'asia_water1', 'asia_water2', 'hotspring',
-  'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree', 'hammock',
+  'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree', 'hammock', 'peacock_perch',
   'sun_rock', 'stone_lantern', 'torii',
   // Tierpark
   'park_path', 'signpost_post',
@@ -134,6 +134,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
+    // Pfau (Asien, Platzhalter) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
+    for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
     // Orang-Utan (Asien, Platzhalter) und das Flanschen-Männchen (seltene Variante); _tree: oben in der Baumkrone
     for (const k of ['orangutan', 'orangutan2']) {
       this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });

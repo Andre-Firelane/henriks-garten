@@ -97,6 +97,7 @@ export const OBJECTS = {
   9: { key: 'climb_tree', originY: 84 / 96, solid: true, hitbox: 9 }, // Kletterbaum im Affengehege
   F: { key: 'feeder', originY: 52 / 64, solid: true, hitbox: 10, feeder: true }, // Futterautomat im Tierpark
   // Asien
+  '+': { key: 'peacock_perch', originY: 84 / 96, solid: true, hitbox: 6 }, // hohe Sitzstange (Pfauengehege)
   H: { key: 'hammock', originY: 76 / 88, solid: true, hitbox: 10 }, // Hängematte mit Blätternest (Orang-Utan-Gehege)
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
@@ -187,14 +188,16 @@ export function setLevel(id) {
   ENCLOSURES = list.map((e) => {
     // Kacheln der Innenfläche: entweder ein Rechteck (area) oder alles, was vom Startpunkt (seed) aus erreichbar ist,
     // ohne über Zaun, Wand oder Tor zu gehen. So sind auch L-Formen und unregelmäßige Gehege möglich.
-    const tiles = e.seed ? floodPen(e.seed) : rectTiles(e.area);
+    // free: freilaufende Tiere (z. B. Pfauen) – ein "Gehege" ohne Fläche, Zaun und Schild, nur zum Zählen
+    // pond: Teich ohne Zaun (Koi) – das Gehege ist das zusammenhängende Wasser samt Brücke ab dem Startpunkt
+    const tiles = e.free ? [] : e.pond ? floodChars(e.seed, 'oE') : e.seed ? floodPen(e.seed) : rectTiles(e.area);
     const tileSet = new Set(tiles.map(({ tx, ty }) => tx + ',' + ty));
-    const a = e.area ?? {
+    const a = e.area ?? (e.free ? { tx0: 0, tx1: 0, ty0: 0, ty1: 0 } : {
       tx0: Math.min(...tiles.map((t) => t.tx)),
       tx1: Math.max(...tiles.map((t) => t.tx)),
       ty0: Math.min(...tiles.map((t) => t.ty)),
       ty1: Math.max(...tiles.map((t) => t.ty)),
-    };
+    });
     // Tore liegen im Zaun direkt neben der Innenfläche
     const gates = GATE_TILES.filter(({ tx, ty }) =>
       [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => tileSet.has(tx + dx + ',' + (ty + dy))),
@@ -203,7 +206,8 @@ export function setLevel(id) {
     const right = e.signSide === 'right';
     const g = right ? gates[gates.length - 1] : gates[0];
     const d = right ? 1 : -1;
-    const sign = e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null;
+    // ohne Tor (Teich ohne Zaun): eigener Platz fürs Schild (signAt, auf einem Pfosten)
+    const sign = e.signAt ?? (e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null);
     return { ...e, area: a, tiles, tileSet, gates, sign };
   });
   FISHPOND_TILES = tilesWith('o');
@@ -338,6 +342,25 @@ function rectTiles(a) {
 }
 
 // alle Kacheln, die man vom Startpunkt aus erreicht, ohne Zaun, Wand oder Tor zu überqueren
+// zusammenhängende Kacheln aus diesen Zeichen ab seed (z. B. das Wasser eines Teichs ohne Zaun)
+function floodChars(seed, chars) {
+  const seen = new Set([seed.tx + ',' + seed.ty]);
+  const tiles = [];
+  const todo = [seed];
+  while (todo.length) {
+    const t = todo.pop();
+    tiles.push(t);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { tx: t.tx + dx, ty: t.ty + dy };
+      const key = n.tx + ',' + n.ty;
+      if (seen.has(key) || !chars.includes(charAt(n.tx, n.ty))) continue;
+      seen.add(key);
+      todo.push(n);
+    }
+  }
+  return tiles;
+}
+
 function floodPen(seed) {
   const seen = new Set([seed.tx + ',' + seed.ty]);
   const tiles = [];
