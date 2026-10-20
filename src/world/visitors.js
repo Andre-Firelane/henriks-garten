@@ -138,11 +138,14 @@ export function buildPathGrid() {
     }
   }
   const exits = EXITS.map(({ tx, ty }) => ({ tx, ty })).filter((t) => walk.has(key(t.tx, t.ty)));
-  // Aussichtsplätze: Wegkacheln höchstens 2 Kacheln von der Innenfläche des Geheges (also direkt am Zaun),
-  // sonst höchstens 3; je Kachel steht nur ein Besucher
+  // Aussichtsplätze: Wegkacheln höchstens 2 Kacheln von der Innenfläche des Geheges (also direkt am Zaun); gibt es dort
+  // weniger als MIN_SPOTS (z. B. bei runden Gehegen etwas abseits vom Weg), auch weiter weg bis 4 Kacheln.
+  // Je Kachel steht nur ein Besucher
+  const MIN_SPOTS = 4;
   const spots = new Map();
   for (const e of ENCLOSURES) {
-    for (const r of [2, 3]) {
+    let fewest = null;
+    for (const r of [2, 3, 4]) {
       const list = [];
       for (const k of walk) {
         const [tx, ty] = k.split(',').map(Number);
@@ -150,6 +153,11 @@ export function buildPathGrid() {
         for (let dy = -r; dy <= r && !near; dy++) for (let dx = -r; dx <= r && !near; dx++) if (e.tileSet.has(key(tx + dx, ty + dy))) near = { tx: tx + dx, ty: ty + dy };
         if (near) list.push({ tx, ty, look: near, taken: null });
       }
+      if (list.length < MIN_SPOTS && r < 4) {
+        if (list.length && (!fewest || list.length > fewest.length)) fewest = list;
+        continue;
+      }
+      if (!list.length && fewest) list.push(...fewest);
       if (list.length) {
         // zum Hinschauen: die nächste Gehegekachel
         for (const s of list) {
