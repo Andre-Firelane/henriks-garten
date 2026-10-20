@@ -573,10 +573,13 @@ export function objectAt(tx, ty) {
 
 // Ist genau dieser Punkt fest? Wie isBlocked, aber Bäume und Büsche sind nur um den Stamm herum fest.
 // wade: durch Wasser waten (Wasserbüffel beim Reittier-Event in Asien)
-export function isBlockedPoint(x, y, wade = false) {
+// trample: über kleine Büsche laufen (Elefant beim Reittier-Event in der Savanne; die Randbüsche bleiben fest)
+const SMALL_BUSHES = 'vbk';
+export function isBlockedPoint(x, y, wade = false, trample = false) {
   if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_BODY.hw) return true;
   const { tx, ty } = worldToTile(x, y);
   if (wade && charAt(tx, ty) === '~') return false;
+  if (trample && SMALL_BUSHES.includes(charAt(tx, ty))) return false;
   const hitbox = objectAt(tx, ty)?.hitbox;
   if (!hitbox) return isBlocked(tx, ty);
   const c = tileToWorld(tx, ty);

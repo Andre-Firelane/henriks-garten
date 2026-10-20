@@ -75,6 +75,7 @@ export default class Player {
     this.mount = key;
     this.speed = key ? SPEED * RIDE_SPEED : SPEED;
     this.wade = key === 'ride_asia'; // der Wasserbüffel darf ins Wasser
+    this.trample = key === 'ride_savanna'; // der Elefant läuft über kleine Büsche
     this.sprite.setTexture(key ?? this.texture, this.sprite.frame.name).setOrigin(0.5, key ? RIDE_ORIGIN_Y : 112 / 116);
     this.shadow.setSize(key ? 46 : 26, key ? 11 : 9);
     this.handLift = HAND_LIFT[key] ?? 0;
@@ -110,9 +111,9 @@ export default class Player {
       const step = (this.speed * (wading ? WADE_SPEED : 1) * dt * Math.min(1, len)) / len;
       // Achsen getrennt prüfen, damit man an Hindernissen entlanggleitet
       const nx = this.x + vx * step;
-      if (!blockedAt(nx, this.y, FOOT_W, FOOT_H, this.wade)) this.x = nx;
+      if (!blockedAt(nx, this.y, FOOT_W, FOOT_H, this.wade, this.trample)) this.x = nx;
       const ny = this.y + vy * step;
-      if (!blockedAt(this.x, ny, FOOT_W, FOOT_H, this.wade)) this.y = ny;
+      if (!blockedAt(this.x, ny, FOOT_W, FOOT_H, this.wade, this.trample)) this.y = ny;
 
       this.walkTime += dt;
       this.recordTrail();

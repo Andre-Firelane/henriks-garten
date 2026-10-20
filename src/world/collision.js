@@ -11,12 +11,13 @@ export function footTiles(x, y, fw, fh) {
   ].map(([px, py]) => worldToTile(px, py));
 }
 
-// Stehen die Füße an Position x/y auf etwas Festem? wade: Wasser ist begehbar (Wasserbüffel)
-export function blockedAt(x, y, fw, fh, wade = false) {
+// Stehen die Füße an Position x/y auf etwas Festem? wade: Wasser ist begehbar (Wasserbüffel),
+// trample: kleine Büsche sind begehbar (Elefant)
+export function blockedAt(x, y, fw, fh, wade = false, trample = false) {
   return [
     [x - fw, y],
     [x + fw, y],
     [x, y - fh],
     [x, y + fh],
-  ].some(([px, py]) => isBlockedPoint(px, py, wade));
+  ].some(([px, py]) => isBlockedPoint(px, py, wade, trample));
 }
