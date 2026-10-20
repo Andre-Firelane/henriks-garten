@@ -14,7 +14,7 @@ const RANGE = 4; // so viele Kacheln weit sucht er nach Bambus
 const HOME_DIST = 6; // weiter weg vom Bambus läuft er zurück
 const SNACK_REACH = 1; // beim Folgen: Bambus so viele Kacheln neben ihm lockt ihn weg
 const SNACK_LOCK = 10; // so lange lässt er sich danach nicht mit Futter locken
-const SNACK_GRACE = 5; // nach dem Füttern so lange Zeit, ihn vom Bambus wegzulocken
+const SNACK_GRACE = 10; // nach einem Fang so lange Zeit, die Pandas vom Bambus wegzulocken (gilt für alle Pandas)
 const WALK_TIMEOUT = 10;
 const EAT_ORIGIN_Y = 92 / 96;
 
@@ -132,7 +132,10 @@ export default class Panda extends Animal {
   catch() {
     this.sit = null;
     this.snackLock = 0;
-    this.grace = SNACK_GRACE; // erst mal vom Bambus weg
+    // Schonfrist für alle Pandas, auch die, die schon hinterherlaufen: sonst läuft einer weg, wenn man einen
+    // fängt, der gerade im Gras sitzt
+    for (const a of this.scene.animals) if (a.species === 'panda') a.grace = Math.max(a.grace ?? 0, SNACK_GRACE);
+    this.grace = SNACK_GRACE;
     super.catch();
   }
 

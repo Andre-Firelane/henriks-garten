@@ -71,6 +71,8 @@
         background: rgba(20, 14, 8, 0.55); font: 15px/1.3 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
       }
       #events.show { display: flex; }
+      /* auf kleinen Bildschirmen: die Tafel scrollt (Wischen nach oben und unten) */
+      .ev-box { max-height: 92vh; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
       .ev-hearts { margin: -6px 0 12px; font-size: 16px; }
       .ev-tabs { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
       .ev-tab {
@@ -210,7 +212,7 @@
       #hud .hearts.pulse { animation: heart-pulse 0.45s ease-out; }
       @keyframes heart-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
       /* Touch-Steuerung (nur sichtbar, wenn body.touch) */
-      #stick-zone, #btn-action, #btn-reset { display: none; }
+      #stick-zone, #btn-action, #btn-reset, #btn-full { display: none; }
       body.touch #stick-zone { display: block; position: fixed; left: 0; top: 0; bottom: 0; width: 50%; }
       #stick {
         position: fixed; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%;
@@ -241,10 +243,17 @@
         font: bold 28px/1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
         background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
       }
+      /* Vollbild-Knopf neben dem Neustart (verschwindet im Vollbild und wo es kein Vollbild gibt) */
+      body.touch #btn-full {
+        display: block; position: fixed; right: 76px; top: 16px; width: 52px; height: 52px; border-radius: 12px;
+        font: bold 26px/1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
+      }
+      body.touch.fullscreen #btn-full, body.touch.no-fullscreen #btn-full { display: none; }
       /* Auf dem Tablet zeigt der Aktionsknopf das Werkzeug; der Wegweiser rückt nach oben */
       body.touch #tools { display: none; }
       body.touch #sign { bottom: auto; top: 84px; }
-      body.touch #hud { max-width: calc(100% - 120px); }
+      body.touch #hud { max-width: calc(100% - 180px); }
       /* Hinweise am Bildschirmrand: in welcher Richtung eine ausgelegte Falle liegt */
       #markers { position: fixed; inset: 0; pointer-events: none; }
       .marker {
@@ -286,6 +295,7 @@
     <div id="stick"><div id="stick-knob"></div></div>
     <button id="btn-action" aria-label="Aktion"></button>
     <button id="btn-reset" aria-label="Neustart">↺</button>
+    <button id="btn-full" aria-label="Vollbild">⛶</button>
     <button id="btn-swap" aria-label="Werkzeug wechseln">🧰</button>
     <script>
       // Tablet/Handy schon beim Laden erkennen, damit die Steuerung sofort da ist

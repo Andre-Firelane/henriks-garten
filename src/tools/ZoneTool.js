@@ -5,7 +5,9 @@
 
 export default class ZoneTool {
   // maxCatch: höchstens so viele Tiere pro Einsatz (z. B. 1 beim Lasso); ohne Angabe beliebig viele
-  constructor(scene, player, { id, reach, radius, duration, catchFrom, catchTo, maxCatch = Infinity }) {
+  // aim: in die genaue Laufrichtung (statt schräg in Blickrichtung), z. B. beim Lasso
+  constructor(scene, player, { id, reach, radius, duration, catchFrom, catchTo, maxCatch = Infinity, aim = false }) {
+    this.aim = aim;
     this.scene = scene;
     this.player = player;
     this.id = id;
@@ -42,6 +44,12 @@ export default class ZoneTool {
   // Mitte der Fangzone vor dem Spieler (die Blickrichtung ist immer schräg, daher halbe Höhe)
   zoneAhead() {
     const p = this.player;
+    if (this.aim && p.aimX != null) {
+      // genau in Laufrichtung auf dem Bildschirm, so weit wie der schräge Wurf (gemessen in Kachel-Abstand, y doppelt)
+      const ux = p.aimX, uy = p.aimY;
+      const k = (this.reach * Math.SQRT2) / Math.hypot(ux, uy * 2);
+      return { x: p.x + ux * k, y: p.y + uy * k };
+    }
     return { x: p.x + p.faceX * this.reach, y: p.y + (p.faceY * this.reach) / 2 };
   }
 

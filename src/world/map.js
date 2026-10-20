@@ -140,7 +140,7 @@ export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, 
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
 // Grundfläche des Autos (Schnellreise): Strecke vom Vorderrad links unten bis zum Anhänger rechts oben (Welt-Pixel)
 export let CAR_BODY = null;
-const CAR_HALF_WIDTH = 13; // so weit neben dieser Strecke ist es noch fest
+const CAR_HALF_WIDTH = 15; // so weit neben dieser Strecke ist es noch fest (mal Größe des Autos)
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
@@ -175,15 +175,24 @@ export function setLevel(id) {
   const car = LEVEL.car;
   const c = car && tileToWorld(car.tx, car.ty);
   const k = car?.scale ?? 1; // größere Autos haben eine längere Grundfläche
-  CAR_BODY = c ? { ax: c.x - 44 * k, ay: c.y - 4 * k, bx: c.x + 48 * k, by: c.y - 24 * k } : null;
+  // Mittellinie der Grundfläche (Auto und Anhänger): von vorne links nach hinten rechts, mitten zwischen Vorder- und Hinterkante
+  CAR_BODY = c ? { ax: c.x - 42 * k, ay: c.y - 14 * k, bx: c.x + 46 * k, by: c.y - 34 * k, hw: CAR_HALF_WIDTH * k } : null;
   const beyondGate = (tx, ty, dy) => {
     while (charAt(tx, ty) === 'G') ty += dy;
     return charAt(tx, ty);
   };
-  GATE_TILES = tilesWith('G').map((t) => ({
-    ...t,
-    vertical: '|!;}]N'.includes(beyondGate(t.tx, t.ty - 1, -1)) || '|!;}]N'.includes(beyondGate(t.tx, t.ty + 1, 1)),
-  }));
+  const isFence = (c) => !!OBJECTS[c]?.fence;
+  GATE_TILES = tilesWith('G').map((t) => {
+    const up = beyondGate(t.tx, t.ty - 1, -1);
+    const down = beyondGate(t.tx, t.ty + 1, 1);
+    let vertical = '|!;}]N'.includes(up) || '|!;}]N'.includes(down);
+    // Zaun (auch ein Eckstück) über oder unter dem Tor, links und rechts aber keiner: das Tor sitzt in einer senkrechten
+    // Zaunlinie (z. B. bei runden Gehegen, wo neben dem Tor gleich die Ecke kommt)
+    const left = charAt(t.tx - 1, t.ty);
+    const right = charAt(t.tx + 1, t.ty);
+    if (!vertical && (isFence(up) || isFence(down)) && !isFence(left) && !isFence(right) && left !== 'G' && right !== 'G') vertical = true;
+    return { ...t, vertical };
+  });
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const all = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
   const list = all.filter((e) => !e.unlock || game.unlocked.includes(e.unlock)); // noch nicht gebaute Gehege fehlen
@@ -527,7 +536,7 @@ export function objectAt(tx, ty) {
 // Ist genau dieser Punkt fest? Wie isBlocked, aber Bäume und Büsche sind nur um den Stamm herum fest.
 // wade: durch Wasser waten (Wasserbüffel beim Reittier-Event in Asien)
 export function isBlockedPoint(x, y, wade = false) {
-  if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_HALF_WIDTH) return true;
+  if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_BODY.hw) return true;
   const { tx, ty } = worldToTile(x, y);
   if (wade && charAt(tx, ty) === '~') return false;
   const hitbox = objectAt(tx, ty)?.hitbox;

@@ -25,12 +25,24 @@ export function setupTouchControls() {
   window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
   // Vollbild: Chrome erlaubt es erst beim Loslassen des Fingers (touchend), nicht beim Aufsetzen.
   // Bei jedem Tippen erneut versuchen, falls das Vollbild verlassen wurde (z. B. durch die Neustart-Rückfrage).
-  window.addEventListener('touchend', () => {
-    if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
-    document.documentElement
-      .requestFullscreen({ navigationUI: 'hide' })
+  // Klappt das nicht von selbst, gibt es oben rechts den Vollbild-Knopf.
+  const root = document.documentElement;
+  const request = root.requestFullscreen?.bind(root) ?? root.webkitRequestFullscreen?.bind(root);
+  const isFull = () => !!(document.fullscreenElement ?? document.webkitFullscreenElement);
+  const enterFullscreen = () => {
+    if (isFull() || !request) return;
+    Promise.resolve(request({ navigationUI: 'hide' }))
       .then(() => screen.orientation?.lock?.('landscape')) // im Vollbild auf quer festhalten
       .catch(() => {});
+  };
+  if (!request) document.body.classList.add('no-fullscreen'); // z. B. iPhone: dort geht es nicht
+  const markFull = () => document.body.classList.toggle('fullscreen', isFull());
+  document.addEventListener('fullscreenchange', markFull);
+  document.addEventListener('webkitfullscreenchange', markFull);
+  window.addEventListener('touchend', enterFullscreen);
+  document.getElementById('btn-full').addEventListener('click', (e) => {
+    e.stopPropagation();
+    enterFullscreen();
   });
 
   let stickId = null;

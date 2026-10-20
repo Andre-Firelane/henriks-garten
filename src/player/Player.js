@@ -98,6 +98,9 @@ export default class Player {
     const len = Math.hypot(vx, vy);
     if (moving) {
       // Die Figur hat nur schräge Ansichten: die jeweils andere Achse merken wir uns
+      // genaue Laufrichtung (auch gerade oder dazwischen) für Würfe wie das Lasso
+      this.aimX = vx / len;
+      this.aimY = vy / len;
       if (Math.abs(vx) > len * 0.25) this.faceX = Math.sign(vx);
       if (Math.abs(vy) > len * 0.25) this.faceY = Math.sign(vy);
 
