@@ -135,7 +135,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
-    // Pfau (Asien) und der weiße Pfau (seltene Variante, noch Platzhalter); _wheel: schlägt ein Rad
+    // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
     for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
     // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante, noch Platzhalter); _tree: oben in der Baumkrone
     this.load.spritesheet('orangutan_eat', 'assets/orangutan_eat.png', { frameWidth: 88, frameHeight: 88 }); // sitzt und frisst

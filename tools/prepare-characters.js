@@ -164,6 +164,9 @@ const CHARACTERS = [
   // Pfau mit Rad und ohne (bei Pfau.png ist das Rad der Vorderansichten weggeschnitten, siehe tools/peacock-cut.cjs)
   { src: 'Sprites/Pfau Rad.png', out: 'peacock_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
   { src: 'Sprites/Pfau.png', out: 'peacock.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
+  // weißer Pfau (seltene Variante): Rad der Vorderansichten mit dem blauen Pfau als Schablone weggeschnitten (tools/peacock2-cut.cjs)
+  { src: 'Sprites/Pfau2 Rad.png', out: 'peacock2_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
+  { src: 'Sprites/Pfau2.png', out: 'peacock2.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)

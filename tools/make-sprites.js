@@ -1764,61 +1764,6 @@ function hammock() {
   return c;
 }
 
-// ---------- Pfau (Asien): Platzhalter, 4 Ansichten à 96x96 (Füße bei 92); wheel: schlägt ein Rad; white: weißer Pfau ----------
-function peacockColors(white) {
-  return white
-    ? { body: '#f4f4f0', neck: '#ffffff', tail: '#e8e8e0', eye: '#d8d8cc', eyeIn: '#c8c8bc', crest: '#ffffff' }
-    : { body: '#2f6fb8', neck: '#2a8ac8', tail: '#3f8a3c', eye: '#e8b84a', eyeIn: '#2b4fa0', crest: '#2a8ac8' };
-}
-
-function peacockSprite(wheel = false, white = false) {
-  const C = peacockColors(white);
-  const view = (back) => {
-    const o = new Canvas(96, 96);
-    const g = 92;
-    if (wheel) {
-      // aufgefächertes Rad hinter dem Körper mit "Augen"
-      o.ellipse(48, g - 44, 40, 34, hex(C.tail));
-      for (let i = 0; i < 11; i++) {
-        const a = Math.PI * (0.05 + (0.9 * i) / 10);
-        const ex = 48 - Math.cos(a) * 32, ey = g - 44 - Math.sin(a) * 26;
-        o.ellipse(ex, ey, 4.5, 5.5, hex(C.eye));
-        o.ellipse(ex, ey, 2.2, 2.8, hex(C.eyeIn));
-      }
-      if (back) o.ellipse(48, g - 40, 30, 24, hex(white ? '#d8d8cc' : '#8a6a3a'), true); // Rückseite des Rads: Federkiele
-    } else {
-      // Schleppe flach nach hinten
-      o.poly([[44, g - 20], [6, g - 10], [4, g - 4], [44, g - 12]], hex(C.tail));
-      for (const x of [12, 22, 32]) o.ellipse(x, g - 9, 3, 2.5, hex(C.eye));
-    }
-    // Beine
-    for (const x of [44, 52]) o.rect(x, g - 12, 2, 12, hex('#8a7a6a'));
-    // Körper, Hals, Kopf mit Krönchen
-    o.ellipse(48, g - 20, 12, 10, hex(C.body));
-    const hx = back ? 50 : 56;
-    o.poly([[44, g - 26], [52, g - 26], [hx + 2, g - 46], [hx - 3, g - 46]], hex(C.neck));
-    o.circle(hx, g - 49, 5, hex(C.neck));
-    for (const dx of [-3, 0, 3]) {
-      o.line(hx, g - 53, hx + dx, g - 60, hex(C.crest));
-      o.circle(hx + dx, g - 60, 1.5, hex(C.crest));
-    }
-    if (!back) {
-      o.circle(hx + 2, g - 50, 1.4, hex('#1a1210'));
-      o.poly([[hx + 4, g - 49], [hx + 9, g - 48], [hx + 4, g - 47]], hex('#c8a060')); // Schnabel
-      if (!white) o.line(hx - 1, g - 48, hx + 3, g - 47, hex('#ffffff'));
-    }
-    o.outline(INK);
-    return o;
-  };
-  const sheet = new Canvas(384, 96);
-  const front = view(false), back = view(true);
-  sheet.draw(front, 0, 0);
-  sheet.draw(front, 96, 0, true);
-  sheet.draw(back, 192, 0);
-  sheet.draw(back, 288, 0, true);
-  return sheet;
-}
-
 // Pfauengehege (Ausbau): hohe Sitzstange aus Holz; Kachelmitte bei (32, 84)
 function peacockPerch() {
   const o = new Canvas(64, 96);
@@ -2038,9 +1983,6 @@ const sprites = {
   'orangutan2.png': orangutanSprite(true),
   'orangutan2_tree.png': orangutanTree(true),
   'hammock.png': hammock(), // Orang-Utan-Gehege (Ausbau)
-  // weißer Pfau (Platzhalter; der normale Pfau kommt aus Sprites/Pfau.jpg und Pfau Rad.jpg); _wheel: schlägt ein Rad
-  'peacock2.png': peacockSprite(false, true),
-  'peacock2_wheel.png': peacockSprite(true, true),
   'peacock_perch.png': peacockPerch(), // Pfauengehege (Ausbau)
   'build_stakes.png': buildStakes(), // Baustelle in noch nicht ausgebauten Gehegen
   'build_planks.png': buildPlanks(),
