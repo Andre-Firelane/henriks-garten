@@ -207,6 +207,8 @@ const PEN_CALL_DIST = 190; // so nah muss man am Gehege sein (in Kachel-Proporti
 const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
 // welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
 const PEN_CALLS = { lion: 'lion_roar', stag: null, deer: null };
+// Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
+const CALL_FALLBACK = { tiger: 'lion_roar' };
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -1103,7 +1105,9 @@ export default class GardenScene extends Phaser.Scene {
 
   // Ruf eines Tiers (beim Bauernhof-Event muhen, grunzen und meckern die Schafe)
   callOf(a) {
-    return a.farm ? `animal_${a.farm}` : `animal_${a.species}`;
+    const key = a.farm ? `animal_${a.farm}` : `animal_${a.species}`;
+    // ohne eigenen Ton: ein ähnlicher (der Tiger brüllt wie der Löwe)
+    return this.cache.audio.exists(key) ? key : CALL_FALLBACK[a.species] ?? key;
   }
 
   // Tierpark: ab und zu ein Ruf aus dem nächsten Gehege mit Tieren, die einen Ruf haben
