@@ -25,6 +25,7 @@ const SOUNDS = [
   ['Sounds/Panda.mp3', 'public/assets/sounds/animal_panda.wav', 0.7, 1.3, 0.8], // erster Laut
   ['Sounds/Flamingo.mp3', 'public/assets/sounds/animal_flamingo.wav', 0.18, 1.25, 0.8], // erster Ruf
   ['Sounds/Zebra.mp3', 'public/assets/sounds/animal_zebra.wav', 0.15, 1.45, 0.8], // erstes Wiehern, ohne den Knack am Anfang
+  ['Sounds/Pfau.mp3', 'public/assets/sounds/animal_peacock.wav', 1.25, 2.45, 0.8], // erster Ruf (davor Stille)
   // Warnruf des Erdmännchen-Wächters (die ersten Rufe, ohne Knack und Stille davor)
   ['Sounds/Erdmännchen Alarm.mp3', 'public/assets/sounds/meerkat_alarm.wav', 2.5, 1.6, 0.8],
   // Brüllen des Löwen, wenn er den Spieler bemerkt (ohne den Knack am Anfang)

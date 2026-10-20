@@ -78,6 +78,7 @@ const ANIMAL_SOUNDS = {
   flamingo: 'animal_flamingo.wav',
   panda: 'animal_panda.wav',
   macaque: 'animal_macaque.wav',
+  peacock: 'animal_peacock.wav', // schallt ab und zu durchs ganze Gebiet
   cow: 'animal_cow.wav', // Bauernhof-Event
   pig: 'animal_pig.wav',
   goat: 'animal_goat.wav',
