@@ -155,6 +155,9 @@ const CHARACTERS = [
   // Tiger (Asien): laufend und fressend, gleicher Maßstab
   { src: 'Sprites/Tiger.png', out: 'tiger.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
   { src: 'Sprites/Tiger frisst.png', out: 'tiger_eat.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
+  // weißer Tiger (seltene Variante): gleicher Aufbau und Maßstab
+  { src: 'Sprites/Tiger2.png', out: 'tiger2.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
+  { src: 'Sprites/Tiger2 frisst.png', out: 'tiger2_eat.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
   // Orang-Utan: auf allen Vieren und sitzend beim Fressen (das sitzende Bild nimmt er auch oben im Baum, siehe tree-peeks.cjs)
   { src: 'Sprites/Orang Utan.png', out: 'orangutan.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
   { src: 'Sprites/Orang Utan sitzt und frisst.png', out: 'orangutan_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },

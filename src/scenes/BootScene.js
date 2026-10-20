@@ -143,8 +143,8 @@ export default class BootScene extends Phaser.Scene {
       this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
       this.load.image(`${k}_tree`, `assets/${k}_tree.png`);
     }
-    // Tiger (Asien) und der weiße Tiger (seltene Variante, noch Platzhalter); _peek: neugieriges Gesicht im Bambus
-    this.load.spritesheet('tiger_eat', 'assets/tiger_eat.png', { frameWidth: 96, frameHeight: 80 });
+    // Tiger (Asien) und der weiße Tiger (seltene Variante); _peek: neugieriges Gesicht im Bambus
+    for (const k of ['tiger_eat', 'tiger2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 80 });
     for (const k of ['tiger', 'tiger2']) {
       this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 80 });
       this.load.image(`${k}_peek`, `assets/${k}_peek.png`);

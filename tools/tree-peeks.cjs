@@ -56,14 +56,15 @@ function leaves(dst, list, dark, light) {
   for (const [x, y, rx, ry] of list) fill(x - 1, y - 1, rx * 0.55, ry * 0.45, light);
 }
 
-// Tiger: Kopf aus der Vorderansicht (nach rechts unten), untere Hälfte vom Bambus verdeckt
-{
-  const t = read('Sprites/Tiger.png');
-  const head = shrink(t, 138, 166, 266, 294, 50, 50);
+// Tiger und weißer Tiger: Kopf aus der Vorderansicht (nach rechts unten), untere Hälfte vom Bambus verdeckt
+// Ausschnitt um den Kopf (x, y der oberen linken Ecke, 128 x 128 Pixel im freigestellten Bild)
+for (const [file, outName, hx, hy] of [['Sprites/Tiger.png', 'tiger_peek', 138, 166], ['Sprites/Tiger2.png', 'tiger2_peek', 146, 168]]) {
+  const t = read(file);
+  const head = shrink(t, hx, hy, hx + 128, hy + 128, 50, 50);
   const out = new PNG({ width: 64, height: 64 });
   blit(out, head, 7, 1);
   leaves(out, [[6, 47, 9, 4], [20, 52, 10, 4], [36, 50, 11, 4], [52, 53, 10, 4], [60, 45, 6, 3], [28, 58, 12, 4], [48, 59, 10, 3], [10, 57, 9, 3]], [79, 138, 50], [122, 184, 74]);
-  fs.writeFileSync('public/assets/tiger_peek.png', PNG.sync.write(out));
+  fs.writeFileSync(`public/assets/${outName}.png`, PNG.sync.write(out));
 }
 
 // Orang-Utan: sitzend (erstes Bild von "sitzt und frisst"), unten Laub der Baumkrone

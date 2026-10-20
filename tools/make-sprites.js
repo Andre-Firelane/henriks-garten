@@ -1678,96 +1678,6 @@ function buildPlanks() {
   return c;
 }
 
-// ---------- Tiger (Asien): Platzhalter, 4 Ansichten à 96x80 (Füße bei 76); white: weißer Tiger (seltene Variante) ----------
-function tigerColors(white) {
-  return white
-    ? { fur: '#f2efe6', dark: '#d8d2c4', stripe: '#3a3a44', belly: '#ffffff' }
-    : { fur: '#e8892c', dark: '#c86a1c', stripe: '#2b2018', belly: '#fbecd4' };
-}
-
-function tigerSprite(white = false) {
-  const C = tigerColors(white);
-  const view = (back) => {
-    const o = new Canvas(96, 80);
-    const g = 76;
-    // Beine
-    for (const [x, d] of [[24, 0], [33, 2], [60, 0], [69, 2]]) {
-      o.rect(x - 4, g - 20 - d, 9, 20 - (d ? 1 : 0), hex(C.dark));
-      o.rect(x - 4, g - 4 - d, 9, 4, hex(C.belly));
-    }
-    // Schwanz mit Ringen
-    for (let i = 0; i < 14; i++) {
-      const tx = 16 - i * 0.6, ty = g - 34 - i * 1.4;
-      o.circle(tx, ty, 2.6, hex(i % 4 < 2 ? C.fur : C.stripe));
-    }
-    // Körper mit Streifen
-    o.ellipse(46, g - 30, 30, 15, hex(C.fur));
-    o.ellipse(46, g - 22, 24, 6, hex(C.belly), true);
-    for (const x of [28, 36, 44, 52, 60]) o.poly([[x, g - 45], [x + 4, g - 45], [x + 1, g - 30], [x - 2, g - 32]], hex(C.stripe), true);
-    // Kopf
-    const hx = back ? 66 : 72, hy = g - 42;
-    o.circle(hx, hy, 14, hex(C.fur));
-    for (const ex of [-10, 9]) {
-      o.circle(hx + ex, hy - 11, 4.5, hex(C.fur));
-      o.circle(hx + ex, hy - 11, 2, hex(C.stripe));
-    }
-    for (const dx of [-6, 0, 6]) o.rect(hx + dx - 1, hy - 13, 2, 6, hex(C.stripe)); // Stirnstreifen
-    if (!back) {
-      o.ellipse(hx + 2, hy + 6, 9, 6, hex(C.belly)); // Schnauze
-      o.circle(hx - 5, hy - 2, 2.4, hex('#2b2b2b'));
-      o.circle(hx + 7, hy - 2, 2.4, hex('#2b2b2b'));
-      o.set(hx - 5, hy - 3, hex('#ffffff'));
-      o.set(hx + 7, hy - 3, hex('#ffffff'));
-      o.ellipse(hx + 2, hy + 3, 2.5, 1.8, hex('#d86a7a')); // Nase
-      for (const dx of [-12, 12]) o.line(hx + dx * 0.6, hy + 4, hx + dx, hy + 2, hex(C.stripe)); // Wangenstreifen
-    }
-    o.outline(INK);
-    return o;
-  };
-  const sheet = new Canvas(384, 80);
-  const front = view(false), back = view(true);
-  sheet.draw(front, 0, 0);
-  sheet.draw(front, 96, 0, true);
-  sheet.draw(back, 192, 0);
-  sheet.draw(back, 288, 0, true);
-  return sheet;
-}
-
-// neugieriges Tigergesicht zwischen Bambusblättern (schaut aus dem Bambus); Mitte unten bei (32, 60)
-function tigerPeek(white = false) {
-  const C = tigerColors(white);
-  const o = new Canvas(64, 64);
-  const hx = 32, hy = 36;
-  o.circle(hx, hy, 18, hex(C.fur));
-  for (const ex of [-13, 13]) {
-    o.circle(hx + ex, hy - 14, 6, hex(C.fur));
-    o.circle(hx + ex, hy - 14, 3, hex('#f4c0b0'));
-  }
-  for (const dx of [-7, 0, 7]) o.rect(hx + dx - 1, hy - 17, 3, 7, hex(C.stripe));
-  for (const s of [-1, 1]) for (const dy of [-2, 4]) o.line(hx + s * 18, hy + dy, hx + s * 11, hy + dy + 1, hex(C.stripe));
-  o.ellipse(hx, hy + 8, 11, 7, hex(C.belly));
-  // große, runde, neugierige Augen mit Lichtpunkt
-  for (const ex of [-7, 7]) {
-    o.circle(hx + ex, hy - 2, 4.5, hex('#ffffff'));
-    o.circle(hx + ex + 1, hy - 1, 3, hex('#3a2a1a'));
-    o.circle(hx + ex, hy - 3, 1.2, hex('#ffffff'));
-  }
-  o.ellipse(hx, hy + 5, 3, 2, hex('#d86a7a'));
-  o.line(hx, hy + 7, hx - 3, hy + 10, hex(C.stripe));
-  o.line(hx, hy + 7, hx + 3, hy + 10, hex(C.stripe));
-  o.outline(INK);
-  // Bambusblätter davor
-  const c = new Canvas(64, 64);
-  c.draw(o, 0, 0);
-  const leaf = hex('#5f9a3a'), leaf2 = hex('#7ab84a');
-  for (const [x, y, w] of [[8, 50, 10], [22, 56, 9], [44, 55, 10], [56, 48, 9], [4, 38, 8], [60, 34, 7]]) {
-    c.ellipse(x, y, w, 3, leaf);
-    c.ellipse(x - 1, y - 1, w * 0.6, 1.5, leaf2, true);
-  }
-  c.outline(INK);
-  return c;
-}
-
 // ---------- Orang-Utan (Asien): Platzhalter, 4 Ansichten à 88x88 (Füße bei 84); flange: Flanschen-Männchen ----------
 const ORANG = { fur: '#b8582a', dark: '#8a3e1c', light: '#d47a44', face: '#6a4a3a', faceLight: '#8a6650' };
 
@@ -2123,9 +2033,6 @@ const sprites = {
   'fountain.png': fountain(),
   'nest_box.png': nestBox(),
   'lion_rock.png': lionRock(),
-  // weißer Tiger (Platzhalter, der normale Tiger kommt aus Sprites/Tiger.jpg, siehe prepare-characters.js); _peek: Gesicht im Bambus
-  'tiger2.png': tigerSprite(true),
-  'tiger2_peek.png': tigerPeek(true),
   'ball.png': toyBall(), // Ball als Werkzeug (Bild in der Werkzeugleiste und in der Kiste)
   // Flanschen-Männchen (Platzhalter; der normale Orang-Utan kommt aus Sprites/Orang Utan.jpg); _tree: oben in der Baumkrone
   'orangutan2.png': orangutanSprite(true),
