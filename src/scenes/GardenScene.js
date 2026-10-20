@@ -709,33 +709,44 @@ export default class GardenScene extends Phaser.Scene {
         deck.fillStyle(0x6e3a22, 1);
         deck.fillPoints([a, b, { x: b.x, y: b.y + 3 }, { x: a.x, y: a.y + 3 }], true);
       }
-      const ys = [pt(0, 0).y, pt(len, 1).y, pt(0, 1).y, pt(len, 0).y];
-      const rail = (v, depth) => {
-        const g = this.add.graphics().setDepth(depth);
-        const line = (h, w, col) => {
-          g.lineStyle(w, col, 1);
-          g.beginPath();
-          for (let u = 0; u <= len + 1e-6; u += STEP) {
-            const p = pt(u, v, h);
-            if (u === 0) g.moveTo(p.x, p.y);
-            else g.lineTo(p.x, p.y);
-          }
-          g.strokePath();
-        };
-        // Pfosten
-        for (let u = 0; u <= len + 1e-6; u += 0.5) {
-          const a = pt(u, v, 0), b = pt(u, v, 13);
-          g.lineStyle(4, 0x2b1d14, 1).lineBetween(a.x, a.y, b.x, b.y - 1);
-          g.lineStyle(2, 0x9c2e20, 1).lineBetween(a.x, a.y, b.x, b.y);
-          g.fillStyle(0xe8b84a, 1).fillRect(b.x - 1, b.y - 1, 3, 2);
-        }
-        line(12, 4, 0x2b1d14); // Handlauf mit dunkler Kontur
-        line(12, 2, 0xd64a32);
-        line(6, 3, 0x2b1d14); // Mittellatte
-        line(6, 1.5, 0xc8402c);
+      // Geländer stückweise (je eine halbe Kachel), jedes Stück mit der Tiefe seiner Stelle am Boden: so steht man vor
+      // dem vorderen Geländer, wenn man davor steht, und dahinter, wenn man auf der Brücke ist – auf der ganzen Länge
+      const groundY = (u, v) => {
+        const along = br.from + u;
+        const cross = br.at + v;
+        const [txf, tyf] = br.axis === 'y' ? [cross, along] : [along, cross];
+        return (txf + tyf) * (TILE_H / 2);
       };
-      rail(0, Math.min(...ys) - 24);
-      rail(1, Math.max(...ys) + 24);
+      const rail = (v, shift) => {
+        const PIECE = 0.5;
+        for (let u0 = 0; u0 < len - 1e-6; u0 += PIECE) {
+          const u1 = Math.min(len, u0 + PIECE);
+          const g = this.add.graphics().setDepth(groundY((u0 + u1) / 2, v) + shift);
+          const line = (h, w, col) => {
+            g.lineStyle(w, col, 1);
+            g.beginPath();
+            for (let u = u0, first = true; u <= u1 + 1e-6; u += STEP, first = false) {
+              const p = pt(Math.min(u, u1), v, h);
+              if (first) g.moveTo(p.x, p.y);
+              else g.lineTo(p.x, p.y);
+            }
+            g.strokePath();
+          };
+          // Pfosten am Anfang des Stücks (und am Ende der Brücke)
+          for (const u of u1 >= len - 1e-6 ? [u0, len] : [u0]) {
+            const a = pt(u, v, 0), b = pt(u, v, 13);
+            g.lineStyle(4, 0x2b1d14, 1).lineBetween(a.x, a.y, b.x, b.y - 1);
+            g.lineStyle(2, 0x9c2e20, 1).lineBetween(a.x, a.y, b.x, b.y);
+            g.fillStyle(0xe8b84a, 1).fillRect(b.x - 1, b.y - 1, 3, 2);
+          }
+          line(12, 4, 0x2b1d14); // Handlauf mit dunkler Kontur
+          line(12, 2, 0xd64a32);
+          line(6, 3, 0x2b1d14); // Mittellatte
+          line(6, 1.5, 0xc8402c);
+        }
+      };
+      rail(0, -4); // hinten: hinter allem, was auf der Brücke steht
+      rail(1, 2); // vorne: vor allem auf der Brücke, hinter allem davor
     }
   }
 
