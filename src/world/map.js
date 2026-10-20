@@ -101,7 +101,7 @@ export const OBJECTS = {
   // Aquarium: Fassade am Rand des Tierparks (großes Bild, ragt über den Kartenrand; die Kachelmitte ist die Tür)
   '`': { key: 'aquarium_facade', originX: 344 / 480, originY: 290 / 360, solid: false, noCull: true, depthAlways: -12 },
   // Deko in den Wassertanks
-  '(': { key: 'seaweed', originY: 52 / 64, solid: false },
+  '(': { key: 'seaweed', originY: 100 / 112, solid: false },
   ')': { key: 'coral', originY: 52 / 64, solid: false },
   '?': { key: 'tank_rock', originY: 52 / 64, solid: false },
   '/': { key: 'shell', originY: 52 / 64, solid: false },
@@ -495,7 +495,11 @@ export function exitAt(tx, ty) {
 
 export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
-  const house = buildingAt(tx, ty);
+  let house = buildingAt(tx, ty);
+  // unter den Glaswänden eines Wassertanks: Boden der Halle drumherum (der Sand liegt nur innen)
+  if (house?.style === 'tank' && (tx === house.tx0 || tx === house.tx1 || ty === house.ty0 || ty === house.ty1)) {
+    house = buildings().find((b) => b !== house && tx >= b.tx0 && tx <= b.tx1 && ty >= b.ty0 && ty <= b.ty1) ?? house;
+  }
   if (house) return HUT_FLOOR[house.style] ?? 'planks'; // die ganze Hütte hat Holzboden, auch unter Wänden und Tür
   if (PATH_CHARS.includes(c)) return LEVEL.path;
   // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel

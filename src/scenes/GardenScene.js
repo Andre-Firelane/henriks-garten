@@ -64,7 +64,7 @@ import Giraffe from '../animals/Giraffe.js';
 import Panda from '../animals/Panda.js';
 import Tiger from '../animals/Tiger.js';
 import Peacock from '../animals/Peacock.js';
-import TankFish from '../aquarium/TankFish.js';
+import { stockTank } from '../aquarium/TankFish.js';
 import Orangutan, { WAVE_DIST } from '../animals/Orangutan.js';
 import Macaque from '../animals/Macaque.js';
 import Cat from '../animals/Cat.js';
@@ -182,8 +182,9 @@ const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
 // vordere Wände auch von außen halb durchsichtig (Katzenhaus aus Glas: sonst verschwinden die Katzen vorne hinter dem Sockel)
 const FRONT_ALPHA = { cathouse: 0.5, tank: 0.45 }; // Wassertanks: vorne Glas, durch das man die Fische sieht
-const TANK_FISH = [6, 8]; // so viele Zierfische schwimmen in jedem Wassertank
-const TANK_WATER_UP = 38; // Höhe der Wasseroberfläche (knapp unter der Oberkante der Glaswände)
+const TANK_FISH = [12, 18]; // so viele Zierfische schwimmen in jedem Wassertank
+const TANK_TOP = 120; // Oberkante der Glaswände (Bild "hutwall_tank")
+const TANK_WATER_UP = 112; // Höhe der Wasseroberfläche (knapp unter der Oberkante der 120 Pixel hohen Glaswände)
 // obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
 const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
 const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
@@ -322,6 +323,10 @@ export default class GardenScene extends Phaser.Scene {
           const imgs = this.addFence(tx, ty, obj);
           // vordere Hüttenwände (zur Kamera hin) werden durchsichtig, wenn man drin ist
           const h = obj.fence.kind === 'hut' ? buildingAt(tx, ty) : null;
+          // hintere Glasscheiben der Wassertanks: dort ist die dunkelblaue Rückwand (siehe drawTanks), die Pfosten bleiben
+          if (h?.style === 'tank' && (ty === h.ty0 || tx === h.tx0) && !(ty === h.ty1 || tx === h.tx1)) {
+            for (const img of imgs) if (img.texture.key.startsWith('hutwall_')) img.setVisible(false).noCull = true;
+          }
           if (h && (ty === h.ty1 || tx === h.tx1)) {
             if (!this.houseFront.has(h)) this.houseFront.set(h, []);
             this.houseFront.get(h).push(...imgs);
@@ -875,26 +880,51 @@ export default class GardenScene extends Phaser.Scene {
     });
   }
 
-  // Aquarium: Wassertanks (Gebäude im Stil "tank") bekommen eine schimmernde Wasseroberfläche und Zierfische.
-  // Die Oberfläche ist je Kachel ein flaches Viereck auf Wasserhöhe, gleich hinter der Kachel einsortiert:
-  // so liegt sie über den Fischen und der Deko darunter, aber hinter der vorderen Glaswand
+  // Aquarium: Wassertanks (Gebäude im Stil "tank") sind hoch und bis knapp unter den Rand voll Wasser. Dazu gehören
+  // eine dunkelblaue Rückwand (wie in echten Aquarien), eine Wasseroberfläche je Kachel, eine zarte Tönung hinter der
+  // vorderen Glasscheibe und die Zierfische, die darin schweben. Alles je Kachel einsortiert: Rückwand hinter den
+  // Fischen, Oberfläche und vordere Tönung davor.
   drawTanks() {
     this.tankFish = [];
     for (const h of buildings().filter((b) => b.style === 'tank')) {
+      const W = (tx, ty, z = 0) => {
+        const p = tileToWorld(tx, ty);
+        return { x: p.x, y: p.y - z };
+      };
+      const pane = (x0, y0, x1, y1, depth, color, alpha, z0 = 3, z1 = TANK_WATER_UP) => {
+        this.add.graphics().setDepth(depth).fillStyle(color, alpha).fillPoints([W(x0, y0, z0), W(x1, y1, z0), W(x1, y1, z1), W(x0, y0, z1)], true);
+      };
+      // Rückwände (oben und links): tiefes Blau, nach oben heller, mit Metallrahmen oben und unten
+      const rim = (x0, y0, x1, y1, depth) => {
+        const g = this.add.graphics().setDepth(depth + 0.02).lineStyle(3, 0x2f5068, 1);
+        for (const z of [2, TANK_TOP]) g.lineBetween(W(x0, y0, z).x, W(x0, y0, z).y, W(x1, y1, z).x, W(x1, y1, z).y);
+      };
+      for (let tx = h.tx0; tx < h.tx1; tx++) {
+        const d = tileToWorld(tx + 0.5, h.ty0).y + 0.2;
+        pane(tx, h.ty0, tx + 1, h.ty0, d, 0x123f63, 1, 2, TANK_TOP);
+        pane(tx, h.ty0, tx + 1, h.ty0, d + 0.01, 0x2a78a8, 0.45, TANK_WATER_UP - 30);
+        rim(tx, h.ty0, tx + 1, h.ty0, d);
+      }
+      for (let ty = h.ty0; ty < h.ty1; ty++) {
+        const d = tileToWorld(h.tx0, ty + 0.5).y + 0.2;
+        pane(h.tx0, ty, h.tx0, ty + 1, d, 0x0f3656, 1, 2, TANK_TOP);
+        pane(h.tx0, ty, h.tx0, ty + 1, d + 0.01, 0x2a78a8, 0.4, TANK_WATER_UP - 30);
+        rim(h.tx0, ty, h.tx0, ty + 1, d);
+      }
+      // Wasseroberfläche je Innenkachel
       for (let ty = h.ty0 + 1; ty < h.ty1; ty++) {
         for (let tx = h.tx0 + 1; tx < h.tx1; tx++) {
           const c = tileToWorld(tx, ty);
-          const pts = [[0, -0.5], [0.5, 0], [0, 0.5], [-0.5, 0]].map(([dx, dy]) => {
-            const p = tileToWorld(tx + dx + dy, ty + dy - dx); // Ecken der Kachel
-            return { x: p.x, y: p.y - TANK_WATER_UP };
-          });
+          const pts = [[0, -0.5], [0.5, 0], [0, 0.5], [-0.5, 0]].map(([dx, dy]) => W(tx + dx + dy, ty + dy - dx, TANK_WATER_UP));
           const g = this.add.graphics().setDepth(c.y + 0.6);
-          g.fillStyle(0x2f98d0, 0.26).fillPoints(pts, true);
-          if ((tx + ty) % 2 === 0) g.lineStyle(1, 0xd8f4ff, 0.35).lineBetween(pts[3].x + 6, pts[3].y, pts[1].x - 10, pts[1].y - 2); // Glanz
+          g.fillStyle(0x6fc8f0, 0.22).fillPoints(pts, true);
+          if ((tx + ty) % 2 === 0) g.lineStyle(1, 0xe8f8ff, 0.4).lineBetween(pts[3].x + 6, pts[3].y, pts[1].x - 10, pts[1].y - 2); // Glanz
         }
       }
-      const n = Phaser.Math.Between(...TANK_FISH);
-      for (let i = 0; i < n; i++) this.tankFish.push(new TankFish(this, h));
+      // Wasser hinter der vorderen Glasscheibe (unten und rechts): zarte Tönung über den Fischen
+      for (let tx = h.tx0; tx < h.tx1; tx++) pane(tx, h.ty1, tx + 1, h.ty1, tileToWorld(tx + 0.5, h.ty1).y + 0.3, 0x3fa8d8, 0.12);
+      for (let ty = h.ty0; ty < h.ty1; ty++) pane(h.tx1, ty, h.tx1, ty + 1, tileToWorld(h.tx1, ty + 0.5).y + 0.3, 0x3fa8d8, 0.12);
+      this.tankFish.push(stockTank(this, h, Phaser.Math.Between(...TANK_FISH)));
     }
   }
 

@@ -1861,17 +1861,17 @@ function aquariumFloor() {
 function tankFloor() {
   return tile(() => {
     const r = rand();
-    return r < 0.05 ? hex('#6f9490') : r < 0.1 ? hex('#a8cbc0') : hex('#8fb8b0');
+    return r < 0.05 ? hex('#3f6a7a') : r < 0.1 ? hex('#6a98a0') : hex('#557f8c');
   });
 }
 
-// Seegras: ein paar wellige grüne Halme; Kachelmitte bei (32, 52)
+// Seegras: hohe, wellige grüne Halme (passend zu den hohen Tanks); Kachelmitte bei (32, 100)
 function seaweed() {
-  const o = new Canvas(64, 64);
-  for (const [bx, len, ph, col] of [[24, 34, 0, '#3f9a4a'], [30, 44, 1.5, '#5ab85a'], [37, 30, 3, '#3f9a4a'], [42, 38, 4.5, '#2f7a3c']]) {
+  const o = new Canvas(64, 112);
+  for (const [bx, len, ph, col] of [[22, 62, 0, '#3f9a4a'], [29, 86, 1.5, '#5ab85a'], [36, 54, 3, '#3f9a4a'], [42, 74, 4.5, '#2f7a3c']]) {
     for (let i = 0; i < len; i++) {
-      const x = bx + Math.sin(i / 5 + ph) * 3;
-      o.rect(Math.round(x), 52 - i, 3, 1, hex(col));
+      const x = bx + Math.sin(i / 7 + ph) * 4;
+      o.rect(Math.round(x), 100 - i, 3, 1, hex(col));
     }
   }
   o.outline(INK);
@@ -1926,6 +1926,91 @@ function tankChest() {
   }
   o.outline(INK);
   return o;
+}
+
+// ---------- Hohe Wassertanks im Aquarium (etwa doppelt so hoch wie die Spielfigur, bis oben voll Wasser) ----------
+// Bild 64x160; die Kachelmitte liegt wie bei allen Gebäudewänden 20 Pixel über dem unteren Rand (32, 140)
+const TANK_H = 120;
+const TANK_A = [16, 132], TANK_B = [48, 148];
+function tankWall() {
+  const a = TANK_A, b = TANK_B, H = TANK_H;
+  const up = ([x, y], h) => [x, y - h];
+  const w = new Canvas(64, 160);
+  w.poly([a, b, up(b, H), up(a, H)], hex('#7fd0f0', 70)); // Glas mit Wasser dahinter
+  for (let y = 0; y < 160; y++) {
+    for (let x = 0; x < 64; x++) {
+      const h = a[1] + (x - a[0]) * 0.5 - y; // Höhe über der Grundlinie
+      if (h < 0 || h > H || x < a[0] || x > b[0]) continue;
+      if (h < 4) w.paint(x, y, hex('#2f5068')); // Metallrahmen unten
+      else if (h > H - 4) w.paint(x, y, hex('#2f5068')); // und oben
+    }
+  }
+  w.line(...up(a, H - 6), ...up(b, H - 6), hex('#bfeaff', 200)); // Wasserlinie knapp unter dem Rand
+  w.outline(INK);
+  return w;
+}
+
+function tankPost() {
+  const o = new Canvas(64, 160);
+  const [x, y] = [32, 140];
+  o.rect(x - 2, y - TANK_H - 1, 4, TANK_H + 2, hex('#2f5068'));
+  o.rect(x - 2, y - TANK_H - 1, 1, TANK_H + 2, hex('#5a8aa8'));
+  o.outline(INK);
+  return o;
+}
+
+// Minifische für die Wassertanks, in Seitenansicht: 6 Arten, je nach rechts und nach links (Bilder à 20x16)
+// 0 Neonsalmler, 1 Clownfisch, 2 Paletten-Doktorfisch, 3 Gelber Doktorfisch, 4 Skalar, 5 Guppy
+function miniFish() {
+  const F = 20, Hh = 16;
+  const sheet = new Canvas(F * 12, Hh);
+  const kinds = [
+    (o) => { // Neonsalmler: schmal, blauer Streifen, roter Bauch hinten
+      o.ellipse(10, 8, 6, 2.5, hex('#d8e4f0'));
+      o.rect(5, 7, 10, 1, hex('#3fb8f0'));
+      o.rect(5, 9, 6, 1, hex('#e8483f'));
+      o.poly([[4, 8], [1, 5], [1, 11]], hex('#c8d4e0'));
+      o.set(15, 7, hex('#1a1210'));
+    },
+    (o) => { // Clownfisch: orange mit weißen Bändern
+      o.ellipse(10, 8, 6, 4, hex('#f07a2c'));
+      for (const x of [7, 12]) o.rect(x, 4, 2, 8, hex('#ffffff'));
+      o.poly([[4, 8], [1, 4], [1, 12]], hex('#f07a2c'));
+      o.set(15, 7, hex('#1a1210'));
+    },
+    (o) => { // Paletten-Doktorfisch: blau, schwarze Zeichnung, gelber Schwanz
+      o.ellipse(10, 8, 7, 4.5, hex('#2f6fd8'));
+      o.line(5, 6, 13, 9, hex('#14204a'));
+      o.poly([[3, 8], [0, 4], [0, 12]], hex('#f2d84a'));
+      o.set(15, 7, hex('#1a1210'));
+    },
+    (o) => { // Gelber Doktorfisch: hoch und gelb
+      o.ellipse(10, 8, 6, 5.5, hex('#f2d84a'));
+      o.poly([[15, 8], [18, 7], [15, 9]], hex('#f8e888')); // spitze Schnauze
+      o.poly([[4, 8], [1, 5], [1, 11]], hex('#e8c83a'));
+      o.set(13, 6, hex('#1a1210'));
+    },
+    (o) => { // Skalar: dreieckig hoch, silbern mit dunklen Streifen, lange Flossen
+      o.poly([[16, 8], [9, 1], [5, 8], [9, 15]], hex('#e8e8f0'));
+      for (const x of [8, 11]) o.line(x, 3, x, 13, hex('#3a3a44'));
+      o.poly([[5, 8], [2, 6], [2, 10]], hex('#d8d8e0'));
+      o.set(14, 7, hex('#1a1210'));
+    },
+    (o) => { // Guppy: klein, bunter Fächerschwanz
+      o.ellipse(11, 8, 4, 2.5, hex('#c8c8a8'));
+      o.poly([[7, 8], [1, 3], [1, 13]], hex('#e84a8a'));
+      o.poly([[6, 8], [3, 6], [3, 10]], hex('#4ab8e8'));
+      o.set(14, 7, hex('#1a1210'));
+    },
+  ];
+  kinds.forEach((draw, i) => {
+    const o = new Canvas(F, Hh);
+    draw(o);
+    o.outline(INK);
+    sheet.draw(o, i * 2 * F, 0); // nach rechts
+    sheet.draw(o.flipped(), (i * 2 + 1) * F, 0); // nach links
+  });
+  return sheet;
 }
 
 const PRINT_KINDS = ['tiger', 'sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
@@ -2141,9 +2226,9 @@ const sprites = {
   'hutwall_aquarium_x.png': hutWall('aquarium'),
   'hutwall_aquarium_y.png': hutWall('aquarium').flipped(),
   'post_hutwall_aquarium.png': hutPost('aquarium'),
-  'hutwall_tank_x.png': hutWall('tank'),
-  'hutwall_tank_y.png': hutWall('tank').flipped(),
-  'post_hutwall_tank.png': hutPost('tank'),
+  'hutwall_tank_x.png': tankWall(), // hoch, bis oben voll Wasser
+  'hutwall_tank_y.png': tankWall().flipped(),
+  'post_hutwall_tank.png': tankPost(),
   'floor_aquarium.png': aquariumFloor(),
   'tank_floor.png': tankFloor(),
   'seaweed.png': seaweed(),
@@ -2151,6 +2236,7 @@ const sprites = {
   'tank_rock.png': tankRock(),
   'shell.png': shell(),
   'tank_chest.png': tankChest(),
+  'minifish.png': miniFish(), // Zierfische im Aquarium (6 Arten, je nach rechts und links)
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
