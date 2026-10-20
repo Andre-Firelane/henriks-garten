@@ -140,7 +140,7 @@ export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, 
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
 // Grundfläche des Autos (Schnellreise): Strecke vom Vorderrad links unten bis zum Anhänger rechts oben (Welt-Pixel)
 export let CAR_BODY = null;
-const CAR_HALF_WIDTH = 15; // so weit neben dieser Strecke ist es noch fest (mal Größe des Autos)
+const CAR_HALF_WIDTH = 10; // so weit neben dieser Strecke ist es noch fest (mal Größe des Autos; dazu kommen die Füße der Figur)
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
@@ -195,7 +195,7 @@ export function setLevel(id) {
   const c = car && tileToWorld(car.tx, car.ty);
   const k = car?.scale ?? 1; // größere Autos haben eine längere Grundfläche
   // Mittellinie der Grundfläche (Auto und Anhänger): von vorne links nach hinten rechts, mitten zwischen Vorder- und Hinterkante
-  CAR_BODY = c ? { ax: c.x - 42 * k, ay: c.y - 14 * k, bx: c.x + 46 * k, by: c.y - 34 * k, hw: CAR_HALF_WIDTH * k } : null;
+  CAR_BODY = c ? { ax: c.x - 38 * k, ay: c.y - 15 * k, bx: c.x + 42 * k, by: c.y - 33 * k, hw: CAR_HALF_WIDTH * k } : null;
   const beyondGate = (tx, ty, dy) => {
     while (charAt(tx, ty) === 'G') ty += dy;
     return charAt(tx, ty);
