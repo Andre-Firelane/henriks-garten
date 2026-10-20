@@ -487,6 +487,7 @@ export default class GardenScene extends Phaser.Scene {
     const arrive = data.arrive ?? START;
     const start = tileToWorld(arrive.tx, arrive.ty);
     this.player = new Player(this, start.x, start.y, LEVEL.hero ?? 'hero'); // Kleidung passend zum Gebiet
+    this.unstickPlayer();
 
     // Werkzeuge am Boden: gespeicherter Stand oder die Startplätze des Levels
     const saved = game.levels[LEVEL_ID];
@@ -863,6 +864,26 @@ export default class GardenScene extends Phaser.Scene {
       if (b.ux < 0) angle += Math.PI;
       text.setPosition(mid.x, mid.y).setRotation(angle).setDepth(depth + 0.01);
     });
+  }
+
+  // Steht die Figur beim Betreten auf etwas Festem (z. B. hat ein Gehegeausbau dort gerade etwas aufgestellt)?
+  // Dann auf den nächsten freien Platz daneben, sonst steckt sie fest
+  unstickPlayer() {
+    const p = this.player;
+    if (!blockedAt(p.x, p.y, 7, 3)) return;
+    for (let r = 8; r <= 96; r += 8) {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        const x = p.x + Math.cos(a) * r;
+        const y = p.y + Math.sin(a) * r * 0.5;
+        if (!blockedAt(x, y, 7, 3)) {
+          p.x = x;
+          p.y = y;
+          p.trail = [{ x, y }];
+          return;
+        }
+      }
+    }
   }
 
   // variant: Farbmuster (nur Koi), sonst zufällig

@@ -92,7 +92,7 @@ export const OBJECTS = {
   // Baustelle vor dem Ausbau: Pflöcke mit Absperrband, Bretterstapel (begehbar, nur ein Hinweis)
   ':': { key: 'build_stakes', originY: 52 / 64, solid: false },
   '<': { key: 'build_planks', originY: 52 / 64, solid: false },
-  $: { key: 'lion_rock', originY: 104 / 128, solid: true, hitbox: 22 }, // großer Löwenfelsen
+  $: { key: 'lion_rock', originY: 104 / 128, solid: false }, // großer Löwenfelsen (begehbar: man klettert drüber)
   '*': { key: 'nest_box', originY: 84 / 96, solid: true, hitbox: 6 },
   9: { key: 'climb_tree', originY: 84 / 96, solid: true, hitbox: 9 }, // Kletterbaum im Affengehege
   F: { key: 'feeder', originY: 52 / 64, solid: true, hitbox: 10, feeder: true }, // Futterautomat im Tierpark
