@@ -327,7 +327,9 @@ export default class GardenScene extends Phaser.Scene {
           this.drawSignBoards(x, y, tx, ty);
         } else if (obj) {
           const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : obj.key; // Einrichtung passend zur Hütte (auch außen an der Wand)
-          const img = this.add.image(x, y, key).setOrigin(0.5, obj.originY).setDepth(obj.floor ? -99990 : y + (obj.depthShift ?? 0));
+          // depthShift nur in Hütten (z. B. die Kiste vor der Rückwand); draußen gilt die normale Tiefe, sonst steht sie vor der Spielfigur
+          const shift = buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0;
+          const img = this.add.image(x, y, key).setOrigin(0.5, obj.originY).setDepth(obj.floor ? -99990 : y + shift);
           if (obj.chest && obj.styled && !buildingAt(tx, ty)) {
             // Regal außen vor der Hütte: ein Stück vor die Wand gerückt, damit der Dachüberstand Kescher und Lasso nicht verdeckt
             img.setPosition(x - 19, y + 10).setDepth(y - 4);
@@ -536,8 +538,10 @@ export default class GardenScene extends Phaser.Scene {
         if (!NEAR_PATH.has(tx + ',' + ty)) this.placeInPen(a, a.enclosure, true);
         continue;
       }
-      if (a.state !== 'penned' || (a.enclosure && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
-      const e = a.enclosure ?? ENCLOSURES.find((f) => accepts(f, a.species));
+      // (auch: Gehege, das diese Art nicht mehr aufnimmt – z. B. nach dem Zusammenlegen von Teichen und Volieren)
+      const fits = a.enclosure && accepts(a.enclosure, a.species);
+      if (a.state !== 'penned' || (fits && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
+      const e = (fits && a.enclosure) || ENCLOSURES.find((f) => accepts(f, a.species));
       if (e) this.placeInPen(a, e, true);
     }
 
@@ -1373,9 +1377,12 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Gehege, an dessen Schild man gerade steht (nur im Tierpark, nur Gehege mit Plätzen)
+  // ... oder in dem man gerade drin steht
   penAtSign() {
-    const e = this.shownSign?.enclosure;
-    return LEVEL_ID === 'park' && e && hasSlots(e) ? e : null;
+    if (LEVEL_ID !== 'park') return null;
+    const { tx, ty } = worldToTile(this.player.x, this.player.y);
+    const e = this.shownSign?.enclosure ?? enclosureAt(tx, ty);
+    return e && hasSlots(e) && !e.free ? e : null;
   }
 
   // Erfolg: ein Gehege ist voll – kleine Meldung mit Tierbild und Stern
@@ -2527,6 +2534,12 @@ export default class GardenScene extends Phaser.Scene {
     if (near !== this.nearCar) {
       this.nearCar = near;
       this.car.label.setVisible(near);
+      this.updateToolbar();
+    }
+    // am Gehegeschild oder im Gehege: die Werkzeugleiste zeigt "Gehege ausbauen"
+    const penHere = this.penAtSign();
+    if (penHere !== this.penHere) {
+      this.penHere = penHere;
       this.updateToolbar();
     }
     // unter einem Orang-Utan im Baum: die Aktionstaste winkt

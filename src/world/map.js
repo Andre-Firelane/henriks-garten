@@ -160,11 +160,30 @@ export function setLevel(id) {
       return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
     });
   }
-  // Gehege vor dem Ausbau: Innenzaun bzw. ohne die Ausstattung, die erst der Ausbau bringt (basic in levels.js)
+  // Gehege vor dem Ausbau: Innenzaun bzw. ohne die Ausstattung, die erst der Ausbau bringt (basic in levels.js).
+  // Baustellen-Hinweise (Pflöcke, Bretter) stehen nur im Abschnitt, der erst mit dem Ausbau dazukommt – nicht dort,
+  // wo die Tiere schon laufen. Gehege ohne neuen Abschnitt bekommen keine.
   for (const e of LEVEL.enclosures ?? []) {
     if (!e.basic || isUpgraded(e)) continue;
+    const full = ROWS.map((r) => [...r]);
     const rows = ROWS.map((r) => [...r]);
-    for (const [tx, ty, c] of e.basic) rows[ty][tx] = c;
+    for (const [tx, ty, c] of e.basic) rows[ty][tx] = c === ':' || c === '<' ? '.' : c;
+    if (e.seed && !e.pond && !e.free) {
+      const before = floodRows(rows, e.seed);
+      const after = floodRows(full, e.seed);
+      if (before && after) {
+        const fenced = new Set(e.basic.filter(([, , c]) => OBJECTS[c]?.fence).map(([tx, ty]) => tx + ',' + ty));
+        const extra = [...after].map((k) => k.split(',').map(Number)).map(([tx, ty]) => ({ tx, ty })).filter(({ tx, ty }) => !before.has(tx + ',' + ty) && !fenced.has(tx + ',' + ty) && rows[ty][tx] === '.');
+        if (extra.length) {
+          const cx = extra.reduce((sum, t) => sum + t.tx, 0) / extra.length;
+          const cy = extra.reduce((sum, t) => sum + t.ty, 0) / extra.length;
+          extra.sort((p, q) => Math.hypot(p.tx - cx, p.ty - cy) - Math.hypot(q.tx - cx, q.ty - cy));
+          rows[extra[0].ty][extra[0].tx] = ':';
+          const second = extra.find((t) => Math.abs(t.tx - extra[0].tx) + Math.abs(t.ty - extra[0].ty) >= 2);
+          if (second) rows[second.ty][second.tx] = '<';
+        }
+      }
+    }
     ROWS = rows.map((r) => r.join(''));
   }
   MAP_W = Math.max(...ROWS.map((r) => r.length));
@@ -363,6 +382,25 @@ function rectTiles(a) {
 }
 
 // alle Kacheln, die man vom Startpunkt aus erreicht, ohne Zaun, Wand oder Tor zu überqueren
+// Innenfläche eines Geheges in einem Zeilen-Raster (wie floodPen): Set "tx,ty", oder null, wenn es nicht geschlossen ist
+function floodRows(rows, seed) {
+  const seen = new Set([seed.tx + ',' + seed.ty]);
+  const todo = [seed];
+  while (todo.length) {
+    const t = todo.pop();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { tx: t.tx + dx, ty: t.ty + dy };
+      const key = n.tx + ',' + n.ty;
+      const c = rows[n.ty]?.[n.tx];
+      if (seen.has(key) || c === undefined || c === ' ' || c === 'G' || OBJECTS[c]?.fence) continue;
+      seen.add(key);
+      todo.push(n);
+      if (seen.size > 600) return null;
+    }
+  }
+  return seen;
+}
+
 // zusammenhängende Kacheln aus diesen Zeichen ab seed (z. B. das Wasser eines Teichs ohne Zaun)
 function floodChars(seed, chars) {
   const seen = new Set([seed.tx + ',' + seed.ty]);
