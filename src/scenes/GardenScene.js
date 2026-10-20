@@ -64,6 +64,7 @@ import Giraffe from '../animals/Giraffe.js';
 import Panda from '../animals/Panda.js';
 import Tiger from '../animals/Tiger.js';
 import Peacock from '../animals/Peacock.js';
+import TankFish from '../aquarium/TankFish.js';
 import Orangutan, { WAVE_DIST } from '../animals/Orangutan.js';
 import Macaque from '../animals/Macaque.js';
 import Cat from '../animals/Cat.js';
@@ -180,7 +181,9 @@ const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der H
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
 // vordere Wände auch von außen halb durchsichtig (Katzenhaus aus Glas: sonst verschwinden die Katzen vorne hinter dem Sockel)
-const FRONT_ALPHA = { cathouse: 0.5 };
+const FRONT_ALPHA = { cathouse: 0.5, tank: 0.45 }; // Wassertanks: vorne Glas, durch das man die Fische sieht
+const TANK_FISH = [6, 8]; // so viele Zierfische schwimmen in jedem Wassertank
+const TANK_WATER_UP = 38; // Höhe der Wasseroberfläche (knapp unter der Oberkante der Glaswände)
 // obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
 const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
 const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
@@ -332,8 +335,9 @@ export default class GardenScene extends Phaser.Scene {
         } else if (obj) {
           const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : obj.key; // Einrichtung passend zur Hütte (auch außen an der Wand)
           // depthShift nur in Hütten (z. B. die Kiste vor der Rückwand); draußen gilt die normale Tiefe, sonst steht sie vor der Spielfigur
-          const shift = buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0;
-          const img = this.add.image(x, y, key).setOrigin(0.5, obj.originY).setDepth(obj.floor ? -99990 : y + shift);
+          const shift = obj.depthAlways ?? (buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0);
+          const img = this.add.image(x, y, key).setOrigin(obj.originX ?? 0.5, obj.originY).setDepth(obj.floor ? -99990 : y + shift);
+          if (obj.noCull) img.noCull = true; // große Bilder (Aquarium-Fassade) nicht ausblenden, nur weil ihr Ankerpunkt außerhalb ist
           if (obj.chest && obj.styled && !buildingAt(tx, ty)) {
             // Regal außen vor der Hütte: ein Stück vor die Wand gerückt, damit der Dachüberstand Kescher und Lasso nicht verdeckt
             img.setPosition(x - 19, y + 10).setDepth(y - 4);
@@ -358,7 +362,7 @@ export default class GardenScene extends Phaser.Scene {
       }
     }
 
-    this.cullables = this.children.list.slice(firstStatic).filter((o) => o.type === 'Image' || o.type === 'Text');
+    this.cullables = this.children.list.slice(firstStatic).filter((o) => (o.type === 'Image' || o.type === 'Text') && !o.noCull);
     this.cullView = null;
     this.bakeGround(ground);
 
@@ -397,12 +401,15 @@ export default class GardenScene extends Phaser.Scene {
       const top = tileToWorld(h.tx0, h.ty0);
       const bottom = tileToWorld(h.tx1, h.ty1);
       const [ax, ay] = ROOF_ANCHOR[h.style] ?? [184, 100];
-      const roof = this.add.image(top.x, top.y - TILE_H / 2, `hutroof_${h.style}`);
-      roof.setOrigin(ax / roof.width, ay / roof.height).setDepth(bottom.y + TILE_H / 2 + 1);
-      roof.setAlpha(ROOF_ALPHA[h.style] ?? 1);
+      // noRoof: Gebäude ohne Dach (Aquarium-Halle, Wassertanks)
+      const roof = h.noRoof ? null : this.add.image(top.x, top.y - TILE_H / 2, `hutroof_${h.style}`);
+      roof?.setOrigin(ax / roof.width, ay / roof.height).setDepth(bottom.y + TILE_H / 2 + 1);
+      roof?.setAlpha(ROOF_ALPHA[h.style] ?? 1);
       for (const img of front) img.setAlpha(FRONT_ALPHA[h.style] ?? 1);
       this.houses.push({ h, roof, front, inside: false });
     }
+
+    this.drawTanks();
 
     // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
     this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
@@ -469,6 +476,8 @@ export default class GardenScene extends Phaser.Scene {
 
     // Beschriftung über den Übergängen in andere Level
     for (const exit of EXITS) {
+      // breite Türen (mehrere Übergangs-Kacheln nebeneinander) nur einmal beschriften
+      if (EXITS.some((o) => o !== exit && o.to === exit.to && Math.abs(o.tx - exit.tx) + Math.abs(o.ty - exit.ty) === 1 && (o.tx < exit.tx || o.ty < exit.ty))) continue;
       const { x, y } = tileToWorld(exit.tx, exit.ty);
       this.add
         .text(x, y - 34, `${exit.label} ▸`, {
@@ -864,6 +873,29 @@ export default class GardenScene extends Phaser.Scene {
       if (b.ux < 0) angle += Math.PI;
       text.setPosition(mid.x, mid.y).setRotation(angle).setDepth(depth + 0.01);
     });
+  }
+
+  // Aquarium: Wassertanks (Gebäude im Stil "tank") bekommen eine schimmernde Wasseroberfläche und Zierfische.
+  // Die Oberfläche ist je Kachel ein flaches Viereck auf Wasserhöhe, gleich hinter der Kachel einsortiert:
+  // so liegt sie über den Fischen und der Deko darunter, aber hinter der vorderen Glaswand
+  drawTanks() {
+    this.tankFish = [];
+    for (const h of buildings().filter((b) => b.style === 'tank')) {
+      for (let ty = h.ty0 + 1; ty < h.ty1; ty++) {
+        for (let tx = h.tx0 + 1; tx < h.tx1; tx++) {
+          const c = tileToWorld(tx, ty);
+          const pts = [[0, -0.5], [0.5, 0], [0, 0.5], [-0.5, 0]].map(([dx, dy]) => {
+            const p = tileToWorld(tx + dx + dy, ty + dy - dx); // Ecken der Kachel
+            return { x: p.x, y: p.y - TANK_WATER_UP };
+          });
+          const g = this.add.graphics().setDepth(c.y + 0.6);
+          g.fillStyle(0x2f98d0, 0.26).fillPoints(pts, true);
+          if ((tx + ty) % 2 === 0) g.lineStyle(1, 0xd8f4ff, 0.35).lineBetween(pts[3].x + 6, pts[3].y, pts[1].x - 10, pts[1].y - 2); // Glanz
+        }
+      }
+      const n = Phaser.Math.Between(...TANK_FISH);
+      for (let i = 0; i < n; i++) this.tankFish.push(new TankFish(this, h));
+    }
   }
 
   // Steht die Figur beim Betreten auf etwas Festem (z. B. hat ein Gehegeausbau dort gerade etwas aufgestellt)?
@@ -2564,7 +2596,7 @@ export default class GardenScene extends Phaser.Scene {
       const inside = px >= h.tx0 && px <= h.tx1 && py >= h.ty0 && py <= h.ty1 && !(px === h.tx0 || py === h.ty0); // samt Tür
       if (inside !== house.inside) {
         house.inside = inside;
-        this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
+        if (house.roof) this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
         this.tweens.add({ targets: house.front, alpha: inside ? Math.min(HUT_FRONT_ALPHA, FRONT_ALPHA[h.style] ?? 1) : (FRONT_ALPHA[h.style] ?? 1), duration: 250 });
       }
     }
@@ -2607,6 +2639,7 @@ export default class GardenScene extends Phaser.Scene {
     this.visitors?.update(dt);
     this.updatePenCalls(dt);
     this.updatePeacockCall(dt);
+    for (const f of this.tankFish) f.update(dt); // Zierfische im Aquarium
     this.cullStatic();
     if (this.riding) this.updateMount(); // in Gebäuden ab-, draußen wieder aufsteigen
     this.eventTimer -= dt;

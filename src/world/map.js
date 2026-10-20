@@ -9,7 +9,7 @@ import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
-const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', office: 'floor_office' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
+const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
@@ -98,6 +98,14 @@ export const OBJECTS = {
   F: { key: 'feeder', originY: 52 / 64, solid: true, hitbox: 10, feeder: true }, // Futterautomat im Tierpark
   // Asien
   '+': { key: 'peacock_perch', originY: 84 / 96, solid: true, hitbox: 6 }, // hohe Sitzstange (Pfauengehege)
+  // Aquarium: Fassade am Rand des Tierparks (großes Bild, ragt über den Kartenrand; die Kachelmitte ist die Tür)
+  '`': { key: 'aquarium_facade', originX: 344 / 480, originY: 290 / 360, solid: false, noCull: true, depthAlways: -12 },
+  // Deko in den Wassertanks
+  '(': { key: 'seaweed', originY: 52 / 64, solid: false },
+  ')': { key: 'coral', originY: 52 / 64, solid: false },
+  '?': { key: 'tank_rock', originY: 52 / 64, solid: false },
+  '/': { key: 'shell', originY: 52 / 64, solid: false },
+  '"': { key: 'tank_chest', originY: 52 / 64, solid: false },
   H: { key: 'hammock', originY: 76 / 88, solid: true, hitbox: 10 }, // Hängematte mit Blätternest (Orang-Utan-Gehege)
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)

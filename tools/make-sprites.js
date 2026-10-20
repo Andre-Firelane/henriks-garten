@@ -735,6 +735,9 @@ const HUT_STYLES = {
   asia: { wall: '#c0392b', dark: '#7a1e18', light: '#e05a48', cap: '#2b2b2b' },
   // Katzenhaus im Tierpark: große Glasfronten in einem hellen Holzrahmen, damit man die Katzen von außen sieht
   cathouse: { wall: '#bfe4f0', dark: '#a8743f', light: '#f4ead8', cap: '#8a5a30', glass: true },
+  // Aquarium: dunkelblaue Halle mit hellen Fliesenfugen; Wassertanks aus blau schimmerndem Glas mit Metallrahmen
+  aquarium: { wall: '#24486a', dark: '#16304a', light: '#3f6f9a', cap: '#0f2236' },
+  tank: { wall: '#6ec6e8', dark: '#2f5068', light: '#bfeaff', cap: '#2f5068', glass: true },
 };
 
 // Wandstück entlang tx (die Version entlang ty ist gespiegelt); door: Tür statt Wand
@@ -755,7 +758,12 @@ function hutWall(style, door = false) {
         w.paint(x, y, hex(p === 0 ? '#2f1e12' : p <= 2 ? '#6b4224' : p <= 5 ? s.wall : s.light));
       }
       if (style === 'savanna' && x % 16 === 0) w.paint(x, y, hex(s.dark)); // Nähte der Plane
-      if (s.glass) {
+      if (style === 'aquarium' && (((Math.floor(h) % 11) + 11) % 11 === 0 || (((x - a[0]) % 22) + 22) % 22 === 0)) w.paint(x, y, hex(s.light)); // Fliesenfugen
+      if (style === 'tank') {
+        // Aquarienglas: unten ein schmaler Metallrahmen, sonst Glas mit Spiegelungen
+        if (h < 3) w.paint(x, y, hex(s.dark));
+        else if ((x + Math.floor(h)) % 23 === 0 && h > 22 && h < 40) w.paint(x, y, hex('#ffffff', 130)); // wenige Spiegelungen oben
+      } else if (s.glass) {
         // Rahmen: Sockel, senkrechte Sprossen und ein Querholz; dazwischen große Scheiben mit Lichtreflex
         const sprosse = (((x - a[0]) % 16) + 16) % 16 < 2;
         if (h < 6 || sprosse || (h > 24 && h < 27)) w.paint(x, y, hex(sprosse ? s.light : '#e8dcc4'));
@@ -1782,6 +1790,144 @@ function peacockPerch() {
   return c;
 }
 
+// ---------- Aquarium (Platzhalter) ----------
+// Fassade am Rand des Tierparks: Ecke eines großen Glasbaus, von dem man nur einen Teil sieht. Die Tür liegt über der
+// Kachel des Übergangs; diese Kachelmitte liegt im Bild bei (AQ_OX, AQ_OY). Das Gebäude reicht 7 Kacheln nach links
+// (tx kleiner) und je 3,5 Kacheln vor und hinter die Tür (ty), 96 Pixel hoch.
+const AQ_W = 480, AQ_H = 360, AQ_OX = 344, AQ_OY = 290;
+function aquariumFacade() {
+  const o = new Canvas(AQ_W, AQ_H);
+  const A = (u, v, z = 0) => [AQ_OX + (u - v) * 32, AQ_OY + (u + v) * 16 - z];
+  const U0 = -7, U1 = 0.5, V0 = -3.5, V1 = 3.5, Z = 96;
+  const quad = (p, col, clip) => o.poly(p, hex(col), clip);
+  // Flächen: vorne-rechts (Front mit Tür, u = U1), vorne-links (Seite, v = V1), Dach
+  quad([A(U1, V0), A(U1, V1), A(U1, V1, Z), A(U1, V0, Z)], '#2f6fa8');
+  quad([A(U0, V1), A(U1, V1), A(U1, V1, Z), A(U0, V1, Z)], '#245a8a');
+  quad([A(U0, V0, Z), A(U1, V0, Z), A(U1, V1, Z), A(U0, V1, Z)], '#1f4a72');
+  // Fensterbänder mit Spiegelungen (Front und Seite)
+  const glass = (face, a0, a1, z0, z1) => {
+    const P = face === 'front' ? (t, z) => A(U1, t, z) : (t, z) => A(t, V1, z);
+    quad([P(a0, z0), P(a1, z0), P(a1, z1), P(a0, z1)], '#8fd4ee');
+    for (let t = a0 + 0.25; t < a1; t += 0.5) {
+      const [x0, y0] = P(t, z0 + 2), [x1, y1] = P(t + 0.15, z1 - 2);
+      o.line(x0, y0, x1, y1, hex('#e8f8ff'));
+    }
+    for (let t = a0; t <= a1 + 1e-6; t += 0.5) {
+      const [x0, y0] = P(t, z0), [x1, y1] = P(t, z1);
+      o.line(x0, y0, x1, y1, hex('#1a3a5a'));
+    }
+  };
+  glass('front', -3.2, -1.1, 14, 66);
+  glass('front', 1.1, 3.2, 14, 66);
+  glass('side', -6.6, -0.4, 18, 70);
+  // Sockel und Dachkante
+  quad([A(U1, V0), A(U1, V1), A(U1, V1, 8), A(U1, V0, 8)], '#1a3a5a');
+  quad([A(U0, V1), A(U1, V1), A(U1, V1, 8), A(U0, V1, 8)], '#14304a');
+  quad([A(U1, V0, Z - 8), A(U1, V1, Z - 8), A(U1, V1, Z), A(U1, V0, Z)], '#5aa0d0');
+  quad([A(U0, V1, Z - 8), A(U1, V1, Z - 8), A(U1, V1, Z), A(U0, V1, Z)], '#4a8ec0');
+  // Wellenband unter der Dachkante
+  for (let t = V0; t < V1; t += 0.05) {
+    const z = Z - 16 + Math.sin(t * 5) * 3;
+    const [x, y] = A(U1, t, z);
+    o.rect(Math.round(x), Math.round(y), 1, 3, hex('#bfe8ff'));
+  }
+  // Tür (Glastür mit Rahmen) über der Übergangs-Kachel
+  quad([A(U1, -0.7), A(U1, 0.7), A(U1, 0.7, 46), A(U1, -0.7, 46)], '#14304a');
+  quad([A(U1, -0.6), A(U1, 0), A(U1, 0, 42), A(U1, -0.6, 42)], '#5ab8d8');
+  quad([A(U1, 0.03), A(U1, 0.6), A(U1, 0.6, 42), A(U1, 0.03, 42)], '#5ab8d8');
+  // rundes Schild mit Fisch über der Tür
+  const [sx, sy] = A(U1, 0, 66);
+  o.ellipse(sx, sy, 17, 15, hex('#14304a'));
+  o.ellipse(sx, sy, 14, 12, hex('#f4f8ff'));
+  o.ellipse(sx - 2, sy, 7, 5, hex('#f08a2c')); // Fisch
+  o.poly([[sx + 4, sy], [sx + 10, sy - 5], [sx + 10, sy + 5]], hex('#f08a2c'));
+  o.circle(sx - 6, sy - 1, 1.2, hex('#1a1210'));
+  for (const [dx, dy, r] of [[-11, -8, 1.5], [-13, -12, 1.2], [-10, -14, 1]]) o.circle(sx + dx, sy + dy, r, hex('#5ab8d8'));
+  o.outline(INK);
+  return o;
+}
+
+// Fliesenboden der Aquarium-Halle: dunkel, mit blauem Schimmer
+function aquariumFloor() {
+  return tile((x, y) => {
+    const k = y - 0.5 * x;
+    const l = y + 0.5 * x;
+    if (((k % 16) + 16) % 16 < 1 || ((l % 16) + 16) % 16 < 1) return hex('#1e3446');
+    return rand() < 0.08 ? hex('#34526a') : hex('#2b4860');
+  });
+}
+
+// Boden im Wassertank: Sand, durchs Wasser blau getönt, ein paar Kiesel
+function tankFloor() {
+  return tile(() => {
+    const r = rand();
+    return r < 0.05 ? hex('#6f9490') : r < 0.1 ? hex('#a8cbc0') : hex('#8fb8b0');
+  });
+}
+
+// Seegras: ein paar wellige grüne Halme; Kachelmitte bei (32, 52)
+function seaweed() {
+  const o = new Canvas(64, 64);
+  for (const [bx, len, ph, col] of [[24, 34, 0, '#3f9a4a'], [30, 44, 1.5, '#5ab85a'], [37, 30, 3, '#3f9a4a'], [42, 38, 4.5, '#2f7a3c']]) {
+    for (let i = 0; i < len; i++) {
+      const x = bx + Math.sin(i / 5 + ph) * 3;
+      o.rect(Math.round(x), 52 - i, 3, 1, hex(col));
+    }
+  }
+  o.outline(INK);
+  return o;
+}
+
+// Koralle: verzweigt, rosa bzw. orange; Kachelmitte bei (32, 52)
+function coral() {
+  const o = new Canvas(64, 64);
+  const branch = (x, y, len, a, col, depth) => {
+    const x1 = x + Math.cos(a) * len, y1 = y + Math.sin(a) * len;
+    for (let t = 0; t <= 1; t += 0.05) o.circle(x + (x1 - x) * t, y + (y1 - y) * t, 2.2 - depth * 0.5, hex(col));
+    if (depth < 2) {
+      branch(x1, y1, len * 0.7, a - 0.5, col, depth + 1);
+      branch(x1, y1, len * 0.7, a + 0.5, col, depth + 1);
+    }
+  };
+  branch(28, 52, 12, -Math.PI / 2 - 0.3, '#f07a8a', 0);
+  branch(38, 52, 10, -Math.PI / 2 + 0.3, '#f0a050', 0);
+  o.outline(INK);
+  return o;
+}
+
+// Steine im Tank; Kachelmitte bei (32, 52)
+function tankRock() {
+  const o = new Canvas(64, 64);
+  o.ellipse(28, 46, 12, 7, hex('#7a8a8a'));
+  o.ellipse(38, 49, 9, 5, hex('#8a9a9a'));
+  o.ellipse(26, 43, 6, 3, hex('#a8b8b8'), true);
+  o.outline(INK);
+  return o;
+}
+
+// Muschel auf dem Sand; Kachelmitte bei (32, 52)
+function shell() {
+  const o = new Canvas(64, 64);
+  o.ellipse(32, 50, 7, 5, hex('#f4d8c8'));
+  for (const dx of [-4, -1, 2, 5]) o.line(32, 54, 32 + dx, 46, hex('#d8a890'));
+  o.rect(30, 53, 4, 2, hex('#e8c0a8'));
+  o.outline(INK);
+  return o;
+}
+
+// kleine Schatzkiste im Tank; Kachelmitte bei (32, 52)
+function tankChest() {
+  const o = new Canvas(64, 64);
+  const P = isoBox(o, 32, 50, 0.45, 0.3, 10, '#a8743f', '#6b4224', '#8a5a30');
+  o.poly([P(-0.22, -0.15, 10), P(0.22, -0.15, 10), P(0.22, -0.15, 14), P(-0.22, -0.15, 14)], hex('#8a5a30')); // offener Deckel
+  for (const [u, v] of [[-0.1, 0], [0, 0.05], [0.1, -0.02]]) {
+    const [x, y] = P(u, v, 11);
+    o.circle(x, y, 1.6, hex('#f2c84a')); // Goldmünzen
+  }
+  o.outline(INK);
+  return o;
+}
+
 const PRINT_KINDS = ['tiger', 'sheep', 'mole', 'cat', 'frog', 'heron', 'fish', 'antelope', 'giraffe', 'deer', 'stag', 'fox', 'squirrel', 'zebra', 'meerkat', 'lion', 'crocodile'];
 const sprites = {
   'grass0.png': grassTile(0),
@@ -1989,6 +2135,22 @@ const sprites = {
   'icecream.png': iceCone(),
   'icecream2.png': iceCone('#8a5a30', '#f4f0e6'),
   'icecream3.png': iceCone('#a8e0b0', '#f4c0d0'),
+  // (am Ende, damit die Zufallsmuster der Bilder davor gleich bleiben)
+  // Aquarium (Platzhalter): Fassade am Rand des Tierparks, Halle und Wassertanks (Wände ohne Dach), Böden, Deko im Tank
+  'aquarium_facade.png': aquariumFacade(),
+  'hutwall_aquarium_x.png': hutWall('aquarium'),
+  'hutwall_aquarium_y.png': hutWall('aquarium').flipped(),
+  'post_hutwall_aquarium.png': hutPost('aquarium'),
+  'hutwall_tank_x.png': hutWall('tank'),
+  'hutwall_tank_y.png': hutWall('tank').flipped(),
+  'post_hutwall_tank.png': hutPost('tank'),
+  'floor_aquarium.png': aquariumFloor(),
+  'tank_floor.png': tankFloor(),
+  'seaweed.png': seaweed(),
+  'coral.png': coral(),
+  'tank_rock.png': tankRock(),
+  'shell.png': shell(),
+  'tank_chest.png': tankChest(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")

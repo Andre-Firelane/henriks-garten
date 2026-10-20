@@ -316,6 +316,46 @@ export const LEVELS = {
     spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35, peacock: 0.8 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
   },
 
+  // Aquarium: eigene Zone hinter der Fassade oben links im Tierpark. Eine Halle (Gebäude ohne Dach, man ist immer drin)
+  // mit zwei Wassertanks an der Rückwand; darin schwimmen Zierfische (siehe TankFish.js) zwischen Pflanzen und Deko.
+  aquarium: {
+    name: 'Aquarium',
+    rows: [
+      'MMMMMMMMMMMMMMMMMM',
+      'Ns..............sN',
+      'N.MMMMMMM.MMMMMM.N',
+      'N.N(..?.N.N.(.)N.N',
+      'N.N.)..(N.N(.?.N.N',
+      'N.N/.(."N.N./.(N.N',
+      'N.MMMMMMM.MMMMMM.N',
+      'N................N',
+      'N................N',
+      'N....d......d....N',
+      'N................N',
+      'N................N',
+      'NZ..............ZN',
+      'MMMMMMMMXXMMMMMMMM',
+    ],
+    grass: ['floor_aquarium'],
+    path: 'floor_aquarium',
+    start: { tx: 8, ty: 11 },
+    enclosures: [],
+    // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle
+    buildings: [
+      { tx0: 2, ty0: 2, tx1: 8, ty1: 6, style: 'tank', noRoof: true },
+      { tx0: 10, ty0: 2, tx1: 15, ty1: 6, style: 'tank', noRoof: true },
+      { tx0: 0, ty0: 0, tx1: 17, ty1: 13, style: 'aquarium', noRoof: true },
+    ],
+    chests: [],
+    toolSpots: [],
+    background: '#0b1a26',
+    exits: [
+      { tx: 8, ty: 13, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
+      { tx: 9, ty: 13, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
+    ],
+    spawn: { population: 0, weights: {} }, // die Zierfische sind keine Tiere
+  },
+
   // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein
   // (siehe moveFollowersIntoPens in GardenScene). Erreichbar oben aus jeder Welt.
   park: {
@@ -338,13 +378,13 @@ export const LEVELS = {
       '                         3]........]....A.#].......y]..3',
       '                 333333333].A.y....]......#G..y..y..]..3',
       '                 3.....v..].....$..G#.y.A.#G........]y.3',
-      '                 3....y...]........G#.v...#].....A..]vy3',
-      '                 3.y...y..]...y..y.]#vy.A.#]........].A3',
-      '            333333..y.....[[[[[[[[[[#F....#[[[[[[[[[[..3',
-      '            3v...#####################################y3',
-      '            3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy3',
-      '            3.}......}..|.....|.#....A...A....v.#...R..3',
-      '            3.}.oooo.}..|..u..|.#..y.....y....v.#..vy..3',
+      '        V3333    3....y...]........G#.v...#].....A..]vy3',
+      '        Vl.K3    3.y...y..]...y..y.]#vy.A.#]........].A3',
+      '        V.g.333333..y.....[[[[[[[[[[#F....#[[[[[[[[[[..3',
+      '        `#############################################y3',
+      '        V.f.3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy3',
+      '        Vl.b3.}......}..|.....|.#....A...A....v.#...R..3',
+      '        V3333.}.oooo.}..|..u..|.#..y.....y....v.#..vy..3',
       '            3.}.oooo.}..|.....|.#........yyy..A.#y..A..3',
       '            3.}y.ooo.}..|y.y..|.#..............y#...y..3',
       '            3.}......}..-------.#..R.....vy..y..#....A.3',
@@ -459,6 +499,7 @@ export const LEVELS = {
     signScale: 1.25,
     sections: [
       { label: 'Savanne', tx: 38, ty: 18 },
+      { label: 'Aquarium', tx: 10, ty: 15 },
       { label: 'Wald', tx: 12, ty: 46 },
       { label: 'Wiese', tx: 46, ty: 41 },
       { label: 'Asien', tx: 38, ty: 61 },
@@ -466,6 +507,7 @@ export const LEVELS = {
     exits: [
       { tx: 34, ty: 0, to: 'savanna', arrive: { tx: 20, ty: 1 }, label: 'Savanne' },
       { tx: 1, ty: 46, to: 'forest', arrive: { tx: 22, ty: 1 }, label: 'Wald' },
+      { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 8, ty: 11 }, label: 'Aquarium' }, // Tür in der Fassade oben links
       { tx: 55, ty: 40, to: 'meadow', arrive: { tx: 20, ty: 1 }, label: 'Wiese' },
       { tx: 35, ty: 82, to: 'asia', arrive: { tx: 20, ty: 1 }, label: 'Asien' },
     ],

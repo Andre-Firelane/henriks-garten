@@ -35,6 +35,9 @@ const PIXEL_ART = [
   'climb_tree', // Kletterbaum im Affengehege
   'hay_shelter', 'hay_rack', 'reeds', 'fountain', 'nest_box', 'lion_rock', // Ausstattung ausgebauter Gehege
   'build_stakes', 'build_planks', // Baustelle vor dem Ausbau
+  // Aquarium: Fassade im Tierpark, Halle und Wassertanks, Böden, Deko im Tank
+  'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
+  'floor_aquarium', 'tank_floor', 'seaweed', 'coral', 'tank_rock', 'shell', 'tank_chest',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
