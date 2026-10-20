@@ -152,6 +152,15 @@ const CHARACTERS = [
   { src: 'Sprites/Flamingo.png', out: 'flamingo.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },
   { src: 'Sprites/Flamingo fliegend.png', out: 'flamingo_fly.png', frameW: 104, frameH: 100, feetY: 96, figureH: 88, byComponents: true }, // Flügel reichen in die Nachbarspalten
   { src: 'Sprites/Flamingo Baby.png', out: 'flamingo_baby.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },
+  // Tiger (Asien): laufend und fressend, gleicher Maßstab
+  { src: 'Sprites/Tiger.png', out: 'tiger.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
+  { src: 'Sprites/Tiger frisst.png', out: 'tiger_eat.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
+  // Orang-Utan: auf allen Vieren und sitzend beim Fressen (das sitzende Bild nimmt er auch oben im Baum, siehe tree-peeks.cjs)
+  { src: 'Sprites/Orang Utan.png', out: 'orangutan.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
+  { src: 'Sprites/Orang Utan sitzt und frisst.png', out: 'orangutan_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
+  // Pfau mit Rad und ohne (bei Pfau.png ist das Rad der Vorderansichten weggeschnitten, siehe tools/peacock-cut.cjs)
+  { src: 'Sprites/Pfau Rad.png', out: 'peacock_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
+  { src: 'Sprites/Pfau.png', out: 'peacock.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)

@@ -2123,21 +2123,15 @@ const sprites = {
   'fountain.png': fountain(),
   'nest_box.png': nestBox(),
   'lion_rock.png': lionRock(),
-  // Tiger (Platzhalter, bis die echten Bilder da sind) und der weiße Tiger; _peek: neugieriges Gesicht im Bambus
-  'tiger.png': tigerSprite(false),
+  // weißer Tiger (Platzhalter, der normale Tiger kommt aus Sprites/Tiger.jpg, siehe prepare-characters.js); _peek: Gesicht im Bambus
   'tiger2.png': tigerSprite(true),
-  'tiger_peek.png': tigerPeek(false),
   'tiger2_peek.png': tigerPeek(true),
   'ball.png': toyBall(), // Ball als Werkzeug (Bild in der Werkzeugleiste und in der Kiste)
-  // Orang-Utan (Platzhalter) und das Flanschen-Männchen; _tree: oben in der Baumkrone
-  'orangutan.png': orangutanSprite(false),
+  // Flanschen-Männchen (Platzhalter; der normale Orang-Utan kommt aus Sprites/Orang Utan.jpg); _tree: oben in der Baumkrone
   'orangutan2.png': orangutanSprite(true),
-  'orangutan_tree.png': orangutanTree(false),
   'orangutan2_tree.png': orangutanTree(true),
   'hammock.png': hammock(), // Orang-Utan-Gehege (Ausbau)
-  // Pfau (Platzhalter) und der weiße Pfau; _wheel: schlägt ein Rad
-  'peacock.png': peacockSprite(false, false),
-  'peacock_wheel.png': peacockSprite(true, false),
+  // weißer Pfau (Platzhalter; der normale Pfau kommt aus Sprites/Pfau.jpg und Pfau Rad.jpg); _wheel: schlägt ein Rad
   'peacock2.png': peacockSprite(false, true),
   'peacock2_wheel.png': peacockSprite(true, true),
   'peacock_perch.png': peacockPerch(), // Pfauengehege (Ausbau)

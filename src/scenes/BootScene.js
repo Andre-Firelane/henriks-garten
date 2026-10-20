@@ -134,14 +134,16 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
-    // Pfau (Asien, Platzhalter) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
+    // Pfau (Asien) und der weiße Pfau (seltene Variante, noch Platzhalter); _wheel: schlägt ein Rad
     for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
-    // Orang-Utan (Asien, Platzhalter) und das Flanschen-Männchen (seltene Variante); _tree: oben in der Baumkrone
+    // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante, noch Platzhalter); _tree: oben in der Baumkrone
+    this.load.spritesheet('orangutan_eat', 'assets/orangutan_eat.png', { frameWidth: 88, frameHeight: 88 }); // sitzt und frisst
     for (const k of ['orangutan', 'orangutan2']) {
       this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
       this.load.image(`${k}_tree`, `assets/${k}_tree.png`);
     }
-    // Tiger (Asien, Platzhalter) und der weiße Tiger (seltene Variante); _peek: neugieriges Gesicht im Bambus
+    // Tiger (Asien) und der weiße Tiger (seltene Variante, noch Platzhalter); _peek: neugieriges Gesicht im Bambus
+    this.load.spritesheet('tiger_eat', 'assets/tiger_eat.png', { frameWidth: 96, frameHeight: 80 });
     for (const k of ['tiger', 'tiger2']) {
       this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 80 });
       this.load.image(`${k}_peek`, `assets/${k}_peek.png`);

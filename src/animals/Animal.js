@@ -292,6 +292,7 @@ export const SPECIES = {
   // Tiger (Asien): streift als Schemen durch den Bambus, mit dem Ball lockt man ihn heraus (siehe Tiger.js)
   tiger: {
     texture: 'tiger',
+    eatTexture: 'tiger_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 22,
@@ -307,6 +308,7 @@ export const SPECIES = {
   // Orang-Utan (Asien): sitzt oben in den Urwaldbäumen, kommt nach dem Wink-Spiel herunter (siehe Orangutan.js)
   orangutan: {
     texture: 'orangutan',
+    eatTexture: 'orangutan_eat', // sitzt und frisst (am Futter im Tierpark)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 16,
@@ -516,7 +518,8 @@ export default class Animal {
 
   // beim Fressen das Fress-Bild (kind.eatTexture, Kopf unten); das Schaf grast stattdessen (siehe Sheep.js)
   setEating(on) {
-    this.eatingLook = on && !!this.kind.eatTexture;
+    // seltene Varianten ohne eigenes Fress-Bild bleiben beim Fressen in ihrem Bild
+    this.eatingLook = on && !!this.kind.eatTexture && this.scene.textures.exists(this.eatTexture());
   }
 
   // Bild für Stehen und Laufen: beim Fressen am Futter das Fress-Bild; mit Skin dessen Bilder (z. B. cat2, cat2_eat)
