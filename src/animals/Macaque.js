@@ -100,8 +100,10 @@ export default class Macaque extends Animal {
     return spots[Math.min(spots.length - 1, Phaser.Math.Between(0, 4))] ?? null;
   }
 
-  // Land darf er beim Rennen nicht durchs Wasser abkürzen (nur springen)
+  // Land darf er beim Rennen nicht durchs Wasser abkürzen (nur springen); folgt er dem Spieler, läuft er überall mit
+  // (auch durchs heiße Wasser), sonst bleibt er am Ufer hängen
   blocked(x, y) {
+    if (this.state === 'following') return false;
     if (this.phase !== 'jump' && this.phase !== 'bath') {
       const { tx, ty } = worldToTile(x, y);
       if (charAt(tx, ty) === 'h') return true;
