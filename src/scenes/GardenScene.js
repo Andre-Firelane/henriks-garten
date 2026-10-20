@@ -179,6 +179,8 @@ const NO_PEN_FEED = ['fish', 'koi', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
+// vordere Wände auch von außen halb durchsichtig (Katzenhaus aus Glas: sonst verschwinden die Katzen vorne hinter dem Sockel)
+const FRONT_ALPHA = { cathouse: 0.5 };
 // obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
 const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
 const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
@@ -398,6 +400,7 @@ export default class GardenScene extends Phaser.Scene {
       const roof = this.add.image(top.x, top.y - TILE_H / 2, `hutroof_${h.style}`);
       roof.setOrigin(ax / roof.width, ay / roof.height).setDepth(bottom.y + TILE_H / 2 + 1);
       roof.setAlpha(ROOF_ALPHA[h.style] ?? 1);
+      for (const img of front) img.setAlpha(FRONT_ALPHA[h.style] ?? 1);
       this.houses.push({ h, roof, front, inside: false });
     }
 
@@ -2541,7 +2544,7 @@ export default class GardenScene extends Phaser.Scene {
       if (inside !== house.inside) {
         house.inside = inside;
         this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
-        this.tweens.add({ targets: house.front, alpha: inside ? HUT_FRONT_ALPHA : 1, duration: 250 });
+        this.tweens.add({ targets: house.front, alpha: inside ? Math.min(HUT_FRONT_ALPHA, FRONT_ALPHA[h.style] ?? 1) : (FRONT_ALPHA[h.style] ?? 1), duration: 250 });
       }
     }
     // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
