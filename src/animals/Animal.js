@@ -410,6 +410,25 @@ export const SPECIES = {
     shadowW: 14,
     catchWith: ['net'],
   },
+  // Krake (Riff): getarnt fast unsichtbar, flieht beim Näherkommen und verschwindet in Tinte (siehe Octopus.js);
+  // swimFrames: Bilder im Spritesheet "octopus", frames/originY gelten für den Beutel an Land
+  octopus: {
+    texture: 'octopus',
+    swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
+    originY: 68 / 72,
+    speed: 6,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 26,
+    fleeSpeed: 44, // langsamer als der Taucher (60) – aber sie hat nur ein paar Sekunden, dann ist sie in der Tinte weg
+    catchWith: ['net'],
+  },
   fish: {
     texture: 'fish',
     bagTexture: 'fishbag',

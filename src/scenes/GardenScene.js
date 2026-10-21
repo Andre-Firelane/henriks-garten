@@ -75,6 +75,7 @@ import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
 import ReefFish from '../animals/ReefFish.js';
 import Seahorse from '../animals/Seahorse.js';
+import Octopus from '../animals/Octopus.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
@@ -101,7 +102,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -122,6 +123,7 @@ const CATCH_TIPS = {
   koi: 'Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!',
   reeffish: 'Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.',
   seahorse: 'Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!',
+  octopus: 'Getarnt fast unsichtbar am Meeresboden. Kommst du näher, schwimmt sie weg – keschere sie schnell, sonst verschwindet sie in einer Tintenwolke!',
   mole: 'Nur wenn er aus seinem Hügel schaut.',
   squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
   heron: 'Nur wenn er am Wasser gelandet ist.',
@@ -155,6 +157,7 @@ const ANIMAL_INFO = {
   koi: ['Koi', 'Hat keine Füße – Koi schwimmen mit ihren Flossen. Am Maul haben sie zwei Barteln.'],
   reeffish: ['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'],
   seahorse: ['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'],
+  octopus: ['Krake', 'Hat acht Arme mit Saugnäpfen – damit kriecht sie über den Boden und hält sich fest.'],
   deer: ['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'],
   stag: ['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'],
   fox: ['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'],
@@ -185,7 +188,7 @@ const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Fut
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['fish', 'koi', 'reeffish', 'seahorse', 'crocodile', 'heron', 'flamingo', 'frog'];
+const NO_PEN_FEED = ['fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
@@ -254,7 +257,7 @@ const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
-const AQUA = ['reeffish', 'seahorse']; // Meerestiere: ziehen ins Aquarium (in dessen Becken)
+const AQUA = ['reeffish', 'seahorse', 'octopus']; // Meerestiere: ziehen ins Aquarium (in dessen Becken)
 const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
 const REEF_GROUP = [2, 5]; // ... die anderen in Gruppen dieser Größe (eine Art)
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
@@ -269,7 +272,7 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: 'Kescher',
-    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
+    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
     hint: (list) => `Damit fängst du ${animalIcons(list)}`,
   },
   lasso: {
@@ -1050,6 +1053,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new ReefFish(this, x, y, variant)
         : species === 'seahorse'
           ? new Seahorse(this, x, y)
+        : species === 'octopus'
+          ? new Octopus(this, x, y)
         : species === 'crocodile'
           ? new Crocodile(this, this.animals)
         : species === 'squirrel'
@@ -2331,6 +2336,13 @@ export default class GardenScene extends Phaser.Scene {
     let r = Math.random() * this.aqPenned.reduce((s, a) => s + appeal(a), 0);
     const from = this.aqPenned.find((a) => (r -= appeal(a)) <= 0) ?? this.aqPenned[0];
     this.addHearts(1, from?.species ?? null);
+  }
+
+  // Krake entwischt in einer Tintenwolke (kurzer Hinweis, nur beim ersten Mal in diesem Gebiet)
+  inkEscape() {
+    if (this.inkShown) return;
+    this.inkShown = true;
+    this.showToast(`${animalIcon('octopus', 3)} Puff – die Krake ist in einer Tintenwolke verschwunden! Beim nächsten Mal schneller keschern.`);
   }
 
   // Aquarium: Zierfische nur in Tanks ohne echte Fische

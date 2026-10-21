@@ -31,6 +31,7 @@ export const APPEAL = {
   crocodile: 5,
   reeffish: 1.5,
   seahorse: 3,
+  octopus: 4.5,
 };
 
 const MAX_VISITORS = 12;

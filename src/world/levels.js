@@ -324,27 +324,28 @@ export const LEVELS = {
   aquarium: {
     name: 'Aquarium',
     // große Halle: links zwei Becken (Riff-Fische, Seepferdchen), oben an der Wand ein großes Becken; in der Mitte ein
-    // Mosaikweg mit Platz, Delfin-Statue, Bänken und Quallen-Lampen
+    // Mosaikweg mit Platz, Delfin-Statue, Bänken und Quallen-Lampen. Rechts durch den Durchgang Raum 2: hinten eine
+    // riesige Beckenfront (noch ohne Tiere, nur Zierfische), rechts ein kleines Krakenbecken
     rows: [
-'MMMMMMMMMMMMMMMMMMMMMM',
-      'NZ..................ZN',
-      'N...MMMMMMMMMMMMMMMM.N',
-      'N...N......?.(.?.(.N.N',
-      'N...N(.)(".((.((..(N.N',
-      'N...N..)..)"...)..?N.N',
-      'N...MMMMMMMMMMMMMMMM.N',
-      'N.......#############N',
-      'N.MMMMMM#.....#.....ŁN',
-      'N.N.).)N#..Ł.Ɓ#Ɓ.Ł...N',
-      'N.N.?..N#...#####....N',
-      'N.N(...N#...#####.Ɓ.ZN',
-      'N.MMMMMM######Ś##....N',
-      'N.MMMMMM#...#####.Ɓ..N',
-      'N.N(..(N#...#####....N',
-      'N.N.().N#..Ł###..Ł...N',
-      'N.MMMMMM#..###.......N',
-      'N.......#.###Ł.Z....ZN',
-      'MMMMMMMMMMXXMMMMMMMMMM',
+'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+      'NZ..................ZNZMMMMMMMMMMMMMMN',
+      'N...MMMMMMMMMMMMMMMM.N.N.).)..(..)(.NN',
+      'N...N......?.(.?.(.N.N.N.)(?..?(../)NN',
+      'N...N(.)(".((.((..(N.N.N(".)).))..?.NN',
+      'N...N..)..)"...)..?N.N.N...).?...(..NN',
+      'N...MMMMMMMMMMMMMMMM.N.N..).....)"..NN',
+      'N.......#############N.MMMMMMMMMMMMMMN',
+      'N.MMMMMM#.....#.....ŁNŁ..............N',
+      'N.N.).)N#..Ł.Ɓ#Ɓ.Ł...N###############N',
+      'N.N.?..N#...#####....N..Ɓ..Ɓ.Ł#.MMMMMN',
+      'N.N(...N#...#####.Ɓ.ZN........#.N?.)NN',
+      'N.MMMMMM######Ś################.N)..NN',
+      'N.MMMMMM#...#####.Ɓ..##########.N..)NN',
+      'N.N(..(N#...#####....N...Ɓ....#.N..?NN',
+      'N.N.().N#..Ł###..Ł...NŁ.......#.MMMMMN',
+      'N.MMMMMM#..###.......N........#######N',
+      'N.......#.###Ł.Z....ZNZ........Ł....ZN',
+      'MMMMMMMMMMXXMMMMMMMMMMMMMMMMMMMMMMMMMM',
     ],
     grass: ['floor_aquarium'],
     path: 'aq_path',
@@ -355,13 +356,17 @@ export const LEVELS = {
       { id: 'tankBig', name: 'Großes Becken', species: ['reeffish'], world: 'reef', seed: { tx: 6, ty: 3 }, slots: [20, 20], signAt: { tx: 11.5, ty: 6 }, signOnGlass: true },
       { id: 'tank1', name: 'Becken', species: ['reeffish'], world: 'reef', seed: { tx: 3, ty: 9 }, slots: [10, 10], signAt: { tx: 7, ty: 10 }, signOnGlass: true },
       { id: 'seahorses', name: 'Seepferdchen-Becken', species: ['seahorse'], world: 'reef', seed: { tx: 4, ty: 14 }, slots: [6, 6], signAt: { tx: 7, ty: 14.5 }, signOnGlass: true },
+      { id: 'octopus', name: 'Krakenbecken', species: ['octopus'], world: 'reef', seed: { tx: 34, ty: 12 }, slots: [3, 3], signAt: { tx: 34, ty: 15 }, signOnGlass: true },
     ],
     // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle. pathFloor: Mosaik auf dem Weg in der Halle
     buildings: [
       { tx0: 4, ty0: 2, tx1: 19, ty1: 6, style: 'tank', noRoof: true },
       { tx0: 2, ty0: 8, tx1: 7, ty1: 12, style: 'tank', noRoof: true },
       { tx0: 2, ty0: 13, tx1: 7, ty1: 16, style: 'tank', noRoof: true },
+      { tx0: 23, ty0: 1, tx1: 36, ty1: 7, style: 'tank', noRoof: true }, // Raum 2: riesige Beckenfront
+      { tx0: 32, ty0: 10, tx1: 36, ty1: 15, style: 'tank', noRoof: true }, // Raum 2: Krakenbecken
       { tx0: 0, ty0: 0, tx1: 21, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Besucher laufen auf dem Mosaikweg
+      { tx0: 21, ty0: 0, tx1: 37, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Raum 2 (die Wand dazwischen gehört zur Halle)
     ],
     chests: [],
     toolSpots: [],
@@ -434,7 +439,7 @@ export const LEVELS = {
     exits: [],
     // Riff-Fische: 22 Arten, alle gleich häufig (siehe ReefFish.js); eine Gruppe zählt als ein Platz.
     // Seepferdchen verstecken sich in den Korallen (siehe Seahorse.js)
-    spawn: { population: 13, weights: { reeffish: 1, seahorse: 0.3 } },
+    spawn: { population: 14, weights: { reeffish: 1, seahorse: 0.3, octopus: 0.2 } }, // Kraken tarnen sich am Boden (siehe Octopus.js)
   },
 
   // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein

@@ -28,6 +28,7 @@ const SHEETS = {
   giraffe: [104, 168, 4, 0],
   reeffish: [96, 64, 44, 0], // Riff-Fische: der Clownfisch steht für alle
   seahorse: [48, 64, 4, 0],
+  octopus: [72, 72, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)

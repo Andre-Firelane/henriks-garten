@@ -149,6 +149,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
     this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
+    this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
     for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
     // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante); _eat: sitzt und frisst; _tree: oben in der Baumkrone

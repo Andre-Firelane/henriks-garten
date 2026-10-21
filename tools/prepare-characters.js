@@ -24,6 +24,8 @@ const CHARACTERS = [
   { src: 'Sprites/Charakter Riff.png', out: 'hero_swim.png', frameW: 72, frameH: 116, feetY: 112, figureH: 110 }, // im Taucheranzug (Unterwasserwelt)
   // Seepferdchen (Riff): im Bild unten-links, unten-rechts, oben-links, oben-links – die ersten drei gespiegelt ergibt die übliche Reihenfolge
   { src: 'Sprites/Seepferdchen.png', out: 'seahorse.png', frameW: 48, frameH: 64, feetY: 60, figureH: 56, mirror: [0, 1, 2], stripShadow: true },
+  // Krake (Riff): unten-rechts, unten-links, oben-rechts, oben-links
+  { src: 'Sprites/Krake.png', out: 'octopus.png', frameW: 72, frameH: 72, feetY: 68, figureH: 60, stripShadow: true },
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Schaf.png', out: 'sheep.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
   // Schaf beim Grasen (Kopf unten); gleicher Maßstab wie oben (0,243). Freigestellt mit npm run cutout
