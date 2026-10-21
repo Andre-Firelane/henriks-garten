@@ -11,6 +11,8 @@ import { execFileSync } from 'node:child_process';
 const SOUNDS = [
   // Quelle, Ziel, Start und Länge des Ausschnitts in Sekunden, Spitzenpegel (0..1)
   ['Sounds/535220__spycrah__grass-step-left.wav', 'public/assets/sounds/step.wav', 0, 0.3, 0.8],
+  // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
+  ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
   // Tierrufe beim Fangen (der Name hinter "animal_" ist die Tierart)
   ['Sounds/schaf.wav', 'public/assets/sounds/animal_sheep.wav', 0.85, 0.85, 0.8],
   ['Sounds/katze.wav', 'public/assets/sounds/animal_cat.wav', 0.05, 0.75, 0.8],
@@ -112,7 +114,10 @@ function writeWav(file, rate, samples) {
 }
 
 fs.mkdirSync('public/assets/sounds', { recursive: true });
+// ONLY=Teil des Dateinamens: nur diese Geräusche neu erzeugen (z. B. ONLY=step_indoor node tools/prepare-sounds.js)
+const ONLY = process.env.ONLY;
 for (const [src, dest, start, seconds, peak] of SOUNDS) {
+  if (ONLY && !dest.includes(ONLY)) continue;
   if (/\.mp3$/i.test(src) && start === undefined) {
     fs.copyFileSync(src, dest);
     console.log(`${dest}: kopiert`);
@@ -136,7 +141,7 @@ for (const [src, dest, start, seconds, peak] of SOUNDS) {
 // Schleife (das Ende wird in den Anfang übergeblendet), leiser darübergelegt über die Wiesengeräusche.
 // Weil beide gleich lang sind, liegen ihre Schleifenstellen übereinander.
 const ASIA_MIX = { src: 'Sounds/Asien Ambient.mp3', base: 'public/assets/sounds/ambient_meadow.mp3', dest: 'public/assets/sounds/ambient_asia.mp3', fade: 3, gainDb: -18 };
-{
+if (!ONLY || ASIA_MIX.dest.includes(ONLY)) {
   const { src, base, dest, fade, gainDb } = ASIA_MIX;
   const len = Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', base]).toString().trim());
   const end = len + fade;
@@ -147,4 +152,17 @@ const ASIA_MIX = { src: 'Sounds/Asien Ambient.mp3', base: 'public/assets/sounds/
     '[asia][1:a]amix=inputs=2:normalize=0:duration=shortest[out]';
   execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', src, '-i', base, '-filter_complex', filter, '-map', '[out]', '-c:a', 'libmp3lame', '-b:a', '128k', dest]);
   console.log(`${dest}: ${len.toFixed(2)} s, Asien über Wiese gemischt`);
+}
+
+// Riff: am Anfang und Ende ein- bzw. ausgeblendet – das wird weggeschnitten, und das Ende geht weich in den Anfang über
+// (nahtlose Schleife wie beim Asien-Ambient)
+const REEF_LOOP = { src: 'Sounds/Riff Ambient.mp3', dest: 'public/assets/sounds/ambient_reef.mp3', from: 0.8, to: 23.4, fade: 1 };
+if (!ONLY || REEF_LOOP.dest.includes(ONLY)) {
+  const { src, dest, from, to, fade } = REEF_LOOP;
+  const filter =
+    `[0:a]atrim=${from}:${to},asetpts=PTS-STARTPTS,asplit[a1][a2];` +
+    `[a1]atrim=${fade},asetpts=PTS-STARTPTS[tail];[a2]atrim=0:${fade},asetpts=PTS-STARTPTS[head];` +
+    `[tail][head]acrossfade=d=${fade}:c1=tri:c2=tri[out]`;
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', src, '-filter_complex', filter, '-map', '[out]', '-c:a', 'libmp3lame', '-b:a', '128k', dest]);
+  console.log(`${dest}: ${(to - from - fade).toFixed(2)} s, Ränder weg, als Schleife überblendet`);
 }

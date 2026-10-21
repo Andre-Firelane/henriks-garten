@@ -130,6 +130,11 @@ export default class Orangutan extends Animal {
     const next = Phaser.Utils.Array.GetRandom(others);
     this.scene.orangutanMissed?.(this, reason);
     if (next) this.swingTo(next);
+    else {
+      // kein freier Baum in Sprungweite: er bleibt sitzen, das Spiel beginnt hier von vorn
+      this.phase = 'tree';
+      this.phaseTime = Phaser.Math.FloatBetween(...SIT_TIME);
+    }
   }
 
   // in einem Bogen von Krone zu Krone schwingen (mit Rascheln und Ruf)

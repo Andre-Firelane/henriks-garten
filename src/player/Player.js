@@ -1,7 +1,7 @@
 import { blockedAt } from '../world/collision.js';
 import { touch } from '../ui/touch.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
-import { bridgeLift, charAt } from '../world/map.js';
+import { bridgeLift, buildingAt, charAt } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
 
 // Bilder im Spritesheet "hero": Blickrichtung je nach Laufrichtung
@@ -31,10 +31,16 @@ const WADE_SPEED = 0.6; // im Wasser watet er langsamer
 // so viel höher als zu Fuß hält Henrik auf dem Reittier seine Hände (dort sitzen die Werkzeuge)
 const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31 };
 const RIDE_SHADOW_UP = 5; // Schatten unter der Mitte der Hufe statt unter dem vordersten Huf
+// Schwimmen (Unterwasserwelt): Henrik schwebt über dem Meeresboden, wippt langsam auf und ab und neigt sich in Schwimmrichtung
+const SWIM_LIFT = 16; // so hoch über dem Boden
+const SWIM_BOB = 2.5; // so weit wippt er auf und ab
+const SWIM_BOB_RATE = 1.8; // ... so schnell
+const SWIM_TILT = 8; // so weit neigt er sich beim Schwimmen (Grad)
+const SWIM_SPEED = 0.75; // unter Wasser langsamer als zu Fuß
 
 export default class Player {
-  // texture: Spritesheet der Figur (je Gebiet andere Kleidung)
-  constructor(scene, x, y, texture = 'hero') {
+  // texture: Spritesheet der Figur (je Gebiet andere Kleidung); swim: schwimmt statt zu laufen (Unterwasserwelt)
+  constructor(scene, x, y, texture = 'hero', { swim = false } = {}) {
     this.x = x;
     this.y = y;
     this.faceX = -1;
@@ -42,6 +48,7 @@ export default class Player {
     this.walkTime = 0;
     this.scene = scene;
     this.texture = texture;
+    this.swim = swim;
     // Lauf- und Stehanimation (Test): gibt es bisher nur in der Wiesen-Kleidung
     this.canWalkAnim = ANIMATED_HERO && texture === 'hero' && ['hero_walk', 'hero_walk_back', 'hero_idle'].every((key) => scene.anims.exists(key));
     this.stepTimer = 0; // Zeit bis zum nächsten Schritt-Geräusch
@@ -52,7 +59,7 @@ export default class Player {
     this.sprite = scene.add.sprite(x, y, texture, FRAME.downLeft);
     this.sprite.setOrigin(0.5, 112 / 116).setScale(0.5);
     this.mount = null; // Reittier-Bild (z. B. ride_meadow) oder null
-    this.speed = SPEED;
+    this.speed = swim ? SPEED * SWIM_SPEED : SPEED;
     this.handLift = 0; // Werkzeuge: so viel höher als zu Fuß
     this.sink = 0; // so tief steht der Wasserbüffel gerade im Wasser
     // heller Ring auf dem Wasser um den watenden Büffel: die hintere Hälfte hinter ihm, die vordere davor
@@ -156,14 +163,15 @@ export default class Player {
 
     // Laufen andeuten: leichtes Hüpfen und Wippen (die Laufanimation bewegt sich selbst)
     const phase = this.walkTime * (this.mount ? RIDE_STEP_RATE : STEP_RATE);
-    const hop = moving && !animated ? Math.abs(Math.sin(phase)) * (this.mount ? RIDE_HOP : HOP) : 0;
+    const hop = moving && !animated && !this.swim ? Math.abs(Math.sin(phase)) * (this.mount ? RIDE_HOP : HOP) : 0;
+    const float = this.swim ? SWIM_LIFT + Math.sin((this.scene.time.now / 1000) * SWIM_BOB_RATE) * SWIM_BOB : 0;
     const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
     const { tx, ty } = worldToTile(this.x, this.y);
     const target = this.wade && charAt(tx, ty) === '~' ? WADE_SINK : 0; // im Wasser steht der Büffel tiefer
     this.sink += (target - this.sink) * Math.min(1, dt * WADE_EASE);
     if (this.sink < 0.3) this.sink = 0;
     const sink = this.sink;
-    this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK + sink);
+    this.sprite.setPosition(this.x, this.y - hop - float - lift + SPRITE_SINK + sink);
     // was unter der Wasserlinie liegt, abschneiden (im Bild gerechnet, Maßstab 0,5)
     if (sink) {
       const f = this.sprite.frame;
@@ -178,9 +186,10 @@ export default class Player {
         .setAlpha(Math.min(1, sink / WADE_SINK))
         .setDepth(this.y + (i ? 0.1 : -0.2)), // hinten hinter, vorne vor dem Büffel
     );
-    this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount ? 1.5 : 3) : 0);
+    if (this.swim) this.sprite.setAngle(moving ? this.faceX * SWIM_TILT * Math.min(1, len) : 0);
+    else this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount ? 1.5 : 3) : 0);
     this.shadow.setPosition(this.x, this.y - lift - (this.mount ? RIDE_SHADOW_UP : 0)).setVisible(!sink); // im Wasser kein Schatten
-    this.shadow.setScale(1 - hop * 0.04);
+    this.shadow.setScale(this.swim ? 0.8 - (float - SWIM_LIFT) * 0.03 : 1 - hop * 0.04); // schwimmend: kleinerer Schatten, der mitwippt
 
     // Wer weiter unten steht, wird weiter vorne gezeichnet
     this.sprite.setDepth(this.y);
@@ -188,8 +197,12 @@ export default class Player {
   }
 
   playStep() {
-    if (!this.scene.cache.audio.exists('step')) return;
-    this.scene.sound.play('step', {
+    if (this.swim) return; // unter Wasser keine Schritte
+    // drinnen (Haupthaus, Hütten, Aquarium) klingen die Schritte wie auf einem Flur, draußen wie auf Gras
+    const { tx, ty } = worldToTile(this.x, this.y);
+    const key = !this.mount && buildingAt(tx, ty) && this.scene.cache.audio.exists('step_indoor') ? 'step_indoor' : 'step';
+    if (!this.scene.cache.audio.exists(key)) return;
+    this.scene.sound.play(key, {
       volume: STEP_VOLUME * (0.8 + Math.random() * 0.4),
       detune: (this.mount ? RIDE_STEP_DETUNE : 0) + (Math.random() * 2 - 1) * STEP_DETUNE,
     });

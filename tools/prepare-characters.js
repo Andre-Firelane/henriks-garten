@@ -21,6 +21,9 @@ const CHARACTERS = [
   { src: 'Sprites/Charakter Wald.png', out: 'hero_forest.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
   { src: 'Sprites/Charakter Savanne.png', out: 'hero_savanna.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
   { src: 'Sprites/Charakter Asien.png', out: 'hero_asia.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Sprites/Charakter Riff.png', out: 'hero_swim.png', frameW: 72, frameH: 116, feetY: 112, figureH: 110 }, // im Taucheranzug (Unterwasserwelt)
+  // Seepferdchen (Riff): im Bild unten-links, unten-rechts, oben-links, oben-links – die ersten drei gespiegelt ergibt die übliche Reihenfolge
+  { src: 'Sprites/Seepferdchen.png', out: 'seahorse.png', frameW: 48, frameH: 64, feetY: 60, figureH: 56, mirror: [0, 1, 2], stripShadow: true },
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Schaf.png', out: 'sheep.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
   // Schaf beim Grasen (Kopf unten); gleicher Maßstab wie oben (0,243). Freigestellt mit npm run cutout
@@ -161,6 +164,9 @@ const CHARACTERS = [
   // Orang-Utan: auf allen Vieren und sitzend beim Fressen (das sitzende Bild nimmt er auch oben im Baum, siehe tree-peeks.cjs)
   { src: 'Sprites/Orang Utan.png', out: 'orangutan.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
   { src: 'Sprites/Orang Utan sitzt und frisst.png', out: 'orangutan_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
+  // Flanschen-Männchen (seltene Variante): gleiches Format und gleicher Maßstab
+  { src: 'Sprites/Orang Utan2.png', out: 'orangutan2.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
+  { src: 'Sprites/Orang Utan2 sitzt und frisst.png', out: 'orangutan2_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
   // Pfau mit Rad und ohne (bei Pfau.png ist das Rad der Vorderansichten weggeschnitten, siehe tools/peacock-cut.cjs)
   { src: 'Sprites/Pfau Rad.png', out: 'peacock_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
   { src: 'Sprites/Pfau.png', out: 'peacock.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },

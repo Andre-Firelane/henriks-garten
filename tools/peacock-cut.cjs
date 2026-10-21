@@ -8,6 +8,7 @@ const [inp, out, tailY = '335', grow = '7'] = process.argv.slice(2);
 const p = PNG.sync.read(fs.readFileSync(inp));
 const W = p.width, H = p.height, d = p.data;
 const TAIL_Y = Number(tailY), GROW = Number(grow);
+const BEAK_ZONE = 110; // so weit unter dem Krönchen-Ansatz liegt höchstens der Schnabel
 const blue = (i) => d[i + 3] > 128 && d[i + 2] > 120 && d[i + 2] > d[i + 1] + 35 && d[i] < 110;
 // größte zusammenhängende blaue Fläche (Körper) in einem Bildstreifen
 function body(x0, x1) {
@@ -70,6 +71,22 @@ for (const [x0, x1] of [[0, 272], [272, 535]]) {
   }
   // das Krönchen kommt später aus der Rückansicht (das hier ist mit den Federn des Rads verwoben)
   const { top, hx } = body(x0, x1);
+  // Schnabel (grau, ragt seitlich aus dem Kopf über das Rad hinaus): am Kopf entlang mit wachsen lassen, danach seine
+  // dunkle Umrandung
+  const headBottom = top + BEAK_ZONE;
+  const grow = (test, steps) => {
+    for (let k = 0; k < steps; k++) {
+      const add = [];
+      for (let y = Math.max(1, top); y < headBottom; y++) for (let x = x0 + 1; x < x1 - 1; x++) {
+        const s = y * W + x, i = s * 4;
+        if (keep[s] || d[i + 3] < 20 || !test(i)) continue;
+        if (keep[s - 1] || keep[s + 1] || keep[s - W] || keep[s + W]) add.push(s);
+      }
+      for (const s of add) keep[s] = 1;
+    }
+  };
+  grow((i) => Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) < 32 && d[i] > 90, 30);
+  grow((i) => d[i] + d[i + 1] + d[i + 2] < 260, 2);
   crests.push({ top, hx });
   for (let y = 0; y < Math.min(H, TAIL_Y); y++) for (let x = x0; x < x1; x++) {
     const s = y * W + x;

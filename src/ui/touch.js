@@ -1,5 +1,5 @@
 // Touch-Steuerung fürs Tablet: Joystick (linke Bildschirmhälfte, erscheint dort, wo der Finger aufsetzt),
-// Aktionsknopf rechts unten (zeigt das getragene Werkzeug) und Neustart-Knopf oben rechts.
+// Aktionsknopf rechts unten (zeigt das getragene Werkzeug) und Menü-Knopf oben rechts.
 // Erscheint erst, wenn der Bildschirm berührt wird; am PC mit Tastatur ändert sich nichts.
 
 const RADIUS = 55; // so weit (CSS-Pixel) lässt sich der Knopf des Joysticks ziehen
@@ -9,7 +9,7 @@ const DEADZONE = 0.15; // kleine Ausschläge zählen nicht
 export const touch = { x: 0, y: 0 };
 
 // Die Szene trägt hier ein, was die Knöpfe tun (wird bei jedem Levelwechsel neu gesetzt)
-export const touchHandlers = { action: null, reset: null };
+export const touchHandlers = { action: null, menu: null };
 
 let ui = null;
 
@@ -18,13 +18,13 @@ export function setupTouchControls() {
   const base = document.getElementById('stick');
   const knob = document.getElementById('stick-knob');
   const action = document.getElementById('btn-action');
-  const reset = document.getElementById('btn-reset');
+  const menu = document.getElementById('btn-menu');
   ui = { action };
 
   // Sobald der Bildschirm berührt wird: Touch-Ansicht einschalten
   window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
   // Vollbild: Chrome erlaubt es erst beim Loslassen des Fingers (touchend), nicht beim Aufsetzen.
-  // Bei jedem Tippen erneut versuchen, falls das Vollbild verlassen wurde (z. B. durch die Neustart-Rückfrage).
+  // Bei jedem Tippen erneut versuchen, falls das Vollbild verlassen wurde.
   // Klappt das nicht von selbst, gibt es oben rechts den Vollbild-Knopf.
   const root = document.documentElement;
   const request = root.requestFullscreen?.bind(root) ?? root.webkitRequestFullscreen?.bind(root);
@@ -97,8 +97,9 @@ export function setupTouchControls() {
   });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) action.addEventListener(ev, () => action.classList.remove('pressed'));
 
-  reset.addEventListener('click', () => {
-    if (window.confirm('Spiel wirklich neu starten? Alle gefangenen Tiere sind dann weg.')) touchHandlers.reset?.();
+  menu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    touchHandlers.menu?.();
   });
 
   // Kein Kontextmenü beim langen Drücken

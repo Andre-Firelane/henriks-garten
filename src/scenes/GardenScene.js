@@ -37,6 +37,7 @@ import {
   buildings,
   buildingAt,
   CAR_BODY,
+  nearSegment,
   GATE_TILES,
   enclosureAt,
   penCapacity,
@@ -48,7 +49,8 @@ import {
   bridgeArch,
 } from '../world/map.js';
 import { LEVELS } from '../world/levels.js';
-import { game, resetGame } from '../state.js';
+import { game } from '../state.js';
+import { save, saveHandlers, writeSave } from '../save.js';
 import Player from '../player/Player.js';
 import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, SKINS } from '../animals/Animal.js';
 import Fish from '../animals/Fish.js';
@@ -71,10 +73,12 @@ import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
+import ReefFish from '../animals/ReefFish.js';
+import Seahorse from '../animals/Seahorse.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { AWAY_ICE_PER_VISITOR_MINUTE, awayHearts, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, FULL_BONUS, appeal, awayHearts, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { EVENTS, RARE_EVENT_CHANCE, activeOverlap, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
@@ -90,13 +94,14 @@ import Trap from '../world/Trap.js';
 import { animalIcon, animalIcons } from '../ui/icons.js';
 import { touchHandlers, setTouchTool } from '../ui/touch.js';
 import { openJournal, isJournalOpen } from '../ui/journal.js';
+import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -115,6 +120,8 @@ const CATCH_TOOLS = {
 const CATCH_TIPS = {
   fish: 'Nur wenn er nach den Luftblasen auftaucht.',
   koi: 'Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!',
+  reeffish: 'Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.',
+  seahorse: 'Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!',
   mole: 'Nur wenn er aus seinem Hügel schaut.',
   squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
   heron: 'Nur wenn er am Wasser gelandet ist.',
@@ -146,6 +153,8 @@ const ANIMAL_INFO = {
   frog: ['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'],
   fish: ['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'],
   koi: ['Koi', 'Hat keine Füße – Koi schwimmen mit ihren Flossen. Am Maul haben sie zwei Barteln.'],
+  reeffish: ['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'],
+  seahorse: ['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'],
   deer: ['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'],
   stag: ['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'],
   fox: ['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'],
@@ -176,18 +185,24 @@ const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Fut
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['fish', 'koi', 'crocodile', 'heron', 'flamingo', 'frog'];
+const NO_PEN_FEED = ['fish', 'koi', 'reeffish', 'seahorse', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
 // vordere Wände auch von außen halb durchsichtig (Katzenhaus aus Glas: sonst verschwinden die Katzen vorne hinter dem Sockel)
 const FRONT_ALPHA = { cathouse: 0.5, tank: 0.45 }; // Wassertanks: vorne Glas, durch das man die Fische sieht
-const TANK_FISH = [12, 18]; // so viele Zierfische schwimmen in jedem Wassertank
+const TANK_FISH = [12, 18]; // so viele Zierfische schwimmen in jedem Wassertank (nur solange noch keine Riff-Fische drin sind)
+const TANK_FISH_SCALE = 0.5; // so klein sind sie dort
 const TANK_TOP = 120; // Oberkante der Glaswände (Bild "hutwall_tank")
 const TANK_WATER_UP = 112; // Höhe der Wasseroberfläche (knapp unter der Oberkante der 120 Pixel hohen Glaswände)
 // obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
 const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
-const CAR_DIST = 72; // so nah muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen
+const BOAT_BOB = 3; // so weit schaukelt das Boot in der Unterwasserwelt auf und ab (Pixel)
+const BOAT_ROPE = [-24, -27]; // dort am Boot (links hinten, Welt-Pixel vom Ankerpunkt des Bilds, mal Größe) hängt das Ankerseil
+const ANCHOR_RING = [19, -18]; // ... und dort am Anker (vom Ankerpunkt des Bilds "anchor_sack")
+const SEA_TINT = [0x1a7ad0, 0.24]; // blaue Tönung über allem unter Wasser
+const SEA_BUBBLES = 260; // alle so viele Millisekunden steigt irgendwo im Bild ein Bläschen auf
+const CAR_DIST = 30; // so nah (über die Hitbox hinaus) muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen – von jeder Seite
 const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
 const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS-Pixel)
@@ -237,8 +252,11 @@ const ACTION_KEY = 'E';
 // Flamingo-Flug (Event): in diesen Welten fliegen Flamingos ein, etwa neunmal so oft wie Reiher
 const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
-const PEACOCK_CALL_VOLUME = 0.35;
+const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
+const AQUA = ['reeffish', 'seahorse']; // Meerestiere: ziehen ins Aquarium (in dessen Becken)
+const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
+const REEF_GROUP = [2, 5]; // ... die anderen in Gruppen dieser Größe (eine Art)
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
 const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
 const BALL_ROLL = [56, 44, 32]; // so weit rollt der Ball auf den Tiger zu (der erste freie Platz)
@@ -251,7 +269,7 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: 'Kescher',
-    catches: ['cat', 'fish', 'koi', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
+    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
     hint: (list) => `Damit fängst du ${animalIcons(list)}`,
   },
   lasso: {
@@ -287,6 +305,20 @@ const TOOLS = {
     hint: (list) => `Geh nah an ${list.map((s) => animalIcon(s)).join(' oder ')} heran und füttere sie`,
   },
 };
+
+// Becken im Aquarium (auch von einem anderen Level aus): Innenfläche des Tanks, in dem der Startpunkt des Beckens liegt
+function aquariumTanks() {
+  const aq = LEVELS.aquarium;
+  return aq.enclosures.map((e) => {
+    const b = aq.buildings.find((h) => h.style === 'tank' && e.seed.tx >= h.tx0 && e.seed.tx <= h.tx1 && e.seed.ty >= h.ty0 && e.seed.ty <= h.ty1);
+    return { e, cap: e.slots[0], tx0: b.tx0 + 1, tx1: b.tx1 - 1, ty0: b.ty0 + 1, ty1: b.ty1 - 1 };
+  });
+}
+// in welchem Becken ein gespeichertes Tier schwimmt (nach seiner Position)
+function tankOf(tanks, s) {
+  const { tx, ty } = worldToTile(s.x, s.y);
+  return tanks.find((t) => tx >= t.tx0 && tx <= t.tx1 && ty >= t.ty0 && ty <= t.ty1);
+}
 
 export default class GardenScene extends Phaser.Scene {
   constructor() {
@@ -341,7 +373,7 @@ export default class GardenScene extends Phaser.Scene {
           const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : obj.key; // Einrichtung passend zur Hütte (auch außen an der Wand)
           // depthShift nur in Hütten (z. B. die Kiste vor der Rückwand); draußen gilt die normale Tiefe, sonst steht sie vor der Spielfigur
           const shift = obj.depthAlways ?? (buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0);
-          const img = this.add.image(x, y, key).setOrigin(obj.originX ?? 0.5, obj.originY).setDepth(obj.floor ? -99990 : y + shift);
+          const img = this.add.image(x, y, key).setOrigin(obj.originX ?? 0.5, obj.originY).setDepth(obj.depthFixed ?? (obj.floor ? -99990 : y + shift));
           if (obj.noCull) img.noCull = true; // große Bilder (Aquarium-Fassade) nicht ausblenden, nur weil ihr Ankerpunkt außerhalb ist
           if (obj.chest && obj.styled && !buildingAt(tx, ty)) {
             // Regal außen vor der Hütte: ein Stück vor die Wand gerückt, damit der Dachüberstand Kescher und Lasso nicht verdeckt
@@ -415,6 +447,7 @@ export default class GardenScene extends Phaser.Scene {
     }
 
     this.drawTanks();
+    this.drawSea();
 
     // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
     this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
@@ -433,13 +466,13 @@ export default class GardenScene extends Phaser.Scene {
         sy = c.y - 78; // über dem First
         front = tileToWorld(house.tx1, house.ty1).y + TILE_H + 2; // vor dem Dach
       }
-      // ohne Zaun (Teich ohne Zaun): das Schild steht auf einem eigenen Holzpfosten
-      if (!e.gates.length && !house) {
+      // ohne Zaun (Teich ohne Zaun): das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
+      if (!e.gates.length && !house && !e.signOnGlass) {
         this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
       }
       const board = this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
       // im Tierpark: Schild antippen öffnet den Ausbau dieses Geheges (nur wenn man davorsteht)
-      if (hasSlots(e)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.penAtSign() === e ? this.openEventsPanel(e.id) : this.tooFar()));
+      if (hasSlots(e) && LEVEL_ID === 'park') board.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.penAtSign() === e ? this.openEventsPanel(e.id) : this.tooFar()));
       // Tierbilder nebeneinander auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
       const list = e.species ?? [];
       const step = SIGN_INNER_W / list.length;
@@ -465,10 +498,11 @@ export default class GardenScene extends Phaser.Scene {
 
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
     this.car = null;
+    this.boatRope = null;
     if (LEVEL.car) {
       const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
       const k = LEVEL.car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
-      const img = this.add.sprite(x, y + 4, LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
+      const img = this.add.sprite(x, y + 4 - (LEVEL.car.float ?? 0), LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
       img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearCar ? this.openCarMap() : this.tooFar()));
       const label = this.add
         .text(x, y - 76 * k, 'Schnellreise ▸', { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
@@ -476,6 +510,7 @@ export default class GardenScene extends Phaser.Scene {
         .setDepth(100000)
         .setVisible(false);
       this.car = { x, y, label, img, k };
+      if (LEVEL.car.float) this.floatBoat(); // Boot (Unterwasserwelt): schaukelt über dem Boden, Seil hinunter zum Anker
     }
     this.nearCar = false;
 
@@ -500,7 +535,9 @@ export default class GardenScene extends Phaser.Scene {
 
     const arrive = data.arrive ?? START;
     const start = tileToWorld(arrive.tx, arrive.ty);
-    this.player = new Player(this, start.x, start.y, LEVEL.hero ?? 'hero'); // Kleidung passend zum Gebiet
+    // Kleidung passend zum Gebiet (fehlt das Bild noch, die normale Figur); unter Wasser schwimmt sie
+    const hero = LEVEL.hero && this.textures.exists(LEVEL.hero) ? LEVEL.hero : 'hero';
+    this.player = new Player(this, start.x, start.y, hero, { swim: !!LEVEL.sea });
     this.unstickPlayer();
 
     // Werkzeuge am Boden: gespeicherter Stand oder die Startplätze des Levels
@@ -591,12 +628,13 @@ export default class GardenScene extends Phaser.Scene {
       game.hearts += away;
       game.parkLeftAt = null;
     }
-    const moved = LEVEL_ID === 'park' ? this.moveFollowersIntoPens() : ''; // im Tierpark ziehen sie gleich ein
+    const moved = LEVEL_ID === 'park' || LEVEL_ID === 'aquarium' ? this.moveFollowersIntoPens() : ''; // im Tierpark (und im Aquarium) ziehen sie gleich ein
+    this.updateTankDeco();
     // Tierbabys, solange das Event läuft (vor den Besuchern, die Babys locken sie an)
     this.babiesOn = false;
     if (LEVEL_ID === 'park' && isActive('babies')) this.spawnBabies(false);
     // Besucher im Tierpark (wie viele, hängt von den Tieren in den Gehegen ab)
-    this.visitors = LEVEL_ID === 'park' ? new VisitorCrowd(this) : null;
+    this.visitors = LEVEL_ID === 'park' || LEVEL_ID === 'aquarium' ? new VisitorCrowd(this) : null; // auch im Aquarium (eigene Besucher)
     this.eventTimer = 0;
     this.eventBanner = document.getElementById('event-banner');
 
@@ -630,12 +668,9 @@ export default class GardenScene extends Phaser.Scene {
     this.startSteam();
     this.drawBridges();
 
-    // ESC (oder der Neustart-Knopf auf dem Tablet) setzt das ganze Spiel zurück
-    const restart = () => {
-      resetGame();
-      this.scene.restart({});
-    };
-    this.input.keyboard.on('keydown-ESC', restart);
+    // ESC (oder der Menü-Knopf oben rechts) öffnet das Menü: speichern, zurück zum Startbildschirm
+    this.input.keyboard.on('keydown-ESC', () => this.openGameMenu());
+    saveHandlers.snapshot = () => this.saveGame();
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
     const useTool = () => {
       if (this.nearFeeder && !this.leaving && this.toolId !== 'parkfood') {
@@ -688,7 +723,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateMount();
     this.hud.onclick = () => this.showJournal(); // ganzer Tipp, damit derselbe Tipp die Tafel nicht gleich wieder schließt
     touchHandlers.action = useTool;
-    touchHandlers.reset = restart;
+    touchHandlers.menu = () => this.openGameMenu();
     cam.setBounds(
       -MAP_H * (TILE_W / 2) - TILE_W,
       -TILE_H * 3,
@@ -769,6 +804,58 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Dampf über heißen Quellen: kleine Wölkchen steigen auf und verblassen
+  // Unterwasserwelt: Fischschwärme über der ganzen Karte, blaue Tönung, Lichtstrahlen von oben und aufsteigende Bläschen
+  drawSea() {
+    const sea = LEVEL.sea;
+    if (!sea) return;
+    const area = { tx0: 1, tx1: MAP_W - 2, ty0: 1, ty1: MAP_H - 2, height: sea.fishHeight, scale: sea.fishScale };
+    this.tankFish.push(stockTank(this, area, sea.fish));
+    // Tönung und Lichtstrahlen hängen am Bildschirm (groß genug für jeden Zoom), unter den Beschriftungen
+    this.add.rectangle(0, 0, 8000, 8000, ...SEA_TINT).setScrollFactor(0).setDepth(99990);
+    const { width: w, height: h } = this.scale;
+    for (let i = 0; i < 5; i++) {
+      const x = (w * (i + 0.5)) / 5 + Phaser.Math.Between(-40, 40);
+      const top = Phaser.Math.Between(26, 60);
+      const ray = this.add.graphics().setScrollFactor(0).setDepth(99991).setBlendMode(Phaser.BlendModes.ADD);
+      ray.fillStyle(0xbfe8ff, 0.07).fillPoints([{ x: x - top / 2, y: -h }, { x: x + top / 2, y: -h }, { x: x + top * 2.5 - 180, y: h * 2 }, { x: x - top - 180, y: h * 2 }], true);
+      this.tweens.add({ targets: ray, alpha: 0.35, duration: Phaser.Math.Between(2500, 4500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
+    this.time.addEvent({
+      delay: SEA_BUBBLES,
+      loop: true,
+      callback: () => {
+        const v = this.cameras.main.worldView;
+        const x = Phaser.Math.Between(v.x, v.right);
+        const y = Phaser.Math.Between(v.y + v.height * 0.3, v.bottom);
+        const b = this.add.circle(x, y, Phaser.Math.FloatBetween(1.2, 2.6), 0xd8f2ff, 0.7).setStrokeStyle(1, 0x7fc0e8).setDepth(y);
+        this.tweens.add({ targets: b, y: y - Phaser.Math.Between(90, 180), x: x + Phaser.Math.Between(-10, 10), alpha: 0, duration: Phaser.Math.Between(2200, 3600), ease: 'Sine.easeIn', onComplete: () => b.destroy() });
+      },
+    });
+  }
+
+  // Boot in der Unterwasserwelt: schaukelt langsam auf und ab, sein Schatten liegt auf dem Meeresboden, und ein Seil führt
+  // hinunter zum Anker, an dem der Werkzeug-Sack hängt (Kiste mit anchor: true)
+  floatBoat() {
+    const { x, y, img, k } = this.car;
+    const base = img.y;
+    this.add.ellipse(x + 2, y - 22 * k, 120 * k, 28 * k, 0x0a2a40, 0.22).setDepth(-99980).setAngle(-12);
+    this.tweens.add({ targets: img, y: base - BOAT_BOB, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const anchor = (LEVEL.chests ?? []).find((c) => c.anchor);
+    if (!anchor) return;
+    const a = tileToWorld(anchor.tx, anchor.ty);
+    const end = { x: a.x + ANCHOR_RING[0], y: a.y + ANCHOR_RING[1] };
+    const rope = this.add.graphics().setDepth(Math.min(a.y, y) - 1);
+    this.boatRope = () => {
+      const top = { x: x + BOAT_ROPE[0] * k, y: img.y + BOAT_ROPE[1] * k };
+      const pts = [];
+      for (let i = 0; i <= 12; i++) {
+        const t = i / 12;
+        pts.push({ x: top.x + (end.x - top.x) * t, y: top.y + (end.y - top.y) * t + Math.sin(t * Math.PI) * 10 }); // hängt etwas durch
+      }
+      rope.clear().lineStyle(2, 0x6b4a2a, 1).strokePoints(pts);
+    };
+  }
+
   startSteam() {
     const hot = [];
     for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) if (groundAt(tx, ty) === 'hotspring') hot.push(tileToWorld(tx, ty));
@@ -847,8 +934,10 @@ export default class GardenScene extends Phaser.Scene {
     const DIRS = { 'ty-': [2, -1], 'tx-': [-2, -1], 'tx+': [2, 1], 'ty+': [-2, 1] };
     const targets = (LEVEL.sections ?? EXITS.map(({ label, tx, ty }) => ({ label, tx, ty }))).filter((s) => !s.unlock || game.unlocked.includes(s.unlock));
     const boards = targets.map((s) => {
-      const dtx = s.tx - tx;
-      const dty = s.ty - ty;
+      // like: in dieselbe Richtung wie das Brett eines anderen Ziels (z. B. das Aquarium wie die Savanne)
+      const ref = (s.like && targets.find((o) => o.label === s.like)) || s;
+      const dtx = ref.tx - tx;
+      const dty = ref.ty - ty;
       const key = Math.abs(dtx) >= Math.abs(dty) ? (dtx > 0 ? 'tx+' : 'tx-') : dty > 0 ? 'ty+' : 'ty-';
       const [dx, dy] = DIRS[key];
       const n = Math.hypot(dx, dy);
@@ -924,7 +1013,9 @@ export default class GardenScene extends Phaser.Scene {
       // Wasser hinter der vorderen Glasscheibe (unten und rechts): zarte Tönung über den Fischen
       for (let tx = h.tx0; tx < h.tx1; tx++) pane(tx, h.ty1, tx + 1, h.ty1, tileToWorld(tx + 0.5, h.ty1).y + 0.3, 0x3fa8d8, 0.12);
       for (let ty = h.ty0; ty < h.ty1; ty++) pane(h.tx1, ty, h.tx1, ty + 1, tileToWorld(h.tx1, ty + 0.5).y + 0.3, 0x3fa8d8, 0.12);
-      this.tankFish.push(stockTank(this, h, Phaser.Math.Between(...TANK_FISH)));
+      const deco = stockTank(this, { ...h, scale: TANK_FISH_SCALE }, Phaser.Math.Between(...TANK_FISH));
+      deco.tank = h;
+      this.tankFish.push(deco);
     }
   }
 
@@ -955,6 +1046,10 @@ export default class GardenScene extends Phaser.Scene {
         ? new Fish(this, this.animals)
         : species === 'koi'
           ? new Koi(this, this.animals, variant)
+        : species === 'reeffish'
+          ? new ReefFish(this, x, y, variant)
+        : species === 'seahorse'
+          ? new Seahorse(this, x, y)
         : species === 'crocodile'
           ? new Crocodile(this, this.animals)
         : species === 'squirrel'
@@ -1056,7 +1151,22 @@ export default class GardenScene extends Phaser.Scene {
       }
       return this.finishSpawn(group, fadeIn);
     }
-    if (species === 'fish' || species === 'koi' || species === 'crocodile' || species === 'squirrel' || species === 'mole') {
+    // Riff-Fische: eine Art (alle gleich häufig), allein oder in einer kleinen Gruppe, die gemeinsam schwimmt
+    if (species === 'reeffish') {
+      const tile = this.randomFreeTile(taken);
+      taken.push(tile);
+      const p = tileToWorld(tile.tx, tile.ty);
+      const lead = this.createAnimal('reeffish', p.x, p.y);
+      group.push(lead);
+      const more = Math.random() < REEF_SOLO ? 0 : Phaser.Math.Between(...REEF_GROUP) - 1;
+      for (let i = 0; i < more; i++) {
+        const a = new ReefFish(this, p.x + Phaser.Math.Between(-16, 16), p.y + Phaser.Math.Between(-8, 8), lead.variant, lead.herd);
+        this.animals.push(a);
+        group.push(a);
+      }
+      return this.finishSpawn(group, fadeIn);
+    }
+    if (species === 'fish' || species === 'koi' || species === 'crocodile' || species === 'squirrel' || species === 'mole' || species === 'seahorse') {
       const a = this.createAnimal(species, 0, 0);
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
       if (species === 'koi') a.placeRandom(); // irgendwo in den Koi-Teich
@@ -1313,7 +1423,7 @@ export default class GardenScene extends Phaser.Scene {
   // Abzeichen oben links: Gebiet und wie viele Tiere schon zuhause sind; die Einzelheiten zeigt die Übersicht (I)
   updateHud() {
     const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
-    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span><span class="key">I</span>`;
+    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span><span class="key">I</span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
   }
 
   // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
@@ -1610,9 +1720,10 @@ export default class GardenScene extends Phaser.Scene {
     if (this.nearChest) {
       // in der Hütte das Werkzeug-Regal, sonst (z. B. auf der Teichinsel) eine kleine Kiste
       const house = buildingAt(this.nearChest.tx, this.nearChest.ty, 1); // Regal in oder an der Hütte
-      const img = house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
+      const own = objectAt(this.nearChest.tx, this.nearChest.ty); // eigenes Bild und eigener Name (z. B. der Sack am Anker im Riff)
+      const img = own?.chestName ? `assets/${own.key}.png` : house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
       setTouchTool(null, img);
-      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${house ? 'Regal' : 'Kiste'} öffnen</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${own?.chestName ?? (house ? 'Regal' : 'Kiste')} öffnen</span></div>`;
       return;
     }
     if (this.nearOrangutan && !this.tool) {
@@ -2131,10 +2242,11 @@ export default class GardenScene extends Phaser.Scene {
   // Gibt den Zusatz für die Meldung beim Ankommen zurück.
   moveFollowersIntoPens() {
     const moved = [];
+    const fish = LEVEL_ID === 'park' ? this.sendFishToAquarium() : '';
     const fullBefore = new Set(ENCLOSURES.filter((e) => isFull(this.animals, e)));
     for (const a of [...this.followers]) {
       const fitting = ENCLOSURES.filter((e) => accepts(e, a.species));
-      const e = fitting.find((f) => f.world === a.origin) ?? fitting[0];
+      const e = AQUA.includes(a.species) ? this.tankFor(a, fitting) : fitting.find((f) => f.world === a.origin) ?? fitting[0];
       if (!e) continue;
       this.placeInPen(a, e);
       this.followers.splice(this.followers.indexOf(a), 1);
@@ -2143,14 +2255,102 @@ export default class GardenScene extends Phaser.Scene {
     }
     const nowFull = ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e));
     nowFull.forEach((e, i) => this.time.delayedCall(1400 + i * 3200, () => this.showPenFull(e)));
-    let text = moved.length ? `<br>${animalIcons(moved, 2.6)}<br>${moved.length === 1 ? 'Dein Tier ist in sein Gehege gezogen.' : 'Deine Tiere sind in ihre Gehege gezogen.'}` : '';
+    const home = LEVEL_ID === 'aquarium' ? ['ins Becken', 'in die Becken'] : ['in sein Gehege', 'in ihre Gehege'];
+    let text = moved.length ? `<br>${animalIcons(moved, 2.6)}<br>${moved.length === 1 ? `Dein Tier ist ${home[0]} gezogen.` : `Deine Tiere sind ${home[1]} gezogen.`}` : '';
     if (this.released?.length) {
       const hearts = this.released.reduce((s, r) => s + r.hearts, 0);
       const n = this.released.length;
       text += `<br>🌳 ${animalIcons(this.released.map((r) => r.species), 2.2)} ${n === 1 ? 'wurde' : 'wurden'} im Naturreservat ausgewildert · <span class="heart">♥</span> ${hearts}`;
       this.released = [];
     }
-    return text;
+    return fish + text;
+  }
+
+  // Tierpark: gefangene Meerestiere (Riff-Fische, Seepferdchen) kommen gleich beim Betreten ins Aquarium (in dessen gespeicherten
+  // Stand), in die passenden Tanks wie in tankFor. Ist alles voll, zieht dort eines der häufigsten Art ins Naturreservat.
+  // Gibt den Text für die Meldung zurück.
+  sendFishToAquarium() {
+    const fish = this.followers.filter((a) => AQUA.includes(a.species));
+    if (!fish.length) return '';
+    const saved = (game.levels.aquarium ??= { animals: [], pickups: [] });
+    const allTanks = aquariumTanks();
+    const inside = (t) => saved.animals.filter((s) => s.state === 'penned' && tankOf(allTanks, s) === t);
+    this.released ??= [];
+    const delivered = [];
+    for (const a of fish) {
+      const tanks = allTanks.filter((t) => accepts(t.e, a.species));
+      if (!tanks.length) continue;
+      const same = (t) => inside(t).filter((s) => s.variant === a.variant).length;
+      const room = (t) => t.cap - inside(t).length;
+      const t = [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
+      if (room(t) <= 0) {
+        // voll: von der häufigsten Art (nicht der des neuen Fischs, falls möglich) zieht der älteste aus
+        const list = inside(t);
+        const counts = {};
+        for (const s of list) counts[s.variant] = (counts[s.variant] ?? 0) + 1;
+        const most = Object.keys(counts).map(Number).sort((u, v) => (u === a.variant) - (v === a.variant) || counts[v] - counts[u])[0];
+        const victim = list.filter((s) => s.variant === most).sort((u, v) => (u.since ?? 0) - (v.since ?? 0))[0];
+        saved.animals.splice(saved.animals.indexOf(victim), 1);
+        const hearts = releaseHearts(a.species);
+        this.addHearts(hearts, a.species);
+        this.released.push({ species: a.species, hearts });
+      }
+      const p = tileToWorld(Phaser.Math.FloatBetween(t.tx0 - 0.3, t.tx1 + 0.3), Phaser.Math.FloatBetween(t.ty0 - 0.3, t.ty1 + 0.3));
+      saved.animals.push({ species: a.species, variant: a.variant, farm: null, skin: null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
+      this.followers.splice(this.followers.indexOf(a), 1);
+      this.animals.splice(this.animals.indexOf(a), 1);
+      a.destroy();
+      delivered.push(a.species);
+    }
+    if (!delivered.length) return '';
+    const kinds = AQUA.filter((s) => delivered.includes(s)).map((s) => `${animalIcon(s, 2.6)} × ${delivered.filter((d) => d === s).length}`);
+    return `<br>${kinds.join(' ')}<br>${delivered.length === 1 ? 'Dein Fang schwimmt jetzt' : 'Deine Fänge schwimmen jetzt'} im Aquarium.`;
+  }
+
+  // Aquarium: solange man woanders ist, locken die Tiere in den Becken weiter Besucher an. Die Herzen kommen laufend dazu
+  // (so viele wie bei den Herzen der Abwesenheit im Tierpark: ein halbes Herz pro Besucher und Minute)
+  aquariumIncome(dt) {
+    const saved = game.levels.aquarium?.animals ?? [];
+    if (!saved.length) return;
+    this.aqScoreTimer = (this.aqScoreTimer ?? 0) - dt;
+    if (this.aqScoreTimer <= 0) {
+      // Anziehung wie im Aquarium selbst: Summe je Becken, volle Becken zählen mehr
+      this.aqScoreTimer = 5;
+      const tanks = aquariumTanks();
+      this.aqPenned = saved.filter((s) => s.state === 'penned');
+      this.aqRate = (maxVisitors(tanks.reduce((sum, t) => {
+        const list = this.aqPenned.filter((s) => tankOf(tanks, s) === t);
+        const score = list.reduce((s, a) => s + appeal(a), 0);
+        return sum + (list.length >= t.cap ? score * FULL_BONUS : score);
+      }, 0)) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
+    }
+    this.aqHearts = (this.aqHearts ?? 0) + this.aqRate * dt;
+    if (this.aqHearts < 1) return;
+    this.aqHearts -= 1;
+    // für die Statistik: eine Tierart aus dem Aquarium, je nach Anziehung
+    let r = Math.random() * this.aqPenned.reduce((s, a) => s + appeal(a), 0);
+    const from = this.aqPenned.find((a) => (r -= appeal(a)) <= 0) ?? this.aqPenned[0];
+    this.addHearts(1, from?.species ?? null);
+  }
+
+  // Aquarium: Zierfische nur in Tanks ohne echte Fische
+  updateTankDeco() {
+    for (const deco of this.tankFish ?? []) {
+      if (!deco.tank) continue;
+      const h = deco.tank;
+      const real = this.animals.some((a) => a.state === 'penned' && a.enclosure?.tiles.some(({ tx, ty }) => tx > h.tx0 && tx < h.tx1 && ty > h.ty0 && ty < h.ty1));
+      deco.setVisible(!real);
+    }
+  }
+
+  // Aquarium: in welchen Tank ein Riff-Fisch zieht. Gleiche Arten sollen zusammen schwimmen: zuerst ein Tank mit Platz, in dem
+  // schon Fische seiner Art sind, sonst der leerste mit Platz. Sind alle voll, der mit den meisten seiner Art (dort zieht dann
+  // ein anderer ins Naturreservat, siehe releaseExtra)
+  tankFor(fish, tanks) {
+    const inside = (e) => this.animals.filter((a) => a.state === 'penned' && a.enclosure === e);
+    const same = (e) => inside(e).filter((a) => a.variant === fish.variant).length;
+    const room = (e) => penQuotas(e)[0].cap - inside(e).length;
+    return [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
   }
 
   // Gehege voll: das älteste Tier wird im Naturreservat ausgewildert (bringt ein paar Herzen). Seltene Varianten bleiben; sonst zuerst das
@@ -2364,8 +2564,12 @@ export default class GardenScene extends Phaser.Scene {
       this.tweens.add({ targets: tag, y: tag.y - 18, alpha: 0, delay: 600, duration: 1400, onComplete: () => tag.destroy() });
       this.time.delayedCall(900, () => this.showToast(`🌳 Das Gehege für ${animalIcon(animal.species, 3)} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`));
     }
-    // Herdentiere: die anderen der Herde rennen vor Schreck davon und verschwinden
-    if (animal.herd) {
+    // Riff-Fische: der Rest der Gruppe schießt davon und ist weg – man bekommt nur einen
+    if (animal.species === 'reeffish') {
+      const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild');
+      for (const a of mates) this.despawn(a);
+      if (mates.length) this.showToast(`Die anderen ${animalIcon('reeffish')} sind blitzschnell davongeschwommen!`);
+    } else if (animal.herd) {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild' && a.scatter);
       for (const a of mates) a.scatter();
       if (mates.length) this.showToast(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`);
@@ -2412,11 +2616,33 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (LEVEL_ID === 'park') game.parkLeftAt = Date.now(); // ab jetzt zählen die Herzen der Abwesenheit
     this.saveLevelState();
+    writeSave(exit.to); // beim Laden geht es dann im neuen Gebiet weiter
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () =>
       this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }),
+    );
+  }
+
+  // Spielstand speichern (Autosave, Menü). Während eines Levelwechsels nicht: der ist dann schon gespeichert.
+  saveGame() {
+    if (this.leaving) return false;
+    this.saveLevelState();
+    return writeSave(LEVEL_ID);
+  }
+
+  // Menü: das Spiel pausiert, solange es offen ist
+  openGameMenu() {
+    if (this.leaving || isMenuOpen() || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
+    this.scene.pause();
+    openMenu(
+      () => this.saveGame(),
+      () => {
+        this.saveGame();
+        location.reload(); // Seite neu laden: zeigt den Startbildschirm
+      },
+      () => this.scene.resume(),
     );
   }
 
@@ -2502,7 +2728,7 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Tafel unten rechts: am Wegweiser die Richtungen, an einem Gehege-Schild die erlaubten Tiere mit ihren Fußspuren
+  // Tafel unten rechts: am Wegweiser die Richtungen, an einem Gehege-Schild die erlaubten Tiere
   updateSign() {
     const p = this.player;
     const near = (s) => Math.hypot(p.x - s.x, (p.y - s.y) * 2) < SIGN_DIST;
@@ -2523,7 +2749,7 @@ export default class GardenScene extends Phaser.Scene {
   enclosureInfo(enclosure) {
     const rows = enclosure.species.map((s) => {
       const [name, text] = ANIMAL_INFO[s] ?? [s, ''];
-      return `<div class="print-row"><img class="print" src="assets/print_${s}.png" alt="">${animalIcon(s)}<span><b>${name}</b>${text}</span></div>`;
+      return `<div class="print-row">${animalIcon(s)}<span><b>${name}</b>${text}</span></div>`;
     });
     const places = penQuotas(enclosure)
       .map(({ key, cap }) => `${key ? animalIcon(key) + ' ' : ''}<b>${penCount(this.animals, enclosure, key)} / ${cap}</b>`)
@@ -2631,7 +2857,7 @@ export default class GardenScene extends Phaser.Scene {
       }
     }
     // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
-    const near = !!this.car && Math.hypot((this.player.x - this.car.x) / (1.6 * this.car.k), (this.player.y - this.car.y) * 2) < CAR_DIST;
+    const near = !!this.car && !!CAR_BODY && nearSegment(this.player.x, this.player.y, CAR_BODY) < CAR_BODY.hw + CAR_DIST;
     if (near !== this.nearCar) {
       this.nearCar = near;
       this.car.label.setVisible(near);
@@ -2667,9 +2893,11 @@ export default class GardenScene extends Phaser.Scene {
 
     for (const a of this.animals) a.update(dt, this.player);
     this.visitors?.update(dt);
+    if (LEVEL_ID !== 'aquarium' && !this.leaving) this.aquariumIncome(dt);
     this.updatePenCalls(dt);
     this.updatePeacockCall(dt);
-    for (const f of this.tankFish) f.update(dt); // Zierfische im Aquarium
+    for (const f of this.tankFish) f.update(dt); // Zierfische im Aquarium und Fischschwärme im Riff
+    this.boatRope?.();
     this.cullStatic();
     if (this.riding) this.updateMount(); // in Gebäuden ab-, draußen wieder aufsteigen
     this.eventTimer -= dt;

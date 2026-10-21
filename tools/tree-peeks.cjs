@@ -1,6 +1,6 @@
 // Bilder fürs Versteck: der Tiger schaut mit halbem Gesicht aus dem Bambus (tiger_peek), der Orang-Utan sitzt oben
 // in der Baumkrone (orangutan_tree). Beide aus den freigestellten Sprites, verkleinert, mit Laub davor.
-// Aufruf: node tools/tree-peeks.cjs   (nach npm run cutout für Sprites/Tiger.png und Sprites/Orang Utan sitzt und frisst.png)
+// Aufruf: node tools/tree-peeks.cjs   (nach npm run cutout für Sprites/Tiger.png und Sprites/Orang Utan sitzt und frisst.png bzw. Orang Utan2)
 const { PNG } = require('pngjs');
 const fs = require('fs');
 
@@ -67,9 +67,9 @@ for (const [file, outName, hx, hy] of [['Sprites/Tiger.png', 'tiger_peek', 138, 
   fs.writeFileSync(`public/assets/${outName}.png`, PNG.sync.write(out));
 }
 
-// Orang-Utan: sitzend (erstes Bild von "sitzt und frisst"), unten Laub der Baumkrone
-{
-  const o = read('Sprites/Orang Utan sitzt und frisst.png');
+// Orang-Utan und Flanschen-Männchen: sitzend (erstes Bild von "sitzt und frisst"), unten Laub der Baumkrone
+for (const [file, outName] of [['Sprites/Orang Utan sitzt und frisst.png', 'orangutan_tree'], ['Sprites/Orang Utan2 sitzt und frisst.png', 'orangutan2_tree']]) {
+  const o = read(file);
   // Umriss des ersten Bilds suchen
   let x0 = 1e9, x1 = 0, y0 = 1e9, y1 = 0;
   for (let y = 0; y < o.height; y++) for (let x = 0; x < 280; x++) {
@@ -80,6 +80,6 @@ for (const [file, outName, hx, hy] of [['Sprites/Tiger.png', 'tiger_peek', 138, 
   const out = new PNG({ width: 64, height: 64 });
   blit(out, fig, Math.round((64 - w) / 2), 6);
   leaves(out, [[6, 52, 8, 4], [18, 57, 10, 4], [32, 55, 9, 3], [46, 57, 10, 4], [58, 52, 7, 4], [26, 61, 10, 3], [42, 62, 9, 2]], [44, 114, 50], [90, 168, 76]);
-  fs.writeFileSync('public/assets/orangutan_tree.png', PNG.sync.write(out));
+  fs.writeFileSync(`public/assets/${outName}.png`, PNG.sync.write(out));
 }
 console.log('ok');

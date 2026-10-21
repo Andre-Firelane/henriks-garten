@@ -107,7 +107,7 @@ export default class Panda extends Animal {
         sit.phase = 'eat';
         sit.time = Math.max(Phaser.Math.FloatBetween(...SIT_TIME), this.snackLock);
         this.faceX = Math.sign(sit.food.x - this.x) || this.faceX;
-        this.faceY = sit.food.y < this.y ? -1 : 1;
+        this.faceY = 1; // beim Fressen immer von vorne zu sehen (nur seitlich zum Futter gedreht)
         return false;
       }
       const step = Math.min(d, this.kind.speed * 1.4 * dt);

@@ -29,6 +29,8 @@ export const APPEAL = {
   macaque: 4,
   lion: 5,
   crocodile: 5,
+  reeffish: 1.5,
+  seahorse: 3,
 };
 
 const MAX_VISITORS = 12;
@@ -41,7 +43,8 @@ export const BABY_BONUS = 2.5;
 // seltene Skins locken mehr Besucher an als die normale Art (Katze 2: mehr als doppelt so viel wie eine Katze, Oryx 1,5-mal)
 export const SKIN_APPEAL = { cat2: 3, antelope2: 4.5, koi3: 3, fish2: 3, frog2: 3, tiger2: 7, orangutan2: 7, peacock2: 6 }; // koi3: weißer Koi mit rotem Punkt
 
-const appeal = (a) => (a.baby ? BABY_APPEAL : SKIN_APPEAL[a.skin ?? a.variant] ?? APPEAL[a.species] ?? 1);
+// (geht auch mit gespeicherten Tieren eines anderen Levels: braucht nur species, skin, variant, baby)
+export const appeal = (a) => (a.baby ? BABY_APPEAL : SKIN_APPEAL[a.skin ?? a.variant] ?? APPEAL[a.species] ?? 1);
 
 // Für die Statistik: welche Tierart ein Herz an diesem Gehege gebracht hat – zufällig, je nach Anziehung
 // (seltene Tiere und Babys öfter)
@@ -108,7 +111,7 @@ export function arrivalInterval(score) {
 
 // Herzen, während der Spieler nicht im Tierpark ist: so viele Besucher, wie die Tiere anlocken, geben zusammen
 // etwa ein halbes Herz pro Besucher und Minute. Gezählt wird höchstens eine Stunde, damit die Zahl nicht zu groß wird.
-const AWAY_HEARTS_PER_VISITOR_MINUTE = 0.5;
+export const AWAY_HEARTS_PER_VISITOR_MINUTE = 0.5;
 const AWAY_MAX_MINUTES = 60;
 // eventMs: so lange lief in der Zeit das Tierbaby-Event, babies: so viele Babys hätte es gegeben
 export function awayHearts(score, ms, eventMs = 0, babies = 0) {
@@ -124,10 +127,11 @@ export const AWAY_ICE_PER_VISITOR_MINUTE = 0.5; // 0,25 Eis pro Besucher und Min
 
 const key = (tx, ty) => tx + ',' + ty;
 
-// Wegnetz: alle begehbaren Wegkacheln, ohne Gehegetore und Gebäudetüren (dort gehen nur Tiere bzw. der Spieler durch)
+// Wegnetz: alle begehbaren Wegkacheln, ohne Gehegetore und Gebäudetüren (dort gehen nur Tiere bzw. der Spieler durch).
+// Gebäude nur, wenn Besucher hinein dürfen (visitors: true, z. B. die Aquarium-Halle)
 export function buildPathGrid() {
   const doors = new Set(GATE_TILES.map((g) => key(g.tx, g.ty)));
-  const inBuilding = (tx, ty) => buildings().some((h) => tx >= h.tx0 && tx <= h.tx1 && ty >= h.ty0 && ty <= h.ty1);
+  const inBuilding = (tx, ty) => buildings().some((h) => !h.visitors && tx >= h.tx0 && tx <= h.tx1 && ty >= h.ty0 && ty <= h.ty1);
   const walk = new Set();
   for (let ty = 0; ty < MAP_H; ty++) {
     for (let tx = 0; tx < MAP_W; tx++) {

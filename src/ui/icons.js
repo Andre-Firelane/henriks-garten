@@ -26,6 +26,8 @@ const SHEETS = {
   lion: [72, 96, 4, 0],
   crocodile: [72, 92, 4, 0, 'croc'],
   giraffe: [104, 168, 4, 0],
+  reeffish: [96, 64, 44, 0], // Riff-Fische: der Clownfisch steht für alle
+  seahorse: [48, 64, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)

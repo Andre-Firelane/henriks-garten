@@ -143,6 +143,24 @@ class Canvas {
 const SHADOW = [20, 40, 10, 70];
 const INK = hex('#2b1d14');
 
+// Ausschnitt (x, y, w, h) aus einem fertigen Bild verkleinert (Mittelwert der Pixel) bei (dx, dy) in der Größe dw × dh einzeichnen
+function drawImagePart(o, file, x, y, w, h, dx, dy, dw, dh) {
+  const img = PNG.sync.read(fs.readFileSync(path.resolve(file)));
+  for (let j = 0; j < dh; j++) {
+    for (let i = 0; i < dw; i++) {
+      let r = 0, g = 0, b = 0, a = 0, n = 0;
+      for (let sy = Math.floor(y + (j * h) / dh); sy < y + ((j + 1) * h) / dh; sy++) {
+        for (let sx = Math.floor(x + (i * w) / dw); sx < x + ((i + 1) * w) / dw; sx++) {
+          const k = (sy * img.width + sx) * 4;
+          const al = img.data[k + 3];
+          r += img.data[k] * al; g += img.data[k + 1] * al; b += img.data[k + 2] * al; a += al; n++;
+        }
+      }
+      if (a / n > 110) o.set(dx + i, dy + j, [r / a, g / a, b / a, 255]);
+    }
+  }
+}
+
 // ---------- Bodenfliesen (64x32 Rauten) ----------
 
 const TW = 64;
@@ -1792,13 +1810,13 @@ function peacockPerch() {
 
 // ---------- Aquarium (Platzhalter) ----------
 // Fassade am Rand des Tierparks: Ecke eines großen Glasbaus, von dem man nur einen Teil sieht. Die Tür liegt über der
-// Kachel des Übergangs; diese Kachelmitte liegt im Bild bei (AQ_OX, AQ_OY). Das Gebäude reicht 7 Kacheln nach links
-// (tx kleiner) und je 3,5 Kacheln vor und hinter die Tür (ty), 96 Pixel hoch.
-const AQ_W = 480, AQ_H = 360, AQ_OX = 344, AQ_OY = 290;
+// Kachel des Übergangs; diese Kachelmitte liegt im Bild bei (AQ_OX, AQ_OY). Das Gebäude ist so groß, dass man seine
+// Enden nicht sieht: 20 Kacheln nach hinten (tx kleiner), 16 Kacheln hinter und 3,5 vor die Tür (ty), 96 Pixel hoch.
+const AQ_W = 1296, AQ_H = 752, AQ_OX = 760, AQ_OY = 680;
 function aquariumFacade() {
   const o = new Canvas(AQ_W, AQ_H);
   const A = (u, v, z = 0) => [AQ_OX + (u - v) * 32, AQ_OY + (u + v) * 16 - z];
-  const U0 = -7, U1 = 0.5, V0 = -3.5, V1 = 3.5, Z = 96;
+  const U0 = -20, U1 = 0.5, V0 = -16, V1 = 3.5, Z = 96;
   const quad = (p, col, clip) => o.poly(p, hex(col), clip);
   // Flächen: vorne-rechts (Front mit Tür, u = U1), vorne-links (Seite, v = V1), Dach
   quad([A(U1, V0), A(U1, V1), A(U1, V1, Z), A(U1, V0, Z)], '#2f6fa8');
@@ -1817,9 +1835,8 @@ function aquariumFacade() {
       o.line(x0, y0, x1, y1, hex('#1a3a5a'));
     }
   };
-  glass('front', -3.2, -1.1, 14, 66);
-  glass('front', 1.1, 3.2, 14, 66);
-  glass('side', -6.6, -0.4, 18, 70);
+  for (const [a0, a1] of [[-15.4, -11.2], [-10.2, -6], [-5.2, -1.1], [1.1, 3.2]]) glass('front', a0, a1, 14, 66);
+  for (const [a0, a1] of [[-19.6, -13.4], [-12.6, -7.4], [-6.6, -0.4]]) glass('side', a0, a1, 18, 70);
   // Sockel und Dachkante
   quad([A(U1, V0), A(U1, V1), A(U1, V1, 8), A(U1, V0, 8)], '#1a3a5a');
   quad([A(U0, V1), A(U1, V1), A(U1, V1, 8), A(U0, V1, 8)], '#14304a');
@@ -1839,9 +1856,7 @@ function aquariumFacade() {
   const [sx, sy] = A(U1, 0, 66);
   o.ellipse(sx, sy, 17, 15, hex('#14304a'));
   o.ellipse(sx, sy, 14, 12, hex('#f4f8ff'));
-  o.ellipse(sx - 2, sy, 7, 5, hex('#f08a2c')); // Fisch
-  o.poly([[sx + 4, sy], [sx + 10, sy - 5], [sx + 10, sy + 5]], hex('#f08a2c'));
-  o.circle(sx - 6, sy - 1, 1.2, hex('#1a1210'));
+  drawImagePart(o, 'public/assets/reeffish.png', 0, 0, 96, 64, sx - 13, sy - 9, 26, 17); // Clownfisch aus den Riff-Fischen (tools/reef-fish.cjs)
   for (const [dx, dy, r] of [[-11, -8, 1.5], [-13, -12, 1.2], [-10, -14, 1]]) o.circle(sx + dx, sy + dy, r, hex('#5ab8d8'));
   o.outline(INK);
   return o;
@@ -2210,9 +2225,6 @@ const sprites = {
   'nest_box.png': nestBox(),
   'lion_rock.png': lionRock(),
   'ball.png': toyBall(), // Ball als Werkzeug (Bild in der Werkzeugleiste und in der Kiste)
-  // Flanschen-Männchen (Platzhalter; der normale Orang-Utan kommt aus Sprites/Orang Utan.jpg); _tree: oben in der Baumkrone
-  'orangutan2.png': orangutanSprite(true),
-  'orangutan2_tree.png': orangutanTree(true),
   'hammock.png': hammock(), // Orang-Utan-Gehege (Ausbau)
   'peacock_perch.png': peacockPerch(), // Pfauengehege (Ausbau)
   'build_stakes.png': buildStakes(), // Baustelle in noch nicht ausgebauten Gehegen
@@ -2237,6 +2249,34 @@ const sprites = {
   'shell.png': shell(),
   'tank_chest.png': tankChest(),
   'minifish.png': miniFish(), // Zierfische im Aquarium (6 Arten, je nach rechts und links)
+  // Unterwasserwelt (Riff)
+  'reef_sand0.png': reefSand(0),
+  'reef_sand1.png': reefSand(1),
+  'reef_sand2.png': reefSand(2),
+  'reef_path.png': reefPath(),
+  'reef_branch.png': reefBranchCoral(),
+  'reef_fan.png': reefFanCoral(),
+  'reef_brain.png': reefBrainCoral(),
+  'reef_tube.png': reefTubeCoral(),
+  'reef_kelp.png': reefKelp(),
+  'reef_starfish.png': reefStarfish(),
+  'reef_anemone.png': reefAnemone(),
+  'reef_rock.png': reefRock(),
+  'anchor_sack.png': reefAnchorSack(),
+  'boat.png': reefBoat(),
+  'reef_branch2.png': reefBranchCoral([['#2f8ad8', '#a8e0ff'], ['#3fb8c8', '#c8f4ff'], ['#4a6ae0', '#b8c8ff']]),
+  'reef_fan2.png': reefFanCoral('#b8302a', '#f07a5a', '#7a2a20'),
+  'reef_brain2.png': reefBrainCoral('#e08aa8', '#f4b8cc', '#a8506e'),
+  'reef_tube2.png': reefTubeCoral('#f2d03a', '#fae88a', '#8a6a10'),
+  'reef_gravel.png': reefGravel(),
+  'reef_seagrass.png': reefSeagrass(),
+  'reef_algae.png': reefAlgae(),
+  'reef_dark.png': reefDarkSand(),
+  // Aquarium: Einrichtung der großen Halle
+  'aq_path.png': aqPath(),
+  'aq_bench.png': aqBench(),
+  'aq_lamp.png': aqLamp(),
+  'aq_statue.png': aqStatue(),
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -3099,23 +3139,54 @@ function sunRock() {
 }
 
 // Steinlaterne; Fuß bei (16, 50)
+// Steinlaterne (Tōrō) am Wegesrand: zweistufiger Sockel, runde Säule, Plattform, Lichtkammer mit warm leuchtendem
+// Gitterfenster, geschwungenes Dach mit hochgezogenen Ecken und Perlenknauf, ein paar Moosflecken; Fußpunkt bei (20, 58)
 function stoneLantern() {
-  const o = new Canvas(32, 56);
-  const stone = hex('#a8a296');
-  const light = hex('#c8c2b4');
-  o.rect(8, 44, 16, 6, stone); // Sockel
-  o.rect(8, 44, 16, 2, light);
-  o.rect(13, 30, 6, 14, stone); // Säule
-  o.rect(13, 30, 2, 14, light);
-  o.rect(9, 26, 14, 4, stone);
-  o.rect(10, 16, 12, 10, hex('#8a8478')); // Lichtkasten
-  o.rect(13, 18, 6, 6, hex('#ffd86a')); // Licht
-  o.rect(14, 19, 2, 2, hex('#fff2b8'));
-  o.poly([[4, 16], [16, 7], [28, 16]], stone); // Dach
-  o.line(4, 16, 28, 16, light);
-  o.rect(15, 3, 3, 4, stone); // Knauf
+  const o = new Canvas(40, 64);
+  const S = { dark: '#7a756a', mid: '#a8a296', light: '#cfc9bb', top: '#ddd8cc' };
+  const moss = hex('#6f9a4a');
+  // Steinblock als flacher Zylinder: Seite (links hell, rechts dunkel) und Deckel
+  const slab = (cy, rx, ry, h) => {
+    for (let x = -rx; x <= rx; x++) {
+      const t = (x + rx) / (2 * rx);
+      const col = t < 0.35 ? S.light : t < 0.75 ? S.mid : S.dark;
+      const yb = cy + Math.sqrt(Math.max(0, 1 - (x * x) / (rx * rx))) * ry;
+      o.rect(20 + x, Math.round(yb - h), 1, h + 1, hex(col));
+    }
+    o.ellipse(20, cy - h, rx, ry, hex(S.top));
+  };
+  slab(57, 11, 4, 4); // unterer Sockel
+  slab(52, 8, 3, 3); // oberer Sockel
+  // Säule mit Ring
+  for (let x = -3; x <= 3; x++) o.rect(20 + x, 34, 1, 16, hex(x < -1 ? S.light : x < 2 ? S.mid : S.dark));
+  o.rect(17, 41, 7, 1, hex(S.dark));
+  slab(35, 9, 3, 3); // Plattform unter der Lichtkammer
+  // Lichtkammer: Pfosten, leuchtendes Fenster mit Gitter
+  o.rect(13, 20, 14, 12, hex(S.mid));
+  o.rect(13, 20, 3, 12, hex(S.light));
+  o.rect(24, 20, 3, 12, hex(S.dark));
+  o.rect(16, 22, 8, 8, hex('#ffcf5a'));
+  o.rect(17, 23, 6, 6, hex('#ffe9a0'));
+  o.rect(19, 22, 2, 8, hex('#c8963a')); // Gitter
+  o.rect(16, 25, 8, 1, hex('#c8963a'));
+  // Dach: breit, Unterseite dunkel, Ecken hochgezogen
+  o.poly([[3, 19], [8, 17], [32, 17], [37, 19], [33, 21], [7, 21]], hex(S.dark));
+  o.poly([[2, 16], [7, 18], [33, 18], [38, 16], [36, 18.5], [20, 11], [4, 18.5]], hex(S.mid));
+  o.poly([[6, 17], [20, 9], [34, 17], [28, 17], [20, 12], [12, 17]], hex(S.light));
+  o.poly([[20, 9], [30, 15], [20, 12]], hex(S.top));
+  // Perlenknauf
+  o.rect(19, 6, 2, 3, hex(S.mid));
+  o.circle(20, 5, 2, hex(S.light));
+  o.set(19, 4, hex('#ffffff'));
+  // Moos
+  for (const [x, y] of [[11, 54], [12, 55], [27, 53], [9, 17], [10, 17], [31, 16], [22, 36]]) o.set(x, y, moss);
   o.outline(INK);
-  return withShadow(32, 56, 16, 50, 9, 3, o);
+  // warmer Lichtschein um das Fenster (nach dem Umriss, damit er weich bleibt)
+  for (let y = 17; y < 35; y++) for (let x = 10; x < 30; x++) {
+    const d = Math.hypot(x - 20, (y - 26) * 1.2);
+    if (d > 7 && d < 11 && o.alpha(x, y) === 0) o.set(x, y, hex('#ffd86a', 40));
+  }
+  return withShadow(40, 64, 20, 58, 11, 3, o);
 }
 
 // rotes Tor (Torii) quer über dem Weg: der Weg läuft entlang ty, das Tor steht entlang tx.
@@ -3468,6 +3539,397 @@ function hutFloor(style) {
     if (m < 1) return hex('#3f4a2a');
     return rand() < 0.3 ? hex('#c8c88a') : ((Math.floor(l) % 2) + 2) % 2 ? hex('#bcbc7a') : hex('#c4c482');
   });
+}
+
+// ---------- Unterwasserwelt (Riff) ----------
+
+// Meeresboden: heller Sand mit kleinen Rippeln; Variante 2 mit Kieseln und Muschelstückchen
+function reefSand(variant) {
+  const c = tile(() => {
+    const r = rand();
+    return r < 0.08 ? hex('#bdb388') : r < 0.15 ? hex('#e6dab0') : hex('#d4c89c');
+  });
+  for (let n = 0; n < 5 + variant * 2; n++) {
+    const x = randInt(8, 50);
+    const y = randInt(5, 26);
+    for (let i = 0; i < 5; i++) {
+      c.paint(x + i, y + (i % 4 < 2 ? 0 : 1), hex('#ece2bc'));
+      c.paint(x + i, y + 1 + (i % 4 < 2 ? 0 : 1), hex('#b8ae84'));
+    }
+  }
+  if (variant === 2) {
+    for (let n = 0; n < 4; n++) {
+      const x = randInt(14, 48);
+      const y = randInt(8, 23);
+      const col = n % 2 ? hex('#f2b8b0') : hex('#9a9a8a');
+      c.paint(x, y, col);
+      c.paint(x + 1, y, col);
+    }
+  }
+  return c;
+}
+
+// heller, feiner Sand als Weg zwischen den Korallen
+function reefPath() {
+  return tile(() => {
+    const r = rand();
+    return r < 0.07 ? hex('#d8cca4') : r < 0.14 ? hex('#fbf4dc') : hex('#efe6c8');
+  });
+}
+
+// verzweigte Koralle, groß und bunt; Kachelmitte bei (32, 80). cols: drei Äste je [Farbe, Spitze]
+function reefBranchCoral(cols = [['#d8487e', '#ffb0cc'], ['#b04aa8', '#f0a8f0'], ['#e05a8a', '#ffc0d8']]) {
+  const o = new Canvas(64, 92);
+  const branch = (x, y, len, a, col, tip, depth) => {
+    const x1 = x + Math.cos(a) * len, y1 = y + Math.sin(a) * len;
+    for (let t = 0; t <= 1; t += 0.04) o.circle(x + (x1 - x) * t, y + (y1 - y) * t, 3.4 - depth * 0.8, hex(col));
+    if (depth < 3) {
+      branch(x1, y1, len * 0.72, a - 0.45, col, tip, depth + 1);
+      branch(x1, y1, len * 0.72, a + 0.4, col, tip, depth + 1);
+    } else o.circle(x1, y1, 2, hex(tip));
+  };
+  branch(26, 80, 16, -Math.PI / 2 - 0.35, ...cols[0], 0);
+  branch(38, 80, 14, -Math.PI / 2 + 0.3, ...cols[1], 0);
+  branch(32, 81, 18, -Math.PI / 2, ...cols[2], 0);
+  o.outline(INK);
+  return withShadow(64, 92, 32, 80, 14, 5, o);
+}
+
+// Fächerkoralle: flacher, lila Fächer mit Gitter; Kachelmitte bei (32, 88)
+function reefFanCoral(rib = '#7a2fa8', fill = '#b878e8', stem = '#5a2a78') {
+  const o = new Canvas(64, 100);
+  const cx = 32, cy = 84;
+  for (let y = 0; y < 100; y++) {
+    for (let x = 0; x < 64; x++) {
+      const dx = (x - cx) / 26, dy = (y - cy) / 70;
+      if (dy > 0 || dx * dx + dy * dy > 1) continue;
+      const a = Math.atan2(y - cy, x - cx);
+      const r = Math.hypot(x - cx, (y - cy) * 0.5);
+      const isRib = Math.abs((((a * 9) % 1) + 1) % 1 - 0.5) < 0.1;
+      const ring = r % 7 < 1;
+      if (isRib || ring) o.set(x, y, hex(rib));
+      else if ((x + y) % 2 === 0) o.set(x, y, hex(fill, 200));
+    }
+  }
+  o.rect(30, 78, 4, 9, hex(stem));
+  o.outline(INK);
+  return withShadow(64, 100, 32, 88, 12, 4, o);
+}
+
+// Hirnkoralle: grüngelbe Kuppel mit gewundenen Rillen; Kachelmitte bei (32, 50)
+function reefBrainCoral(base = '#b8c24a', light = '#d2da6a', groove = '#7f8a2a') {
+  const o = new Canvas(64, 64);
+  o.ellipse(32, 40, 20, 14, hex(base));
+  o.ellipse(29, 36, 13, 8, hex(light), true);
+  for (let y = 26; y < 56; y++) {
+    for (let x = 12; x < 54; x++) {
+      if (Math.sin(x / 2.2 + Math.sin(y / 3) * 2.5) > 0.82) o.paint(x, y, hex(groove));
+    }
+  }
+  o.outline(INK);
+  return withShadow(64, 64, 32, 50, 18, 5, o);
+}
+
+// Röhrenkoralle: orange Röhren in verschiedenen Höhen; Kachelmitte bei (32, 60)
+function reefTubeCoral(base = '#f08a2c', light = '#f8b060', inner = '#8a3a10') {
+  const o = new Canvas(64, 72);
+  for (const [x, h, w] of [[22, 22, 5], [30, 34, 6], [38, 26, 5], [26, 14, 4], [42, 16, 4], [34, 18, 5]]) {
+    const top = 62 - h;
+    o.rect(x - w, top, w * 2, h, hex(base));
+    o.rect(x - w, top, 2, h, hex(light));
+    o.ellipse(x, top, w, w * 0.5, hex(light));
+    o.ellipse(x, top, w - 1.5, w * 0.5 - 1, hex(inner));
+  }
+  o.outline(INK);
+  return withShadow(64, 72, 32, 60, 15, 5, o);
+}
+
+// Riesentang: hohe, wellige Stängel mit Blättern und Schwimmblasen; Kachelmitte bei (32, 168)
+function reefKelp() {
+  const o = new Canvas(64, 180);
+  for (const [bx, len, ph, col, leaf] of [[24, 150, 0, '#5f7f24', '#8aa83a'], [33, 166, 1.7, '#6a8a2a', '#a0bc48'], [41, 132, 3.4, '#4f6f1e', '#7a9a30']]) {
+    for (let i = 0; i < len; i++) {
+      const x = bx + Math.sin(i / 14 + ph) * 5;
+      o.rect(Math.round(x), 168 - i, 2, 1, hex(col));
+      if (i > 10 && i % 13 === 0) {
+        const side = (i / 13) % 2 ? 1 : -1;
+        o.ellipse(x + side * 6, 168 - i - 3, 6, 2.5, hex(leaf));
+        o.circle(x + side * 1.5, 168 - i, 1.6, hex('#c8b040'));
+      }
+    }
+  }
+  o.outline(INK);
+  return withShadow(64, 180, 32, 168, 12, 4, o);
+}
+
+// Seestern, flach auf dem Sand; Kachelmitte bei (32, 36)
+function reefStarfish() {
+  const o = new Canvas(64, 48);
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5 + 0.3;
+    const r = i % 2 ? 6 : 17;
+    pts.push([32 + Math.cos(a) * r, 36 + Math.sin(a) * r * 0.55]);
+  }
+  o.poly(pts, hex('#f0703a'));
+  o.ellipse(32, 36, 4, 2.2, hex('#f8a060'), true);
+  for (const [x, y] of pts.filter((_, i) => i % 2 === 0)) o.paint(Math.round((x + 32) / 2), Math.round((y + 36) / 2), hex('#ffe0b0'));
+  o.outline(INK);
+  return o;
+}
+
+// Seeanemone mit Clownfisch: lila Fuß, viele Fangarme mit rosa Spitzen; Kachelmitte bei (32, 52)
+function reefAnemone() {
+  const o = new Canvas(64, 64);
+  o.ellipse(32, 50, 11, 5, hex('#7a3a8a'));
+  o.rect(23, 42, 18, 8, hex('#8a4a9a'));
+  for (let i = 0; i < 16; i++) {
+    const x0 = 21 + i * 1.5;
+    const bend = Math.sin(i * 1.3) * 5;
+    for (let t = 0; t < 14; t++) o.set(x0 + (bend * t) / 14, 42 - t, hex(t > 10 ? '#ffb0d0' : '#e070b0'));
+  }
+  o.ellipse(39, 30, 5, 3, hex('#f07a2c')); // Clownfisch
+  o.rect(37, 27, 2, 6, hex('#ffffff'));
+  o.poly([[34, 30], [31, 27], [31, 33]], hex('#f07a2c'));
+  o.set(42, 29, hex('#1a1210'));
+  o.outline(INK);
+  return withShadow(64, 64, 32, 52, 14, 4, o);
+}
+
+// großer Riff-Felsen mit Korallenbewuchs (Kartenrand); Kachelmitte bei (32, 66)
+function reefRock() {
+  const o = new Canvas(64, 84);
+  const dots = ['#e0508a', '#f08a2c', '#b8c24a', '#7ac8d8'];
+  o.ellipse(32, 52, 26, 22, hex('#6a7a88'));
+  o.ellipse(22, 42, 14, 12, hex('#7a8a98'));
+  o.ellipse(40, 38, 13, 12, hex('#5a6a78'));
+  o.ellipse(27, 36, 8, 6, hex('#9aa8b4'), true);
+  for (let n = 0; n < 14; n++) {
+    const x = randInt(12, 52), y = randInt(30, 62);
+    o.paint(x, y, hex(dots[n % 4]));
+    o.paint(x + 1, y, hex(dots[n % 4]));
+  }
+  o.circle(20, 30, 3, hex('#e05a8a'));
+  o.circle(44, 28, 2.5, hex('#f8b060'));
+  o.outline(INK);
+  return withShadow(64, 84, 32, 66, 28, 9, o);
+}
+
+// Anker mit Werkzeug-Sack auf dem Meeresboden (das Seil nach oben zum Boot zeichnet GardenScene); Kachelmitte bei (32, 64).
+// Der Ankerring (dort hängt das Seil) liegt bei (51, 46)
+function reefAnchorSack() {
+  const o = new Canvas(64, 80);
+  const iron = hex('#4a5560'), light = hex('#7a8894');
+  // Anker liegt schräg: Schaft, Querstange, gebogene Arme, Ring oben
+  o.line(36, 66, 50, 48, iron);
+  o.line(37, 66, 51, 48, iron);
+  o.line(36, 67, 50, 49, light);
+  o.line(42, 54, 50, 60, iron);
+  o.line(42, 55, 50, 61, iron);
+  for (let a = 0; a <= Math.PI; a += 0.05) o.circle(36 + Math.cos(a + 0.6) * 8, 62 + Math.sin(a + 0.6) * 4, 1.2, iron);
+  o.circle(51, 46, 2.5, iron);
+  o.set(51, 46, light);
+  // Sack: Jute, oben zugebunden, ein Kescherstiel schaut heraus
+  o.line(16, 22, 20, 46, hex('#a8743f'));
+  o.line(17, 22, 21, 46, hex('#c8935a'));
+  o.ellipse(16, 21, 5, 3, hex('#e8e0d0'));
+  o.ellipse(24, 58, 13, 11, hex('#c8a26a'));
+  o.ellipse(22, 55, 8, 6, hex('#dcb880'), true);
+  o.poly([[18, 48], [30, 48], [27, 42], [21, 42]], hex('#c8a26a'));
+  o.rect(19, 46, 10, 2, hex('#7a4e2d'));
+  for (let n = 0; n < 18; n++) o.paint(randInt(12, 36), randInt(48, 68), hex('#a8844e'));
+  o.line(29, 47, 50, 46, hex('#d8c08a')); // Seil vom Sack zum Ankerring
+  o.outline(INK);
+  return withShadow(64, 80, 32, 64, 20, 6, o);
+}
+
+// modernes Motorboot für die Schnellreise (wie die Autos 240x140, zwei gleiche Bilder). Es liegt entlang der Grundfläche
+// CAR_BODY (map.js): vom Heck links unten (44, 98) zum Bug rechts oben (204, 62), im Bild doppelt so groß wie in der Welt.
+// Weißer Rumpf mit blauem Streifen, Deck, Steuerstand mit getönter Scheibe, Reling und Außenborder am Heck
+function reefBoatFrame() {
+  const o = new Canvas(240, 140);
+  const A = [44, 98], B = [204, 62];
+  const d = [B[0] - A[0], B[1] - A[1]];
+  const g = Math.hypot(d[0], d[1] * 2);
+  const perp = [(-d[1] * 2) / g, d[0] / g / 2]; // quer zur Längsachse auf dem Boden, als Bildschirm-Versatz
+  const W = 34, H = 22;
+  const width = (t) => (t < 0.55 ? 1 : Math.sqrt(Math.max(0, 1 - ((t - 0.55) / 0.45) ** 2)));
+  const P = (t, side, z, k = 1) => [A[0] + d[0] * t + perp[0] * side * W * width(t) * k, A[1] + d[1] * t + perp[1] * side * W * width(t) * k - z];
+  const ts = Array.from({ length: 41 }, (_, i) => i / 40);
+  const band = (s0, z0, k0, s1, z1, k1, from = 0, to = 1) => {
+    const tt = ts.filter((t) => t >= from && t <= to);
+    return [...tt.map((t) => P(t, s0, z0, k0)), ...tt.slice().reverse().map((t) => P(t, s1, z1, k1))];
+  };
+  // Außenborder hinter dem Heck: Motorblock, Schaft nach unten
+  const [mx, my] = P(-0.06, 0, H + 4, 0);
+  o.rect(mx - 9, my, 16, 20, hex('#2a2f36'));
+  o.rect(mx - 9, my, 16, 4, hex('#4a525c'));
+  o.rect(mx - 3, my + 20, 5, 16, hex('#3a4048'));
+  o.rect(mx - 6, my + 34, 11, 3, hex('#2a2f36'));
+  // Heckspiegel und Außenseite zur Kamera: weiß mit blauem Streifen, unten dunkler Kiel
+  o.poly([P(0, -1, H), P(0, 1, H), P(0, 1, 0, 0.6), P(0, -1, 0, 0.6)], hex('#d8dde4'));
+  o.poly(band(1, H, 1, 1, 0, 0.6), hex('#f6f8fa'));
+  o.poly(band(1, 8, 0.86, 1, 0, 0.6), hex('#2f4a6a'));
+  o.poly(band(1, H - 5, 0.98, 1, H - 10, 0.95), hex('#1f78c8'));
+  // Deck (hell) mit Rand
+  o.poly(band(1, H, 1, -1, H, 1), hex('#e8ecf0'));
+  o.poly(band(1, H, 0.86, -1, H, 0.86), hex('#c8d0d8'));
+  // Sitzbank hinten
+  o.poly([P(0.08, -0.75, H + 6), P(0.08, 0.75, H + 6), P(0.2, 0.75, H + 6), P(0.2, -0.75, H + 6)], hex('#1f78c8'));
+  o.poly([P(0.08, 0.75, H), P(0.2, 0.75, H), P(0.2, 0.75, H + 6), P(0.08, 0.75, H + 6)], hex('#155a98'));
+  // Steuerstand: Kasten mit getönter Scheibe obendrauf
+  const c0 = 0.4, c1 = 0.55;
+  o.poly([P(c0, 0.5, H), P(c1, 0.5, H), P(c1, 0.5, H + 14), P(c0, 0.5, H + 14)], hex('#c8d0d8'));
+  o.poly([P(c0, -0.5, H + 14), P(c1, -0.5, H + 14), P(c1, 0.5, H + 14), P(c0, 0.5, H + 14)], hex('#f6f8fa'));
+  o.poly([P(c1, -0.55, H + 14), P(c1, 0.55, H + 14), P(c1 + 0.04, 0.55, H + 26), P(c1 + 0.04, -0.55, H + 26)], hex('#3a6a8a', 220));
+  o.line(...P(c1, -0.4, H + 16), ...P(c1 + 0.03, -0.4, H + 24), hex('#bfe8ff'));
+  // Reling am Bug
+  for (const side of [-1, 1]) {
+    const pts = ts.filter((t) => t >= 0.6 && t <= 0.97).map((t) => P(t, side, H + 7, 0.9));
+    for (let n = 1; n < pts.length; n++) o.line(...pts[n - 1], ...pts[n], hex('#9aa6b2'));
+    for (const t of [0.65, 0.78, 0.9]) o.line(...P(t, side, H, 0.9), ...P(t, side, H + 7, 0.9), hex('#9aa6b2'));
+  }
+  // Positionslampe auf dem Steuerstand
+  o.circle(...P(c0 + 0.02, 0, H + 18), 2, hex('#f2c84a'));
+  o.outline(INK);
+  return o;
+}
+function reefBoat() {
+  const sheet = new Canvas(480, 140);
+  const f = reefBoatFrame();
+  sheet.draw(f, 0, 0);
+  sheet.draw(f, 240, 0);
+  return sheet;
+}
+
+
+// weitere Böden im Riff (in Flecken verteilt, siehe patches in levels.js)
+// Korallenschutt: Kies und helle Bruchstücke auf grauem Sand
+function reefGravel() {
+  const c = tile(() => (rand() < 0.5 ? hex('#b8b29a') : hex('#c8c0a4')));
+  for (let n = 0; n < 26; n++) {
+    const x = randInt(6, 56), y = randInt(4, 27);
+    const col = [hex('#8a8a80'), hex('#e8e0cc'), hex('#a09a88'), hex('#d8a8a0')][n % 4];
+    c.paint(x, y, col);
+    c.paint(x + 1, y, col);
+    if (n % 3 === 0) c.paint(x, y - 1, hex('#f2ecdc'));
+  }
+  return c;
+}
+// Seegraswiese: Sand mit vielen kurzen grünen Halmen
+function reefSeagrass() {
+  const c = tile(() => (rand() < 0.15 ? hex('#b8b488') : hex('#c8c296')));
+  for (let n = 0; n < 34; n++) {
+    const x = randInt(6, 57), y = randInt(5, 28);
+    if (!inDiamond(x, y) || !inDiamond(x, y - 3)) continue;
+    const col = n % 2 ? hex('#4f8a3a') : hex('#6aa84a');
+    for (let k = 0; k < 3; k++) c.paint(x + (k === 2 ? (n % 3) - 1 : 0), y - k, col);
+  }
+  return c;
+}
+// rosa Kalkalgen-Flecken auf dem Sand
+function reefAlgae() {
+  const c = tile(() => (rand() < 0.1 ? hex('#c8ba92') : hex('#d6c89e')));
+  for (let n = 0; n < 5; n++) {
+    const x = randInt(14, 48), y = randInt(8, 23);
+    c.ellipse(x, y, randInt(3, 6), randInt(2, 3), hex('#d88aa0'), true);
+    c.ellipse(x - 1, y - 1, 2, 1, hex('#f0b8c8'), true);
+  }
+  return c;
+}
+// dunklerer, feuchter Sand mit tiefen Rippeln
+function reefDarkSand() {
+  const c = tile((x, y) => {
+    const k = (((x + 2 * y) % 12) + 12) % 12;
+    if (k < 2) return hex('#a89e78');
+    if (k === 2) return hex('#d8cca0');
+    return rand() < 0.08 ? hex('#b0a680') : hex('#bfb48c');
+  });
+  return c;
+}
+
+// ---------- Aquarium: Einrichtung der großen Halle ----------
+
+// Mosaikweg: helle Fliesen mit blauen Rauten und einer Welle
+function aqPath() {
+  return tile((x, y) => {
+    const k = y - 0.5 * x;
+    const l = y + 0.5 * x;
+    const mk = ((k % 8) + 8) % 8, ml = ((l % 8) + 8) % 8;
+    if (mk < 1 || ml < 1) return hex('#8aa8b8'); // Fugen
+    const cell = (Math.floor(k / 8) + Math.floor(l / 8)) % 2;
+    if (Math.abs(Math.sin(x / 5) * 3 + 16 - y) < 1.2) return hex('#3f8fcf'); // Welle
+    return rand() < 0.06 ? hex('#cfe2ec') : cell ? hex('#e6f0f4') : hex('#b8d8ea');
+  });
+}
+
+// Holzbank mit Lehne (Sitzfläche entlang tx); Kachelmitte bei (32, 48)
+function aqBench() {
+  const o = new Canvas(64, 64);
+  const P = (u, v, z = 0) => [32 + (u - v) * 32, 48 + (u + v) * 16 - z];
+  // Beine (dunkles Metall)
+  for (const u of [-0.32, 0.32]) {
+    o.poly([P(u - 0.03, 0.08), P(u + 0.03, 0.08), P(u + 0.03, 0.08, 10), P(u - 0.03, 0.08, 10)], hex('#3a4048'));
+    o.poly([P(u - 0.03, -0.12), P(u + 0.03, -0.12), P(u + 0.03, -0.12, 22), P(u - 0.03, -0.12, 22)], hex('#3a4048'));
+  }
+  // Sitzfläche
+  o.poly([P(-0.4, -0.12, 10), P(0.4, -0.12, 10), P(0.4, 0.14, 10), P(-0.4, 0.14, 10)], hex('#c8935a'));
+  o.poly([P(-0.4, 0.14, 10), P(0.4, 0.14, 10), P(0.4, 0.14, 7), P(-0.4, 0.14, 7)], hex('#8a5a30'));
+  for (const v of [-0.04, 0.05]) o.line(...P(-0.4, v, 10), ...P(0.4, v, 10), hex('#a8743f'));
+  // Lehne: zwei Bretter
+  for (const z of [14, 20]) {
+    o.poly([P(-0.4, -0.13, z), P(0.4, -0.13, z), P(0.4, -0.13, z + 4), P(-0.4, -0.13, z + 4)], hex('#b07e48'));
+  }
+  o.outline(INK);
+  return withShadow(64, 64, 32, 50, 22, 6, o);
+}
+
+// Stehlampe mit leuchtendem Quallen-Schirm; Kachelmitte bei (32, 104)
+function aqLamp() {
+  const o = new Canvas(64, 112);
+  o.ellipse(32, 103, 7, 3, hex('#2f3a48'));
+  o.rect(31, 40, 3, 63, hex('#3a4858'));
+  o.rect(31, 40, 1, 63, hex('#6a7a8a'));
+  // Tentakel
+  for (const [x, len, ph] of [[24, 16, 0], [29, 20, 1], [35, 18, 2], [40, 14, 3]]) {
+    for (let i = 0; i < len; i++) o.set(x + Math.sin(i / 3 + ph) * 1.5, 34 + i, hex('#e8a8f0', 200));
+  }
+  // Schirm (Quallenglocke)
+  o.ellipse(32, 30, 15, 11, hex('#f0c0f8'));
+  o.ellipse(32, 28, 11, 7, hex('#fbe6ff'), true);
+  o.ellipse(28, 25, 4, 2, hex('#ffffff'), true);
+  o.outline(INK);
+  // Lichtschein um den Schirm
+  const c = new Canvas(64, 112);
+  c.ellipse(32, 103, 12, 4, SHADOW);
+  for (let r = 26; r > 14; r -= 3) c.ellipse(32, 30, r, r * 0.8, hex('#fff2b0', 18));
+  c.draw(o, 0, 0);
+  return c;
+}
+
+// Statue: springender Delfin auf einem Steinsockel; Kachelmitte bei (48, 112)
+function aqStatue() {
+  const o = new Canvas(96, 128);
+  isoBox(o, 48, 112, 0.7, 0.7, 26, '#d8d8e0', '#9a9aa8', '#b8b8c4');
+  isoBox(o, 48, 88, 0.5, 0.5, 6, '#e8e8f0', '#aaaab8', '#c8c8d4');
+  // Delfin im Bogen: Körper als Kette von Kreisen, vom Schwanz unten zur Schnauze oben
+  const pts = [];
+  for (let t = 0; t <= 1; t += 0.02) {
+    const a = Math.PI * (0.95 - t * 0.9);
+    pts.push([48 + Math.cos(a) * 22, 84 - Math.sin(a) * 50, 3 + Math.sin(t * Math.PI) * 7]);
+  }
+  for (const [x, y, r] of pts) o.circle(x, y, r, hex('#8fb0c8'));
+  for (const [x, y, r] of pts) o.circle(x + r * 0.35, y + r * 0.35, r * 0.55, hex('#c8dce8'), true); // heller Bauch
+  const [tx, ty] = pts[0];
+  o.poly([[tx, ty], [tx - 9, ty + 6], [tx - 3, ty + 1], [tx + 4, ty + 8]], hex('#7a9ab4')); // Schwanzflosse
+  const [hx, hy] = pts[pts.length - 1];
+  o.poly([[hx, hy - 2], [hx + 9, hy + 2], [hx, hy + 3]], hex('#8fb0c8')); // Schnauze
+  const [fx, fy] = pts[22];
+  o.poly([[fx - 2, fy - 8], [fx - 10, fy - 15], [fx + 3, fy - 9]], hex('#7a9ab4')); // Rückenflosse
+  const [ex, ey] = pts[pts.length - 6];
+  o.set(ex + 1, ey - 2, hex('#1a1a20'));
+  o.outline(INK);
+  return withShadow(96, 128, 48, 114, 30, 10, o);
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {

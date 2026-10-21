@@ -1,6 +1,7 @@
 // Zierfische im Aquarium: kleine Fische in Seitenansicht (Bild "minifish"), die im hohen Wassertank in allen Höhen
 // hin und her schweben und ab und zu Bläschen aufsteigen lassen. Schwarmfische (Neonsalmler, Guppys, Clownfische)
 // ziehen in kleinen Gruppen gemeinsam umher. Reine Deko – keine Tierart, nicht fangbar, wird nicht gespeichert.
+// Auch im offenen Meer (Riff): dort ist der "Tank" die ganze Karte, die Fische sind größer und schwimmen höher.
 import Phaser from 'phaser';
 import { tileToWorld } from '../world/iso.js';
 
@@ -24,7 +25,7 @@ class School {
   constructor(tank) {
     this.tank = tank;
     this.pos = this.randomSpot();
-    this.h = Phaser.Math.FloatBetween(...SWIM_HEIGHT);
+    this.h = Phaser.Math.FloatBetween(...(tank.height ?? SWIM_HEIGHT));
     this.speed = Phaser.Math.FloatBetween(...SPEED);
     this.pickTarget();
   }
@@ -36,7 +37,7 @@ class School {
 
   pickTarget() {
     this.target = this.randomSpot();
-    this.targetH = Phaser.Math.FloatBetween(...SWIM_HEIGHT);
+    this.targetH = Phaser.Math.FloatBetween(...(this.tank.height ?? SWIM_HEIGHT));
   }
 
   update(dt) {
@@ -60,7 +61,7 @@ class TankFish {
     this.school = school;
     this.frame = frame;
     this.offset = { tx: Phaser.Math.FloatBetween(-SPREAD, SPREAD), ty: Phaser.Math.FloatBetween(-SPREAD, SPREAD), h: Phaser.Math.FloatBetween(-SPREAD_UP, SPREAD_UP) };
-    this.sprite = scene.add.sprite(0, 0, 'minifish', frame * 2).setOrigin(0.5);
+    this.sprite = scene.add.sprite(0, 0, 'minifish', frame * 2).setOrigin(0.5).setScale(school.tank.scale ?? 1);
     this.phase = Math.random() * 10;
     this.lag = Phaser.Math.FloatBetween(0.6, 1.4); // jeder schwimmt ein wenig anders hinterher
     this.pos = { ...school.pos };
@@ -84,7 +85,8 @@ class TankFish {
     const sx = (dx - dy) * 32; // Bewegung auf dem Bildschirm (links/rechts)
     if (Math.abs(sx) > 0.3) this.faceRight = sx > 0;
     else if (s.faceRight !== undefined) this.faceRight = s.faceRight;
-    const h = Phaser.Math.Clamp(s.h + this.offset.h, SWIM_HEIGHT[0], SWIM_HEIGHT[1]);
+    const [h0, h1] = t.height ?? SWIM_HEIGHT;
+    const h = Phaser.Math.Clamp(s.h + this.offset.h, h0, h1);
     const p = tileToWorld(this.pos.tx, this.pos.ty);
     const bob = Math.sin(this.phase * 2.4) * 1.5;
     this.sprite.setFrame(this.frame * 2 + (this.faceRight ? 0 : 1));
@@ -93,7 +95,7 @@ class TankFish {
     this.bubbleIn -= dt;
     if (this.bubbleIn <= 0) {
       this.bubbleIn = Phaser.Math.FloatBetween(...BUBBLE_EVERY);
-      this.bubble(p);
+      if (this.sprite.visible) this.bubble(p);
     }
   }
 
@@ -102,12 +104,13 @@ class TankFish {
     const x = this.sprite.x + (this.faceRight ? 7 : -7);
     const y = this.sprite.y - 2;
     const b = this.scene.add.circle(x, y, Phaser.Math.FloatBetween(1, 1.8), 0xd8f2ff, 0.8).setStrokeStyle(1, 0x2f7fbf).setDepth(p.y + 0.55);
-    const top = p.y - SWIM_HEIGHT[1] - 8;
+    const top = p.y - (this.school.tank.height ?? SWIM_HEIGHT)[1] - 8;
     this.scene.tweens.add({ targets: b, y: top, x: x + Phaser.Math.Between(-3, 3), duration: (y - top) * 30, ease: 'Sine.easeIn', onComplete: () => b.destroy() });
   }
 }
 
 // alle Zierfische eines Tanks: ein paar Schwärme und Einzelgänger, bis etwa n Fische zusammenkommen
+// tank: { tx0, tx1, ty0, ty1 }, dazu wahlweise height (Schwimmhöhe [von, bis]) und scale (Größe der Fische)
 export function stockTank(scene, tank, n) {
   const schools = [];
   const fish = [];
@@ -118,5 +121,19 @@ export function stockTank(scene, tank, n) {
     const size = Math.min(n - fish.length, Phaser.Math.Between(...kind.group));
     for (let i = 0; i < size; i++) fish.push(new TankFish(scene, school, kind.frame));
   }
-  return { update: (dt) => { for (const s of schools) s.update(dt); for (const f of fish) f.update(dt); }, count: fish.length };
+  const deco = {
+    count: fish.length,
+    hidden: false,
+    update: (dt) => {
+      if (deco.hidden) return;
+      for (const s of schools) s.update(dt);
+      for (const f of fish) f.update(dt);
+    },
+    // ausblenden (z. B. sobald echte Fische im Tank schwimmen) bzw. wieder zeigen
+    setVisible: (v) => {
+      deco.hidden = !v;
+      for (const f of fish) f.sprite.setVisible(v);
+    },
+  };
+  return deco;
 }

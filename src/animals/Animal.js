@@ -373,6 +373,43 @@ export const SPECIES = {
     shadowW: 20,
     catchWith: ['net'],
   },
+  // Riff-Fische (Riff): 22 Arten in Seitenansicht, schweben über dem Meeresboden und flüchten (siehe ReefFish.js);
+  // frames/originY gelten für den Beutel, in dem Henrik sie an Land trägt
+  reeffish: {
+    texture: 'reeffish',
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
+    originY: 68 / 72,
+    speed: 14,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 22,
+    fleeDist: 80, // kommt man näher, flüchten sie ...
+    fleeSpeed: 54, // ... knapp langsamer als der Taucher (60): mit dem Kescher holt man sie gerade so ein
+    catchWith: ['net'],
+  },
+  // Seepferdchen (Riff): verstecken sich in Korallen und schauen nur kurz heraus (siehe Seahorse.js);
+  // swimFrames: Bilder im Spritesheet "seahorse", frames/originY gelten für den Beutel an Land
+  seahorse: {
+    texture: 'seahorse',
+    swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
+    originY: 68 / 72,
+    speed: 8,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 14,
+    catchWith: ['net'],
+  },
   fish: {
     texture: 'fish',
     bagTexture: 'fishbag',

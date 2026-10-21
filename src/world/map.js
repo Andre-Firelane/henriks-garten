@@ -99,20 +99,40 @@ export const OBJECTS = {
   // Asien
   '+': { key: 'peacock_perch', originY: 84 / 96, solid: true, hitbox: 6 }, // hohe Sitzstange (Pfauengehege)
   // Aquarium: Fassade am Rand des Tierparks (großes Bild, ragt über den Kartenrand; die Kachelmitte ist die Tür)
-  '`': { key: 'aquarium_facade', originX: 344 / 480, originY: 290 / 360, solid: false, noCull: true, depthAlways: -12 },
+  // ganz hinten (gleich über dem Boden): hinter der Fassade liegt nur der Kartenrand, alles auf der Karte steht davor
+  '`': { key: 'aquarium_facade', originX: 760 / 1296, originY: 680 / 752, solid: false, noCull: true, depthFixed: -99000 },
   // Deko in den Wassertanks
   '(': { key: 'seaweed', originY: 100 / 112, solid: false },
   ')': { key: 'coral', originY: 52 / 64, solid: false },
   '?': { key: 'tank_rock', originY: 52 / 64, solid: false },
   '/': { key: 'shell', originY: 52 / 64, solid: false },
   '"': { key: 'tank_chest', originY: 52 / 64, solid: false },
+  // Unterwasserwelt (Riff): Korallen, Riesentang, Seesterne, Anemonen, Felsen am Rand und der Sack am Anker (Werkzeuge)
+  ü: { key: 'reef_branch', originY: 80 / 92, solid: true, hitbox: 8 },
+  Ü: { key: 'reef_fan', originY: 88 / 100, solid: true, hitbox: 6 },
+  ö: { key: 'reef_brain', originY: 50 / 64, solid: true, hitbox: 12 },
+  ä: { key: 'reef_tube', originY: 60 / 72, solid: true, hitbox: 8 },
+  // dieselben in anderen Farben: blaue Astkoralle, rote Fächerkoralle, rosa Hirnkoralle, gelbe Röhrenkoralle
+  û: { key: 'reef_branch2', originY: 80 / 92, solid: true, hitbox: 8 },
+  Û: { key: 'reef_fan2', originY: 88 / 100, solid: true, hitbox: 6 },
+  ô: { key: 'reef_brain2', originY: 50 / 64, solid: true, hitbox: 12 },
+  â: { key: 'reef_tube2', originY: 60 / 72, solid: true, hitbox: 8 },
+  ß: { key: 'reef_kelp', originY: 168 / 180, solid: true, hitbox: 4 },
+  '§': { key: 'reef_starfish', originY: 36 / 48, solid: false, floor: true },
+  '°': { key: 'reef_anemone', originY: 52 / 64, solid: false },
+  Ö: { key: 'reef_rock', originY: 66 / 84, solid: true },
+  // Aquarium-Halle: Quallen-Lampe, Delfin-Statue auf dem Sockel, Bank
+  Ł: { key: 'aq_lamp', originY: 104 / 112, solid: true, hitbox: 4 },
+  Ś: { key: 'aq_statue', originY: 112 / 128, solid: true, hitbox: 18 },
+  Ɓ: { key: 'aq_bench', originY: 48 / 64, solid: true, hitbox: 10 },
+  Ä: { key: 'anchor_sack', originY: 64 / 80, solid: true, hitbox: 10, chest: true, chestName: 'Sack' },
   H: { key: 'hammock', originY: 76 / 88, solid: true, hitbox: 10 }, // Hängematte mit Blätternest (Orang-Utan-Gehege)
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
   J: { key: 'jungle_tree', originY: 150 / 160, solid: true, hitbox: 14 },
   K: { key: 'cherry_tree', originY: 82 / 96, solid: true, hitbox: 10 },
   O: { key: 'sun_rock', originY: 40 / 48, solid: true, hitbox: 20 },
-  l: { key: 'stone_lantern', originY: 50 / 56, solid: true, hitbox: 8 },
+  l: { key: 'stone_lantern', originY: 58 / 64, solid: true, hitbox: 8 },
   I: { key: 'torii', originY: 100 / 128, solid: false }, // rotes Tor über dem Weg
   // Bogenbrücken: B entlang ty, E entlang tx; gezeichnet werden sie am Stück (siehe drawBridges in GardenScene)
   B: { solid: false, bridge: 'y' },
@@ -141,7 +161,7 @@ export let HOT_SPRINGS; // dieselben, nach zusammenhängenden Quellen getrennt: 
 export let NEAR_BAMBOO; // freie Kacheln höchstens 2 Kacheln von Bambus oder hohem Gras (für Pandas)
 export let NEAR_PATH; // freie Kacheln höchstens 3 Kacheln neben einem Weg (Set "tx,ty"): dort laufen freilaufende Tiere (Pfauen)
 export let NEAR_PATH_TILES; // dieselben als Liste (zum Verteilen)
-export let JUNGLE_TREES; // Urwaldbäume (nicht am Kartenrand): dort sitzen die Orang-Utans oben in der Krone
+export let JUNGLE_TREES; // Urwaldbäume (nicht am Kartenrand, Krone nicht verdeckt): dort sitzen die Orang-Utans oben in der Krone
 export let TIGER_ZONE; // Bambus und hohes Gras im Bambuswald (nicht am Kartenrand): dort streift der Tiger als Schemen
 export let NEAR_TREES; // freie Kacheln höchstens 2 Kacheln von einem Baum entfernt (für Giraffen)
 export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, water: { tx, ty } } (für Zebras)
@@ -267,7 +287,7 @@ export function setLevel(id) {
     }
   }
   NEAR_PATH = new Set(NEAR_PATH_TILES.map(({ tx, ty }) => tx + ',' + ty));
-  JUNGLE_TREES = tilesWith('J').filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty));
+  JUNGLE_TREES = tilesWith('J').filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty) && !crownHidden(tx, ty));
   TIGER_ZONE = ['Q', 'q']
     .flatMap(tilesWith)
     .filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty))
@@ -428,6 +448,16 @@ function floodChars(seed, chars) {
   return tiles;
 }
 
+// Steht ein Urwaldbaum so davor (etwas weiter unten auf dem Bildschirm, fast genau darunter), dass seine Krone die Krone
+// dieses Baums verdeckt? Dann sähe man einen Orang-Utan darin nicht
+function crownHidden(tx, ty) {
+  for (let dx = 0; dx <= 5; dx++) for (let dy = 0; dy <= 5; dy++) {
+    if (dx + dy < 2 || dx + dy > 7 || Math.abs(dx - dy) > 1) continue;
+    if (charAt(tx + dx, ty + dy) === 'J') return true;
+  }
+  return false;
+}
+
 function floodPen(seed) {
   const seen = new Set([seed.tx + ',' + seed.ty]);
   const tiles = [];
@@ -500,6 +530,7 @@ export function groundAt(tx, ty) {
   if (house?.style === 'tank' && (tx === house.tx0 || tx === house.tx1 || ty === house.ty0 || ty === house.ty1)) {
     house = buildings().find((b) => b !== house && tx >= b.tx0 && tx <= b.tx1 && ty >= b.ty0 && ty <= b.ty1) ?? house;
   }
+  if (house?.pathFloor && PATH_CHARS.includes(c)) return house.pathFloor; // eigener Weg im Gebäude (Mosaik im Aquarium)
   if (house) return HUT_FLOOR[house.style] ?? 'planks'; // die ganze Hütte hat Holzboden, auch unter Wänden und Tür
   if (PATH_CHARS.includes(c)) return LEVEL.path;
   // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel
@@ -520,7 +551,21 @@ export function grassAt(tx, ty) {
   // im Tierpark hat jedes Gehege und jeder Randstreifen den Boden seiner Welt
   const zone = LEVEL.grounds?.find(({ area: a }) => tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1);
   const grass = enclosureAt(tx, ty)?.ground ?? zone?.ground ?? LEVEL.grass;
+  // Flecken anderer Böden (Riff: Kies, Seegras, Algen ...): je Art eine weiche Fleckenkarte, fest pro Kachel
+  for (const [i, p] of (LEVEL.patches ?? []).entries()) if (patchNoise(tx, ty, i) > 1 - p.amount) return p.ground;
   return grass[n < 6 ? 0 : n < 9 ? 1 : 2];
+}
+
+// weiches Rauschen zwischen 0 und 1 (Gitter alle 4 Kacheln, dazwischen weich überblendet); layer: eigene Karte je Fleckenart
+function patchNoise(tx, ty, layer) {
+  const at = (x, y) => (((x * 73856093) ^ (y * 19349663) ^ ((layer + 1) * 83492791)) >>> 0) % 1000 / 1000;
+  const gx = tx / 4, gy = ty / 4;
+  const x0 = Math.floor(gx), y0 = Math.floor(gy);
+  const fx = gx - x0, fy = gy - y0;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const top = at(x0, y0) * (1 - sx) + at(x0 + 1, y0) * sx;
+  const bottom = at(x0, y0 + 1) * (1 - sx) + at(x0 + 1, y0 + 1) * sx;
+  return top * (1 - sy) + bottom * sy;
 }
 
 // Wasserecken, die nach außen ins Land ragen (beide angrenzenden Nachbarn sind kein Wasser derselben Art).
@@ -599,7 +644,7 @@ export function isBlockedPoint(x, y, wade = false, trample = false) {
 }
 
 // Abstand eines Punkts von der Strecke a–b
-function nearSegment(x, y, { ax, ay, bx, by }) {
+export function nearSegment(x, y, { ax, ay, bx, by }) {
   const dx = bx - ax, dy = by - ay;
   const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
   return Math.hypot(x - (ax + dx * t), y - (ay + dy * t));

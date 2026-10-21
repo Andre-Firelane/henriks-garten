@@ -22,6 +22,9 @@
 //          Q  Bambus     q  hohes Gras (Versteck)   J  Dschungelbaum   K  Kirschbaum   O  Sonnenfelsen
 //          l  Steinlaterne   I  rotes Tor (Torii) über dem Weg   h  heiße Quelle   B  Brücke über den Teich
 //          4  Busch      5  dichter Busch   6  Bambus (Füller)   (niedrige Füller rechts neben den Gehegen, damit sie die Tiere nicht verdecken)
+// Riff:   ü  Astkoralle   Ü  Fächerkoralle   ö  Hirnkoralle   ä  Röhrenkoralle   (û Û ô â: dieselben in anderen Farben)   ß  Riesentang   §  Seestern
+//          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Sack am Anker (Werkzeuge)   /  Muschel   ?  Steine
+// Aquarium: Ł  Quallen-Lampe   Ś  Delfin-Statue   Ɓ  Bank
 
 export const LEVELS = {
   meadow: {
@@ -320,40 +323,118 @@ export const LEVELS = {
   // mit zwei Wassertanks an der Rückwand; darin schwimmen Zierfische (siehe TankFish.js) zwischen Pflanzen und Deko.
   aquarium: {
     name: 'Aquarium',
+    // große Halle: links zwei Becken (Riff-Fische, Seepferdchen), oben an der Wand ein großes Becken; in der Mitte ein
+    // Mosaikweg mit Platz, Delfin-Statue, Bänken und Quallen-Lampen
     rows: [
-      'MMMMMMMMMMMMMMMMMM',
-      'Ns..............sN',
-      'N.MMMMMMM.MMMMMM.N',
-      'N.N(..?.N.N.(.)N.N',
-      'N.N.)..(N.N(.?.N.N',
-      'N.N/.(."N.N./.(N.N',
-      'N.MMMMMMM.MMMMMM.N',
-      'N................N',
-      'N................N',
-      'N....d......d....N',
-      'N................N',
-      'N................N',
-      'NZ..............ZN',
-      'MMMMMMMMXXMMMMMMMM',
+'MMMMMMMMMMMMMMMMMMMMMM',
+      'NZ..................ZN',
+      'N...MMMMMMMMMMMMMMMM.N',
+      'N...N......?.(.?.(.N.N',
+      'N...N(.)(".((.((..(N.N',
+      'N...N..)..)"...)..?N.N',
+      'N...MMMMMMMMMMMMMMMM.N',
+      'N.......#############N',
+      'N.MMMMMM#.....#.....ŁN',
+      'N.N.).)N#..Ł.Ɓ#Ɓ.Ł...N',
+      'N.N.?..N#...#####....N',
+      'N.N(...N#...#####.Ɓ.ZN',
+      'N.MMMMMM######Ś##....N',
+      'N.MMMMMM#...#####.Ɓ..N',
+      'N.N(..(N#...#####....N',
+      'N.N.().N#..Ł###..Ł...N',
+      'N.MMMMMM#..###.......N',
+      'N.......#.###Ł.Z....ZN',
+      'MMMMMMMMMMXXMMMMMMMMMM',
     ],
     grass: ['floor_aquarium'],
-    path: 'floor_aquarium',
-    start: { tx: 8, ty: 11 },
-    enclosures: [],
-    // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle
+    path: 'aq_path',
+    start: { tx: 10, ty: 16 },
+    // die Wassertanks sind die Becken: gefangene Riff-Fische und Seepferdchen ziehen beim Betreten des Tierparks ein
+    enclosures: [
+      // Schild unten an der vorderen Scheibe (signAt auf der Glaswand, signOnGlass: ohne Pfosten)
+      { id: 'tankBig', name: 'Großes Becken', species: ['reeffish'], world: 'reef', seed: { tx: 6, ty: 3 }, slots: [20, 20], signAt: { tx: 11.5, ty: 6 }, signOnGlass: true },
+      { id: 'tank1', name: 'Becken', species: ['reeffish'], world: 'reef', seed: { tx: 3, ty: 9 }, slots: [10, 10], signAt: { tx: 7, ty: 10 }, signOnGlass: true },
+      { id: 'seahorses', name: 'Seepferdchen-Becken', species: ['seahorse'], world: 'reef', seed: { tx: 4, ty: 14 }, slots: [6, 6], signAt: { tx: 7, ty: 14.5 }, signOnGlass: true },
+    ],
+    // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle. pathFloor: Mosaik auf dem Weg in der Halle
     buildings: [
-      { tx0: 2, ty0: 2, tx1: 8, ty1: 6, style: 'tank', noRoof: true },
-      { tx0: 10, ty0: 2, tx1: 15, ty1: 6, style: 'tank', noRoof: true },
-      { tx0: 0, ty0: 0, tx1: 17, ty1: 13, style: 'aquarium', noRoof: true },
+      { tx0: 4, ty0: 2, tx1: 19, ty1: 6, style: 'tank', noRoof: true },
+      { tx0: 2, ty0: 8, tx1: 7, ty1: 12, style: 'tank', noRoof: true },
+      { tx0: 2, ty0: 13, tx1: 7, ty1: 16, style: 'tank', noRoof: true },
+      { tx0: 0, ty0: 0, tx1: 21, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Besucher laufen auf dem Mosaikweg
     ],
     chests: [],
     toolSpots: [],
     background: '#0b1a26',
+    ambient: 'ambient_reef', // leise das Riff-Rauschen (wie unter Wasser)
+    ambientVolume: 0.18,
     exits: [
-      { tx: 8, ty: 13, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
-      { tx: 9, ty: 13, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
+      { tx: 10, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
+      { tx: 11, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
     ],
     spawn: { population: 0, weights: {} }, // die Zierfische sind keine Tiere
+  },
+
+  // Unterwasserwelt: ein buntes Riff vor Australien. Henrik schwimmt (schwebt über dem Meeresboden), Fischschwärme ziehen
+  // umher (Deko wie im Aquarium, nicht fangbar). Hin und zurück nur mit dem Boot (Schnellreise); die Werkzeuge liegen im
+  // Sack, der mit dem Anker vom Boot heruntergelassen wurde. Tiere kommen später.
+  reef: {
+    name: 'Riff',
+    // Schnellreise: ein kleines Boot, das über dem Meeresboden schwimmt (float: so hoch, in Pixeln)
+    car: { tx: 18.16, ty: 14.5, texture: 'boat', frame: 0, scale: 1.5, float: 30 },
+    map: { x: 89, y: 66, icon: 'reeffish' }, // Great Barrier Reef vor Australien (Clownfisch)
+    rows: [
+'ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ',
+      'ÖÜÜÜßäôßÛôûÜûöüÖäÜôÖßüÖÖäâÖÜöÜäßâûÛÖüÖ',
+      'ÖÜß.ßß...û..........û......ö.ûâ..ä..üÖ',
+      'Öâßß.ßüßßßâ....§ôû.............§...üüÖ',
+      'Öüößßß.ß.ßä..ü.....üä.â....Ü.Û.§ü?..öÖ',
+      'Öâû..ö.ß.ß........ö.âöâ..ä.ä.ä..ô...ßÖ',
+      'Öû..ßßß.../.....û.ûâö.....Û..ü°.ä..§ÖÖ',
+      'Öü.......üÛ....../°ö......öä...â..ô.ûÖ',
+      'Öä...ßß..ßöûôô....ö......Ûô?.ôü.û...ûÖ',
+      'Öû/..ô....ûÛ......Û..ä.äûôâû.ö....ü.äÖ',
+      'Öü.........ô.âä......°..ôÛöÜ..ä...ö.ÖÖ',
+      'ÖÖ.../.ä...ââ...û..û.....âü..ü.ü.â°ÜäÖ',
+      'Öä........ô................äôâ..ö...ÖÖ',
+      'ÖÛ...û....âû..ü........ö....§....â..äÖ',
+      'Öäââ.âû.....§../........û....ä.ô.°ô.âÖ',
+      'Öü..öâ.....â.Ûö.........Û.......§...äÖ',
+      'Öü.ôô..ö...../...........ûûö§.ôä...ûöÖ',
+      'Öü.â.äôÛô...§...Ä.........äü........ûÖ',
+      'Öö....ôä.......ô..........ô.........ÖÖ',
+      'Öâ.......ö...äô.......ä....§........ûÖ',
+      'Ööü..öâ.......ô....äü.Ü?ûöüä..û.....âÖ',
+      'Öû..........öô...§.....°ô.ä..üû.ô...ÖÖ',
+      'ÖÖ...................Û.ä.ö...û......ÜÖ',
+      'ÖÛ..?Û.ô.ô..ä.Ü..â..û.ô......Üûö....ôÖ',
+      'Öä..§.ö.Ü.....üÜ..ô.Û......ä.öüôö...ÜÖ',
+      'Öß.ä.ü.Üü.û..ô..Ü........Ü.â..üüü..§äÖ',
+      'Öö..öä.ûö..........ü.öû......ô°§.ö.§âÖ',
+      'Öä....û.ä....?...â...û.......öä..û..ûÖ',
+      'Öä.û...â...........Ûô......ô........âÖ',
+      'Öä.....û..........ô......â°..û.â°...ÖÖ',
+      'ÖüûÖäôäûÖöäÜüÖöûäüüüäâÖôôÜöÛöäôöûââäôÖ',
+      'ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ',
+    ],
+    grass: ['reef_sand0', 'reef_sand1', 'reef_sand2'],
+    path: 'reef_path',
+    // Flecken anderer Böden über dem Sand (amount: ungefährer Anteil der Fläche)
+    patches: [{ ground: 'reef_seagrass', amount: 0.18 }, { ground: 'reef_gravel', amount: 0.15 }, { ground: 'reef_algae', amount: 0.12 }, { ground: 'reef_dark', amount: 0.15 }],
+    start: { tx: 19, ty: 16 },
+    enclosures: [],
+    chests: [
+      { tx: 16, ty: 17, tools: ['net'], anchor: true }, // Sack am Anker; das Seil führt hinauf zum Boot
+    ],
+    hero: 'hero_swim', // Henrik im Taucheranzug
+    ambient: 'ambient_reef',
+    sea: { fish: 60, fishHeight: [24, 120], fishScale: 0.6 }, // unter Wasser: Figur schwimmt, Fischschwärme, Lichtstrahlen, Bläschen
+    background: '#0e3a5c',
+    toolSpots: [],
+    exits: [],
+    // Riff-Fische: 22 Arten, alle gleich häufig (siehe ReefFish.js); eine Gruppe zählt als ein Platz.
+    // Seepferdchen verstecken sich in den Korallen (siehe Seahorse.js)
+    spawn: { population: 13, weights: { reeffish: 1, seahorse: 0.3 } },
   },
 
   // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein
@@ -366,29 +447,29 @@ export const LEVELS = {
     // jede Welt hat ihre eigene Seite: Savanne oben, Wald links, Wiese rechts, Asien unten. Die Gehege sind in den
     // Rand eingelassen, ihre Tore zeigen zum Rundweg; der Ausgang in eine Welt liegt mitten in deren Seite.
     rows: [
-      '                                 3X3333333333333333333  ',
-      '                                 3#[[[[[[[[[[[[[[[[[[3  ',
-      '                                 3#].y..............]3  ',
-      '                                 3#]..A..yyy....A.@.]3  ',
-      '                                 3#].....www........]3  ',
-      '                         333333333#]....wwww........]333',
-      '                         3A..A....#[[[[[[[[[y.......]..3',
-      '                         3.yv.....#########].yyA.y..].y3',
-      '                         3[[[[[[[[[[....v.#]..y.....]..3',
-      '                         3]........]....A.#].......y]..3',
-      '                 333333333].A.y....]......#G..y..y..]..3',
-      '                 3.....v..].....$..G#.y.A.#G........]y.3',
-      '        V3333    3....y...]........G#.v...#].....A..]vy3',
-      '        Vl.K3    3.y...y..]...y..y.]#vy.A.#]........].A3',
-      '        V.g.333333..y.....[[[[[[[[[[#F....#[[[[[[[[[[..3',
+      '         f.g.b.f.                3X3333333333333333333  ',
+      '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3  ',
+      '         g.K.f.b.                3#].y..............]3  ',
+      '         f...b.g.                3#]..A..yyy....A.@.]3  ',
+      '         .g.T..K.                3#].....www........]3  ',
+      '         b..f.g..        333333333#]....wwww........]333',
+      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]..3',
+      '         g.b..f..        3.yv.....#########].yyA.y..].y3',
+      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]..3',
+      '        Vbbbbbbbb3       3]........]....A.#].......y]..3',
+      '        V.T..f.K.333333333].A.y....]......#G..y..y..]..3',
+      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y.3',
+      '        Vf.b....g3....y...]........G#.v...#].....A..]vy3',
+      '        Vl.Kf.g..3.y...y..]...y..y.]#vy.A.#]........].A3',
+      '        V.g..f.b.3..y.....[[[[[[[[[[#F....#[[[[[[[[[[..3',
       '        `#############################################y3',
-      '        V.f.3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy3',
-      '        Vl.b3.}......}..|.....|.#....A...A....v.#...R..3',
+      '        Vgff3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy3',
+      '        Vlfb3.}......}..|.....|.#....A...A....v.#...R..3',
       '        V3333.}.oooo.}..|..u..|.#..y.....y....v.#..vy..3',
-      '            3.}.oooo.}..|.....|.#........yyy..A.#y..A..3',
-      '            3.}y.ooo.}..|y.y..|.#..............y#...y..3',
-      '            3.}......}..-------.#..R.....vy..y..#....A.3',
-      '            3.{{{{{{{{..y...y..y#v...........R..#v....v3',
+      'g.f.b.g.f.b.3.}.oooo.}..|.....|.#........yyy..A.#y..A..3',
+      'b..T..f.K.g.3.}y.ooo.}..|y.y..|.#..............y#...y..3',
+      '.K..g.b..T..3.}......}..-------.#..R.....vy..y..#....A.3',
+      'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v3',
       '22222222222222222222222################################b',
       '           2.^^^^^^^^^^#............###.......#MMMMMMM.b',
       '           2.;.n......;#..y.y.v.....###..%....#N.C...N.b',
@@ -479,6 +560,7 @@ export const LEVELS = {
     ],
     // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
     grounds: [
+      { area: { tx0: 8, tx1: 16, ty0: 0, ty1: 18 }, ground: ['grass0', 'grass1', 'grass2'] }, // Wiese ums Aquarium (vor der Savanne, die erste Fläche gilt)
       { area: { tx0: 12, tx1: 55, ty0: 0, ty1: 22 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] },
       { area: { tx0: 0, tx1: 22, ty0: 23, ty1: 59 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] },
       { area: { tx0: 12, tx1: 55, ty0: 60, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich
@@ -499,7 +581,7 @@ export const LEVELS = {
     signScale: 1.25,
     sections: [
       { label: 'Savanne', tx: 38, ty: 18 },
-      { label: 'Aquarium', tx: 10, ty: 15 },
+      { label: 'Aquarium', tx: 10, ty: 15, like: 'Savanne' }, // der Weg dorthin führt an der Savanne vorbei
       { label: 'Wald', tx: 12, ty: 46 },
       { label: 'Wiese', tx: 46, ty: 41 },
       { label: 'Asien', tx: 38, ty: 61 },
@@ -507,7 +589,7 @@ export const LEVELS = {
     exits: [
       { tx: 34, ty: 0, to: 'savanna', arrive: { tx: 20, ty: 1 }, label: 'Savanne' },
       { tx: 1, ty: 46, to: 'forest', arrive: { tx: 22, ty: 1 }, label: 'Wald' },
-      { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 8, ty: 11 }, label: 'Aquarium' }, // Tür in der Fassade oben links
+      { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 10, ty: 16 }, label: 'Aquarium' }, // Tür in der Fassade oben links
       { tx: 55, ty: 40, to: 'meadow', arrive: { tx: 20, ty: 1 }, label: 'Wiese' },
       { tx: 35, ty: 82, to: 'asia', arrive: { tx: 20, ty: 1 }, label: 'Asien' },
     ],

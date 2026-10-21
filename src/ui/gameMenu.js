@@ -1,0 +1,75 @@
+// Menü (Knopf oben rechts oder Esc): weiterspielen, von Hand speichern, zurück zum Startbildschirm.
+// Das Spiel pausiert so lange. Esc schließt das Menü wieder.
+import { save } from '../save.js';
+
+let panel = null;
+let state = null;
+let openedAt = 0;
+const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nichts tun
+
+export function isMenuOpen() {
+  return !!panel?.classList.contains('show');
+}
+
+function savedLine() {
+  if (save.testMode) return 'Test-Spiel – wird nicht gespeichert';
+  if (!save.lastSaved) return 'Noch nicht gespeichert';
+  return `Zuletzt gespeichert: ${new Date(save.lastSaved).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`;
+}
+
+function render() {
+  panel.innerHTML = `<div class="chest-box menu-box">
+      <h2>Menü</h2>
+      <button class="start-btn" data-act="resume">▶ Weiterspielen</button>
+      <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>💾 Speichern</button>
+      <button class="start-btn" data-act="title">⌂ Zum Startbildschirm</button>
+      <p class="menu-saved">${savedLine()}</p>
+    </div>`;
+}
+
+// onSave(): speichert, gibt true zurück, wenn es geklappt hat; onTitle(): zurück zum Startbildschirm; onClose(): Menü zu
+export function openMenu(onSave, onTitle, onClose) {
+  panel = document.getElementById('menu');
+  state = { onSave, onTitle, onClose };
+  render();
+  panel.classList.add('show');
+  openedAt = performance.now();
+  // erst nach diesem Tastendruck reagieren, sonst schließt Esc das Menü gleich wieder
+  setTimeout(() => {
+    window.addEventListener('keydown', onKey, true);
+    panel.addEventListener('click', onClick);
+  }, 0);
+}
+
+function onKey(e) {
+  e.preventDefault();
+  e.stopPropagation(); // die Taste soll im Spiel nichts auslösen
+  if (e.key === 'Escape') close();
+}
+
+function onClick(e) {
+  if (performance.now() - openedAt < OPEN_GRACE) return;
+  const b = e.target.closest('.start-btn');
+  const act = b?.dataset.act;
+  if (!e.target.closest('.menu-box')) return close(); // neben die Tafel tippen schließt
+  if (!b) return;
+  if (act === 'resume') close();
+  else if (act === 'save' && !b.disabled) {
+    const ok = state.onSave();
+    render();
+    panel.querySelector('.menu-saved').textContent = ok ? 'Gespeichert ✓' : 'Speichern hat nicht geklappt';
+  } else if (act === 'title') {
+    const cb = state.onTitle;
+    close();
+    cb();
+  }
+}
+
+function close() {
+  window.removeEventListener('keydown', onKey, true);
+  panel.removeEventListener('click', onClick);
+  panel.classList.remove('show');
+  const cb = state?.onClose;
+  state = null;
+  cb?.();
+}

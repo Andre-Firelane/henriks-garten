@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { openStartScreen } from '../ui/startScreen.js';
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -38,6 +39,11 @@ const PIXEL_ART = [
   // Aquarium: Fassade im Tierpark, Halle und Wassertanks, Böden, Deko im Tank
   'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
   'floor_aquarium', 'tank_floor', 'seaweed', 'coral', 'tank_rock', 'shell', 'tank_chest',
+  // Unterwasserwelt (Riff)
+  'reef_sand0', 'reef_sand1', 'reef_sand2', 'reef_path', 'reef_branch', 'reef_fan', 'reef_brain', 'reef_tube', 'reef_kelp',
+  'reef_starfish', 'reef_anemone', 'reef_rock', 'anchor_sack', 'reef_branch2', 'reef_fan2', 'reef_brain2', 'reef_tube2',
+  'reef_gravel', 'reef_seagrass', 'reef_algae', 'reef_dark',
+  'aq_path', 'aq_bench', 'aq_lamp', 'aq_statue',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
@@ -101,6 +107,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
     this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
     this.load.spritesheet('hero_asia', 'assets/hero_asia.png', HERO_FRAME);
+    this.load.spritesheet('hero_swim', 'assets/hero_swim.png', HERO_FRAME); // Taucheranzug (Riff)
     this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
     this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
     this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
@@ -119,6 +126,7 @@ export default class BootScene extends Phaser.Scene {
     for (let n = 1; n <= 8; n++) this.load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
+    this.load.spritesheet('boat', 'assets/boat.png', CAR_FRAME); // Schnellreise in der Unterwasserwelt
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     // Katze 2 (seltener Skin)
     this.load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
@@ -139,10 +147,13 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
     this.load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
+    this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
+    this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
     for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
-    // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante, noch Platzhalter); _tree: oben in der Baumkrone
-    this.load.spritesheet('orangutan_eat', 'assets/orangutan_eat.png', { frameWidth: 88, frameHeight: 88 }); // sitzt und frisst
+    // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante); _eat: sitzt und frisst; _tree: oben in der Baumkrone
+    this.load.spritesheet('orangutan_eat', 'assets/orangutan_eat.png', { frameWidth: 88, frameHeight: 88 });
+    this.load.spritesheet('orangutan2_eat', 'assets/orangutan2_eat.png', { frameWidth: 88, frameHeight: 88 });
     for (const k of ['orangutan', 'orangutan2']) {
       this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
       this.load.image(`${k}_tree`, `assets/${k}_tree.png`);
@@ -182,6 +193,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     this.load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
+    this.load.audio('step_indoor', 'assets/sounds/step_indoor.wav'); // ... drinnen (Haupthaus, Hütten, Aquarium)
     this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
     this.load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu
     this.load.audio('car', 'assets/sounds/car.wav'); // Auto fährt los (Schnellreise)
@@ -194,6 +206,6 @@ export default class BootScene extends Phaser.Scene {
     for (const key of PIXEL_ART) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     for (const key of ['hero_walk', 'hero_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 14, repeat: -1 });
     this.anims.create({ key: 'hero_idle', frames: this.anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
-    this.scene.start('Garden');
+    openStartScreen((data) => this.scene.start('Garden', data));
   }
 }
