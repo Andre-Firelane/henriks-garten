@@ -2,6 +2,7 @@
 // Tablet: aufs Gebiet tippen. Laptop: mit WASD (oder Pfeiltasten) auswählen, mit E, Enter oder Leertaste losfahren.
 // Esc oder ein Tipp neben die Gebiete schließt die Karte.
 import { animalIconSquare } from './icons.js';
+import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 
 let panel = null;
 let state = null;
@@ -23,7 +24,7 @@ export function openTravelMap(places, current, onTravel, onClose) {
       </button>`,
     )
     .join('');
-  panel.innerHTML = `<div class="travel-box">
+  panel.innerHTML = `<div class="travel-box">${CLOSE_BUTTON}
       <div class="travel-map">${markers}</div>
       <p class="travel-hint">Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.</p>
     </div>`;
@@ -78,6 +79,7 @@ function onKey(e) {
 function onClick(e) {
   // auf dem Tablet kommt nach dem Antippen, das die Tafel geöffnet hat, noch ein Klick hinterher: nicht gleich wieder schließen
   if (performance.now() - openedAt < OPEN_GRACE) return;
+  if (isCloseClick(e)) return close(true);
   const place = e.target.closest('.place');
   if (place && !place.classList.contains('here')) travel(place.dataset.id);
   else if (!place) close(true);

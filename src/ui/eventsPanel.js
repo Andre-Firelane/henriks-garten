@@ -3,6 +3,7 @@
 // Laptop: Q/Tab wechselt den Reiter, A/D wählt, E/Enter/Leertaste bestätigt, Esc schließt.
 import { formatTime } from '../world/events.js';
 import { animalIcons } from './icons.js';
+import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 
 let panel = null;
 let state = null;
@@ -44,6 +45,11 @@ const THUMBS = {
     ['antelope2', 72, 100, 0, 0.6, 0, 4],
     ['cat2', 72, 80, 1, 0.6, 96, 6],
     ['frog2', 56, 52, 0, 0.7, 66, 0],
+  ],
+  wolves: [
+    ['wolf_howl', 80, 80, 0, 0.75, 14, 0],
+    ['wolf', 80, 80, 1, 0.7, 104, 2],
+    ['wolf_howl', 80, 80, 1, 0.55, 66, 14],
   ],
   jellyfish: [
     ['jellyfish', 64, 96, 0, 0.75, 14, 0],
@@ -114,7 +120,7 @@ function render() {
     ? `<span class="ev-tab on">${TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege: keine Reiter
     : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
   const hint = state.tab === 'pens' ? 'Ein ausgebautes Gehege hat mehr Plätze und neue Ausstattung.' : 'Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.';
-  panel.innerHTML = `<div class="chest-box ev-box">
+  panel.innerHTML = `<div class="chest-box ev-box">${CLOSE_BUTTON}
       <div class="ev-tabs">${tabs}</div>
       <p class="ev-hearts">Dein Konto: <span class="heart">♥</span> <b>${hearts}</b></p>
       <div class="chest-items">${list
@@ -177,6 +183,7 @@ function onHover(e) {
 function onClick(e) {
   // auf dem Tablet kommt nach dem Antippen, das die Tafel geöffnet hat, noch ein Klick hinterher
   if (performance.now() - openedAt < OPEN_GRACE) return;
+  if (isCloseClick(e)) return close(true);
   const t = e.target.closest('.ev-tab');
   if (t) return state.only ? undefined : switchTab(t.dataset.tab);
   const b = e.target.closest('.ev-item');

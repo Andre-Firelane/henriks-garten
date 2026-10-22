@@ -35,6 +35,7 @@ export const APPEAL = {
   turtle: 6,
   jellyfish: 3,
   ray: 5,
+  wolf: 5,
 };
 
 const MAX_VISITORS = 12;

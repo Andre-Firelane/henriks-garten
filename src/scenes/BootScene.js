@@ -44,10 +44,11 @@ const PIXEL_ART = [
   'reef_starfish', 'reef_anemone', 'reef_rock', 'anchor_sack', 'reef_branch2', 'reef_fan2', 'reef_brain2', 'reef_tube2',
   'reef_gravel', 'reef_seagrass', 'reef_algae', 'reef_dark',
   'aq_path', 'aq_bench', 'aq_lamp', 'aq_statue',
+  'wolf_forest_edge', // dunkler Wald hinter dem Wolfswald (Tierpark)
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -93,6 +94,7 @@ const ANIMAL_SOUNDS = {
   goat: 'animal_goat.wav',
   fish: 'animal_fish.wav',
   koi: 'animal_fish.wav', // derselbe Platscher wie beim Fisch
+  wolf: 'animal_wolf.wav', // Knurren beim Fangen
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -151,6 +153,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
     for (const k of ['jellyfish', 'jellyfish2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
+    for (const k of ['wolf', 'wolf_howl', 'wolf_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf (Wolfsnacht)
     for (const k of ['ray', 'ray2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
     this.load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
@@ -192,6 +195,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
     this.load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
     this.load.audio('lion_roar', 'assets/sounds/lion_roar.wav');
+    this.load.audio('wolf_howl', 'assets/sounds/wolf_howl.wav'); // Wolfsgeheul (siehe tools/prepare-sounds.js)
     this.load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);
     this.load.spritesheet('croc_water', 'assets/croc_water.png', CROC_WATER_FRAME); // nur der Kopf schaut aus dem Wasser
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);

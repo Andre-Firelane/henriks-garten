@@ -210,6 +210,23 @@ export const SPECIES = {
     catchWith: ['trap'],
     trapWeight: 3, // Füchse lieben den Köder
   },
+  // Wolf (Wald, nur in der Wolfsnacht): lebt im Rudel, Ochs am Berg beim Heulen (siehe Wolf.js)
+  wolf: {
+    texture: 'wolf',
+    eatTexture: 'wolf_eat', // beim Fressen am Futter im Tierpark
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 22,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 1.5,
+    footW: 8,
+    shadowW: 34,
+    fleeSpeed: 120, // erschrocken rennt das Rudel davon
+    catchWith: ['touch'],
+  },
   // Frösche hüpfen im Kreis (siehe Frog.js) und leben gern am Wasser
   frog: {
     texture: 'frog',

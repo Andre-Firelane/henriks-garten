@@ -107,6 +107,7 @@ export default class Player {
     }
 
     const moving = vx !== 0 || vy !== 0;
+    this.moving = moving; // (Wolfsnacht: wer sich beim Umschauen der Wölfe bewegt, wird gesehen)
     const len = Math.hypot(vx, vy);
     if (moving) {
       // Die Figur hat nur schräge Ansichten: die jeweils andere Achse merken wir uns

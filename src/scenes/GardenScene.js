@@ -79,6 +79,7 @@ import Octopus from '../animals/Octopus.js';
 import Turtle, { CUTS_NEEDED, CUT_DIST } from '../animals/Turtle.js';
 import Jellyfish, { DARK_DEPTH } from '../animals/Jellyfish.js';
 import Ray from '../animals/Ray.js';
+import Wolf, { WolfNight } from '../animals/Wolf.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
@@ -107,7 +108,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['wolf', 'peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -131,6 +132,7 @@ const CATCH_TIPS = {
   koi: 'Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!',
   reeffish: 'Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.',
   seahorse: 'Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!',
+  wolf: 'Nur in der Wolfsnacht im Wald. Folge den leuchtenden Spuren. Heulen die Wölfe, darfst du laufen – hören sie auf und schauen sich um (👀), bleib sofort stehen! Erreichst du einen, berühre ihn.',
   jellyfish: 'Nur beim Quallen-Schwarm im Riff. Mit dem Quallenglas – aber nur, wenn sie langsam sinkt! Beim Aufsteigen flutscht sie davon. Nicht anfassen, sie brennt!',
   ray: 'Schwimm neben ihm her – nicht zu nah, sonst erschrickt er, und nicht zu weit weg. Ist die Herzchen-Leiste voll, schwimmt er dir hinterher.',
   turtle: 'Selten. Hat sich in einem alten Fischernetz verheddert – hol die Schere aus dem Sack, schwimm hin und schneide sie frei: dreimal, dann ist sie frei!',
@@ -169,6 +171,7 @@ const ANIMAL_INFO = {
   reeffish: ['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'],
   seahorse: ['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'],
   octopus: ['Krake', 'Hat acht Arme mit Saugnäpfen – damit kriecht sie über den Boden und hält sich fest.'],
+  wolf: ['Wolf', 'Vier Zehen mit Krallen und ein großer Ballen – wie beim Hund, nur größer. Wölfe laufen oft genau in der Spur des Vordermanns.'],
   jellyfish: ['Qualle', 'Hat weder Füße noch Flossen – sie schwimmt, indem sie ihren Schirm zusammenzieht und wieder entspannt.'],
   ray: ['Rochen', 'Hat keine Füße – er „fliegt“ mit seinen großen, flachen Brustflossen durchs Wasser.'],
   turtle: ['Meeresschildkröte', 'Hat Flossen statt Füße – damit „fliegt“ sie durchs Wasser. Zum Luftholen schwimmt sie an die Oberfläche.'],
@@ -260,7 +263,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || s === 'jellyfish' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
+    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -441,6 +444,12 @@ export default class GardenScene extends Phaser.Scene {
     }
 
     this.cullables = this.children.list.slice(firstStatic).filter((o) => (o.type === 'Image' || o.type === 'Text') && !o.noCull);
+    // große Bilder jenseits des Kartenrands, ganz hinten (z. B. der dunkle Wald hinter dem Wolfswald); nicht ausgeblendet
+    for (const b of LEVEL.backdrops ?? []) {
+      const { x, y } = tileToWorld(b.tx, b.ty);
+      const img = this.add.image(x, y, b.key);
+      img.setOrigin(b.ox / img.width, b.oy / img.height).setDepth(-99000);
+    }
     this.cullView = null;
     this.bakeGround(ground);
 
@@ -542,6 +551,7 @@ export default class GardenScene extends Phaser.Scene {
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
     this.car = null;
     this.boatRope = null;
+    this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
     if (LEVEL.car) {
       const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
       const k = LEVEL.car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
@@ -1106,6 +1116,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Jellyfish(this, x, y)
         : species === 'ray'
           ? new Ray(this, x, y)
+        : species === 'wolf'
+          ? new Wolf(this, x, y)
         : species === 'crocodile'
           ? new Crocodile(this, this.animals)
         : species === 'squirrel'
@@ -1175,6 +1187,7 @@ export default class GardenScene extends Phaser.Scene {
   // (Wasser, Baum, Wiese), alle anderen kommen auf eine freie Kachel mit Abstand zu "taken" (siehe randomFreeTile).
   // Gibt die neuen Tiere zurück (meist eins, Antilopen kommen in kleinen Gruppen).
   spawnOne(taken, fadeIn = false) {
+    if (this.wolfNight) return []; // Wolfsnacht: im Wald nur die Wolfsrudel (siehe Wolf.js)
     const species = this.pickSpecies();
     const group = [];
     // Japanmakaken sitzen gleich in der heißen Quelle (höchstens MAX_MACAQUES, sonst wird es dort zu voll)
@@ -1505,6 +1518,7 @@ export default class GardenScene extends Phaser.Scene {
         if (id === 'farm') this.showToast('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!');
         if (id === 'rare') this.showToast('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.');
         if (id === 'flamingo') this.showToast('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.');
+        if (id === 'wolves') this.showToast('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.');
         if (id === 'jellyfish') this.showToast('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.');
         if (id === 'ride') this.showToast('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.');
         if (id === 'babies') {
@@ -1685,7 +1699,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateEventBanner() {
-    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼' };
+    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺' };
     const lines = EVENTS.map((ev) => ({ ev, s: eventState(ev.id) }))
       .filter(({ s }) => s.state === 'active')
       .map(({ ev, s }) => `${icons[ev.id] ?? '★'} ${ev.name} · noch ${formatTime(s.left)}`);
@@ -1719,7 +1733,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef))
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest))
         .map((l) => l.name);
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -2464,6 +2478,29 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Wolfsnacht im Wald: beginnt bzw. endet mit dem Event (auch wenn man schon im Wald ist)
+  updateWolfNight(dt) {
+    const on = LEVEL_ID === 'forest' && isActive('wolves');
+    if (on && !this.wolfNight) {
+      this.wolfNight = new WolfNight(this);
+      this.startAmbient(); // Wald bei Nacht
+    }
+    if (!on && this.wolfNight) {
+      this.wolfNight.destroy();
+      this.wolfNight = null;
+      this.startAmbient();
+      this.showToast('🌅 Die Wolfsnacht ist vorbei – es wird wieder hell im Wald.');
+    }
+    this.wolfNight?.update(dt);
+  }
+
+  // beim Umschauen hat sich der Spieler bewegt: kurzer Hinweis (nicht zu oft)
+  wolvesSawYou() {
+    if (this.time.now - (this.wolfHintAt ?? -Infinity) < 8000) return;
+    this.wolfHintAt = this.time.now;
+    this.showToast(`👀 Die Wölfe haben dich gesehen und sind weggerannt! Beweg dich nur, wenn sie heulen.`);
+  }
+
   // Rochen: die Herzchen-Leiste ist voll – er vertraut einem und schwimmt hinterher
   rayTrusts(ray) {
     this.catchAnimal(ray);
@@ -2696,6 +2733,11 @@ export default class GardenScene extends Phaser.Scene {
       game.unlocked.push('flamingo');
       this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.`));
     }
+    // der erste Wolf: im Tierpark entsteht am Waldrand der Wolfswald
+    if (animal.species === 'wolf' && !game.unlocked.includes('wolves')) {
+      game.unlocked.push('wolves');
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} Dein erster Wolf! Im Tierpark ist im Wald-Bereich ganz links am Rand ein Wolfswald entstanden.`));
+    }
     // die erste Qualle: im Aquarium öffnet sich der dunkle Quallenraum
     if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
       game.unlocked.push('jellyfish');
@@ -2731,7 +2773,7 @@ export default class GardenScene extends Phaser.Scene {
   // Hintergrundgeräusch des Levels starten; ein anderes (oder in einem Level ohne) sofort beenden.
   // Die Dateien sind groß: sie werden erst beim Betreten des Levels im Hintergrund geladen, damit das Spiel schnell startet.
   startAmbient() {
-    const key = LEVEL.ambient;
+    const key = this.ambientKey();
     if (ambient && ambient.key !== key) {
       ambient.destroy();
       ambient = null;
@@ -2740,7 +2782,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!this.cache.audio.exists(key)) {
       this.load.audio(key, `assets/sounds/${key}.mp3`);
       this.load.once('complete', () => {
-        if (this.sys.isActive() && LEVEL.ambient === key) this.startAmbient();
+        if (this.sys.isActive() && this.ambientKey() === key) this.startAmbient();
       });
       this.load.start();
       return;
@@ -2749,6 +2791,11 @@ export default class GardenScene extends Phaser.Scene {
     ambient.play();
     // Lautstärke je Gebiet (ambientVolume in levels.js), sonst die normale
     this.tweens.add({ targets: ambient, volume: LEVEL.ambientVolume ?? AMBIENT_VOLUME, duration: AMBIENT_FADE });
+  }
+
+  // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
+  ambientKey() {
+    return LEVEL_ID === 'forest' && isActive('wolves') ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
   // Level verlassen: Stand merken, folgende Tiere mitnehmen. Jedes Level hat seine eigenen Werkzeuge:
@@ -3063,8 +3110,9 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.updateTraps(dt);
     this.updateTrapMarkers();
+    this.updateWolfNight(dt);
     this.updateSpawner(dt);
-    this.updateHerons(dt);
+    if (!this.wolfNight) this.updateHerons(dt);
     this.updateGate(dt);
     this.updateSign();
     this.checkWrongHome(dt);

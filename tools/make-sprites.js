@@ -2279,6 +2279,8 @@ const sprites = {
   'aq_statue.png': aqStatue(),
   'jar.png': jarItem(), // Quallenglas (Werkzeug beim Quallen-Event)
   'scissors.png': scissorsItem(), // Schere: Schildkröten aus dem Netz schneiden (Riff)
+  'lantern.png': lanternItem(), // Laterne in Henriks Hand (Wolfsnacht)
+  'wolf_forest_edge.png': wolfForestEdge(), // dunkler Wald hinter dem Wolfswald (jenseits des linken Kartenrands im Tierpark)
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -3967,6 +3969,50 @@ function scissorsItem() {
   // Löcher in den Griffen
   for (const [x, y] of [[20, 46], [34, 50]]) for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
     if (dx * dx + dy * dy <= 16) o.d[((y + dy) * 64 + x + dx) * 4 + 3] = 0;
+  }
+  return o;
+}
+
+// Laterne mit Griff und warmem Licht (doppelte Auflösung)
+function lanternItem() {
+  const o = new Canvas(64, 64);
+  o.line(24, 10, 32, 4, hex('#3a3028')); // Bügel
+  o.line(32, 4, 40, 10, hex('#3a3028'));
+  o.rect(22, 10, 20, 5, hex('#4a4038')); // Dach
+  o.rect(24, 15, 16, 26, hex('#ffd860')); // Glas mit Licht
+  o.rect(28, 19, 8, 18, hex('#fff4c0'));
+  for (const x of [24, 31, 39]) o.rect(x, 15, 2, 26, hex('#4a4038')); // Streben
+  o.rect(22, 41, 20, 5, hex('#4a4038')); // Boden
+  o.outline(INK);
+  return o;
+}
+
+// Dunkler Wald hinter dem Wolfswald: dichte Tannen jenseits des linken Kartenrands im Tierpark, je weiter weg, desto
+// dunkler. Bezugskachel (0, 29) liegt im Bild bei (EDGE_OX, EDGE_OY); u, v: Kacheln von dort (u < 0: hinter dem Rand)
+function wolfForestEdge() {
+  const W = 880, H = 540, OX = 560, OY = 400;
+  const o = new Canvas(W, H);
+  const A = (u, v) => [OX + (u - v) * 32, OY + (u + v) * 16];
+  const night = [10, 18, 22];
+  // Boden: dunkler Waldboden, nach hinten fast schwarz
+  for (let u = -0.5; u > -10; u -= 0.5) {
+    const k = Math.min(1, -u / 9);
+    const col = [30 * (1 - k) + night[0] * k, 52 * (1 - k) + night[1] * k, 32 * (1 - k) + night[2] * k, 255];
+    o.poly([A(u, -8), A(u, 7.5), A(u - 0.5, 7.5), A(u - 0.5, -8)], col);
+  }
+  // Tannen von hinten nach vorne, dunkler je weiter hinten
+  const tree = pine();
+  const spots = [];
+  for (let u = -0.6; u > -9.5; u -= 0.8) for (let v = -8; v < 7.5; v += 0.8) spots.push([u + (rand() - 0.5) * 0.4, v + (rand() - 0.5) * 0.4]);
+  spots.sort((p, q) => p[0] + p[1] - (q[0] + q[1]));
+  for (const [u, v] of spots) {
+    const f = Math.max(0.12, 0.7 - (-u / 9) * 0.6); // Helligkeit
+    const [x, y] = A(u, v);
+    for (let j = 0; j < tree.h; j++) for (let i = 0; i < tree.w; i++) {
+      const si = (j * tree.w + i) * 4;
+      if (!tree.d[si + 3]) continue;
+      o.set(x - 32 + i, y - 100 + j, [tree.d[si] * f + night[0] * (1 - f), tree.d[si + 1] * f + night[1] * (1 - f), tree.d[si + 2] * f + night[2] * (1 - f), tree.d[si + 3]]);
+    }
   }
   return o;
 }

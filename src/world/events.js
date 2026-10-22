@@ -54,6 +54,14 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
+    id: 'wolves',
+    name: 'Wolfsnacht',
+    text: '5 Minuten lang ist es im Wald Nacht. Folge mit der Laterne den leuchtenden Spuren zu den Wolfsrudeln. Wenn sie heulen, darfst du laufen – sonst bleib stehen!',
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
     id: 'icecream',
     name: 'Eisstand',
     text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.',

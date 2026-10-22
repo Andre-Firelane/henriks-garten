@@ -1,6 +1,7 @@
 // Menü (Knopf oben rechts oder Esc): weiterspielen, von Hand speichern, zurück zum Startbildschirm.
 // Das Spiel pausiert so lange. Esc schließt das Menü wieder.
 import { save } from '../save.js';
+import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 
 let panel = null;
 let state = null;
@@ -18,7 +19,7 @@ function savedLine() {
 }
 
 function render() {
-  panel.innerHTML = `<div class="chest-box menu-box">
+  panel.innerHTML = `<div class="chest-box menu-box">${CLOSE_BUTTON}
       <h2>Menü</h2>
       <button class="start-btn" data-act="resume">▶ Weiterspielen</button>
       <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>💾 Speichern</button>
@@ -49,6 +50,7 @@ function onKey(e) {
 
 function onClick(e) {
   if (performance.now() - openedAt < OPEN_GRACE) return;
+  if (isCloseClick(e)) return close();
   const b = e.target.closest('.start-btn');
   const act = b?.dataset.act;
   if (!e.target.closest('.menu-box')) return close(); // neben die Tafel tippen schließt

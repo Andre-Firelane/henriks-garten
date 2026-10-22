@@ -32,6 +32,7 @@ const SHEETS = {
   turtle: [112, 88, 4, 0],
   jellyfish: [64, 96, 4, 0],
   ray: [112, 80, 4, 0],
+  wolf: [80, 80, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)

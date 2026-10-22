@@ -11,6 +11,9 @@ import { execFileSync } from 'node:child_process';
 const SOUNDS = [
   // Quelle, Ziel, Start und Länge des Ausschnitts in Sekunden, Spitzenpegel (0..1)
   ['Sounds/535220__spycrah__grass-step-left.wav', 'public/assets/sounds/step.wav', 0, 0.3, 0.8],
+  // Wolfsnacht: ein einzelnes Heulen (das erste der Aufnahme) und ein kurzes Knurren beim Fangen
+  ['Sounds/Wolf heult.mp3', 'public/assets/sounds/wolf_howl.wav', 0.1, 5.1, 0.8],
+  ['Sounds/Wolf.mp3', 'public/assets/sounds/animal_wolf.wav', 1.7, 1.3, 0.8],
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
   // Tierrufe beim Fangen (der Name hinter "animal_" ist die Tierart)
@@ -154,11 +157,15 @@ if (!ONLY || ASIA_MIX.dest.includes(ONLY)) {
   console.log(`${dest}: ${len.toFixed(2)} s, Asien über Wiese gemischt`);
 }
 
-// Riff: am Anfang und Ende ein- bzw. ausgeblendet – das wird weggeschnitten, und das Ende geht weich in den Anfang über
-// (nahtlose Schleife wie beim Asien-Ambient)
-const REEF_LOOP = { src: 'Sounds/Riff Ambient.mp3', dest: 'public/assets/sounds/ambient_reef.mp3', from: 0.8, to: 23.4, fade: 1 };
-if (!ONLY || REEF_LOOP.dest.includes(ONLY)) {
-  const { src, dest, from, to, fade } = REEF_LOOP;
+// Schleifen aus einem Stück der Aufnahme: from bis to ausschneiden, das Ende geht weich in den Anfang über (wie beim
+// Asien-Ambient). Riff: am Anfang und Ende ein- bzw. ausgeblendet – das fällt weg. Wald bei Nacht (Wolfsnacht): die
+// Aufnahme ist eine Stunde lang, davon reichen 45 Sekunden aus der Mitte
+const LOOPS = [
+  { src: 'Sounds/Riff Ambient.mp3', dest: 'public/assets/sounds/ambient_reef.mp3', from: 0.8, to: 23.4, fade: 1 },
+  { src: 'Sounds/Wald Nacht.mp3', dest: 'public/assets/sounds/ambient_forest_night.mp3', from: 600, to: 647, fade: 2 },
+];
+for (const { src, dest, from, to, fade } of LOOPS) {
+  if (ONLY && !dest.includes(ONLY)) continue;
   const filter =
     `[0:a]atrim=${from}:${to},asetpts=PTS-STARTPTS,asplit[a1][a2];` +
     `[a1]atrim=${fade},asetpts=PTS-STARTPTS[tail];[a2]atrim=0:${fade},asetpts=PTS-STARTPTS[head];` +

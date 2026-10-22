@@ -1,6 +1,8 @@
 // Große Übersicht (Taste I oder Tippen auf das Abzeichen oben links): welche Tiere man schon nach Hause gebracht hat
 // und womit man sie fängt. Schließen mit einer beliebigen Taste oder einem Tipp.
 
+import { CLOSE_BUTTON } from './closeButton.js';
+
 let panel = null;
 let onClose = null;
 
@@ -12,6 +14,7 @@ export function isJournalOpen() {
 export function openJournal(html, closed) {
   panel = document.getElementById('journal');
   panel.innerHTML = html;
+  panel.querySelector('.journal-box')?.insertAdjacentHTML('afterbegin', CLOSE_BUTTON); // (jeder Tipp schließt ohnehin)
   panel.classList.add('show');
   onClose = closed;
   // erst nach diesem Tastendruck auf den nächsten hören, sonst schließt die Taste I die Tafel gleich wieder

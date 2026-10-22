@@ -1,5 +1,6 @@
 // Werkzeug-Kiste in der Hütte: großes Auswahlfeld mit allen Werkzeugen dieses Gebiets und "Hände frei".
 // Tablet: antippen. Laptop: mit A/D (oder Pfeiltasten) wählen, mit E, Enter oder Leertaste nehmen. Esc schließt.
+import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 
 let panel = null;
 let state = null;
@@ -13,7 +14,7 @@ export function isToolChestOpen() {
 // items: [{ id, name, image }] (id null = Hände frei); current: getragenes Werkzeug; onPick(id) beim Auswählen
 export function openToolChest(items, current, onPick, onClose) {
   panel = document.getElementById('chest');
-  panel.innerHTML = `<div class="chest-box">
+  panel.innerHTML = `<div class="chest-box">${CLOSE_BUTTON}
       <h2>Was möchtest du mitnehmen?</h2>
       <div class="chest-items">${items
         .map(
@@ -64,6 +65,7 @@ function onHover(e) {
 function onClick(e) {
   // auf dem Tablet kommt nach dem Antippen, das die Tafel geöffnet hat, noch ein Klick hinterher: nicht gleich wieder schließen
   if (performance.now() - openedAt < OPEN_GRACE) return;
+  if (isCloseClick(e)) return close(true);
   const b = e.target.closest('.chest-item');
   if (b) pick(Number(b.dataset.i));
   else close(true);

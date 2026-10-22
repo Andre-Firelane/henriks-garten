@@ -14,6 +14,8 @@ const PANDA_SCALE = 0.3;
 // Maßstab des Japanmakaken (laufend und badend gleich groß)
 const MACAQUE_SCALE = 0.27;
 const COW_SCALE = 0.36;
+// Maßstab des Wolfs (laufend, heulend und fressend gleich groß)
+const WOLF_SCALE = 0.213;
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
@@ -72,6 +74,11 @@ const CHARACTERS = [
   { src: 'Sprites/Fuchs.png', out: 'fox.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64, byComponents: true },
   // Fuchs schlafend (eingerollt). Im Bild schauen 1. und 2. Figur beide nach links, 3. und 4. beide nach oben links:
   // 1. und 3. werden gespiegelt. Gleicher Maßstab wie oben (0,210). Freigestellt mit npm run cutout
+  // Wolf (Wald, Event Wolfsnacht): laufend, heulend (Schriftzug im Bild vorher entfernt) und fressend. Beim Fressen gibt es
+  // nur Vorderansichten: die erste, gespiegelt für links, und ebenso für die Rückansichten (Bild 2 = Spiegelbild von 1)
+  { src: 'Sprites/Wolf.png', out: 'wolf.png', frameW: 80, frameH: 80, feetY: 76, figureH: 70 },
+  { src: 'Sprites/Wolf heult.png', out: 'wolf_howl.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE },
+  { src: 'Sprites/Wolf frisst.png', out: 'wolf_eat.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE, copyMirror: { 1: 0, 2: 1, 3: 0 } },
   { src: 'Sprites/Fuchs schlafend.png', out: 'fox_sleep.png', frameW: 56, frameH: 44, feetY: 41, figureH: 39.5, mirror: [0, 2] },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (hoch wegen der Hörner)
   { src: 'Sprites/Antilope.png', out: 'antelope.png', frameW: 72, frameH: 100, feetY: 96, figureH: 88 },
