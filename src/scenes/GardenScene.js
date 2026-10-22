@@ -695,6 +695,9 @@ export default class GardenScene extends Phaser.Scene {
       this.followers.push(a);
     }
     game.followers = [];
+    // zu volle Gehege und Becken (z. B. durch einen früheren Fehler beim Einliefern ins Aquarium) wieder auf ihre Plätze bringen;
+    // die Meldung dazu kommt mit der von moveFollowersIntoPens
+    if (LEVEL_ID === 'park' || LEVEL_ID === 'aquarium') for (const e of ENCLOSURES) if (hasSlots(e) && !e.free) this.releaseExtra(e);
     const moved = LEVEL_ID === 'park' || LEVEL_ID === 'aquarium' ? this.moveFollowersIntoPens() : ''; // im Tierpark (und im Aquarium) ziehen sie gleich ein
     this.updateTankDeco();
     // Tierbabys, solange das Event läuft (vor den Besuchern, die Babys locken sie an)
@@ -2413,7 +2416,8 @@ export default class GardenScene extends Phaser.Scene {
       moved.push(a.species);
       this.releaseExtra(e);
     }
-    const nowFull = ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e));
+    const nowFull = [...(this.aquaNowFull ?? []), ...ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e))]; // auch volle Becken im Aquarium
+    this.aquaNowFull = [];
     nowFull.forEach((e, i) => this.time.delayedCall(1400 + i * 3200, () => this.showPenFull(e)));
     const tank = LEVEL_ID === 'aquarium';
     const home = moved.length === 1
@@ -2434,12 +2438,16 @@ export default class GardenScene extends Phaser.Scene {
   // Stand), in die passenden Tanks wie in tankFor. Ist alles voll, zieht dort eines der häufigsten Art ins Naturreservat.
   // Gibt den Text für die Meldung zurück.
   sendFishToAquarium() {
+    this.aquaNowFull = []; // Becken, die dadurch voll geworden sind (für die Erfolgsmeldung, siehe moveFollowersIntoPens)
     const fish = this.followers.filter((a) => AQUA.includes(a.species));
     if (!fish.length) return '';
     const saved = (game.levels.aquarium ??= { animals: [], pickups: [] });
     const allTanks = aquariumTanks();
     // im Becken mit eigenen Plätzen je Art zählt nur die eigene Art
     const inside = (t, species) => saved.animals.filter((s) => s.state === 'penned' && tankOf(allTanks, s) === t && (!t.e.quota || s.species === species));
+    // voll: alle Plätze belegt (im Becken mit Plätzen je Art: jede Art für sich)
+    const tankFull = (t) => (t.e.quota ? Object.keys(t.e.quota) : [null]).every((sp) => inside(t, sp).length >= t.capFor(sp));
+    const fullBefore = new Set(allTanks.filter(tankFull));
     this.released ??= [];
     const delivered = [];
     for (const a of fish) {
@@ -2449,16 +2457,21 @@ export default class GardenScene extends Phaser.Scene {
       const room = (t) => t.capFor(a.species) - inside(t, a.species).length;
       const t = [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
       if (room(t) <= 0) {
-        // voll: von der häufigsten Art (nicht der des neuen Fischs, falls möglich) zieht der älteste aus
-        const list = inside(t, a.species);
+        // voll: wie bei releaseExtra – seltene Skins bleiben, sonst zieht vom häufigsten Aussehen (nicht dem des neuen Tiers,
+        // falls möglich) das älteste aus. Aussehen: Skin, Farbvariante (Riff-Fische) oder Tierart (Kraken haben keine Variante)
+        const list = inside(t, a.species).filter((s) => !s.baby);
+        const pool = list.some((s) => !s.skin) ? list.filter((s) => !s.skin) : list;
+        const look = (s) => String(s.skin ?? s.variant ?? s.species);
         const counts = {};
-        for (const s of list) counts[s.variant] = (counts[s.variant] ?? 0) + 1;
-        const most = Object.keys(counts).map(Number).sort((u, v) => (u === a.variant) - (v === a.variant) || counts[v] - counts[u])[0];
-        const victim = list.filter((s) => s.variant === most).sort((u, v) => (u.since ?? 0) - (v.since ?? 0))[0];
-        saved.animals.splice(saved.animals.indexOf(victim), 1);
-        const hearts = releaseHearts(a.species);
-        this.addHearts(hearts, a.species);
-        this.released.push({ species: a.species, hearts });
+        for (const s of pool) counts[look(s)] = (counts[look(s)] ?? 0) + 1;
+        const most = Object.keys(counts).sort((u, v) => (u === look(a)) - (v === look(a)) || counts[v] - counts[u])[0];
+        const victim = pool.filter((s) => look(s) === most).sort((u, v) => (u.since ?? 0) - (v.since ?? 0))[0];
+        if (victim) {
+          saved.animals.splice(saved.animals.indexOf(victim), 1);
+          const hearts = releaseHearts(victim.species, victim.skin ?? victim.variant);
+          this.addHearts(hearts, victim.species);
+          this.released.push({ species: victim.species, hearts });
+        }
       }
       const p = tileToWorld(Phaser.Math.FloatBetween(t.tx0 - 0.3, t.tx1 + 0.3), Phaser.Math.FloatBetween(t.ty0 - 0.3, t.ty1 + 0.3));
       saved.animals.push({ species: a.species, variant: a.variant, farm: null, skin: a.skin ?? null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
@@ -2468,6 +2481,7 @@ export default class GardenScene extends Phaser.Scene {
       delivered.push(a.species);
     }
     if (!delivered.length) return '';
+    this.aquaNowFull = allTanks.filter((t) => tankFull(t) && !fullBefore.has(t)).map((t) => t.e);
     const kinds = AQUA.filter((s) => delivered.includes(s)).map((s) => `${animalIcon(s, 2.6)} × ${delivered.filter((d) => d === s).length}`);
     const swims = delivered.length === 1
       ? tr('Dein Fang schwimmt jetzt im Aquarium.', 'Your catch is swimming in the aquarium now.')
