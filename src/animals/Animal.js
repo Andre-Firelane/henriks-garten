@@ -429,6 +429,60 @@ export const SPECIES = {
     fleeSpeed: 44, // langsamer als der Taucher (60) – aber sie hat nur ein paar Sekunden, dann ist sie in der Tinte weg
     catchWith: ['net'],
   },
+  // Meeresschildkröte (Riff, selten): im Fischernetz verheddert, man schneidet sie frei (siehe Turtle.js);
+  // swimFrames: Bilder im Spritesheet "turtle", frames/originY gelten für den Beutel an Land
+  turtle: {
+    texture: 'turtle',
+    swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
+    originY: 68 / 72,
+    speed: 8,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 34,
+    catchWith: ['scissors'], // mit der Schere freischneiden (dreimal die Aktionstaste)
+  },
+  // Qualle (Riff, nur beim Quallen-Schwarm): pulsiert, mit dem Quallenglas nur beim Sinken fangbar (siehe Jellyfish.js);
+  // swimFrames: Bilder im Spritesheet "jellyfish", frames/originY gelten für den Beutel an Land
+  jellyfish: {
+    texture: 'jellyfish',
+    swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
+    originY: 68 / 72,
+    speed: 6,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 18,
+    catchWith: ['jar'],
+  },
+  // Rochen (Riff): fangen durch Mitschwimmen (siehe Ray.js); swimFrames: Bilder im Spritesheet "ray",
+  // frames/originY gelten für den Beutel an Land
+  ray: {
+    texture: 'ray',
+    swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    bagTexture: 'fishbag',
+    frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
+    originY: 68 / 72,
+    speed: 10,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 36,
+    catchWith: ['swim'], // mitschwimmen, bis er einem vertraut
+  },
   fish: {
     texture: 'fish',
     bagTexture: 'fishbag',
@@ -470,6 +524,8 @@ export const SKINS = {
   peacock: { id: 'peacock2', name: 'weißer Pfau', male: true, wild: 0.1, baby: 0.03 },
   orangutan: { id: 'orangutan2', name: 'Orang-Utan mit Backenwülsten', male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
   frog: { id: 'frog2', name: 'blauer Frosch', male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
+  jellyfish: { id: 'jellyfish2', name: 'Goldqualle', male: false, wild: 0.08, baby: 0 }, // golden, mit Ranken auf dem Schirm
+  ray: { id: 'ray2', name: 'Mantarochen', male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
 // seltene Tierarten, die eigentlich eine Variante einer anderen sind (der Hirsch beim Reh): bleiben wie Skins
 // beim Auszug ins Naturreservat bevorzugt im Gehege

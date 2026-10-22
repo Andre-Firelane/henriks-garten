@@ -26,6 +26,17 @@ const CHARACTERS = [
   { src: 'Sprites/Seepferdchen.png', out: 'seahorse.png', frameW: 48, frameH: 64, feetY: 60, figureH: 56, mirror: [0, 1, 2], stripShadow: true },
   // Krake (Riff): unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Krake.png', out: 'octopus.png', frameW: 72, frameH: 72, feetY: 68, figureH: 60, stripShadow: true },
+  // Meeresschildkröte (Riff): unten-rechts, unten-links, oben-rechts, oben-links (turtle_net: dieselbe im Fischernetz, Bild kommt noch)
+  { src: 'Sprites/Unterseeschildkröte.png', out: 'turtle.png', frameW: 112, frameH: 88, feetY: 84, figureH: 76, stripShadow: true },
+  // Rochen und Mantarochen (Riff): im Bild schwimmen die ersten beiden nach unten-links, die anderen nach oben-rechts.
+  // Die Schwänze ragen in die Nachbarbilder, daher nach zusammenhängenden Teilen getrennt; Bild 0 und 3 gespiegelt
+  // ergibt unten-rechts, unten-links, oben-rechts, oben-links
+  { src: 'Sprites/Rochen.png', out: 'ray.png', frameW: 112, frameH: 80, feetY: 76, figureH: 66, byComponents: true, mirror: [0, 3] }, // ohne stripShadow: der Rochen selbst ist grau
+  { src: 'Sprites/Rochen2.png', out: 'ray2.png', frameW: 112, frameH: 80, feetY: 76, figureH: 66, byComponents: true, mirror: [0, 3] }, // ohne stripShadow: der Rochen selbst ist grau
+  // Qualle (Riff, Event): die zweite Vorderansicht hat kein Gesicht – unten-links ist daher die gespiegelte erste;
+  // freigestellt mit npm run cutout und tools/jelly-cut.cjs; die Goldqualle (seltene Variante) genauso
+  { src: 'Sprites/Qualle.png', out: 'jellyfish.png', frameW: 64, frameH: 96, feetY: 92, figureH: 88, copyMirror: { 1: 0 } },
+  { src: 'Sprites/Qualle2.png', out: 'jellyfish2.png', frameW: 64, frameH: 96, feetY: 92, figureH: 88, copyMirror: { 1: 0 } },
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Schaf.png', out: 'sheep.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
   // Schaf beim Grasen (Kopf unten); gleicher Maßstab wie oben (0,243). Freigestellt mit npm run cutout

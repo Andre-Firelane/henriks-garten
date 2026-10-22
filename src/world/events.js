@@ -46,6 +46,14 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
+    id: 'jellyfish',
+    name: 'Quallen-Schwarm',
+    text: '5 Minuten lang treiben Quallen durchs Riff. Fang sie mit dem Quallenglas aus dem Sack – aber nicht anfassen, sie brennen!',
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
     id: 'icecream',
     name: 'Eisstand',
     text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.',

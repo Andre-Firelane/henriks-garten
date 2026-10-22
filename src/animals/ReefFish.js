@@ -151,7 +151,8 @@ export default class ReefFish extends Animal {
     }
     if (this.state === 'following') this.h += (FOLLOW_HEIGHT - this.h) * 0.05;
     const tank = this.inTank();
-    if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture).setOrigin(0.5, 0.5);
+    const look = this.skin ?? this.kind.texture; // seltene Variante mit eigenem Bild (Goldqualle)
+    if (this.sprite.texture.key !== look) this.sprite.setTexture(look).setOrigin(0.5, 0.5);
     this.sprite.setScale(this.swimScale(tank)).setAngle(0);
     this.sprite.setFrame(this.swimFrame());
     const bob = Math.sin(this.phase * 2.2 + this.offset.x) * BOB;

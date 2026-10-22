@@ -2277,6 +2277,8 @@ const sprites = {
   'aq_bench.png': aqBench(),
   'aq_lamp.png': aqLamp(),
   'aq_statue.png': aqStatue(),
+  'jar.png': jarItem(), // Quallenglas (Werkzeug beim Quallen-Event)
+  'scissors.png': scissorsItem(), // Schere: Schildkröten aus dem Netz schneiden (Riff)
 };
 
 // Offene Hand: der Platz an der Hütte, an dem man das getragene Werkzeug ablegt ("Hände frei")
@@ -3930,6 +3932,43 @@ function aqStatue() {
   o.set(ex + 1, ey - 2, hex('#1a1a20'));
   o.outline(INK);
   return withShadow(96, 128, 48, 114, 30, 10, o);
+}
+
+// Quallenglas: großes Einmachglas mit etwas Wasser und Metalldeckel (Werkzeug in doppelter Auflösung wie der Kescher)
+function jarItem() {
+  const o = new Canvas(64, 64);
+  o.rect(20, 22, 24, 34, hex('#d8f2ff', 110)); // Glas
+  o.ellipse(32, 56, 12, 4, hex('#d8f2ff', 110));
+  o.rect(20, 38, 24, 18, hex('#5ab8e8', 150)); // Wasser
+  o.ellipse(32, 56, 12, 4, hex('#5ab8e8', 150));
+  o.ellipse(32, 38, 12, 3, hex('#9ad8f8', 200)); // Wasseroberfläche
+  o.rect(23, 25, 2, 26, hex('#ffffff', 200)); // Glanz
+  o.rect(19, 15, 26, 8, hex('#c8a050')); // Deckel
+  o.rect(19, 15, 26, 2, hex('#e8c878'));
+  o.rect(19, 21, 26, 1, hex('#8a6a30'));
+  o.outline(INK);
+  return o;
+}
+
+// Schere mit roten Griffen, leicht geöffnet (Werkzeug in doppelter Auflösung wie der Kescher)
+function scissorsItem() {
+  const o = new Canvas(64, 64);
+  const blade = (x0, y0, x1, y1) => {
+    for (let t = 0; t <= 1; t += 0.02) o.circle(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 2.6 - t * 1.8, hex('#c8d0d8'));
+  };
+  blade(30, 36, 54, 8); // Klingen
+  blade(34, 36, 58, 18);
+  o.line(31, 35, 52, 10, hex('#f4f8fc'));
+  for (const [x, y] of [[20, 46], [34, 50]]) { // Griffe
+    o.circle(x, y, 8, hex('#d8483f'));
+  }
+  o.circle(32, 38, 2.5, hex('#5a6470')); // Schraube
+  o.outline(INK);
+  // Löcher in den Griffen
+  for (const [x, y] of [[20, 46], [34, 50]]) for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+    if (dx * dx + dy * dy <= 16) o.d[((y + dy) * 64 + x + dx) * 4 + 3] = 0;
+  }
+  return o;
 }
 
 for (const [name, canvas] of Object.entries(sprites)) {

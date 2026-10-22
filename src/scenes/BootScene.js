@@ -47,7 +47,7 @@ const PIXEL_ART = [
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -150,6 +150,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
+    for (const k of ['jellyfish', 'jellyfish2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
+    for (const k of ['ray', 'ray2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
+    this.load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
     for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
     // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante); _eat: sitzt und frisst; _tree: oben in der Baumkrone

@@ -76,6 +76,11 @@ import Koi from '../animals/Koi.js';
 import ReefFish from '../animals/ReefFish.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
+import Turtle, { CUTS_NEEDED, CUT_DIST } from '../animals/Turtle.js';
+import Jellyfish, { DARK_DEPTH } from '../animals/Jellyfish.js';
+import Ray from '../animals/Ray.js';
+import Jar from '../tools/Jar.js';
+import ScissorsTool from '../tools/ScissorsTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
@@ -102,7 +107,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -117,12 +122,18 @@ const CATCH_TOOLS = {
   lasso: ['lasso', 'Lasso'],
   trap: ['trap', 'Falle'],
   food: ['food', 'Grünfutter'],
+  scissors: ['scissors', 'Schere'],
+  jar: ['jar', 'Quallenglas'],
+  swim: ['hand', 'Mitschwimmen'],
 };
 const CATCH_TIPS = {
   fish: 'Nur wenn er nach den Luftblasen auftaucht.',
   koi: 'Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!',
   reeffish: 'Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.',
   seahorse: 'Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!',
+  jellyfish: 'Nur beim Quallen-Schwarm im Riff. Mit dem Quallenglas – aber nur, wenn sie langsam sinkt! Beim Aufsteigen flutscht sie davon. Nicht anfassen, sie brennt!',
+  ray: 'Schwimm neben ihm her – nicht zu nah, sonst erschrickt er, und nicht zu weit weg. Ist die Herzchen-Leiste voll, schwimmt er dir hinterher.',
+  turtle: 'Selten. Hat sich in einem alten Fischernetz verheddert – hol die Schere aus dem Sack, schwimm hin und schneide sie frei: dreimal, dann ist sie frei!',
   octopus: 'Getarnt fast unsichtbar am Meeresboden. Kommst du näher, schwimmt sie weg – keschere sie schnell, sonst verschwindet sie in einer Tintenwolke!',
   mole: 'Nur wenn er aus seinem Hügel schaut.',
   squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
@@ -158,6 +169,9 @@ const ANIMAL_INFO = {
   reeffish: ['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'],
   seahorse: ['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'],
   octopus: ['Krake', 'Hat acht Arme mit Saugnäpfen – damit kriecht sie über den Boden und hält sich fest.'],
+  jellyfish: ['Qualle', 'Hat weder Füße noch Flossen – sie schwimmt, indem sie ihren Schirm zusammenzieht und wieder entspannt.'],
+  ray: ['Rochen', 'Hat keine Füße – er „fliegt“ mit seinen großen, flachen Brustflossen durchs Wasser.'],
+  turtle: ['Meeresschildkröte', 'Hat Flossen statt Füße – damit „fliegt“ sie durchs Wasser. Zum Luftholen schwimmt sie an die Oberfläche.'],
   deer: ['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'],
   stag: ['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'],
   fox: ['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'],
@@ -188,7 +202,7 @@ const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Fut
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'crocodile', 'heron', 'flamingo', 'frog'];
+const NO_PEN_FEED = ['fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
@@ -246,7 +260,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
+    s === 'flamingo' || s === 'jellyfish' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -257,7 +271,16 @@ const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
-const AQUA = ['reeffish', 'seahorse', 'octopus']; // Meerestiere: ziehen ins Aquarium (in dessen Becken)
+const AQUA = ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'];
+const MAX_RAYS = 2; // so viele Rochen gleiten höchstens gleichzeitig durchs Riff
+// Quallen-Schwarm (Event): so viele Quallen treiben höchstens gleichzeitig im Riff, so oft kommt eine neue (Sekunden),
+// beim Ankommen sind schon so viele da; so nah (in Kachel-Proportionen) darf man ihnen nicht kommen, sonst brennt es
+const JELLY_MAX = 14;
+const JELLY_EVERY = [1.5, 3];
+const JELLY_START = 8;
+const STING_DIST = 16;
+const STING_HINT_EVERY = 20000; // Millisekunden zwischen zwei Hinweisen zum Brennen
+const AQUA_FISH = ['reeffish', 'seahorse', 'octopus']; // nur diese verdrängen die Zierfische aus ihrem Becken (Schildkröten nicht) // Meerestiere: ziehen ins Aquarium (in dessen Becken)
 const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
 const REEF_GROUP = [2, 5]; // ... die anderen in Gruppen dieser Größe (eine Art)
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
@@ -291,6 +314,18 @@ const TOOLS = {
     name: 'Futter',
     hint: 'Wirf es am Zaun ins Gehege – dann kommen die Tiere zum Fressen',
   },
+  scissors: {
+    create: (scene, player) => new ScissorsTool(scene, player),
+    name: 'Schere',
+    catches: ['turtle'],
+    hint: (list) => `Damit schneidest du ${animalIcons(list)} aus dem Fischernetz frei – dreimal schneiden!`,
+  },
+  jar: {
+    create: (scene, player) => new Jar(scene, player),
+    name: 'Quallenglas',
+    catches: ['jellyfish'],
+    hint: (list) => `Damit fängst du ${animalIcons(list)} – aber nur, wenn sie langsam sinken!`,
+  },
   koifood: {
     create: (scene, player) => new KoiFoodTool(scene, player),
     name: 'Fischfutter',
@@ -314,7 +349,10 @@ function aquariumTanks() {
   const aq = LEVELS.aquarium;
   return aq.enclosures.map((e) => {
     const b = aq.buildings.find((h) => h.style === 'tank' && e.seed.tx >= h.tx0 && e.seed.tx <= h.tx1 && e.seed.ty >= h.ty0 && e.seed.ty <= h.ty1);
-    return { e, cap: e.slots[0], tx0: b.tx0 + 1, tx1: b.tx1 - 1, ty0: b.ty0 + 1, ty1: b.ty1 - 1 };
+    // cap: alle Plätze; capFor(Art): Plätze dieser Art (Becken mit quota haben je Art eigene, z. B. Schildkröten und Rochen)
+    const capFor = (species) => (e.quota ? e.quota[species]?.[0] ?? 0 : e.slots[0]);
+    const cap = e.quota ? Object.values(e.quota).reduce((s, q) => s + q[0], 0) : e.slots[0];
+    return { e, cap, capFor, tx0: b.tx0 + 1, tx1: b.tx1 - 1, ty0: b.ty0 + 1, ty1: b.ty1 - 1 };
   });
 }
 // in welchem Becken ein gespeichertes Tier schwimmt (nach seiner Position)
@@ -451,12 +489,14 @@ export default class GardenScene extends Phaser.Scene {
 
     this.drawTanks();
     this.drawSea();
+    this.drawDarkRooms();
 
     // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
     this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
       const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
       // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt
       let front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
+      if (e.dark) front = DARK_DEPTH + 20; // im dunklen Raum über der Abdunklung, damit man es lesen kann
       // signOnRoof: das Schild sitzt oben auf dem Dach des Gebäudes (z. B. Katzenhaus), damit man es von weitem sieht
       const house = e.signOnRoof ? buildingAt(e.tiles[0].tx, e.tiles[0].ty) : null;
       let sx = x, sy = y;
@@ -700,6 +740,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearOrangutan && !this.tool && !this.leaving) {
         this.waveAt(this.nearOrangutan); // unter dem Orang-Utan: zurückwinken
+        return;
+      }
+      if (this.nearTurtle && !this.leaving && this.toolId !== 'scissors') {
+        this.showToast(`✂️ Das Netz ist zu fest – hol die Schere aus dem Sack am Anker.`); // mit der Schere schneidet der Werkzeug-Einsatz
         return;
       }
       const tool = this.tool;
@@ -1016,6 +1060,7 @@ export default class GardenScene extends Phaser.Scene {
       // Wasser hinter der vorderen Glasscheibe (unten und rechts): zarte Tönung über den Fischen
       for (let tx = h.tx0; tx < h.tx1; tx++) pane(tx, h.ty1, tx + 1, h.ty1, tileToWorld(tx + 0.5, h.ty1).y + 0.3, 0x3fa8d8, 0.12);
       for (let ty = h.ty0; ty < h.ty1; ty++) pane(h.tx1, ty, h.tx1, ty + 1, tileToWorld(h.tx1, ty + 0.5).y + 0.3, 0x3fa8d8, 0.12);
+      if (h.noDeco) continue; // z. B. das Quallenbecken
       const deco = stockTank(this, { ...h, scale: TANK_FISH_SCALE }, Phaser.Math.Between(...TANK_FISH));
       deco.tank = h;
       this.tankFish.push(deco);
@@ -1055,6 +1100,12 @@ export default class GardenScene extends Phaser.Scene {
           ? new Seahorse(this, x, y)
         : species === 'octopus'
           ? new Octopus(this, x, y)
+        : species === 'turtle'
+          ? new Turtle(this, x, y)
+        : species === 'jellyfish'
+          ? new Jellyfish(this, x, y)
+        : species === 'ray'
+          ? new Ray(this, x, y)
         : species === 'crocodile'
           ? new Crocodile(this, this.animals)
         : species === 'squirrel'
@@ -1156,6 +1207,9 @@ export default class GardenScene extends Phaser.Scene {
       }
       return this.finishSpawn(group, fadeIn);
     }
+    // Meeresschildkröte: höchstens eine gleichzeitig (selten), irgendwo im Netz verheddert
+    if (species === 'turtle' && this.animals.some((a) => a.species === 'turtle' && a.state === 'wild')) return group;
+    if (species === 'ray' && this.animals.filter((a) => a.species === 'ray' && a.state === 'wild').length >= MAX_RAYS) return group;
     // Riff-Fische: eine Art (alle gleich häufig), allein oder in einer kleinen Gruppe, die gemeinsam schwimmt
     if (species === 'reeffish') {
       const tile = this.randomFreeTile(taken);
@@ -1451,6 +1505,7 @@ export default class GardenScene extends Phaser.Scene {
         if (id === 'farm') this.showToast('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!');
         if (id === 'rare') this.showToast('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.');
         if (id === 'flamingo') this.showToast('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.');
+        if (id === 'jellyfish') this.showToast('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.');
         if (id === 'ride') this.showToast('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.');
         if (id === 'babies') {
           this.spawnBabies(true);
@@ -1630,7 +1685,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateEventBanner() {
-    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨' };
+    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼' };
     const lines = EVENTS.map((ev) => ({ ev, s: eventState(ev.id) }))
       .filter(({ s }) => s.state === 'active')
       .map(({ ev, s }) => `${icons[ev.id] ?? '★'} ${ev.name} · noch ${formatTime(s.left)}`);
@@ -1664,7 +1719,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')))
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef))
         .map((l) => l.name);
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -1729,6 +1784,11 @@ export default class GardenScene extends Phaser.Scene {
       const img = own?.chestName ? `assets/${own.key}.png` : house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${own?.chestName ?? (house ? 'Regal' : 'Kiste')} öffnen</span></div>`;
+      return;
+    }
+    if (this.nearTurtle && this.toolId === 'scissors') {
+      setTouchTool('scissors');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scissors.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Netz aufschneiden ✂️ ${this.nearTurtle.cuts} / ${CUTS_NEEDED}</span></div>`;
       return;
     }
     if (this.nearOrangutan && !this.tool) {
@@ -2201,7 +2261,8 @@ export default class GardenScene extends Phaser.Scene {
   // Werkzeug-Kiste öffnen: Werkzeuge dieses Gebiets und "Hände frei"; das Spiel pausiert so lange
   openChest(chest) {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
-    const items = [...chest.tools.map((id) => ({ id, name: TOOLS[id].name, image: id })), { id: null, name: 'Hände frei', image: 'hand' }];
+    const tools = [...chest.tools, ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack
+    const items = [...tools.map((id) => ({ id, name: TOOLS[id].name, image: id })), { id: null, name: 'Hände frei', image: 'hand' }];
     this.scene.pause();
     openToolChest(
       items,
@@ -2279,18 +2340,19 @@ export default class GardenScene extends Phaser.Scene {
     if (!fish.length) return '';
     const saved = (game.levels.aquarium ??= { animals: [], pickups: [] });
     const allTanks = aquariumTanks();
-    const inside = (t) => saved.animals.filter((s) => s.state === 'penned' && tankOf(allTanks, s) === t);
+    // im Becken mit eigenen Plätzen je Art zählt nur die eigene Art
+    const inside = (t, species) => saved.animals.filter((s) => s.state === 'penned' && tankOf(allTanks, s) === t && (!t.e.quota || s.species === species));
     this.released ??= [];
     const delivered = [];
     for (const a of fish) {
       const tanks = allTanks.filter((t) => accepts(t.e, a.species));
       if (!tanks.length) continue;
-      const same = (t) => inside(t).filter((s) => s.variant === a.variant).length;
-      const room = (t) => t.cap - inside(t).length;
+      const same = (t) => inside(t, a.species).filter((s) => s.species === a.species && s.variant === a.variant).length;
+      const room = (t) => t.capFor(a.species) - inside(t, a.species).length;
       const t = [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
       if (room(t) <= 0) {
         // voll: von der häufigsten Art (nicht der des neuen Fischs, falls möglich) zieht der älteste aus
-        const list = inside(t);
+        const list = inside(t, a.species);
         const counts = {};
         for (const s of list) counts[s.variant] = (counts[s.variant] ?? 0) + 1;
         const most = Object.keys(counts).map(Number).sort((u, v) => (u === a.variant) - (v === a.variant) || counts[v] - counts[u])[0];
@@ -2301,7 +2363,7 @@ export default class GardenScene extends Phaser.Scene {
         this.released.push({ species: a.species, hearts });
       }
       const p = tileToWorld(Phaser.Math.FloatBetween(t.tx0 - 0.3, t.tx1 + 0.3), Phaser.Math.FloatBetween(t.ty0 - 0.3, t.ty1 + 0.3));
-      saved.animals.push({ species: a.species, variant: a.variant, farm: null, skin: null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
+      saved.animals.push({ species: a.species, variant: a.variant, farm: null, skin: a.skin ?? null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
       this.followers.splice(this.followers.indexOf(a), 1);
       this.animals.splice(this.animals.indexOf(a), 1);
       a.destroy();
@@ -2338,6 +2400,76 @@ export default class GardenScene extends Phaser.Scene {
     this.addHearts(1, from?.species ?? null);
   }
 
+  // Schildkröte im Netz: ein Schnitt mit der Schere (siehe ScissorsTool); nach dem dritten ist sie frei und schwimmt hinterher
+  cutNet(t) {
+    if (t.cut()) {
+      this.catchAnimal(t);
+      this.showToast(`${animalIcon('turtle', 3.2)} Geschafft – die Meeresschildkröte ist frei! Sie schwimmt dir dankbar hinterher.`);
+    } else if (t.cuts === 1) {
+      this.showToast(`✂️ Das Netz reißt! Noch ${CUTS_NEEDED - t.cuts}-mal schneiden.`);
+    }
+    this.updateToolbar();
+  }
+
+  // Quallen-Schwarm im Riff: Quallen kommen nach, solange das Event läuft (beim Ankommen gleich ein paar), danach sind sie
+  // fort. Berührt man eine, brennt es.
+  updateJellies(dt) {
+    if (!LEVEL.sea) return;
+    const wild = this.animals.filter((a) => a.species === 'jellyfish' && a.state === 'wild');
+    if (!isActive('jellyfish')) {
+      for (const a of wild) this.despawn(a);
+      return;
+    }
+    this.jellyTimer = (this.jellyTimer ?? 0) - dt;
+    const want = this.jellyStarted ? 1 : JELLY_START - wild.length;
+    this.jellyStarted = true;
+    if (this.jellyTimer <= 0 || want > 1) {
+      this.jellyTimer = Phaser.Math.FloatBetween(...JELLY_EVERY);
+      for (let i = 0; i < want && wild.length + i < JELLY_MAX; i++) {
+        const t = this.randomFreeTile([worldToTile(this.player.x, this.player.y), ...TOOL_SPOTS]);
+        const p = tileToWorld(t.tx, t.ty);
+        const [a] = this.finishSpawn([this.createAnimal('jellyfish', p.x, p.y)], true);
+        a.life = Infinity; // bleibt bis zum Ende des Events
+      }
+    }
+    // Brennen: zu nah an einer Qualle (gefangene in der Hand brennen nicht mehr)
+    const p = this.player;
+    const hit = wild.find((a) => this.animals.includes(a) && Math.hypot(a.x - p.x, (a.y - p.y) * 2) < STING_DIST);
+    if (hit && p.sting()) {
+      const t = this.add.text(p.x, p.y - 60, 'Autsch!', { fontFamily: 'Trebuchet MS, Arial', fontSize: '13px', fontStyle: 'bold', color: '#ffffff', stroke: '#c8303a', strokeThickness: 3, resolution: 4 }).setOrigin(0.5).setDepth(100000);
+      this.tweens.add({ targets: t, y: t.y - 18, alpha: 0, duration: 900, onComplete: () => t.destroy() });
+      if (this.time.now - (this.stingHintAt ?? -Infinity) > STING_HINT_EVERY) {
+        this.stingHintAt = this.time.now;
+        this.showToast(`${animalIcon('jellyfish', 3)} Autsch – Quallen brennen! Nicht anfassen, nimm das Quallenglas.`);
+      }
+    }
+  }
+
+  // Aquarium: abgedunkelte Räume (Gebäude mit dark, außer den Becken darin). Eine dunkle Fläche über Boden und Wänden;
+  // die Quallen im Becken dort leuchten darüber (siehe Jellyfish.js), die Schilder liegen ebenfalls darüber
+  drawDarkRooms() {
+    for (const h of buildings().filter((b) => b.dark && b.style !== 'tank')) {
+      const W = (tx, ty, up = 0) => {
+        const q = tileToWorld(tx, ty);
+        return { x: q.x, y: q.y - up };
+      };
+      // nur an der Rückwand nach oben (dahinter ist nichts); an der Seite zum Nachbarraum nicht, sonst würde der mit abgedunkelt
+      const UP = 150;
+      const [x0, y0, x1, y1] = [h.tx0 - 0.5, h.ty0 - 0.5, h.tx1 + 0.5, h.ty1 + 0.5];
+      this.add
+        .graphics()
+        .setDepth(DARK_DEPTH)
+        .fillStyle(0x040818, 0.62)
+        .fillPoints([W(x0, y0, UP), W(x1, y0, UP), W(x1, y0), W(x1, y1), W(x0, y1), W(x0, y0)], true);
+    }
+  }
+
+  // Rochen: die Herzchen-Leiste ist voll – er vertraut einem und schwimmt hinterher
+  rayTrusts(ray) {
+    this.catchAnimal(ray);
+    if (!ray.skin) this.showToast(`${animalIcon('ray', 3.2)} Der Rochen vertraut dir! Er schwimmt dir jetzt hinterher.`);
+  }
+
   // Krake entwischt in einer Tintenwolke (kurzer Hinweis, nur beim ersten Mal in diesem Gebiet)
   inkEscape() {
     if (this.inkShown) return;
@@ -2350,7 +2482,7 @@ export default class GardenScene extends Phaser.Scene {
     for (const deco of this.tankFish ?? []) {
       if (!deco.tank) continue;
       const h = deco.tank;
-      const real = this.animals.some((a) => a.state === 'penned' && a.enclosure?.tiles.some(({ tx, ty }) => tx > h.tx0 && tx < h.tx1 && ty > h.ty0 && ty < h.ty1));
+      const real = this.animals.some((a) => AQUA_FISH.includes(a.species) && a.state === 'penned' && a.enclosure?.tiles.some(({ tx, ty }) => tx > h.tx0 && tx < h.tx1 && ty > h.ty0 && ty < h.ty1));
       deco.setVisible(!real);
     }
   }
@@ -2359,9 +2491,9 @@ export default class GardenScene extends Phaser.Scene {
   // schon Fische seiner Art sind, sonst der leerste mit Platz. Sind alle voll, der mit den meisten seiner Art (dort zieht dann
   // ein anderer ins Naturreservat, siehe releaseExtra)
   tankFor(fish, tanks) {
-    const inside = (e) => this.animals.filter((a) => a.state === 'penned' && a.enclosure === e);
+    const inside = (e) => this.animals.filter((a) => a.state === 'penned' && a.enclosure === e && (!e.quota || a.species === fish.species));
     const same = (e) => inside(e).filter((a) => a.variant === fish.variant).length;
-    const room = (e) => penQuotas(e)[0].cap - inside(e).length;
+    const room = (e) => (penQuotas(e).find((q) => q.key === (e.quota ? fish.species : null))?.cap ?? 0) - inside(e).length;
     return [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
   }
 
@@ -2563,6 +2695,11 @@ export default class GardenScene extends Phaser.Scene {
     if (animal.species === 'flamingo' && !game.unlocked.includes('flamingo')) {
       game.unlocked.push('flamingo');
       this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.`));
+    }
+    // die erste Qualle: im Aquarium öffnet sich der dunkle Quallenraum
+    if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
+      game.unlocked.push('jellyfish');
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('jellyfish', 3.2)} Deine erste Qualle! Im Aquarium hat sich in Raum 2 unten rechts der Durchgang zum dunklen Quallenraum geöffnet.`));
     } // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = LEVEL_ID !== 'park' && this.parkPenFull(animal.species, animal.origin);
@@ -2888,6 +3025,12 @@ export default class GardenScene extends Phaser.Scene {
       this.nearOrangutan = orang;
       this.updateToolbar();
     }
+    // an einer Schildkröte im Netz: die Aktionstaste schneidet
+    const turtle = this.animals.find((a) => a.species === 'turtle' && a.netted() && Math.hypot(a.x - p0.x, (a.y - p0.y) * 2) < CUT_DIST) ?? null;
+    if (turtle !== this.nearTurtle) {
+      this.nearTurtle = turtle;
+      this.updateToolbar();
+    }
     // kurz nach dem Aufheben kein Tausch: sonst wechselt man aus Versehen, wenn man über die Werkzeuge daneben läuft
     if (this.time.now >= (this.toolLockUntil ?? 0)) {
       for (const p of [...this.pickups]) if (p.checkCollect(this.player)) this.takeTool(p);
@@ -2905,6 +3048,7 @@ export default class GardenScene extends Phaser.Scene {
 
     for (const a of this.animals) a.update(dt, this.player);
     this.visitors?.update(dt);
+    this.updateJellies(dt);
     if (LEVEL_ID !== 'aquarium' && !this.leaving) this.aquariumIncome(dt);
     this.updatePenCalls(dt);
     this.updatePeacockCall(dt);

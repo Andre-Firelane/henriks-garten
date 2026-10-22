@@ -324,28 +324,30 @@ export const LEVELS = {
   aquarium: {
     name: 'Aquarium',
     // große Halle: links zwei Becken (Riff-Fische, Seepferdchen), oben an der Wand ein großes Becken; in der Mitte ein
-    // Mosaikweg mit Platz, Delfin-Statue, Bänken und Quallen-Lampen. Rechts durch den Durchgang Raum 2: hinten eine
-    // riesige Beckenfront (noch ohne Tiere, nur Zierfische), rechts ein kleines Krakenbecken
+    // Mosaikweg mit Platz, Delfin-Statue, Bänken und Quallen-Lampen. Rechts durch den Durchgang (mittig in der Wand) Raum 2: hinten eine
+    // riesige Beckenfront (Meeresschildkröten und Rochen, dazu die Zierfische), unten rechts ein kleines Krakenbecken. Unten rechts geht
+    // es in Raum 3: abgedunkelt, mitten im Raum ein großes Becken voller leuchtender Quallen, rundherum ein Weg
+    // (dark: siehe drawDarkRooms)
     rows: [
-'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
-      'NZ..................ZNZMMMMMMMMMMMMMMN',
-      'N...MMMMMMMMMMMMMMMM.N.N.).)..(..)(.NN',
-      'N...N......?.(.?.(.N.N.N.)(?..?(../)NN',
-      'N...N(.)(".((.((..(N.N.N(".)).))..?.NN',
-      'N...N..)..)"...)..?N.N.N...).?...(..NN',
-      'N...MMMMMMMMMMMMMMMM.N.N..).....)"..NN',
-      'N.......#############N.MMMMMMMMMMMMMMN',
-      'N.MMMMMM#.....#.....ŁNŁ..............N',
-      'N.N.).)N#..Ł.Ɓ#Ɓ.Ł...N###############N',
-      'N.N.?..N#...#####....N..Ɓ..Ɓ.Ł#.MMMMMN',
-      'N.N(...N#...#####.Ɓ.ZN........#.N?.)NN',
-      'N.MMMMMM######Ś################.N)..NN',
-      'N.MMMMMM#...#####.Ɓ..##########.N..)NN',
-      'N.N(..(N#...#####....N...Ɓ....#.N..?NN',
-      'N.N.().N#..Ł###..Ł...NŁ.......#.MMMMMN',
-      'N.MMMMMM#..###.......N........#######N',
-      'N.......#.###Ł.Z....ZNZ........Ł....ZN',
-      'MMMMMMMMMMXXMMMMMMMMMMMMMMMMMMMMMMMMMM',
+'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+      'NZ..................ZNZMMMMMMMMMMMMMMNZ...........ZN',
+      'N...MMMMMMMMMMMMMMMM.N.N.).)..(..)(.NN.............N',
+      'N...N......?.(.?.(.N.N.N.)(?..?(../)NN.###########.N',
+      'N...N(.)(".((.((..(N.N.N(".)).))..?.NN.#.........#.N',
+      'N...N..)..)"...)..?N.N.N...).?...(..NN.#.MMMMMMM.#.N',
+      'N...MMMMMMMMMMMMMMMMŁN.N..).....)"..NN.#.N.....N.#.N',
+      'N.......#############N.MMMMMMMMMMMMMMN.#.N.....N.#.N',
+      'N.MMMMMM#.....#.....###..............N.#.N.....N.#.N',
+      'N.N.).)N#..Ł.Ɓ#Ɓ.Ł..#################N.#.N.....N.#ƁN',
+      'N.N.?..N#...#####...###.Ɓ..#...Ɓ.Ł...N.#.N..?..N.#.N',
+      'N.N(...N#...#####.Ɓ.ZN....Ł#.......#ZN.#.MMMMMMM.#.N',
+      'N.MMMMMM######Ś##....NŁ....#.MMMMMM#.N.#.........#.N',
+      'N.MMMMMM#...#####.Ɓ..N...Ł.#.N?.))N#.N############.N',
+      'N.N(..(N#...#####....N..Ɓ..#.N....N#.N#............N',
+      'N.N.().N#..Ł###..Ł...N.....#.N)..?N#.N#....Ɓ..Ɓ....N',
+      'N.MMMMMM#..###.......N..Ɓ..#.MMMMMM#.N#............N',
+      'N.......#.###Ł.Z....ZNZ....##########N#.Z.........ZN',
+      'MMMMMMMMMMXXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
     ],
     grass: ['floor_aquarium'],
     path: 'aq_path',
@@ -356,7 +358,9 @@ export const LEVELS = {
       { id: 'tankBig', name: 'Großes Becken', species: ['reeffish'], world: 'reef', seed: { tx: 6, ty: 3 }, slots: [20, 20], signAt: { tx: 11.5, ty: 6 }, signOnGlass: true },
       { id: 'tank1', name: 'Becken', species: ['reeffish'], world: 'reef', seed: { tx: 3, ty: 9 }, slots: [10, 10], signAt: { tx: 7, ty: 10 }, signOnGlass: true },
       { id: 'seahorses', name: 'Seepferdchen-Becken', species: ['seahorse'], world: 'reef', seed: { tx: 4, ty: 14 }, slots: [6, 6], signAt: { tx: 7, ty: 14.5 }, signOnGlass: true },
-      { id: 'octopus', name: 'Krakenbecken', species: ['octopus'], world: 'reef', seed: { tx: 34, ty: 12 }, slots: [3, 3], signAt: { tx: 34, ty: 15 }, signOnGlass: true },
+      { id: 'turtles', name: 'Schildkröten- und Rochenbecken', species: ['turtle', 'ray'], world: 'reef', seed: { tx: 25, ty: 5 }, quota: { turtle: [4, 4], ray: [3, 3] }, signAt: { tx: 25.5, ty: 7 }, signOnGlass: true }, // die riesige Beckenfront
+      { id: 'jellyfish', name: 'Quallenbecken', species: ['jellyfish'], world: 'reef', unlock: 'jellyfish', seed: { tx: 44, ty: 8 }, slots: [12, 12], signAt: { tx: 44, ty: 11 }, signOnGlass: true, dark: true },
+      { id: 'octopus', name: 'Krakenbecken', species: ['octopus'], world: 'reef', seed: { tx: 31, ty: 14 }, slots: [3, 3], signAt: { tx: 31.5, ty: 16 }, signOnGlass: true },
     ],
     // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle. pathFloor: Mosaik auf dem Weg in der Halle
     buildings: [
@@ -364,10 +368,14 @@ export const LEVELS = {
       { tx0: 2, ty0: 8, tx1: 7, ty1: 12, style: 'tank', noRoof: true },
       { tx0: 2, ty0: 13, tx1: 7, ty1: 16, style: 'tank', noRoof: true },
       { tx0: 23, ty0: 1, tx1: 36, ty1: 7, style: 'tank', noRoof: true }, // Raum 2: riesige Beckenfront
-      { tx0: 32, ty0: 10, tx1: 36, ty1: 15, style: 'tank', noRoof: true }, // Raum 2: Krakenbecken
+      { tx0: 29, ty0: 12, tx1: 34, ty1: 16, style: 'tank', noRoof: true }, // Raum 2: Krakenbecken unten rechts, frei stehend
       { tx0: 0, ty0: 0, tx1: 21, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Besucher laufen auf dem Mosaikweg
+      { tx0: 41, ty0: 5, tx1: 47, ty1: 11, style: 'tank', noRoof: true, noDeco: true }, // Raum 3: Quallenbecken mitten im Raum (ohne Zierfische)
       { tx0: 21, ty0: 0, tx1: 37, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Raum 2 (die Wand dazwischen gehört zur Halle)
+      { tx0: 37, ty0: 0, tx1: 51, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true, dark: true }, // Raum 3, abgedunkelt
     ],
+    // freischaltbar: der Durchgang in den dunklen Quallenraum öffnet sich, sobald man die erste Qualle fängt
+    unlocks: [{ id: 'jellyfish', tx: 37, ty: 16, rows: ['#', '#'] }],
     chests: [],
     toolSpots: [],
     background: '#0b1a26',
@@ -429,7 +437,7 @@ export const LEVELS = {
     start: { tx: 19, ty: 16 },
     enclosures: [],
     chests: [
-      { tx: 16, ty: 17, tools: ['net'], anchor: true }, // Sack am Anker; das Seil führt hinauf zum Boot
+      { tx: 16, ty: 17, tools: ['net', 'scissors'], anchor: true }, // Sack am Anker (Kescher, Schere); das Seil führt hinauf zum Boot
     ],
     hero: 'hero_swim', // Henrik im Taucheranzug
     ambient: 'ambient_reef',
@@ -439,7 +447,9 @@ export const LEVELS = {
     exits: [],
     // Riff-Fische: 22 Arten, alle gleich häufig (siehe ReefFish.js); eine Gruppe zählt als ein Platz.
     // Seepferdchen verstecken sich in den Korallen (siehe Seahorse.js)
-    spawn: { population: 14, weights: { reeffish: 1, seahorse: 0.3, octopus: 0.2 } }, // Kraken tarnen sich am Boden (siehe Octopus.js)
+    // Kraken tarnen sich am Boden (siehe Octopus.js); Meeresschildkröten sind selten und höchstens eine zugleich (im Netz, siehe Turtle.js)
+    // Rochen gleiten in großen Bögen, höchstens zwei zugleich (fangen durch Mitschwimmen, siehe Ray.js)
+    spawn: { population: 15, weights: { reeffish: 1, seahorse: 0.3, octopus: 0.2, turtle: 0.1, ray: 0.2 } },
   },
 
   // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein

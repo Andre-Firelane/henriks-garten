@@ -37,6 +37,8 @@ const SWIM_BOB = 2.5; // so weit wippt er auf und ab
 const SWIM_BOB_RATE = 1.8; // ... so schnell
 const SWIM_TILT = 8; // so weit neigt er sich beim Schwimmen (Grad)
 const SWIM_SPEED = 0.75; // unter Wasser langsamer als zu Fuß
+const STUNG_TIME = 1.5; // Qualle berührt: so lange (Sekunden) ist er langsamer ...
+const STUNG_SPEED = 0.5; // ... und zwar so viel
 
 export default class Player {
   // texture: Spritesheet der Figur (je Gebiet andere Kleidung); swim: schwimmt statt zu laufen (Unterwasserwelt)
@@ -49,6 +51,7 @@ export default class Player {
     this.scene = scene;
     this.texture = texture;
     this.swim = swim;
+    this.stung = 0; // Zeit, die das Brennen einer Qualle noch anhält
     // Lauf- und Stehanimation (Test): gibt es bisher nur in der Wiesen-Kleidung
     this.canWalkAnim = ANIMATED_HERO && texture === 'hero' && ['hero_walk', 'hero_walk_back', 'hero_idle'].every((key) => scene.anims.exists(key));
     this.stepTimer = 0; // Zeit bis zum nächsten Schritt-Geräusch
@@ -89,6 +92,7 @@ export default class Player {
   }
 
   update(dt) {
+    if (this.stung > 0) this.stung -= dt;
     const k = this.keys;
     let vx = 0;
     let vy = 0;
@@ -115,7 +119,7 @@ export default class Player {
       // Tasten: immer volles Tempo (auch schräg); Joystick: Tempo je nach Ausschlag
       const { tx: wx, ty: wy } = worldToTile(this.x, this.y);
       const wading = this.wade && charAt(wx, wy) === '~';
-      const step = (this.speed * (wading ? WADE_SPEED : 1) * dt * Math.min(1, len)) / len;
+      const step = (this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt * Math.min(1, len)) / len;
       // Achsen getrennt prüfen, damit man an Hindernissen entlanggleitet
       const nx = this.x + vx * step;
       if (!blockedAt(nx, this.y, FOOT_W, FOOT_H, this.wade, this.trample)) this.x = nx;
@@ -194,6 +198,15 @@ export default class Player {
     // Wer weiter unten steht, wird weiter vorne gezeichnet
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
+  }
+
+  // eine Qualle berührt: kurz langsamer und rot aufblitzen; gibt zurück, ob es neu brennt (nicht schon gerade)
+  sting() {
+    if (this.stung > 0) return false;
+    this.stung = STUNG_TIME;
+    this.sprite.setTint(0xff9a9a);
+    this.scene.time.delayedCall(350, () => this.sprite.clearTint());
+    return true;
   }
 
   playStep() {

@@ -6,9 +6,10 @@ const REST_ANGLE = -15; // Haltung beim Tragen (über der Schulter)
 const SWING_ANGLE = 95; // so weit schwingt er nach vorne
 
 export default class Net extends ZoneTool {
-  constructor(scene, player) {
-    super(scene, player, { id: 'net', reach: 42, radius: 36, duration: 0.35, catchFrom: 0, catchTo: 0.7 });
-    this.sprite = scene.add.image(0, 0, 'net').setOrigin(6 / 64, 58 / 64);
+  // id/texture/origin: für Werkzeuge, die genauso geschwungen werden (Quallenglas)
+  constructor(scene, player, { id = 'net', texture = 'net', origin = [6 / 64, 58 / 64] } = {}) {
+    super(scene, player, { id, reach: 42, radius: 36, duration: 0.35, catchFrom: 0, catchTo: 0.7 });
+    this.sprite = scene.add.image(0, 0, texture).setOrigin(...origin);
   }
 
   use() {

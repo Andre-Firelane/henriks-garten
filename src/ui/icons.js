@@ -29,6 +29,9 @@ const SHEETS = {
   reeffish: [96, 64, 44, 0], // Riff-Fische: der Clownfisch steht für alle
   seahorse: [48, 64, 4, 0],
   octopus: [72, 72, 4, 0],
+  turtle: [112, 88, 4, 0],
+  jellyfish: [64, 96, 4, 0],
+  ray: [112, 80, 4, 0],
 };
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)
