@@ -2,8 +2,10 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
 import GardenScene from './scenes/GardenScene.js';
 import { setupTouchControls } from './ui/touch.js';
+import { setupUpdateCheck } from './update.js';
 
 setupTouchControls();
+setupUpdateCheck();
 
 new Phaser.Game({
   type: Phaser.AUTO,
