@@ -1,7 +1,8 @@
 // Kleine Tierbilder für die Anzeige (HUD, Meldungen, Wegweiser) statt Tiernamen.
 // Ein Bild ist ein Ausschnitt aus dem Spritesheet der Tierart (Bildgrößen wie in BootScene).
 const SHEETS = {
-  // Bildbreite, Bildhöhe, Anzahl Bilder im Sheet, welches Bild gezeigt wird (und die Datei, falls sie anders heißt)
+  // Bildbreite, Bildhöhe, Anzahl Bilder im Sheet (je Zeile), welches Bild gezeigt wird (und die Datei, falls sie anders heißt,
+  // und die Zahl der Zeilen bei Rastern)
   sheep: [80, 88, 4, 0],
   cat: [72, 80, 4, 0],
   deer: [72, 96, 4, 0],
@@ -26,7 +27,7 @@ const SHEETS = {
   lion: [72, 96, 4, 0],
   crocodile: [72, 92, 4, 0, 'croc'],
   giraffe: [104, 168, 4, 0],
-  reeffish: [96, 64, 44, 0], // Riff-Fische: der Clownfisch steht für alle
+  reeffish: [96, 64, 12, 0, 'reeffish', 4], // Riff-Fische: der Clownfisch steht für alle (Raster: 12 Bilder je Zeile, 4 Zeilen)
   seahorse: [48, 64, 4, 0],
   octopus: [72, 72, 4, 0],
   turtle: [112, 88, 4, 0],
@@ -37,13 +38,13 @@ const SHEETS = {
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)
 export function animalIcon(species, size = 2.6) {
-  const [w, h, count, frame, file = species] = SHEETS[species];
+  const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];
   const k = size / h;
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${size}em`,
     `background-image:url(assets/${file}.png)`,
-    `background-size:${(w * count * k).toFixed(3)}em ${size}em`,
+    `background-size:${(w * count * k).toFixed(3)}em ${(size * rows).toFixed(3)}em`,
     `background-position:${(-w * frame * k).toFixed(3)}em 0`,
   ].join(';');
   return `<span class="animal" style="${style}"></span>`;
@@ -51,13 +52,13 @@ export function animalIcon(species, size = 2.6) {
 
 // Tierbild in einem quadratischen Feld (size em): breite und hohe Tiere passen gleichermaßen hinein
 export function animalIconSquare(species, size = 3) {
-  const [w, h, count, frame, file = species] = SHEETS[species];
+  const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];
   const k = size / Math.max(w, h);
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${(h * k).toFixed(3)}em`,
     `background-image:url(assets/${file}.png)`,
-    `background-size:${(w * count * k).toFixed(3)}em ${(h * k).toFixed(3)}em`,
+    `background-size:${(w * count * k).toFixed(3)}em ${(h * rows * k).toFixed(3)}em`,
     `background-position:${(-w * frame * k).toFixed(3)}em 0`,
   ].join(';');
   return `<span class="animal-box" style="width:${size}em;height:${size}em"><span class="animal" style="${style}"></span></span>`;

@@ -1,5 +1,6 @@
 // Riff-Fische: schneidet die Fische aus dem Raster in "Sprites/Riff Fische.png" (6 × 4, nach npm run cutout) aus und legt
-// sie als Spritesheet public/assets/reeffish.png ab: je Art zwei Bilder (nach rechts, nach links), 96 × 64 Pixel.
+// sie als Spritesheet public/assets/reeffish.png ab: je Art zwei Bilder (nach rechts, nach links), 96 × 64 Pixel,
+// Zeile für Zeile zu je SHEET_COLS Bildern.
 // Alle Fische behalten ihre Größe zueinander (ein gemeinsamer Maßstab).
 // Aufruf: node tools/reef-fish.cjs
 const { PNG } = require('pngjs');
@@ -10,6 +11,8 @@ const OUT = 'public/assets/reeffish.png';
 const COLS = 6, ROWS = 4;
 const FW = 96, FH = 64; // Bildgröße im Spritesheet
 const MAX_W = 88, MAX_H = 56; // so groß darf der größte Fisch werden
+// im Raster statt in einer langen Reihe: Tablets und Handys laden keine Bilder, die breiter als 4096 Pixel sind
+const SHEET_COLS = 12;
 // Blickrichtung im Original je Rasterfeld (Zeile für Zeile): R nach rechts, L nach links, - doppelt (weggelassen)
 const FACING = [
   'RRRLLR',
@@ -57,13 +60,14 @@ function shrink(f, flip) {
   return { w, h, px: out };
 }
 
-const sheet = new PNG({ width: FW * fish.length * 2, height: FH });
+const sheet = new PNG({ width: FW * SHEET_COLS, height: FH * Math.ceil((fish.length * 2) / SHEET_COLS) });
 fish.forEach((f, k) => {
   // Bild 2k schaut nach rechts, 2k+1 nach links
   for (const [slot, flip] of [[0, f.left], [1, !f.left]]) {
     const s = shrink(f, flip);
-    const ox = (k * 2 + slot) * FW + Math.round((FW - s.w) / 2);
-    const oy = Math.round((FH - s.h) / 2);
+    const n = k * 2 + slot;
+    const ox = (n % SHEET_COLS) * FW + Math.round((FW - s.w) / 2);
+    const oy = Math.floor(n / SHEET_COLS) * FH + Math.round((FH - s.h) / 2);
     for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
       const i = (y * s.w + x) * 4, o = ((oy + y) * sheet.width + ox + x) * 4;
       for (let c = 0; c < 4; c++) sheet.data[o + c] = Math.round(s.px[i + c]);
