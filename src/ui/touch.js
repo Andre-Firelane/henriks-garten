@@ -8,6 +8,11 @@ const DEADZONE = 0.15; // kleine Ausschläge zählen nicht
 // Laufrichtung vom Joystick: x/y zwischen -1 und 1 (Bildschirmrichtung), 0/0 = steht
 export const touch = { x: 0, y: 0 };
 
+// Symbole des Vollbild-Knopfs: Ecken nach außen (Vollbild an) bzw. nach innen (Vollbild aus)
+const ICON = (d) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const ICON_EXPAND = ICON('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
+const ICON_SHRINK = ICON('<path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/>');
+
 // Die Szene trägt hier ein, was die Knöpfe tun (wird bei jedem Levelwechsel neu gesetzt)
 export const touchHandlers = { action: null, menu: null };
 
@@ -24,25 +29,38 @@ export function setupTouchControls() {
   // Sobald der Bildschirm berührt wird: Touch-Ansicht einschalten
   window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
   // Vollbild: Chrome erlaubt es erst beim Loslassen des Fingers (touchend), nicht beim Aufsetzen.
-  // Bei jedem Tippen erneut versuchen, falls das Vollbild verlassen wurde.
-  // Klappt das nicht von selbst, gibt es oben rechts den Vollbild-Knopf.
+  // Bei jedem Tippen erneut versuchen, falls das Vollbild verlassen wurde – außer man hat es mit dem Knopf selbst beendet.
+  // Der Knopf oben rechts schaltet um: Vollbild an bzw. wieder aus.
   const root = document.documentElement;
   const request = root.requestFullscreen?.bind(root) ?? root.webkitRequestFullscreen?.bind(root);
   const isFull = () => !!(document.fullscreenElement ?? document.webkitFullscreenElement);
+  let leftOnPurpose = false; // mit dem Knopf beendet: dann nicht bei jedem Tippen wieder ins Vollbild
   const enterFullscreen = () => {
-    if (isFull() || !request) return;
+    if (isFull() || !request || leftOnPurpose) return;
     Promise.resolve(request({ navigationUI: 'hide' }))
       .then(() => screen.orientation?.lock?.('landscape')) // im Vollbild auf quer festhalten
       .catch(() => {});
   };
   if (!request) document.body.classList.add('no-fullscreen'); // z. B. iPhone: dort geht es nicht
-  const markFull = () => document.body.classList.toggle('fullscreen', isFull());
+  const button = document.getElementById('btn-full');
+  const markFull = () => {
+    document.body.classList.toggle('fullscreen', isFull());
+    button.innerHTML = isFull() ? ICON_SHRINK : ICON_EXPAND;
+    button.setAttribute('aria-label', isFull() ? 'Vollbild beenden' : 'Vollbild');
+  };
+  markFull();
   document.addEventListener('fullscreenchange', markFull);
   document.addEventListener('webkitfullscreenchange', markFull);
   window.addEventListener('touchend', enterFullscreen);
-  document.getElementById('btn-full').addEventListener('click', (e) => {
+  button.addEventListener('click', (e) => {
     e.stopPropagation();
-    enterFullscreen();
+    if (isFull()) {
+      leftOnPurpose = true;
+      (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document);
+    } else {
+      leftOnPurpose = false;
+      enterFullscreen();
+    }
   });
 
   let stickId = null;

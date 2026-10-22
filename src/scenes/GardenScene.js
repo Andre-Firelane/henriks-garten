@@ -73,6 +73,7 @@ import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
+import { afterPaint, hideLoading, showLoading } from '../ui/loading.js';
 import ReefFish from '../animals/ReefFish.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
@@ -717,6 +718,7 @@ export default class GardenScene extends Phaser.Scene {
     this.scale.on('resize', this.fitZoom, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.fitZoom, this));
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
+    hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
     this.startAmbient();
     this.startSteam();
     this.drawBridges();
@@ -1583,7 +1585,10 @@ export default class GardenScene extends Phaser.Scene {
     this.saveLevelState();
     const arrive = worldToTile(this.player.x, this.player.y);
     this.cameras.main.fadeOut(250);
-    this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name }));
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      showLoading(`${e.name} wird ausgebaut …`);
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name }));
+    });
   }
 
   // warum ein Event gerade nicht startbar ist (sonst null)
@@ -2816,9 +2821,10 @@ export default class GardenScene extends Phaser.Scene {
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
     this.cameras.main.fadeOut(250);
-    this.cameras.main.once('camerafadeoutcomplete', () =>
-      this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }),
-    );
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      showLoading(`${LEVELS[exit.to].name} wird geladen …`);
+      afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }));
+    });
   }
 
   // Spielstand speichern (Autosave, Menü). Während eines Levelwechsels nicht: der ist dann schon gespeichert.

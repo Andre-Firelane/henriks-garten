@@ -9,7 +9,7 @@ import { tileToWorld } from '../world/iso.js';
 
 const HIDDEN_TIME = [4, 10]; // so lange ist nichts zu sehen
 const BUBBLE_TIME = [2, 3]; // so lange blubbert es an der Koralle, bevor es herausschaut
-const OUT_TIME = [2.6, 4]; // so lange bleibt es draußen (recht kurz)
+const OUT_TIME = [7.6, 9]; // so lange bleibt es draußen
 const SLIDE_TIME = 0.35; // Heraus- bzw. Hineinschwimmen
 const PEEK_OUT = 0.55; // so weit (Anteil der Strecke zur freien Nachbarkachel) kommt es aus der Koralle heraus
 const BUBBLE_FRONT = 80; // Bläschen vor den Korallen davor zeichnen (sonst steigen sie unsichtbar in deren Kronen auf)

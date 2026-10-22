@@ -250,13 +250,14 @@
         font: bold 28px/1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
         background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
       }
-      /* Vollbild-Knopf neben dem Menü (verschwindet im Vollbild und wo es kein Vollbild gibt) */
+      /* Vollbild-Knopf neben dem Menü: an bzw. im Vollbild wieder aus (fehlt, wo es kein Vollbild gibt) */
       body.touch #btn-full {
         display: block; position: fixed; right: 76px; top: 16px; width: 52px; height: 52px; border-radius: 12px;
         font: bold 26px/1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
         background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
       }
-      body.touch.fullscreen #btn-full, body.touch.no-fullscreen #btn-full { display: none; }
+      body.touch.no-fullscreen #btn-full { display: none; }
+      #btn-full svg { display: block; margin: auto; }
       /* Auf dem Tablet zeigt der Aktionsknopf das Werkzeug; der Wegweiser rückt nach oben */
       body.touch #tools { display: none; }
       body.touch #sign { bottom: auto; top: 84px; }
@@ -287,6 +288,19 @@
         position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center;
         font: 15px/1.3 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
       }
+      /* Ladeanzeige: beim Start mit Fortschritt, beim Aufbau eines Gebiets mit laufendem Balken (busy) */
+      #loading {
+        position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center;
+        background: #2d4a22; font: 16px/1.35 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+      }
+      #loading.show { display: flex; }
+      .loading-box { width: min(360px, 80vw); text-align: center; }
+      .loading-box h1 { margin: 0 0 6px; font-size: 30px; color: #ffe8a8; text-shadow: 0 2px 0 #2b1d14; }
+      .loading-text { margin: 0 0 14px; }
+      .loading-bar { height: 16px; border: 3px solid #6b4224; border-radius: 10px; background: #f4dcae; overflow: hidden; box-shadow: 0 3px 0 #2b1d14; }
+      .loading-fill { width: 0; height: 100%; background: #7cc04a; transition: width 0.15s; }
+      #loading.busy .loading-fill { width: 35%; animation: loading-run 1.1s ease-in-out infinite; transition: none; }
+      @keyframes loading-run { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
       #start { background: #2d4a22 url(assets/worldmap.jpg) center / cover; }
       #menu { background: rgba(20, 14, 8, 0.55); }
       #start.show, #menu.show { display: flex; }
@@ -319,6 +333,8 @@
   </head>
   <body>
     <div id="game"></div>
+    <!-- Ladeanzeige (siehe src/ui/loading.js): gleich beim Öffnen der Seite zu sehen -->
+    <div id="loading" class="show"><div class="loading-box"><h1>Henriks Garten</h1><p class="loading-text">Das Spiel wird geladen …</p><div class="loading-bar"><div class="loading-fill"></div></div></div></div>
     <div id="hud"></div>
     <div id="tools"></div>
     <div id="toast"></div>

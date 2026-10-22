@@ -19,6 +19,8 @@ const SPEED = [8, 15]; // gemütliches Schwimmen (Pixel pro Sekunde)
 const ROAM = 4; // so viele Kacheln weit sucht sich ein Fisch sein nächstes Ziel
 const SCHOOL_GAP = 18; // so weit schwimmen Gruppenfische um ihren Anführer herum
 const BOB = 1.5; // leichtes Auf und Ab
+const FLEE_CHANCE = 2 / 3; // kommt man nah, schwimmt eine Gruppe nur mit dieser Wahrscheinlichkeit davon ...
+const FLEE_ROLL = 4; // ... und würfelt nach so vielen Sekunden neu, wenn man in der Nähe bleibt
 
 export default class ReefFish extends Animal {
   // variant: Art (0 bis REEF_KINDS - 1), sonst zufällig; herd: Gruppe, zu der er gehört (oder null);
@@ -92,6 +94,25 @@ export default class ReefFish extends Animal {
       return null;
     }
     return l;
+  }
+
+  // Erschrecken: nicht immer – die ganze Gruppe entscheidet gemeinsam, ob sie davonschwimmt (FLEE_CHANCE)
+  shouldFlee(player) {
+    if (this.state !== 'wild' || !this.kind.fleeDist) return false;
+    const d = Math.hypot(this.x - player.x, (this.y - player.y) * 2);
+    const h = this.herd;
+    const now = this.scene.time.now;
+    if (d < this.kind.fleeDist) {
+      if (!(now < h.rollUntil)) {
+        h.willFlee = Math.random() < FLEE_CHANCE;
+        h.rollUntil = now + FLEE_ROLL * 1000;
+      }
+      this.fleeing = h.willFlee;
+    } else if (d > this.kind.fleeDist * 1.6) {
+      if (this.fleeing) this.pickTarget();
+      this.fleeing = false;
+    }
+    return this.fleeing;
   }
 
   updateFree(dt, player) {

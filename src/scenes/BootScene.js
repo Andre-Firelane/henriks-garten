@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { openStartScreen } from '../ui/startScreen.js';
+import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -103,6 +104,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.on('progress', setLoadingProgress); // Ladebalken (die Tafel steht schon in index.html)
     for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${key}.png`);
     this.load.spritesheet('hero', 'assets/hero.png', HERO_FRAME);
     // Kleidung je Gebiet (siehe hero in levels.js)
@@ -214,6 +216,11 @@ export default class BootScene extends Phaser.Scene {
     for (const key of PIXEL_ART) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     for (const key of ['hero_walk', 'hero_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 14, repeat: -1 });
     this.anims.create({ key: 'hero_idle', frames: this.anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
-    openStartScreen((data) => this.scene.start('Garden', data));
+    hideLoading();
+    openStartScreen((data) => {
+      // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige
+      showLoading('Das Spiel startet …');
+      afterPaint(() => this.scene.start('Garden', data));
+    });
   }
 }

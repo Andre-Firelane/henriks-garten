@@ -405,8 +405,8 @@ export const SPECIES = {
     hop: 1,
     footW: 4,
     shadowW: 22,
-    fleeDist: 80, // kommt man näher, flüchten sie ...
-    fleeSpeed: 54, // ... knapp langsamer als der Taucher (60): mit dem Kescher holt man sie gerade so ein
+    fleeDist: 70, // kommt man näher, flüchten sie ...
+    fleeSpeed: 45, // ... deutlich langsamer als der Taucher (60): mit dem Kescher holt man sie ein
     catchWith: ['net'],
   },
   // Seepferdchen (Riff): verstecken sich in Korallen und schauen nur kurz heraus (siehe Seahorse.js);
@@ -443,7 +443,7 @@ export const SPECIES = {
     hop: 1,
     footW: 4,
     shadowW: 26,
-    fleeSpeed: 44, // langsamer als der Taucher (60) – aber sie hat nur ein paar Sekunden, dann ist sie in der Tinte weg
+    fleeSpeed: 26, // viel langsamer als der Taucher (60) – aber sie hat nur ein paar Sekunden, dann ist sie in der Tinte weg
     catchWith: ['net'],
   },
   // Meeresschildkröte (Riff, selten): im Fischernetz verheddert, man schneidet sie frei (siehe Turtle.js);
