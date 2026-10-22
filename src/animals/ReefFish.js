@@ -19,6 +19,7 @@ const SPEED = [8, 15]; // gemütliches Schwimmen (Pixel pro Sekunde)
 const ROAM = 4; // so viele Kacheln weit sucht sich ein Fisch sein nächstes Ziel
 const SCHOOL_GAP = 18; // so weit schwimmen Gruppenfische um ihren Anführer herum
 const BOB = 1.5; // leichtes Auf und Ab
+const BABY_SCALE = 0.55; // Tierbabys (Event) sind so viel kleiner
 const FLEE_CHANCE = 2 / 3; // kommt man nah, schwimmt eine Gruppe nur mit dieser Wahrscheinlichkeit davon ...
 const FLEE_ROLL = 4; // ... und würfelt nach so vielen Sekunden neu, wenn man in der Nähe bleibt
 
@@ -44,6 +45,11 @@ export default class ReefFish extends Animal {
 
   swimScale(tank) {
     return tank ? TANK_SCALE : SCALE;
+  }
+
+  // Tierbaby (Event): kleiner als die Eltern
+  babyScale() {
+    return this.baby ? BABY_SCALE : 1;
   }
 
   inTank() {
@@ -174,7 +180,7 @@ export default class ReefFish extends Animal {
     const tank = this.inTank();
     const look = this.skin ?? this.kind.texture; // seltene Variante mit eigenem Bild (Goldqualle)
     if (this.sprite.texture.key !== look) this.sprite.setTexture(look).setOrigin(0.5, 0.5);
-    this.sprite.setScale(this.swimScale(tank)).setAngle(0);
+    this.sprite.setScale(this.swimScale(tank) * this.babyScale()).setAngle(0);
     this.sprite.setFrame(this.swimFrame());
     const bob = Math.sin(this.phase * 2.2 + this.offset.x) * BOB;
     this.sprite.setPosition(this.x, this.y - this.h + bob);

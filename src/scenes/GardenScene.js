@@ -86,8 +86,8 @@ import ScissorsTool from '../tools/ScissorsTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, FULL_BONUS, appeal, awayHearts, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
-import { EVENTS, RARE_EVENT_CHANCE, activeOverlap, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
+import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { EVENTS, RARE_EVENT_CHANCE, babyFamily, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
@@ -275,6 +275,7 @@ const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
+const BABY_LEVELS = ['park', 'aquarium']; // dort gibt es beim Tierbaby-Event Nachwuchs
 const AQUA = ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'];
 const MAX_RAYS = 2; // so viele Rochen gleiten höchstens gleichzeitig durchs Riff
 // Quallen-Schwarm (Event): so viele Quallen treiben höchstens gleichzeitig im Riff, so oft kommt eine neue (Sekunden),
@@ -667,26 +668,11 @@ export default class GardenScene extends Phaser.Scene {
       this.followers.push(a);
     }
     game.followers = [];
-    // Herzen, die die Besucher dagelassen haben, während der Spieler woanders war (nach den Tieren, die schon da waren)
-    let away = 0;
-    if (LEVEL_ID === 'park' && game.parkLeftAt) {
-      const now = Date.now();
-      const babies = babyPlan(this.animals.filter((a) => a.state === 'penned')).length;
-      away = awayHearts(parkScore(this.animals), now - game.parkLeftAt, activeOverlap('babies', game.parkLeftAt, now), babies);
-      for (const [s, n] of Object.entries(splitHearts(this.animals, away))) game.heartsBy[s] = (game.heartsBy[s] ?? 0) + n;
-      // Eisstand: auch während man weg war, haben sich Besucher Eis geholt
-      const iceMin = Math.min(60, activeOverlap('icecream', game.parkLeftAt, now) / 60000);
-      const ice = Math.floor(iceMin * maxVisitors(parkScore(this.animals)) * AWAY_ICE_PER_VISITOR_MINUTE);
-      if (ice) game.heartsBy.icecream = (game.heartsBy.icecream ?? 0) + ice;
-      away += ice;
-      game.hearts += away;
-      game.parkLeftAt = null;
-    }
     const moved = LEVEL_ID === 'park' || LEVEL_ID === 'aquarium' ? this.moveFollowersIntoPens() : ''; // im Tierpark (und im Aquarium) ziehen sie gleich ein
     this.updateTankDeco();
     // Tierbabys, solange das Event läuft (vor den Besuchern, die Babys locken sie an)
     this.babiesOn = false;
-    if (LEVEL_ID === 'park' && isActive('babies')) this.spawnBabies(false);
+    if (BABY_LEVELS.includes(LEVEL_ID) && isActive('babies')) this.spawnBabies(false);
     // Besucher im Tierpark (wie viele, hängt von den Tieren in den Gehegen ab)
     this.visitors = LEVEL_ID === 'park' || LEVEL_ID === 'aquarium' ? new VisitorCrowd(this) : null; // auch im Aquarium (eigene Besucher)
     this.eventTimer = 0;
@@ -708,8 +694,7 @@ export default class GardenScene extends Phaser.Scene {
       if (data.upgraded) {
         this.time.delayedCall(350, () => this.showToast(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz und neue Ausstattung.`));
       }
-      const hearts = away ? `<br><span style="color:#ff8fb8">♥</span> ${away} Bewunderungsherz${away === 1 ? '' : 'en'} haben die Besucher dagelassen, während du weg warst.` : '';
-      this.showToast(`${LEVEL.name}${back}${moved}${hearts}`);
+      this.showToast(`${LEVEL.name}${back}${moved}`);
     }
 
     const cam = this.cameras.main;
@@ -1593,9 +1578,24 @@ export default class GardenScene extends Phaser.Scene {
 
   // warum ein Event gerade nicht startbar ist (sonst null)
   eventBlocked(ev) {
-    if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length) return 'braucht 2 gleiche größere Tiere in einem Gehege';
+    if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) return 'braucht 2 gleiche größere Tiere in einem Gehege';
     if (game.hearts < ev.cost) return 'zu wenig Herzen';
     return null;
+  }
+
+  // Gibt es im Aquarium (gespeicherter Stand) zwei Tiere einer Familie im selben Becken? Dann kann das Tierbaby-Event dort Babys bringen
+  aquariumBabyPair() {
+    const saved = LEVEL_ID === 'aquarium' ? [] : game.levels.aquarium?.animals ?? []; // im Aquarium selbst zählt this.animals
+    const tanks = aquariumTanks();
+    const count = {};
+    for (const s of saved) {
+      const family = babyFamily(s.species);
+      const t = s.state === 'penned' && family ? tankOf(tanks, s) : null;
+      if (!t) continue;
+      const k = t.e.id + ':' + family;
+      count[k] = (count[k] ?? 0) + 1;
+    }
+    return Object.values(count).some((n) => n >= 2);
   }
 
   // Tierbabys: in jedem Gehege auf je 2 größere Tiere ein kleines, neben einem der Eltern
@@ -1657,8 +1657,8 @@ export default class GardenScene extends Phaser.Scene {
     if (this.riding && !isActive('ride')) this.showToast('Das Reittier ist zurück im Stall.');
     this.updateMount();
     const on = isActive('babies');
-    if (LEVEL_ID === 'park' && on && !this.babiesOn) this.spawnBabies(false);
-    if (LEVEL_ID === 'park' && !on && this.babiesOn) {
+    if (BABY_LEVELS.includes(LEVEL_ID) && on && !this.babiesOn) this.spawnBabies(false);
+    if (BABY_LEVELS.includes(LEVEL_ID) && !on && this.babiesOn) {
       this.removeBabies();
       this.visitors?.updateScore();
       this.showToast('Das Tierbaby-Event ist vorbei – die Kleinen schlafen jetzt.');
@@ -2393,6 +2393,42 @@ export default class GardenScene extends Phaser.Scene {
     return `<br>${kinds.join(' ')}<br>${delivered.length === 1 ? 'Dein Fang schwimmt jetzt' : 'Deine Fänge schwimmen jetzt'} im Aquarium.`;
   }
 
+  // Tierpark: beim Verlassen merken, wie viele Herzen er pro Minute bringt (wie viele Besucher die Tiere anlocken, ein halbes
+  // Herz pro Besucher und Minute) – auch für die Zeit, in der das Tierbaby-Event bzw. der Eisstand läuft – und welche
+  // Tierarten wie viel dazu beitragen (für die Statistik)
+  parkIncomeRates() {
+    const adults = this.animals.filter((a) => a.state === 'penned' && !a.baby);
+    const score = parkScore(adults);
+    const babies = babyPlan(adults).length;
+    return {
+      normal: maxVisitors(score) * AWAY_HEARTS_PER_VISITOR_MINUTE,
+      babies: maxVisitors(score + babies * BABY_APPEAL) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS),
+      ice: maxVisitors(score) * AWAY_ICE_PER_VISITOR_MINUTE,
+      split: splitHearts(adults, 1000), // Anteile je Tierart
+    };
+  }
+
+  // Tierpark: solange man woanders ist, kommen seine Herzen laufend dazu (wie beim Aquarium); Events, die in der Zeit
+  // beginnen oder enden, zählen mit
+  parkIncome(dt) {
+    const r = game.parkIncome;
+    if (!r) return;
+    const perMinute = isActive('babies') ? r.babies : r.normal;
+    this.parkHearts = (this.parkHearts ?? 0) + (perMinute / 60) * dt;
+    this.iceHearts = (this.iceHearts ?? 0) + (isActive('icecream') ? r.ice / 60 : 0) * dt;
+    if (this.iceHearts >= 1) {
+      this.iceHearts -= 1;
+      this.addHearts(1, 'icecream');
+    }
+    if (this.parkHearts < 1) return;
+    this.parkHearts -= 1;
+    // für die Statistik: eine Tierart, je nach ihrem Anteil
+    const shares = Object.entries(r.split ?? {});
+    let pick = Math.random() * shares.reduce((s, [, n]) => s + n, 0);
+    const from = shares.find(([, n]) => (pick -= n) <= 0)?.[0] ?? null;
+    this.addHearts(1, from);
+  }
+
   // Aquarium: solange man woanders ist, locken die Tiere in den Becken weiter Besucher an. Die Herzen kommen laufend dazu
   // (so viele wie bei den Herzen der Abwesenheit im Tierpark: ein halbes Herz pro Besucher und Minute)
   aquariumIncome(dt) {
@@ -2815,7 +2851,7 @@ export default class GardenScene extends Phaser.Scene {
       this.tool = null;
       this.toolId = null;
     }
-    if (LEVEL_ID === 'park') game.parkLeftAt = Date.now(); // ab jetzt zählen die Herzen der Abwesenheit
+    if (LEVEL_ID === 'park') game.parkIncome = this.parkIncomeRates(); // ab jetzt kommen die Herzen des Tierparks laufend (siehe parkIncome)
     this.saveLevelState();
     writeSave(exit.to); // beim Laden geht es dann im neuen Gebiet weiter
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
@@ -3103,6 +3139,7 @@ export default class GardenScene extends Phaser.Scene {
     this.visitors?.update(dt);
     this.updateJellies(dt);
     if (LEVEL_ID !== 'aquarium' && !this.leaving) this.aquariumIncome(dt);
+    if (LEVEL_ID !== 'park' && !this.leaving) this.parkIncome(dt);
     this.updatePenCalls(dt);
     this.updatePeacockCall(dt);
     for (const f of this.tankFish) f.update(dt); // Zierfische im Aquarium und Fischschwärme im Riff

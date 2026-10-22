@@ -101,7 +101,7 @@ export default class Ray extends ReefFish {
     super.render(moving);
     // Flügelschlag: sanftes Auf und Ab der Flügel (Bild wird etwas flacher und wieder höher)
     if (this.sprite.texture.key !== this.kind.bagTexture) {
-      const s = this.swimScale();
+      const s = this.swimScale() * this.babyScale();
       this.sprite.setScale(s, s * (1 + Math.sin(this.phase * 3) * 0.08));
     }
     this.bar.clear();

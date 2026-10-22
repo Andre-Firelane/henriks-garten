@@ -114,18 +114,9 @@ export function arrivalInterval(score) {
   return Math.max(6, 90 / (1 + score / 6));
 }
 
-// Herzen, während der Spieler nicht im Tierpark ist: so viele Besucher, wie die Tiere anlocken, geben zusammen
-// etwa ein halbes Herz pro Besucher und Minute. Gezählt wird höchstens eine Stunde, damit die Zahl nicht zu groß wird.
+// Herzen, während der Spieler woanders ist (Tierpark und Aquarium, laufend): so viele Besucher, wie die Tiere anlocken,
+// geben zusammen etwa ein halbes Herz pro Besucher und Minute (siehe parkIncome und aquariumIncome in GardenScene)
 export const AWAY_HEARTS_PER_VISITOR_MINUTE = 0.5;
-const AWAY_MAX_MINUTES = 60;
-// eventMs: so lange lief in der Zeit das Tierbaby-Event, babies: so viele Babys hätte es gegeben
-export function awayHearts(score, ms, eventMs = 0, babies = 0) {
-  const minutes = Math.min(AWAY_MAX_MINUTES, Math.max(0, ms) / 60000);
-  const eventMinutes = babies ? Math.min(minutes, Math.max(0, eventMs) / 60000) : 0;
-  const normal = (minutes - eventMinutes) * maxVisitors(score) * AWAY_HEARTS_PER_VISITOR_MINUTE;
-  const event = eventMinutes * maxVisitors(score + babies * BABY_APPEAL) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS);
-  return Math.floor(normal + event);
-}
 
 // Eisstand-Event: so viele Eis holen sich die Besucher pro Minute, während man nicht im Tierpark ist
 export const AWAY_ICE_PER_VISITOR_MINUTE = 0.5; // 0,25 Eis pro Besucher und Minute, je 2 Herzen

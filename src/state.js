@@ -7,7 +7,7 @@ export const game = {
   nextTrapId: 1,
   hearts: 0, // Bewunderungsherzen der Besucher im Tierpark (zum Eintauschen, kommt später)
   heartsBy: {}, // Statistik: so viele Herzen hat jede Tierart (bzw. 'icecream' der Eisstand) gebracht
-  parkLeftAt: null, // wann der Spieler den Tierpark zuletzt verlassen hat (für die Herzen, die in der Zeit dazukommen)
+  parkIncome: null, // so viele Herzen bringt der Tierpark pro Minute, solange man woanders ist (beim Verlassen gemerkt)
   events: {},
   unlocked: [],
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
@@ -21,7 +21,7 @@ export function resetGame() {
   game.traps = [];
   game.hearts = 0;
   game.heartsBy = {};
-  game.parkLeftAt = null;
+  game.parkIncome = null;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};

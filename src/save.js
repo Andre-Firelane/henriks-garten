@@ -54,7 +54,6 @@ export function loadSave() {
   for (const ev of Object.values(game.events)) {
     for (const k of ['startsAt', 'endsAt', 'readyAt']) if (ev[k] != null) ev[k] += shift;
   }
-  if (game.parkLeftAt) game.parkLeftAt += shift;
   for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.since) a.since += shift;
   save.lastSaved = s.savedAt;
   return s.level;

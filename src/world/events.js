@@ -96,13 +96,6 @@ export function startEvent(id, now = Date.now()) {
   game.events[id] = { startsAt: now, endsAt: now + ev.duration, readyAt: now + ev.duration + ev.cooldown };
 }
 
-// wie lange sich die Zeit von "from" bis "to" mit dem laufenden Event überschneidet (Millisekunden)
-export function activeOverlap(id, from, to) {
-  const s = game.events[id];
-  if (!s) return 0;
-  return Math.max(0, Math.min(to, s.endsAt) - Math.max(from, s.startsAt ?? 0));
-}
-
 // "4:12"
 export function formatTime(ms) {
   const sec = Math.ceil(ms / 1000);
@@ -110,9 +103,16 @@ export function formatTime(ms) {
 }
 
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
-// ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen und Frösche bekommen Babys; Maulwürfe, Vögel und
-// Wassertiere nicht.
-const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog' };
+// ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen, Frösche und Wölfe bekommen Babys,
+// im Aquarium Seepferdchen, Schildkröten, Rochen, Kraken und Quallen; Maulwürfe, Reiher, Fische und Koi nicht.
+const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog', wolf: 'wolf',
+  // im Aquarium (Fische und Koi bekommen keine Babys)
+  seahorse: 'seahorse', turtle: 'turtle', ray: 'ray', octopus: 'octopus', jellyfish: 'jellyfish' };
+
+// Familie für die Tierbabys (oder null, wenn diese Art keine bekommt)
+export function babyFamily(species) {
+  return BABY_OF[species] ?? null;
+}
 
 // animals: [{ species, enclosure, ... }] (nur Tiere in Gehegen, ohne Babys). Ergebnis: [{ enclosure, species, parent }]
 export function babyPlan(animals) {
