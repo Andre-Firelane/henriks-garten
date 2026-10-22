@@ -3,6 +3,7 @@ import { blockedAt, footTiles } from '../world/collision.js';
 import { inPen, isGate, enclosureAt, accepts, bridgeLift } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
 import { rareChance } from '../world/events.js';
+import { tr } from '../i18n.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -534,15 +535,15 @@ const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort,
 // Seltene Skins: anderes Aussehen derselben Tierart. wild: Anteil draußen, baby: Anteil bei den Tierbabys.
 // Im Gehege locken sie mehr Besucher an (siehe SKIN_APPEAL in world/visitors.js).
 export const SKINS = {
-  cat: { id: 'cat2', name: 'Glöckchen-Katze', male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
-  antelope: { id: 'antelope2', name: 'Oryx-Antilope', male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
-  fish: { id: 'fish2', name: 'Wels', male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
-  tiger: { id: 'tiger2', name: 'weißer Tiger', male: true, wild: 0.1, baby: 0.03 },
-  peacock: { id: 'peacock2', name: 'weißer Pfau', male: true, wild: 0.1, baby: 0.03 },
-  orangutan: { id: 'orangutan2', name: 'Orang-Utan mit Backenwülsten', male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
-  frog: { id: 'frog2', name: 'blauer Frosch', male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
-  jellyfish: { id: 'jellyfish2', name: 'Goldqualle', male: false, wild: 0.08, baby: 0 }, // golden, mit Ranken auf dem Schirm
-  ray: { id: 'ray2', name: 'Mantarochen', male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
+  cat: { id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
+  antelope: { id: 'antelope2', name: tr('Oryx-Antilope', 'oryx antelope'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
+  fish: { id: 'fish2', name: tr('Wels', 'catfish'), male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
+  tiger: { id: 'tiger2', name: tr('weißer Tiger', 'white tiger'), male: true, wild: 0.1, baby: 0.03 },
+  peacock: { id: 'peacock2', name: tr('weißer Pfau', 'white peacock'), male: true, wild: 0.1, baby: 0.03 },
+  orangutan: { id: 'orangutan2', name: tr('Orang-Utan mit Backenwülsten', 'orangutan with cheek pads'), male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
+  frog: { id: 'frog2', name: tr('blauer Frosch', 'blue frog'), male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
+  jellyfish: { id: 'jellyfish2', name: tr('Goldqualle', 'golden jellyfish'), male: false, wild: 0.08, baby: 0 }, // golden, mit Ranken auf dem Schirm
+  ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
 // seltene Tierarten, die eigentlich eine Variante einer anderen sind (der Hirsch beim Reh): bleiben wie Skins
 // beim Auszug ins Naturreservat bevorzugt im Gehege

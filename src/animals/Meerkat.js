@@ -6,6 +6,7 @@
 // Im Gehege läuft es herum und gräbt sich ab und zu ein Loch, aus dem es eine Weile herausschaut.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
+import { tr } from '../i18n.js';
 
 const COLONY_JOIN = 70; // so nah muss ein Erdmännchen an einer Kolonie sein, um dazuzugehören
 const TURN_TIME = 15; // alle so viele Sekunden dreht sich der Wächter eine Richtung weiter (im Uhrzeigersinn)
@@ -144,8 +145,8 @@ export default class Meerkat extends Animal {
     if (scene.cache.audio.exists('meerkat_alarm')) scene.sound.play('meerkat_alarm', { volume: ALARM_VOLUME });
     scene.showToast(
       reason === 'catch'
-        ? 'Gefangen! Aber der Wächter hat Alarm geschlagen – die anderen Erdmännchen sind weg.'
-        : 'Der Wächter hat dich gesehen – alle Erdmännchen sind weg! Tipp: Schleich dich von hinten an, er sieht nur, was vor ihm ist.',
+        ? tr('Gefangen! Aber der Wächter hat Alarm geschlagen – die anderen Erdmännchen sind weg.', 'Caught! But the lookout raised the alarm – the other meerkats are gone.')
+        : tr('Der Wächter hat dich gesehen – alle Erdmännchen sind weg! Tipp: Schleich dich von hinten an, er sieht nur, was vor ihm ist.', 'The lookout saw you – all the meerkats are gone! Tip: sneak up from behind, it only sees what is in front of it.'),
     );
     for (const a of [...this.allAnimals]) {
       if (a.colony === colony && a.state === 'wild') scene.despawn(a);

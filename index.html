@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <title>Henriks Garten</title>
+    <title>My Little Zoo</title>
     <style>
       html, body {
         margin: 0; height: 100%; background: #2d4a22; overflow: hidden;
@@ -19,8 +19,8 @@
         cursor: pointer; user-select: none;
       }
       #hud .key {
-        display: inline-block; margin-left: 8px; padding: 0 5px; font-size: 12px;
-        color: #2b1d14; background: #fff8e6; border-radius: 4px;
+        display: inline-block; margin-left: 8px; padding: 1px 8px; font-size: 13px;
+        color: #2b1d14; background: #fff8e6; border-radius: 8px; box-shadow: 0 2px 0 #2b1d14;
       }
       #tools { position: fixed; left: 16px; bottom: 16px; display: flex; gap: 10px; pointer-events: none; }
       .tool {
@@ -169,6 +169,22 @@
       .journal-box .tool-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
       .journal-box .tool-row .tool-img { width: 34px; height: 34px; }
       .journal-box .tool-row b { min-width: 90px; }
+      /* Steuerung ganz oben in der Übersicht: PC und Tablet nebeneinander (schmal untereinander) */
+      .journal-box > h3:first-of-type { margin-top: 0; }
+      .journal-box .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 8px; margin-bottom: 14px; }
+      .journal-box .ctl-box { padding: 8px 10px; background: #e8c48a; border: 2px solid #a8743f; border-radius: 10px; }
+      .journal-box .ctl-box > b { display: block; margin-bottom: 4px; font-size: 16px; }
+      .journal-box .ctl-row { display: grid; grid-template-columns: 9.5em 1fr; gap: 8px; padding: 2px 0; font-size: 14px; }
+      .journal-box .ctl-keys { font-weight: bold; }
+      .journal-box kbd {
+        display: inline-block; min-width: 1em; margin: 0 1px; padding: 0 4px; text-align: center;
+        font: bold 12px/1.5 "Trebuchet MS", Arial, sans-serif; color: #2b1d14; background: #fff8e6; border: 1px solid #a8743f; border-radius: 4px;
+      }
+      /* Willkommens-Tafel beim neuen Spiel (gleiche Tafel wie die Übersicht, nur schmaler) */
+      .journal-box.intro-box { width: min(760px, 94vw); }
+      .intro-goals { margin: 0 0 14px; padding: 0; list-style: none; font-size: 16px; }
+      .intro-goals li { display: flex; gap: 10px; padding: 4px 0; }
+      .intro-icon { flex: none; width: 1.4em; text-align: center; color: #e8508a; }
       .journal-box .close-hint { margin: 12px 0 0; text-align: center; font-size: 13px; color: #6b4224; }
       #sign {
         position: fixed; right: 16px; bottom: 16px; padding: 10px 16px; min-width: 260px;
@@ -327,6 +343,13 @@
       #start.asking .start-ask { display: flex; }
       #start.asking [data-act="new"] { display: none; }
       .menu-saved { margin: 2px 0 0; font-size: 14px; color: #6b4224; }
+      /* Sprachwahl unten auf dem Startbildschirm */
+      .start-lang { display: flex; gap: 8px; margin-top: 2px; }
+      .lang-btn {
+        padding: 5px 14px; border: 2px solid #a8743f; border-radius: 10px; background: #e8c48a; cursor: pointer;
+        font: bold 15px "Trebuchet MS", Arial, sans-serif; color: #3a2414;
+      }
+      .lang-btn.on { background: #6b4224; border-color: #6b4224; color: #fff8e6; cursor: default; }
       #hud .test { margin-left: 8px; padding: 0 5px; font-size: 12px; color: #fff8e6; background: #c0392b; border-radius: 4px; }
       @keyframes toast { 0% { opacity: 0; } 8%, 80% { opacity: 1; } 100% { opacity: 0; } }
     </style>
@@ -334,7 +357,17 @@
   <body>
     <div id="game"></div>
     <!-- Ladeanzeige (siehe src/ui/loading.js): gleich beim Öffnen der Seite zu sehen -->
-    <div id="loading" class="show"><div class="loading-box"><h1>Henriks Garten</h1><p class="loading-text">Das Spiel wird geladen …</p><div class="loading-bar"><div class="loading-fill"></div></div></div></div>
+    <div id="loading" class="show"><div class="loading-box"><h1>My Little Zoo</h1><p class="loading-text">Das Spiel wird geladen …</p><div class="loading-bar"><div class="loading-fill"></div></div></div></div>
+    <script>
+      // Ladeanzeige gleich in der richtigen Sprache (dieselbe Regel wie in src/i18n.js)
+      (function () {
+        var l = null;
+        try { l = localStorage.getItem("my-little-zoo-lang"); } catch (e) {}
+        if (l !== "de" && l !== "en") l = ((navigator.languages && navigator.languages[0]) || navigator.language || "").toLowerCase().indexOf("de") === 0 ? "de" : "en";
+        document.documentElement.lang = l;
+        if (l === "en") document.querySelector("#loading .loading-text").textContent = "Loading the game …";
+      })();
+    </script>
     <div id="hud"></div>
     <div id="tools"></div>
     <div id="toast"></div>

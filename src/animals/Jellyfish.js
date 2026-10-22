@@ -4,6 +4,7 @@
 // Selten treibt eine Goldqualle mit (Skin "jellyfish2"). Im dunklen Raum des Aquariums leuchten die Quallen im Becken.
 import Phaser from 'phaser';
 import ReefFish from './ReefFish.js';
+import { tr } from '../i18n.js';
 
 const RISE_TIME = 0.7; // Sekunden: zusammenziehen und aufsteigen
 const SINK_TIME = [1.6, 2.4]; // ... entspannen und sinken (nur dann fangbar)
@@ -107,7 +108,7 @@ export default class Jellyfish extends ReefFish {
     const p = this.scene.player;
     const a = Math.atan2(this.y - p.y, this.x - p.x);
     this.scene.tweens.add({ targets: this, x: this.x + Math.cos(a) * SLIP, y: this.y + Math.sin(a) * SLIP * 0.5, h: Math.min(HEIGHT[1], this.h + 20), duration: 500, ease: 'Quad.easeOut' });
-    const t = this.scene.add.text(this.x, this.y - this.h - 30, 'flutsch!', { fontFamily: 'Trebuchet MS, Arial', fontSize: '12px', fontStyle: 'bold', color: '#ffffff', stroke: '#1f6fb0', strokeThickness: 3, resolution: 4 }).setOrigin(0.5).setDepth(100000);
+    const t = this.scene.add.text(this.x, this.y - this.h - 30, tr('flutsch!', 'whoosh!'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '12px', fontStyle: 'bold', color: '#ffffff', stroke: '#1f6fb0', strokeThickness: 3, resolution: 4 }).setOrigin(0.5).setDepth(100000);
     this.scene.tweens.add({ targets: t, y: t.y - 16, alpha: 0, duration: 800, onComplete: () => t.destroy() });
   }
 

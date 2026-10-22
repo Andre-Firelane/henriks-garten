@@ -2,6 +2,7 @@
 // Das Spiel pausiert so lange. Esc schließt das Menü wieder.
 import { save } from '../save.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
+import { locale, tr } from '../i18n.js';
 
 let panel = null;
 let state = null;
@@ -13,17 +14,18 @@ export function isMenuOpen() {
 }
 
 function savedLine() {
-  if (save.testMode) return 'Test-Spiel – wird nicht gespeichert';
-  if (!save.lastSaved) return 'Noch nicht gespeichert';
-  return `Zuletzt gespeichert: ${new Date(save.lastSaved).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`;
+  if (save.testMode) return tr('Test-Spiel – wird nicht gespeichert', 'Test game – not saved');
+  if (!save.lastSaved) return tr('Noch nicht gespeichert', 'Not saved yet');
+  const time = new Date(save.lastSaved).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  return tr(`Zuletzt gespeichert: ${time} Uhr`, `Last saved: ${time}`);
 }
 
 function render() {
   panel.innerHTML = `<div class="chest-box menu-box">${CLOSE_BUTTON}
-      <h2>Menü</h2>
-      <button class="start-btn" data-act="resume">▶ Weiterspielen</button>
-      <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>💾 Speichern</button>
-      <button class="start-btn" data-act="title">⌂ Zum Startbildschirm</button>
+      <h2>${tr('Menü', 'Menu')}</h2>
+      <button class="start-btn" data-act="resume">▶ ${tr('Weiterspielen', 'Resume')}</button>
+      <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>💾 ${tr('Speichern', 'Save')}</button>
+      <button class="start-btn" data-act="title">⌂ ${tr('Zum Startbildschirm', 'Title screen')}</button>
       <p class="menu-saved">${savedLine()}</p>
     </div>`;
 }
@@ -59,7 +61,7 @@ function onClick(e) {
   else if (act === 'save' && !b.disabled) {
     const ok = state.onSave();
     render();
-    panel.querySelector('.menu-saved').textContent = ok ? 'Gespeichert ✓' : 'Speichern hat nicht geklappt';
+    panel.querySelector('.menu-saved').textContent = ok ? tr('Gespeichert ✓', 'Saved ✓') : tr('Speichern hat nicht geklappt', 'Saving did not work');
   } else if (act === 'title') {
     const cb = state.onTitle;
     close();

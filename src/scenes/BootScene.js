@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { openStartScreen } from '../ui/startScreen.js';
 import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
+import { tr } from '../i18n.js';
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -219,7 +220,7 @@ export default class BootScene extends Phaser.Scene {
     hideLoading();
     openStartScreen((data) => {
       // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige
-      showLoading('Das Spiel startet …');
+      showLoading(tr('Das Spiel startet …', 'Starting the game …'));
       afterPaint(() => this.scene.start('Garden', data));
     });
   }

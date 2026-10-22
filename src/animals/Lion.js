@@ -8,6 +8,7 @@ import Animal, { SPRITE_SINK } from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
 import { NEAR_TREES, isTerrainBlocked, inPen, isGate, fenceAxisAt } from '../world/map.js';
 import { footTiles } from '../world/collision.js';
+import { tr } from '../i18n.js';
 
 const SLEEP_TIME = [5, 10]; // so lange schläft er am Stück
 const ALERT_TIME = [2, 3]; // so lange schaut er auf
@@ -125,7 +126,7 @@ export default class Lion extends Animal {
   roar(player) {
     const scene = this.scene;
     if (scene.cache.audio.exists('lion_roar')) scene.sound.play('lion_roar', { volume: ROAR_VOLUME });
-    scene.showToast('Der Löwe hat dich bemerkt und trottet davon. Schleich dich an, solange er schnarcht (Zzz)!');
+    scene.showToast(tr('Der Löwe hat dich bemerkt und trottet davon. Schleich dich an, solange er schnarcht (Zzz)!', 'The lion noticed you and trots away. Sneak up while it snores (Zzz)!'));
     // unter den Plätzen an Bäumen die am weitesten vom Spieler entfernten
     const spots = NEAR_TREES.map((t) => {
       const p = tileToWorld(t.tx, t.ty);

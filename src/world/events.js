@@ -1,70 +1,71 @@
 // Events im Tierpark: am Hauptrechner im Haupthaus gegen Bewunderungsherzen eintauschen. Die Zeit läuft mit der echten
 // Uhr, ein Event läuft also auch weiter, wenn man den Park verlässt.
 import { game } from '../state.js';
+import { tr } from '../i18n.js';
 
 const MINUTE = 60 * 1000;
 
 export const EVENTS = [
   {
     id: 'babies',
-    name: 'Tierbabys',
-    text: '5 Minuten lang bekommen die Tiere Nachwuchs. Die Besucher lieben das!',
+    name: tr('Tierbabys', 'Animal Babies'),
+    text: tr('5 Minuten lang bekommen die Tiere Nachwuchs. Die Besucher lieben das!', 'For 5 minutes the animals have babies. The visitors love it!'),
     cost: 50,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE, // danach so lange Pause, bevor man es wieder starten kann
   },
   {
     id: 'ride',
-    name: 'Reittier',
-    text: '10 Minuten reitest du in den Welten: schneller unterwegs und überall Werkzeug wechseln.',
+    name: tr('Reittier', 'Mount'),
+    text: tr('10 Minuten reitest du in den Welten: schneller unterwegs und überall Werkzeug wechseln.', 'Ride through the worlds for 10 minutes: move faster and switch tools anywhere.'),
     cost: 50,
     duration: 10 * MINUTE,
     cooldown: 5 * MINUTE,
   },
   {
     id: 'flamingo',
-    name: 'Flamingo-Flug',
-    text: '5 Minuten lang fliegen Flamingos über Wiese, Wald und Savanne. Fang einen für den Tierpark!',
+    name: tr('Flamingo-Flug', 'Flamingo Flight'),
+    text: tr('5 Minuten lang fliegen Flamingos über Wiese, Wald und Savanne. Fang einen für den Tierpark!', 'For 5 minutes flamingos fly over the meadow, forest and savanna. Catch one for your zoo!'),
     cost: 100,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
   {
     id: 'farm',
-    name: 'Bauernhof',
-    text: '5 Minuten lang sind die Schafe auf der Wiese Kühe, Schweine und Ziegen. Gefangene bleiben es!',
+    name: tr('Bauernhof', 'Farm'),
+    text: tr('5 Minuten lang sind die Schafe auf der Wiese Kühe, Schweine und Ziegen. Gefangene bleiben es!', 'For 5 minutes the sheep on the meadow are cows, pigs and goats. The ones you catch stay that way!'),
     cost: 100,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
   {
     id: 'rare',
-    name: 'Seltene Tiere',
-    text: '5 Minuten lang ist draußen jedes zweite neue Tier eine seltene Variante: Glöckchen-Katze, Oryx, Wels, Hirsch ...',
+    name: tr('Seltene Tiere', 'Rare Animals'),
+    text: tr('5 Minuten lang ist draußen jedes zweite neue Tier eine seltene Variante: Glöckchen-Katze, Oryx, Wels, Hirsch ...', 'For 5 minutes every second new animal outside is a rare variant: bell cat, oryx, catfish, stag ...'),
     cost: 200,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
   {
     id: 'jellyfish',
-    name: 'Quallen-Schwarm',
-    text: '5 Minuten lang treiben Quallen durchs Riff. Fang sie mit dem Quallenglas aus dem Sack – aber nicht anfassen, sie brennen!',
+    name: tr('Quallen-Schwarm', 'Jellyfish Swarm'),
+    text: tr('5 Minuten lang treiben Quallen durchs Riff. Fang sie mit dem Quallenglas aus dem Sack – aber nicht anfassen, sie brennen!', 'For 5 minutes jellyfish drift through the reef. Catch them with the jellyfish jar from the bag – but don’t touch them, they sting!'),
     cost: 100,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
   {
     id: 'wolves',
-    name: 'Wolfsnacht',
-    text: '5 Minuten lang ist es im Wald Nacht. Folge mit der Laterne den leuchtenden Spuren zu den Wolfsrudeln. Wenn sie heulen, darfst du laufen – sonst bleib stehen!',
+    name: tr('Wolfsnacht', 'Wolf Night'),
+    text: tr('5 Minuten lang ist es im Wald Nacht. Folge mit der Laterne den leuchtenden Spuren zu den Wolfsrudeln. Wenn sie heulen, darfst du laufen – sonst bleib stehen!', 'For 5 minutes it is night in the forest. Follow the glowing tracks to the wolf packs with your lantern. While they howl you may walk – otherwise stand still!'),
     cost: 100,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
   {
     id: 'icecream',
-    name: 'Eisstand',
-    text: '8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.',
+    name: tr('Eisstand', 'Ice Cream Stand'),
+    text: tr('8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.', 'For 8 minutes an ice cream truck stands in the middle of the zoo. Every ice cream a visitor buys brings two hearts.'),
     cost: 30,
     duration: 8 * MINUTE,
     cooldown: 5 * MINUTE,

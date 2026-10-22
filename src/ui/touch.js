@@ -1,6 +1,7 @@
 // Touch-Steuerung fürs Tablet: Joystick (linke Bildschirmhälfte, erscheint dort, wo der Finger aufsetzt),
 // Aktionsknopf rechts unten (zeigt das getragene Werkzeug) und Menü-Knopf oben rechts.
 // Erscheint erst, wenn der Bildschirm berührt wird; am PC mit Tastatur ändert sich nichts.
+import { tr } from '../i18n.js';
 
 const RADIUS = 55; // so weit (CSS-Pixel) lässt sich der Knopf des Joysticks ziehen
 const DEADZONE = 0.15; // kleine Ausschläge zählen nicht
@@ -25,6 +26,9 @@ export function setupTouchControls() {
   const action = document.getElementById('btn-action');
   const menu = document.getElementById('btn-menu');
   ui = { action };
+  action.setAttribute('aria-label', tr('Aktion', 'Action'));
+  menu.setAttribute('aria-label', tr('Menü', 'Menu'));
+  document.getElementById('btn-swap').setAttribute('aria-label', tr('Werkzeug wechseln', 'Switch tool'));
 
   // Sobald der Bildschirm berührt wird: Touch-Ansicht einschalten
   window.addEventListener('touchstart', () => document.body.classList.add('touch'), { once: true, passive: true });
@@ -46,7 +50,7 @@ export function setupTouchControls() {
   const markFull = () => {
     document.body.classList.toggle('fullscreen', isFull());
     button.innerHTML = isFull() ? ICON_SHRINK : ICON_EXPAND;
-    button.setAttribute('aria-label', isFull() ? 'Vollbild beenden' : 'Vollbild');
+    button.setAttribute('aria-label', isFull() ? tr('Vollbild beenden', 'Exit full screen') : tr('Vollbild', 'Full screen'));
   };
   markFull();
   document.addEventListener('fullscreenchange', markFull);

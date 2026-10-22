@@ -7,6 +7,7 @@ import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { MAP_W, MAP_H, isBlocked, inPen } from '../world/map.js';
+import { tr } from '../i18n.js';
 
 const PACKS = 2; // so viele Rudel sind unterwegs
 const PACK_SIZE = [3, 4];
@@ -231,7 +232,7 @@ export class WolfNight {
       t = this.scene.add.text(0, 0, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '13px', fontStyle: 'bold', color: '#fff8e6', stroke: '#1a2040', strokeThickness: 3, resolution: 4 }).setOrigin(0.5).setDepth(NIGHT_DEPTH + 3);
       this.signs.set(pack, t);
     }
-    t.setText(pack.running ? '💨' : pack.phase === 'howl' ? 'Auuuu ♪' : pack.phase === 'watch' ? '👀' : '');
+    t.setText(pack.running ? '💨' : pack.phase === 'howl' ? tr('Auuuu ♪', 'Awooo ♪') : pack.phase === 'watch' ? '👀' : '');
   }
 
   // Geheul: je näher das Rudel, desto lauter

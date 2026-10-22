@@ -3,6 +3,7 @@
 // Esc oder ein Tipp neben die Gebiete schließt die Karte.
 import { animalIconSquare } from './icons.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
+import { tr } from '../i18n.js';
 
 let panel = null;
 let state = null;
@@ -20,13 +21,13 @@ export function openTravelMap(places, current, onTravel, onClose) {
   const markers = places
     .map(
       (p) => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%">
-        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? '<small>Du bist hier</small>' : ''}</span>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}</span>
       </button>`,
     )
     .join('');
   panel.innerHTML = `<div class="travel-box">${CLOSE_BUTTON}
       <div class="travel-map">${markers}</div>
-      <p class="travel-hint">Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.</p>
+      <p class="travel-hint">${tr('Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.', 'Where do you want to go? Tap an area – or choose with <b>WASD</b> and drive off with <b>E</b>.')}</p>
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();

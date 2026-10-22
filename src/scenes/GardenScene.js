@@ -50,6 +50,7 @@ import {
 } from '../world/map.js';
 import { LEVELS } from '../world/levels.js';
 import { game } from '../state.js';
+import { tr } from '../i18n.js';
 import { save, saveHandlers, writeSave } from '../save.js';
 import Player from '../player/Player.js';
 import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, SKINS } from '../animals/Animal.js';
@@ -119,80 +120,103 @@ const SIGN_ICON_H = 22;
 
 // Für die Übersicht: womit man fängt (Bild, Name) und besondere Tipps je Tierart
 const CATCH_TOOLS = {
-  touch: ['hand', 'Berühren'],
-  net: ['net', 'Kescher'],
+  touch: ['hand', tr('Berühren', 'Touch')],
+  net: ['net', tr('Kescher', 'Net')],
   lasso: ['lasso', 'Lasso'],
-  trap: ['trap', 'Falle'],
-  food: ['food', 'Grünfutter'],
-  scissors: ['scissors', 'Schere'],
-  jar: ['jar', 'Quallenglas'],
-  swim: ['hand', 'Mitschwimmen'],
+  trap: ['trap', tr('Falle', 'Trap')],
+  food: ['food', tr('Grünfutter', 'Leafy greens')],
+  scissors: ['scissors', tr('Schere', 'Scissors')],
+  jar: ['jar', tr('Quallenglas', 'Jellyfish jar')],
+  swim: ['hand', tr('Mitschwimmen', 'Swim along')],
 };
 const CATCH_TIPS = {
-  fish: 'Nur wenn er nach den Luftblasen auftaucht.',
-  koi: 'Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!',
-  reeffish: 'Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.',
-  seahorse: 'Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!',
-  wolf: 'Nur in der Wolfsnacht im Wald. Folge den leuchtenden Spuren. Heulen die Wölfe, darfst du laufen – hören sie auf und schauen sich um (👀), bleib sofort stehen! Erreichst du einen, berühre ihn.',
-  jellyfish: 'Nur beim Quallen-Schwarm im Riff. Mit dem Quallenglas – aber nur, wenn sie langsam sinkt! Beim Aufsteigen flutscht sie davon. Nicht anfassen, sie brennt!',
-  ray: 'Schwimm neben ihm her – nicht zu nah, sonst erschrickt er, und nicht zu weit weg. Ist die Herzchen-Leiste voll, schwimmt er dir hinterher.',
-  turtle: 'Selten. Hat sich in einem alten Fischernetz verheddert – hol die Schere aus dem Sack, schwimm hin und schneide sie frei: dreimal, dann ist sie frei!',
-  octopus: 'Getarnt fast unsichtbar am Meeresboden. Kommst du näher, schwimmt sie weg – keschere sie schnell, sonst verschwindet sie in einer Tintenwolke!',
-  mole: 'Nur wenn er aus seinem Hügel schaut.',
-  squirrel: 'Nur wenn es vom Baum herunterkommt – halte etwas Abstand.',
-  heron: 'Nur wenn er am Wasser gelandet ist.',
-  flamingo: 'Nur beim Flamingo-Flug – und nur, wenn er gelandet ist.',
-  deer: 'Scheu: aus der Ferne mit dem Lasso.',
-  stag: 'Selten und scheu: aus der Ferne mit dem Lasso.',
-  fox: 'Nur mit der Falle.',
-  antelope: 'Lebt in Herden – fängst du eine, rennen die anderen weg.',
-  zebra: 'Beim Trinken am Wasserloch flieht es nicht, dann kannst du es auch berühren.',
-  meerkat: 'Schleich dich von hinten an – der Wächter sieht nur, was vor ihm ist.',
-  lion: 'Kraulen, solange er schnarcht (Zzz). Hören die Zzz auf, bleib stehen und warte weit weg!',
-  crocodile: 'Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.',
-  giraffe: 'Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.',
-  panda: 'Mit Grünfutter folgt er dir – aber mach einen Bogen um Bambus und hohes Gras!',
-  peacock: 'Scheu – kommst du zu nah, rennt er weg oder fliegt sogar davon. Warte, bis er ein Rad schlägt: dann kannst du ihn berühren oder keschern.',
-  orangutan: 'Sitzt oben im Urwaldbaum. Stell dich ohne Werkzeug darunter und warte, bis er winkt – dann schnell zurückwinken! Dreimal geschafft, kommt er herunter.',
-  tiger: 'Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!',
-  macaque: 'Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!',
+  fish: tr('Nur wenn er nach den Luftblasen auftaucht.', 'Only when it comes up after the air bubbles.'),
+  koi: tr('Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!', 'Scatter fish food into the water from the shore – they come up and snap at it. Net them quickly!'),
+  reeffish: tr('Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.', 'In the reef. If you get too close, they flee – swim after them, you are faster. At the aquarium they move into the tanks.'),
+  seahorse: tr('Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!', 'Hides in the corals. When bubbles rise, it peeks out – then net it quickly!'),
+  wolf: tr('Nur in der Wolfsnacht im Wald. Folge den leuchtenden Spuren. Heulen die Wölfe, darfst du laufen – hören sie auf und schauen sich um (👀), bleib sofort stehen! Erreichst du einen, berühre ihn.', 'Only during the Wolf Night in the forest. Follow the glowing tracks. While the wolves howl, you may walk – when they stop and look around (👀), stand still at once! When you reach one, touch it.'),
+  jellyfish: tr('Nur beim Quallen-Schwarm im Riff. Mit dem Quallenglas – aber nur, wenn sie langsam sinkt! Beim Aufsteigen flutscht sie davon. Nicht anfassen, sie brennt!', 'Only during the Jellyfish Swarm in the reef. Use the jellyfish jar – but only while it slowly sinks! When it rises, it slips away. Don’t touch it, it stings!'),
+  ray: tr('Schwimm neben ihm her – nicht zu nah, sonst erschrickt er, und nicht zu weit weg. Ist die Herzchen-Leiste voll, schwimmt er dir hinterher.', 'Swim alongside it – not too close or it gets scared, and not too far away. When the heart bar is full, it swims after you.'),
+  turtle: tr('Selten. Hat sich in einem alten Fischernetz verheddert – hol die Schere aus dem Sack, schwimm hin und schneide sie frei: dreimal, dann ist sie frei!', 'Rare. It is tangled in an old fishing net – get the scissors from the bag, swim over and cut it free: three cuts and it is free!'),
+  octopus: tr('Getarnt fast unsichtbar am Meeresboden. Kommst du näher, schwimmt sie weg – keschere sie schnell, sonst verschwindet sie in einer Tintenwolke!', 'Camouflaged and almost invisible on the sea floor. When you come closer, it swims away – net it quickly, or it vanishes in a cloud of ink!'),
+  mole: tr('Nur wenn er aus seinem Hügel schaut.', 'Only when it peeks out of its molehill.'),
+  squirrel: tr('Nur wenn es vom Baum herunterkommt – halte etwas Abstand.', 'Only when it comes down from the tree – keep a little distance.'),
+  heron: tr('Nur wenn er am Wasser gelandet ist.', 'Only when it has landed by the water.'),
+  flamingo: tr('Nur beim Flamingo-Flug – und nur, wenn er gelandet ist.', 'Only during the Flamingo Flight – and only when it has landed.'),
+  deer: tr('Scheu: aus der Ferne mit dem Lasso.', 'Shy: use the lasso from a distance.'),
+  stag: tr('Selten und scheu: aus der Ferne mit dem Lasso.', 'Rare and shy: use the lasso from a distance.'),
+  fox: tr('Nur mit der Falle.', 'Only with the trap.'),
+  antelope: tr('Lebt in Herden – fängst du eine, rennen die anderen weg.', 'Lives in herds – catch one and the others run away.'),
+  zebra: tr('Beim Trinken am Wasserloch flieht es nicht, dann kannst du es auch berühren.', 'While drinking at the water hole it doesn’t run away – then you can even touch it.'),
+  meerkat: tr('Schleich dich von hinten an – der Wächter sieht nur, was vor ihm ist.', 'Sneak up from behind – the lookout only sees what is in front of it.'),
+  lion: tr('Kraulen, solange er schnarcht (Zzz). Hören die Zzz auf, bleib stehen und warte weit weg!', 'Pet it while it snores (Zzz). When the Zzz stop, stand still and wait far away!'),
+  crocodile: tr('Wie beim Fisch: warte auf die Luftblasen im Wasserloch und wirf das Lasso, wenn der Kopf auftaucht.', 'Like the fish: wait for the air bubbles in the water hole and throw the lasso when its head comes up.'),
+  giraffe: tr('Füttere sie mit Grünfutter, dann folgt sie dir vielleicht.', 'Feed it leafy greens and maybe it will follow you.'),
+  panda: tr('Mit Grünfutter folgt er dir – aber mach einen Bogen um Bambus und hohes Gras!', 'With leafy greens it follows you – but stay away from bamboo and tall grass!'),
+  peacock: tr('Scheu – kommst du zu nah, rennt er weg oder fliegt sogar davon. Warte, bis er ein Rad schlägt: dann kannst du ihn berühren oder keschern.', 'Shy – if you get too close, it runs or even flies away. Wait until it fans out its tail: then you can touch it or net it.'),
+  orangutan: tr('Sitzt oben im Urwaldbaum. Stell dich ohne Werkzeug darunter und warte, bis er winkt – dann schnell zurückwinken! Dreimal geschafft, kommt er herunter.', 'Sits high up in a jungle tree. Stand underneath without a tool and wait until it waves – then quickly wave back! Do it three times and it climbs down.'),
+  tiger: tr('Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!', 'Prowls through the bamboo as a dark shadow. Roll the ball over, walk away a bit and keep your distance while it looks curious. It only plays for a moment and then dashes off – quick, the lasso!'),
+  macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
 };
+
+// Für die Übersicht ganz oben: die Steuerung, getrennt für PC und Tablet/Handy
+const controlRows = (rows) => rows.map(([keys, what]) => `<div class="ctl-row"><span class="ctl-keys">${keys}</span><span>${what}</span></div>`).join('');
+const CONTROLS = `<h3>${tr('Steuerung', 'Controls')}</h3>
+  <div class="controls">
+    <div class="ctl-box"><b>💻 PC</b>${controlRows([
+      [tr('<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> oder Pfeiltasten', '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys'), tr('laufen', 'walk')],
+      ['<kbd>E</kbd> / <kbd>Enter</kbd>', tr('Werkzeug benutzen, Regal, Auto, Computer oder Gehegeschild benutzen', 'use your tool, the shelf, car, computer or enclosure sign')],
+      ['<kbd>I</kbd>', tr('Info (diese Übersicht)', 'info (this page)')],
+      ['<kbd>Q</kbd>', tr('Werkzeug wechseln (beim Reiten)', 'switch tool (while riding)')],
+      ['<kbd>Esc</kbd>', tr('Menü', 'menu')],
+      [tr('Maus', 'Mouse'), tr('Regal, Auto, Computer oder Schild anklicken, wenn du direkt daneben stehst', 'click the shelf, car, computer or a sign when you stand right next to it')],
+    ])}</div>
+    <div class="ctl-box"><b>📱 ${tr('Tablet und Handy', 'Tablet and phone')}</b>${controlRows([
+      [tr('linke Hälfte', 'left half'), tr('Finger aufsetzen und ziehen: laufen', 'put your finger down and drag: walk')],
+      [tr('Knopf unten rechts', 'button bottom right'), tr('Werkzeug benutzen, Regal, Auto, Computer oder Gehegeschild benutzen', 'use your tool, the shelf, car, computer or enclosure sign')],
+      ['ⓘ Info', tr('diese Übersicht', 'this page')],
+      ['☰', tr('Menü', 'menu')],
+      ['⛶', tr('Vollbild an oder aus', 'full screen on or off')],
+      ['🧰', tr('Werkzeug wechseln (beim Reiten)', 'switch tool (while riding)')],
+      [tr('Antippen', 'Tap'), tr('Regal, Auto, Computer oder Schild, wenn du direkt daneben stehst', 'the shelf, car, computer or a sign when you stand right next to it')],
+    ])}</div>
+  </div>`;
 
 // freilaufende Tiere im Tierpark (Pfauen): so viele dürfen es höchstens sein (für die Übersicht), sonst null
 const freeCap = (species) => (LEVELS.park.enclosures ?? []).find((e) => e.free && e.species?.includes(species))?.slots[0] ?? null;
 
 // Für die Schilder an den Gehegetoren: Name und was man an der Fußspur erkennt (zum Lernen)
 const ANIMAL_INFO = {
-  sheep: ['Schaf', 'Paarhufer: Jeder Fuß hat zwei Hufhälften.'],
-  mole: ['Maulwurf', 'Breite Grabhände mit fünf kräftigen Krallen.'],
-  cat: ['Katze', 'Vier Zehen und ein großer Ballen. Die Krallen bleiben beim Laufen eingezogen.'],
-  frog: ['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'],
-  fish: ['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'],
-  koi: ['Koi', 'Hat keine Füße – Koi schwimmen mit ihren Flossen. Am Maul haben sie zwei Barteln.'],
-  reeffish: ['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'],
-  seahorse: ['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'],
-  octopus: ['Krake', 'Hat acht Arme mit Saugnäpfen – damit kriecht sie über den Boden und hält sich fest.'],
-  wolf: ['Wolf', 'Vier Zehen mit Krallen und ein großer Ballen – wie beim Hund, nur größer. Wölfe laufen oft genau in der Spur des Vordermanns.'],
-  jellyfish: ['Qualle', 'Hat weder Füße noch Flossen – sie schwimmt, indem sie ihren Schirm zusammenzieht und wieder entspannt.'],
-  ray: ['Rochen', 'Hat keine Füße – er „fliegt“ mit seinen großen, flachen Brustflossen durchs Wasser.'],
-  turtle: ['Meeresschildkröte', 'Hat Flossen statt Füße – damit „fliegt“ sie durchs Wasser. Zum Luftholen schwimmt sie an die Oberfläche.'],
-  deer: ['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'],
-  stag: ['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'],
-  fox: ['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'],
-  squirrel: ['Eichhörnchen', 'Lange, dünne Finger mit spitzen Krallen – perfekt zum Klettern.'],
-  antelope: ['Antilope', 'Paarhufer: zwei schmale, spitze Hufhälften – gut zum schnellen Rennen.'],
-  zebra: ['Zebra', 'Unpaarhufer wie das Pferd: ein einziger runder Huf statt zwei Hälften.'],
-  meerkat: ['Erdmännchen', 'Vier Zehen mit langen Grabkrallen – damit buddeln sie ihre Höhlen.'],
-  lion: ['Löwe', 'Wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren.'],
-  crocodile: ['Krokodil', 'Fünf gespreizte Zehen mit Krallen – und dazwischen die Schleifspur vom Schwanz.'],
-  giraffe: ['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'],
-  macaque: ['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'],
-  panda: ['Panda', 'Breite Tatzen mit fünf Zehen und einem sechsten „Daumen“ zum Bambushalten.'],
-  peacock: ['Pfau', 'Drei lange Zehen nach vorne und eine nach hinten – wie beim Huhn, nur größer.'],
-  orangutan: ['Orang-Utan', 'Lange Hände und Füße mit einem Daumen auch am Fuß – damit hält er sich an Ästen fest.'],
-  tiger: ['Tiger', 'Riesige Katzenpfote: vier Zehen und ein breiter Ballen. Die Krallen bleiben eingezogen.'],
-  heron: ['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'],
-  flamingo: ['Flamingo', 'Drei Zehen nach vorne mit Schwimmhäuten dazwischen.'],
+  sheep: tr(['Schaf', 'Paarhufer: Jeder Fuß hat zwei Hufhälften.'], ['Sheep', 'Even-toed hoofs: each foot has two hoof halves.']),
+  mole: tr(['Maulwurf', 'Breite Grabhände mit fünf kräftigen Krallen.'], ['Mole', 'Wide digging hands with five strong claws.']),
+  cat: tr(['Katze', 'Vier Zehen und ein großer Ballen. Die Krallen bleiben beim Laufen eingezogen.'], ['Cat', 'Four toes and a big pad. The claws stay pulled in while walking.']),
+  frog: tr(['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'], ['Frog', 'Long, thin fingers with round sticky pads at the tips.']),
+  fish: tr(['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'], ['Fish', 'No feet – fish swim with their fins.']),
+  koi: tr(['Koi', 'Hat keine Füße – Koi schwimmen mit ihren Flossen. Am Maul haben sie zwei Barteln.'], ['Koi', 'No feet – koi swim with their fins. They have two whiskers by their mouth.']),
+  reeffish: tr(['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'], ['Reef fish', 'No feet – reef fish live among the corals and are just as colorful.']),
+  seahorse: tr(['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'], ['Seahorse', 'No feet – it holds on to corals and seagrass with its curly tail.']),
+  octopus: tr(['Krake', 'Hat acht Arme mit Saugnäpfen – damit kriecht sie über den Boden und hält sich fest.'], ['Octopus', 'Eight arms with suckers – it crawls over the sea floor and holds on with them.']),
+  wolf: tr(['Wolf', 'Vier Zehen mit Krallen und ein großer Ballen – wie beim Hund, nur größer. Wölfe laufen oft genau in der Spur des Vordermanns.'], ['Wolf', 'Four toes with claws and a big pad – like a dog, only bigger. Wolves often step right into the tracks of the wolf in front.']),
+  jellyfish: tr(['Qualle', 'Hat weder Füße noch Flossen – sie schwimmt, indem sie ihren Schirm zusammenzieht und wieder entspannt.'], ['Jellyfish', 'No feet and no fins – it swims by squeezing its bell together and letting it go again.']),
+  ray: tr(['Rochen', 'Hat keine Füße – er „fliegt“ mit seinen großen, flachen Brustflossen durchs Wasser.'], ['Ray', 'No feet – it “flies” through the water with its big, flat fins.']),
+  turtle: tr(['Meeresschildkröte', 'Hat Flossen statt Füße – damit „fliegt“ sie durchs Wasser. Zum Luftholen schwimmt sie an die Oberfläche.'], ['Sea turtle', 'Flippers instead of feet – it “flies” through the water with them. To breathe, it swims up to the surface.']),
+  deer: tr(['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'], ['Deer', 'Even-toed hoofs: two narrow hoof halves, pointed at the front.']),
+  stag: tr(['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'], ['Stag', 'Like the deer, only much bigger – you often see two small dewclaws behind them.']),
+  fox: tr(['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'], ['Fox', 'Four toes with claws and a small pad – almost like a dog, only narrower.']),
+  squirrel: tr(['Eichhörnchen', 'Lange, dünne Finger mit spitzen Krallen – perfekt zum Klettern.'], ['Squirrel', 'Long, thin fingers with sharp claws – perfect for climbing.']),
+  antelope: tr(['Antilope', 'Paarhufer: zwei schmale, spitze Hufhälften – gut zum schnellen Rennen.'], ['Antelope', 'Even-toed hoofs: two narrow, pointed hoof halves – good for running fast.']),
+  zebra: tr(['Zebra', 'Unpaarhufer wie das Pferd: ein einziger runder Huf statt zwei Hälften.'], ['Zebra', 'Like a horse: one single round hoof instead of two halves.']),
+  meerkat: tr(['Erdmännchen', 'Vier Zehen mit langen Grabkrallen – damit buddeln sie ihre Höhlen.'], ['Meerkat', 'Four toes with long digging claws – for digging their burrows.']),
+  lion: tr(['Löwe', 'Wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren.'], ['Lion', 'Like a giant cat paw: a big pad, four toes, no claw marks.']),
+  crocodile: tr(['Krokodil', 'Fünf gespreizte Zehen mit Krallen – und dazwischen die Schleifspur vom Schwanz.'], ['Crocodile', 'Five spread-out toes with claws – and the drag mark of the tail in between.']),
+  giraffe: tr(['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'], ['Giraffe', 'Huge hoofs, almost as big as a plate, with two round halves.']),
+  macaque: tr(['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'], ['Japanese macaque', 'Small hands and feet with five long fingers – almost like ours.']),
+  panda: tr(['Panda', 'Breite Tatzen mit fünf Zehen und einem sechsten „Daumen“ zum Bambushalten.'], ['Panda', 'Wide paws with five toes and a sixth “thumb” for holding bamboo.']),
+  peacock: tr(['Pfau', 'Drei lange Zehen nach vorne und eine nach hinten – wie beim Huhn, nur größer.'], ['Peacock', 'Three long toes in front and one behind – like a chicken, only bigger.']),
+  orangutan: tr(['Orang-Utan', 'Lange Hände und Füße mit einem Daumen auch am Fuß – damit hält er sich an Ästen fest.'], ['Orangutan', 'Long hands and feet with a thumb on the foot, too – for holding on to branches.']),
+  tiger: tr(['Tiger', 'Riesige Katzenpfote: vier Zehen und ein breiter Ballen. Die Krallen bleiben eingezogen.'], ['Tiger', 'Giant cat paw: four toes and a wide pad. The claws stay pulled in.']),
+  heron: tr(['Fischreiher', 'Drei lange Zehen nach vorne und eine nach hinten.'], ['Heron', 'Three long toes in front and one behind.']),
+  flamingo: tr(['Flamingo', 'Drei Zehen nach vorne mit Schwimmhäuten dazwischen.'], ['Flamingo', 'Three toes in front with webbing in between.']),
 };
 
 // Falle: wie lange es dauert, bis ein Tier hineingeht, und aus welcher Umgebung Tiere kommen
@@ -299,53 +323,56 @@ const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_sav
 const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
-    name: 'Kescher',
+    name: tr('Kescher', 'Net'),
     catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
-    hint: (list) => `Damit fängst du ${animalIcons(list)}`,
+    hint: (list) => tr(`Damit fängst du ${animalIcons(list)}`, `Catches ${animalIcons(list)}`),
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
     catches: ['deer', 'stag', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron', 'tiger'],
-    hint: (list) => `Damit fängst du ${animalIcons(list)} aus der Ferne`,
+    hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
     create: (scene, player) => new TrapTool(scene, player),
-    name: 'Falle',
-    hint: 'Leg sie aus und warte, bis ein Tier hineingeht',
+    name: tr('Falle', 'Trap'),
+    hint: tr('Leg sie aus und warte, bis ein Tier hineingeht', 'Set it down and wait until an animal walks in'),
   },
   parkfood: {
     create: (scene, player) => new ParkFoodTool(scene, player),
-    name: 'Futter',
-    hint: 'Wirf es am Zaun ins Gehege – dann kommen die Tiere zum Fressen',
+    name: tr('Futter', 'Food'),
+    hint: tr('Wirf es am Zaun ins Gehege – dann kommen die Tiere zum Fressen', 'Throw it over the fence into an enclosure – the animals will come to eat'),
   },
   scissors: {
     create: (scene, player) => new ScissorsTool(scene, player),
-    name: 'Schere',
+    name: tr('Schere', 'Scissors'),
     catches: ['turtle'],
-    hint: (list) => `Damit schneidest du ${animalIcons(list)} aus dem Fischernetz frei – dreimal schneiden!`,
+    hint: (list) => tr(`Damit schneidest du ${animalIcons(list)} aus dem Fischernetz frei – dreimal schneiden!`, `Cut ${animalIcons(list)} free from the fishing net – three cuts!`),
   },
   jar: {
     create: (scene, player) => new Jar(scene, player),
-    name: 'Quallenglas',
+    name: tr('Quallenglas', 'Jellyfish jar'),
     catches: ['jellyfish'],
-    hint: (list) => `Damit fängst du ${animalIcons(list)} – aber nur, wenn sie langsam sinken!`,
+    hint: (list) => tr(`Damit fängst du ${animalIcons(list)} – aber nur, wenn sie langsam sinken!`, `Catches ${animalIcons(list)} – but only while they slowly sink!`),
   },
   koifood: {
     create: (scene, player) => new KoiFoodTool(scene, player),
-    name: 'Fischfutter',
-    hint: `Streu es am Ufer ins Wasser – dann kommen die ${animalIcon('koi')} hoch`,
+    name: tr('Fischfutter', 'Fish food'),
+    hint: tr(`Streu es am Ufer ins Wasser – dann kommen die ${animalIcon('koi')} hoch`, `Scatter it into the water from the shore – the ${animalIcon('koi')} will come up`),
   },
   ball: {
     create: (scene, player) => new BallTool(scene, player),
     name: 'Ball',
-    hint: `Stell dich damit still vor einen Schatten im Bambus – dann wird der ${animalIcon('tiger')} neugierig. Danach hast du gleich das Lasso`,
+    hint: tr(
+      `Stell dich damit still vor einen Schatten im Bambus – dann wird der ${animalIcon('tiger')} neugierig. Danach hast du gleich das Lasso`,
+      `Stand still with it in front of a shadow in the bamboo – the ${animalIcon('tiger')} gets curious. Then you have the lasso right away`,
+    ),
   },
   food: {
     create: (scene, player) => new FoodTool(scene, player),
-    name: 'Grünfutter',
+    name: tr('Grünfutter', 'Leafy greens'),
     catches: ['giraffe', 'panda'],
-    hint: (list) => `Geh nah an ${list.map((s) => animalIcon(s)).join(' oder ')} heran und füttere sie`,
+    hint: (list) => tr(`Geh nah an ${list.map((s) => animalIcon(s)).join(' oder ')} heran und füttere sie`, `Get close to ${list.map((s) => animalIcon(s)).join(' or ')} and feed them`),
   },
 };
 
@@ -560,7 +587,7 @@ export default class GardenScene extends Phaser.Scene {
       const img = this.add.sprite(x, y + 4 - (LEVEL.car.float ?? 0), LEVEL.car.texture, LEVEL.car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
       img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearCar ? this.openCarMap() : this.tooFar()));
       const label = this.add
-        .text(x, y - 76 * k, 'Schnellreise ▸', { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
+        .text(x, y - 76 * k, tr('Schnellreise ▸', 'Fast travel ▸'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
         .setOrigin(0.5)
         .setDepth(100000)
         .setVisible(false);
@@ -690,9 +717,9 @@ export default class GardenScene extends Phaser.Scene {
     this.updateHud();
     this.updateToolbar();
     if (data.level) {
-      const back = data.returned ? `<br><small>${data.returned} ist wieder im Regal im anderen Gebiet</small>` : '';
+      const back = data.returned ? `<br><small>${tr(`${data.returned} ist wieder im Regal im anderen Gebiet`, `${data.returned} – back on the shelf in the other area`)}</small>` : '';
       if (data.upgraded) {
-        this.time.delayedCall(350, () => this.showToast(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz und neue Ausstattung.`));
+        this.time.delayedCall(350, () => this.showToast(tr(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz und neue Ausstattung.`, `🏗️ ${data.upgraded} upgraded! More space and new equipment.`)));
       }
       this.showToast(`${LEVEL.name}${back}${moved}`);
     }
@@ -704,6 +731,7 @@ export default class GardenScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.scale.off('resize', this.fitZoom, this));
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
+    if (data.intro) this.time.delayedCall(400, () => this.showIntro()); // neues Spiel: Willkommens-Tafel
     this.startAmbient();
     this.startSteam();
     this.drawBridges();
@@ -715,7 +743,7 @@ export default class GardenScene extends Phaser.Scene {
     const useTool = () => {
       if (this.nearFeeder && !this.leaving && this.toolId !== 'parkfood') {
         this.equipTool('parkfood'); // am Futterautomaten: Futter holen
-        this.showToast('Futter genommen! Wirf es am Zaun ins Gehege – dann kommen die Tiere.');
+        this.showToast(tr('Futter genommen! Wirf es am Zaun ins Gehege – dann kommen die Tiere.', 'Got food! Throw it over the fence into an enclosure – the animals will come.'));
         return;
       }
       if (this.nearComputer && !this.leaving) {
@@ -740,7 +768,7 @@ export default class GardenScene extends Phaser.Scene {
         return;
       }
       if (this.nearTurtle && !this.leaving && this.toolId !== 'scissors') {
-        this.showToast(`✂️ Das Netz ist zu fest – hol die Schere aus dem Sack am Anker.`); // mit der Schere schneidet der Werkzeug-Einsatz
+        this.showToast(tr('✂️ Das Netz ist zu fest – hol die Schere aus dem Sack am Anker.', '✂️ The net is too strong – get the scissors from the bag at the anchor.')); // mit der Schere schneidet der Werkzeug-Einsatz
         return;
       }
       const tool = this.tool;
@@ -1399,7 +1427,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Antippen aus der Ferne: erst hingehen
   tooFar() {
-    if (!this.leaving) this.showToast('Geh erst direkt daneben.');
+    if (!this.leaving) this.showToast(tr('Geh erst direkt daneben.', 'Walk right up to it first.'));
   }
 
   // Boden einmal in große Flächen (je 1024 x 1024 Pixel) malen statt tausender einzelner Kacheln, die sonst in jedem Bild
@@ -1482,7 +1510,7 @@ export default class GardenScene extends Phaser.Scene {
   // Abzeichen oben links: Gebiet und wie viele Tiere schon zuhause sind; die Einzelheiten zeigt die Übersicht (I)
   updateHud() {
     const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
-    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span><span class="key">I</span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
+    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span><span class="key">ⓘ Info</span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
   }
 
   // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
@@ -1501,17 +1529,17 @@ export default class GardenScene extends Phaser.Scene {
         if (tab === 'pens') return this.upgradePen(id);
         startEvent(id);
         this.updateHud();
-        if (id === 'icecream') this.showToast('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.');
-        if (id === 'farm') this.showToast('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!');
-        if (id === 'rare') this.showToast('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.');
-        if (id === 'flamingo') this.showToast('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.');
-        if (id === 'wolves') this.showToast('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.');
-        if (id === 'jellyfish') this.showToast('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.');
-        if (id === 'ride') this.showToast('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.');
+        if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
+        if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
+        if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
+        if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
+        if (id === 'wolves') this.showToast(tr('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.', '🐺 Wolf Night! It is dark in the forest – follow the glowing tracks to the wolves with your lantern.'));
+        if (id === 'jellyfish') this.showToast(tr('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.', '🪼 Jellyfish Swarm! Jellyfish are drifting through the reef – the jellyfish jar is in the bag at the anchor.'));
+        if (id === 'ride') this.showToast(tr('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.', '🐴 Your mount is waiting in the worlds! There you ride for 10 minutes.'));
         if (id === 'babies') {
           this.spawnBabies(true);
           this.visitors?.updateScore();
-          this.showToast('<span class="heart">♥</span> Tierbabys! Die Besucher strömen herbei.');
+          this.showToast(`<span class="heart">♥</span> ${tr('Tierbabys! Die Besucher strömen herbei.', 'Animal babies! Visitors are flocking in.')}`);
         }
         this.updateEventBanner();
       },
@@ -1526,7 +1554,7 @@ export default class GardenScene extends Phaser.Scene {
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
     const mount = key && !buildingAt(tx, ty) ? key : null;
     if (mount && !this.player.mount && !this.riding) {
-      this.showToast('🐴 Du reitest! Schneller unterwegs – Werkzeug wechseln mit Q bzw. dem Werkzeug-Knopf.');
+      this.showToast(tr('🐴 Du reitest! Schneller unterwegs – Werkzeug wechseln mit Q bzw. dem Werkzeug-Knopf.', '🐴 You are riding! You move faster – switch tools with Q or the tool button.'));
     }
     this.riding = !!key;
     this.player.setMount(mount);
@@ -1552,8 +1580,8 @@ export default class GardenScene extends Phaser.Scene {
           species: e.species ?? [],
           cost,
           done,
-          text: done ? `${penCapacity(e, 1)} Plätze · ${e.upgrade}` : `${penCapacity(e, 0)} → ${penCapacity(e, 1)} Plätze · ${e.upgrade}`,
-          blocked: done ? null : game.hearts < cost ? 'zu wenig Herzen' : null,
+          text: `${done ? '' : `${penCapacity(e, 0)} → `}${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}`,
+          blocked: done ? null : game.hearts < cost ? tr('zu wenig Herzen', 'not enough hearts') : null,
         };
       })
       .sort((u, v) => u.done - v.done);
@@ -1571,15 +1599,17 @@ export default class GardenScene extends Phaser.Scene {
     const arrive = worldToTile(this.player.x, this.player.y);
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      showLoading(`${e.name} wird ausgebaut …`);
+      showLoading(tr(`${e.name} wird ausgebaut …`, `Upgrading ${e.name} …`));
       afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name }));
     });
   }
 
   // warum ein Event gerade nicht startbar ist (sonst null)
   eventBlocked(ev) {
-    if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) return 'braucht 2 gleiche größere Tiere in einem Gehege';
-    if (game.hearts < ev.cost) return 'zu wenig Herzen';
+    if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) {
+      return tr('braucht 2 gleiche größere Tiere in einem Gehege', 'needs 2 matching grown-up animals in one enclosure');
+    }
+    if (game.hearts < ev.cost) return tr('zu wenig Herzen', 'not enough hearts');
     return null;
   }
 
@@ -1654,14 +1684,14 @@ export default class GardenScene extends Phaser.Scene {
   updateEvents() {
     this.updatePenSigns();
     this.updateIceStand();
-    if (this.riding && !isActive('ride')) this.showToast('Das Reittier ist zurück im Stall.');
+    if (this.riding && !isActive('ride')) this.showToast(tr('Das Reittier ist zurück im Stall.', 'Your mount is back in the stable.'));
     this.updateMount();
     const on = isActive('babies');
     if (BABY_LEVELS.includes(LEVEL_ID) && on && !this.babiesOn) this.spawnBabies(false);
     if (BABY_LEVELS.includes(LEVEL_ID) && !on && this.babiesOn) {
       this.removeBabies();
       this.visitors?.updateScore();
-      this.showToast('Das Tierbaby-Event ist vorbei – die Kleinen schlafen jetzt.');
+      this.showToast(tr('Das Tierbaby-Event ist vorbei – die Kleinen schlafen jetzt.', 'The animal baby event is over – the little ones are asleep now.'));
     }
     this.updateEventBanner();
   }
@@ -1679,8 +1709,14 @@ export default class GardenScene extends Phaser.Scene {
   showPenFull(e) {
     const box = document.getElementById('success');
     box.innerHTML = e.free
-      ? `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div><b>Alle ${penCapacity(e)} ${e.name} sind da!</b><small>Sie laufen frei durch den Park – die Besucher sind begeistert.</small>`
-      : `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div><b>${e.name} ist voll!</b><small>Alle ${penCapacity(e)} Plätze belegt – die Besucher sind begeistert.</small>`;
+      ? `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div>${tr(
+          `<b>Alle ${penCapacity(e)} ${e.name} sind da!</b><small>Sie laufen frei durch den Park – die Besucher sind begeistert.</small>`,
+          `<b>All ${penCapacity(e)} ${e.name} are here!</b><small>They roam freely through the zoo – the visitors are thrilled.</small>`,
+        )}`
+      : `<div class="success-star">⭐</div><div>${animalIcons(e.species ?? [], 3.4)}</div>${tr(
+          `<b>${e.name} ist voll!</b><small>Alle ${penCapacity(e)} Plätze belegt – die Besucher sind begeistert.</small>`,
+          `<b>${e.name} is full!</b><small>All ${penCapacity(e)} spaces taken – the visitors are thrilled.</small>`,
+        )}`;
     box.classList.remove('show');
     void box.offsetWidth; // Animation neu starten
     box.classList.add('show');
@@ -1707,7 +1743,7 @@ export default class GardenScene extends Phaser.Scene {
     const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺' };
     const lines = EVENTS.map((ev) => ({ ev, s: eventState(ev.id) }))
       .filter(({ s }) => s.state === 'active')
-      .map(({ ev, s }) => `${icons[ev.id] ?? '★'} ${ev.name} · noch ${formatTime(s.left)}`);
+      .map(({ ev, s }) => `${icons[ev.id] ?? '★'} ${ev.name} · ${tr(`noch ${formatTime(s.left)}`, `${formatTime(s.left)} left`)}`);
     this.eventBanner.classList.toggle('show', lines.length > 0);
     if (lines.length) {
       this.eventBanner.innerHTML = lines.join('<br>');
@@ -1730,6 +1766,26 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Willkommens-Tafel zu Beginn eines neuen Spiels: kurz, worum es geht, und die Steuerung
+  showIntro() {
+    if (isJournalOpen() || this.leaving) return;
+    const goals = [
+      ['🐾', tr('Fang Tiere in den Welten rund um deinen Tierpark. Sie laufen dir hinterher – bring sie nach Hause in deine Gehege.', 'Catch animals in the worlds around your zoo. They follow you – bring them home to your enclosures.')],
+      ['🧰', tr('Werkzeuge wie Kescher, Lasso und Falle liegen im Regal in der Hütte. Jedes Tier fängst du anders.', 'Tools like the net, lasso and trap are on the shelf in the hut. Every animal is caught in its own way.')],
+      ['♥', tr('Besucher lieben deine Tiere und schenken dir Herzen.', 'Visitors love your animals and give you hearts.')],
+      ['🎉', tr('Mit den Herzen startest du am Computer im Haupthaus Events oder baust Gehege aus.', 'Use the hearts at the computer in the main building to start events or upgrade enclosures.')],
+      ['ⓘ', tr('Alles Weitere steht in der Info oben links.', 'You can find everything else under Info at the top left.')],
+    ];
+    const html = `<div class="journal-box intro-box">
+      <h2>${tr('Willkommen bei My Little Zoo!', 'Welcome to My Little Zoo!')}</h2>
+      <ul class="intro-goals">${goals.map(([icon, text]) => `<li><span class="intro-icon">${icon}</span>${text}</li>`).join('')}</ul>
+      ${CONTROLS}
+      <p class="close-hint">${tr('Beliebige Taste oder Tippen – los geht’s!', 'Press any key or tap – let’s go!')}</p>
+    </div>`;
+    this.scene.pause();
+    openJournal(html, () => this.scene.resume());
+  }
+
   // Große Übersicht: alle Tierarten mit Anzahl zuhause, Lebensraum und womit man sie fängt, dazu die Werkzeuge
   showJournal() {
     if (isJournalOpen() || this.leaving) return;
@@ -1743,7 +1799,7 @@ export default class GardenScene extends Phaser.Scene {
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
       return `<div class="card${n ? ' has' : ''}">
-        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">Zuhause: <span class="num">${n}${freeCap(s) ? ` / ${freeCap(s)}` : ''}</span></span></div></div>
+        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">${tr('Zuhause', 'At home')}: <span class="num">${n}${freeCap(s) ? ` / ${freeCap(s)}` : ''}</span></span></div></div>
         <div class="where">${places.join(', ')}</div>
         <div class="tools">${tools}</div>
         <div class="tip">${CATCH_TIPS[s] ?? ''}</div>
@@ -1759,20 +1815,21 @@ export default class GardenScene extends Phaser.Scene {
     const top = hearts[0]?.[1] ?? 1;
     const heartRows = hearts.map(([s, n]) => {
       const icon = s === 'icecream' ? '<span class="hs-ice">🍦</span>' : animalIcon(s, 2.2);
-      const name = s === 'icecream' ? 'Eisstand' : (ANIMAL_INFO[s] ?? [s])[0];
+      const name = s === 'icecream' ? tr('Eisstand', 'Ice cream stand') : (ANIMAL_INFO[s] ?? [s])[0];
       return `<div class="hs-row">${icon}<b>${name}</b><span class="hs-bar"><span style="width:${Math.max(3, (100 * n) / top)}%"></span></span><span class="hs-num"><span class="heart">♥</span> ${n}</span></div>`;
     });
     const heartSum = hearts.reduce((s, [, n]) => s + n, 0);
     const heartHtml = hearts.length
-      ? `<h3>Herzen von den Besuchern · <span class="heart">♥</span> ${heartSum}</h3><div class="hs-list">${heartRows.join('')}</div>`
-      : '<h3>Herzen von den Besuchern</h3><p class="hs-empty">Noch keine – bring Tiere in den Tierpark, dann kommen Besucher.</p>';
+      ? `<h3>${tr('Herzen von den Besuchern', 'Hearts from visitors')} · <span class="heart">♥</span> ${heartSum}</h3><div class="hs-list">${heartRows.join('')}</div>`
+      : `<h3>${tr('Herzen von den Besuchern', 'Hearts from visitors')}</h3><p class="hs-empty">${tr('Noch keine – bring Tiere in den Tierpark, dann kommen Besucher.', 'None yet – bring animals to your zoo and visitors will come.')}</p>`;
     const html = `<div class="journal-box">
-      <h2>Tierbuch · <span class="num">${total}</span> Tiere zuhause</h2>
+      ${CONTROLS}
+      <h2>${tr(`Tierbuch · <span class="num">${total}</span> Tiere zuhause`, `Animal Book · <span class="num">${total}</span> animals at home`)}</h2>
       <div class="cards">${cards.join('')}</div>
       ${heartHtml}
-      <h3>Womit fängst du was?</h3>
+      <h3>${tr('Womit fängst du was?', 'What catches what?')}</h3>
       <div class="tool-list">${toolRows.join('')}</div>
-      <p class="close-hint">Beliebige Taste oder Tippen zum Schließen</p>
+      <p class="close-hint">${tr('Beliebige Taste oder Tippen zum Schließen', 'Press any key or tap to close')}</p>
     </div>`;
     this.scene.pause();
     openJournal(html, () => this.scene.resume());
@@ -1781,19 +1838,19 @@ export default class GardenScene extends Phaser.Scene {
   updateToolbar() {
     if (this.nearFeeder && this.toolId !== 'parkfood') {
       setTouchTool(null, 'assets/feeder.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Futter holen</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Futter holen', 'Get food')}</span></div>`;
       return;
     }
     const pen = !this.tool && this.penAtSign();
     if (pen) {
       const done = isUpgraded(pen);
       setTouchTool(null, 'assets/esign_board.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${done ? 'Gehege ansehen' : 'Gehege ausbauen'}</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${done ? tr('Gehege ansehen', 'View enclosure') : tr('Gehege ausbauen', 'Upgrade enclosure')}</span></div>`;
       return;
     }
     if (this.nearComputer) {
       setTouchTool(null, 'assets/office_desk.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/office_desk.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Computer benutzen</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/office_desk.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Computer benutzen', 'Use computer')}</span></div>`;
       return;
     }
     if (this.nearChest) {
@@ -1802,23 +1859,23 @@ export default class GardenScene extends Phaser.Scene {
       const own = objectAt(this.nearChest.tx, this.nearChest.ty); // eigenes Bild und eigener Name (z. B. der Sack am Anker im Riff)
       const img = own?.chestName ? `assets/${own.key}.png` : house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
       setTouchTool(null, img);
-      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${own?.chestName ?? (house ? 'Regal' : 'Kiste')} öffnen</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr(`${own?.chestName ?? (house ? 'Regal' : 'Kiste')} öffnen`, `Open ${own?.chestName ?? (house ? 'shelf' : 'chest')}`)}</span></div>`;
       return;
     }
     if (this.nearTurtle && this.toolId === 'scissors') {
       setTouchTool('scissors');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scissors.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Netz aufschneiden ✂️ ${this.nearTurtle.cuts} / ${CUTS_NEEDED}</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scissors.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Netz aufschneiden', 'Cut the net')} ✂️ ${this.nearTurtle.cuts} / ${CUTS_NEEDED}</span></div>`;
       return;
     }
     if (this.nearOrangutan && !this.tool) {
       setTouchTool(null, 'assets/orangutan_tree.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/orangutan_tree.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Zurückwinken 👋</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/orangutan_tree.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Zurückwinken', 'Wave back')} 👋</span></div>`;
       return;
     }
     if (this.nearCar) {
       // am Auto zeigt die Aktionstaste die Schnellreise
       setTouchTool(null, 'assets/worldmap.jpg');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/worldmap.jpg" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>Schnellreise</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/worldmap.jpg" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Schnellreise', 'Fast travel')}</span></div>`;
       return;
     }
     const id = this.toolId;
@@ -1898,7 +1955,7 @@ export default class GardenScene extends Phaser.Scene {
       .filter(({ d }) => d < FEED_DIST)
       .sort((u, v) => u.d - v.d)[0]?.a;
     if (!near) {
-      this.showToast(`Geh näher an eine ${animalIcon('giraffe')} oder einen ${animalIcon('panda')} heran, um zu füttern.`);
+      this.showToast(tr(`Geh näher an eine ${animalIcon('giraffe')} oder einen ${animalIcon('panda')} heran, um zu füttern.`, `Get closer to a ${animalIcon('giraffe')} or a ${animalIcon('panda')} to feed it.`));
       return;
     }
     if (near.species === 'panda') return this.feedPanda(near);
@@ -1912,9 +1969,9 @@ export default class GardenScene extends Phaser.Scene {
     this.munchLeaves(giraffe);
     if (Math.random() < FEED_CHANCE) {
       this.catchAnimal(giraffe);
-      this.showToast(`${animalIcon('giraffe', 3.2)} Die Giraffe mag dich! Sie läuft dir jetzt hinterher.`);
+      this.showToast(`${animalIcon('giraffe', 3.2)} ${tr('Die Giraffe mag dich! Sie läuft dir jetzt hinterher.', 'The giraffe likes you! It follows you now.')}`);
     } else {
-      this.showToast(`${animalIcon('giraffe', 3.2)} Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter gibt es im Regal in der Hütte.`);
+      this.showToast(`${animalIcon('giraffe', 3.2)} ${tr('Mmh, lecker! Aber sie bleibt lieber hier. Neues Grünfutter gibt es im Regal in der Hütte.', 'Yum! But it would rather stay here. You can get new leafy greens from the shelf in the hut.')}`);
     }
   }
 
@@ -1922,13 +1979,14 @@ export default class GardenScene extends Phaser.Scene {
   // Das Grünfutter bleibt dabei in der Hand
   feedPanda(panda) {
     if (panda.isSnacking()) {
-      this.showToast(`${animalIcon('panda', 3.2)} Er frisst noch Bambus … in ${Math.ceil(panda.snackLock)} Sekunden mag er wieder Grünfutter.`);
+      const sec = Math.ceil(panda.snackLock);
+      this.showToast(`${animalIcon('panda', 3.2)} ${tr(`Er frisst noch Bambus … in ${sec} Sekunden mag er wieder Grünfutter.`, `It is still eating bamboo … in ${sec} seconds it will want leafy greens again.`)}`);
       return;
     }
     // in Asien verbraucht sich das Grünfutter nicht: es bleibt in der Hand (für den nächsten Panda)
     this.munchLeaves(panda);
     this.catchAnimal(panda);
-    this.showToast(`${animalIcon('panda', 3.2)} Der Panda folgt dir! Mach einen Bogen um Bambus und hohes Gras – da kann er nicht widerstehen.`);
+    this.showToast(`${animalIcon('panda', 3.2)} ${tr('Der Panda folgt dir! Mach einen Bogen um Bambus und hohes Gras – da kann er nicht widerstehen.', 'The panda follows you! Stay away from bamboo and tall grass – it can’t resist them.')}`);
   }
 
   // Kachel in einem Gehege?
@@ -1945,7 +2003,7 @@ export default class GardenScene extends Phaser.Scene {
     const now = this.time.now;
     if (now - (this.macaqueToastAt ?? -1e9) > 8000) {
       this.macaqueToastAt = now;
-      this.showToast('Blubb! Der Affe ist abgetaucht. Aus der heißen Quelle kriegst du ihn nicht – warte, bis er herausspringt.');
+      this.showToast(tr('Blubb! Der Affe ist abgetaucht. Aus der heißen Quelle kriegst du ihn nicht – warte, bis er herausspringt.', 'Blub! The monkey dived under. You can’t get it out of the hot spring – wait until it jumps out.'));
     }
   }
 
@@ -1956,7 +2014,7 @@ export default class GardenScene extends Phaser.Scene {
     this.followers.splice(i, 1);
     panda.snack(target);
     this.updateHud();
-    this.showToast(`${animalIcon('panda', 3.2)} Oh nein – Bambus! Der Panda frisst jetzt erst mal. Gleich kannst du ihn wieder mit Grünfutter locken.`);
+    this.showToast(`${animalIcon('panda', 3.2)} ${tr('Oh nein – Bambus! Der Panda frisst jetzt erst mal. Gleich kannst du ihn wieder mit Grünfutter locken.', 'Oh no – bamboo! The panda is eating now. Soon you can lure it with leafy greens again.')}`);
   }
 
   // Fischfutter am Ufer ins Wasser streuen: die Koi in der Nähe (wild oder im Gehege) kommen herbei und schnappen
@@ -1974,7 +2032,7 @@ export default class GardenScene extends Phaser.Scene {
       .map((w) => ({ ...w, d: Math.hypot(w.x - aim.x, (w.y - aim.y) * 2) }))
       .sort((u, v) => u.d - v.d)[0];
     if (!water || water.d > KOI_FEED_DIST) {
-      this.showToast(`Geh ans Ufer und streu das Futter ins Wasser – dann kommen die ${animalIcon('koi')}.`);
+      this.showToast(tr(`Geh ans Ufer und streu das Futter ins Wasser – dann kommen die ${animalIcon('koi')}.`, `Go to the shore and scatter the food into the water – the ${animalIcon('koi')} will come.`));
       return;
     }
     // das Futter landet mitten auf der Wasserkachel vor dem Ufer, damit man die Koi gut sieht
@@ -1988,7 +2046,7 @@ export default class GardenScene extends Phaser.Scene {
     const koi = [...wild.slice(0, KOI_CALLED), ...penned];
     // kein Koi in der Nähe: das Futter nicht verschwenden
     if (!koi.length) {
-      this.showToast(`Hier ist gerade kein ${animalIcon('koi')} in der Nähe. Stell dich ans Ufer, wo du bunte Schatten im Wasser siehst.`);
+      this.showToast(tr(`Hier ist gerade kein ${animalIcon('koi')} in der Nähe. Stell dich ans Ufer, wo du bunte Schatten im Wasser siehst.`, `There is no ${animalIcon('koi')} nearby right now. Stand on the shore where you see colorful shadows in the water.`));
       return;
     }
     this.koiFedAt = now;
@@ -2000,7 +2058,7 @@ export default class GardenScene extends Phaser.Scene {
     this.equipTool('net');
     this.scatterFood(p, spot);
     for (const a of koi) a.call(spot);
-    this.showToast(`Die ${animalIcon('koi')} kommen! Du hast jetzt den Kescher in der Hand – sie fressen eine Weile.`);
+    this.showToast(tr(`Die ${animalIcon('koi')} kommen! Du hast jetzt den Kescher in der Hand – sie fressen eine Weile.`, `The ${animalIcon('koi')} are coming! You have the net in your hand now – they will eat for a while.`));
   }
 
   // Futter am Zaun ins Gehege werfen: die Tiere dort kommen herbei und fressen, jedes an seinem eigenen Platz
@@ -2019,7 +2077,7 @@ export default class GardenScene extends Phaser.Scene {
       }
     }
     if (!best || best.d > PEN_FEED_DIST) {
-      this.showToast('Stell dich an den Zaun eines Geheges und wirf das Futter hinein.');
+      this.showToast(tr('Stell dich an den Zaun eines Geheges und wirf das Futter hinein.', 'Stand at the fence of an enclosure and throw the food in.'));
       return;
     }
     const e = best.e;
@@ -2029,7 +2087,11 @@ export default class GardenScene extends Phaser.Scene {
     this.toolId = null;
     this.updateToolbar();
     const eaters = this.feedEnclosure(e, p, best.w, true);
-    this.showToast(eaters ? `Die Tiere im Gehege ${e.name} kommen zum Fressen!` : `Lecker Futter im Gehege ${e.name} … aber gerade frisst niemand davon.`);
+    this.showToast(
+      eaters
+        ? tr(`Die Tiere im Gehege ${e.name} kommen zum Fressen!`, `The animals in ${e.name} are coming to eat!`)
+        : tr(`Lecker Futter im Gehege ${e.name} … aber gerade frisst niemand davon.`, `Yummy food in ${e.name} … but nobody is eating it right now.`),
+    );
   }
 
   // Futter von "from" aus ins Gehege werfen (Spieler oder Besucher): die Tiere dort kommen herbei und fressen, jedes an
@@ -2142,7 +2204,7 @@ export default class GardenScene extends Phaser.Scene {
     this.tool = null;
     this.toolId = null;
     this.updateToolbar();
-    this.showToast('Falle ausgelegt! Jetzt heißt es abwarten …');
+    this.showToast(tr('Falle ausgelegt! Jetzt heißt es abwarten …', 'Trap set! Now you have to wait …'));
   }
 
   // Jede ausgelegte Falle wartet für sich (auch, wenn man im anderen Level ist). Läuft ihre Zeit ab,
@@ -2252,7 +2314,7 @@ export default class GardenScene extends Phaser.Scene {
     // Schnapp-Geräusch, auch wenn die Falle gerade nicht zu sehen ist (sie meldet sich ja auch mit einem Hinweis)
     if (this.cache.audio.exists('trap')) this.sound.play('trap', { volume: TRAP_VOLUME });
     const where = here ? '' : ` (${LEVELS[t.level].name})`;
-    this.showToast(`Etwas ist in die Falle gegangen!${where} Geh hin und schau nach …`);
+    this.showToast(tr(`Etwas ist in die Falle gegangen!${where} Geh hin und schau nach …`, `Something walked into the trap!${where} Go and have a look …`));
   }
 
   // Tier abholen, wenn der Spieler an der vollen Falle ist: es folgt ihm, die Falle kehrt zur Hütte zurück
@@ -2264,12 +2326,12 @@ export default class GardenScene extends Phaser.Scene {
       .filter((a) => a.state === 'trapped')
       .sort((a, b) => Math.hypot(a.x - t.x, a.y - t.y) - Math.hypot(b.x - t.x, b.y - t.y))[0];
     if (animal) this.catchAnimal(animal);
-    const surprise = animal ? `${animalIcon(animal.species, 3.2)} war in der Falle! ` : '';
+    const surprise = animal ? `${animalIcon(animal.species, 3.2)} ${tr('war in der Falle!', 'was in the trap!')} ` : '';
     trap.destroy();
     this.traps.delete(t.id);
     game.traps = game.traps.filter((g) => g !== t);
     this.returnTool('trap');
-    this.showToast(`${surprise}Die Falle ist wieder im Regal.`);
+    this.showToast(`${surprise}${tr('Die Falle ist wieder im Regal.', 'The trap is back on the shelf.')}`);
   }
 
   // Kiste an dieser Kachel (aus LEVEL.chests)
@@ -2281,7 +2343,7 @@ export default class GardenScene extends Phaser.Scene {
   openChest(chest) {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
     const tools = [...chest.tools, ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack
-    const items = [...tools.map((id) => ({ id, name: TOOLS[id].name, image: id })), { id: null, name: 'Hände frei', image: 'hand' }];
+    const items = [...tools.map((id) => ({ id, name: TOOLS[id].name, image: id })), { id: null, name: tr('Hände frei', 'Empty hands'), image: 'hand' }];
     this.scene.pause();
     openToolChest(
       items,
@@ -2291,7 +2353,7 @@ export default class GardenScene extends Phaser.Scene {
         if (id === this.toolId) return;
         if (id) {
           this.equipTool(id); // das getragene Werkzeug kommt zurück in die Kiste
-          this.showToast(`${TOOLS[id].name} genommen. ${this.toolHint(id)}`);
+          this.showToast(`${tr(`${TOOLS[id].name} genommen.`, `You took the ${TOOLS[id].name.toLowerCase()}.`)} ${this.toolHint(id)}`);
         } else if (this.tool) this.dropTool();
       },
       () => this.scene.resume(),
@@ -2340,12 +2402,16 @@ export default class GardenScene extends Phaser.Scene {
     }
     const nowFull = ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e));
     nowFull.forEach((e, i) => this.time.delayedCall(1400 + i * 3200, () => this.showPenFull(e)));
-    const home = LEVEL_ID === 'aquarium' ? ['ins Becken', 'in die Becken'] : ['in sein Gehege', 'in ihre Gehege'];
-    let text = moved.length ? `<br>${animalIcons(moved, 2.6)}<br>${moved.length === 1 ? `Dein Tier ist ${home[0]} gezogen.` : `Deine Tiere sind ${home[1]} gezogen.`}` : '';
+    const tank = LEVEL_ID === 'aquarium';
+    const home = moved.length === 1
+      ? tr(`Dein Tier ist ${tank ? 'ins Becken' : 'in sein Gehege'} gezogen.`, `Your animal moved into its ${tank ? 'tank' : 'enclosure'}.`)
+      : tr(`Deine Tiere sind ${tank ? 'in die Becken' : 'in ihre Gehege'} gezogen.`, `Your animals moved into their ${tank ? 'tanks' : 'enclosures'}.`);
+    let text = moved.length ? `<br>${animalIcons(moved, 2.6)}<br>${home}` : '';
     if (this.released?.length) {
       const hearts = this.released.reduce((s, r) => s + r.hearts, 0);
       const n = this.released.length;
-      text += `<br>🌳 ${animalIcons(this.released.map((r) => r.species), 2.2)} ${n === 1 ? 'wurde' : 'wurden'} im Naturreservat ausgewildert · <span class="heart">♥</span> ${hearts}`;
+      const released = n === 1 ? tr('wurde im Naturreservat ausgewildert', 'was released into the nature reserve') : tr('wurden im Naturreservat ausgewildert', 'were released into the nature reserve');
+      text += `<br>🌳 ${animalIcons(this.released.map((r) => r.species), 2.2)} ${released} · <span class="heart">♥</span> ${hearts}`;
       this.released = [];
     }
     return fish + text;
@@ -2390,7 +2456,10 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (!delivered.length) return '';
     const kinds = AQUA.filter((s) => delivered.includes(s)).map((s) => `${animalIcon(s, 2.6)} × ${delivered.filter((d) => d === s).length}`);
-    return `<br>${kinds.join(' ')}<br>${delivered.length === 1 ? 'Dein Fang schwimmt jetzt' : 'Deine Fänge schwimmen jetzt'} im Aquarium.`;
+    const swims = delivered.length === 1
+      ? tr('Dein Fang schwimmt jetzt im Aquarium.', 'Your catch is swimming in the aquarium now.')
+      : tr('Deine Fänge schwimmen jetzt im Aquarium.', 'Your catches are swimming in the aquarium now.');
+    return `<br>${kinds.join(' ')}<br>${swims}`;
   }
 
   // Tierpark: beim Verlassen merken, wie viele Herzen er pro Minute bringt (wie viele Besucher die Tiere anlocken, ein halbes
@@ -2459,9 +2528,10 @@ export default class GardenScene extends Phaser.Scene {
   cutNet(t) {
     if (t.cut()) {
       this.catchAnimal(t);
-      this.showToast(`${animalIcon('turtle', 3.2)} Geschafft – die Meeresschildkröte ist frei! Sie schwimmt dir dankbar hinterher.`);
+      this.showToast(`${animalIcon('turtle', 3.2)} ${tr('Geschafft – die Meeresschildkröte ist frei! Sie schwimmt dir dankbar hinterher.', 'You did it – the sea turtle is free! It gratefully swims after you.')}`);
     } else if (t.cuts === 1) {
-      this.showToast(`✂️ Das Netz reißt! Noch ${CUTS_NEEDED - t.cuts}-mal schneiden.`);
+      const left = CUTS_NEEDED - t.cuts;
+      this.showToast(tr(`✂️ Das Netz reißt! Noch ${left}-mal schneiden.`, `✂️ The net is tearing! ${left} more ${left === 1 ? 'cut' : 'cuts'}.`));
     }
     this.updateToolbar();
   }
@@ -2491,11 +2561,11 @@ export default class GardenScene extends Phaser.Scene {
     const p = this.player;
     const hit = wild.find((a) => this.animals.includes(a) && Math.hypot(a.x - p.x, (a.y - p.y) * 2) < STING_DIST);
     if (hit && p.sting()) {
-      const t = this.add.text(p.x, p.y - 60, 'Autsch!', { fontFamily: 'Trebuchet MS, Arial', fontSize: '13px', fontStyle: 'bold', color: '#ffffff', stroke: '#c8303a', strokeThickness: 3, resolution: 4 }).setOrigin(0.5).setDepth(100000);
+      const t = this.add.text(p.x, p.y - 60, tr('Autsch!', 'Ouch!'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '13px', fontStyle: 'bold', color: '#ffffff', stroke: '#c8303a', strokeThickness: 3, resolution: 4 }).setOrigin(0.5).setDepth(100000);
       this.tweens.add({ targets: t, y: t.y - 18, alpha: 0, duration: 900, onComplete: () => t.destroy() });
       if (this.time.now - (this.stingHintAt ?? -Infinity) > STING_HINT_EVERY) {
         this.stingHintAt = this.time.now;
-        this.showToast(`${animalIcon('jellyfish', 3)} Autsch – Quallen brennen! Nicht anfassen, nimm das Quallenglas.`);
+        this.showToast(`${animalIcon('jellyfish', 3)} ${tr('Autsch – Quallen brennen! Nicht anfassen, nimm das Quallenglas.', 'Ouch – jellyfish sting! Don’t touch them, use the jellyfish jar.')}`);
       }
     }
   }
@@ -2530,7 +2600,7 @@ export default class GardenScene extends Phaser.Scene {
       this.wolfNight.destroy();
       this.wolfNight = null;
       this.startAmbient();
-      this.showToast('🌅 Die Wolfsnacht ist vorbei – es wird wieder hell im Wald.');
+      this.showToast(tr('🌅 Die Wolfsnacht ist vorbei – es wird wieder hell im Wald.', '🌅 The Wolf Night is over – it is getting light in the forest again.'));
     }
     this.wolfNight?.update(dt);
   }
@@ -2539,20 +2609,20 @@ export default class GardenScene extends Phaser.Scene {
   wolvesSawYou() {
     if (this.time.now - (this.wolfHintAt ?? -Infinity) < 8000) return;
     this.wolfHintAt = this.time.now;
-    this.showToast(`👀 Die Wölfe haben dich gesehen und sind weggerannt! Beweg dich nur, wenn sie heulen.`);
+    this.showToast(tr('👀 Die Wölfe haben dich gesehen und sind weggerannt! Beweg dich nur, wenn sie heulen.', '👀 The wolves saw you and ran away! Only move while they howl.'));
   }
 
   // Rochen: die Herzchen-Leiste ist voll – er vertraut einem und schwimmt hinterher
   rayTrusts(ray) {
     this.catchAnimal(ray);
-    if (!ray.skin) this.showToast(`${animalIcon('ray', 3.2)} Der Rochen vertraut dir! Er schwimmt dir jetzt hinterher.`);
+    if (!ray.skin) this.showToast(`${animalIcon('ray', 3.2)} ${tr('Der Rochen vertraut dir! Er schwimmt dir jetzt hinterher.', 'The ray trusts you! It swims after you now.')}`);
   }
 
   // Krake entwischt in einer Tintenwolke (kurzer Hinweis, nur beim ersten Mal in diesem Gebiet)
   inkEscape() {
     if (this.inkShown) return;
     this.inkShown = true;
-    this.showToast(`${animalIcon('octopus', 3)} Puff – die Krake ist in einer Tintenwolke verschwunden! Beim nächsten Mal schneller keschern.`);
+    this.showToast(`${animalIcon('octopus', 3)} ${tr('Puff – die Krake ist in einer Tintenwolke verschwunden! Beim nächsten Mal schneller keschern.', 'Poof – the octopus vanished in a cloud of ink! Net it faster next time.')}`);
   }
 
   // Aquarium: Zierfische nur in Tanks ohne echte Fische
@@ -2666,7 +2736,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   peacockFlew() {
-    this.showToast(`${animalIcon('peacock', 3.2)} Zu nah – der Pfau ist davongeflogen! Warte, bis einer ein Rad schlägt.`);
+    this.showToast(`${animalIcon('peacock', 3.2)} ${tr('Zu nah – der Pfau ist davongeflogen! Warte, bis einer ein Rad schlägt.', 'Too close – the peacock flew away! Wait until one fans out its tail.')}`);
   }
 
   // Orang-Utan: der Spieler winkt zurück (👋 über Henrik); was es bewirkt, entscheidet der Orang-Utan
@@ -2675,19 +2745,19 @@ export default class GardenScene extends Phaser.Scene {
     const hand = this.add.text(p.x - p.faceX * 12, p.sprite.y - 44, '👋', { fontSize: '16px', resolution: 4 }).setOrigin(0.5).setDepth(100000);
     this.tweens.add({ targets: hand, angle: { from: -20, to: 20 }, duration: 150, yoyo: true, repeat: 2, onComplete: () => hand.destroy() });
     const result = o.playerWaves();
-    if (result === 'happy') this.showToast(`${animalIcon('orangutan', 3.2)} Er freut sich! ${'😊'.repeat(o.waves)} Warte, bis er wieder winkt.`);
+    if (result === 'happy') this.showToast(`${animalIcon('orangutan', 3.2)} ${tr('Er freut sich!', 'It is happy!')} ${'😊'.repeat(o.waves)} ${tr('Warte, bis er wieder winkt.', 'Wait until it waves again.')}`);
   }
 
   orangutanMissed(o, reason) {
     this.showToast(
       reason === 'early'
-        ? `${animalIcon('orangutan', 3.2)} Zu früh! Warte, bis er zuerst winkt. Jetzt ist er auf einen anderen Baum gesprungen.`
-        : `${animalIcon('orangutan', 3.2)} Zu langsam! Er ist auf einen anderen Baum gesprungen. Wink gleich zurück, wenn er winkt.`,
+        ? `${animalIcon('orangutan', 3.2)} ${tr('Zu früh! Warte, bis er zuerst winkt. Jetzt ist er auf einen anderen Baum gesprungen.', 'Too early! Wait until it waves first. Now it has jumped to another tree.')}`
+        : `${animalIcon('orangutan', 3.2)} ${tr('Zu langsam! Er ist auf einen anderen Baum gesprungen. Wink gleich zurück, wenn er winkt.', 'Too slow! It has jumped to another tree. Wave back right when it waves.')}`,
     );
   }
 
   orangutanDown() {
-    this.showToast(`${animalIcon('orangutan', 3.2)} Dreimal zurückgewinkt! Er klettert herunter – geh hin und streichel ihn.`);
+    this.showToast(`${animalIcon('orangutan', 3.2)} ${tr('Dreimal zurückgewinkt! Er klettert herunter – geh hin und streichel ihn.', 'You waved back three times! It is climbing down – go and pet it.')}`);
   }
 
   // Ball (Asien): vor einem Tiger-Schemen im Bambus hinrollen – der Tiger wird neugierig und kommt heraus.
@@ -2699,7 +2769,7 @@ export default class GardenScene extends Phaser.Scene {
       .map((a) => ({ a, d: Math.hypot(a.x - p.x, (a.y - p.y) * 2) }))
       .sort((u, v) => u.d - v.d)[0];
     if (!near || near.d > TIGER_LURE_DIST) {
-      if (!auto) this.showToast(`Halte Ausschau nach einem dunklen Schatten im Bambus – und stell dich mit dem Ball davor.`);
+      if (!auto) this.showToast(tr('Halte Ausschau nach einem dunklen Schatten im Bambus – und stell dich mit dem Ball davor.', 'Look out for a dark shadow in the bamboo – and stand in front of it with the ball.'));
       return;
     }
     // der Ball rollt ein Stück auf den Tiger zu (bis vor den Bambus)
@@ -2721,17 +2791,17 @@ export default class GardenScene extends Phaser.Scene {
     this.equipTool('lasso');
     t.lure(spot);
     t.ballPickup = ball;
-    this.showToast(`${animalIcon('tiger', 3.2)} Der Ball rollt zum Bambus. Jetzt geh ein Stück weg – dann wird der Tiger aufmerksam. Du hast das Lasso in der Hand.`);
+    this.showToast(`${animalIcon('tiger', 3.2)} ${tr('Der Ball rollt zum Bambus. Jetzt geh ein Stück weg – dann wird der Tiger aufmerksam. Du hast das Lasso in der Hand.', 'The ball rolls to the bamboo. Now walk away a bit – then the tiger gets curious. You have the lasso in your hand.')}`);
   }
 
   // der Tiger ist herausgekommen und spielt am Ball
   tigerOut() {
-    this.showToast(`${animalIcon('tiger', 3.2)} Der Tiger spielt mit dem Ball – gleich rennt er wieder los. Schnell das Lasso!`);
+    this.showToast(`${animalIcon('tiger', 3.2)} ${tr('Der Tiger spielt mit dem Ball – gleich rennt er wieder los. Schnell das Lasso!', 'The tiger is playing with the ball – soon it will run off again. Quick, the lasso!')}`);
   }
 
   // nach dem Wurf weggegangen: der Tiger schaut neugierig aus dem Bambus
   tigerCurious() {
-    this.showToast(`${animalIcon('tiger', 3.2)} Da schaut jemand neugierig aus dem Bambus … nicht näher kommen!`);
+    this.showToast(`${animalIcon('tiger', 3.2)} ${tr('Da schaut jemand neugierig aus dem Bambus … nicht näher kommen!', 'Someone is peeking curiously out of the bamboo … don’t come closer!')}`);
   }
 
   // zu nah herangekommen (shy) oder nicht weggegangen: der Tiger bleibt im Bambus; den Ball kann man noch aufheben
@@ -2739,8 +2809,8 @@ export default class GardenScene extends Phaser.Scene {
     this.expireBall(t);
     this.showToast(
       shy
-        ? `${animalIcon('tiger', 3.2)} Zu nah! Der Tiger ist erschrocken. Halt Abstand, wenn er neugierig schaut.`
-        : `${animalIcon('tiger', 3.2)} Der Tiger hat das Interesse verloren. Nach dem Werfen musst du ein Stück weggehen.`,
+        ? `${animalIcon('tiger', 3.2)} ${tr('Zu nah! Der Tiger ist erschrocken. Halt Abstand, wenn er neugierig schaut.', 'Too close! The tiger got scared. Keep your distance while it looks curious.')}`
+        : `${animalIcon('tiger', 3.2)} ${tr('Der Tiger hat das Interesse verloren. Nach dem Werfen musst du ein Stück weggehen.', 'The tiger lost interest. After throwing, you have to walk away a bit.')}`,
     );
   }
 
@@ -2772,17 +2842,17 @@ export default class GardenScene extends Phaser.Scene {
     // der erste Flamingo: im Tierpark entsteht das Flamingo-Gehege
     if (animal.species === 'flamingo' && !game.unlocked.includes('flamingo')) {
       game.unlocked.push('flamingo');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.`));
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} ${tr('Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.', 'Your first flamingo! A flamingo enclosure was built in your zoo, across from the main building.')}`));
     }
     // der erste Wolf: im Tierpark entsteht am Waldrand der Wolfswald
     if (animal.species === 'wolf' && !game.unlocked.includes('wolves')) {
       game.unlocked.push('wolves');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} Dein erster Wolf! Im Tierpark ist im Wald-Bereich ganz links am Rand ein Wolfswald entstanden.`));
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} ${tr('Dein erster Wolf! Im Tierpark ist im Wald-Bereich ganz links am Rand ein Wolfswald entstanden.', 'Your first wolf! In your zoo, Wolf Woods have appeared at the far left edge of the forest area.')}`));
     }
     // die erste Qualle: im Aquarium öffnet sich der dunkle Quallenraum
     if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
       game.unlocked.push('jellyfish');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('jellyfish', 3.2)} Deine erste Qualle! Im Aquarium hat sich in Raum 2 unten rechts der Durchgang zum dunklen Quallenraum geöffnet.`));
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('jellyfish', 3.2)} ${tr('Deine erste Qualle! Im Aquarium hat sich in Raum 2 unten rechts der Durchgang zum dunklen Quallenraum geöffnet.', 'Your first jellyfish! In the aquarium, the passage to the dark jellyfish room has opened in room 2, bottom right.')}`));
     } // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = LEVEL_ID !== 'park' && this.parkPenFull(animal.species, animal.origin);
@@ -2790,21 +2860,28 @@ export default class GardenScene extends Phaser.Scene {
     this.followers.push(animal);
     if (animal.species === 'tiger') this.expireBall(animal); // der Ball bleibt noch eine Weile liegen
     const rare = animal.skin && SKINS[animal.species];
-    if (rare) this.showToast(`✨ ${rare.male ? 'Ein seltener' : 'Eine seltene'} ${rare.name}! Im Tierpark lockt ${rare.male ? 'er' : 'sie'} besonders viele Besucher an.`);
+    if (rare) {
+      this.showToast(
+        tr(
+          `✨ ${rare.male ? 'Ein seltener' : 'Eine seltene'} ${rare.name}! Im Tierpark lockt ${rare.male ? 'er' : 'sie'} besonders viele Besucher an.`,
+          `✨ A rare ${rare.name}! It attracts lots of visitors to your zoo.`,
+        ),
+      );
+    }
     if (full) {
       const tag = this.add.text(animal.x, animal.y - 40, '🌳', { fontSize: '18px' }).setOrigin(0.5).setDepth(100000);
       this.tweens.add({ targets: tag, y: tag.y - 18, alpha: 0, delay: 600, duration: 1400, onComplete: () => tag.destroy() });
-      this.time.delayedCall(900, () => this.showToast(`🌳 Das Gehege für ${animalIcon(animal.species, 3)} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`));
+      this.time.delayedCall(900, () => this.showToast(tr(`🌳 Das Gehege für ${animalIcon(animal.species, 3)} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The enclosure for ${animalIcon(animal.species, 3)} is already full – when you bring it home, one animal moves to the nature reserve.`)));
     }
     // Riff-Fische: der Rest der Gruppe schießt davon und ist weg – man bekommt nur einen
     if (animal.species === 'reeffish') {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild');
       for (const a of mates) this.despawn(a);
-      if (mates.length) this.showToast(`Die anderen ${animalIcon('reeffish')} sind blitzschnell davongeschwommen!`);
+      if (mates.length) this.showToast(tr(`Die anderen ${animalIcon('reeffish')} sind blitzschnell davongeschwommen!`, `The other ${animalIcon('reeffish')} swam away in a flash!`));
     } else if (animal.herd) {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild' && a.scatter);
       for (const a of mates) a.scatter();
-      if (mates.length) this.showToast(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`);
+      if (mates.length) this.showToast(tr(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`, `The other ${animalIcon(animal.species)} got scared and ran away!`));
     }
     // kurzer Tierruf (falls es für diese Art einen gibt)
     const sound = this.callOf(animal);
@@ -2858,7 +2935,7 @@ export default class GardenScene extends Phaser.Scene {
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      showLoading(`${LEVELS[exit.to].name} wird geladen …`);
+      showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`));
       afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }));
     });
   }
@@ -2907,14 +2984,14 @@ export default class GardenScene extends Phaser.Scene {
       const where = world ? `${LEVELS[world].name}: ` : ''; // im Tierpark: zu welcher Welt das Gehege gehört
       entries.push([
         tileToWorld((a.tx0 + a.tx1) / 2, (a.ty0 + a.ty1) / 2),
-        species ? `${where}${name} – ${animalIcons(species)}` : `${name} – alle Tiere außer ${animalIcon('fish')}`,
+        species ? `${where}${name} – ${animalIcons(species)}` : `${name} – ${tr('alle Tiere außer', 'all animals except')} ${animalIcon('fish')}`,
       ]);
     }
     // eigener Fischteich nur, wenn er nicht schon in einem Gehege liegt
     const mid = FISHPOND_TILES[Math.floor(FISHPOND_TILES.length / 2)];
-    if (mid && !inPen(mid.tx, mid.ty)) entries.push([tileToWorld(mid.tx, mid.ty), `Fischteich – für ${animalIcon('fish')}`]);
+    if (mid && !inPen(mid.tx, mid.ty)) entries.push([tileToWorld(mid.tx, mid.ty), `${tr('Fischteich – für', 'Fish pond – for')} ${animalIcon('fish')}`]);
     const h = LEVEL.hut;
-    if (h) entries.push([tileToWorld((h.tx0 + h.tx1) / 2, (h.ty0 + h.ty1) / 2), 'Hütte – Werkzeuge im Regal']);
+    if (h) entries.push([tileToWorld((h.tx0 + h.tx1) / 2, (h.ty0 + h.ty1) / 2), tr('Hütte – Werkzeuge im Regal', 'Hut – tools on the shelf')]);
 
     const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
     return entries.map(([p, text]) => {
@@ -2980,7 +3057,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.signPanel.innerHTML = sign.enclosure
       ? this.enclosureInfo(sign.enclosure)
-      : `<b>Wegweiser · ${LEVEL.name}</b>${this.signEntries(sign).join('')}`;
+      : `<b>${tr('Wegweiser', 'Signpost')} · ${LEVEL.name}</b>${this.signEntries(sign).join('')}`;
     this.signPanel.classList.add('show');
   }
 
@@ -2993,9 +3070,13 @@ export default class GardenScene extends Phaser.Scene {
       .map(({ key, cap }) => `${key ? animalIcon(key) + ' ' : ''}<b>${penCount(this.animals, enclosure, key)} / ${cap}</b>`)
       .join(' · ');
     const slots = hasSlots(enclosure)
-      ? `<div class="pen-slots">Plätze: ${places}${isFull(this.animals, enclosure) ? ' ⭐' : ''}${isUpgraded(enclosure) ? ' · ausgebaut' : ` · Ausbau: ${enclosure.upgrade} (${ACTION_KEY} oder Schild antippen)`}</div>`
+      ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: ${places}${isFull(this.animals, enclosure) ? ' ⭐' : ''}${
+          isUpgraded(enclosure)
+            ? tr(' · ausgebaut', ' · upgraded')
+            : tr(` · Ausbau: ${enclosure.upgrade} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade} (${ACTION_KEY} or tap the sign)`)
+        }</div>`
       : '';
-    return `<b>${enclosure.name} · Hier wohnen:</b>${rows.join('')}${slots}`;
+    return `<b>${enclosure.name} · ${tr('Hier wohnen', 'Who lives here')}:</b>${rows.join('')}${slots}`;
   }
 
   // Läuft man mit einem Tier in ein Gehege, das nicht zu ihm passt: kurzer Hinweis
@@ -3006,7 +3087,10 @@ export default class GardenScene extends Phaser.Scene {
       const enclosure = a.enclosureFullyAt(a.x, a.y);
       if (!enclosure || accepts(enclosure, a.species)) continue;
       this.showToast(
-        `${animalIcon(a.species, 3)} wohnt nicht hier! Hier (${enclosure.name}) dürfen nur ${animalIcons(enclosure.species)} hinein. Schau aufs Schild am Tor!`,
+        tr(
+          `${animalIcon(a.species, 3)} wohnt nicht hier! Hier (${enclosure.name}) dürfen nur ${animalIcons(enclosure.species)} hinein. Schau aufs Schild am Tor!`,
+          `${animalIcon(a.species, 3)} doesn’t live here! Only ${animalIcons(enclosure.species)} may go in here (${enclosure.name}). Check the sign at the gate!`,
+        ),
       );
       this.wrongHomeTimer = WRONG_HOME_HINT;
       return;

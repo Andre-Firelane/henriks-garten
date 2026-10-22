@@ -7,15 +7,16 @@ import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { rareChance } from '../world/events.js';
 import Fish from './Fish.js';
+import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { KOI_WATER, FISHPOND_TILES, enclosureAt, accepts, underBridge } from '../world/map.js';
 
 // Farbmuster: Bild, Farbe des Schattens unter Wasser, Name in der Meldung beim Fangen, Anteil im wilden Teich.
 // Der weiße mit rotem Punkt ist die seltene Variante (lockt im Tierpark mehr Besucher an, siehe SKIN_APPEAL)
 export const KOI_VARIANTS = {
-  koi1: { color: 0xf08a2c, name: 'goldener Koi mit schwarzen Flecken', chance: 0.45 },
-  koi2: { color: 0xe8503a, name: 'rot-weißer Koi', chance: 0.45 },
-  koi3: { color: 0xf4f4f4, name: 'weißer Koi mit rotem Punkt', chance: 0.1, rare: true },
+  koi1: { color: 0xf08a2c, name: tr('goldener Koi mit schwarzen Flecken', 'golden koi with black spots'), chance: 0.45 },
+  koi2: { color: 0xe8503a, name: tr('rot-weißer Koi', 'red and white koi'), chance: 0.45 },
+  koi3: { color: 0xf4f4f4, name: tr('weißer Koi mit rotem Punkt', 'white koi with a red dot'), chance: 0.1, rare: true },
 };
 function randomVariant() {
   if (Math.random() < rareChance(0)) return 'koi3'; // Event "Seltene Tiere": jeder zweite der weiße
@@ -195,7 +196,11 @@ export default class Koi extends Fish {
     this.phase = null;
     this.blob.setVisible(false);
     const v = KOI_VARIANTS[this.variant];
-    this.scene.showToast(v.rare ? `✨ Ein seltener ${v.name}! Im Tierpark lockt er besonders viele Besucher an.` : `Ein ${v.name}!`);
+    this.scene.showToast(
+      v.rare
+        ? tr(`✨ Ein seltener ${v.name}! Im Tierpark lockt er besonders viele Besucher an.`, `✨ A rare ${v.name}! It attracts lots of visitors to your zoo.`)
+        : tr(`Ein ${v.name}!`, `A ${v.name}!`),
+    );
   }
 
   restore(state) {

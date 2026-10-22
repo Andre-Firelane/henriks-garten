@@ -1,6 +1,7 @@
 // Werkzeug-Kiste in der Hütte: großes Auswahlfeld mit allen Werkzeugen dieses Gebiets und "Hände frei".
 // Tablet: antippen. Laptop: mit A/D (oder Pfeiltasten) wählen, mit E, Enter oder Leertaste nehmen. Esc schließt.
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
+import { tr } from '../i18n.js';
 
 let panel = null;
 let state = null;
@@ -15,15 +16,15 @@ export function isToolChestOpen() {
 export function openToolChest(items, current, onPick, onClose) {
   panel = document.getElementById('chest');
   panel.innerHTML = `<div class="chest-box">${CLOSE_BUTTON}
-      <h2>Was möchtest du mitnehmen?</h2>
+      <h2>${tr('Was möchtest du mitnehmen?', 'What do you want to take?')}</h2>
       <div class="chest-items">${items
         .map(
           (it, i) => `<button class="chest-item${it.id === current ? ' carried' : ''}" data-i="${i}">
-            <img src="assets/${it.image}.png" alt=""><span>${it.name}</span>${it.id === current ? '<small>in der Hand</small>' : ''}
+            <img src="assets/${it.image}.png" alt=""><span>${it.name}</span>${it.id === current ? `<small>${tr('in der Hand', 'in your hand')}</small>` : ''}
           </button>`,
         )
         .join('')}</div>
-      <p class="chest-hint">Tippe auf ein Werkzeug – oder wähle mit <b>A</b>/<b>D</b> und nimm es mit <b>E</b>.</p>
+      <p class="chest-hint">${tr('Tippe auf ein Werkzeug – oder wähle mit <b>A</b>/<b>D</b> und nimm es mit <b>E</b>.', 'Tap a tool – or choose with <b>A</b>/<b>D</b> and take it with <b>E</b>.')}</p>
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();

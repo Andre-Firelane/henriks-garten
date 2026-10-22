@@ -4,6 +4,7 @@
 import { formatTime } from '../world/events.js';
 import { animalIcons } from './icons.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
+import { tr } from '../i18n.js';
 
 let panel = null;
 let state = null;
@@ -12,7 +13,7 @@ let timer = null;
 const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nichts tun
 const TABS = [
   ['events', 'Events'],
-  ['pens', 'Gehege ausbauen'],
+  ['pens', tr('Gehege ausbauen', 'Upgrade enclosures')],
 ];
 
 export function isEventsOpen() {
@@ -95,14 +96,14 @@ export function openEvents(getInfo, onPick, onClose, opts = {}) {
 // was die Kachel unten anzeigt und ob man sie wählen kann
 function status(item) {
   if (state.tab === 'pens') {
-    if (item.done) return ['<span class="ev-status on">ausgebaut ✓</span>', false];
+    if (item.done) return [`<span class="ev-status on">${tr('ausgebaut', 'upgraded')} ✓</span>`, false];
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
-    return ['<span class="ev-status go">Ausbauen</span>', true];
+    return [`<span class="ev-status go">${tr('Ausbauen', 'Upgrade')}</span>`, true];
   }
-  if (item.state === 'active') return [`<span class="ev-status on">läuft noch ${formatTime(item.left)}</span>`, false];
-  if (item.state === 'cooldown') return [`<span class="ev-status wait">wieder in ${formatTime(item.left)}</span>`, false];
+  if (item.state === 'active') return [`<span class="ev-status on">${tr(`läuft noch ${formatTime(item.left)}`, `running · ${formatTime(item.left)} left`)}</span>`, false];
+  if (item.state === 'cooldown') return [`<span class="ev-status wait">${tr('wieder in', 'again in')} ${formatTime(item.left)}</span>`, false];
   if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
-  return ['<span class="ev-status go">Starten</span>', true];
+  return [`<span class="ev-status go">${tr('Starten', 'Start')}</span>`, true];
 }
 
 function items() {
@@ -119,10 +120,12 @@ function render() {
   const tabs = state.only
     ? `<span class="ev-tab on">${TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege: keine Reiter
     : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
-  const hint = state.tab === 'pens' ? 'Ein ausgebautes Gehege hat mehr Plätze und neue Ausstattung.' : 'Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.';
+  const hint = state.tab === 'pens'
+    ? tr('Ein ausgebautes Gehege hat mehr Plätze und neue Ausstattung.', 'An upgraded enclosure has more spaces and new equipment.')
+    : tr('Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.', 'Tap an event – or choose with <b>A</b>/<b>D</b> and start it with <b>E</b>.');
   panel.innerHTML = `<div class="chest-box ev-box">${CLOSE_BUTTON}
       <div class="ev-tabs">${tabs}</div>
-      <p class="ev-hearts">Dein Konto: <span class="heart">♥</span> <b>${hearts}</b></p>
+      <p class="ev-hearts">${tr('Dein Konto', 'Your hearts')}: <span class="heart">♥</span> <b>${hearts}</b></p>
       <div class="chest-items">${list
         .map(
           (it, i) => `<button class="chest-item ev-item" data-i="${i}">
@@ -131,7 +134,7 @@ function render() {
           </button>`,
         )
         .join('')}</div>
-      <p class="chest-hint">${hint}${state.only ? ' <b>Esc</b> schließt.' : ' <b>Q</b> wechselt zwischen Events und Gehegen.'}</p>
+      <p class="chest-hint">${hint}${state.only ? tr(' <b>Esc</b> schließt.', ' <b>Esc</b> closes.') : tr(' <b>Q</b> wechselt zwischen Events und Gehegen.', ' <b>Q</b> switches between events and enclosures.')}</p>
     </div>`;
   tick();
 }

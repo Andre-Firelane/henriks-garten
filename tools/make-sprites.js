@@ -1069,11 +1069,20 @@ function officeDesk() {
   const P = isoBox(o, 96, 72, 2.6, 0.7, 18, '#d8b07a', '#3a3f44', '#555c63');
   // Holzkante vorne
   o.poly([P(-1.3, 0.35, 18), P(1.3, 0.35, 18), P(1.3, 0.35, 15), P(-1.3, 0.35, 15)], hex('#b8834c'));
-  // Monitore: Fuß, Hals und Bildschirm mit Diagrammen
+  // Monitore: Fuß, Hals und Bildschirm mit Diagrammen. Die Diagramme werden flach gezeichnet (px: dx nach rechts, dy nach
+  // unten) und dabei mit der Schräge des Bildschirms verschoben; was über den Rand ginge, wird weggelassen
   const screens = [
-    ['#2f6a9a', (sx, sy) => { for (let k = 0; k < 5; k++) o.rect(sx + 3 + k * 4, sy + 13 - k * 2, 3, 3 + k * 2, hex('#7ad07a')); }],
-    ['#244f75', (sx, sy) => { for (let k = 0; k < 18; k++) o.set(sx + 3 + k, sy + 10 - Math.round(Math.sin(k / 2.5) * 4), hex('#f2c24a')); o.rect(sx + 3, sy + 3, 8, 2, hex('#e8eef4')); }],
-    ['#2f6a9a', (sx, sy) => { o.circle(sx + 9, sy + 9, 5, hex('#e8483f')); o.ellipse(sx + 9, sy + 9, 5, 5, hex('#7ad07a'), true); o.rect(sx + 16, sy + 5, 6, 2, hex('#e8eef4')); o.rect(sx + 16, sy + 9, 5, 2, hex('#e8eef4')); }],
+    // liegende Balken (stehende sähen durch die Schräge alle gleich hoch aus)
+    ['#2f6a9a', (px) => { [9, 15, 12, 19].forEach((len, k) => { for (let dx = 4; dx < 4 + len; dx++) for (const dy of [4 + k * 3, 5 + k * 3]) px(dx, dy, '#7ad07a'); }); }],
+    ['#244f75', (px) => {
+      for (let dx = 4; dx <= 21; dx++) px(dx, 10 - Math.round(Math.sin((dx - 4) / 2.5) * 3), '#f2c24a');
+      for (let dx = 15; dx <= 21; dx++) for (const dy of [4, 5]) px(dx, dy, '#e8eef4');
+    }],
+    ['#2f6a9a', (px) => {
+      for (let dx = -4; dx <= 4; dx++) for (let dy = -4; dy <= 4; dy++) if (dx * dx + dy * dy <= 18) px(9 + dx, 9 + dy, dx >= 0 && dy < 0 ? '#e8483f' : '#7ad07a'); // Torte
+      for (let dx = 16; dx <= 21; dx++) for (const dy of [6, 7]) px(dx, dy, '#e8eef4');
+      for (let dx = 16; dx <= 20; dx++) for (const dy of [10, 11]) px(dx, dy, '#e8eef4');
+    }],
   ];
   screens.forEach(([bg, draw], i) => {
     const u = -0.85 + i * 0.85;
@@ -1085,7 +1094,9 @@ function officeDesk() {
     const sx = Math.round(fx) - w / 2, sy = Math.round(fy) - 8 - h;
     o.poly([[sx, sy], [sx + w, sy + w / 2], [sx + w, sy + w / 2 + h], [sx, sy + h]], hex('#2b2b2b'));
     o.poly([[sx + 2, sy + 2], [sx + w - 2, sy + w / 2], [sx + w - 2, sy + w / 2 + h - 3], [sx + 2, sy + h - 1]], hex(bg));
-    draw(sx, sy + 2);
+    draw((dx, dy, color) => {
+      if (dx >= 3 && dx <= w - 4 && dy >= 3 && dy <= h - 4) o.set(sx + dx, sy + dy + Math.floor(dx / 2), hex(color));
+    });
   });
   // Tastatur, Maus, Kaffeetasse
   o.poly([P(-0.3, 0.12, 18.5), P(0.3, 0.12, 18.5), P(0.3, 0.27, 18.5), P(-0.3, 0.27, 18.5)], hex('#e8e8e0'));

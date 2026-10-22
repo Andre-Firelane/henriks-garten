@@ -26,9 +26,11 @@
 //          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Sack am Anker (Werkzeuge)   /  Muschel   ?  Steine
 // Aquarium: Ł  Quallen-Lampe   Ś  Delfin-Statue   Ɓ  Bank
 
+import { tr } from '../i18n.js';
+
 export const LEVELS = {
   meadow: {
-    name: 'Wiese',
+    name: tr('Wiese', 'Meadow'),
     // Schnellreise: Auto (Kachel, Bild, Größe) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 12.16, ty: 26.48, texture: 'car_park', frame: 0, scale: 1.26 },
     map: { x: 51.5, y: 34, icon: 'sheep' },
@@ -87,10 +89,10 @@ export const LEVELS = {
     toolSpots: [],
     // Übergänge: wer auf die Kachel tritt, kommt im Ziel-Level an der Kachel "arrive" heraus
     exits: [
-      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: 'Tierpark' },
-      { tx: 0, ty: 19, to: 'forest', arrive: { tx: 37, ty: 18 }, label: 'Wald' },
-      { tx: 39, ty: 19, to: 'savanna', arrive: { tx: 1, ty: 19 }, label: 'Savanne' },
-      { tx: 20, ty: 39, to: 'asia', arrive: { tx: 20, ty: 46 }, label: 'Asien' },
+      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 0, ty: 19, to: 'forest', arrive: { tx: 37, ty: 18 }, label: tr('Wald', 'Forest') },
+      { tx: 39, ty: 19, to: 'savanna', arrive: { tx: 1, ty: 19 }, label: tr('Savanne', 'Savanna') },
+      { tx: 20, ty: 39, to: 'asia', arrive: { tx: 20, ty: 46 }, label: tr('Bambuswald', 'Bamboo Forest') },
     ],
     // Spawner: so viele wilde Tiere sind ungefähr gleichzeitig unterwegs; die Zahlen dahinter sind die
     // Wahrscheinlichkeiten (je größer, desto häufiger). Tiere verschwinden nach einer Weile und neue kommen.
@@ -100,7 +102,7 @@ export const LEVELS = {
   },
 
   forest: {
-    name: 'Wald',
+    name: tr('Wald', 'Forest'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 24.16, ty: 16.24, texture: 'car_forest', frame: 1, scale: 1.1 },
     map: { x: 53, y: 16, icon: 'stag' },
@@ -159,15 +161,15 @@ export const LEVELS = {
     ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [],
     exits: [
-      { tx: 22, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: 'Tierpark' },
-      { tx: 39, ty: 18, to: 'meadow', arrive: { tx: 1, ty: 19 }, label: 'Wiese' },
+      { tx: 22, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 39, ty: 18, to: 'meadow', arrive: { tx: 1, ty: 19 }, label: tr('Wiese', 'Meadow') },
     ],
     spawn: { population: 12, weights: { deer: 4, squirrel: 2.5, fish: 2.5, frog: 1.6, fox: 1, stag: 0.4 } },
     herons: { every: [50, 110], landChance: 0.5 },
   },
 
   savanna: {
-    name: 'Savanne',
+    name: tr('Savanne', 'Savanna'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 12.16, ty: 25.32, texture: 'car_savanna', frame: 0, scale: 1.15 },
     map: { x: 58, y: 63, icon: 'giraffe' },
@@ -228,8 +230,8 @@ export const LEVELS = {
     ambientVolume: 0.35, // etwas leiser als in den anderen Gebieten (0.55)
     toolSpots: [],
     exits: [
-      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: 'Tierpark' },
-      { tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: 'Wiese' },
+      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: tr('Wiese', 'Meadow') },
     ],
     // Hier leben Antilopen (Gazellen) und Zebras in Gruppen zu 2 bis 4, etwa gleich häufig, und Giraffen;
     // keine Fischreiher. Giraffen sind viel seltener und erscheinen meist an Bäumen
@@ -241,7 +243,7 @@ export const LEVELS = {
   },
 
   asia: {
-    name: 'Asien',
+    name: tr('Bambuswald', 'Bamboo Forest'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 13.16, ty: 41.54, texture: 'car_asia', frame: 1, scale: 1.3 },
     map: { x: 78, y: 37, icon: 'koi' },
@@ -312,8 +314,8 @@ export const LEVELS = {
     toolSpots: [],
     // Eingang im Süden: unten am Hauptweg, unter dem roten Tor hindurch
     exits: [
-      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: 'Tierpark' },
-      { tx: 20, ty: 47, to: 'meadow', arrive: { tx: 20, ty: 38 }, label: 'Wiese' },
+      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 20, ty: 47, to: 'meadow', arrive: { tx: 20, ty: 38 }, label: tr('Wiese', 'Meadow') },
     ],
     // Koi leben im Koi-Teich (nur als Schatten zu sehen, bis man sie mit Fischfutter anlockt)
     spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35, peacock: 0.8 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
@@ -322,7 +324,7 @@ export const LEVELS = {
   // Aquarium: eigene Zone hinter der Fassade oben links im Tierpark. Eine Halle (Gebäude ohne Dach, man ist immer drin)
   // mit zwei Wassertanks an der Rückwand; darin schwimmen Zierfische (siehe TankFish.js) zwischen Pflanzen und Deko.
   aquarium: {
-    name: 'Aquarium',
+    name: tr('Aquarium', 'Aquarium'),
     // große Halle: links zwei Becken (Riff-Fische, Seepferdchen), oben an der Wand ein großes Becken; in der Mitte ein
     // Mosaikweg mit Platz, Delfin-Statue, Bänken und Quallen-Lampen. Rechts durch den Durchgang (mittig in der Wand) Raum 2: hinten eine
     // riesige Beckenfront (Meeresschildkröten und Rochen, dazu die Zierfische), unten rechts ein kleines Krakenbecken. Unten rechts geht
@@ -355,12 +357,12 @@ export const LEVELS = {
     // die Wassertanks sind die Becken: gefangene Riff-Fische und Seepferdchen ziehen beim Betreten des Tierparks ein
     enclosures: [
       // Schild unten an der vorderen Scheibe (signAt auf der Glaswand, signOnGlass: ohne Pfosten)
-      { id: 'tankBig', name: 'Großes Becken', species: ['reeffish'], world: 'reef', seed: { tx: 6, ty: 3 }, slots: [20, 20], signAt: { tx: 11.5, ty: 6 }, signOnGlass: true },
-      { id: 'tank1', name: 'Becken', species: ['reeffish'], world: 'reef', seed: { tx: 3, ty: 9 }, slots: [10, 10], signAt: { tx: 7, ty: 10 }, signOnGlass: true },
-      { id: 'seahorses', name: 'Seepferdchen-Becken', species: ['seahorse'], world: 'reef', seed: { tx: 4, ty: 14 }, slots: [6, 6], signAt: { tx: 7, ty: 14.5 }, signOnGlass: true },
-      { id: 'turtles', name: 'Schildkröten- und Rochenbecken', species: ['turtle', 'ray'], world: 'reef', seed: { tx: 25, ty: 5 }, quota: { turtle: [4, 4], ray: [3, 3] }, signAt: { tx: 25.5, ty: 7 }, signOnGlass: true }, // die riesige Beckenfront
-      { id: 'jellyfish', name: 'Quallenbecken', species: ['jellyfish'], world: 'reef', unlock: 'jellyfish', seed: { tx: 44, ty: 8 }, slots: [12, 12], signAt: { tx: 44, ty: 11 }, signOnGlass: true, dark: true },
-      { id: 'octopus', name: 'Krakenbecken', species: ['octopus'], world: 'reef', seed: { tx: 31, ty: 14 }, slots: [3, 3], signAt: { tx: 31.5, ty: 16 }, signOnGlass: true },
+      { id: 'tankBig', name: tr('Großes Becken', 'Big Tank'), species: ['reeffish'], world: 'reef', seed: { tx: 6, ty: 3 }, slots: [20, 20], signAt: { tx: 11.5, ty: 6 }, signOnGlass: true },
+      { id: 'tank1', name: tr('Becken', 'Tank'), species: ['reeffish'], world: 'reef', seed: { tx: 3, ty: 9 }, slots: [10, 10], signAt: { tx: 7, ty: 10 }, signOnGlass: true },
+      { id: 'seahorses', name: tr('Seepferdchen-Becken', 'Seahorse Tank'), species: ['seahorse'], world: 'reef', seed: { tx: 4, ty: 14 }, slots: [6, 6], signAt: { tx: 7, ty: 14.5 }, signOnGlass: true },
+      { id: 'turtles', name: tr('Schildkröten- und Rochenbecken', 'Turtle and Ray Tank'), species: ['turtle', 'ray'], world: 'reef', seed: { tx: 25, ty: 5 }, quota: { turtle: [4, 4], ray: [3, 3] }, signAt: { tx: 25.5, ty: 7 }, signOnGlass: true }, // die riesige Beckenfront
+      { id: 'jellyfish', name: tr('Quallenbecken', 'Jellyfish Tank'), species: ['jellyfish'], world: 'reef', unlock: 'jellyfish', seed: { tx: 44, ty: 8 }, slots: [12, 12], signAt: { tx: 44, ty: 11 }, signOnGlass: true, dark: true },
+      { id: 'octopus', name: tr('Krakenbecken', 'Octopus Tank'), species: ['octopus'], world: 'reef', seed: { tx: 31, ty: 14 }, slots: [3, 3], signAt: { tx: 31.5, ty: 16 }, signOnGlass: true },
     ],
     // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle. pathFloor: Mosaik auf dem Weg in der Halle
     buildings: [
@@ -382,8 +384,8 @@ export const LEVELS = {
     ambient: 'ambient_reef', // leise das Riff-Rauschen (wie unter Wasser)
     ambientVolume: 0.18,
     exits: [
-      { tx: 10, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
-      { tx: 11, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: 'Tierpark' },
+      { tx: 10, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 11, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: tr('Tierpark', 'Zoo') },
     ],
     spawn: { population: 0, weights: {} }, // die Zierfische sind keine Tiere
   },
@@ -392,7 +394,7 @@ export const LEVELS = {
   // umher (Deko wie im Aquarium, nicht fangbar). Hin und zurück nur mit dem Boot (Schnellreise); die Werkzeuge liegen im
   // Sack, der mit dem Anker vom Boot heruntergelassen wurde. Tiere kommen später.
   reef: {
-    name: 'Riff',
+    name: tr('Riff', 'Reef'),
     // Schnellreise: ein kleines Boot, das über dem Meeresboden schwimmt (float: so hoch, in Pixeln)
     car: { tx: 18.16, ty: 14.5, texture: 'boat', frame: 0, scale: 1.5, float: 30 },
     map: { x: 89, y: 66, icon: 'reeffish' }, // Great Barrier Reef vor Australien (Clownfisch)
@@ -455,7 +457,7 @@ export const LEVELS = {
   // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein
   // (siehe moveFollowersIntoPens in GardenScene). Erreichbar oben aus jeder Welt.
   park: {
-    name: 'Tierpark',
+    name: tr('Tierpark', 'Zoo'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26 },
     map: { x: 42, y: 32, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur
@@ -494,9 +496,9 @@ export const LEVELS = {
       '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b',
       '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b',
       'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b',
-      'D22DD2222222.;*...;....#.NZ.....sN..###Fb.b....g..g..b#b',
-      'kD222D222222m;..P.;....#.N...z...N..###-------------..#b',
-      'D2222D2mk....^^^^^^kkn.#.N..VYV..N..###|...........|.b#b',
+      'D22DD2222222.;*...;....#.NZ...z.sN..###Fb.b....g..g..b#b',
+      'kD222D222222m;..P.;....#.N...VYV.N..###-------------..#b',
+      'D2222D2mk....^^^^^^kkn.#.N.......N..###|...........|.b#b',
       'k2D2222.################.NVt.....N..###|...........|.b#b',
       '2kk2kk2.------GG---.km.#.Ndix....N..###|....T......---#b',
       '222D222k|.........|k.n.#.Ns.....ZN..###|.............|#b',
@@ -553,26 +555,26 @@ export const LEVELS = {
     // Gehege: slots = Plätze [vor, nach dem Ausbau]; basic = so sieht es vor dem Ausbau aus (Innenzaun bzw. ohne Ausstattung);
     // upgrade = was der Ausbau am Hauptrechner bringt (siehe penLevel in state.js)
     enclosures: [
-      { id: 'crocodile', name: 'Krokodilteich', species: ['crocodile'], gate: 'chain', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 15, ty: 17 }, slots: [2, 3], upgrade: 'Größerer Teich', basic: [[17, 20, ':'], [18, 20, '<'], [19, 20, '.']] },
-      { id: 'lion', name: 'Löwengehege', species: ['lion'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 27, ty: 9 }, slots: [3, 5], upgrade: 'Großer Löwenfelsen', basic: [[32, 11, ':']] },
-      { id: 'meerkat', name: 'Erdmännchenbau', species: ['meerkat'], world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 25, ty: 17 }, slots: [5, 8], upgrade: 'Erdhügel', basic: [[27, 18, ':'], [28, 19, '<']] },
-      { id: 'savanna', name: 'Savannengehege', species: ['antelope', 'zebra', 'giraffe'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 45, ty: 2 }, quota: { antelope: [5, 8], zebra: [5, 8], giraffe: [3, 5] }, upgrade: 'Mehr Steppe mit Heu-Unterstand', basic: [[46, 2, ']'], [46, 3, ']'], [46, 4, ']'], [46, 5, '['], [47, 5, '['], [48, 5, '['], [49, 5, '['], [50, 5, '['], [51, 5, '['], [50, 3, '.']] },
-      { id: 'deerpark', name: 'Hirschgehege', species: ['deer', 'stag'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: 'Mehr Wald mit Futterkrippe', basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
-      { id: 'foxden', name: 'Fuchsbau', species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: 'Fuchshöhle', basic: [[5, 50, ':']] },
-      { id: 'forestpond', name: 'Teich', species: ['frog', 'fish'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: 'Größerer Teich mit Schilf, Pilzen und Farn', basic: [[14, 48, ':'], [17, 53, '<'], [18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.']] },
-      { id: 'wolves', name: 'Wolfswald', species: ['wolf'], gate: 'tall', world: 'forest', unlock: 'wolves', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 6, ty: 30 }, slots: [6, 9], upgrade: 'Heulfelsen', basic: [[5, 28, '.']] },
-      { id: 'forestaviary', name: 'Eichhörnchen-Voliere', species: ['squirrel'], netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 25 }, slots: [5, 8], upgrade: 'Zweiter Flügel mit Nistkasten', basic: [[14, 32, ':'], [16, 33, '<'], [14, 30, '^'], [15, 30, '^'], [16, 30, '^'], [17, 30, '^']] },
-      { id: 'cats', name: 'Katzenhaus', species: ['cat'], gate: 'glass', world: 'meadow', seed: { tx: 50, ty: 26 }, slots: [4, 6], upgrade: 'Zweiter Kratzbaum', basic: [[52, 26, ':']] },
-      { id: 'pasture', name: 'Weide', species: ['sheep', 'mole'], world: 'meadow', seed: { tx: 40, ty: 34 }, quota: { sheep: [10, 14], mole: [3, 5] }, upgrade: 'Mehr Weide mit Heu-Unterstand', basic: [[42, 38, ':'], [41, 39, '<'], [49, 34, '|'], [49, 35, '|'], [49, 36, '|'], [49, 37, '|'], [49, 38, '|'], [49, 39, '|'], [49, 40, '|'], [49, 41, '|'], [49, 42, '|'], [49, 43, '|'], [49, 44, '|']] },
-      { id: 'aviary', name: 'Reiher-Voliere', species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 47, ty: 55 }, slots: [6, 9], upgrade: 'Zweiter Flügel mit Nistkasten und Wasserstelle', basic: [[49, 54, ';'], [49, 55, ';'], [49, 56, ';'], [51, 54, '.'], [51, 55, '.']] },
-      { id: 'flamingos', name: 'Flamingos', species: ['flamingo'], netRoof: true, gate: 'net', world: 'park', unlock: 'flamingo', seed: { tx: 27, ty: 50 }, slots: [6, 9], upgrade: 'Großer See mit Springbrunnen', basic: [[30, 52, 'w'], [28, 51, ':'], [28, 52, '<'], [28, 53, '.'], [32, 51, '.'], [32, 52, '.'], [32, 53, '.'], [29, 50, '.'], [29, 54, '.'], [30, 50, '.'], [30, 54, '.'], [31, 50, '.'], [31, 54, '.'], [27, 49, '.'], [33, 49, '.'], [27, 55, '.'], [33, 55, '.']] },
+      { id: 'crocodile', name: tr('Krokodilteich', 'Crocodile Pond'), species: ['crocodile'], gate: 'chain', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 15, ty: 17 }, slots: [2, 3], upgrade: tr('Größerer Teich', 'Bigger pond'), basic: [[17, 20, ':'], [18, 20, '<'], [19, 20, '.']] },
+      { id: 'lion', name: tr('Löwengehege', 'Lion Enclosure'), species: ['lion'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 27, ty: 9 }, slots: [3, 5], upgrade: tr('Großer Löwenfelsen', 'Big lion rock'), basic: [[32, 11, ':']] },
+      { id: 'meerkat', name: tr('Erdmännchenbau', 'Meerkat Burrow'), species: ['meerkat'], world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 25, ty: 17 }, slots: [5, 8], upgrade: tr('Erdhügel', 'Dirt mounds'), basic: [[27, 18, ':'], [28, 19, '<']] },
+      { id: 'savanna', name: tr('Savannengehege', 'Savanna Enclosure'), species: ['antelope', 'zebra', 'giraffe'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 45, ty: 2 }, quota: { antelope: [5, 8], zebra: [5, 8], giraffe: [3, 5] }, upgrade: tr('Mehr Steppe mit Heu-Unterstand', 'More grassland with a hay shelter'), basic: [[46, 2, ']'], [46, 3, ']'], [46, 4, ']'], [46, 5, '['], [47, 5, '['], [48, 5, '['], [49, 5, '['], [50, 5, '['], [51, 5, '['], [50, 3, '.']] },
+      { id: 'deerpark', name: tr('Hirschgehege', 'Deer Park'), species: ['deer', 'stag'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
+      { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
+      { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: tr('Größerer Teich mit Schilf, Pilzen und Farn', 'Bigger pond with reeds, mushrooms and ferns'), basic: [[14, 48, ':'], [17, 53, '<'], [18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.']] },
+      { id: 'wolves', name: tr('Wolfswald', 'Wolf Woods'), species: ['wolf'], gate: 'tall', world: 'forest', unlock: 'wolves', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 6, ty: 30 }, slots: [6, 9], upgrade: tr('Heulfelsen', 'Howling rock'), basic: [[5, 28, '.']] },
+      { id: 'forestaviary', name: tr('Eichhörnchen-Voliere', 'Squirrel Aviary'), species: ['squirrel'], netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 25 }, slots: [5, 8], upgrade: tr('Zweiter Flügel mit Nistkasten', 'Second wing with a nest box'), basic: [[14, 32, ':'], [16, 33, '<'], [14, 30, '^'], [15, 30, '^'], [16, 30, '^'], [17, 30, '^']] },
+      { id: 'cats', name: tr('Katzenhaus', 'Cat House'), species: ['cat'], gate: 'glass', world: 'meadow', seed: { tx: 50, ty: 26 }, slots: [4, 6], upgrade: tr('Zweiter Kratzbaum', 'Second cat tree'), basic: [[52, 26, ':']] },
+      { id: 'pasture', name: tr('Weide', 'Pasture'), species: ['sheep', 'mole'], world: 'meadow', seed: { tx: 40, ty: 34 }, quota: { sheep: [10, 14], mole: [3, 5] }, upgrade: tr('Mehr Weide mit Heu-Unterstand', 'More pasture with a hay shelter'), basic: [[42, 38, ':'], [41, 39, '<'], [49, 34, '|'], [49, 35, '|'], [49, 36, '|'], [49, 37, '|'], [49, 38, '|'], [49, 39, '|'], [49, 40, '|'], [49, 41, '|'], [49, 42, '|'], [49, 43, '|'], [49, 44, '|']] },
+      { id: 'aviary', name: tr('Reiher-Voliere', 'Heron Aviary'), species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 47, ty: 55 }, slots: [6, 9], upgrade: tr('Zweiter Flügel mit Nistkasten und Wasserstelle', 'Second wing with a nest box and a water hole'), basic: [[49, 54, ';'], [49, 55, ';'], [49, 56, ';'], [51, 54, '.'], [51, 55, '.']] },
+      { id: 'flamingos', name: tr('Flamingos', 'Flamingos'), species: ['flamingo'], netRoof: true, gate: 'net', world: 'park', unlock: 'flamingo', seed: { tx: 27, ty: 50 }, slots: [6, 9], upgrade: tr('Großer See mit Springbrunnen', 'Big lake with a fountain'), basic: [[30, 52, 'w'], [28, 51, ':'], [28, 52, '<'], [28, 53, '.'], [32, 51, '.'], [32, 52, '.'], [32, 53, '.'], [29, 50, '.'], [29, 54, '.'], [30, 50, '.'], [30, 54, '.'], [31, 50, '.'], [31, 54, '.'], [27, 49, '.'], [33, 49, '.'], [27, 55, '.'], [33, 55, '.']] },
       // Pfauen haben kein Gehege: sie laufen frei im Tierpark herum (höchstens 8, kein Ausbau)
-      { id: 'peacocks', name: 'Pfauen', species: ['peacock'], world: 'asia', free: true, slots: [8, 8] },
-      { id: 'orangutans', name: 'Orang-Utan-Gehege', species: ['orangutan'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 20, ty: 77 }, slots: [3, 5], upgrade: 'Hängematte mit Schlafnest', basic: [[19, 77, ':']] },
-      { id: 'tigers', name: 'Tigergehege', species: ['tiger'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 49, ty: 78 }, slots: [3, 5], upgrade: 'Badebecken mit Spielball', basic: [[47, 77, ':'], [48, 77, '<'], [47, 78, '.'], [48, 78, '.'], [46, 77, '.'], [48, 76, '.'], [49, 77, '.']] },
-      { id: 'pandas', name: 'Pandagehege', species: ['panda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, slots: [2, 4], upgrade: 'Reifenschaukel und Spielball', basic: [[49, 66, ':'], [46, 65, '<']] },
-      { id: 'macaques', name: 'Affenquelle', species: ['macaque'], netRoof: true, gate: 'net', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 19, ty: 64 }, slots: [4, 6], upgrade: 'Großer Badesee', basic: [[20, 65, ':'], [20, 66, '<'], [17, 65, '.'], [19, 67, '.']] },
-      { id: 'koipond', name: 'Koi-Teich', seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: 'Steinlaternen und Kirschbäume', basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
+      { id: 'peacocks', name: tr('Pfauen', 'Peacocks'), species: ['peacock'], world: 'asia', free: true, slots: [8, 8] },
+      { id: 'orangutans', name: tr('Orang-Utan-Gehege', 'Orangutan Enclosure'), species: ['orangutan'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 20, ty: 77 }, slots: [3, 5], upgrade: tr('Hängematte mit Schlafnest', 'Hammock with a sleeping nest'), basic: [[19, 77, ':']] },
+      { id: 'tigers', name: tr('Tigergehege', 'Tiger Enclosure'), species: ['tiger'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 49, ty: 78 }, slots: [3, 5], upgrade: tr('Badebecken mit Spielball', 'Pool with a play ball'), basic: [[47, 77, ':'], [48, 77, '<'], [47, 78, '.'], [48, 78, '.'], [46, 77, '.'], [48, 76, '.'], [49, 77, '.']] },
+      { id: 'pandas', name: tr('Pandagehege', 'Panda Enclosure'), species: ['panda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, slots: [2, 4], upgrade: tr('Reifenschaukel und Spielball', 'Tire swing and play ball'), basic: [[49, 66, ':'], [46, 65, '<']] },
+      { id: 'macaques', name: tr('Affenquelle', 'Monkey Spring'), species: ['macaque'], netRoof: true, gate: 'net', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 19, ty: 64 }, slots: [4, 6], upgrade: tr('Großer Badesee', 'Big bathing lake'), basic: [[20, 65, ':'], [20, 66, '<'], [17, 65, '.'], [19, 67, '.']] },
+      { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
     ],
     // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
     grounds: [
@@ -592,7 +594,7 @@ export const LEVELS = {
       { id: 'flamingo', tx: 24, ty: 43, rows: ['#....##..###', '.....##..###', '.....##..###', '.....##.....', 'b^^^^GG^^^^^', '.;.........;', '.;.f.....g.;', '.;...www...;', '.;..wwwww..;', '.;..wwwww..;', '.;..wwwww..;', '.;...www...;', '.;.g.....f.;', '.;.........;', 'b^^^^^^^^^^^', '............'] },
     ],
     iceStand: { tx: 25, ty: 40 }, // Eisstand-Event: der Eiswagen steht mitten im Park vor dem Haupthaus, links am Vorplatz
-    computers: [{ tx: 29, ty: 34 }], // Hauptrechner im Haupthaus (Events)
+    computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
     feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 37, ty: 14, world: 'savanna' }, { tx: 22, ty: 45, world: 'forest' }],
     toolSpots: [],
     ambient: 'ambient_meadow',
@@ -600,18 +602,18 @@ export const LEVELS = {
     // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
     signScale: 1.25,
     sections: [
-      { label: 'Savanne', tx: 38, ty: 18 },
-      { label: 'Aquarium', tx: 10, ty: 15, like: 'Savanne' }, // der Weg dorthin führt an der Savanne vorbei
-      { label: 'Wald', tx: 12, ty: 46 },
-      { label: 'Wiese', tx: 46, ty: 41 },
-      { label: 'Asien', tx: 38, ty: 61 },
+      { label: tr('Savanne', 'Savanna'), tx: 38, ty: 18 },
+      { label: tr('Aquarium', 'Aquarium'), tx: 10, ty: 15, like: tr('Savanne', 'Savanna') }, // der Weg dorthin führt an der Savanne vorbei
+      { label: tr('Wald', 'Forest'), tx: 12, ty: 46 },
+      { label: tr('Wiese', 'Meadow'), tx: 46, ty: 41 },
+      { label: tr('Bambuswald', 'Bamboo Forest'), tx: 38, ty: 61 },
     ],
     exits: [
-      { tx: 34, ty: 0, to: 'savanna', arrive: { tx: 20, ty: 1 }, label: 'Savanne' },
-      { tx: 1, ty: 46, to: 'forest', arrive: { tx: 22, ty: 1 }, label: 'Wald' },
-      { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 10, ty: 16 }, label: 'Aquarium' }, // Tür in der Fassade oben links
-      { tx: 55, ty: 40, to: 'meadow', arrive: { tx: 20, ty: 1 }, label: 'Wiese' },
-      { tx: 35, ty: 82, to: 'asia', arrive: { tx: 20, ty: 1 }, label: 'Asien' },
+      { tx: 34, ty: 0, to: 'savanna', arrive: { tx: 20, ty: 1 }, label: tr('Savanne', 'Savanna') },
+      { tx: 1, ty: 46, to: 'forest', arrive: { tx: 22, ty: 1 }, label: tr('Wald', 'Forest') },
+      { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 10, ty: 16 }, label: tr('Aquarium', 'Aquarium') }, // Tür in der Fassade oben links
+      { tx: 55, ty: 40, to: 'meadow', arrive: { tx: 20, ty: 1 }, label: tr('Wiese', 'Meadow') },
+      { tx: 35, ty: 82, to: 'asia', arrive: { tx: 20, ty: 1 }, label: tr('Bambuswald', 'Bamboo Forest') },
     ],
     spawn: { population: 0, weights: {} },
   },

@@ -3,6 +3,7 @@
 import { LEVELS } from './levels.js';
 import { game } from '../state.js';
 import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
+import { tr } from '../i18n.js';
 
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser)
@@ -125,7 +126,7 @@ export const OBJECTS = {
   Ł: { key: 'aq_lamp', originY: 104 / 112, solid: true, hitbox: 4 },
   Ś: { key: 'aq_statue', originY: 112 / 128, solid: true, hitbox: 18 },
   Ɓ: { key: 'aq_bench', originY: 48 / 64, solid: true, hitbox: 10 },
-  Ä: { key: 'anchor_sack', originY: 64 / 80, solid: true, hitbox: 10, chest: true, chestName: 'Sack' },
+  Ä: { key: 'anchor_sack', originY: 64 / 80, solid: true, hitbox: 10, chest: true, chestName: tr('Sack', 'bag') },
   H: { key: 'hammock', originY: 76 / 88, solid: true, hitbox: 10 }, // Hängematte mit Blätternest (Orang-Utan-Gehege)
   Q: { key: 'bamboo', originY: 118 / 128, solid: true, hitbox: 10 },
   q: { key: 'tall_grass', originY: 40 / 48, solid: false }, // hohes Gras: man geht hindurch (Versteck)
@@ -241,7 +242,7 @@ export function setLevel(id) {
     return { ...t, vertical };
   });
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
-  const all = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: 'Gehege', area: LEVEL.pen, species: null }] : []);
+  const all = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: tr('Gehege', 'Enclosure'), area: LEVEL.pen, species: null }] : []);
   const list = all.filter((e) => !e.unlock || game.unlocked.includes(e.unlock)); // noch nicht gebaute Gehege fehlen
   ENCLOSURES = list.map((e) => {
     // Kacheln der Innenfläche: entweder ein Rechteck (area) oder alles, was vom Startpunkt (seed) aus erreichbar ist,

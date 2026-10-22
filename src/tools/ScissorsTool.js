@@ -1,5 +1,6 @@
 // Schere (Riff, aus dem Sack am Anker): der Spieler trägt sie in der Hand. Mit der Aktionstaste schneidet er an einer
 // Meeresschildkröte im Fischernetz ein Stück Netz durch (dreimal, dann ist sie frei; siehe cutNet in GardenScene).
+import { tr } from '../i18n.js';
 
 export default class ScissorsTool {
   constructor(scene, player) {
@@ -10,7 +11,7 @@ export default class ScissorsTool {
 
   use() {
     if (this.scene.nearTurtle) this.scene.cutNet(this.scene.nearTurtle);
-    else this.scene.showToast('✂️ Schwimm mit der Schere nah an eine Meeresschildkröte im Netz.');
+    else this.scene.showToast(tr('✂️ Schwimm mit der Schere nah an eine Meeresschildkröte im Netz.', '✂️ Swim close to a sea turtle caught in the net with the scissors.'));
   }
 
   update() {
