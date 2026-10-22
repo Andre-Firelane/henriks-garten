@@ -14,6 +14,12 @@ export function showLoading(text, progress = null) {
   el.classList.add('show');
 }
 
+// Hintergrund von Lade- und Startbildschirm: Bildschirmfoto dieser Welt (gibt es keins, bleibt das bisherige)
+const BACKGROUNDS = ['meadow', 'forest', 'savanna', 'asia', 'reef', 'aquarium'];
+export function setLoadingBackground(level) {
+  if (BACKGROUNDS.includes(level)) document.documentElement.style.setProperty('--bg', `url(assets/bg/bg_${level}.jpg)`);
+}
+
 export function setLoadingProgress(p) {
   const bar = panel()?.querySelector('.loading-fill');
   if (bar) bar.style.width = `${Math.round(Math.min(1, Math.max(0, p)) * 100)}%`;

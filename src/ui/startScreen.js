@@ -5,6 +5,7 @@ import { LEVELS } from '../world/levels.js';
 import { resetGame } from '../state.js';
 import { save, readSave, loadSave, deleteSave } from '../save.js';
 import { lang, locale, setLang, tr } from '../i18n.js';
+import { startSession } from '../sessions.js';
 
 let panel = null;
 
@@ -44,16 +45,20 @@ export function openStartScreen(onStart) {
     const l = e.target.closest('.lang-btn')?.dataset.lang;
     if (l) return setLang(l);
     const act = e.target.closest('.start-btn')?.dataset.act;
-    if (act === 'continue') start({ level: loadSave() });
-    else if (act === 'new' && s) panel.classList.add('asking');
+    if (act === 'continue') {
+      startSession('continue');
+      start({ level: loadSave() });
+    } else if (act === 'new' && s) panel.classList.add('asking');
     else if (act === 'new-no') panel.classList.remove('asking');
     else if (act === 'new' || act === 'new-yes') {
       deleteSave();
       resetGame();
+      startSession('new');
       start({ intro: true }); // intro: einmal die Willkommens-Tafel zeigen
     } else if (act === 'test') {
       save.testMode = true;
       resetGame();
+      startSession('test');
       start({ intro: true });
     }
   };

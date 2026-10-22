@@ -1,0 +1,7 @@
+# Netlify: baut das Spiel (dist) und die Function für die Spielrunden (netlify/functions/session)
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"

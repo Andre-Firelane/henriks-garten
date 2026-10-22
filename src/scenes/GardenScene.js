@@ -74,7 +74,7 @@ import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
-import { afterPaint, hideLoading, showLoading } from '../ui/loading.js';
+import { afterPaint, hideLoading, setLoadingBackground, showLoading } from '../ui/loading.js';
 import ReefFish from '../animals/ReefFish.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
@@ -1897,6 +1897,14 @@ export default class GardenScene extends Phaser.Scene {
   // text darf HTML enthalten (z. B. Tierbilder)
   showToast(text) {
     this.toast.innerHTML = text;
+    // zwischen dem Abzeichen oben links und den Knöpfen oben rechts, damit die Meldung nichts davon verdeckt
+    const left = this.hud.getBoundingClientRect().right + 10;
+    const right = Math.min(
+      window.innerWidth - 10,
+      ...[...document.querySelectorAll('#btn-menu, #btn-full')].map((b) => b.getBoundingClientRect()).filter((r) => r.width).map((r) => r.left - 10),
+    );
+    this.toast.style.left = `${Math.round((left + right) / 2)}px`;
+    this.toast.style.maxWidth = `${Math.round(Math.min(right - left, window.innerWidth * 0.65))}px`;
     this.toast.classList.remove('show');
     void this.toast.offsetWidth; // Animation neu starten
     this.toast.classList.add('show');
@@ -2935,6 +2943,7 @@ export default class GardenScene extends Phaser.Scene {
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
+      setLoadingBackground(exit.to);
       showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`));
       afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }));
     });

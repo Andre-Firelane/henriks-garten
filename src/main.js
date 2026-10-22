@@ -3,9 +3,11 @@ import BootScene from './scenes/BootScene.js';
 import GardenScene from './scenes/GardenScene.js';
 import { setupTouchControls } from './ui/touch.js';
 import { setupUpdateCheck } from './update.js';
+import { setupSessions } from './sessions.js';
 
 setupTouchControls();
 setupUpdateCheck();
+setupSessions();
 
 new Phaser.Game({
   type: Phaser.AUTO,
