@@ -114,6 +114,7 @@ const ALL_SPECIES = ['wolf', 'peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'd
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
+const TOAST_MIN_W = 260; // so breit (CSS-Pixel) muss der Platz neben dem Abzeichen oben links sein, sonst kommen Meldungen darunter
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
 const SIGN_INNER_W = 38; // helle Tafel des Torschilds (Welt-Pixel), darauf die Tierbilder
 const SIGN_ICON_H = 22;
@@ -1897,14 +1898,22 @@ export default class GardenScene extends Phaser.Scene {
   // text darf HTML enthalten (z. B. Tierbilder)
   showToast(text) {
     this.toast.innerHTML = text;
-    // zwischen dem Abzeichen oben links und den Knöpfen oben rechts, damit die Meldung nichts davon verdeckt
-    const left = this.hud.getBoundingClientRect().right + 10;
-    const right = Math.min(
-      window.innerWidth - 10,
-      ...[...document.querySelectorAll('#btn-menu, #btn-full')].map((b) => b.getBoundingClientRect()).filter((r) => r.width).map((r) => r.left - 10),
-    );
-    this.toast.style.left = `${Math.round((left + right) / 2)}px`;
-    this.toast.style.maxWidth = `${Math.round(Math.min(right - left, window.innerWidth * 0.65))}px`;
+    // zwischen dem Abzeichen oben links und den Knöpfen oben rechts, damit die Meldung nichts davon verdeckt.
+    // Ist dort zu wenig Platz (Handy hochkant), kommt sie darunter über die ganze Breite
+    const hud = this.hud.getBoundingClientRect();
+    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
+    const left = hud.right + 10;
+    const right = Math.min(window.innerWidth - 10, ...buttons.map((r) => r.left - 10));
+    if (right - left >= TOAST_MIN_W) {
+      this.toast.style.top = '12px';
+      this.toast.style.left = `${Math.round((left + right) / 2)}px`;
+      this.toast.style.maxWidth = `${Math.round(Math.min(right - left, window.innerWidth * 0.65))}px`;
+    } else {
+      const banner = this.eventBanner.classList.contains('show') ? this.eventBanner.getBoundingClientRect().bottom : 0;
+      this.toast.style.top = `${Math.round(Math.max(hud.bottom, banner, ...buttons.map((r) => r.bottom)) + 8)}px`;
+      this.toast.style.left = `${Math.round(window.innerWidth / 2)}px`;
+      this.toast.style.maxWidth = `${window.innerWidth - 24}px`;
+    }
     this.toast.classList.remove('show');
     void this.toast.offsetWidth; // Animation neu starten
     this.toast.classList.add('show');
