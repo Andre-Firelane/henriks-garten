@@ -106,7 +106,7 @@ export function formatTime(ms) {
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
 // ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen, Frösche und Wölfe bekommen Babys,
 // im Aquarium Seepferdchen, Schildkröten, Rochen, Kraken und Quallen; Maulwürfe, Reiher, Fische und Koi nicht.
-const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', stag: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog', wolf: 'wolf',
+const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog', wolf: 'wolf',
   // im Aquarium (Fische und Koi bekommen keine Babys)
   seahorse: 'seahorse', turtle: 'turtle', ray: 'ray', octopus: 'octopus', jellyfish: 'jellyfish' };
 

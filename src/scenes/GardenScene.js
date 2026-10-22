@@ -88,7 +88,7 @@ import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
 import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
-import { EVENTS, RARE_EVENT_CHANCE, babyFamily, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
+import { EVENTS, babyFamily, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
@@ -110,7 +110,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['wolf', 'peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'stag', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['wolf', 'peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -144,8 +144,7 @@ const CATCH_TIPS = {
   squirrel: tr('Nur wenn es vom Baum herunterkommt – halte etwas Abstand.', 'Only when it comes down from the tree – keep a little distance.'),
   heron: tr('Nur wenn er am Wasser gelandet ist.', 'Only when it has landed by the water.'),
   flamingo: tr('Nur beim Flamingo-Flug – und nur, wenn er gelandet ist.', 'Only during the Flamingo Flight – and only when it has landed.'),
-  deer: tr('Scheu: aus der Ferne mit dem Lasso.', 'Shy: use the lasso from a distance.'),
-  stag: tr('Selten und scheu: aus der Ferne mit dem Lasso.', 'Rare and shy: use the lasso from a distance.'),
+  deer: tr('Scheu: aus der Ferne mit dem Lasso. Mit etwas Glück ist es ein seltener Hirsch.', 'Shy: use the lasso from a distance. With a bit of luck it is a rare stag.'),
   fox: tr('Nur mit der Falle.', 'Only with the trap.'),
   antelope: tr('Lebt in Herden – fängst du eine, rennen die anderen weg.', 'Lives in herds – catch one and the others run away.'),
   zebra: tr('Beim Trinken am Wasserloch flieht es nicht, dann kannst du es auch berühren.', 'While drinking at the water hole it doesn’t run away – then you can even touch it.'),
@@ -202,7 +201,7 @@ const ANIMAL_INFO = {
   ray: tr(['Rochen', 'Hat keine Füße – er „fliegt“ mit seinen großen, flachen Brustflossen durchs Wasser.'], ['Ray', 'No feet – it “flies” through the water with its big, flat fins.']),
   turtle: tr(['Meeresschildkröte', 'Hat Flossen statt Füße – damit „fliegt“ sie durchs Wasser. Zum Luftholen schwimmt sie an die Oberfläche.'], ['Sea turtle', 'Flippers instead of feet – it “flies” through the water with them. To breathe, it swims up to the surface.']),
   deer: tr(['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'], ['Deer', 'Even-toed hoofs: two narrow hoof halves, pointed at the front.']),
-  stag: tr(['Hirsch', 'Wie beim Reh, nur viel größer – dahinter sieht man oft zwei kleine Afterklauen.'], ['Stag', 'Like the deer, only much bigger – you often see two small dewclaws behind them.']),
+
   fox: tr(['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'], ['Fox', 'Four toes with claws and a small pad – almost like a dog, only narrower.']),
   squirrel: tr(['Eichhörnchen', 'Lange, dünne Finger mit spitzen Krallen – perfekt zum Klettern.'], ['Squirrel', 'Long, thin fingers with sharp claws – perfect for climbing.']),
   antelope: tr(['Antilope', 'Paarhufer: zwei schmale, spitze Hufhälften – gut zum schnellen Rennen.'], ['Antelope', 'Even-toed hoofs: two narrow, pointed hoof halves – good for running fast.']),
@@ -273,7 +272,7 @@ const PEN_CALL_EVERY = [4, 8]; // Sekunden zwischen zwei Rufen
 const PEN_CALL_DIST = 190; // so nah muss man am Gehege sein (in Kachel-Proportionen, etwa 6 Kacheln)
 const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
 // welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
-const PEN_CALLS = { lion: 'lion_roar', stag: null, deer: null };
+const PEN_CALLS = { lion: 'lion_roar', deer: null };
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
 const CALL_FALLBACK = { tiger: 'lion_roar' };
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -331,7 +330,7 @@ const TOOLS = {
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'stag', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron', 'tiger'],
+    catches: ['deer', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron', 'tiger'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -1193,10 +1192,7 @@ export default class GardenScene extends Phaser.Scene {
   pickSpecies() {
     const entries = Object.entries(LEVEL.spawn.weights);
     let r = Math.random() * entries.reduce((s, [, w]) => s + w, 0);
-    const species = (entries.find(([, w]) => (r -= w) <= 0) ?? entries[0])[0];
-    // Event "Seltene Tiere": jedes zweite Reh ist ein Hirsch
-    if ((species === 'deer' || species === 'stag') && LEVEL.spawn.weights.stag && isActive('rare')) return Math.random() < RARE_EVENT_CHANCE ? 'stag' : 'deer';
-    return species;
+    return (entries.find(([, w]) => (r -= w) <= 0) ?? entries[0])[0];
   }
 
   // Ein zufälliges wildes Tier erzeugen. Fische, Eichhörnchen und Maulwürfe suchen sich ihre Plätze selbst

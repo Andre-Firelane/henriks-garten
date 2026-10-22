@@ -64,7 +64,7 @@ const CHARACTERS = [
   // auftauchen, nach rechts, nach links, Sprung; freigestellt mit npm run cutout
   { src: 'Sprites/Fisch.png', out: 'fish.png', frameW: 84, frameH: 64, feetY: 60, figureH: 56 },
   // Wels (seltener Skin des Fischs): gleiches Format, etwas größer als der Fisch
-  { src: 'Sprites/Fisch2.png', out: 'fish2.png', frameW: 84, frameH: 64, feetY: 60, scale: 0.39 },
+  { src: 'Sprites/Fisch2.png', out: 'fish2.png', frameW: 84, frameH: 64, feetY: 60, scale: 0.39, mirror: [0] }, // Auftauchen: Kopf in dieselbe Richtung wie beim Fisch
   // unten-rechts, unten-links, oben-links, oben-rechts; freigestellt mit npm run cutout
   { src: 'Sprites/Fisch Beutel.png', out: 'fishbag.png', frameW: 64, frameH: 76, feetY: 72, figureH: 64 },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout

@@ -55,8 +55,24 @@ export function loadSave() {
     for (const k of ['startsAt', 'endsAt', 'readyAt']) if (ev[k] != null) ev[k] += shift;
   }
   for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.since) a.since += shift;
+  migrateStag();
   save.lastSaved = s.savedAt;
   return s.level;
+}
+
+// Früher war der Hirsch eine eigene Tierart, jetzt ist er ein seltenes Aussehen (Skin) des Rehs
+function migrateStag() {
+  const fix = (a) => {
+    if (a.species !== 'stag') return;
+    a.species = 'deer';
+    a.skin = 'stag';
+  };
+  for (const lvl of Object.values(game.levels)) lvl.animals.forEach(fix);
+  game.followers.forEach(fix);
+  if (game.heartsBy.stag) {
+    game.heartsBy.deer = (game.heartsBy.deer ?? 0) + game.heartsBy.stag;
+    delete game.heartsBy.stag;
+  }
 }
 
 export function saveNow() {

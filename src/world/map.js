@@ -378,7 +378,7 @@ export function isUpgraded(e) {
 }
 // Tierarten, die sich ein Kontingent teilen (der Hirsch ist die seltene Variante des Rehs; Kuh, Schwein und Ziege
 // sind ohnehin Schafe)
-const QUOTA_OF = { stag: 'deer' };
+const QUOTA_OF = {}; // Tierart → Art, deren Plätze sie mitbenutzt (bisher keine)
 export const quotaKey = (species) => QUOTA_OF[species] ?? species;
 // Kontingente eines Geheges: in gemeinsamen Gehegen je Tierart eigene Plätze (quota: { Art: [vorher, ausgebaut] }),
 // sonst alle zusammen (slots, key null). i: 0 vor, 1 nach dem Ausbau (Standard: wie es gerade ist)

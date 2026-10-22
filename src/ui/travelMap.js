@@ -4,6 +4,7 @@
 import { animalIconSquare } from './icons.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
+import { isTouch } from './touch.js';
 
 let panel = null;
 let state = null;
@@ -32,7 +33,8 @@ export function openTravelMap(places, current, onTravel, onClose) {
   panel.classList.add('show');
   openedAt = performance.now();
   const targets = places.filter((p) => p.id !== current);
-  state = { places: targets, selected: 0, onTravel, onClose };
+  // keys: die Auswahl ist zu sehen (am PC gleich, auf Tablet und Handy erst nach einem Tastendruck – dort tippt man direkt)
+  state = { places: targets, selected: 0, keys: !isTouch(), onTravel, onClose };
   highlight();
   // erst nach diesem Tastendruck reagieren, sonst fährt die Taste E gleich los
   setTimeout(() => {
@@ -42,7 +44,7 @@ export function openTravelMap(places, current, onTravel, onClose) {
 }
 
 function highlight() {
-  const id = state.places[state.selected]?.id;
+  const id = state.keys ? state.places[state.selected]?.id : null;
   for (const b of panel.querySelectorAll('.place')) b.classList.toggle('selected', b.dataset.id === id);
 }
 
@@ -69,6 +71,10 @@ function onKey(e) {
   e.preventDefault();
   e.stopPropagation(); // die Taste soll im Spiel nichts auslösen
   const k = e.key.toLowerCase();
+  if (!state.keys && k !== 'escape') {
+    state.keys = true; // erster Tastendruck auf dem Tablet: erst einmal die Auswahl zeigen
+    return highlight();
+  }
   if (k === 'w' || k === 'arrowup') move(0, -1);
   else if (k === 's' || k === 'arrowdown') move(0, 1);
   else if (k === 'a' || k === 'arrowleft') move(-1, 0);

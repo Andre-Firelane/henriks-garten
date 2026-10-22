@@ -157,25 +157,7 @@ export const SPECIES = {
     shadowW: 40,
     catchWith: ['food'],
   },
-  // Hirsch: verhält sich wie das Reh, ist aber sehr selten
-  stag: {
-    texture: 'stag',
-    eatTexture: 'stag_eat', // beim Fressen am Futter im Tierpark
-    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 108 / 112,
-    speed: 30,
-    restChance: 0.5,
-    restTime: [1.5, 4],
-    walkTime: [1, 2.5],
-    stepRate: 10,
-    hop: 1.5,
-    footW: 8,
-    shadowW: 30,
-    fleeDist: 70, // so nah darf der Spieler kommen, dann rennt es weg
-    fleeSpeed: 95, // schneller als der Spieler (80)
-    catchWith: ['lasso', 'trap'], // scheu: nur mit dem Lasso aus der Entfernung oder in der Falle
-    trapWeight: 1.2, // wie gern es in die Falle geht
-  },
+
   // Eichhörnchen sitzen meist auf ihrem Baum (siehe Squirrel.js)
   squirrel: {
     texture: 'squirrel',
@@ -536,6 +518,7 @@ const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort,
 // Im Gehege locken sie mehr Besucher an (siehe SKIN_APPEAL in world/visitors.js).
 export const SKINS = {
   cat: { id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
+  deer: { id: 'stag', name: tr('Hirsch', 'stag'), male: true, wild: 0.1, baby: 0 }, // ein Rehkitz ist nie ein Hirsch
   antelope: { id: 'antelope2', name: tr('Oryx-Antilope', 'oryx antelope'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   fish: { id: 'fish2', name: tr('Wels', 'catfish'), male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
   tiger: { id: 'tiger2', name: tr('weißer Tiger', 'white tiger'), male: true, wild: 0.1, baby: 0.03 },
@@ -545,9 +528,6 @@ export const SKINS = {
   jellyfish: { id: 'jellyfish2', name: tr('Goldqualle', 'golden jellyfish'), male: false, wild: 0.08, baby: 0 }, // golden, mit Ranken auf dem Schirm
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
-// seltene Tierarten, die eigentlich eine Variante einer anderen sind (der Hirsch beim Reh): bleiben wie Skins
-// beim Auszug ins Naturreservat bevorzugt im Gehege
-export const RARE_SPECIES = ['stag'];
 
 export default class Animal {
   constructor(scene, x, y, species) {
@@ -663,9 +643,9 @@ export default class Animal {
     return this.eatingLook ? this.eatTexture() : this.baseTexture();
   }
 
-  // seltene Variante (Skin, Hirsch, weißer Koi): bleibt beim Auszug ins Naturreservat bevorzugt im Gehege
+  // seltene Variante (Skin wie der Hirsch, weißer Koi): bleibt beim Auszug ins Naturreservat bevorzugt im Gehege
   isRare() {
-    return !!this.skin || RARE_SPECIES.includes(this.species);
+    return !!this.skin;
   }
 
   // seltener Skin würfeln: from 'wild' (draußen) oder 'baby' (Tierbaby-Event, viel seltener)
