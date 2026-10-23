@@ -38,6 +38,28 @@ export function writeSave(level) {
   }
 }
 
+// Spielstand retten, wenn er sich nicht mehr laden lässt (siehe Fehleranzeige in ui/loading.js):
+// 'park': im Tierpark weiterspielen statt im zuletzt besuchten Gebiet;
+// 'repair': zusätzlich alles Vorübergehende weglassen (wilde Tiere, Begleiter, Fallen). Tiere in Gehegen und Becken,
+// Herzen und Ausbauten bleiben. Gibt zurück, ob es geklappt hat.
+export function repairSave(mode) {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (!s?.game) return false;
+    s.level = 'park';
+    if (mode === 'repair') {
+      for (const lvl of Object.values(s.game.levels ?? {})) lvl.animals = (lvl.animals ?? []).filter((a) => a.state === 'penned');
+      s.game.followers = [];
+      s.game.traps = [];
+      s.game.tool = null;
+    }
+    localStorage.setItem(KEY, JSON.stringify(s));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function deleteSave() {
   try {
     localStorage.removeItem(KEY);

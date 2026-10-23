@@ -148,6 +148,12 @@ export default class Cat extends Animal {
     });
   }
 
+  // beim Speichern: oben auf dem Kratzbaum (oder im Sprung) steht sie mitten im Stamm – gespeichert wird der Platz davor,
+  // sonst steckt sie nach dem Laden am Sockel fest
+  savedSpot() {
+    return this.tree && (this.sleeping || this.jumping) ? { x: this.tree.front.x, y: this.tree.front.y } : { x: this.x, y: this.y };
+  }
+
   // auf dem Kratzbaum (oder im Sprung) kommt sie nicht zum Futter
   canFeed() {
     return super.canFeed() && !this.sleeping && !this.jumping && !this.tree;

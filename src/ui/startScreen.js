@@ -1,6 +1,6 @@
 // Startbildschirm: letzten Stand weiterspielen, neues Spiel beginnen oder ein Test-Spiel (speichert nie,
 // der echte Spielstand bleibt unberührt). Ein neues Spiel löscht den alten Stand erst nach einer Rückfrage.
-// Unten wählt man die Sprache (Deutsch oder Englisch); das lädt die Seite neu.
+// Unten wählt man die Sprache (Deutsch oder Englisch); das lädt die Seite neu. Daneben klappt ein kleiner Link das Impressum auf.
 import { LEVELS } from '../world/levels.js';
 import { resetGame } from '../state.js';
 import { save, readSave, loadSave, deleteSave } from '../save.js';
@@ -8,6 +8,18 @@ import { lang, locale, setLang, tr } from '../i18n.js';
 import { startSession } from '../sessions.js';
 
 let panel = null;
+
+// Impressum: leere Angaben werden nicht angezeigt
+const IMPRINT = {
+  name: 'Andre Peschka',
+  address: ['Zollamtsbogen 4', '21035 Hamburg', tr('Deutschland', 'Germany')], // Straße und Hausnummer, PLZ und Ort, Land (je eine Zeile)
+  email: 'andrepeschka@gmail.com',
+};
+
+function imprintHtml() {
+  const lines = [IMPRINT.name, ...IMPRINT.address, IMPRINT.email && `<a href="mailto:${IMPRINT.email}">${IMPRINT.email}</a>`].filter(Boolean);
+  return `<div class="start-imprint"><b>${tr('Impressum', 'Legal notice')}</b><br>${lines.join('<br>')}</div>`;
+}
 
 function savedText(s) {
   const d = new Date(s.savedAt);
@@ -33,7 +45,9 @@ export function openStartScreen(onStart) {
       <div class="start-lang">
         <button class="lang-btn${lang === 'de' ? ' on' : ''}" data-lang="de">Deutsch</button>
         <button class="lang-btn${lang === 'en' ? ' on' : ''}" data-lang="en">English</button>
+        <button class="imprint-link" data-act="imprint">${tr('Impressum', 'Legal notice')}</button>
       </div>
+      ${imprintHtml()}
     </div>`;
   panel.classList.add('show');
   const start = (data) => {
@@ -44,6 +58,7 @@ export function openStartScreen(onStart) {
   panel.onclick = (e) => {
     const l = e.target.closest('.lang-btn')?.dataset.lang;
     if (l) return setLang(l);
+    if (e.target.closest('.imprint-link')) return panel.classList.toggle('imprint');
     const act = e.target.closest('.start-btn')?.dataset.act;
     if (act === 'continue') {
       startSession('continue');

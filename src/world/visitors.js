@@ -19,7 +19,6 @@ export const APPEAL = {
   antelope: 3,
   zebra: 3,
   meerkat: 3.5,
-
   giraffe: 4,
   flamingo: 4,
   panda: 5,
@@ -29,7 +28,7 @@ export const APPEAL = {
   macaque: 4,
   lion: 5,
   crocodile: 5,
-  reeffish: 1.5,
+  reeffish: 0.5, // leicht zu fangen, und im Aquarium schwimmen bis zu 30 davon (sonst bringen sie mehr Besucher als seltene Tiere)
   seahorse: 3,
   octopus: 4.5,
   turtle: 6,

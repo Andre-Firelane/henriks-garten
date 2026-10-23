@@ -1,5 +1,5 @@
 // Erdmännchen (Savanne): leben in Kolonien. Ein Wächter steht aufrecht und dreht sich alle 15 Sekunden im Uhrzeigersinn;
-// sein Blickfeld ist die ganze vordere Hälfte (180°). Die anderen schauen aus ihren Löchern und sehen sich um.
+// sein Blickfeld ist ein Kegel von 90° in Blickrichtung (VIEW_ANGLE). Die anderen schauen aus ihren Löchern und sehen sich um.
 // Sieht der Wächter den Spieler, warnt er mit einem Pfiff, und die ganze Kolonie verschwindet. Ebenso nach dem ersten
 // Fang: dann schlägt er Alarm und die übrigen verschwinden.
 // Fangen: nur mit dem Kescher und nur die im Loch (nicht den Wächter).
@@ -11,6 +11,7 @@ import { tr } from '../i18n.js';
 const COLONY_JOIN = 70; // so nah muss ein Erdmännchen an einer Kolonie sein, um dazuzugehören
 const TURN_TIME = 15; // alle so viele Sekunden dreht sich der Wächter eine Richtung weiter (im Uhrzeigersinn)
 const VIEW_DIST = 140; // so weit sieht er (in Kachel-Proportionen, etwa 4 bis 5 Kacheln)
+const VIEW_ANGLE = 90; // so breit ist sein Blickfeld (Grad, zur Hälfte links und rechts der Blickrichtung)
 const PEEK_TIME = [2, 4]; // so lange schaut ein Erdmännchen im Loch in eine Richtung
 const HOLE_ORIGIN_Y = 26 / 32; // Mitte des Erdlochs im Bild "meerkat_hole"
 const ALARM_VOLUME = 0.5;
@@ -128,12 +129,15 @@ export default class Meerkat extends Animal {
     }
   }
 
-  // Steht der Spieler im Blickfeld des Wächters? Die vordere Hälfte (180°) bis VIEW_DIST weit.
+  // Steht der Spieler im Blickfeld des Wächters? Ein Kegel von VIEW_ANGLE in Blickrichtung, bis VIEW_DIST weit.
   sees(player) {
     const dx = player.x - this.x;
     const dy = (player.y - this.y) * 2; // Kachel-Proportionen
-    if (Math.hypot(dx, dy) > VIEW_DIST) return false;
-    return dx * this.faceX + dy * this.faceY > 0;
+    const d = Math.hypot(dx, dy);
+    if (d > VIEW_DIST) return false;
+    if (d < 1) return true;
+    const cos = (dx * this.faceX + dy * this.faceY) / (d * Math.hypot(this.faceX, this.faceY));
+    return cos > Math.cos(((VIEW_ANGLE / 2) * Math.PI) / 180);
   }
 
   // Warnpfiff: die ganze Kolonie verschwindet. reason: 'seen' (Wächter hat den Spieler gesehen) oder 'catch' (eins gefangen)

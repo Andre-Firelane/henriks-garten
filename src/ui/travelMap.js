@@ -16,25 +16,29 @@ export function isTravelMapOpen() {
 }
 
 // places: [{ id, name, icon, x, y }] (x/y in Prozent der Karte); current: Gebiet, in dem man gerade ist;
-// onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise
-export function openTravelMap(places, current, onTravel, onClose) {
+// onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise.
+// opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mini-Tutorial: hüpfender Pfeil neben diesem Gebiet und
+// der Hinweis statt der Anleitung
+export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   panel = document.getElementById('travel');
   const markers = places
     .map(
       (p) => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%">
         ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}</span>
+        ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
       </button>`,
     )
     .join('');
   panel.innerHTML = `<div class="travel-box">${CLOSE_BUTTON}
       <div class="travel-map">${markers}</div>
-      <p class="travel-hint">${tr('Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.', 'Where do you want to go? Tap an area – or choose with <b>WASD</b> and drive off with <b>E</b>.')}</p>
+      <p class="travel-hint${opts.hint ? ' tut' : ''}">${opts.hint ? `<span class="tut-hint">${opts.hint}</span>` : tr('Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.', 'Where do you want to go? Tap an area – or choose with <b>WASD</b> and drive off with <b>E</b>.')}</p>
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();
   const targets = places.filter((p) => p.id !== current);
   // keys: die Auswahl ist zu sehen (am PC gleich, auf Tablet und Handy erst nach einem Tastendruck – dort tippt man direkt)
-  state = { places: targets, selected: 0, keys: !isTouch(), onTravel, onClose };
+  // im Mini-Tutorial ist das Ziel des Pfeils vorausgewählt
+  state = { places: targets, selected: Math.max(0, targets.findIndex((p) => p.id === opts.point)), keys: !isTouch(), onTravel, onClose };
   highlight();
   // erst nach diesem Tastendruck reagieren, sonst fährt die Taste E gleich los
   setTimeout(() => {

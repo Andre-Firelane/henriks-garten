@@ -101,7 +101,7 @@ import FoodTool from '../tools/FoodTool.js';
 import BallTool from '../tools/BallTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIcons } from '../ui/icons.js';
-import { touchHandlers, setTouchTool } from '../ui/touch.js';
+import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
 import { openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
@@ -272,7 +272,7 @@ const PEN_CALL_EVERY = [4, 8]; // Sekunden zwischen zwei Rufen
 const PEN_CALL_DIST = 190; // so nah muss man am Gehege sein (in Kachel-Proportionen, etwa 6 Kacheln)
 const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
 // welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
-const PEN_CALLS = { lion: 'lion_roar', deer: null };
+const PEN_CALLS = { lion: 'lion_roar', deer: null, peacock: null }; // Pfauen rufen im Park nur selten über alles hinweg (siehe updatePeacockCall)
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
 const CALL_FALLBACK = { tiger: 'lion_roar' };
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -297,6 +297,7 @@ const ACTION_KEY = 'E';
 // Flamingo-Flug (Event): in diesen Welten fliegen Flamingos ein, etwa neunmal so oft wie Reiher
 const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
+const PEACOCK_CALL_EVERY_PARK = [60, 120]; // ... im Tierpark seltener (dort laufen viele Pfauen frei herum)
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const BABY_LEVELS = ['park', 'aquarium']; // dort gibt es beim Tierbaby-Event Nachwuchs
@@ -581,6 +582,7 @@ export default class GardenScene extends Phaser.Scene {
     this.car = null;
     this.boatRope = null;
     this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
+    if (data.intro) game.tutorial = 'car'; // neues Spiel: Mini-Tutorial (siehe showTutorial)
     if (LEVEL.car) {
       const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
       const k = LEVEL.car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
@@ -595,6 +597,7 @@ export default class GardenScene extends Phaser.Scene {
       if (LEVEL.car.float) this.floatBoat(); // Boot (Unterwasserwelt): schaukelt über dem Boden, Seil hinunter zum Anker
     }
     this.nearCar = false;
+    this.showTutorial();
 
     // Beschriftung über den Übergängen in andere Level
     for (const exit of EXITS) {
@@ -646,6 +649,7 @@ export default class GardenScene extends Phaser.Scene {
     this.animals = [];
     if (saved) {
       for (const s of saved.animals) {
+        if (!SPECIES[s.species]) continue; // unbekannte Tierart im Spielstand (z. B. aus einer anderen Version): überspringen
         const a = this.createAnimal(s.species, s.x, s.y, s.variant);
         a.farm = s.farm ?? null; // Bauernhof-Event: gefangene Kuh, Schwein oder Ziege bleibt es
         a.skin = s.skin ?? null; // seltener Skin (Katze 2)
@@ -679,7 +683,9 @@ export default class GardenScene extends Phaser.Scene {
       }
       // (auch: Gehege, das diese Art nicht mehr aufnimmt – z. B. nach dem Zusammenlegen von Teichen und Volieren)
       const fits = a.enclosure && accepts(a.enclosure, a.species);
-      if (a.state !== 'penned' || (fits && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
+      // steckt es auf etwas Festem fest (z. B. eine Katze, die oben auf dem Kratzbaum gespeichert wurde)? Dann auf einen freien Platz
+      const stuck = a.state === 'penned' && a.blocked === Animal.prototype.blocked && a.blocked(a.x, a.y);
+      if (a.state !== 'penned' || (fits && !stuck && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
       const e = (fits && a.enclosure) || ENCLOSURES.find((f) => accepts(f, a.species));
       if (e) this.placeInPen(a, e, true);
     }
@@ -687,6 +693,7 @@ export default class GardenScene extends Phaser.Scene {
     // Tiere, die dem Spieler aus dem letzten Level gefolgt sind
     this.followers = [];
     for (const { species, variant, origin, farm, skin } of game.followers) {
+      if (!SPECIES[species]) continue;
       const a = this.createAnimal(species, start.x, start.y, variant);
       a.farm = farm ?? null;
       a.skin = skin ?? null;
@@ -2376,6 +2383,62 @@ export default class GardenScene extends Phaser.Scene {
     );
   }
 
+  // Mini-Tutorial beim ersten Spiel (game.tutorial), unten ein Hinweis und ein hüpfender roter Pfeil:
+  // 'car'   im Tierpark zum Auto; auf der Weltkarte zeigt der Pfeil zur Wiese (weiter beim Verlassen des Tierparks, siehe leaveLevel)
+  // 'sheep' ein paar Schafe fangen und mit ihnen zurück in den Tierpark (Weltkarte: Pfeil zum Tierpark); weiter, sobald
+  //         Schafe einziehen (siehe moveFollowersIntoPens)
+  // 'visit' am Schafgehege vorbeischauen (Pfeil über dem Schild); fertig, wenn man dort steht (siehe checkTutorialVisit)
+  showTutorial() {
+    if (game.tutorial === true) game.tutorial = 'car'; // Spielstand aus der ersten Fassung des Tutorials
+    this.tutArrow?.destroy();
+    this.tutArrow = null;
+    const step = game.tutorial;
+    const target = step === 'car' && LEVEL_ID === 'park' ? this.car : step === 'visit' && LEVEL_ID === 'park' ? this.sheepSign() : null;
+    const tip = document.getElementById('tip');
+    const on = !!target || step === 'sheep';
+    tip.classList.toggle('show', on);
+    if (!on) return;
+    if (step === 'car') {
+      tip.innerHTML = isTouch()
+        ? tr('🚗 Steig ins Auto und fahr los! Geh zum Auto beim roten Pfeil und tippe auf den Knopf unten rechts.', '🚗 Get in the car and drive off! Walk to the car with the red arrow and tap the button at the bottom right.')
+        : tr('🚗 Steig ins Auto und fahr los! Geh zum Auto beim roten Pfeil und drück <b>E</b>.', '🚗 Get in the car and drive off! Walk to the car with the red arrow and press <b>E</b>.');
+    } else if (step === 'sheep') {
+      tip.innerHTML = tr(
+        '🐑 Fang ein paar Schafe auf der Wiese – lauf einfach hin, dann laufen sie dir hinterher. Bring sie mit dem Auto zurück in den Tierpark!',
+        '🐑 Catch a few sheep on the meadow – just walk up to them and they will follow you. Then take them back to your zoo by car!',
+      );
+    } else {
+      tip.innerHTML = tr('👀 Schau im Schafgehege beim roten Pfeil vorbei und sieh zu, wie die Besucher deine Schafe mögen!', '👀 Visit the sheep enclosure at the red arrow and watch how much the visitors like your sheep!');
+    }
+    if (!target) return;
+    const up = step === 'car' ? 92 * this.car.k : 52;
+    this.tutArrow = this.add
+      .text(target.x, target.y - up, '▼', { fontFamily: 'Arial', fontSize: '22px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 4, resolution: 4 })
+      .setOrigin(0.5, 1)
+      .setDepth(100001);
+    this.tweens.add({ targets: this.tutArrow, y: this.tutArrow.y - 8, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
+  // Schild am Schafgehege (Weide) im Tierpark
+  sheepSign() {
+    return (this.enclosureSigns ?? []).find((s) => s.enclosure.species?.includes('sheep')) ?? null;
+  }
+
+  // Tutorial-Schritt 'visit': steht man am Schafgehege, ist das Tutorial geschafft
+  checkTutorialVisit() {
+    if (game.tutorial !== 'visit' || LEVEL_ID !== 'park' || this.leaving) return;
+    const s = this.sheepSign();
+    if (!s || Math.hypot(this.player.x - s.x, (this.player.y - s.y) * 2) > 110) return;
+    game.tutorial = false;
+    this.showTutorial();
+    this.showToast(
+      tr(
+        '<span class="heart">♥</span> Die Besucher lieben deine Schafe und schenken dir Herzen! Mit den Herzen startest du am Computer im Haupthaus Events. Viel Spaß!',
+        '<span class="heart">♥</span> The visitors love your sheep and give you hearts! Use the hearts at the computer in the main building to start events. Have fun!',
+      ),
+    );
+  }
+
   // Weltkarte öffnen (am Auto): das Spiel pausiert, bis man losfährt oder die Karte schließt
   openCarMap() {
     if (this.leaving || isTravelMapOpen() || isJournalOpen()) return;
@@ -2391,6 +2454,12 @@ export default class GardenScene extends Phaser.Scene {
         this.travelTo(id);
       },
       () => this.scene.resume(),
+      // Mini-Tutorial: erst ein Pfeil zur Wiese (dort fängt man als neuer Spieler am besten an), mit Schafen dann zum Tierpark
+      game.tutorial === 'car'
+        ? { point: 'meadow', hint: tr('Als neuer Spieler startest du am besten auf der <b>Wiese</b> – wähle die Wiese!', 'As a new player, the <b>meadow</b> is the best place to start – choose the meadow!') }
+        : game.tutorial === 'sheep' && LEVEL_ID !== 'park' && this.followers.some((a) => a.species === 'sheep')
+          ? { point: 'park', side: 'left', hint: tr('Bring die Schafe nach Hause – fahr zurück in den <b>Tierpark</b>!', 'Take the sheep home – drive back to your <b>zoo</b>!') }
+          : {},
     );
   }
 
@@ -2415,6 +2484,11 @@ export default class GardenScene extends Phaser.Scene {
       this.followers.splice(this.followers.indexOf(a), 1);
       moved.push(a.species);
       this.releaseExtra(e);
+    }
+    // Mini-Tutorial: die ersten Schafe sind im Tierpark – jetzt am Schafgehege vorbeischauen
+    if (game.tutorial === 'sheep' && LEVEL_ID === 'park' && moved.includes('sheep')) {
+      game.tutorial = 'visit';
+      this.showTutorial();
     }
     const nowFull = [...(this.aquaNowFull ?? []), ...ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e))]; // auch volle Becken im Aquarium
     this.aquaNowFull = [];
@@ -2755,9 +2829,10 @@ export default class GardenScene extends Phaser.Scene {
 
   // Ruf eines wilden Pfaus: schallt ab und zu durchs ganze Gebiet (überall gleich laut)
   updatePeacockCall(dt) {
-    this.peacockCallTimer = (this.peacockCallTimer ?? Phaser.Math.FloatBetween(5, PEACOCK_CALL_EVERY[1])) - dt;
+    const every = LEVEL_ID === 'park' ? PEACOCK_CALL_EVERY_PARK : PEACOCK_CALL_EVERY;
+    this.peacockCallTimer = (this.peacockCallTimer ?? Phaser.Math.FloatBetween(5, every[1])) - dt;
     if (this.peacockCallTimer > 0) return;
-    this.peacockCallTimer = Phaser.Math.FloatBetween(...PEACOCK_CALL_EVERY);
+    this.peacockCallTimer = Phaser.Math.FloatBetween(...every);
     if (!this.animals.some((a) => a.species === 'peacock' && (a.state === 'wild' || a.enclosure?.free))) return;
     if (this.cache.audio.exists('animal_peacock')) this.sound.play('animal_peacock', { volume: PEACOCK_CALL_VOLUME, detune: Phaser.Math.Between(-80, 80) });
   }
@@ -2947,6 +3022,7 @@ export default class GardenScene extends Phaser.Scene {
   // ein getragenes kommt nicht mit, sondern zurück an seinen Platz an der Hütte (sonst gäbe es es doppelt).
   leaveLevel(exit) {
     this.leaving = true;
+    if (LEVEL_ID === 'park' && (game.tutorial === 'car' || game.tutorial === true)) game.tutorial = 'sheep'; // Mini-Tutorial: weiter zu den Schafen
     let returned = null;
     if (this.toolId) {
       returned = TOOLS[this.toolId].name;
@@ -2994,7 +3070,7 @@ export default class GardenScene extends Phaser.Scene {
     game.levels[LEVEL_ID] = {
       animals: this.animals
         .filter((a) => a.state !== 'following' && !a.baby && !((a.species === 'heron' || a.species === 'flamingo') && a.state === 'wild')) // wilde Reiher fliegen weiter, Babys gibt es nur beim Event
-        .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, x: a.x, y: a.y, life: a.life })),
+        .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
     };
     game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, origin: a.origin }));
@@ -3270,6 +3346,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!this.wolfNight) this.updateHerons(dt);
     this.updateGate(dt);
     this.updateSign();
+    this.checkTutorialVisit();
     this.checkWrongHome(dt);
 
     // Tiere, die zuhause angekommen sind, folgen nicht mehr

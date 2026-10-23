@@ -1,6 +1,10 @@
 // Ladeanzeige: beim Spielstart (Bilder und Töne laden, Balken füllt sich) und solange ein Gebiet aufgebaut wird
 // (Spiel starten, Gehege ausbauen, Gebiet wechseln – dort läuft der Balken, weil sich der Aufbau nicht messen lässt).
 // Die Tafel steht schon in index.html und ist beim Öffnen der Seite gleich zu sehen.
+// Geht beim Laden etwas schief, bleibt sie nicht einfach stehen: sie zeigt den Fehler und bietet an, im Tierpark
+// weiterzuspielen bzw. den Spielstand zu reparieren (siehe repairSave).
+import { repairSave } from '../save.js';
+import { tr } from '../i18n.js';
 
 const panel = () => document.getElementById('loading');
 
@@ -27,6 +31,32 @@ export function setLoadingProgress(p) {
 
 export function hideLoading() {
   panel()?.classList.remove('show');
+}
+
+// Fehler, während die Ladeanzeige zu sehen ist: Meldung mit Ausweg statt ewigem Laden
+export function setupLoadingErrors() {
+  const onError = (message) => {
+    const el = panel();
+    if (!el?.classList.contains('show') || el.classList.contains('failed')) return;
+    el.classList.add('failed');
+    el.classList.remove('busy');
+    el.querySelector('.loading-text').textContent = tr('Hoppla – beim Laden ist etwas schiefgegangen.', 'Oops – something went wrong while loading.');
+    const box = el.querySelector('.loading-box');
+    box.insertAdjacentHTML(
+      'beforeend',
+      `<p class="loading-error">${String(message).replace(/[<>&]/g, '')}</p>
+       <button class="start-btn" data-fix="park">${tr('Im Tierpark weiterspielen', 'Continue in the zoo')}</button>
+       <button class="start-btn" data-fix="repair">${tr('Spielstand reparieren', 'Repair saved game')}<small>${tr('Tiere in Gehegen und Becken, Herzen und Ausbauten bleiben', 'Animals in enclosures and tanks, hearts and upgrades stay')}</small></button>`,
+    );
+    box.onclick = (e) => {
+      const fix = e.target.closest('[data-fix]')?.dataset.fix;
+      if (!fix) return;
+      repairSave(fix);
+      location.reload();
+    };
+  };
+  window.addEventListener('error', (e) => onError(e.message || e.error));
+  window.addEventListener('unhandledrejection', (e) => onError(e.reason?.message ?? e.reason));
 }
 
 // erst die Anzeige zeichnen lassen, dann die (lange, blockierende) Arbeit: sonst sieht man sie nie
