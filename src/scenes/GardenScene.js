@@ -406,6 +406,7 @@ export default class GardenScene extends Phaser.Scene {
     setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'park'));
     this.leaving = false;
     this.signs = [];
+    this.chestSprites = new Map(); // Bilder der Regale und Kisten je Kachel ("tx,ty"), für den Pfeil im Mini-Tutorial
     this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
 
     const ground = []; // Bodenkacheln [x, y, Bild]: werden unten in wenige große Flächen gemalt (schneller auf dem Tablet)
@@ -462,6 +463,7 @@ export default class GardenScene extends Phaser.Scene {
           }
           // Antippen geht nur, wenn man direkt daneben steht (wie mit der Aktionstaste)
           if (obj.chest) {
+            this.chestSprites.set(`${tx},${ty}`, img);
             img.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
               const chest = this.chestAt(tx, ty);
               if (chest && this.nearChest === chest) this.openChest(chest);
@@ -1778,7 +1780,11 @@ export default class GardenScene extends Phaser.Scene {
     if (isJournalOpen() || this.leaving) return;
     const goals = [
       ['🐾', tr('Fang Tiere in den Welten rund um deinen Tierpark. Sie laufen dir hinterher – bring sie nach Hause in deine Gehege.', 'Catch animals in the worlds around your zoo. They follow you – bring them home to your enclosures.')],
-      ['🧰', tr('Werkzeuge wie Kescher, Lasso und Falle liegen im Regal in der Hütte. Jedes Tier fängst du anders.', 'Tools like the net, lasso and trap are on the shelf in the hut. Every animal is caught in its own way.')],
+      ['🧰', tr('Werkzeuge wie Kescher, Lasso und Falle liegen im Regal in der Hütte.', 'Tools like the net, lasso and trap are on the shelf in the hut.')],
+      ['🦊', tr(
+        'Schafe laufen dir einfach hinterher – andere Tiere sind kniffliger: Manche musst du anschleichen, mit Futter locken, mit Lasso oder Falle fangen oder geschickt austricksen. Tipps zu jedem Tier stehen in der Info.',
+        'Sheep simply follow you – other animals are trickier: some you have to sneak up on, lure with food, catch with the lasso or a trap, or cleverly outsmart. Tips for every animal are under Info.',
+      )],
       ['♥', tr('Besucher lieben deine Tiere und schenken dir Herzen.', 'Visitors love your animals and give you hearts.')],
       ['🎉', tr('Mit den Herzen startest du am Computer im Haupthaus Events oder baust Gehege aus.', 'Use the hearts at the computer in the main building to start events or upgrade enclosures.')],
       ['ⓘ', tr('Alles Weitere steht in der Info oben links.', 'You can find everything else under Info at the top left.')],
@@ -2367,6 +2373,11 @@ export default class GardenScene extends Phaser.Scene {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
     const tools = [...chest.tools, ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack
     const items = [...tools.map((id) => ({ id, name: TOOLS[id].name, image: id })), { id: null, name: tr('Hände frei', 'Empty hands'), image: 'hand' }];
+    // Mini-Tutorial: das Regal ist gefunden, weiter zu den Schafen
+    if (game.tutorial === 'tools') {
+      game.tutorial = 'sheep';
+      this.showTutorial();
+    }
     this.scene.pause();
     openToolChest(
       items,
@@ -2385,6 +2396,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Mini-Tutorial beim ersten Spiel (game.tutorial), unten ein Hinweis und ein hüpfender roter Pfeil:
   // 'car'   im Tierpark zum Auto; auf der Weltkarte zeigt der Pfeil zur Wiese (weiter beim Verlassen des Tierparks, siehe leaveLevel)
+  // 'tools' in der Welt zum Regal der Hütte, dort liegen die Werkzeuge (weiter, sobald man es öffnet, siehe openChest)
   // 'sheep' ein paar Schafe fangen und mit ihnen zurück in den Tierpark (Weltkarte: Pfeil zum Tierpark); weiter, sobald
   //         Schafe einziehen (siehe moveFollowersIntoPens)
   // 'visit' am Schafgehege vorbeischauen (Pfeil über dem Schild); fertig, wenn man dort steht (siehe checkTutorialVisit)
@@ -2393,30 +2405,48 @@ export default class GardenScene extends Phaser.Scene {
     this.tutArrow?.destroy();
     this.tutArrow = null;
     const step = game.tutorial;
-    const target = step === 'car' && LEVEL_ID === 'park' ? this.car : step === 'visit' && LEVEL_ID === 'park' ? this.sheepSign() : null;
+    // wohin der Pfeil zeigt (seine Spitze): Auto, Regal der Hütte oder Schild am Schafgehege
+    const sign = step === 'visit' && LEVEL_ID === 'park' ? this.sheepSign() : null;
+    const target = step === 'car' && LEVEL_ID === 'park' && this.car
+      ? { x: this.car.x, y: this.car.y - 92 * this.car.k }
+      : step === 'tools'
+        ? this.chestPoint()
+        : sign && { x: sign.x, y: sign.y - 52 };
     const tip = document.getElementById('tip');
-    const on = !!target || step === 'sheep';
+    const on = !!target || step === 'sheep' || step === 'tools';
     tip.classList.toggle('show', on);
     if (!on) return;
     if (step === 'car') {
       tip.innerHTML = isTouch()
         ? tr('🚗 Steig ins Auto und fahr los! Geh zum Auto beim roten Pfeil und tippe auf den Knopf unten rechts.', '🚗 Get in the car and drive off! Walk to the car with the red arrow and tap the button at the bottom right.')
         : tr('🚗 Steig ins Auto und fahr los! Geh zum Auto beim roten Pfeil und drück <b>E</b>.', '🚗 Get in the car and drive off! Walk to the car with the red arrow and press <b>E</b>.');
+    } else if (step === 'tools') {
+      tip.innerHTML = isTouch()
+        ? tr('🧰 In der Hütte liegen Werkzeuge wie Kescher und Lasso. Geh zum Regal beim roten Pfeil und tippe auf den Knopf unten rechts!', '🧰 Tools like the net and lasso are in the hut. Walk to the shelf with the red arrow and tap the button at the bottom right!')
+        : tr('🧰 In der Hütte liegen Werkzeuge wie Kescher und Lasso. Geh zum Regal beim roten Pfeil und drück <b>E</b>!', '🧰 Tools like the net and lasso are in the hut. Walk to the shelf with the red arrow and press <b>E</b>!');
     } else if (step === 'sheep') {
       tip.innerHTML = tr(
-        '🐑 Fang ein paar Schafe auf der Wiese – lauf einfach hin, dann laufen sie dir hinterher. Bring sie mit dem Auto zurück in den Tierpark!',
-        '🐑 Catch a few sheep on the meadow – just walk up to them and they will follow you. Then take them back to your zoo by car!',
+        '🐑 Schafe sind leicht: Lauf einfach hin, dann laufen sie dir hinterher. Bring ein paar mit dem Auto zurück in den Tierpark! Andere Tiere sind kniffliger – Tipps stehen in der Info oben links.',
+        '🐑 Sheep are easy: just walk up to them and they will follow you. Take a few back to your zoo by car! Other animals are trickier – tips are under Info at the top left.',
       );
     } else {
       tip.innerHTML = tr('👀 Schau im Schafgehege beim roten Pfeil vorbei und sieh zu, wie die Besucher deine Schafe mögen!', '👀 Visit the sheep enclosure at the red arrow and watch how much the visitors like your sheep!');
     }
     if (!target) return;
-    const up = step === 'car' ? 92 * this.car.k : 52;
     this.tutArrow = this.add
-      .text(target.x, target.y - up, '▼', { fontFamily: 'Arial', fontSize: '22px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 4, resolution: 4 })
+      .text(target.x, target.y, '▼', { fontFamily: 'Arial', fontSize: '22px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 4, resolution: 4 })
       .setOrigin(0.5, 1)
       .setDepth(100001);
     this.tweens.add({ targets: this.tutArrow, y: this.tutArrow.y - 8, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
+  // Regal (oder Kiste, Sack) dieser Welt: oberer Rand des Bilds, für den Pfeil im Mini-Tutorial
+  chestPoint() {
+    for (const c of LEVEL.chests ?? []) {
+      const img = this.chestSprites?.get(`${c.tx},${c.ty}`);
+      if (img) return { x: img.x, y: img.y - img.displayHeight * img.originY + 6 };
+    }
+    return null;
   }
 
   // Schild am Schafgehege (Weide) im Tierpark
@@ -2777,7 +2807,9 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Ist das Gehege für diese Tierart im Tierpark schon voll (samt den Tieren, die gerade mitlaufen)? (für den Hinweis)
+  // Meerestiere: die Becken im Aquarium
   parkPenFull(species, origin) {
+    if (AQUA.includes(species)) return this.aquariumFull(species);
     const pens = (LEVELS.park.enclosures ?? []).filter((e) => (!e.species || e.species.includes(species)) && (!e.unlock || game.unlocked.includes(e.unlock)));
     const e = pens.find((f) => f.world === origin) ?? pens[0];
     if (!e || !hasSlots(e)) return false;
@@ -2789,6 +2821,22 @@ export default class GardenScene extends Phaser.Scene {
     const inPen = saved.filter((a) => a.state === 'penned' && accepts2(a.species)).length;
     const coming = this.followers.filter((a) => accepts2(a.species)).length;
     return inPen + coming >= cap;
+  }
+
+  // Sind alle Becken im Aquarium, in die diese Meerestier-Art darf, schon voll (samt denen, die gerade mitschwimmen)?
+  // Gezählt wird im gespeicherten Stand des Aquariums, wie beim Einliefern (siehe sendFishToAquarium)
+  aquariumFull(species) {
+    const saved = game.levels.aquarium?.animals ?? [];
+    const all = aquariumTanks();
+    const tanks = all.filter((t) => accepts(t.e, species));
+    if (!tanks.length) return false;
+    const cap = tanks.reduce((n, t) => n + t.capFor(species), 0);
+    const inside = saved.filter((s) => {
+      const t = s.state === 'penned' && tankOf(all, s);
+      return t && tanks.includes(t) && (!t.e.quota || s.species === species);
+    }).length;
+    const coming = this.followers.filter((a) => a.species === species).length;
+    return inside + coming >= cap;
   }
 
   // Ein Tier an eine freie Stelle in diesem Gehege setzen (Wassertiere in dessen Teich) und einziehen lassen
@@ -2973,7 +3021,12 @@ export default class GardenScene extends Phaser.Scene {
     if (full) {
       const tag = this.add.text(animal.x, animal.y - 40, '🌳', { fontSize: '18px' }).setOrigin(0.5).setDepth(100000);
       this.tweens.add({ targets: tag, y: tag.y - 18, alpha: 0, delay: 600, duration: 1400, onComplete: () => tag.destroy() });
-      this.time.delayedCall(900, () => this.showToast(tr(`🌳 Das Gehege für ${animalIcon(animal.species, 3)} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The enclosure for ${animalIcon(animal.species, 3)} is already full – when you bring it home, one animal moves to the nature reserve.`)));
+      const icon = animalIcon(animal.species, 3);
+      this.time.delayedCall(900, () => this.showToast(
+        AQUA.includes(animal.species)
+          ? tr(`🌳 Das Becken für ${icon} im Aquarium ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The tank for ${icon} in the aquarium is already full – when you bring it home, one animal moves to the nature reserve.`)
+          : tr(`🌳 Das Gehege für ${icon} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The enclosure for ${icon} is already full – when you bring it home, one animal moves to the nature reserve.`),
+      ));
     }
     // Riff-Fische: der Rest der Gruppe schießt davon und ist weg – man bekommt nur einen
     if (animal.species === 'reeffish') {
@@ -3022,7 +3075,7 @@ export default class GardenScene extends Phaser.Scene {
   // ein getragenes kommt nicht mit, sondern zurück an seinen Platz an der Hütte (sonst gäbe es es doppelt).
   leaveLevel(exit) {
     this.leaving = true;
-    if (LEVEL_ID === 'park' && (game.tutorial === 'car' || game.tutorial === true)) game.tutorial = 'sheep'; // Mini-Tutorial: weiter zu den Schafen
+    if (LEVEL_ID === 'park' && (game.tutorial === 'car' || game.tutorial === true)) game.tutorial = 'tools'; // Mini-Tutorial: weiter zum Regal der Hütte
     let returned = null;
     if (this.toolId) {
       returned = TOOLS[this.toolId].name;

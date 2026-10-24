@@ -33,7 +33,7 @@ export function openStartScreen(onStart) {
   panel = document.getElementById('start');
   const s = readSave();
   panel.innerHTML = `<div class="start-box">
-      <h1>My Little Zoo</h1>
+      <img class="start-logo" src="assets/logo.png" alt="My Little Zoo">
       <button class="start-btn" data-act="continue"${s ? '' : ' disabled'}>▶ ${tr('Weiterspielen', 'Continue')}<small>${s ? savedText(s) : tr('noch kein Spielstand', 'no saved game yet')}</small></button>
       <button class="start-btn" data-act="new">✿ ${tr('Neues Spiel', 'New game')}</button>
       <div class="start-ask">

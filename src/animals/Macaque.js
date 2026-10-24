@@ -7,7 +7,7 @@ import Animal, { SPRITE_SINK } from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { HOT_SPRINGS, HOT_SPRING_TILES, charAt, objectAt } from '../world/map.js';
 
-const BATH_TIME = [35, 70]; // so lange sitzt er in der Quelle (frei)
+const BATH_TIME = [18, 35]; // so lange sitzt er in der Quelle (frei), bis er wieder herausrennt
 const RUN_TIME = [10, 16]; // so lange rennt er draußen herum
 const RUN_SPEED = 92; // schneller als der Spieler (80)
 const RUN_TURN = [0.4, 0.9]; // so oft schlägt er einen Haken

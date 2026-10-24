@@ -22,6 +22,7 @@ function savedLine() {
 
 function render() {
   panel.innerHTML = `<div class="chest-box menu-box">${CLOSE_BUTTON}
+      <img class="menu-logo" src="assets/logo.png" alt="My Little Zoo">
       <h2>${tr('Menü', 'Menu')}</h2>
       <button class="start-btn" data-act="resume">▶ ${tr('Weiterspielen', 'Resume')}</button>
       <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>💾 ${tr('Speichern', 'Save')}</button>
