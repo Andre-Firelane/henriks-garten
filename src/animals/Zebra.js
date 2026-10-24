@@ -205,7 +205,7 @@ export default class Zebra extends Antelope {
 
   render(moving) {
     const down = (this.drinking && (this.state === 'wild' || this.state === 'penned')) || this.eatingLook;
-    const key = down ? 'zebra_drink' : this.kind.texture;
+    const key = down ? `${this.skin ?? 'zebra'}_drink` : this.baseTexture(); // mit Skin: zebra2, zebra2_drink
     if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
     super.render(moving);
   }

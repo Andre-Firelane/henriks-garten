@@ -78,12 +78,13 @@ export default class Wolf extends Animal {
   }
 
   render(moving) {
-    // heulend bzw. fressend (beim Ruhen) mit eigenem Bild
-    const pose = this.state === 'wild' && this.pack && !this.pack.running ? (this.pack.phase === 'howl' ? 'wolf_howl' : this.pack.phase === 'rest' && this.eats ? 'wolf_eat' : null) : null;
+    // heulend bzw. fressend (beim Ruhen) mit eigenem Bild (schwarzer Wolf: wolf2_howl, wolf2_eat)
+    const base = this.skin ?? 'wolf';
+    const pose = this.state === 'wild' && this.pack && !this.pack.running ? (this.pack.phase === 'howl' ? `${base}_howl` : this.pack.phase === 'rest' && this.eats ? `${base}_eat` : null) : null;
     super.render(moving);
     // erst danach: die Grundlage setzt sonst wieder das Laufbild
     if (pose && this.sprite.texture.key !== pose) this.sprite.setTexture(pose, this.sprite.frame.name);
-    else if (!pose && this.sprite.texture.key === 'wolf_howl') this.sprite.setTexture(this.lookTexture(), this.sprite.frame.name);
+    else if (!pose && this.sprite.texture.key.endsWith('_howl')) this.sprite.setTexture(this.lookTexture(), this.sprite.frame.name);
   }
 }
 
@@ -191,7 +192,9 @@ export class WolfNight {
       w.herd = pack; // beim Fangen rennen die anderen davon (siehe scatter)
       w.life = Infinity;
       w.eats = Math.random() < 0.5; // beim Ruhen frisst etwa die Hälfte
-      w.rollSkin('wild');
+      // schwarze Wölfe kommen nur als ganzes Rudel: gewürfelt wird beim ersten, die anderen sehen genauso aus
+      if (i === 0) w.rollSkin('wild');
+      else w.skin = pack.members[0].skin;
       pack.members.push(w);
     }
   }

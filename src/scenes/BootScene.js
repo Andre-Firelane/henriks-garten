@@ -156,7 +156,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
     for (const k of ['jellyfish', 'jellyfish2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
-    for (const k of ['wolf', 'wolf_howl', 'wolf_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf (Wolfsnacht)
+    for (const k of ['wolf', 'wolf_howl', 'wolf_eat', 'wolf2', 'wolf2_howl', 'wolf2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf und schwarzer Wolf (Wolfsnacht)
     for (const k of ['ray', 'ray2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
     this.load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
@@ -190,6 +190,9 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('antelope2_eat', 'assets/antelope2_eat.png', ANTELOPE_FRAME);
     this.load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
     this.load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
+    // Schoko-Zebra (seltener Skin, umgefärbt mit tools/recolor.js)
+    this.load.spritesheet('zebra2', 'assets/zebra2.png', ZEBRA_FRAME);
+    this.load.spritesheet('zebra2_drink', 'assets/zebra2_drink.png', ZEBRA_FRAME);
     this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
     this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
     this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
@@ -197,6 +200,11 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('lion_eat', 'assets/lion_eat.png', LION_FRAME);
     this.load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
     this.load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
+    // Schwarzmähnen-Löwe (seltener Skin): dieselben vier Bilder
+    this.load.spritesheet('lion2', 'assets/lion2.png', LION_FRAME);
+    this.load.spritesheet('lion2_eat', 'assets/lion2_eat.png', LION_FRAME);
+    this.load.image('lion2_sleep', 'assets/lion2_sleep.png');
+    this.load.image('lion2_alert', 'assets/lion2_alert.png');
     this.load.audio('lion_roar', 'assets/sounds/lion_roar.wav');
     this.load.audio('wolf_howl', 'assets/sounds/wolf_howl.wav'); // Wolfsgeheul (siehe tools/prepare-sounds.js)
     this.load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);

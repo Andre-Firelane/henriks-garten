@@ -45,7 +45,7 @@ export const BABY_APPEAL = 3;
 export const BABY_BONUS = 2.5;
 
 // seltene Skins locken mehr Besucher an als die normale Art (Katze 2: mehr als doppelt so viel wie eine Katze, Oryx 1,5-mal)
-export const SKIN_APPEAL = { stag: 4, cat2: 3, antelope2: 4.5, koi3: 3, fish2: 3, frog2: 3, tiger2: 7, orangutan2: 7, peacock2: 6, jellyfish2: 7, ray2: 8 }; // koi3: weißer Koi mit rotem Punkt
+export const SKIN_APPEAL = { stag: 4, wolf2: 7, lion2: 8, zebra2: 4.5, cat2: 3, antelope2: 4.5, koi3: 3, fish2: 3, frog2: 3, tiger2: 7, orangutan2: 7, peacock2: 6, jellyfish2: 7, ray2: 8 }; // koi3: weißer Koi mit rotem Punkt
 
 // (geht auch mit gespeicherten Tieren eines anderen Levels: braucht nur species, skin, variant, baby)
 export const appeal = (a) => (a.baby ? BABY_APPEAL : SKIN_APPEAL[a.skin ?? a.variant] ?? APPEAL[a.species] ?? 1);

@@ -3009,9 +3009,11 @@ export default class GardenScene extends Phaser.Scene {
     animal.catch();
     this.followers.push(animal);
     if (animal.species === 'tiger') this.expireBall(animal); // der Ball bleibt noch eine Weile liegen
+    // Hinweise beim Fangen in einer Meldung, je eine Zeile (sonst überschreibt einer den anderen, z. B. seltener Wolf + Rudel rennt weg)
+    const notes = [];
     const rare = animal.skin && SKINS[animal.species];
     if (rare) {
-      this.showToast(
+      notes.push(
         tr(
           `✨ ${rare.male ? 'Ein seltener' : 'Eine seltene'} ${rare.name}! Im Tierpark lockt ${rare.male ? 'er' : 'sie'} besonders viele Besucher an.`,
           `✨ A rare ${rare.name}! It attracts lots of visitors to your zoo.`,
@@ -3022,22 +3024,23 @@ export default class GardenScene extends Phaser.Scene {
       const tag = this.add.text(animal.x, animal.y - 40, '🌳', { fontSize: '18px' }).setOrigin(0.5).setDepth(100000);
       this.tweens.add({ targets: tag, y: tag.y - 18, alpha: 0, delay: 600, duration: 1400, onComplete: () => tag.destroy() });
       const icon = animalIcon(animal.species, 3);
-      this.time.delayedCall(900, () => this.showToast(
+      notes.push(
         AQUA.includes(animal.species)
           ? tr(`🌳 Das Becken für ${icon} im Aquarium ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The tank for ${icon} in the aquarium is already full – when you bring it home, one animal moves to the nature reserve.`)
           : tr(`🌳 Das Gehege für ${icon} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The enclosure for ${icon} is already full – when you bring it home, one animal moves to the nature reserve.`),
-      ));
+      );
     }
     // Riff-Fische: der Rest der Gruppe schießt davon und ist weg – man bekommt nur einen
     if (animal.species === 'reeffish') {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild');
       for (const a of mates) this.despawn(a);
-      if (mates.length) this.showToast(tr(`Die anderen ${animalIcon('reeffish')} sind blitzschnell davongeschwommen!`, `The other ${animalIcon('reeffish')} swam away in a flash!`));
+      if (mates.length) notes.push(tr(`Die anderen ${animalIcon('reeffish')} sind blitzschnell davongeschwommen!`, `The other ${animalIcon('reeffish')} swam away in a flash!`));
     } else if (animal.herd) {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild' && a.scatter);
       for (const a of mates) a.scatter();
-      if (mates.length) this.showToast(tr(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`, `The other ${animalIcon(animal.species)} got scared and ran away!`));
+      if (mates.length) notes.push(tr(`Die anderen ${animalIcon(animal.species)} sind vor Schreck davongerannt!`, `The other ${animalIcon(animal.species)} got scared and ran away!`));
     }
+    if (notes.length) this.showToast(notes.join('<br>'));
     // kurzer Tierruf (falls es für diese Art einen gibt)
     const sound = this.callOf(animal);
     if (this.cache.audio.exists(sound)) this.sound.play(sound, { volume: ANIMAL_VOLUME });

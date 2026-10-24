@@ -21,8 +21,8 @@ const ROAR_VOLUME = 0.55;
 const PEN_ROAM = [6, 12]; // im Gehege: so lange läuft er herum ...
 const PEN_LIE = [5, 9]; // ... so lange liegt er und schaut ...
 const PEN_SLEEP = [8, 15]; // ... und so lange schläft er
-// Liegebilder: Kopf nach rechts; Fußlinie im Bild
-const LIE = { lion_sleep: 48 / 52, lion_alert: 60 / 64 };
+// Liegebilder (lion_sleep, lion_alert; Schwarzmähnen-Löwe: lion2_…): Kopf nach rechts; Fußlinie im Bild
+const LIE = { sleep: 48 / 52, alert: 60 / 64 };
 
 export default class Lion extends Animal {
   constructor(scene, x, y) {
@@ -197,8 +197,9 @@ export default class Lion extends Animal {
       return;
     }
     // liegend: schlafend oder aufmerksam, Kopf in Blickrichtung
-    const key = this.phase === 'sleep' ? 'lion_sleep' : 'lion_alert';
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, 0).setOrigin(0.5, LIE[key]);
+    const pose = this.phase === 'sleep' ? 'sleep' : 'alert';
+    const key = `${this.skin ?? 'lion'}_${pose}`;
+    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, 0).setOrigin(0.5, LIE[pose]);
     this.sprite.setFlipX(this.faceX < 0);
     this.sprite.setPosition(this.x, this.y + SPRITE_SINK);
     this.sprite.setAngle(0);

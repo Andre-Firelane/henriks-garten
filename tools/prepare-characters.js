@@ -79,6 +79,10 @@ const CHARACTERS = [
   { src: 'Sprites/Wolf.png', out: 'wolf.png', frameW: 80, frameH: 80, feetY: 76, figureH: 70 },
   { src: 'Sprites/Wolf heult.png', out: 'wolf_howl.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE },
   { src: 'Sprites/Wolf frisst.png', out: 'wolf_eat.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE, copyMirror: { 1: 0, 2: 1, 3: 0 } },
+  // schwarzer Wolf (seltener Skin, immer ein ganzes Rudel): gleiche Posen und gleicher Maßstab; beim Heulen Schriftzug vorher entfernt
+  { src: 'Sprites/Wolf2.png', out: 'wolf2.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE },
+  { src: 'Sprites/Wolf2 heult.png', out: 'wolf2_howl.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE },
+  { src: 'Sprites/Wolf2 frisst.png', out: 'wolf2_eat.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE, copyMirror: { 1: 0, 2: 1, 3: 0 } },
   { src: 'Sprites/Fuchs schlafend.png', out: 'fox_sleep.png', frameW: 56, frameH: 44, feetY: 41, figureH: 39.5, mirror: [0, 2] },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout (hoch wegen der Hörner)
   { src: 'Sprites/Antilope.png', out: 'antelope.png', frameW: 72, frameH: 100, feetY: 96, figureH: 88 },
@@ -97,6 +101,7 @@ const CHARACTERS = [
   // Löwe stehend; die Rückansichten berühren sich am Schwanz, daher nach zusammenhängenden Flächen trennen.
   // Freigestellt mit npm run cutout -- ... 659,336 866,336 127,340 423,340 169,350 379,350 (Lücken zwischen den Beinen)
   { src: 'Sprites/Löwe.png', out: 'lion.png', frameW: 72, frameH: 96, feetY: 92, figureH: 88, byComponents: true },
+  { src: 'Sprites/Löwe2.png', out: 'lion2.png', frameW: 72, frameH: 96, feetY: 92, figureH: 88, byComponents: true }, // Schwarzmähnen-Löwe (seltener Skin)
   // Krokodil an Land (unten-rechts, unten-links, oben-rechts, oben-links) und im Wasser (nur der Kopf schaut heraus;
   // im Bild als 2×2-Raster). Gleicher Maßstab 0,273: an Land 84/308 Pixel, im Wasser samt Wellen 132 Pixel hoch
   { src: 'Sprites/Krokodil.png', out: 'croc.png', frameW: 72, frameH: 92, feetY: 88, figureH: 84 },
@@ -130,6 +135,7 @@ const CHARACTERS = [
   { src: 'Sprites/Katze2 frisst.png', out: 'cat2_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.175, grid: [2, 2], stripShadow: true },
   // Löwe: die 2. Figur steht aufrecht statt zu fressen, dafür die 1. gespiegelt
   { src: 'Sprites/Löwe frisst.png', out: 'lion_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.283, byComponents: true, copyMirror: { 1: 0 } },
+  { src: 'Sprites/Löwe2 frisst.png', out: 'lion2_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.283, byComponents: true, copyMirror: { 1: 0 } },
   // Reh im 2×2-Raster: oben die Vorderansichten; unten zwei Seitenansichten nach rechts statt Rückansichten,
   // daher oben-rechts = Bild 3, oben-links = Bild 3 gespiegelt
   { src: 'Sprites/Reh frisst.png', out: 'deer_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.235, grid: [2, 2], copyMirror: { 3: 2 } },
@@ -425,6 +431,8 @@ const ANIMATIONS = [
   // so groß ist wie beim stehenden Löwen: schlafend 184 Pixel hoch, aufmerksam 242
   { src: 'Sprites/Löwe schlafend.png', out: 'lion_sleep.png', cols: 1, rows: 1, frameW: 108, frameH: 52, feetY: 48, figureH: 42.3 },
   { src: 'Sprites/Löwe aufmerksam.png', out: 'lion_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
+  { src: 'Sprites/Löwe2 schläft.png', out: 'lion2_sleep.png', cols: 1, rows: 1, frameW: 108, frameH: 52, feetY: 48, figureH: 42.3 },
+  { src: 'Sprites/Löwe2 aufmerksam.png', out: 'lion2_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
 ];
 
 function prepareGrid({ src, out, cols, rows, count = cols * rows, frameW, frameH, feetY, figureH }) {

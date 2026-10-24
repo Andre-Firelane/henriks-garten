@@ -12,7 +12,8 @@
     "characters": "node tools/prepare-characters.js",
     "cutout": "node tools/remove-background.js",
     "sounds": "node tools/prepare-sounds.js",
-    "logo": "node tools/make-logo.js"
+    "logo": "node tools/make-logo.js",
+    "recolor": "node tools/recolor.js"
   },
   "dependencies": {
     "@netlify/blobs": "^11.1.6",

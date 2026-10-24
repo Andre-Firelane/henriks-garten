@@ -526,6 +526,9 @@ export const SKINS = {
   orangutan: { id: 'orangutan2', name: tr('Orang-Utan mit Backenwülsten', 'orangutan with cheek pads'), male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
   frog: { id: 'frog2', name: tr('blauer Frosch', 'blue frog'), male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
   jellyfish: { id: 'jellyfish2', name: tr('Goldqualle', 'golden jellyfish'), male: false, wild: 0.08, baby: 0 }, // golden, mit Ranken auf dem Schirm
+  wolf: { id: 'wolf2', name: tr('schwarzer Wolf', 'black wolf'), male: true, wild: 0.1, baby: 0.03 }, // gilt für das ganze Rudel
+  lion: { id: 'lion2', name: tr('Schwarzmähnen-Löwe', 'black-maned lion'), male: true, wild: 0.1, baby: 0 }, // ein Löwenbaby hat noch keine Mähne
+  zebra: { id: 'zebra2', name: tr('Schoko-Zebra', 'chocolate zebra'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
 
