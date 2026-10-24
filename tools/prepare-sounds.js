@@ -14,6 +14,8 @@ const SOUNDS = [
   // Wolfsnacht: ein einzelnes Heulen (das erste der Aufnahme) und ein kurzes Knurren beim Fangen
   ['Sounds/Wolf heult.mp3', 'public/assets/sounds/wolf_howl.wav', 0.1, 5.1, 0.8],
   ['Sounds/Wolf.mp3', 'public/assets/sounds/animal_wolf.wav', 1.7, 1.3, 0.8],
+  // Gnu: das erste Grunzen der Aufnahme (beim Fangen und ab und zu aus der Herde)
+  ['Sounds/Gnu.mp3', 'public/assets/sounds/animal_gnu.wav', 0.6, 0.8, 0.8],
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
   // Tierrufe beim Fangen (der Name hinter "animal_" ist die Tierart)
@@ -163,6 +165,8 @@ if (!ONLY || ASIA_MIX.dest.includes(ONLY)) {
 const LOOPS = [
   { src: 'Sounds/Riff Ambient.mp3', dest: 'public/assets/sounds/ambient_reef.mp3', from: 0.8, to: 23.4, fade: 1 },
   { src: 'Sounds/Wald Nacht.mp3', dest: 'public/assets/sounds/ambient_forest_night.mp3', from: 600, to: 647, fade: 2 },
+  // Große Wanderung (Savanne): Hufgetrappel der Gnu-Herde; am Anfang eine Sekunde Stille
+  { src: 'Sounds/Gnu Event.mp3', dest: 'public/assets/sounds/ambient_migration.mp3', from: 1.3, to: 35.9, fade: 1.5 },
 ];
 for (const { src, dest, from, to, fade } of LOOPS) {
   if (ONLY && !dest.includes(ONLY)) continue;

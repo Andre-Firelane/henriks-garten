@@ -193,6 +193,21 @@ export const SPECIES = {
     catchWith: ['trap'],
     trapWeight: 3, // Füchse lieben den Köder
   },
+  // Gnu (Savanne, nur bei der Großen Wanderung): läuft aus dem Strom der Herde heraus und wieder hinein (siehe Gnu.js)
+  gnu: {
+    texture: 'gnu',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 28,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 30,
+    catchWith: ['lasso'],
+  },
   // Wolf (Wald, nur in der Wolfsnacht): lebt im Rudel, Ochs am Berg beim Heulen (siehe Wolf.js)
   wolf: {
     texture: 'wolf',
@@ -322,6 +337,23 @@ export const SPECIES = {
     catchWith: ['touch'],
   },
   // Pfau (Asien): scheu wie das Zebra, fliegt manchmal ganz davon; beim Rad-Schlagen fangbar (siehe Peacock.js)
+  // Schmetterling (Wiese): flattert in 12 Farben herum und setzt sich auf Blumen (siehe Butterfly.js)
+  butterfly: {
+    texture: 'butterfly',
+    frames: { downRight: 0, downLeft: 0, upRight: 0, upLeft: 0 },
+    originY: 0.5,
+    speed: 24,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 0,
+    footW: 2,
+    shadowW: 10,
+    fleeDist: 50, // im Flug scheu, ...
+    fleeSpeed: 42, // ... aber langsamer als Henrik
+    catchWith: ['net'],
+  },
   peacock: {
     texture: 'peacock',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },

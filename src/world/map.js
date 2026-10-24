@@ -633,7 +633,11 @@ export function objectAt(tx, ty) {
 // wade: durch Wasser waten (Wasserbüffel beim Reittier-Event in Asien)
 // trample: über kleine Büsche laufen (Elefant beim Reittier-Event in der Savanne; die Randbüsche bleiben fest)
 const SMALL_BUSHES = 'vbk';
+// zusätzliche Hindernisse eines Events (z. B. der Gnu-Strom bei der Großen Wanderung): at(x, y) gibt true, wo es fest ist
+export const eventBlock = { at: null };
+
 export function isBlockedPoint(x, y, wade = false, trample = false) {
+  if (eventBlock.at?.(x, y)) return true;
   if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_BODY.hw) return true;
   const { tx, ty } = worldToTile(x, y);
   if (wade && charAt(tx, ty) === '~') return false;

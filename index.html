@@ -127,6 +127,13 @@
         background: #fff3c4; border: 3px solid #e8483f; border-radius: 12px; box-shadow: 0 4px 0 rgba(43, 29, 20, 0.5);
       }
       #tip.show { display: block; }
+      body #tip { padding-right: 36px; } /* Platz für das X (auch bei der kleineren Schrift auf dem Handy) */
+      /* kleines X oben rechts im Hinweis (der Hinweis selbst lässt Klicks durch, nur das X nicht) */
+      #tip .tip-close {
+        position: absolute; top: 50%; right: 6px; width: 24px; height: 24px; margin-top: -12px; padding: 0; pointer-events: auto; cursor: pointer;
+        border: 2px solid #e8483f; border-radius: 50%; background: #fff; color: #e8483f; font: bold 12px/20px Arial, sans-serif;
+      }
+      #tip .tip-close:hover { background: #ffe4e0; }
       body.touch #tip { bottom: 12px; max-width: calc(100% - 300px); } /* zwischen Joystick und Aktionsknopf */
       @media (max-width: 600px) { body.touch #tip { bottom: 150px; max-width: 92%; } } /* hochkant: über dem Aktionsknopf */
       @media (max-width: 900px), (max-height: 500px) { #tip { font-size: 13px; padding: 6px 12px; } }

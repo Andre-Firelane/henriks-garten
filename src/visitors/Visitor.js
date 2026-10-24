@@ -26,7 +26,7 @@ const ICE_BUY_TIME = [2, 3.5];
 const ICE_EAT_TIME = [40, 70]; // so lange hält er das Eis, dann ist es aufgegessen
 const ICE_LOOKS = ['icecream', 'icecream2', 'icecream3'];
 const ICE_HEARTS = 2; // so viele Herzen bringt jedes verkaufte Eis
-// Freilaufende Pfauen: kommt ein Besucher an einem vorbei, bleibt er kurz stehen und schaut; meist gibt es ein Herz
+// Freilaufende Pfauen (und Schmetterlinge, die auf einer Blüte sitzen): kommt ein Besucher an einem vorbei, bleibt er kurz stehen und schaut; meist gibt es ein Herz
 // (immer, wenn der Pfau gerade ein Rad schlägt). Jeden Pfau schaut er sich nur einmal an.
 const PEACOCK_WATCH_DIST = 56;
 const PEACOCK_WATCH_TIME = [2.5, 4];
@@ -81,7 +81,7 @@ export class Visitor {
       if (this.heartPending && this.timer <= this.heartAt) {
         this.heartPending = false;
         this.popHeart();
-        this.scene.addHearts(1, 'peacock');
+        this.scene.addHearts(1, this.watching?.species ?? 'peacock');
       }
       if (this.timer <= 0) {
         this.watching = null;
@@ -156,7 +156,7 @@ export class Visitor {
     if (this.peacockCheck > 0) return;
     this.peacockCheck = 0.5;
     const pc = this.scene.animals.find(
-      (a) => a.species === 'peacock' && a.enclosure?.free && a.state === 'penned' && !this.seenPeacocks?.has(a) && Math.hypot(a.x - this.x, (a.y - this.y) * 2) < PEACOCK_WATCH_DIST,
+      (a) => (a.species === 'peacock' || (a.species === 'butterfly' && a.sitting)) && a.enclosure?.free && a.state === 'penned' && !this.seenPeacocks?.has(a) && Math.hypot(a.x - this.x, (a.y - this.y) * 2) < PEACOCK_WATCH_DIST,
     );
     if (!pc) return;
     (this.seenPeacocks ??= new Set()).add(pc);

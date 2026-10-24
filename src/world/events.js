@@ -55,6 +55,14 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
+    id: 'migration',
+    name: tr('Große Wanderung', 'Great Migration'),
+    text: tr('5 Minuten lang zieht eine riesige Gnu-Herde durch die Savanne. Ab und zu läuft ein Gnu aus der Staubwolke heraus – schnell das Lasso!', 'For 5 minutes a huge herd of wildebeest moves through the savanna. Now and then one runs out of the dust cloud – quick, the lasso!'),
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
     id: 'wolves',
     name: tr('Wolfsnacht', 'Wolf Night'),
     text: tr('5 Minuten lang ist es im Wald Nacht. Folge mit der Laterne den leuchtenden Spuren zu den Wolfsrudeln. Wenn sie heulen, darfst du laufen – sonst bleib stehen!', 'For 5 minutes it is night in the forest. Follow the glowing tracks to the wolf packs with your lantern. While they howl you may walk – otherwise stand still!'),

@@ -76,6 +76,8 @@ const CHARACTERS = [
   // 1. und 3. werden gespiegelt. Gleicher Maßstab wie oben (0,210). Freigestellt mit npm run cutout
   // Wolf (Wald, Event Wolfsnacht): laufend, heulend (Schriftzug im Bild vorher entfernt) und fressend. Beim Fressen gibt es
   // nur Vorderansichten: die erste, gespiegelt für links, und ebenso für die Rückansichten (Bild 2 = Spiegelbild von 1)
+  // Gnu (Savanne, Event Große Wanderung): freigestellt mit npm run cutout und tools/gnu-cut.cjs
+  { src: 'Sprites/Gnu.png', out: 'gnu.png', frameW: 88, frameH: 96, feetY: 92, figureH: 80, stripShadow: true },
   { src: 'Sprites/Wolf.png', out: 'wolf.png', frameW: 80, frameH: 80, feetY: 76, figureH: 70 },
   { src: 'Sprites/Wolf heult.png', out: 'wolf_howl.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE },
   { src: 'Sprites/Wolf frisst.png', out: 'wolf_eat.png', frameW: 80, frameH: 80, feetY: 76, scale: WOLF_SCALE, copyMirror: { 1: 0, 2: 1, 3: 0 } },

@@ -67,6 +67,7 @@ import Giraffe from '../animals/Giraffe.js';
 import Panda from '../animals/Panda.js';
 import Tiger from '../animals/Tiger.js';
 import Peacock from '../animals/Peacock.js';
+import Butterfly, { flowerTiles } from '../animals/Butterfly.js';
 import { stockTank } from '../aquarium/TankFish.js';
 import Orangutan, { WAVE_DIST } from '../animals/Orangutan.js';
 import Macaque from '../animals/Macaque.js';
@@ -82,6 +83,7 @@ import Turtle, { CUTS_NEEDED, CUT_DIST } from '../animals/Turtle.js';
 import Jellyfish, { DARK_DEPTH } from '../animals/Jellyfish.js';
 import Ray from '../animals/Ray.js';
 import Wolf, { WolfNight } from '../animals/Wolf.js';
+import Gnu, { Migration } from '../animals/Gnu.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
@@ -110,7 +112,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
-const ALL_SPECIES = ['wolf', 'peacock', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['gnu', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -135,6 +137,8 @@ const CATCH_TIPS = {
   koi: tr('Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!', 'Scatter fish food into the water from the shore – they come up and snap at it. Net them quickly!'),
   reeffish: tr('Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.', 'In the reef. If you get too close, they flee – swim after them, you are faster. At the aquarium they move into the tanks.'),
   seahorse: tr('Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!', 'Hides in the corals. When bubbles rise, it peeks out – then net it quickly!'),
+  butterfly: tr('Auf der Wiese bei den Blumen. Im Flug sind sie scheu – sitzt einer auf einer Blüte, schleich dich an und nimm den Kescher! Im Tierpark flattern sie frei herum.', 'On the meadow near the flowers. In flight they are shy – when one sits on a blossom, sneak up and use the net! In your zoo they flutter around freely.'),
+  gnu: tr('Nur bei der Großen Wanderung in der Savanne. Ab und zu läuft ein Gnu aus der Staubwolke heraus – fang es mit dem Lasso, bevor es wieder hineinläuft!', 'Only during the Great Migration in the savanna. Now and then a wildebeest runs out of the dust cloud – catch it with the lasso before it runs back in!'),
   wolf: tr('Nur in der Wolfsnacht im Wald. Folge den leuchtenden Spuren. Heulen die Wölfe, darfst du laufen – hören sie auf und schauen sich um (👀), bleib sofort stehen! Erreichst du einen, berühre ihn.', 'Only during the Wolf Night in the forest. Follow the glowing tracks. While the wolves howl, you may walk – when they stop and look around (👀), stand still at once! When you reach one, touch it.'),
   jellyfish: tr('Nur beim Quallen-Schwarm im Riff. Mit dem Quallenglas – aber nur, wenn sie langsam sinkt! Beim Aufsteigen flutscht sie davon. Nicht anfassen, sie brennt!', 'Only during the Jellyfish Swarm in the reef. Use the jellyfish jar – but only while it slowly sinks! When it rises, it slips away. Don’t touch it, it stings!'),
   ray: tr('Schwimm neben ihm her – nicht zu nah, sonst erschrickt er, und nicht zu weit weg. Ist die Herzchen-Leiste voll, schwimmt er dir hinterher.', 'Swim alongside it – not too close or it gets scared, and not too far away. When the heart bar is full, it swims after you.'),
@@ -196,6 +200,8 @@ const ANIMAL_INFO = {
   reeffish: tr(['Riff-Fische', 'Hat keine Füße – Riff-Fische leben zwischen den Korallen und sind so bunt wie sie.'], ['Reef fish', 'No feet – reef fish live among the corals and are just as colorful.']),
   seahorse: tr(['Seepferdchen', 'Hat keine Füße – mit seinem Ringelschwanz hält es sich an Korallen und Seegras fest.'], ['Seahorse', 'No feet – it holds on to corals and seagrass with its curly tail.']),
   octopus: tr(['Krake', 'Hat acht Arme mit Saugnäpfen – damit kriecht sie über den Boden und hält sich fest.'], ['Octopus', 'Eight arms with suckers – it crawls over the sea floor and holds on with them.']),
+  butterfly: tr(['Schmetterling', 'Keine Spuren – ein Schmetterling flattert und landet nur auf Blüten.'], ['Butterfly', 'No tracks – a butterfly flutters and only lands on blossoms.']),
+  gnu: tr(['Gnu', 'Paarhufer wie die Antilope, aber mit breiteren Hufhälften – Tausende davon hinterlassen eine riesige Staubspur.'], ['Wildebeest', 'Cloven hooves like an antelope, but wider – thousands of them leave a huge trail of dust.']),
   wolf: tr(['Wolf', 'Vier Zehen mit Krallen und ein großer Ballen – wie beim Hund, nur größer. Wölfe laufen oft genau in der Spur des Vordermanns.'], ['Wolf', 'Four toes with claws and a big pad – like a dog, only bigger. Wolves often step right into the tracks of the wolf in front.']),
   jellyfish: tr(['Qualle', 'Hat weder Füße noch Flossen – sie schwimmt, indem sie ihren Schirm zusammenzieht und wieder entspannt.'], ['Jellyfish', 'No feet and no fins – it swims by squeezing its bell together and letting it go again.']),
   ray: tr(['Rochen', 'Hat keine Füße – er „fliegt“ mit seinen großen, flachen Brustflossen durchs Wasser.'], ['Ray', 'No feet – it “flies” through the water with its big, flat fins.']),
@@ -230,7 +236,7 @@ const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Fut
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
+const NO_PEN_FEED = ['butterfly', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
@@ -288,7 +294,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
+    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || Object.values(LEVELS).some((level) => level.spawn.weights[s] || (s === 'heron' && level.herons)),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -298,6 +304,9 @@ const ACTION_KEY = 'E';
 const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
 const PEACOCK_CALL_EVERY_PARK = [60, 120]; // ... im Tierpark seltener (dort laufen viele Pfauen frei herum)
+const TUT_TIP_TIME = 25000; // so lange steht der Tutorial-Hinweis unten, wenn man den Schritt nicht macht (Millisekunden)
+let tutTipHidden = null; // Tutorial-Schritt, dessen Hinweis schon ausgeblendet wurde
+let tutTipTimer = null;
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const BABY_LEVELS = ['park', 'aquarium']; // dort gibt es beim Tierbaby-Event Nachwuchs
@@ -325,13 +334,13 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: tr('Kescher', 'Net'),
-    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock'],
+    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock', 'butterfly'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)}`, `Catches ${animalIcons(list)}`),
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'antelope', 'zebra', 'crocodile', 'sheep', 'heron', 'tiger'],
+    catches: ['deer', 'antelope', 'zebra', 'gnu', 'crocodile', 'sheep', 'heron', 'tiger'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -482,6 +491,11 @@ export default class GardenScene extends Phaser.Scene {
       const img = this.add.image(x, y, b.key);
       img.setOrigin(b.ox / img.width, b.oy / img.height).setDepth(-99000);
     }
+    // Zeichen im Pflaster (z. B. Fische, die zum Aquarium zeigen): flach auf dem Weg, über dem Boden
+    for (const m of LEVEL.pathMarks ?? []) {
+      const { x, y } = tileToWorld(m.tx, m.ty);
+      this.add.image(x, y, pathFishTexture(this, m.dir)).setDepth(-99990);
+    }
     this.cullView = null;
     this.bakeGround(ground);
 
@@ -584,6 +598,7 @@ export default class GardenScene extends Phaser.Scene {
     this.car = null;
     this.boatRope = null;
     this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
+    this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     if (data.intro) game.tutorial = 'car'; // neues Spiel: Mini-Tutorial (siehe showTutorial)
     if (LEVEL.car) {
       const { x, y } = tileToWorld(LEVEL.car.tx, LEVEL.car.ty);
@@ -1133,6 +1148,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Koi(this, this.animals, variant)
         : species === 'reeffish'
           ? new ReefFish(this, x, y, variant)
+        : species === 'butterfly'
+          ? new Butterfly(this, x, y, variant)
         : species === 'seahorse'
           ? new Seahorse(this, x, y)
         : species === 'octopus'
@@ -1143,6 +1160,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Jellyfish(this, x, y)
         : species === 'ray'
           ? new Ray(this, x, y)
+        : species === 'gnu'
+          ? new Gnu(this, x, y)
         : species === 'wolf'
           ? new Wolf(this, x, y)
         : species === 'crocodile'
@@ -1272,7 +1291,8 @@ export default class GardenScene extends Phaser.Scene {
       const tile =
         (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileFrom(NEAR_WATER, taken)) ||
         (species === 'giraffe' && Math.random() < GIRAFFE_NEAR_TREES && this.tileFrom(NEAR_TREES, taken)) ||
-        (species === 'panda' && this.tileFrom(NEAR_BAMBOO, taken)) || // Pandas immer beim Bambus
+        (species === 'panda' && this.tileFrom(NEAR_BAMBOO, taken)) ||
+        (species === 'butterfly' && this.tileFrom(flowerTiles(), taken)) || // Schmetterlinge bei den Blumen // Pandas immer beim Bambus
         (species === 'lion' && this.tileFrom(NEAR_TREES, taken)) || // Löwen dösen immer im Schatten eines Baums
         this.randomFreeTile(taken);
       taken.push(tile);
@@ -1542,6 +1562,7 @@ export default class GardenScene extends Phaser.Scene {
         if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
         if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
         if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
+        if (id === 'migration') this.showToast(tr('🦬 Große Wanderung! Unten links in der Savanne zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing through the lower left of the savanna – keep your lasso ready.'));
         if (id === 'wolves') this.showToast(tr('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.', '🐺 Wolf Night! It is dark in the forest – follow the glowing tracks to the wolves with your lantern.'));
         if (id === 'jellyfish') this.showToast(tr('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.', '🪼 Jellyfish Swarm! Jellyfish are drifting through the reef – the jellyfish jar is in the bag at the anchor.'));
         if (id === 'ride') this.showToast(tr('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.', '🐴 Your mount is waiting in the worlds! There you ride for 10 minutes.'));
@@ -1749,7 +1770,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateEventBanner() {
-    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺' };
+    const icons = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬' };
     const lines = EVENTS.map((ev) => ({ ev, s: eventState(ev.id) }))
       .filter(({ s }) => s.state === 'active')
       .map(({ ev, s }) => `${icons[ev.id] ?? '★'} ${ev.name} · ${tr(`noch ${formatTime(s.left)}`, `${formatTime(s.left)} left`)}`);
@@ -1807,7 +1828,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest))
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna))
         .map((l) => l.name);
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -2414,7 +2435,15 @@ export default class GardenScene extends Phaser.Scene {
         : sign && { x: sign.x, y: sign.y - 52 };
     const tip = document.getElementById('tip');
     const on = !!target || step === 'sheep' || step === 'tools';
-    tip.classList.toggle('show', on);
+    // der Hinweis unten verschwindet nach einer Weile, wenn man den Schritt nicht macht (der Pfeil bleibt)
+    clearTimeout(tutTipTimer);
+    tip.classList.toggle('show', on && tutTipHidden !== step);
+    if (on && tutTipHidden !== step) {
+      tutTipTimer = setTimeout(() => {
+        tutTipHidden = step;
+        tip.classList.remove('show');
+      }, TUT_TIP_TIME);
+    }
     if (!on) return;
     if (step === 'car') {
       tip.innerHTML = isTouch()
@@ -2432,6 +2461,15 @@ export default class GardenScene extends Phaser.Scene {
     } else {
       tip.innerHTML = tr('👀 Schau im Schafgehege beim roten Pfeil vorbei und sieh zu, wie die Besucher deine Schafe mögen!', '👀 Visit the sheep enclosure at the red arrow and watch how much the visitors like your sheep!');
     }
+    // kleines X zum Wegdrücken: blendet den Hinweis dieses Schritts aus (wie nach Ablauf der Zeit); der Pfeil bleibt
+    tip.insertAdjacentHTML('beforeend', `<button class="tip-close" aria-label="${tr('Hinweis ausblenden', 'Hide hint')}">✕</button>`);
+    tip.onclick = (e) => {
+      if (!e.target.closest('.tip-close')) return;
+      e.stopPropagation();
+      clearTimeout(tutTipTimer);
+      tutTipHidden = step;
+      tip.classList.remove('show');
+    };
     if (!target) return;
     this.tutArrow = this.add
       .text(target.x, target.y, '▼', { fontFamily: 'Arial', fontSize: '22px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 4, resolution: 4 })
@@ -2720,6 +2758,22 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Große Wanderung in der Savanne: der Gnu-Strom zieht, solange das Event läuft
+  updateMigration(dt) {
+    const on = LEVEL_ID === 'savanna' && isActive('migration');
+    if (on && !this.migration) {
+      this.migration = new Migration(this);
+      this.startAmbient(); // Hufgetrappel der Herde
+    }
+    if (!on && this.migration) {
+      this.migration.destroy();
+      this.migration = null;
+      this.startAmbient();
+      this.showToast(tr('🦬 Die Gnu-Herde ist weitergezogen.', '🦬 The wildebeest herd has moved on.'));
+    }
+    this.migration?.update(dt);
+  }
+
   // Wolfsnacht im Wald: beginnt bzw. endet mit dem Event (auch wenn man schon im Wald ist)
   updateWolfNight(dt) {
     const on = LEVEL_ID === 'forest' && isActive('wolves');
@@ -2999,6 +3053,11 @@ export default class GardenScene extends Phaser.Scene {
       game.unlocked.push('wolves');
       this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} ${tr('Dein erster Wolf! Im Tierpark ist im Wald-Bereich ganz links am Rand ein Wolfswald entstanden.', 'Your first wolf! In your zoo, Wolf Woods have appeared at the far left edge of the forest area.')}`));
     }
+    // das erste Gnu: im Tierpark entsteht nördlich vom Löwengehege die Gnu-Steppe
+    if (animal.species === 'gnu' && !game.unlocked.includes('gnu')) {
+      game.unlocked.push('gnu');
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('gnu', 3.2)} ${tr('Dein erstes Gnu! Im Tierpark ist oben bei den Löwen eine Gnu-Steppe entstanden.', 'Your first wildebeest! In your zoo, Wildebeest Plains have appeared up by the lions.')}`));
+    }
     // die erste Qualle: im Aquarium öffnet sich der dunkle Quallenraum
     if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
       game.unlocked.push('jellyfish');
@@ -3071,6 +3130,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
   ambientKey() {
+    if (LEVEL_ID === 'savanna' && isActive('migration')) return 'ambient_migration';
     return LEVEL_ID === 'forest' && isActive('wolves') ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
@@ -3398,6 +3458,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateTraps(dt);
     this.updateTrapMarkers();
     this.updateWolfNight(dt);
+    this.updateMigration(dt);
     this.updateSpawner(dt);
     if (!this.wolfNight) this.updateHerons(dt);
     this.updateGate(dt);
@@ -3410,4 +3471,39 @@ export default class GardenScene extends Phaser.Scene {
     this.followers = this.followers.filter((s) => s.state === 'following');
     if (this.followers.length !== before) this.updateHud();
   }
+}
+
+// Fisch-Umriss im Pflaster, flach in der Iso-Ansicht; dir: Richtung der Nase in Kacheln (z. B. { tx: -1, ty: 0 })
+function pathFishTexture(scene, dir) {
+  const key = `path_fish_${dir.tx}_${dir.ty}`;
+  if (scene.textures.exists(key)) return key;
+  const W = 80;
+  const H = 48;
+  const tex = scene.textures.createCanvas(key, W, H);
+  const ctx = tex.getContext();
+  // Kachelmaß auf den Bildschirm: tx nach rechts unten, ty nach links unten
+  ctx.setTransform(32, 16, -32, 16, W / 2, H / 2);
+  ctx.rotate(Math.atan2(dir.ty, dir.tx) + Math.PI); // gezeichnet mit der Nase in Richtung -tx
+  const fish = () => {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 0.34, 0.16, 0, 0, Math.PI * 2);
+    ctx.moveTo(0.3, 0);
+    ctx.lineTo(0.54, -0.17);
+    ctx.lineTo(0.54, 0.17);
+    ctx.closePath();
+  };
+  // heller Stein mit dunkler Fuge, wie ins Pflaster eingelegt
+  fish();
+  ctx.lineWidth = 0.14;
+  ctx.strokeStyle = 'rgba(60, 52, 44, 0.7)';
+  ctx.stroke();
+  ctx.lineWidth = 0.07;
+  ctx.strokeStyle = 'rgba(250, 246, 236, 1)';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(-0.19, -0.04, 0.035, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(250, 246, 236, 1)';
+  ctx.fill();
+  tex.refresh();
+  return key;
 }

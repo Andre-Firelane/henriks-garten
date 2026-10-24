@@ -97,6 +97,7 @@ const ANIMAL_SOUNDS = {
   fish: 'animal_fish.wav',
   koi: 'animal_fish.wav', // derselbe Platscher wie beim Fisch
   wolf: 'animal_wolf.wav', // Knurren beim Fangen
+  gnu: 'animal_gnu.wav', // Grunzen (beim Fangen und aus der Herde)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -152,10 +153,12 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
     this.load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
+    this.load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
     this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
     for (const k of ['jellyfish', 'jellyfish2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
+    this.load.spritesheet('gnu', 'assets/gnu.png', { frameWidth: 88, frameHeight: 96 }); // Gnu (Große Wanderung)
     for (const k of ['wolf', 'wolf_howl', 'wolf_eat', 'wolf2', 'wolf2_howl', 'wolf2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf und schwarzer Wolf (Wolfsnacht)
     for (const k of ['ray', 'ray2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
     this.load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)

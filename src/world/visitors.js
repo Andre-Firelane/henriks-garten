@@ -25,6 +25,7 @@ export const APPEAL = {
   tiger: 5,
   orangutan: 5,
   peacock: 3,
+  butterfly: 1.5,
   macaque: 4,
   lion: 5,
   crocodile: 5,
@@ -35,6 +36,7 @@ export const APPEAL = {
   jellyfish: 3,
   ray: 5,
   wolf: 5,
+  gnu: 2.5,
 };
 
 const MAX_VISITORS = 12;
