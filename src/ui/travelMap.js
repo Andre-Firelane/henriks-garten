@@ -15,7 +15,8 @@ export function isTravelMapOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// places: [{ id, name, icon, x, y }] (x/y in Prozent der Karte); current: Gebiet, in dem man gerade ist;
+// places: [{ id, name, icon, x, y, status }] (x/y in Prozent der Karte; status: z. B. die Wetterphase der Savanne);
+// current: Gebiet, in dem man gerade ist;
 // onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise.
 // opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mini-Tutorial: hüpfender Pfeil neben diesem Gebiet und
 // der Hinweis statt der Anleitung
@@ -24,7 +25,7 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   const markers = places
     .map(
       (p) => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%">
-        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}</span>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}${p.status ? `<small class="season">${p.status}</small>` : ''}</span>
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
       </button>`,
     )

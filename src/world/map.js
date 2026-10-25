@@ -4,10 +4,12 @@ import { LEVELS } from './levels.js';
 import { game } from '../state.js';
 import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 import { tr } from '../i18n.js';
+import { currentSeason } from './season.js';
 
+// ≈: ausgetrocknetes Wasserloch (Schlamm, Savanne in der Trockenzeit; dort steckt der Lungenfisch)
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser)
-const GROUND = { '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water' }; // 0: Springbrunnen im See
+const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -33,6 +35,7 @@ export const OBJECTS = {
   W: { key: 'signpost_post', originY: 60 / 64, solid: true }, // Wegweiser: die schrägen Bretter zeichnet die Szene (drawSignBoards)
   // Savanne
   A: { key: 'acacia', originY: 116 / 128, solid: true, hitbox: 12 },
+  Ǎ: { key: 'acacia_bare', originY: 116 / 128, solid: true, hitbox: 12 }, // kahle Akazie (Geier-Voliere; in der Trockenzeit sind alle Akazien kahl)
   R: { key: 'boulder', originY: 46 / 56, solid: true, hitbox: 18 },
   v: { key: 'dry_bush', originY: 33 / 40, solid: true, hitbox: 4 },
   y: { key: 'tuft', originY: 18 / 24, solid: false },
@@ -179,8 +182,18 @@ const tilesWith = (ch) => ROWS.flatMap((row, ty) => [...row].flatMap((c, tx) => 
 
 export function setLevel(id) {
   LEVEL_ID = id;
-  LEVEL = LEVELS[id];
+  // Wetterphase (Savanne): die Angaben der Phase ersetzen die normalen (Tiere, Boden, Geräusch ...), siehe season.js
+  const base = LEVELS[id];
+  const season = base.seasons ? currentSeason() : 'normal';
+  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: 'normal' };
   ROWS = LEVEL.rows;
+  // ... und ihre Kartenstücke (größere Teiche im Regen, Schlamm in der Trockenzeit): { tx, ty, rows }
+  for (const u of LEVEL.mapPatches ?? []) {
+    ROWS = ROWS.map((row, y) => {
+      const patch = u.rows[y - u.ty];
+      return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
+    });
+  }
   // freigeschaltete Teile (z. B. das Flamingo-Gehege) über die Karte legen: { id, tx, ty, rows }
   for (const u of LEVEL.unlocks ?? []) {
     if (!game.unlocked.includes(u.id)) continue;
@@ -272,7 +285,8 @@ export function setLevel(id) {
   FISHPOND_TILES = tilesWith('o');
   // Wasser in den wilden Teichen direkt am begehbaren Ufer, damit man sie mit dem Kescher erreicht
   KOI_WATER = tilesWith('~').filter(({ tx, ty }) => !inPen(tx, ty));
-  FISH_SPOTS = tilesWith('~').filter(({ tx, ty }) =>
+  // (Trockenzeit in der Savanne: im Schlamm des ausgetrockneten Wasserlochs, fishIn in levels.js)
+  FISH_SPOTS = tilesWith(LEVEL.fishIn ?? '~').filter(({ tx, ty }) =>
     [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !isBlocked(tx + dx, ty + dy)),
   );
   NEAR_WATER = freeTilesNear('~');
@@ -574,9 +588,9 @@ function patchNoise(tx, ty, layer) {
 export const CORNER = { top: 1, right: 2, bottom: 4, left: 8 };
 export function outerWaterCorners(tx, ty) {
   const c = charAt(tx, ty);
-  if (!'~owh'.includes(c)) return 0;
-  // unter der Brücke geht das Wasser weiter
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BE'.includes(charAt(x, y)));
+  if (!'~owh≈'.includes(c)) return 0;
+  // unter der Brücke geht das Wasser weiter; Schlamm und das letzte Wasserloch darin gehen ineinander über (Trockenzeit)
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BE≈'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);

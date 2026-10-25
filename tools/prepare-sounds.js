@@ -16,6 +16,11 @@ const SOUNDS = [
   ['Sounds/Wolf.mp3', 'public/assets/sounds/animal_wolf.wav', 1.7, 1.3, 0.8],
   // Gnu: das erste Grunzen der Aufnahme (beim Fangen und ab und zu aus der Herde)
   ['Sounds/Gnu.mp3', 'public/assets/sounds/animal_gnu.wav', 0.6, 0.8, 0.8],
+  // Savanne, Trockenzeit: Hyänen-Kichern (lockt zum Knochenstreuen, siehe Hyena.js) und kurz beim Fangen; Geier-Krächzen
+  ['Sounds/Hyäne.mp3', 'public/assets/sounds/hyena_laugh.wav', 0.4, 3.6, 0.8],
+  ['Sounds/Hyäne.mp3', 'public/assets/sounds/animal_hyena.wav', 0.4, 1.1, 0.8],
+  ['Sounds/Geier.mp3', 'public/assets/sounds/animal_vulture.wav', 0.85, 1.35, 0.8],
+  ['Sounds/Nilpferd.mp3', 'public/assets/sounds/animal_hippo.wav', 1.0, 1.6, 0.8], // Nilpferd-Grunzen (Starkregen)
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
   // Tierrufe beim Fangen (der Name hinter "animal_" ist die Tierart)
@@ -167,6 +172,7 @@ const LOOPS = [
   { src: 'Sounds/Wald Nacht.mp3', dest: 'public/assets/sounds/ambient_forest_night.mp3', from: 600, to: 647, fade: 2 },
   // Große Wanderung (Savanne): Hufgetrappel der Gnu-Herde; am Anfang eine Sekunde Stille
   { src: 'Sounds/Gnu Event.mp3', dest: 'public/assets/sounds/ambient_migration.mp3', from: 1.3, to: 35.9, fade: 1.5 },
+  { src: 'Sounds/Regen.mp3', dest: 'public/assets/sounds/ambient_savanna_rain.mp3', from: 0.5, to: 29.8, fade: 1.5 }, // Savanne bei Starkregen
 ];
 for (const { src, dest, from, to, fade } of LOOPS) {
   if (ONLY && !dest.includes(ONLY)) continue;

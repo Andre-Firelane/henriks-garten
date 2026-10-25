@@ -28,6 +28,75 @@
 
 import { tr } from '../i18n.js';
 
+// Savanne in der normalen Phase; Starkregen und Trockenzeit leiten ihre Karten daraus ab (siehe savanna.seasons)
+const SAVANNA_ROWS = [
+  'AvvvvvvRvAvvvvvvRvAvXvvvvRvAvvvvvvRvAvvv',
+  'R...................#..................v',
+  'v.y.....v..y.....y..#...........yv...v.v',
+  'v.....v.......y..y..#..................v',
+  'v.........y..v......#....y..v......y..yv',
+  'v...............y.v.#............v.....v',
+  'v.v..........v......#.y............y...A',
+  'v.....~~.~~........y#..................R',
+  'v....~~~~~~....y....#..................v',
+  'A.....~~~~~~y.......#.....v............v',
+  'R..v.~~~~~~..y......#y.v...............v',
+  'v.......~~......Ry.y#......v..v..A...y.v',
+  'v......y.....vy...y.#..................v',
+  'v....y.....y........#..................v',
+  'v.v.......v.........#..................v',
+  'v................R..#................y.A',
+  'v.................y.#.y................R',
+  'v.yv....A..R........#...A........y.....v',
+  'A...................#.............y.yA.v',
+  'X##############################........v',
+  'v..........#.MMMMM..#..................v',
+  'v..........#.Nap,N..#...v.....R........v',
+  'v...y.y....#.N,j,G###.....A......y.....v',
+  'v...R......##MMMMM..#...............R..v',
+  'v.......v..###.c....#...v..A...y.......A',
+  'v..........##....yy.#..................R',
+  'v..y.......##.......#..................v',
+  'A....A.....~~....v..#..R...........y...v',
+  'R.........~~~~~.....#........~~~~~.A...v',
+  'v.........~~~~~.....#.......~~~~~~..y..v',
+  'v.........~~~~~.....#..v...~~~~~~~~.y..v',
+  'v...R.....~~~~~.yRA.#........~~~~~.....v',
+  'v..........~~~......#..A..y....~~......v',
+  'v..........~~...y...#...............v..A',
+  'v....A..............#....v...........y.R',
+  'v........v...v....A........v...........v',
+  'A.......y...........y..y....y....v.....v',
+  'R.v.v...v......v.v......v....v.........v',
+  'v......................................v',
+  'vvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvv',
+];
+
+// Starkregen: die Wasserlöcher wachsen um rings Kacheln (nur über Gras und Büschel, nicht an Wege, Hütte, Auto und Start)
+// (dry(x, y): diese Kacheln bleiben trocken)
+function growWater(rows, rings, dry) {
+  let g = rows.map((r) => [...r]);
+  const at = (x, y) => g[y]?.[x];
+  const nearPath = (x, y) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => '#XG'.includes(at(x + dx, y + dy) ?? '.')));
+  for (let i = 0; i < rings; i++) {
+    const next = g.map((r) => [...r]);
+    for (let y = 2; y < g.length - 2; y++) {
+      for (let x = 2; x < g[y].length - 2; x++) {
+        if (!'.y'.includes(g[y][x]) || nearPath(x, y) || dry(x, y)) continue;
+        if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => at(x + dx, y + dy) === '~')) next[y][x] = '~';
+      }
+    }
+    g = next;
+  }
+  return g.map((r) => r.join(''));
+}
+
+// Trockenzeit: aus den Wasserlöchern wird Schlamm (≈), nur ein kleines letztes Wasserloch bleibt (keep: Mitte und Radius)
+function dryUp(rows, keep) {
+  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && Math.hypot(x - keep.tx, y - keep.ty) > keep.r ? '≈' : c)).join(''));
+}
+
+
 export const LEVELS = {
   meadow: {
     name: tr('Wiese', 'Meadow'),
@@ -173,48 +242,7 @@ export const LEVELS = {
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 12.16, ty: 25.32, texture: 'car_savanna', frame: 0, scale: 1.15 },
     map: { x: 58, y: 63, icon: 'giraffe' },
-    rows: [
-      'AvvvvvvRvAvvvvvvRvAvXvvvvRvAvvvvvvRvAvvv',
-      'R...................#..................v',
-      'v.y.....v..y.....y..#...........yv...v.v',
-      'v.....v.......y..y..#..................v',
-      'v.........y..v......#....y..v......y..yv',
-      'v...............y.v.#............v.....v',
-      'v.v..........v......#.y............y...A',
-      'v.....~~.~~........y#..................R',
-      'v....~~~~~~....y....#..................v',
-      'A.....~~~~~~y.......#.....v............v',
-      'R..v.~~~~~~..y......#y.v...............v',
-      'v.......~~......Ry.y#......v..v..A...y.v',
-      'v......y.....vy...y.#..................v',
-      'v....y.....y........#..................v',
-      'v.v.......v.........#..................v',
-      'v................R..#................y.A',
-      'v.................y.#.y................R',
-      'v.yv....A..R........#...A........y.....v',
-      'A...................#.............y.yA.v',
-      'X##############################........v',
-      'v..........#.MMMMM..#..................v',
-      'v..........#.Nap,N..#...v.....R........v',
-      'v...y.y....#.N,j,G###.....A......y.....v',
-      'v...R......##MMMMM..#...............R..v',
-      'v.......v..###.c....#...v..A...y.......A',
-      'v..........##....yy.#..................R',
-      'v..y.......##.......#..................v',
-      'A....A.....~~....v..#..R...........y...v',
-      'R.........~~~~~.....#........~~~~~.A...v',
-      'v.........~~~~~.....#.......~~~~~~..y..v',
-      'v.........~~~~~.....#..v...~~~~~~~~.y..v',
-      'v...R.....~~~~~.yRA.#........~~~~~.....v',
-      'v..........~~~......#..A..y....~~......v',
-      'v..........~~...y...#...............v..A',
-      'v....A..............#....v...........y.R',
-      'v........v...v....A........v...........v',
-      'A.......y...........y..y....y....v.....v',
-      'R.v.v...v......v.v......v....v.........v',
-      'v......................................v',
-      'vvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvv',
-    ],
+    rows: SAVANNA_ROWS,
     grass: ['sgrass0', 'sgrass1', 'sgrass2'],
     path: 'savanna_path',
     start: { tx: 2, ty: 19 },
@@ -240,6 +268,33 @@ export const LEVELS = {
     // wie Fische in den Wasserlöchern auf, sind aber deutlich seltener
     // population zählt hier Plätze: eine Herde oder Kolonie belegt nur einen
     spawn: { population: 8, weights: { antelope: 0.6, zebra: 0.6, giraffe: 0.4, meerkat: 0.3, lion: 0.25, crocodile: 0.2 } },
+    // Wetterphasen (siehe src/world/season.js): ersetzen die Angaben oben; die normalen Tiere sind dann seltener
+    seasons: {
+      // Starkregen: viel größere Wasserlöcher, Nilpferde, Fische (meist Lungenfische), Reiher (oft Schuhschnäbel),
+      // mehr Krokodile (selten ein Albino-Krokodil)
+      rain: {
+        // trocken bleiben: Hütte und Auto, der Start und ein Streifen neben dem Gnu-Strom (Große Wanderung, siehe Gnu.js)
+        rows: growWater(SAVANNA_ROWS, 2, (x, y) => (x >= 9 && x <= 20 && y >= 18 && y <= 27) || (x <= 4 && y >= 17 && y <= 21) || y - x >= 20),
+        grass: ['sgrass_rain0', 'sgrass_rain1', 'sgrass_rain2'],
+        ambient: 'ambient_savanna_rain', // Regen und Donner
+        ambientVolume: 0.5,
+        spawn: { population: 10, weights: { antelope: 0.3, zebra: 0.3, giraffe: 0.2, meerkat: 0.15, lion: 0.12, crocodile: 0.35, fish: 0.7, hippo: 0.45 } },
+        herons: { every: [35, 70], landChance: 0.7 },
+      },
+      // Trockenzeit: Schlamm statt Wasser (darin die Lungenfische), ein letztes kleines Wasserloch, an dem sich Zebras und
+      // Antilopen drängen; kahle Akazien mit Geiern, Warzenschweine, Hyänen (mit Knochen anlocken, siehe Hyena.js)
+      dry: {
+        rows: dryUp(SAVANNA_ROWS, { tx: 31, ty: 30, r: 1.6 }),
+        fishIn: '≈',
+        grass: ['sdry0', 'sdry1', 'sdry2'],
+        objectKeys: { A: 'acacia_bare' },
+        chests: [{ tx: 15, ty: 24, tools: ['net', 'lasso', 'food', 'bone'] }],
+        spawn: { population: 9, weights: { antelope: 0.35, zebra: 0.35, giraffe: 0.15, meerkat: 0.3, lion: 0.12, fish: 0.5, warthog: 0.5 } },
+        gatherAt: { tx: 31, ty: 30, r: 90 }, // dort drängen sich Zebras und Antilopen (Leine, siehe Animal.pickWander)
+        vultures: { every: [30, 60] }, // so oft kreist ein Geier heran (Sekunden)
+        hyenas: { every: [40, 80] }, // so oft kichert das Hyänenrudel
+      },
+    },
   },
 
   asia: {
@@ -464,89 +519,89 @@ export const LEVELS = {
     // jede Welt hat ihre eigene Seite: Savanne oben, Wald links, Wiese rechts, Asien unten. Die Gehege sind in den
     // Rand eingelassen, ihre Tore zeigen zum Rundweg; der Ausgang in eine Welt liegt mitten in deren Seite.
     rows: [
-      '         f.g.b.f.                3X3333333333333333333  ',
-      '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3  ',
-      '         g.K.f.b.                3#].y..............]3  ',
-      '         f...b.g.                3#]..A..yyy....A.@.]3  ',
-      '         .g.T..K.                3#].....www........]3  ',
-      '         b..f.g..        333333333#]....wwww........]333',
-      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]..3',
-      '         g.b..f..        3.yv.....#########].yyA.y..].y3',
-      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]..3',
-      '        Vbbbbbbbb3       3]........]....A.#].......y]..3',
-      '        V.T..f.K.333333333].A.y....]......#G..y..y..]..3',
-      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y.3',
-      '        Vf.b....g3....y...]........G#.v...#].....A..]vy3',
-      '        Vl.Kf.g..3.y...y..]...y..y.]#vy.A.#]........].A3',
-      '        V.g..f.b.3..y.....[[[[[[[[[[#F....#[[[[[[[[[[..3',
-      '        `#############################################y3',
-      '        Vgff3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy3',
-      '        Vlfb3.}......}..|.....|.#....A...A....v.#...R..3',
-      '        V3333.}.oooo.}..|..u..|.#..y.....y....v.#..vy..3',
-      'g.f.b.g.f.b.3.}.oooo.}..|.....|.#........yyy..A.#y..A..3',
-      'b..T..f.K.g.3.}y.ooo.}..|y.y..|.#..............y#...y..3',
-      '.K..g.b..T..3.}......}..-------.#..R.....vy..y..#....A.3',
-      'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v3',
-      '22222222222222222222222################################b',
-      '222k2DDk2222.^^^^^^^^^^#............###.......#MMMMMMM.b',
-      '2D22kD222DD2.;.n......;#..y.y.v.....###..%....#N.C...N.b',
-      '2kD2222k22k2.;.P...ww.;#.D.y......v.###..~~...#N....CN.b',
-      '22k2k22k2D22k;.....ww.G#...Av..A.A..###..~~~..#N.....N.b',
-      'DkD222k2k2k2.;...m....G#.......y....###...~~..#MMMGMMM.b',
-      '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b',
-      '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b',
-      'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b',
-      'D22DD2222222.;*...;....#.NZ...z.sN..###Fb.b....g..g..b#b',
-      'kD222D222222m;..P.;....#.N...VYV.N..###-------------..#b',
-      'D2222D2mk....^^^^^^kkn.#.N.......N..###|...........|.b#b',
-      'k2D2222.################.NVt.....N..###|...........|.b#b',
-      '2kk2kk2.------GG---.km.#.Ndix....N..###|....T......---#b',
-      '222D222k|.........|k.n.#.Ns.....ZN..###|.............|#b',
-      'D2D2kD2.|....D....----k#.MMMMGGMMM.####|..@..........|#b',
-      '22k2DD2.|.&..........|m#bg.#####.fb####|...f......T..|#b',
-      '2kkk222.|.P..........|.#..f#####g..####G.............|#X',
-      '2222kD2.|.m......D..n|k#############W##G.............|.b',
-      '2222kk2.|n...........|.################|.........f...|.b',
-      '22kDD22.|...D........|.##........######---...........|.b',
-      '2222222.----...m.....|k#.........######..|...........|.b',
-      ' 2mm...nkmn-----------F#.........######g.-------------.b',
-      ' X######################......n.....###.....ff.b.b...g.b',
-      ' 2.---G---k#.{{{{{{..m.#.......n.n..###.b..gf.T.....bTbb',
-      ' 2--n....--#{{%...{{mD.#....m.m...m.########g.....bff..b',
-      ' 2|..n....|#}..oo..}...#..D.........###..f.#.^^^^^.....b',
-      ' 2|.mU.n..|#}.oooom}.n.#............###g.g.#.;...;.....b',
-      ' 2|n......|#G.oooo.}...#......mm..q.###....#g;...;....bb',
-      ' 2--.....--#}mnooo.}...#.m.P..0K.K..###g..g#.;...;b....b',
-      ' 2.-------m#{{...%{{kkn#............###...b##G...^^^^^.b',
-      ' 2222222.k.#.{{{{{{.k..#....n.q..l..###.bb.#.G.....*.;fb',
-      '       2m..#.......kn..#..n.q.......###..T.##;...w.w.;.b',
-      '       2mm.#.mn....k...#....ll......###..fb.#;.......;.b',
-      '       2.n.#############...q.qq.....###b.b..#^^^^^^^^^.b',
-      '       2.k.n..k......nk#...........####..f..#..b...f...b',
-      '22222222222222222222222################################b',
-      '            5..................q......#................b',
-      '            T..6^^^^^^......K..r......I.K..[[[[[[[[[[[[b',
-      '            5.6^^....^^^K.............#....]...Q......]b',
-      '            T.^^.9.....;......#########...[[.......Q..]b',
-      '            5.;......q.^^l...##.......##..].....K.....]b',
-      '            T.;..hhhh...;...##..KlK.l..##.]...8.....Q.]b',
-      '            5.;.r.hhh...G####.K....q.q.K##[[.....7....]b',
-      '            T.^^...h....G..#..l..q..ll...##G..........]b',
-      '            5..^^......^^..#.lqooooooo.rq.#G..q...q...]b',
-      '            T.K.^^^^^^^^.q.#..ooooooooo...#[[.........]b',
-      '            5....l....q.r..###EEEEEEEEEE###.[[[[[..[[[[b',
-      '            T..rll.qq.q....#.q.oooooooo.l.#.....[[[[...b',
-      '            5..............##..q...ooor...#............b',
-      '            T.[[[[[[[[[[[...##K.r.K..l..l##.[[[[[[[[[[[b',
-      '            5[[.........[[...##...q.K..K##.[[.........]b',
-      '            T]..J...9....[[...##.......####G..q....Q..]b',
-      '            5].........9..G#############...G....w...Q.]b',
-      '            T]L....H......G........#.......]..www8....]b',
-      '            5]....9.......]........#.......]...ww...Q.]b',
-      '            T]..9.....J...]....K...#.......].L....r...]b',
-      '            5].......q...[[....r...#.....q.[[.........]b',
-      '            T[[[[[[[[[[[[[....q..l.#.r......[[[[[[[[[[[b',
-      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb',
+      '         f.g.b.f.                3X33333333333333333333333333333333333333333333',
+      '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3....y....v....y....A....3',
+      '         g.K.f.b.                3#].y..............]3...v...A....y.....v...y.3',
+      '         f...b.g.                3#]..A..yyy....A.@.]3......y....v..A......R..3',
+      '         .g.T..K.                3#].....www........]3..y.....y........y......3',
+      '         b..f.g..        333333333#]....wwww........]33...v...........v....y..3',
+      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]....A.......y.A......y.v.3',
+      '         g.b..f..        3.yv.....#########].yyA.y..].y...................A...3',
+      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]...v........R..........y.3',
+      '        Vbbbbbbbb3       3]........]....A.#].......y].............v...........3',
+      '        V.T..f.K.333333333].A.y....]......#G..y..y..]....y.......A........R...3',
+      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y............y...........3',
+      '        Vf.b....g3....y...]........G#.v...#].....A..]vy.R........v.........v..3',
+      '        Vl.Kf.g..3.y...y..]...y..y.]#vy.A.#]........].A...........A.......A...3',
+      '        V.g..f.b.3..y.....[[[[[[[[[[#F....#[[[[[[[[[[....y..v..........v....y.3',
+      '        `#####################################################################3',
+      '        Vgff3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy...v.....y...R.....y.v.3',
+      '        Vlfb3.}......}..|.....|.#....A...A....v.#...R...A........y.........A..3',
+      '        V3333.}.oooo.}..|..u..|.#..y.....y....v.#..vy.............v...........3',
+      'g.f.b.g.f.b.3.}.oooo.}..|.....|.#........yyy..A.#y..A....v.......A..........y.3',
+      'b..T..f.K.g.3.}y.ooo.}..|y.y..|.#..............y#...y.............R...........3',
+      '.K..g.b..T..3.}......}..-------.#..R.....vy..y..#....A..y........v.........A..3',
+      'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v...........y...........3',
+      '22222222222222222222222################################b.R.........A.......v..3',
+      '222k2DDk2222.^^^^^^^^^^#............###.......#MMMMMMM.b33333333333333333333333',
+      '2D22kD222DD2.;.n......;#..y.y.v.....###..%....#N.C...N.b                       ',
+      '2kD2222k22k2.;.P...ww.;#.D.y......v.###..~~...#N....CN.b                       ',
+      '22k2k22k2D22k;.....ww.G#...Av..A.A..###..~~~..#N.....N.b                       ',
+      'DkD222k2k2k2.;...m....G#.......y....###...~~..#MMMGMMM.b                       ',
+      '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b                       ',
+      '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b                       ',
+      'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b                       ',
+      'D22DD2222222.;*...;....#.NZ...z.sN..###Fb.b....g..g..b#b                       ',
+      'kD222D222222m;..P.;....#.N...VYV.N..###-------------..#b                       ',
+      'D2222D2mk....^^^^^^kkn.#.N.......N..###|...........|.b#b                       ',
+      'k2D2222.################.NVt.....N..###|...........|.b#b                       ',
+      '2kk2kk2.------GG---.km.#.Ndix....N..###|....T......---#b                       ',
+      '222D222k|.........|k.n.#.Ns.....ZN..###|.............|#b                       ',
+      'D2D2kD2.|....D....----k#.MMMMGGMMM.####|..@..........|#b                       ',
+      '22k2DD2.|.&..........|m#bg.#####.fb####|...f......T..|#b                       ',
+      '2kkk222.|.P..........|.#..f#####g..####G.............|#X                       ',
+      '2222kD2.|.m......D..n|k#############W##G.............|.b                       ',
+      '2222kk2.|n...........|.################|.........f...|.b                       ',
+      '22kDD22.|...D........|.##........######---...........|.b                       ',
+      '2222222.----...m.....|k#.........######..|...........|.b                       ',
+      ' 2mm...nkmn-----------F#.........######g.-------------.b                       ',
+      ' X######################......n.....###.....ff.b.b...g.b                       ',
+      ' 2.---G---k#.{{{{{{..m.#.......n.n..###.b..gf.T.....bTbb                       ',
+      ' 2--n....--#{{%...{{mD.#....m.m...m.########g.....bff..b                       ',
+      ' 2|..n....|#}..oo..}...#..D.........###..f.#.^^^^^.....b                       ',
+      ' 2|.mU.n..|#}.oooom}.n.#............###g.g.#.;...;.....b                       ',
+      ' 2|n......|#G.oooo.}...#......mm..q.###....#g;...;....bb                       ',
+      ' 2--.....--#}mnooo.}...#.m.P..0K.K..###g..g#.;...;b....b                       ',
+      ' 2.-------m#{{...%{{kkn#............###...b##G...^^^^^.b                       ',
+      ' 2222222.k.#.{{{{{{.k..#....n.q..l..###.bb.#.G.....*.;fb                       ',
+      '       2m..#.......kn..#..n.q.......###..T.##;...w.w.;.b                       ',
+      '       2mm.#.mn....k...#....ll......###..fb.#;.......;.b                       ',
+      '       2.n.#############...q.qq.....###b.b..#^^^^^^^^^.b                       ',
+      '       2.k.n..k......nk#...........####..f..#..b...f...b                       ',
+      '22222222222222222222222################################b                       ',
+      '            5..................q......#................b                       ',
+      '            T..6^^^^^^......K..r......I.K..[[[[[[[[[[[[b                       ',
+      '            5.6^^....^^^K.............#....]...Q......]b                       ',
+      '            T.^^.9.....;......#########...[[.......Q..]b                       ',
+      '            5.;......q.^^l...##.......##..].....K.....]b                       ',
+      '            T.;..hhhh...;...##..KlK.l..##.]...8.....Q.]b                       ',
+      '            5.;.r.hhh...G####.K....q.q.K##[[.....7....]b                       ',
+      '            T.^^...h....G..#..l..q..ll...##G..........]b                       ',
+      '            5..^^......^^..#.lqooooooo.rq.#G..q...q...]b                       ',
+      '            T.K.^^^^^^^^.q.#..ooooooooo...#[[.........]b                       ',
+      '            5....l....q.r..###EEEEEEEEEE###.[[[[[..[[[[b                       ',
+      '            T..rll.qq.q....#.q.oooooooo.l.#.....[[[[...b                       ',
+      '            5..............##..q...ooor...#............b                       ',
+      '            T.[[[[[[[[[[[...##K.r.K..l..l##.[[[[[[[[[[[b                       ',
+      '            5[[.........[[...##...q.K..K##.[[.........]b                       ',
+      '            T]..J...9....[[...##.......####G..q....Q..]b                       ',
+      '            5].........9..G#############...G....w...Q.]b                       ',
+      '            T]L....H......G........#.......]..www8....]b                       ',
+      '            5]....9.......]........#.......]...ww...Q.]b                       ',
+      '            T]..9.....J...]....K...#.......].L....r...]b                       ',
+      '            5].......q...[[....r...#.....q.[[.........]b                       ',
+      '            T[[[[[[[[[[[[[....q..l.#.r......[[[[[[[[[[[b                       ',
+      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb                       ',
     ],
     grass: ['grass0', 'grass1', 'grass2'],
     path: 'park_path',
@@ -560,6 +615,11 @@ export const LEVELS = {
       { id: 'meerkat', name: tr('Erdmännchenbau', 'Meerkat Burrow'), species: ['meerkat'], world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 25, ty: 17 }, slots: [5, 8], upgrade: tr('Erdhügel', 'Dirt mounds'), basic: [[27, 18, ':'], [28, 19, '<']] },
       { id: 'savanna', name: tr('Savannengehege', 'Savanna Enclosure'), species: ['antelope', 'zebra', 'giraffe'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 45, ty: 2 }, quota: { antelope: [5, 8], zebra: [5, 8], giraffe: [3, 5] }, upgrade: tr('Mehr Steppe mit Heu-Unterstand', 'More grassland with a hay shelter'), basic: [[46, 2, ']'], [46, 3, ']'], [46, 4, ']'], [46, 5, '['], [47, 5, '['], [48, 5, '['], [49, 5, '['], [50, 5, '['], [51, 5, '['], [50, 3, '.']] },
       { id: 'gnus', name: tr('Gnu-Steppe', 'Wildebeest Plains'), species: ['gnu'], gate: 'tall', world: 'savanna', unlock: 'gnu', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 26, ty: 3 }, slots: [6, 9], upgrade: tr('Heuraufe', 'Hay rack'), basic: [[31, 2, '.']] },
+      // Savanne, Wetterphasen (rechts am Weg der Savanne, entstehen jeweils mit dem ersten Tier, siehe unlocks)
+      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', unlock: 'hippo', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 7 }, slots: [3, 4], upgrade: tr('Schilf am Ufer', 'Reeds on the bank'), basic: [[61, 11, '.']] },
+      { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
+      { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Felsenhöhle', 'Rock den'), basic: [[63, 19, '.']] },
+      { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
       { id: 'deerpark', name: tr('Hirschgehege', 'Deer Park'), species: ['deer'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
       { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
       { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: tr('Größerer Teich mit Schilf, Pilzen und Farn', 'Bigger pond with reeds, mushrooms and ferns'), basic: [[14, 48, ':'], [17, 53, '<'], [18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.']] },
@@ -581,7 +641,8 @@ export const LEVELS = {
     // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
     grounds: [
       { area: { tx0: 8, tx1: 16, ty0: 0, ty1: 18 }, ground: ['grass0', 'grass1', 'grass2'] }, // Wiese ums Aquarium (vor der Savanne, die erste Fläche gilt)
-      { area: { tx0: 12, tx1: 55, ty0: 0, ty1: 22 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] },
+      { area: { tx0: 12, tx1: 78, ty0: 0, ty1: 22 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] }, // mit den Gehegen der Wetterphasen rechts
+      { area: { tx0: 56, tx1: 78, ty0: 23, ty1: 24 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] },
       { area: { tx0: 0, tx1: 22, ty0: 23, ty1: 59 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] },
       { area: { tx0: 12, tx1: 55, ty0: 60, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich
     ],
@@ -591,6 +652,11 @@ export const LEVELS = {
     buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
     // freischaltbar: das Flamingo-Gehege entsteht, sobald man den ersten Flamingo fängt (Event „Flamingo-Flug“)
     unlocks: [
+      // die ersten Tiere der Wetterphasen der Savanne: ihre Gehege entstehen rechts am Savannen-Weg
+      { id: 'hippo', tx: 58, ty: 6, rows: ['{{{{{{{', '}.....}', '}.ooo.}', '}.oooo}', '}.ooo.}', '}..%..}', '}.....}', '{{{G{{{', '..v#...'] },
+      { id: 'vulture', tx: 68, ty: 6, rows: ['^^^^^^^', ';.....;', ';.Ǎ...;', ';.....;', ';...Ǎ.;', ';.....;', ';.....;', '^^^G^^^', '...#...'] }, // Ǎ: kahle Akazien zum Sitzen
+      { id: 'hyena', tx: 58, ty: 16, rows: ['v..#..y', '[[[G[[[', '].....]', ']....v]', ']..R..]', '].....]', '].....]', '[[[[[[['] },
+      { id: 'warthog', tx: 68, ty: 16, rows: ['R..#..y', '[[[G[[[', '].....]', '].u...]', '].....]', ']...u.]', '].....]', '[[[[[[['] },
       // das erste Gnu: nördlich vom Löwengehege, am oberen Kartenrand, entsteht die Gnu-Steppe
       { id: 'gnu', tx: 20, ty: 0, rows: ['[[[[[[[[[[[[[[', ']..A.....y...]', '].....y....&.]', '].y..........G', ']......A.....]', ']..y.....v...]', '[[[[[[[[[[[[[['] },
       // der erste Wolf: am linken Kartenrand im Wald-Bereich entsteht der Wolfswald (dahinter dunkler Wald, siehe backdrops)

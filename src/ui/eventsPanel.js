@@ -62,6 +62,12 @@ const THUMBS = {
     ['jellyfish2', 64, 96, 0, 0.6, 84, 8],
     ['jellyfish', 64, 96, 2, 0.5, 132, 14],
   ],
+  // Wetterwechsel: Wettersymbole statt Tieren ([Zeichen, Schriftgröße in px, links, unten])
+  weather: [
+    ['emoji', '☀️', 34, 8, 14],
+    ['emoji', '🌧️', 40, 58, 22],
+    ['emoji', '🌿', 30, 116, 8],
+  ],
   ride: [
     ['ride_meadow', 160, 230, 0, 0.38, 2, 0],
     ['ride_savanna', 160, 230, 1, 0.4, 92, 0],
@@ -72,6 +78,8 @@ function thumb(item) {
   if (item.species) return `<div class="ev-thumb pen-thumb">${animalIcons(item.species, 3.4)}</div>`; // Gehege: seine Tiere
   const parts = (THUMBS[item.id] ?? [])
     .map(([img, w, h, frame, k, left, bottom, frames = 4]) => {
+      // Wettersymbol: ['emoji', Zeichen, Schriftgröße, links, unten]
+      if (img === 'emoji') return `<span class="ev-sprite" style="left:${frame}px;bottom:${k}px;font-size:${h}px;line-height:1">${w}</span>`;
       const style = `width:${w}px;height:${h}px;left:${left}px;bottom:${bottom}px;transform:scale(${k});`
         + `background:url(assets/${img}.png) -${frame * w}px 0 / ${w * frames}px ${h}px no-repeat;`;
       return `<span class="ev-sprite" style="${style}"></span>`;

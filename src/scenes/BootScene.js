@@ -47,10 +47,13 @@ const PIXEL_ART = [
   'reef_gravel', 'reef_seagrass', 'reef_algae', 'reef_dark',
   'aq_path', 'aq_bench', 'aq_lamp', 'aq_statue',
   'wolf_forest_edge', // dunkler Wald hinter dem Wolfswald (Tierpark)
+  // Savanne in den Wetterphasen (Platzhalter aus tools/season-placeholders.cjs): Boden bei Starkregen, trockener Boden,
+  // Schlamm im ausgetrockneten Wasserloch, kahle Akazie
+  'sgrass_rain0', 'sgrass_rain1', 'sgrass_rain2', 'sdry0', 'sdry1', 'sdry2', 'mud', 'acacia_bare',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -98,6 +101,9 @@ const ANIMAL_SOUNDS = {
   koi: 'animal_fish.wav', // derselbe Platscher wie beim Fisch
   wolf: 'animal_wolf.wav', // Knurren beim Fangen
   gnu: 'animal_gnu.wav', // Grunzen (beim Fangen und aus der Herde)
+  hyena: 'animal_hyena.wav', // kurzes Kichern beim Fangen
+  vulture: 'animal_vulture.wav', // Krächzen
+  hippo: 'animal_hippo.wav', // Grunzen (auch ab und zu aus dem Wasserloch)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -212,6 +218,22 @@ export default class BootScene extends Phaser.Scene {
     this.load.audio('wolf_howl', 'assets/sounds/wolf_howl.wav'); // Wolfsgeheul (siehe tools/prepare-sounds.js)
     this.load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);
     this.load.spritesheet('croc_water', 'assets/croc_water.png', CROC_WATER_FRAME); // nur der Kopf schaut aus dem Wasser
+    // Savanne in den Wetterphasen: Skins (Schuhschnabel, Albino-Krokodil, Lungenfisch) und neue Tiere
+    this.load.spritesheet('shoebill', 'assets/shoebill.png', HERON_FRAME);
+    this.load.spritesheet('shoebill_fly', 'assets/shoebill_fly.png', HERON_FLY_FRAME);
+    this.load.spritesheet('croc_albino', 'assets/croc_albino.png', CROC_FRAME);
+    this.load.spritesheet('croc_albino_water', 'assets/croc_albino_water.png', CROC_WATER_FRAME); // Platzhalter (umgefärbt)
+    this.load.spritesheet('lungfish', 'assets/lungfish.png', FISH_FRAME);
+    this.load.spritesheet('lungfish_mud', 'assets/lungfish_mud.png', FISH_FRAME); // steckt im Schlamm (Trockenzeit, Platzhalter)
+    this.load.spritesheet('hippo', 'assets/hippo.png', { frameWidth: 96, frameHeight: 88 }); // Nilpferd (Starkregen)
+    this.load.spritesheet('hippo_water', 'assets/hippo_water.png', { frameWidth: 64, frameHeight: 44 }); // ... schwimmend: obere Kopfhälfte
+    for (const k of ['hyena', 'hyena_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Hyäne (Trockenzeit)
+    this.load.spritesheet('warthog', 'assets/warthog.png', { frameWidth: 80, frameHeight: 88 }); // Warzenschwein (Trockenzeit)
+    this.load.image('warthog_hole', 'assets/warthog_hole.png'); // sein Erdloch (Platzhalter)
+    this.load.spritesheet('vulture', 'assets/vulture.png', HERON_FRAME); // Geier (Trockenzeit)
+    this.load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
+    this.load.image('bone_pile', 'assets/bone_pile.png'); // gestreute Knochen (lockt die Hyänen an)
+    this.load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     this.load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)

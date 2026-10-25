@@ -71,6 +71,15 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
+    // springt sofort zur nächsten Wetterphase der Savanne (siehe season.js); dauert selbst nicht, keine Pause danach
+    id: 'weather',
+    name: tr('Savannen-Wetterwechsel', 'Savanna Weather Change'),
+    text: tr('Die Savanne wechselt sofort in die nächste Wetterphase: Starkregen, Trockenzeit oder wieder normal – mit anderen Tieren!', 'The savanna switches to the next weather phase right away: heavy rain, dry season or back to normal – with different animals!'),
+    cost: 25,
+    duration: 0,
+    cooldown: 0,
+  },
+  {
     id: 'icecream',
     name: tr('Eisstand', 'Ice Cream Stand'),
     text: tr('8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.', 'For 8 minutes an ice cream truck stands in the middle of the zoo. Every ice cream a visitor buys brings two hearts.'),

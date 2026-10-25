@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { FISH_SPOTS, FISHPOND_TILES, isFishpond, enclosureAt, accepts } from '../world/map.js';
+import { FISH_SPOTS, FISHPOND_TILES, LEVEL, isFishpond, enclosureAt, accepts } from '../world/map.js';
 import { footTiles } from '../world/collision.js';
 
 // Bilder im Spritesheet "fish"
@@ -34,8 +34,18 @@ export default class Fish extends Animal {
   }
 
   useWaterLook() {
-    this.sprite.setTexture(this.baseTexture(), FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y); // mit Skin: Wels
+    this.sprite.setTexture(this.waterTexture(), FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y); // mit Skin: Wels, Lungenfisch
     this.shadow.setVisible(false);
+  }
+
+  // im Schlamm (Savanne in der Trockenzeit): der Lungenfisch schaut mit dem Kopf aus dem Schlamm ("lungfish_mud")
+  inMud() {
+    return this.state === 'wild' && LEVEL.fishIn === '≈';
+  }
+
+  waterTexture() {
+    const base = this.baseTexture();
+    return this.inMud() && this.scene.textures.exists(`${base}_mud`) ? `${base}_mud` : base;
   }
 
   useBagLook() {
@@ -171,7 +181,7 @@ export default class Fish extends Animal {
       return;
     }
 
-    if (this.skin && this.sprite.texture.key !== this.skin) this.useWaterLook(); // Skin erst nach dem Erzeugen gewürfelt
+    if (this.sprite.texture.key !== this.waterTexture()) this.useWaterLook(); // Skin erst nach dem Erzeugen gewürfelt
     let frame = this.faceX > 0 ? FISH_FRAME.right : FISH_FRAME.left;
     let visible = !(this.state === 'penned' && this.dive?.under);
     if (this.state === 'wild') {
@@ -191,8 +201,8 @@ export default class Fish extends Animal {
     const x = this.x + Phaser.Math.Between(-10, 10);
     const y = this.y + Phaser.Math.Between(-3, 3);
     const bubble = this.scene.add
-      .circle(x, y, Phaser.Math.FloatBetween(1.5, 3), 0xd8f2ff, 0.9)
-      .setStrokeStyle(1, 0x2f7fbf)
+      .circle(x, y, Phaser.Math.FloatBetween(1.5, 3), this.inMud() ? 0x8a6a44 : 0xd8f2ff, 0.9) // im Schlamm braune Blasen
+      .setStrokeStyle(1, this.inMud() ? 0x4a3420 : 0x2f7fbf)
       .setDepth(y + 1);
     this.scene.tweens.add({
       targets: bubble,
@@ -209,7 +219,7 @@ export default class Fish extends Animal {
   splash() {
     const ring = this.scene.add
       .ellipse(this.x, this.y + 2, 16, 6)
-      .setStrokeStyle(1.5, 0xffffff, 0.9)
+      .setStrokeStyle(1.5, this.inMud() ? 0x5a4028 : 0xffffff, 0.9)
       .setDepth(this.y - 1);
     this.scene.tweens.add({
       targets: ring,

@@ -35,6 +35,10 @@ const SHEETS = {
   ray: [112, 80, 4, 0],
   wolf: [80, 80, 4, 0],
   gnu: [88, 96, 4, 0],
+  hippo: [96, 88, 4, 0],
+  hyena: [80, 80, 4, 0],
+  warthog: [80, 88, 4, 0],
+  vulture: [88, 108, 4, 0],
   butterfly: [64, 64, 3, 0, 'butterfly', 12], // Schmetterlinge: der orange steht für alle (Raster: 3 Bilder je Zeile, 12 Zeilen)
 };
 

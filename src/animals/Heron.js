@@ -150,14 +150,15 @@ export default class Heron extends Animal {
     const penFlying = this.state === 'penned' && this.penFlight;
     if (!penFlying && (this.state !== 'wild' || this.phase === 'landed')) {
       // stehend (auch beim Folgen und im Gehege)
-      const key = this.baby && this.kind.babyTexture ? this.kind.babyTexture : this.kind.texture;
+      const key = this.baby && this.kind.babyTexture ? this.kind.babyTexture : this.baseTexture(); // mit Skin: Schuhschnabel
       if (this.sprite.texture.key !== key) this.sprite.setTexture(key).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       this.shadow.setScale(1);
       return;
     }
     // fliegend: hoch über allem, mit Flügelschlag-Wippen; der Schatten bleibt am Boden
-    if (this.sprite.texture.key !== this.kind.flyTexture) this.sprite.setTexture(this.kind.flyTexture).setOrigin(0.5, FLY_ORIGIN_Y);
+    const fly = this.skin ? `${this.skin}_fly` : this.kind.flyTexture;
+    if (this.sprite.texture.key !== fly) this.sprite.setTexture(fly).setOrigin(0.5, FLY_ORIGIN_Y);
     const f = this.kind.frames;
     this.sprite.setFrame(
       this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft,

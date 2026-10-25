@@ -16,6 +16,9 @@ const MACAQUE_SCALE = 0.27;
 const COW_SCALE = 0.36;
 // Maßstab des Wolfs (laufend, heulend und fressend gleich groß)
 const WOLF_SCALE = 0.213;
+// Maßstab des Nilpferds (an Land und schwimmend gleich groß) und der Hyäne (laufend und fressend)
+const HIPPO_SCALE = 0.3;
+const HYENA_SCALE = 0.25;
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
@@ -201,6 +204,27 @@ const CHARACTERS = [
   // weißer Pfau (seltene Variante): Rad der Vorderansichten mit dem blauen Pfau als Schablone weggeschnitten (tools/peacock2-cut.cjs)
   { src: 'Sprites/Pfau2 Rad.png', out: 'peacock2_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
   { src: 'Sprites/Pfau2.png', out: 'peacock2.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
+  // Savanne, Wetterphasen: freigestellt mit npm run cutout und tools/savanna-cut.cjs
+  // Schuhschnabel (Reiher-Skin bei Starkregen): stehend und fliegend (ohne Beine) wie der Reiher
+  { src: 'Sprites/Schuhschnabel.png', out: 'shoebill.png', frameW: 88, frameH: 108, feetY: 104, figureH: 100, stripShadow: true },
+  { src: 'Sprites/Schuschnabel fliegend.png', out: 'shoebill_fly.png', frameW: 96, frameH: 92, feetY: 88, figureH: 84, stripShadow: true, byComponents: true },
+  // Albino-Krokodil (seltener Skin bei Starkregen): wie das Krokodil
+  { src: 'Sprites/Krokodil2.png', out: 'croc_albino.png', frameW: 72, frameH: 92, feetY: 88, scale: 0.29 },
+  // Lungenfisch (Fisch-Skin): im Bild nach rechts, nach links, auftauchend, springend – im Sheet wie beim Fisch:
+  // auftauchend, rechts, links, springend
+  { src: 'Sprites/Lungenfisch.png', out: 'lungfish.png', frameW: 84, frameH: 64, feetY: 60, figureH: 56, order: [2, 0, 1, 3] },
+  // Nilpferd (Starkregen): unten-rechts, unten-links, oben-rechts, oben-links; im Wasser nur die obere Kopfhälfte (gleicher Maßstab)
+  { src: 'Sprites/Nilpferd.png', out: 'hippo.png', frameW: 96, frameH: 88, feetY: 84, scale: HIPPO_SCALE }, // ohne stripShadow: das Nilpferd selbst ist grau (Schatten: savanna-cut)
+  { src: 'Sprites/Nilpferd Wasser.png', out: 'hippo_water.png', frameW: 64, frameH: 44, feetY: 40, scale: HIPPO_SCALE },
+  // Hyäne (Trockenzeit): laufend und mit dem Knochen fressend, gleich groß
+  { src: 'Sprites/Hyäne.png', out: 'hyena.png', frameW: 80, frameH: 80, feetY: 76, scale: HYENA_SCALE, stripShadow: true },
+  { src: 'Sprites/Hyäne frisst.png', out: 'hyena_eat.png', frameW: 80, frameH: 80, feetY: 76, scale: HYENA_SCALE, stripShadow: true },
+  // Warzenschwein (Trockenzeit)
+  { src: 'Sprites/Warzenschwein.png', out: 'warthog.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72, stripShadow: true },
+  // Geier (Trockenzeit): beide stehenden Vorderansichten schauen nach rechts, beide Rückansichten nach links –
+  // unten-links und oben-rechts sind gespiegelt. Fliegend: die Rückansichten schauen beide nach links
+  { src: 'Sprites/Geier.png', out: 'vulture.png', frameW: 88, frameH: 108, feetY: 104, scale: 0.24, stripShadow: true, copyMirror: { 1: 0, 2: 3 } },
+  { src: 'Sprites/Geier fliegend.png', out: 'vulture_fly.png', frameW: 96, frameH: 92, feetY: 88, figureH: 80, stripShadow: true, byComponents: true, copyMirror: { 2: 3 } },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)
@@ -305,8 +329,9 @@ function gridToRow(img, cols, rows) {
 // grid: [cols, rows], falls die vier Ansichten im Raster statt nebeneinander liegen;
 // mirror: Nummern der Figuren, die falsch herum gemalt sind und gespiegelt werden;
 // scale: fester Maßstab statt figureH (z. B. gleich groß wie das Laufbild); copyMirror: { Ziel: Quelle } – Bild Ziel
-// wird durch das gespiegelte Bild Quelle ersetzt (falls eine Ansicht fehlt)
-function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, stripShadow = false, byComponents = false, grid = null, mirror = [], copyMirror = {} }) {
+// wird durch das gespiegelte Bild Quelle ersetzt (falls eine Ansicht fehlt); order: [Figur für Bild 0, 1, 2, 3], falls
+// die Ansichten im Original anders angeordnet sind (z. B. der Lungenfisch: auftauchend, rechts, links, springend)
+function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, stripShadow = false, byComponents = false, grid = null, mirror = [], copyMirror = {}, order = null }) {
   let img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (grid) img = gridToRow(img, ...grid);
   const { width: W, height: H, data } = img;
@@ -359,6 +384,13 @@ function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, 
         for (let c = 0; c < 4; c++) sheet.data[b + c] = sheet.data[a + c];
       }
     }
+  }
+
+  if (order) {
+    const before = Buffer.from(sheet.data);
+    order.forEach((from, to) => {
+      for (let y = 0; y < frameH; y++) before.copy(sheet.data, (y * sheet.width + to * frameW) * 4, (y * sheet.width + from * frameW) * 4, (y * sheet.width + (from + 1) * frameW) * 4);
+    });
   }
 
   writeSheet(out, sheet);

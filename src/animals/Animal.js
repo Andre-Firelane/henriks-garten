@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate, enclosureAt, accepts, bridgeLift } from '../world/map.js';
+import { inPen, isGate, enclosureAt, accepts, bridgeLift, LEVEL, LEVEL_ID } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
@@ -273,6 +273,72 @@ export const SPECIES = {
     footW: 7,
     shadowW: 26,
     catchWith: ['touch', 'net', 'lasso'],
+  },
+  // Savanne, Wetterphasen (siehe src/world/season.js)
+  // Nilpferd (Starkregen): schwimmt im Wasserloch, grast ab und zu am Ufer; nur an Land fangbar (siehe Hippo.js)
+  hippo: {
+    texture: 'hippo',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 14,
+    restChance: 0.55,
+    restTime: [2, 5],
+    walkTime: [1, 2.5],
+    stepRate: 6,
+    hop: 1,
+    footW: 14,
+    shadowW: 46,
+    fleeDist: 75, // kommt man näher, trottet es zurück ins Wasser ...
+    fleeSpeed: 40, // ... langsamer als Henrik
+    catchWith: ['lasso'],
+  },
+  // Geier (Trockenzeit): kreist über der Savanne und landet oben auf einer kahlen Akazie (siehe Vulture.js)
+  vulture: {
+    texture: 'vulture',
+    flyTexture: 'vulture_fly',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 104 / 108,
+    speed: 20,
+    restChance: 0.6,
+    restTime: [2, 5],
+    walkTime: [1, 2],
+    stepRate: 6,
+    hop: 1,
+    footW: 7,
+    shadowW: 26,
+    catchWith: ['net'],
+  },
+  // Hyäne (Trockenzeit): versteckt, kichert; mit Knochen angelockt frisst sie, dann mit dem Lasso (siehe Hyena.js)
+  hyena: {
+    texture: 'hyena',
+    eatTexture: 'hyena_eat',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 30,
+    restChance: 0.4,
+    restTime: [1.5, 3],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 30,
+    catchWith: ['lasso'],
+  },
+  // Warzenschwein (Trockenzeit): flitzt ins Erdloch, sobald man näher kommt; man lauert davor (siehe Warthog.js)
+  warthog: {
+    texture: 'warthog',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 18,
+    restChance: 0.5,
+    restTime: [1.5, 3],
+    walkTime: [0.8, 1.8],
+    stepRate: 10,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 30,
+    fleeSpeed: 95, // flitzt ins Loch
+    catchWith: ['lasso'],
   },
   // Japanmakak (Asien): badet in der heißen Quelle, rennt selten wild herum (dann mit dem Lasso), siehe Macaque.js
   macaque: {
@@ -548,11 +614,19 @@ const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort,
 // Zustände: 'wild' läuft frei herum, 'following' folgt dem Spieler, 'penned' ist im Gehege, 'trapped' sitzt in der Falle
 // Seltene Skins: anderes Aussehen derselben Tierart. wild: Anteil draußen, baby: Anteil bei den Tierbabys.
 // Im Gehege locken sie mehr Besucher an (siehe SKIN_APPEAL in world/visitors.js).
+// Eine Art kann auch mehrere Skins haben (Liste); level/seasons: gilt nur dort bzw. in diesen Wetterphasen der Savanne
+// (wild dann auch je Phase: { rain: 0.6, dry: 1 }); common: so häufig, dass es keine Meldung „seltene …“ gibt.
 export const SKINS = {
   cat: { id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
   deer: { id: 'stag', name: tr('Hirsch', 'stag'), male: true, wild: 0.1, baby: 0 }, // ein Rehkitz ist nie ein Hirsch
   antelope: { id: 'antelope2', name: tr('Oryx-Antilope', 'oryx antelope'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
-  fish: { id: 'fish2', name: tr('Wels', 'catfish'), male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
+  fish: [
+    // Lungenfisch: in der Savanne bei Starkregen meistens, in der Trockenzeit immer (steckt dann im Schlamm)
+    { id: 'lungfish', name: tr('Lungenfisch', 'lungfish'), male: true, level: 'savanna', seasons: ['rain', 'dry'], wild: { rain: 0.7, dry: 1 }, baby: 0, common: true },
+    { id: 'fish2', name: tr('Wels', 'catfish'), male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
+  ],
+  heron: { id: 'shoebill', name: tr('Schuhschnabel', 'shoebill'), male: true, level: 'savanna', seasons: ['rain'], wild: 1, baby: 0, common: true }, // in der Savanne bei Starkregen immer ein Schuhschnabel
+  crocodile: { id: 'croc_albino', name: tr('Albino-Krokodil', 'albino crocodile'), male: false, level: 'savanna', seasons: ['rain'], wild: 0.12, baby: 0 },
   tiger: { id: 'tiger2', name: tr('weißer Tiger', 'white tiger'), male: true, wild: 0.1, baby: 0.03 },
   peacock: { id: 'peacock2', name: tr('weißer Pfau', 'white peacock'), male: true, wild: 0.1, baby: 0.03 },
   orangutan: { id: 'orangutan2', name: tr('Orang-Utan mit Backenwülsten', 'orangutan with cheek pads'), male: true, wild: 0.1, baby: 0.03 }, // Flanschen-Männchen
@@ -563,6 +637,16 @@ export const SKINS = {
   zebra: { id: 'zebra2', name: tr('Schoko-Zebra', 'chocolate zebra'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
+
+// Skins dieser Art, die hier und jetzt vorkommen können (Gebiet und Wetterphase)
+function skinsHere(species) {
+  return [SKINS[species] ?? []].flat().filter((s) => (!s.level || s.level === LEVEL_ID) && (!s.seasons || s.seasons.includes(LEVEL.season)));
+}
+
+// Angaben zu einem Skin (Name, männlich ...), oder null
+export function skinInfo(species, id) {
+  return [SKINS[species] ?? []].flat().find((s) => s.id === id) ?? null;
+}
 
 export default class Animal {
   constructor(scene, x, y, species) {
@@ -593,7 +677,10 @@ export default class Animal {
       this.dirY = 0;
       this.wanderTime = Phaser.Math.FloatBetween(...restTime);
     } else {
-      const angle = Math.random() * Math.PI * 2;
+      // an der Leine (z. B. Zebras am letzten Wasserloch in der Trockenzeit): zu weit weg, dann zurück
+      const l = this.state === 'wild' && this.leash;
+      const away = l && Math.hypot(this.x - l.x, (this.y - l.y) * 2) > l.r;
+      const angle = away ? Math.atan2(l.y - this.y, l.x - this.x) + Phaser.Math.FloatBetween(-0.5, 0.5) : Math.random() * Math.PI * 2;
       this.dirX = Math.cos(angle);
       this.dirY = Math.sin(angle);
       this.wanderTime = Phaser.Math.FloatBetween(...walkTime);
@@ -680,14 +767,20 @@ export default class Animal {
 
   // seltene Variante (Skin wie der Hirsch, weißer Koi): bleibt beim Auszug ins Naturreservat bevorzugt im Gehege
   isRare() {
-    return !!this.skin;
+    return !!this.skin && !skinInfo(this.species, this.skin)?.common;
   }
 
   // seltener Skin würfeln: from 'wild' (draußen) oder 'baby' (Tierbaby-Event, viel seltener)
   rollSkin(from) {
-    const s = SKINS[this.species];
-    const chance = from === 'wild' ? rareChance(s?.wild ?? 0) : s?.[from] ?? 0; // Event "Seltene Tiere": 50 %
-    this.skin = s && Math.random() < chance ? s.id : null;
+    this.skin = null;
+    for (const s of skinsHere(this.species)) {
+      const wild = typeof s.wild === 'object' ? s.wild[LEVEL.season] ?? 0 : s.wild ?? 0;
+      const chance = from === 'wild' ? (s.common ? wild : rareChance(wild)) : s[from] ?? 0; // Event "Seltene Tiere": 50 %
+      if (Math.random() < chance) {
+        this.skin = s.id;
+        return;
+      }
+    }
   }
 
   updateFeed(dt) {

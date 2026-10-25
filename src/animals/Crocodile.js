@@ -14,8 +14,9 @@ const LAND_TIME = [8, 15]; // ... und so lange läuft es am Ufer herum
 const BACK_TIMEOUT = 8; // findet es nicht zurück zum Ufer, springt es trotzdem hinein
 
 export default class Crocodile extends Fish {
-  constructor(scene, allAnimals) {
-    super(scene, allAnimals, 'crocodile');
+  // species: für Tiere, die im Gehege genauso zwischen Teich und Ufer wechseln (Nilpferd)
+  constructor(scene, allAnimals, species = 'crocodile') {
+    super(scene, allAnimals, species);
   }
 
   // Uferplätze im eigenen Gehege: freie Kachel direkt neben dem Teich (land) und die Wasserkachel daneben (water)
@@ -100,13 +101,13 @@ export default class Crocodile extends Fish {
 
   // im Wasser: nur der Kopf schaut heraus
   useWaterLook() {
-    this.sprite.setTexture('croc_water', 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(0.5);
+    this.sprite.setTexture(`${this.skin ?? 'croc'}_water`, 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(0.5); // mit Skin: Albino-Krokodil
     this.shadow.setVisible(false);
   }
 
   // an Land (gefangen): läuft auf allen vieren hinterher
   useBagLook() {
-    this.sprite.setTexture(this.kind.texture, this.kind.frames.downRight).setOrigin(0.5, this.kind.originY).setScale(0.5);
+    this.sprite.setTexture(this.baseTexture(), this.kind.frames.downRight).setOrigin(0.5, this.kind.originY).setScale(0.5);
     this.sprite.setVisible(true);
     this.shadow.setVisible(true);
   }
@@ -122,6 +123,7 @@ export default class Crocodile extends Fish {
       Animal.prototype.render.call(this, moving);
       return;
     }
+    if (this.sprite.texture.key !== `${this.skin ?? 'croc'}_water`) this.useWaterLook(); // Skin erst nach dem Erzeugen gewürfelt
     const f = this.kind.frames;
     this.sprite.setFrame(
       this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft,
