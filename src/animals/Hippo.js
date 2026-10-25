@@ -9,6 +9,7 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 import { KOI_WATER, SHORE_TILES, charAt } from '../world/map.js';
 
 const WATER_ORIGIN_Y = 40 / 44; // Wasserlinie im Bild "hippo_water"
+const HIPPO_SCALE = 0.65; // etwas größer als die anderen Tiere (0.5), an Land und im Wasser
 const WATER_TIME = [10, 18]; // so lange treibt es im Wasser ...
 const LAND_TIME = [14, 22]; // ... und so lange grast es am Ufer
 const DRIFT_SPEED = 6; // langsames Treiben
@@ -155,9 +156,15 @@ export default class Hippo extends Crocodile {
     }
   }
 
+  // an Land (auch gefangen und im Gehege am Ufer): groß wie ein Nilpferd
+  useBagLook() {
+    super.useBagLook();
+    this.sprite.setScale(this.baby ? 0.3 : HIPPO_SCALE);
+  }
+
   // im Wasser: nur die obere Kopfhälfte
   useWaterLook() {
-    this.sprite.setTexture('hippo_water', 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(0.5);
+    this.sprite.setTexture('hippo_water', 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(HIPPO_SCALE);
     this.shadow.setVisible(false);
   }
 
@@ -171,7 +178,7 @@ export default class Hippo extends Crocodile {
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     const bob = Math.sin(this.scene.time.now / 400 + this.x) * 1;
-    this.sprite.setVisible(true).setScale(0.5).setAngle(0);
+    this.sprite.setVisible(true).setScale(HIPPO_SCALE).setAngle(0);
     this.sprite.setPosition(this.x, this.y + 4 + bob);
     this.sprite.setDepth(this.y);
   }

@@ -68,7 +68,6 @@ function cracks(p, seed, color, alpha) {
 
 const JOBS = {
   // (die Tiere selbst sind schon echte Bilder, siehe tools/prepare-characters.js und tools/savanna-cut.cjs)
-  croc_albino_water: () => tint(read('croc_water'), '#f2e6dc', { mix: 0.1, light: 1.2 }), // Albino-Krokodil im Wasser: 4 Bilder 64 × 44
   // Lungenfisch im Schlamm (Trockenzeit): wie lungfish, unten im Schlamm steckend (4 Bilder 84 × 64)
   lungfish_mud: () => {
     const p = read('lungfish');

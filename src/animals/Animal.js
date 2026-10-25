@@ -287,7 +287,7 @@ export const SPECIES = {
     stepRate: 6,
     hop: 1,
     footW: 14,
-    shadowW: 46,
+    shadowW: 58,
     fleeDist: 75, // kommt man näher, trottet es zurück ins Wasser ...
     fleeSpeed: 40, // ... langsamer als Henrik
     catchWith: ['lasso'],

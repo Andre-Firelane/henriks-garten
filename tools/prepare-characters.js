@@ -210,6 +210,7 @@ const CHARACTERS = [
   { src: 'Sprites/Schuschnabel fliegend.png', out: 'shoebill_fly.png', frameW: 96, frameH: 92, feetY: 88, figureH: 84, stripShadow: true, byComponents: true },
   // Albino-Krokodil (seltener Skin bei Starkregen): wie das Krokodil
   { src: 'Sprites/Krokodil2.png', out: 'croc_albino.png', frameW: 72, frameH: 92, feetY: 88, scale: 0.29 },
+  { src: 'Sprites/Krokodil2 Wasser.png', out: 'croc_albino_water.png', frameW: 64, frameH: 44, feetY: 40, figureH: 34, grid: [2, 2] }, // ... im Wasser (wie croc_water)
   // Lungenfisch (Fisch-Skin): im Bild nach rechts, nach links, auftauchend, springend – im Sheet wie beim Fisch:
   // auftauchend, rechts, links, springend
   { src: 'Sprites/Lungenfisch.png', out: 'lungfish.png', frameW: 84, frameH: 64, feetY: 60, figureH: 56, order: [2, 0, 1, 3] },
