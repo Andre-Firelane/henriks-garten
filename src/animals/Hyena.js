@@ -7,6 +7,7 @@ import Animal from './Animal.js';
 import { tr } from '../i18n.js';
 
 const RUN_SPEED = 70; // so schnell kommen sie angelaufen und laufen wieder weg
+const SCARED_SPEED = 115; // so schnell rennen sie davon, wenn eine aus dem Rudel gefangen wird (schneller als der Spieler)
 const EAT_TIME = [9, 12]; // so lange fressen sie an den Knochen
 const HEARD_TIME = 30000; // nach dem Kichern so lange (ms) in der Nähe: jetzt Knochen streuen
 const COME_DELAY = 2500; // so lange nach dem Streuen, bis sie auftauchen (ms)
@@ -66,8 +67,17 @@ export default class Hyena extends Animal {
       this.setEating(true);
       return false;
     }
-    const step = Math.min(d, RUN_SPEED * dt);
+    const step = Math.min(d, (this.scared ? SCARED_SPEED : RUN_SPEED) * dt);
     return this.move((dx / d) * step, (dy / d) * step);
+  }
+
+  // eine aus dem Rudel wurde gefangen: die anderen lassen die Knochen liegen und rennen davon (siehe catchAnimal)
+  scatter() {
+    if (this.state !== 'wild' || !this.mode) return;
+    this.setEating(false);
+    this.mode = 'leave';
+    this.scared = true;
+    this.spot = this.scene.heronExitPoint(this.x, this.y);
   }
 
   catch() {
@@ -141,6 +151,7 @@ export class HyenaPack {
       for (let i = 0; i < n; i++) {
         const h = this.scene.createAnimal('hyena', from.x + Phaser.Math.Between(-20, 20), from.y + Phaser.Math.Between(-10, 10));
         h.life = Infinity;
+        h.herd = this; // ein Rudel: fängt man eine, rennen die anderen weg
         h.rollSkin('wild');
         const a = (i / n) * Math.PI * 2 + Math.random() * 0.5;
         h.goEat({ x: b.x + Math.cos(a) * 18, y: b.y + Math.sin(a) * 9 }, b);

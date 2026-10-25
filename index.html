@@ -172,7 +172,12 @@
       }
       .travel-map .place > span { font-size: 0.9em; line-height: 1.15; } /* lange Namen wie "Bambuswald" passen hinein */
       .travel-map .place small { display: block; font-size: 0.85em; font-weight: normal; }
-      .travel-map .place small.season { font-size: 0.85em; line-height: 1.3; white-space: nowrap; margin-top: 1px; } /* Wetterphase der Savanne mit Countdown */
+      /* Wetterphase der Savanne mit Countdown: gut lesbar unter dem Schild */
+      .travel-map .place > .season-tag {
+        position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 4px; padding: 2px 8px; pointer-events: none;
+        font: bold 1.15em/1.3 "Trebuchet MS", Arial, sans-serif; color: #3a2414; white-space: nowrap;
+        background: rgba(255, 248, 230, 0.95); border: 2px solid #6b4224; border-radius: 10px; box-shadow: 0 2px 0 rgba(43, 29, 20, 0.35);
+      }
       /* alle Schilder gleich groß und quadratisch, das Tierbild mittig im Quadrat. Sie wachsen und schrumpfen mit der Karte
          (13px Schrift bei großer Karte), sonst überlappen sich auf dem Handy Tierpark, Wiese und Wald */
       .travel-map .place { width: 6.2em; height: 6.2em; justify-content: center; box-sizing: border-box; font-size: clamp(8px, 1.1cqw, 13px); }

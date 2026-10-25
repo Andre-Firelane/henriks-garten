@@ -8,7 +8,7 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 const SEE_DIST = 110; // so nah darf man beim ersten Mal kommen, dann flitzt es ins Loch
 const TOO_CLOSE = 55; // steht man näher am Loch, bleibt es drin (und flieht sofort, wenn es draußen ist)
 const IN_TIME = [8, 15]; // so lange bleibt es im Loch ...
-const OUT_TIME = [3, 5]; // ... und so kurz kommt es danach heraus
+const OUT_TIME = [3.5, 5.5]; // ... und so kurz kommt es danach heraus
 const GRAZE_R = 45; // so weit grast es vom Loch weg
 const HOLE_ORIGIN_Y = 26 / 40; // Mitte des Lochs im Bild "warthog_hole"
 const GRUNT_DIST = 500; // so weit hört man es grunzen, ...

@@ -22,6 +22,7 @@ import {
   groundAt,
   grassAt,
   outerWaterCorners,
+  cornerGroundAt,
   objectAt,
   charAt,
   fenceAxisAt,
@@ -449,7 +450,7 @@ export default class GardenScene extends Phaser.Scene {
         // Boden liegt immer ganz unten. Wasserecken, die ins Land ragen, werden abgerundet; darunter Gras.
         const corners = outerWaterCorners(tx, ty);
         if (corners) {
-          ground.push([x, y, grassAt(tx, ty)]);
+          ground.push([x, y, cornerGroundAt(tx, ty)]); // Gras, im Schlammloch Schlamm
           ground.push([x, y, roundedTexture(this, groundAt(tx, ty), corners)]);
         } else {
           ground.push([x, y, groundAt(tx, ty)]);

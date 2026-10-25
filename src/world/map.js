@@ -590,10 +590,20 @@ export function outerWaterCorners(tx, ty) {
   const c = charAt(tx, ty);
   if (!'~owh≈'.includes(c)) return 0;
   // unter der Brücke geht das Wasser weiter; Schlamm und das letzte Wasserloch darin gehen ineinander über (Trockenzeit)
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BE≈'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~');
+  // Wasser rundet auch zum Schlamm hin ab (darunter liegt dann Schlamm, siehe cornerGroundAt), Schlamm nicht zum Wasser hin
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BE'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
+}
+
+// Boden unter den abgerundeten Ecken einer Wasserkachel: Schlamm, wenn das Wasser im Schlammloch liegt (Trockenzeit),
+// sonst Gras
+export function cornerGroundAt(tx, ty) {
+  if (charAt(tx, ty) === '~') {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (charAt(tx + dx, ty + dy) === '≈') return groundAt(tx + dx, ty + dy);
+  }
+  return grassAt(tx, ty);
 }
 
 // Richtung eines Zaunstücks oder Tors an dieser Kachel ('x', 'y') oder null

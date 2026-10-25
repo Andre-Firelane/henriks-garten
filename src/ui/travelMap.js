@@ -25,7 +25,8 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   const markers = places
     .map(
       (p) => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%">
-        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}${p.status ? `<small class="season">${p.status}</small>` : ''}</span>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}</span>
+        ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
       </button>`,
     )

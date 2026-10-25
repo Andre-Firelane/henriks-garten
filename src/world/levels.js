@@ -616,7 +616,7 @@ export const LEVELS = {
       { id: 'savanna', name: tr('Savannengehege', 'Savanna Enclosure'), species: ['antelope', 'zebra', 'giraffe'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 45, ty: 2 }, quota: { antelope: [5, 8], zebra: [5, 8], giraffe: [3, 5] }, upgrade: tr('Mehr Steppe mit Heu-Unterstand', 'More grassland with a hay shelter'), basic: [[46, 2, ']'], [46, 3, ']'], [46, 4, ']'], [46, 5, '['], [47, 5, '['], [48, 5, '['], [49, 5, '['], [50, 5, '['], [51, 5, '['], [50, 3, '.']] },
       { id: 'gnus', name: tr('Gnu-Steppe', 'Wildebeest Plains'), species: ['gnu'], gate: 'tall', world: 'savanna', unlock: 'gnu', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 26, ty: 3 }, slots: [6, 9], upgrade: tr('Heuraufe', 'Hay rack'), basic: [[31, 2, '.']] },
       // Savanne, Wetterphasen (rechts am Weg der Savanne, entstehen jeweils mit dem ersten Tier, siehe unlocks)
-      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', unlock: 'hippo', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 7 }, slots: [3, 4], upgrade: tr('Schilf am Ufer', 'Reeds on the bank'), basic: [[61, 11, '.']] },
+      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', unlock: 'hippo', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 57, ty: 4 }, slots: [3, 4], upgrade: tr('Schilf am Ufer', 'Reeds on the bank'), basic: [[58, 5, '.'], [62, 9, '.']] },
       { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
       { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Felsenhöhle', 'Rock den'), basic: [[63, 19, '.']] },
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
@@ -653,7 +653,8 @@ export const LEVELS = {
     // freischaltbar: das Flamingo-Gehege entsteht, sobald man den ersten Flamingo fängt (Event „Flamingo-Flug“)
     unlocks: [
       // die ersten Tiere der Wetterphasen der Savanne: ihre Gehege entstehen rechts am Savannen-Weg
-      { id: 'hippo', tx: 58, ty: 6, rows: ['{{{{{{{', '}.....}', '}.ooo.}', '}.oooo}', '}.ooo.}', '}..%..}', '}.....}', '{{{G{{{', '..v#...'] },
+      // Nilpferdbecken: großer See mit Schilf am Ufer (Schilf erst nach dem Ausbau, siehe basic)
+      { id: 'hippo', tx: 56, ty: 3, rows: ['{{{{{{{{{', '}.......}', '}.%ooo..}', '}.ooooo.}', '}oooooo.}', '}.ooooo.}', '}.oooo%.}', '}..oo...}', '}.......}', '{{{{{G{{{', '....v#...'] },
       { id: 'vulture', tx: 68, ty: 6, rows: ['^^^^^^^', ';.....;', ';.Ǎ...;', ';.....;', ';...Ǎ.;', ';.....;', ';.....;', '^^^G^^^', '...#...'] }, // Ǎ: kahle Akazien zum Sitzen
       { id: 'hyena', tx: 58, ty: 16, rows: ['v..#..y', '[[[G[[[', '].....]', ']....v]', ']..R..]', '].....]', '].....]', '[[[[[[['] },
       { id: 'warthog', tx: 68, ty: 16, rows: ['R..#..y', '[[[G[[[', '].....]', '].u...]', '].....]', ']...u.]', '].....]', '[[[[[[['] },
