@@ -105,7 +105,7 @@ import ScissorsTool from '../tools/ScissorsTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { EVENTS, babyFamily, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
@@ -2917,7 +2917,7 @@ export default class GardenScene extends Phaser.Scene {
         const list = st.penned.filter((s) => tankOf(tanks, s) === t);
         const score = list.reduce((s, a) => s + appeal(a), 0);
         return sum + (list.length >= t.cap ? score * FULL_BONUS : score);
-      }, 0)) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
+      }, 0), HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
     }
     st.hearts += st.rate * dt;
     if (st.hearts < 1) return;

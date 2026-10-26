@@ -6,8 +6,8 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
-import { LEVEL } from '../world/map.js';
-import { BABY_BONUS, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
+import { LEVEL, LEVEL_ID } from '../world/map.js';
+import { BABY_BONUS, HOUSE_VISITORS, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
 const LOOKS = 8; // Besucher-Bilder visitor1 ... visitor8
 const FRAMES = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
@@ -268,7 +268,7 @@ export class VisitorCrowd {
 
   updateScore() {
     this.score = parkScore(this.scene.animals);
-    this.max = maxVisitors(this.score);
+    this.max = maxVisitors(this.score, HOUSE_VISITORS[LEVEL_ID]); // in Aquarium und Reptilienhaus eigene Obergrenze
     this.scoreTimer = SCORE_EVERY;
     // sind neue Tiere eingezogen, kommt der nächste Besucher entsprechend früher
     this.arrivalTimer = Math.min(this.arrivalTimer ?? Infinity, arrivalInterval(this.score));

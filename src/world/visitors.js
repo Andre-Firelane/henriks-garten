@@ -18,7 +18,7 @@ export const APPEAL = {
   fox: 3,
   antelope: 3,
   zebra: 3,
-  meerkat: 3.5,
+  meerkat: 4.5,
   giraffe: 4,
   flamingo: 4,
   panda: 5,
@@ -29,11 +29,11 @@ export const APPEAL = {
   macaque: 4,
   howler: 5, // laut und lustig
   gibbon: 5,
-  snake: 5,
+  snake: 3,
   macaw: 6, // bunt und laut
-  tarantula: 4,
-  lion: 5,
-  crocodile: 5,
+  tarantula: 3,
+  lion: 6,
+  crocodile: 6,
   reeffish: 0.5, // leicht zu fangen, und im Aquarium schwimmen bis zu 30 davon (sonst bringen sie mehr Besucher als seltene Tiere)
   seahorse: 3,
   octopus: 4.5,
@@ -41,7 +41,7 @@ export const APPEAL = {
   jellyfish: 3,
   ray: 5,
   wolf: 5,
-  gnu: 2.5,
+  gnu: 3.5,
   hippo: 5,
   redpanda: 5,
   hyena: 4,
@@ -49,7 +49,9 @@ export const APPEAL = {
   vulture: 3.5,
 };
 
-const MAX_VISITORS = 12;
+const MAX_VISITORS = 16; // im Tierpark (bei so vielen Gehegen brächten neue Tiere sonst kaum noch etwas)
+// Häuser mit eigener Halle haben weniger Platz für Besucher: das Reptilienhaus mit zwei kleinen Terrarien nur wenige
+export const HOUSE_VISITORS = { aquarium: 12, reptiles: 4 };
 // Tierbaby-Event: Babys sind besonders süß. Es kommen nicht mehr Besucher als sonst, aber sie gehen lieber zu den
 // Gehegen mit Babys (BABY_APPEAL zählt bei der Wahl mit), und wer dort stehen bleibt, gibt zusätzlich im Schnitt
 // 2,5 Herzen (abwechselnd 2 oder 3). Mit einigen Tierpaaren bringt das Event so mehr ein, als es kostet (50 Herzen).
@@ -115,9 +117,9 @@ export function releaseHearts(species, skin = null) {
 }
 
 // Wie viele Besucher gleichzeitig da sein dürfen: 2 Schafe locken einen an, ein voller Park ein Dutzend
-export function maxVisitors(score) {
+export function maxVisitors(score, cap = MAX_VISITORS) {
   if (score <= 0) return 0;
-  return Math.max(1, Math.min(MAX_VISITORS, Math.round(score / 4)));
+  return Math.max(1, Math.min(cap, Math.round(score / 4)));
 }
 
 // Sekunden bis zum nächsten neuen Besucher: bei 2 Schafen etwa eine Minute, im vollen Park wenige Sekunden
