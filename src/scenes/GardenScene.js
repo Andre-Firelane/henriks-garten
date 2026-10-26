@@ -95,7 +95,7 @@ import Howler, { LURE_DIST } from '../animals/Howler.js';
 import Critter, { randomCritter } from '../animals/Critter.js';
 import Macaw from '../animals/Macaw.js';
 import BananaTool from '../tools/BananaTool.js';
-import FireflyEvening from '../world/Fireflies.js';
+import FireflyEvening, { glowTexture } from '../world/Fireflies.js';
 import Weather from '../world/Weather.js';
 import { SEASON_INFO, SEASON_LEVELS, seasonState, skipSeason } from '../world/season.js';
 import Thicket from '../world/Thicket.js';
@@ -132,7 +132,7 @@ const VIEW_H = 360;
 // Reihenfolge der Tierarten in der Anzeige
 // Tierarten, die es nur in einer Wetterphase der Savanne gibt (für die Übersicht: "Savanne (☀️ Trockenzeit)")
 const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: 'dry' };
-const ALL_SPECIES = ['macaw', 'snake', 'tarantula', 'howler', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['macaw', 'snake', 'tarantula', 'howler', 'gibbon', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -188,7 +188,8 @@ const CATCH_TIPS = {
   macaw: tr('Aras sitzen paarweise in den Bäumen am Fluss. Fliegen sie ans andere Ufer, gehen sie über dem Wasser in den Tiefflug – dann erwischst du sie mit dem Kescher, am besten vom Kanu aus!', 'Macaws sit in pairs in the trees by the river. When they fly to the other bank, they swoop low over the water – then you can catch them with the net, best from the canoe!'),
   snake: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
   tarantula: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
-  howler: tr('Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
+  gibbon: tr('Nur bei Nebel im Dschungel. Wie der Brüllaffe sitzt er unsichtbar oben im Urwaldbaum – merk dir, wohin er springt, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in fog in the jungle. Like the howler monkey it sits unseen high up in a jungle tree – remember where it jumps, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
+  howler: tr('Nur bei normalem Wetter. Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in normal weather. It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
   macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
 };
 
@@ -250,9 +251,10 @@ const ANIMAL_INFO = {
   lion: tr(['Löwe', 'Wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren.'], ['Lion', 'Like a giant cat paw: a big pad, four toes, no claw marks.']),
   crocodile: tr(['Krokodil', 'Fünf gespreizte Zehen mit Krallen – und dazwischen die Schleifspur vom Schwanz.'], ['Crocodile', 'Five spread-out toes with claws – and the drag mark of the tail in between.']),
   giraffe: tr(['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'], ['Giraffe', 'Huge hoofs, almost as big as a plate, with two round halves.']),
-  macaw: tr(['Ara', 'Aras bleiben ihr ganzes Leben mit ihrem Partner zusammen – man sieht sie fast immer zu zweit.'], ['Macaw', 'Macaws stay with their partner for life – you almost always see them in pairs.']),
+  macaw: tr(['Ara', 'Mit seinem kräftigen Schnabel knackt er sogar harte Nüsse – und er kann bis zu 60 Jahre alt werden.'], ['Macaw', 'Its powerful beak can crack even hard nuts – and it can live up to 60 years.']),
   snake: tr(['Schlange', 'Sie riecht mit der Zunge: Beim Züngeln fängt sie Duftteilchen aus der Luft ein.'], ['Snake', 'It smells with its tongue: flicking it catches scent particles from the air.']),
   tarantula: tr(['Vogelspinne', 'Sie hat acht Beine und acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Tarantula', 'It has eight legs and eight eyes – but still doesn’t see very well.']),
+  gibbon: tr(['Gibbon', 'Mit seinen langen Armen schwingt er sich von Ast zu Ast – bis zu 15 Meter weit mit einem Schwung.'], ['Gibbon', 'With its long arms it swings from branch to branch – up to 15 metres in a single swing.']),
   howler: tr(['Brüllaffe', 'Sein Brüllen hört man kilometerweit – er ist eines der lautesten Tiere der Welt.'], ['Howler monkey', 'Its howl can be heard for miles – it is one of the loudest animals in the world.']),
   macaque: tr(['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'], ['Japanese macaque', 'Small hands and feet with five long fingers – almost like ours.']),
   panda: tr(['Panda', 'Breite Tatzen mit fünf Zehen und einem sechsten „Daumen“ zum Bambushalten.'], ['Panda', 'Wide paws with five toes and a sixth “thumb” for holding bamboo.']),
@@ -329,6 +331,7 @@ const MACAW_VOLUME = 0.45; // Ruf der Aras beim Losfliegen, ganz nah ...
 const MACAW_HEAR = 320; // ... und so weit hört man ihn
 const RUSTLE_VOLUME = 0.5; // Rascheln einer Baumkrone (Brüllaffen), ganz nah ...
 const RUSTLE_HEAR = 300; // ... und so weit (Welt-Pixel) hört man es noch
+const SPRAY_EVERY = 70; // so oft (ms) steigt am Fuß des Wasserfalls ein Wölkchen Sprühnebel auf
 const WATERFALL_VOLUME = 0.6; // Rauschen des Wasserfalls (Dschungel), ganz nah ...
 const WATERFALL_HEAR = 520; // ... und so weit (Welt-Pixel) hört man es noch
 
@@ -360,7 +363,7 @@ const REPTILES = ['snake', 'tarantula']; // ziehen ins Reptilienhaus (in dessen 
 // Häuser mit eigener Halle (eigenes Level): welche Tierarten dort in die Becken bzw. Terrarien ziehen
 const HOUSES = { aquarium: AQUA, reptiles: REPTILES };
 const houseOf = (species) => Object.keys(HOUSES).find((h) => HOUSES[h].includes(species)) ?? null;
-const STARTLE_CHANCE = 0.15; // so wahrscheinlich schreckt beim Wegschlagen eines Dickichts eine Schlange oder Vogelspinne auf
+const STARTLE_CHANCE = 0.1; // so wahrscheinlich schreckt beim Wegschlagen eines Dickichts eine Schlange oder Vogelspinne auf
 const MAX_RAYS = 2; // so viele Rochen gleiten höchstens gleichzeitig durchs Riff
 // Quallen-Schwarm (Event): so viele Quallen treiben höchstens gleichzeitig im Riff, so oft kommt eine neue (Sekunden),
 // beim Ankommen sind schon so viele da; so nah (in Kachel-Proportionen) darf man ihnen nicht kommen, sonst brennt es
@@ -390,7 +393,7 @@ const TOOLS = {
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler'],
+    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler', 'gibbon'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -548,6 +551,7 @@ export default class GardenScene extends Phaser.Scene {
           if (obj.waterfall) {
             this.waterfalls.push({ x, y, img });
             this.time.addEvent({ delay: 140, loop: true, callback: () => img.setFrame((Number(img.frame.name) + 1) % 3) }); // das Wasser fällt
+            this.time.addEvent({ delay: SPRAY_EVERY, loop: true, callback: () => this.waterfallSpray(x, y) }); // unten steigt Gischt auf
           }
           if (obj.noCull) img.noCull = true; // große Bilder (Aquarium-Fassade) nicht ausblenden, nur weil ihr Ankerpunkt außerhalb ist
           if (obj.chest && obj.styled && !buildingAt(tx, ty)) {
@@ -703,6 +707,7 @@ export default class GardenScene extends Phaser.Scene {
     this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
     this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
+    this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
     this.hyenaPack = LEVEL.hyenas ? new HyenaPack(this, LEVEL.hyenas) : null; // Trockenzeit: das versteckte Hyänenrudel
     this.weather = SEASON_LEVELS.includes(LEVEL_ID) ? new Weather(this, LEVEL.season) : null; // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel
@@ -1307,8 +1312,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Warthog(this, x, y)
         : species === 'redpanda'
           ? new RedPanda(this, x, y)
-        : species === 'howler'
-          ? new Howler(this, x, y)
+        : species === 'howler' || species === 'gibbon'
+          ? new Howler(this, x, y, species)
         : species === 'snake' || species === 'tarantula'
           ? new Critter(this, x, y, species)
         : species === 'macaw'
@@ -1397,8 +1402,8 @@ export default class GardenScene extends Phaser.Scene {
       return group;
     }
     // Brüllaffen: ein kleiner Trupp unsichtbar oben in nahe beieinander stehenden Urwaldbäumen
-    if (species === 'howler') return this.finishSpawn(Howler.spawnTroop(this), false);
-    // Aras: ein Paar in einem Uferbaum
+    if (species === 'howler' || species === 'gibbon') return this.finishSpawn(Howler.spawnTroop(this, species), false); // Gibbons genauso (bei Nebel)
+    // Aras: ein Paar in einem Uferbaum (fängt man einen, fliegt der andere davon)
     if (species === 'macaw') return this.finishSpawn(Macaw.spawnPair(this), false);
     // Orang-Utans sitzen oben in den Urwaldbäumen (höchstens MAX_ORANGUTANS gleichzeitig)
     if (species === 'orangutan') {
@@ -2029,7 +2034,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna) || (s === 'redpanda' && l === LEVELS.asia) || ((s === 'snake' || s === 'tarantula') && l === LEVELS.jungle) || (l === LEVELS.savanna && !l.spawn.weights[s] && SEASON_SPECIES[s]))
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna) || (s === 'redpanda' && l === LEVELS.asia) || ((s === 'snake' || s === 'tarantula' || s === 'gibbon') && l === LEVELS.jungle) || (l === LEVELS.savanna && !l.spawn.weights[s] && SEASON_SPECIES[s]))
         .map((l) => (l === LEVELS.savanna && SEASON_SPECIES[s] && !l.spawn.weights[s] ? `${l.name} (${SEASON_INFO[SEASON_SPECIES[s]].icon} ${SEASON_INFO[SEASON_SPECIES[s]].name})` : l.name));
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -2998,6 +3003,27 @@ export default class GardenScene extends Phaser.Scene {
     this.updateToolbar();
   }
 
+  // Wasserfall: am Fuß steigt feiner Sprühnebel auf (weiche, helle Wölkchen, die nach oben treiben und verblassen)
+  waterfallSpray(x, y) {
+    if (!this.cameras.main.worldView.contains(x, y - 60)) return; // nur, wenn man es sieht
+    const puff = this.add
+      .image(x + Phaser.Math.Between(-40, 40), y + Phaser.Math.Between(-6, 16), glowTexture(this))
+      .setTint(0xdcecf4)
+      .setAlpha(0)
+      .setScale(Phaser.Math.FloatBetween(0.5, 0.9))
+      .setDepth(y + 20);
+    this.tweens.add({ targets: puff, alpha: Phaser.Math.FloatBetween(0.45, 0.7), duration: 350 });
+    this.tweens.add({
+      targets: puff,
+      y: puff.y - Phaser.Math.Between(60, 120),
+      x: puff.x + Phaser.Math.Between(-20, 20),
+      scale: puff.scale * 2,
+      duration: Phaser.Math.Between(1800, 2800),
+      ease: 'Sine.easeOut',
+    });
+    this.tweens.add({ targets: puff, alpha: 0, delay: 700, duration: 1800, onComplete: () => puff.destroy() });
+  }
+
   // Wasserfall (Dschungel): rauscht lauter, je näher man ihm kommt
   updateWaterfallSound() {
     if (!this.waterfalls.length) return;
@@ -3131,11 +3157,11 @@ export default class GardenScene extends Phaser.Scene {
     const x = p.x + p.faceX * 16;
     const y = p.y + p.faceY * 8;
     // nur direkt unter einem Baum, in dem gerade ein Brüllaffe sitzt (sonst legt man sie im Dickicht aus Versehen ab)
-    const monkey = this.animals.some((a) => a.species === 'howler' && a.state === 'wild' && a.phase === 'tree' && Math.hypot(x - a.x, (y - a.y) * 2) < LURE_DIST);
+    const monkey = this.animals.some((a) => a instanceof Howler && a.state === 'wild' && a.phase === 'tree' && Math.hypot(x - a.x, (y - a.y) * 2) < LURE_DIST);
     if (!monkey) {
       if (this.time.now - (this.bananaTipAt ?? -1e9) > 4000) {
         this.bananaTipAt = this.time.now;
-        this.showToast(`${animalIcon('howler', 3.2)} ${tr('Die Banane legst du direkt unter einen Baum, in dem ein Brüllaffe sitzt – hör und schau, wo sie hinspringen!', 'Put the banana right under a tree with a howler monkey in it – listen and watch where they jump!')}`);
+        this.showToast(`${animalIcon('howler', 3.2)} ${tr('Die Banane legst du direkt unter einen Baum, in dem ein Affe sitzt – hör und schau, wo sie hinspringen!', 'Put the banana right under a tree with a monkey in it – listen and watch where they jump!')}`);
       }
       return;
     }
@@ -3668,7 +3694,7 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)

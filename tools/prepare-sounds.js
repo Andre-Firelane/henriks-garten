@@ -24,6 +24,7 @@ const SOUNDS = [
   // Dschungel: das erste Brüllen des Brüllaffen (beim Springen und Fangen) und Rascheln in der Baumkrone
   ['Sounds/Brüllaffe.mp3', 'public/assets/sounds/animal_howler.wav', 2.6, 6.0, 0.8],
   ['Sounds/Baumrascheln.mp3', 'public/assets/sounds/tree_rustle.wav', 0.45, 2.6, 0.8],
+  ['Sounds/Gibbon.mp3', 'public/assets/sounds/animal_gibbon.wav', 0.05, 4.0, 0.8], // Rufe des Gibbons (beim Springen und Fangen)
   ['Sounds/Ara.mp3', 'public/assets/sounds/animal_macaw.wav', 1.08, 0.85, 0.8], // erster Ruf des Aras (beim Losfliegen und Fangen)
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
@@ -177,8 +178,9 @@ const LOOPS = [
   // Große Wanderung (Savanne): Hufgetrappel der Gnu-Herde; am Anfang eine Sekunde Stille
   { src: 'Sounds/Gnu Event.mp3', dest: 'public/assets/sounds/ambient_migration.mp3', from: 1.3, to: 35.9, fade: 1.5 },
   { src: 'Sounds/Regen.mp3', dest: 'public/assets/sounds/ambient_savanna_rain.mp3', from: 0.5, to: 29.8, fade: 1.5 }, // Savanne bei Starkregen
-  // Dschungel: nur der Anfang der Aufnahme; Wasserfall (oben links im Dschungel, wird lauter, je näher man kommt)
-  { src: 'Sounds/Dschungel Ambient.mp3', dest: 'public/assets/sounds/ambient_jungle.mp3', from: 0.2, to: 32.2, fade: 2 },
+  // Dschungel: ein ruhiges Stück aus der Aufnahme ohne Brüllaffen (die brüllen bei 16–23 s, 31 s und 80–105 s; die
+  // Brüllaffen im Spiel haben ihren eigenen Ruf); Wasserfall (oben links im Dschungel, wird lauter, je näher man kommt)
+  { src: 'Sounds/Dschungel Ambient.mp3', dest: 'public/assets/sounds/ambient_jungle.mp3', from: 33.6, to: 60.4, fade: 2 },
   { src: 'Sounds/Wasserfall ambient.mp3', dest: 'public/assets/sounds/ambient_waterfall.mp3', from: 0.2, to: 45.8, fade: 2 },
   // Paddeln im Kanu (Dschungel): läuft, solange Henrik im Kanu paddelt
   { src: 'Sounds/Kanu.mp3', dest: 'public/assets/sounds/canoe_paddle.mp3', from: 0.2, to: 15.0, fade: 1 },

@@ -1,7 +1,7 @@
 // Große Wanderung (Event in der Savanne): durch die untere linke Ecke zieht ein riesiger Strom aus Gnus – vor allem eine
 // Staubwolke, darin dunkle Gnu-Schatten, alles in Bewegung. Durch den Strom kommt niemand hindurch, und je näher man ihm
-// ist, desto mehr wackelt der Boden (der Bildschirm bebt leicht). Ab und zu löst sich ein Gnu, läuft ein paar Sekunden
-// draußen herum und dann wieder hinein – solange es draußen ist, fängt man es mit dem Lasso.
+// ist, desto mehr wackelt der Boden (der Bildschirm bebt leicht). Ab und zu löst sich oben ein Gnu am rechten Rand des
+// Stroms und läuft die ganze Strecke mit der Herde nach unten – solange fängt man es mit dem Lasso.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { worldToTile } from '../world/iso.js';
@@ -20,9 +20,9 @@ const SHAKE_NEAR = 300; // ab diesem Abstand zum Strom bebt der Bildschirm, ...
 const SHAKE_PX = 2; // ... ganz nah um so viele Bildschirmpixel (vor allem auf und ab, wie ein Grollen im Boden)
 const STRAY_EVERY = [6, 11]; // so oft löst sich ein Gnu aus dem Strom
 const STRAY_MAX = 2; // so viele sind höchstens gleichzeitig draußen
-const STRAY_OUT = [3, 5]; // so lange laufen sie draußen, dann wieder hinein
 const STRAY_SPEED = 30; // seitlich (vom Strom weg und wieder hin) ...
 const STRAY_FLOW = FLOW * 1.1; // ... und dabei schnell mit der Herde nach unten
+const STRAY_TOP = 360; // dort (oben im Strom, knapp unter dem Kartenrand) tauchen sie auf
 const STRAY_WIDTH = 50; // so weit entfernen sie sich höchstens vom Strom (sie tauchen mitten in der Herde auf)
 const CALL_EVERY = [4, 8]; // so oft grunzt ein Gnu aus der Herde (Sekunden), ...
 const CALL_VOLUME = 0.5; // ... ganz nah so laut, weiter weg leiser
@@ -69,8 +69,6 @@ export default class Gnu extends Animal {
   updateFree(dt, player) {
     const s = this.stray;
     if (this.state !== 'wild' || !s) return super.updateFree(dt, player);
-    s.time -= dt;
-    if (!s.back && s.time <= 0) s.back = true;
     if (s.back) {
       // taucht in der Staubwolke unter: verblasst und ist fort
       if (!s.gone) {
@@ -83,9 +81,13 @@ export default class Gnu extends Animal {
     s.turn -= dt;
     if (s.turn <= 0) {
       s.turn = Phaser.Math.FloatBetween(0.6, 1.2);
-      s.dir = this.x > X1 + STRAY_WIDTH ? -1 : this.x < X0 + 40 ? 1 : Phaser.Math.FloatBetween(-1, 1);
+      s.dir = this.x > X1 + STRAY_WIDTH ? -1 : this.x < X1 - 90 ? 1 : Phaser.Math.FloatBetween(-1, 1); // am rechten Rand bleiben
     }
-    if (!this.move(s.dir * STRAY_SPEED * dt, STRAY_FLOW * dt)) s.back = true; // dort geht es nicht weiter: zurück in die Herde
+    // die ganze Strecke mit der Herde: an einem Hindernis seitlich ausweichen, erst unten wieder in den Staub
+    if (!this.move(s.dir * STRAY_SPEED * dt, STRAY_FLOW * dt)) {
+      s.dir = -s.dir;
+      if (!this.move(0, STRAY_FLOW * dt) && !this.move(s.dir * STRAY_SPEED * dt, 0)) s.back = true; // ganz eingeklemmt: zurück in die Herde
+    }
     if (this.y > Y_BOTTOM - 120) s.back = true;
     return true;
   }
@@ -125,13 +127,15 @@ export class Migration {
   // ein Gnu taucht mitten in der Herde auf einer freien Kachel auf (das Lasso reicht vom Rand bis dorthin)
   addStray() {
     const scene = this.scene;
-    for (let i = 0; i < 20; i++) {
-      const y = Phaser.Math.Between(380, 720); // oben, damit es ein Stück mit der Herde mitlaufen kann
-      const x = Phaser.Math.Between(X0 + 50, X1 - 10); // mitten in der Herde
+    for (let i = 0; i < 30; i++) {
+      // immer oben im Strom (gleich unter dem Kartenrand), damit man genug Zeit hat, es zu fangen; nur wenn dort nichts frei
+      // ist, ein Stück weiter unten
+      const y = Phaser.Math.Between(STRAY_TOP, STRAY_TOP + 40 + i * 8);
+      const x = Phaser.Math.Between(X1 - 80, X1 - 15); // am rechten Rand der Herde (dort reicht das Lasso hin)
       const { tx, ty } = worldToTile(x, y);
       if (tx < 1 || ty < 1 || tx > MAP_W - 2 || ty > MAP_H - 2 || isBlocked(tx, ty)) continue;
       const g = scene.createAnimal('gnu', x, y);
-      g.stray = { time: Phaser.Math.FloatBetween(...STRAY_OUT), back: false, turn: 0, dir: 0 };
+      g.stray = { back: false, turn: 0, dir: 0 };
       g.life = Infinity;
       g.rollSkin('wild');
       g.sprite.setAlpha(0);

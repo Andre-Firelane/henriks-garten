@@ -28,6 +28,11 @@ const JOBS = {
   // roter Panda (laufend und sitzend): grauer Boden, Kiesel und Blätter nur unten (Gesicht und Ohren sind weiß)
   'Roter Panda': (r, g, b, x, y) => leaf(r, g, b) || (y > 340 && ground(r, g, b)),
   'Roter panda sitzt': (r, g, b, x, y) => leaf(r, g, b) || (y > 340 && ground(r, g, b)),
+  // Gibbon (laufend, springend, fressend): Boden und Blätter unten (das Gesicht hat einen weißen Kranz); beim Fressen
+  // steht unter jedem eine eigene Bodenkachel – alles unterhalb der Figuren weg
+  Gibbon: (r, g, b, x, y) => leaf(r, g, b) || (y > 340 && ground(r, g, b)) || (y > 240 && Math.min(r, g, b) > 236 && sat(r, g, b) < 12), // dazu das Weiß zwischen Armen und Beinen
+  'Gibbon springt': (r, g, b, x, y) => y > 380 && ground(r, g, b),
+  'Gibbon frisst': (r, g, b, x, y) => y > 376,
   // Aras (rot und blau-gelb, sitzend und fliegend): nur der graue Schatten unten (das Gesicht ist weiß)
   Ara: (r, g, b, x, y) => y > 380 && ground(r, g, b),
   'Ara fliegend': (r, g, b, x, y) => y > 380 && ground(r, g, b),

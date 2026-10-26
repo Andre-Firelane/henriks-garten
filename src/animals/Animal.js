@@ -403,6 +403,22 @@ export const SPECIES = {
     shadowW: 20,
     catchWith: ['net'],
   },
+  // Gibbon (Dschungel, nur bei Nebel): wie der Brüllaffe (siehe Howler.js)
+  gibbon: {
+    texture: 'gibbon',
+    eatTexture: 'gibbon_eat',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 30,
+    restChance: 0.4,
+    restTime: [1, 3],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 2,
+    footW: 6,
+    shadowW: 22,
+    catchWith: ['lasso'],
+  },
   // Brüllaffe (Dschungel): sitzt unsichtbar oben in den Urwaldbäumen, kommt für eine Banane herunter (siehe Howler.js)
   howler: {
     texture: 'howler',

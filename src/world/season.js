@@ -1,6 +1,6 @@
 // Wetterphasen nach der echten Uhr, je Gebiet ein eigener Kreislauf:
 // Savanne: Normal (20 min) → Starkregen (15) → Normal (20) → Trockenzeit (15)
-// Dschungel: alle 5 Minuten ein Wechsel: Normal → Starkregen → Normal → aufsteigender Nebel
+// Dschungel: alle 5 Minuten ein Wechsel: Normal → Starkregen → aufsteigender Nebel
 // dann von vorn. Eine Runde beginnt immer mit Normal, ab dem Anker des Gebiets (beim ersten Spielen gesetzt; die Savanne
 // nutzt game.seasonAnchor, die anderen game.seasonAnchors[Gebiet]).
 // Das Event "Wetterwechsel" springt sofort zur nächsten Phase (skipSeason).
@@ -19,7 +19,6 @@ const CYCLES = {
   jungle: [
     ['normal', 5 * MINUTE],
     ['rain', 5 * MINUTE],
-    ['normal', 5 * MINUTE],
     ['fog', 5 * MINUTE],
   ],
 };

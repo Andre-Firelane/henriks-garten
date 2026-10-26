@@ -28,6 +28,7 @@ export const APPEAL = {
   butterfly: 1.5,
   macaque: 4,
   howler: 5, // laut und lustig
+  gibbon: 5,
   snake: 5,
   macaw: 6, // bunt und laut
   tarantula: 4,

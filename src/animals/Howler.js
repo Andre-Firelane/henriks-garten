@@ -2,6 +2,7 @@
 // springt einer von Krone zu Krone: die Kronen rascheln, und er brüllt laut. Man muss sich also merken, wo er gerade sitzt.
 // Legt man eine Banane unten an seinen Baum, klettert er herunter und frisst sie – dann fängt man ihn mit dem Lasso.
 // Danach (oder wenn man zu langsam ist) klettert er wieder hinauf.
+// Der Gibbon (nur bei Nebel) verhält sich genauso, nur mit eigenen Bildern und einem höheren Ruf (species 'gibbon').
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
@@ -23,14 +24,14 @@ const CALL_VOLUME = 0.7; // Brüllen ganz nah ...
 const CALL_HEAR = 300; // ... und so weit (Welt-Pixel, etwa 9 Kacheln) hört man es noch – nur in der Nähe
 
 export default class Howler extends Animal {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'howler');
+  constructor(scene, x, y, species = 'howler') {
+    super(scene, x, y, species);
     this.phase = null; // wild: 'tree' → ('jump' → 'tree') bzw. 'down' → 'eat' → 'up' → 'tree'
     this.lift = 0; // so hoch über dem Boden ist er gerade zu sehen (Sprung, Klettern)
   }
 
   // einen Trupp in nahe beieinander stehende, freie Urwaldbäume setzen; gibt die Affen zurück
-  static spawnTroop(scene) {
+  static spawnTroop(scene, species = 'howler') {
     const taken = Howler.takenTrees(scene);
     const free = JUNGLE_TREES.filter((t) => !taken.has(t.tx + ',' + t.ty));
     const first = Phaser.Utils.Array.GetRandom(free);
@@ -39,7 +40,7 @@ export default class Howler extends Animal {
     const trees = [first, ...near].slice(0, Phaser.Math.Between(...TROOP_SIZE));
     const troop = { members: [] };
     return trees.map((tree) => {
-      const a = scene.createAnimal('howler', 0, 0);
+      const a = scene.createAnimal(species, 0, 0);
       a.troop = troop;
       troop.members.push(a);
       a.sitIn(tree);
@@ -50,7 +51,7 @@ export default class Howler extends Animal {
 
   // Bäume, auf denen schon ein Brüllaffe sitzt (oder gleich landet)
   static takenTrees(scene, except = null) {
-    return new Set(scene.animals.filter((a) => a !== except && a.species === 'howler' && a.tree).map((a) => a.tree.tx + ',' + a.tree.ty));
+    return new Set(scene.animals.filter((a) => a !== except && a instanceof Howler && a.tree).map((a) => a.tree.tx + ',' + a.tree.ty));
   }
 
   sitIn(tree) {
@@ -146,7 +147,8 @@ export default class Howler extends Animal {
     if (k <= 0) return;
     const audio = this.scene.cache.audio;
     const volume = CALL_VOLUME * k * k; // weiter weg schnell leiser
-    if (audio.exists('animal_howler')) this.scene.sound.play('animal_howler', { volume, detune: Phaser.Math.Between(-100, 100) });
+    if (audio.exists(`animal_${this.species}`)) this.scene.sound.play(`animal_${this.species}`, { volume, detune: Phaser.Math.Between(-100, 100) });
+    else if (this.species === 'gibbon' && audio.exists('animal_howler')) this.scene.sound.play('animal_howler', { volume, detune: 700 + Phaser.Math.Between(-100, 100) }); // Gibbon: höher, bis er einen eigenen Ruf hat
     else if (audio.exists('animal_macaque')) this.scene.sound.play('animal_macaque', { volume, detune: -1100 + Phaser.Math.Between(-100, 100) });
   }
 
@@ -205,7 +207,7 @@ export default class Howler extends Animal {
     this.sprite.setVisible(!hidden);
     this.shadow.setVisible(!hidden && this.lift < CROWN_UP * 0.5);
     // im Sprung das Sprungbild (Arme nach vorn)
-    const key = this.phase === 'jump' && this.scene.textures.exists('howler_jump') ? 'howler_jump' : this.lookTexture();
+    const key = this.phase === 'jump' && this.scene.textures.exists(`${this.species}_jump`) ? `${this.species}_jump` : this.lookTexture();
     if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
     super.render(moving && !this.lift);
     if (this.lift) {

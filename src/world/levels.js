@@ -406,18 +406,18 @@ export const LEVELS = {
       'Jqnľ.n.ľ#ľn.nkn.....ĎnḢnn.ľJ.ľḢJnf.#ĎĎĎĎĎ.ľJ',
       'kqg..n..##...n.Jn.ṀĎ~~~~~n.Ď..k...##ĎĎĎĎĎ..k',
       'k.J.ľ...k#.ľ.J..Ḣ~~~~~~~~~~~Ṁ..f.k#qĎĎĎĎĎ.Jk',
-      'Jgn..fJ..#ḟn.nĎṀ~~~~~~~Ŝ~~~~~ĎĎṀ..#e.ĎĎĎJľnJ',
-      'kqgkfn.ľ##ľ.JṀ~~~~~~~~~Ŝ~~~~~~~~~~Ŝ~~.Ṁ.nkJk',
-      'kṀnṀĎ...##Jn.Ṁ~~~~~....#..~~~~~~~~Ŝ~~~~~~Ṁfk',
+      'Jgn..fJ..#ḟn.nĎṀ~~~~~~~~~~~~~ĎĎṀ..#e.ĎĎĎJľnJ',
+      'kqgkfn.ľ##ľ.JṀ~~~~~~~~~~~~~~~~~~~~Ŝ~~.Ṁ.nkJk',
+      'kṀnṀĎ...##Jn.Ṁ~~~~~.......~~~~~~~~~~~~~~~Ṁfk',
       '~~~~~Ṁnľ.#en.Ṁ~~~~..MMMMM..~~~~~~~~~~~~~~~~~',
       '~~~~~~~~~Ŝ~~~~~~~~..Nap,N.n~~~~~~~~~~~~~~~~~',
-      '~~~~~~~~~Ŝ~~~~~~~~b.N,j,G#.~~~~Ŝ~~~~~~~~~~~~',
+      '~~~~~~~~~~~~~~~~~~b.N,j,G#.~~~~~~~~~~~~~~~~~',
       '~~~~~~~~~~~~~~~~~~..MMMMM#.~~~~Ŝ~~~~~~~~~~~~',
       '~~~~~~~~~~~~~~~~~~....c..#.~~~~#e.qn.~~~~~~~',
-      '~~~~~~~~~~~~Ŝ~~~~~.f..###..~~~~##n...Ṁ.ĎĎ~~~',
+      '~~~~~~~~~~~~~~~~~~.f..###..~~~~##n...Ṁ.ĎĎ~~~',
       'JṀnĎk~~~~~~~Ŝ~~~~~~n..#...~~~~~##f...nľ.J.ṀJ',
       'k.kJ.ṀṀṀṀṀľ.#e~~~~~~~~Ŝ~~~~~~~~#...fn.JnJJ.k',
-      'knk..ĎĎĎ...k#f.n~~~~~~Ŝ~~~~~~..#..q.n...q.fk',
+      'knk..ĎĎĎ...k#f.n~~~~~~~~~~~~~..#..q.n...q.fk',
       'Jľ..ĎĎĎĎĎn.n#JľľĎ~~~~~~~~~~~Ṁ.f#Jľ.nḢ.nJ.qľJ',
       'kJ.JĎĎĎĎĎḢ..#.J.ľĎṀṀ~~~~~nĎṀľk.##..n.ĎĎĎ..kk',
       'kJkľĎĎĎĎĎ...#ffJqn.ľĎnn.ľn.ḟnľľ.#qnnĎĎĎĎĎ..k',
@@ -447,7 +447,7 @@ export const LEVELS = {
     enclosures: [], // die Gehege sind im Tierpark
     hut: { tx0: 20, ty0: 19, tx1: 24, ty1: 22, style: 'jungle' }, // Fischerhütte auf der Insel
     // Kanu: liegt am Anfang am Südsteg der Insel
-    boat: { tx: 22, ty: 28 },
+    boat: { tx: 22, ty: 27 },
     chests: [
       { tx: 22, ty: 23, tools: ['net', 'lasso', 'banana'] }, // Regal vor der Fischerhütte
       { tx: 10, ty: 19, tools: ['net', 'lasso', 'banana'] }, // Kisten an den Uferstegen
@@ -457,7 +457,7 @@ export const LEVELS = {
     ],
     hero: 'hero_jungle', // Dschungel-Kleidung mit Machete
     ambient: 'ambient_jungle', // Dschungel-Geräusche (dazu rauscht oben links der Wasserfall, siehe updateWaterfallSound)
-    ambientVolume: 0.5,
+    ambientVolume: 0.7, // das ruhige Stück ohne Brüllaffen ist leiser aufgenommen
     background: '#2f5a24',
     toolSpots: [],
     exits: [], // hin und zurück nur mit dem Wasserflugzeug
@@ -472,6 +472,7 @@ export const LEVELS = {
       },
       // aufsteigender Nebel: man sieht nicht weit, über dem Fluss steigen Schwaden auf (siehe Weather.js)
       fog: {
+        spawn: { population: 4, weights: { gibbon: 1, macaw: 1 } }, // im Nebel: Gibbons statt Brüllaffen
         ambientVolume: 0.3, // im Nebel ist es stiller
       },
     },
@@ -670,16 +671,16 @@ export const LEVELS = {
       '         f.g.b.f.                3X33333333333333333333333333333333333333333333                 ',
       '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3....y....v....y....A....3                 ',
       '         g.K.f.b.                3#].y..............]3...v...A....y.....v...y.3                 ',
-      '         f...b.g.                3#]..A..yyy....A.@.]3..{{{{{{{{{v..A......R..3                 ',
-      '         .g.T..K.                3#].....www........]3..}.......}......y......3                 ',
-      '         b..f.g..        333333333#]....wwww........]33.}.%ooo..}.....v....y..3                 ',
-      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]...}.ooooo.}y.A......y.v.3                 ',
-      '         g.b..f..        3.yv.....#########].yyA.y..].y.}oooooo.}.........A...3                 ',
-      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]...}.ooooo.}R..........y.3                 ',
-      '        Vbbbbbbbb3       3]........]....A.#].......y]...}.oooo%.}.v...........3                 ',
-      '        V.T..f.K.333333333].A.y....]......#G..y..y..]...}..oo...}A........R...3                 ',
-      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y..}.......}.y...........3                 ',
-      '        Vf.b....g3....y...]........G#.v...#].....A..]vy.{{{{{G{{{v.........v..3                 ',
+      '         f...b.g.                3#]..A..yyy....A.@.]3..{{{{{{{{{{{{A......R..3                 ',
+      '         .g.T..K.                3#].....www........]3..}..........}...y......3                 ',
+      '         b..f.g..        333333333#]....wwww........]33.}.%ooooo...}..v....y..3                 ',
+      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]...}.ooooooo..}......y.v.3                 ',
+      '         g.b..f..        3.yv.....#########].yyA.y..].y.}oooooooo%.}......A...3                 ',
+      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]...}.ooooooo..}........y.3                 ',
+      '        Vbbbbbbbb3       3]........]....A.#].......y]...}.oooo%oo..}..........3                 ',
+      '        V.T..f.K.333333333].A.y....]......#G..y..y..]...}..oo..oo..}......R...3                 ',
+      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y..}..........}..........3                 ',
+      '        Vf.b....g3....y...]........G#.v...#].....A..]vy.{{{{{G{{{{{{.......v..3                 ',
       '        Vl.Kf.g..3.y...y..]...y..y.]#vy.A.#]........].A.....v#....A.......A...3                 ',
       '        V.g..f.b.3..y.....[[[[[[[[[[#F....#[[[[[[[[[[....y..v#.........v....y.3                 ',
       '        `#####################################################################3                 ',
@@ -730,23 +731,23 @@ export const LEVELS = {
       '            5..................q......#................bbbbb5J[[[[[[[[[[[[[[[Jḟ.               5',
       '            T..6^^^^^^......K..r......I.K..[[[[[[[[[[[[[[[[b5ľ]n...........ľ]Jľ.               5',
       '            5.6^^....^^^K.............#....]...Q..........]b5ľ]..J......J...]..ľ               5',
-      '            T.^^.9.....;......#########...[[.......Q....K.]b5.].......ľ.....]qq.               5',
-      '            5.;......q.^^l...##.......##..].....K.........]b5J]...n......ľ..]J.q               5',
-      '            T.;..hhhh...;...##..KlK.l..##.]...8.....Q.....]b5ľ].....J.......]nḢ.               5',
-      '            5.;.r.hhh...G####.K....q.q.K##[[.....7.......Q]b5ľ]...........J.]ľ..               5',
+      '            T.^^.9.....;......#########....].......Q....K.]b5.].......ľ.....]qq.               5',
+      '            5.;......q.^^l...##.......##...]....K.........]b5J]...n......ľ..]J.q               5',
+      '            T.;..hhhh...;...##..KlK.l..##..]..8.....Q.....]b5ľ].....J.......]nḢ.               5',
+      '            5.;.r.hhh...G####.K....q.q.K##.].....7.......Q]b5ľ]...........J.]ľ..               5',
       '            T.^^...h....G..#..l..q..ll...##G..............]b5.].J......n....].Ḣľ               5',
       '            5..^^......^^..#.lqooooooo.rq.#G..q...q....q..]b5.]....q.....ḟ..].J.               5',
-      '            T.K.^^^^^^^^.q.#..ooooooooo...#[[.............]b5.[[[[[[[G[[[[[[[.ľ.               5',
-      '            5....l....q.r..###EEEEEEEEEE###.[[[[[..[[[[[[[[b5........#.......ľ.ľ      Ř        5',
-      '            T..rll.qq.q....#.q.oooooooo.l.#W....[[[[...bbbbb5........#..............l.#.l......5',
+      '            T.K.^^^^^^^^.q.#..ooooooooo...#]..............]b5.[[[[[[[G[[[[[[[.ľ.               5',
+      '            5....l....q.r..###EEEEEEEEEE###[[[[[[[[[[[[[[[[b5........#.......ľ.ľ      Ř        5',
+      '            T..rll.qq.q....#.q.oooooooo.l.#W...........bbbbb5........#..............l.#.l......5',
       '            5..............##..q...ooor...###################################################..5',
       '            T.[[[[[[[[[[[...##K.r.K..l..l##.[[[[[[[[[[[b......#......................W.........5',
       '            5[[.........[[...##...q.K..K##.[[.........]bnn^^^^G^^^^^..Jľ...Jḟ...ľ..q...........5',
       '            T]..J...9....[[...##.......####G..q....Q..]b..;.....ḟ..;ľ...ľ......................5',
-      '            5].........9..G#############...G....w...Q.]bnḟ;.J.....Ḣ;........ľ..................5',
+      '            5].........9..G#############...G....w...Q.]bnḟ;.ľ.....Ḣ;........ľ..................5',
       '            T]L....H......G........#.......]..www8....]b..;........;.............ľ.............5',
       '            5]....9.......]........#.......]...ww...Q.]bJ.;....ľ...;.....ľ............ľ.......ľ5',
-      '            T]..9.....J...]....K...#.......].L....r...]b..;..q...J.;.......................n.qJ5',
+      '            T]..9.....J...]....K...#.......].L....r...]b..;..J...J.;.......................n.qJ5',
       '            5].......q...[[....r...#.....q.[[.........]bJ.;n.......;................n......ľ.ľ.5',
       '            T[[[[[[[[[[[[[....q..l.#.r......[[[[[[[[[[[bľ.^^^^^^^^^^ľ...Ḣ..J..nľJ..ḢľJqnJn.Jq.ľ5',
       '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb5555555555555555555555555555555555555555',
@@ -765,9 +766,9 @@ export const LEVELS = {
       { id: 'gnus', name: tr('Gnu-Steppe', 'Wildebeest Plains'), species: ['gnu'], gate: 'tall', world: 'savanna', unlock: 'gnu', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 26, ty: 3 }, slots: [6, 9], upgrade: tr('Heuraufe', 'Hay rack'), basic: [[31, 2, '.']] },
       // Savanne, Wetterphasen (rechts am Weg der Savanne; das Nilpferdbecken steht von Anfang an, die anderen entstehen
       // jeweils mit dem ersten Tier, siehe unlocks)
-      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 57, ty: 4 }, slots: [3, 4], upgrade: tr('Schilf am Ufer', 'Reeds on the bank'), basic: [[58, 5, '.'], [62, 9, '.']] },
+      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 57, ty: 4 }, slots: [3, 4], upgrade: tr('Größeres Becken mit Schilf', 'Bigger pool with reeds'), basic: [[65, 3, 'v'], [66, 3, '.'], [67, 3, '.'], [64, 4, '}'], [67, 4, '.'], [58, 5, '.'], [62, 5, '.'], [63, 5, '.'], [64, 5, '}'], [67, 5, '.'], [63, 6, '.'], [64, 6, '}'], [65, 6, 'y'], [67, 6, 'A'], [63, 7, '.'], [64, 7, '}'], [65, 7, '.'], [67, 7, '.'], [63, 8, '.'], [64, 8, '}'], [65, 8, 'R'], [67, 8, '.'], [62, 9, '.'], [63, 9, '.'], [64, 9, '}'], [66, 9, 'v'], [67, 9, '.'], [63, 10, '.'], [64, 10, '}'], [65, 10, 'A'], [67, 10, '.'], [64, 11, '}'], [66, 11, 'y'], [67, 11, '.'], [65, 12, 'v'], [66, 12, '.'], [67, 12, '.']] },
       { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
-      { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Felsenhöhle', 'Rock den'), basic: [[63, 19, '.']] },
+      { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Mehr Platz mit Felsenhöhle', 'More room with a rock den'), basic: [[56, 17, '.'], [57, 17, '.'], [56, 18, '.'], [57, 18, '.'], [58, 18, ']'], [56, 19, '.'], [57, 19, '.'], [58, 19, ']'], [56, 20, '.'], [57, 20, '.'], [58, 20, ']'], [56, 21, '.'], [57, 21, '.'], [58, 21, ']'], [56, 22, '.'], [57, 22, '.'], [58, 22, ']'], [56, 23, '.'], [57, 23, '.'], [63, 19, '.']] },
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
       { id: 'deerpark', name: tr('Hirschgehege', 'Deer Park'), species: ['deer'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
       { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
@@ -786,7 +787,7 @@ export const LEVELS = {
       { id: 'pandas', name: tr('Pandagehege', 'Panda Enclosure'), species: ['panda', 'redpanda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, quota: { panda: [2, 4], redpanda: [3, 5] }, upgrade: tr('Reifenschaukel und Spielball', 'Tire swing and play ball'), basic: [[49, 66, ':'], [46, 65, '<']] }, // rote Pandas wohnen mit im (verbreiterten) Gehege
       { id: 'macaques', name: tr('Affenquelle', 'Monkey Spring'), species: ['macaque'], netRoof: true, gate: 'net', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 19, ty: 64 }, slots: [4, 6], upgrade: tr('Großer Badesee', 'Big bathing lake'), basic: [[20, 65, ':'], [20, 66, '<'], [17, 65, '.'], [19, 67, '.']] },
       // Dschungel (rechts neben dem Bambuswald): Gehege links, rechts das Reptilienhaus
-      { id: 'howlers', name: tr('Brüllaffen-Gehege', 'Howler Monkey Enclosure'), species: ['howler'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, slots: [4, 6], upgrade: tr('Zusätzlicher Urwaldbaum', 'Another jungle tree'), basic: [[74, 66, ':']] },
+      { id: 'howlers', name: tr('Affen-Gehege', 'Monkey Enclosure'), species: ['howler', 'gibbon'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, quota: { howler: [4, 6], gibbon: [3, 5] }, upgrade: tr('Zusätzlicher Urwaldbaum', 'Another jungle tree'), basic: [[74, 66, ':']] }, // Brüllaffen und Gibbons zusammen
       { id: 'macaws', name: tr('Ara-Voliere', 'Macaw Aviary'), species: ['macaw'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 62, ty: 77 }, slots: [4, 6], upgrade: tr('Zweiter Urwaldbaum', 'Second jungle tree'), basic: [[65, 79, ':']] },
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
     ],
@@ -808,7 +809,7 @@ export const LEVELS = {
     unlocks: [
       // die ersten Tiere der Wetterphasen der Savanne: ihre Gehege entstehen rechts am Savannen-Weg
       { id: 'vulture', tx: 68, ty: 6, rows: ['^^^^^^^', ';.....;', ';.Ǎ...;', ';.....;', ';...Ǎ.;', ';.....;', ';.....;', '^^^G^^^', '...#...'] }, // Ǎ: kahle Akazien zum Sitzen
-      { id: 'hyena', tx: 58, ty: 16, rows: ['v..#..y', '[[[G[[[', '].....]', ']....v]', ']..R..]', '].....]', '].....]', '[[[[[[['] },
+      { id: 'hyena', tx: 56, ty: 16, rows: ['..v..#..y', '[[[[[G[[[', '].......]', ']......v]', ']....R..]', '].y.....]', '].......]', '[[[[[[[[['] }, // nach dem Ausbau zwei Spalten breiter (siehe basic)
       { id: 'warthog', tx: 68, ty: 16, rows: ['R..#..y', '[[[G[[[', '].....]', '].u...]', '].....]', ']...u.]', '].....]', '[[[[[[['] },
       // das erste Gnu: nördlich vom Löwengehege, am oberen Kartenrand, entsteht die Gnu-Steppe
       { id: 'gnu', tx: 20, ty: 0, rows: ['[[[[[[[[[[[[[[', ']..A.....y...]', '].....y....&.]', '].y..........G', ']......A.....]', ']..y.....v...]', '[[[[[[[[[[[[[['] },

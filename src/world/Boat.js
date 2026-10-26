@@ -7,7 +7,7 @@ import { tileToWorld, worldToTile } from './iso.js';
 import { LEVEL, LEVEL_ID, charAt } from './map.js';
 
 const BOARD_DIST = 40; // so nah muss man (auf dem Steg) am Kanu stehen, um einzusteigen
-const LAND_DIST = 30; // so nah muss das Kanu an einem Steg sein, um auszusteigen
+const LAND_DIST = 12; // so nah muss das Kanu an einem Steg sein, um auszusteigen (direkt dran, sonst steigt man beim Fangen aus Versehen aus)
 const BOB = 1.2; // so weit schaukelt es auf dem Wasser
 const PADDLE_VOLUME = 0.45; // Paddeln (Kanu.mp3), solange Henrik im Kanu fährt
 const PADDLE_EASE = 5; // so schnell wird es lauter bzw. leiser
@@ -75,8 +75,8 @@ export default class Boat {
     }
     const target = this.hidden ? GHOST_ALPHA : 0;
     this.ghost.setAlpha(this.ghost.alpha + (target - this.ghost.alpha) * Math.min(1, dt * 8));
-    // das getragene Werkzeug ist im Kanu nicht zu sehen (Henrik paddelt)
-    this.scene.tool?.sprite?.setVisible(!this.state.riding);
+    // das getragene Werkzeug (z. B. der Kescher) hält Henrik auch im Kanu in der Hand: vor dem Boot gezeichnet
+    if (this.state.riding) this.scene.tool?.sprite?.setDepth(this.img.depth + 0.2);
     if (this.state.riding) p.boatBob = bob;
     this.updatePaddle(dt, this.state.riding && p.moving);
     // Aktion in der Nähe?

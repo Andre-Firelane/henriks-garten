@@ -22,6 +22,7 @@ const SHEETS = {
   peacock: [96, 96, 4, 0],
   macaque: [72, 72, 4, 0],
   howler: [88, 88, 4, 0],
+  gibbon: [88, 88, 4, 0],
   snake: [72, 72, 4, 0],
   macaw: [64, 80, 4, 0],
   tarantula: [64, 64, 4, 0],

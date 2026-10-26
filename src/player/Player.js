@@ -44,6 +44,7 @@ const BOAT_SINK = 15; // so tief sitzt er im Boot
 const BOAT_SPEED = 1.15;
 const BOAT_W = 12; // halbe Länge und Breite des Boots für die Kollision (es fährt nur auf Wasser)
 const BOAT_H = 6;
+const BOAT_HAND_LIFT = 18; // im Kanu sitzt er tiefer: so viel höher als die Figur hält er das Werkzeug (Hände über dem Bootsrand)
 
 export default class Player {
   // texture: Spritesheet der Figur (je Gebiet andere Kleidung); swim: schwimmt statt zu laufen (Unterwasserwelt)
@@ -102,6 +103,7 @@ export default class Player {
     this.speed = on ? SPEED * BOAT_SPEED : SPEED;
     this.sink = on ? BOAT_SINK : 0;
     this.boatBob = 0;
+    this.handLift = on ? BOAT_HAND_LIFT : HAND_LIFT[this.mount] ?? 0;
   }
 
   update(dt) {

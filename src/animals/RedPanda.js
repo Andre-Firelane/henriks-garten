@@ -13,6 +13,7 @@ const CLIMB_MS = 1100; // so lange klettert er herunter bzw. hinauf
 const DOWN_TIME = 20; // so lange sitzt er unten beim Glas
 const PEN_CLIMB_EVERY = [30, 60]; // im Gehege: so oft klettert er auf den Kirschbaum ...
 const PEN_TREE_TIME = [8, 14]; // ... und so lange bleibt er oben
+const TREE_REST = 90; // aus einem Baum, in dem gerade einer gefangen wurde, kommt so lange (Sekunden) kein neuer
 
 export default class RedPanda extends Animal {
   constructor(scene, x, y) {
@@ -36,7 +37,11 @@ export default class RedPanda extends Animal {
   // in einen freien Kirschbaum setzen; gibt zurück, ob einer frei war
   placeInTree() {
     const taken = this.scene.animals.filter((a) => a !== this && a.species === 'redpanda' && a.tree).map((a) => a.tree);
-    const free = RedPanda.trees(this.scene).filter((t) => !taken.some((u) => u.tx === t.tx && u.ty === t.ty));
+    // Bäume, aus denen gerade einer gefangen wurde, bleiben eine Weile leer: man soll woanders suchen
+    const now = this.scene.time.now;
+    const recent = (this.scene.redpandaCaughtAt ?? []).filter((r) => r.until > now);
+    this.scene.redpandaCaughtAt = recent;
+    const free = RedPanda.trees(this.scene).filter((t) => ![...taken, ...recent].some((u) => u.tx === t.tx && u.ty === t.ty));
     const tree = Phaser.Utils.Array.GetRandom(free);
     if (!tree) return false;
     this.climbInto(tree);
@@ -158,6 +163,7 @@ export default class RedPanda extends Animal {
   }
 
   catch() {
+    if (this.state === 'wild' && this.tree) (this.scene.redpandaCaughtAt ??= []).push({ tx: this.tree.tx, ty: this.tree.ty, until: this.scene.time.now + TREE_REST * 1000 });
     this.scene.tweens.killTweensOf(this);
     this.setEating(false);
     this.phase = null;

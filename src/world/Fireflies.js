@@ -14,6 +14,7 @@ const FLY_HEIGHT = [10, 34]; // so hoch über dem Boden
 const FLY_ROAM = 26; // so weit kreisen sie um ihren Platz
 const RESPAWN_MS = 3000; // gefangene tauchen nach so langer Zeit woanders wieder auf
 const RED_PANDAS = 2; // so viele rote Pandas sitzen gleichzeitig in den Kirschbäumen
+const REFILL_DELAY = 15; // nach einem Fang kommt erst nach so vielen Sekunden ein neuer dazu
 const LANTERN_UP = 30; // Höhe des Lichts über dem Fuß der Steinlaterne
 const TORII_UP = 86; // ... und über dem Fuß des roten Tors
 
@@ -96,6 +97,13 @@ export default class FireflyEvening {
     if (this.pandaIn <= 0) {
       this.pandaIn = 2;
       const wild = this.scene.animals.filter((a) => a.species === 'redpanda' && a.state === 'wild').length;
+      // gerade einer gefangen: erst etwas später ein neuer (in einem anderen Baum, siehe RedPanda.placeInTree)
+      if (wild < (this.lastWild ?? wild)) {
+        this.lastWild = wild;
+        this.pandaIn = REFILL_DELAY;
+        return;
+      }
+      this.lastWild = RED_PANDAS;
       for (let i = wild; i < RED_PANDAS; i++) {
         const a = this.scene.createAnimal('redpanda', 0, 0);
         a.life = Infinity;

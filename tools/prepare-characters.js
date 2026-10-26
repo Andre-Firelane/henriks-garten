@@ -253,6 +253,11 @@ const CHARACTERS = [
   // roter Panda (Glühwürmchen-Abend): laufend und sitzend, im Bild nach links, rechts, Rücken nach links oben, rechts oben
   { src: 'Sprites/Roter Panda.png', out: 'redpanda.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.24, order: [1, 0, 3, 2] },
   { src: 'Sprites/Roter panda sitzt.png', out: 'redpanda_sit.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.24, order: [1, 0, 3, 2] },
+  // Gibbon (Dschungel, bei Nebel): wie der Brüllaffe laufend, springend (beide Vorderansichten nach rechts, unten-links ist
+  // das Spiegelbild) und mit der Banane
+  { src: 'Sprites/Gibbon.png', out: 'gibbon.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE },
+  { src: 'Sprites/Gibbon springt.png', out: 'gibbon_jump.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, byComponents: true, copyMirror: { 1: 0 }, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Gibbon frisst.png', out: 'gibbon_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE },
   // Kanu leer und mit Henrik darin (die vierte Ansicht ist das Spiegelbild der dritten)
   { src: 'Sprites/Kanu.png', out: 'canoe.png', frameW: 144, frameH: 152, feetY: 148, scale: CANOE_SCALE, copyMirror: { 3: 2 } },
   { src: 'Sprites/Kanu besetzt.png', out: 'canoe_hero.png', frameW: 144, frameH: 152, feetY: 148, scale: CANOE_SCALE, copyMirror: { 3: 2 } },

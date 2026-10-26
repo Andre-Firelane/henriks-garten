@@ -17,7 +17,7 @@ const CRUISE = 48; // über Land (Ufer, Insel) fliegen sie höher – dort kommt
 export const CATCH_LOW = 22; // ... und bis zu dieser Höhe erwischt man sie mit dem Kescher
 const DIVE = 0.3; // Anteil des Flugs, auf dem sie hinunter- bzw. wieder hinaufgleiten
 const PARTNER_DELAY = 0.45; // so viel später (Sekunden) fliegt der zweite hinterher
-const TILT = 50; // so weit neigt er sich im Flug nach vorn (Grad)
+const FOLLOW_UP = 20; // folgt er Henrik, fliegt er so hoch hinter ihm her
 const HIGH_DEPTH = 98990; // hoch in der Luft vor allen Bäumen
 const PEN_FLY_EVERY = [8, 16]; // in der Voliere: so oft fliegt er eine kurze Strecke
 const PEN_ALTITUDE = 26;
@@ -79,7 +79,7 @@ export default class Macaw extends Animal {
   }
 
   canBeCaughtNow() {
-    return this.state === 'wild' && this.phase === 'fly' && this.altitude <= CATCH_LOW;
+    return this.state === 'wild' && this.phase === 'fly' && this.altitude <= CATCH_LOW && !this.fled;
   }
 
   canDespawn() {
@@ -113,7 +113,7 @@ export default class Macaw extends Animal {
     }
     if (this.phase !== 'fly') return false;
     const f = this.flight;
-    f.done = Math.min(f.total, f.done + FLY_SPEED * dt);
+    f.done = Math.min(f.total, f.done + FLY_SPEED * (this.fled ? 2 : 1) * dt); // erschrocken doppelt so schnell
     const t = f.done / f.total;
     this.x = f.from.x + (f.to.x - f.from.x) * t;
     this.y = f.from.y + (f.to.y - f.from.y) * t;
@@ -124,6 +124,7 @@ export default class Macaw extends Animal {
     f.cruise = (f.cruise ?? f.fromUp) + ((water ? LOW : CRUISE) - (f.cruise ?? f.fromUp)) * Math.min(1, dt * 3);
     this.altitude = t < DIVE ? f.fromUp + (f.cruise - f.fromUp) * ease(t / DIVE) : t > 1 - DIVE ? f.cruise + (f.toUp - f.cruise) * ease((t - 1 + DIVE) / DIVE) : f.cruise;
     if (t >= 1) {
+      if (this.fled) return this.scene.despawn(this), false; // der Partner wurde gefangen: er ist auf und davon
       this.perchIn(f.tree);
       this.perchTime = Phaser.Math.FloatBetween(...PERCH_TIME);
     }
@@ -189,19 +190,24 @@ export default class Macaw extends Animal {
   }
 
   render(moving) {
-    const fly = this.flying();
+    const follow = this.state === 'following'; // folgt Henrik: fliegt hinter ihm her
+    const fly = this.flying() || follow;
+    const altitude = follow ? FOLLOW_UP : this.altitude;
     const base = this.baseTexture();
     const key = fly ? `${base}_fly` : base;
     if (this.sprite.texture.key !== key && this.scene.textures.exists(key)) this.sprite.setTexture(key, this.sprite.frame.name);
-    super.render(moving && !fly && !this.altitude);
-    this.shadow.setVisible(fly || !this.altitude); // oben in der Krone ohne Schatten am Boden
-    if (!this.altitude && !fly) return;
-    // in der Luft bzw. oben in der Krone: höher gezeichnet; im Flug in Flugrichtung geneigt, mit Flügelschlag-Wippen
+    super.render(moving && !fly && !altitude);
+    // im Flug immer die Vorderansicht nach rechts (Bild 1), nach links gespiegelt – auch beim Flug nach oben
+    if (fly) this.sprite.setFrame(0).setFlipX(this.faceX < 0);
+    else this.sprite.setFlipX(false);
+    this.shadow.setVisible(fly || !altitude); // oben in der Krone ohne Schatten am Boden
+    if (!altitude && !fly) return;
+    // in der Luft bzw. oben in der Krone: höher gezeichnet; im Flug mit Flügelschlag-Wippen
     const flap = fly ? Math.sin(this.scene.time.now / 90) * 1.5 : 0;
-    this.sprite.setY(this.sprite.y - this.altitude + flap);
-    this.sprite.setAngle(fly ? this.faceX * TILT * (this.faceY < 0 ? 0.6 : 1) : 0);
-    this.sprite.setDepth(this.altitude > 30 && fly ? HIGH_DEPTH : this.y + 2);
-    this.shadow.setScale(1 - Math.min(0.6, this.altitude / 160));
+    this.sprite.setY(this.sprite.y - altitude + flap);
+    this.sprite.setAngle(0); // im Flug aufrecht (wie gemalt)
+    this.sprite.setDepth(altitude > 30 && fly ? HIGH_DEPTH : this.y + 2);
+    this.shadow.setScale(1 - Math.min(0.6, altitude / 160));
   }
 
   catch() {
@@ -212,8 +218,11 @@ export default class Macaw extends Animal {
     this.pair = null;
     this.troop = null;
     super.catch();
-    // der andere erschrickt und fliegt weit weg
-    if (mate && mate.phase !== 'fly') mate.flyAcross(true);
+    // der andere erschrickt und fliegt weit weg – ihn fängt man nicht mehr (sonst fängt man zu viele), er verschwindet
+    if (mate) {
+      mate.fled = true;
+      if (mate.phase !== 'fly') mate.flyAcross(true);
+    }
   }
 
   restore(state) {

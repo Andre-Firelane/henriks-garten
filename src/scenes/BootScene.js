@@ -112,6 +112,7 @@ const ANIMAL_SOUNDS = {
   vulture: 'animal_vulture.wav', // Krächzen
   hippo: 'animal_hippo.wav', // Grunzen (auch ab und zu aus dem Wasserloch)
   howler: 'animal_howler.wav', // Brüllen (beim Springen von Baum zu Baum und beim Fangen)
+  gibbon: 'animal_gibbon.wav', // Rufe (beim Springen von Baum zu Baum und beim Fangen)
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
 };
 
@@ -170,7 +171,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
     this.load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
-    for (const k of ['howler', 'howler_jump', 'howler_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
+    for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
     // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
     // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend und fliegend
     for (const k of ['macaw', 'macaw2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
