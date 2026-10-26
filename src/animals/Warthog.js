@@ -9,6 +9,7 @@ const SEE_DIST = 110; // so nah darf man beim ersten Mal kommen, dann flitzt es 
 const TOO_CLOSE = 55; // steht man näher am Loch, bleibt es drin (und flieht sofort, wenn es draußen ist)
 const IN_TIME = [8, 15]; // so lange bleibt es im Loch ...
 const OUT_TIME = [3.5, 5.5]; // ... und so kurz kommt es danach heraus
+const ALERT_TIME = 1; // erschrickt es, bleibt es erst so lange stehen (Sekunden), dann flitzt es ins Loch
 const GRAZE_R = 45; // so weit grast es vom Loch weg
 const HOLE_ORIGIN_Y = 26 / 40; // Mitte des Lochs im Bild "warthog_hole"
 const GRUNT_DIST = 500; // so weit hört man es grunzen, ...
@@ -67,9 +68,16 @@ export default class Warthog extends Animal {
       this.modeTime = (this.modeTime ?? Infinity) - dt;
       const scared = this.shy ? fromMe < TOO_CLOSE : fromMe < SEE_DIST;
       if (scared || (this.shy && this.modeTime <= 0)) {
-        this.mode = 'run';
-        this.grunt(fromMe); // grunzt beim Wegflitzen
+        this.mode = 'alert';
+        this.modeTime = ALERT_TIME;
+        this.faceX = Math.sign(player.x - this.x) || this.faceX; // schaut erschrocken her
+        this.grunt(fromMe); // grunzt beim Erschrecken
       } else return super.updateFree(dt, { x: Infinity, y: Infinity }); // grast (an der Leine beim Loch)
+    }
+    if (this.mode === 'alert') {
+      this.modeTime -= dt;
+      if (this.modeTime > 0) return false; // steht kurz still – Zeit fürs Lasso
+      this.mode = 'run';
     }
     // ins Loch flitzen
     const dx = h.x - this.x;

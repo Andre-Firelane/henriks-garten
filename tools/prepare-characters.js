@@ -19,6 +19,9 @@ const WOLF_SCALE = 0.213;
 // Maßstab des Nilpferds (an Land und schwimmend gleich groß) und der Hyäne (laufend und fressend)
 const HIPPO_SCALE = 0.3;
 const HYENA_SCALE = 0.25;
+// Maßstab des Brüllaffen (laufend, springend und fressend gleich groß) und des Kanus (leer und mit Henrik darin)
+const HOWLER_SCALE = 0.25;
+const CANOE_SCALE = 0.57;
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
@@ -226,6 +229,33 @@ const CHARACTERS = [
   // unten-links und oben-rechts sind gespiegelt. Fliegend: die Rückansichten schauen beide nach links
   { src: 'Sprites/Geier.png', out: 'vulture.png', frameW: 88, frameH: 108, feetY: 104, scale: 0.24, stripShadow: true, copyMirror: { 1: 0, 2: 3 } },
   { src: 'Sprites/Geier fliegend.png', out: 'vulture_fly.png', frameW: 96, frameH: 92, feetY: 88, figureH: 80, stripShadow: true, byComponents: true, copyMirror: { 2: 3 } },
+  // Dschungel: freigestellt mit npm run cutout und tools/jungle-cut.cjs
+  { src: 'Sprites/Charakter Dschungel.png', out: 'hero_jungle.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
+  // Brüllaffe: im Bild nach links, nach rechts, Rückansicht nach links oben, nach rechts oben – im Sheet wie üblich
+  // unten-rechts, unten-links, oben-rechts, oben-links. Fressend: von vorne sitzend, seitlich sitzend (nach rechts),
+  // zweimal stehend nach rechts (oben-links ist davon das Spiegelbild)
+  { src: 'Sprites/Brüllaffe.png', out: 'howler.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, order: [1, 0, 3, 2] },
+  // springend: beide Vorderansichten greifen nach rechts (unten-links ist das Spiegelbild), Rückansichten nach links oben, rechts oben
+  { src: 'Sprites/Brüllaffe springt.png', out: 'howler_jump.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, byComponents: true, copyMirror: { 1: 0 }, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Brüllaffe frisst.png', out: 'howler_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, copyMirror: { 3: 2 }, order: [1, 0, 2, 3] },
+  // Schlange und Vogelspinne (Dschungel, Reptilienhaus), je zwei Farben (die zweite ist ein seltener Skin). Im Bild:
+  // unten-rechts, unten-links, dann zweimal von hinten nach links oben – oben-rechts ist bei der Schlange das Spiegelbild
+  { src: 'Sprites/Schlange.png', out: 'snake.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.24, copyMirror: { 3: 2 }, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Schlange2.png', out: 'snake2.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.24, copyMirror: { 3: 2 }, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Vogelspinne.png', out: 'tarantula.png', frameW: 64, frameH: 64, feetY: 60, scale: 0.21, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Vogelspinne2.png', out: 'tarantula2.png', frameW: 64, frameH: 64, feetY: 60, scale: 0.21, order: [0, 1, 3, 2] },
+  // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend (im Bild nach rechts, links, Rücken nach links oben, rechts oben)
+  // und fliegend (aufrecht gemalt, das Spiel neigt ihn in Flugrichtung; die Rückansichten schauen beide nach rechts oben)
+  { src: 'Sprites/Ara.png', out: 'macaw.png', frameW: 64, frameH: 80, feetY: 76, scale: 0.165, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Ara2.png', out: 'macaw2.png', frameW: 64, frameH: 80, feetY: 76, scale: 0.165, order: [0, 1, 3, 2] },
+  { src: 'Sprites/Ara fliegend.png', out: 'macaw_fly.png', frameW: 88, frameH: 80, feetY: 76, scale: 0.165, byComponents: true, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Ara2 fliegend.png', out: 'macaw2_fly.png', frameW: 88, frameH: 80, feetY: 76, scale: 0.165, byComponents: true, copyMirror: { 3: 2 } },
+  // roter Panda (Glühwürmchen-Abend): laufend und sitzend, im Bild nach links, rechts, Rücken nach links oben, rechts oben
+  { src: 'Sprites/Roter Panda.png', out: 'redpanda.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.24, order: [1, 0, 3, 2] },
+  { src: 'Sprites/Roter panda sitzt.png', out: 'redpanda_sit.png', frameW: 72, frameH: 72, feetY: 68, scale: 0.24, order: [1, 0, 3, 2] },
+  // Kanu leer und mit Henrik darin (die vierte Ansicht ist das Spiegelbild der dritten)
+  { src: 'Sprites/Kanu.png', out: 'canoe.png', frameW: 144, frameH: 152, feetY: 148, scale: CANOE_SCALE, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Kanu besetzt.png', out: 'canoe_hero.png', frameW: 144, frameH: 152, feetY: 148, scale: CANOE_SCALE, copyMirror: { 3: 2 } },
 ];
 
 // Figuren anhand leerer Spalten trennen (Standard)
@@ -468,6 +498,8 @@ const ANIMATIONS = [
   { src: 'Sprites/Löwe aufmerksam.png', out: 'lion_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
   { src: 'Sprites/Löwe2 schläft.png', out: 'lion2_sleep.png', cols: 1, rows: 1, frameW: 108, frameH: 52, feetY: 48, figureH: 42.3 },
   { src: 'Sprites/Löwe2 aufmerksam.png', out: 'lion2_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
+  // Wasserflugzeug (Schnellreise im Dschungel), ein Bild
+  { src: 'Sprites/Wasserflugzeug.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
 ];
 
 function prepareGrid({ src, out, cols, rows, count = cols * rows, frameW, frameH, feetY, figureH }) {
@@ -506,5 +538,7 @@ function prepareGrid({ src, out, cols, rows, count = cols * rows, frameW, frameH
   console.log(`${out}: ${count} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
 }
 
-CHARACTERS.forEach(prepare);
-ANIMATIONS.forEach(prepareGrid);
+// ONLY=hero_jungle.png,canoe.png: nur diese Bilder neu erzeugen
+const ONLY = process.env.ONLY?.split(',');
+CHARACTERS.filter((c) => !ONLY || ONLY.includes(c.out)).forEach(prepare);
+ANIMATIONS.filter((c) => !ONLY || ONLY.includes(c.out)).forEach(prepareGrid);

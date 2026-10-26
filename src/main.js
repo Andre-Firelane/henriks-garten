@@ -5,10 +5,12 @@ import { setupTouchControls } from './ui/touch.js';
 import { setupUpdateCheck } from './update.js';
 import { setupSessions } from './sessions.js';
 import { setupLoadingErrors } from './ui/loading.js';
+import { setupScrollbars } from './ui/scrollbar.js';
 
 setupTouchControls();
 setupUpdateCheck();
 setupSessions();
+setupScrollbars(); // dicker Scrollbalken an allen Tafeln (auf dem Handy sonst unsichtbar)
 setupLoadingErrors(); // statt ewig zu laden: Fehler zeigen und Ausweg anbieten
 
 new Phaser.Game({

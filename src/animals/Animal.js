@@ -274,6 +274,23 @@ export const SPECIES = {
     shadowW: 26,
     catchWith: ['touch', 'net', 'lasso'],
   },
+  // Roter Panda (Bambuswald, nur beim Glühwürmchen-Abend): sitzt im Kirschbaum, das leuchtende Glas lockt ihn herunter
+  // (siehe RedPanda.js); im Pandagehege zusammen mit den Pandas
+  redpanda: {
+    texture: 'redpanda',
+    eatTexture: 'redpanda_sit', // sitzt (unten am leuchtenden Glas)
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 26,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 7,
+    shadowW: 24,
+    catchWith: ['touch'],
+  },
   // Savanne, Wetterphasen (siehe src/world/season.js)
   // Nilpferd (Starkregen): schwimmt im Wasserloch, grast ab und zu am Ufer; nur an Land fangbar (siehe Hippo.js)
   hippo: {
@@ -338,6 +355,68 @@ export const SPECIES = {
     footW: 9,
     shadowW: 30,
     fleeSpeed: 95, // flitzt ins Loch
+    catchWith: ['lasso'],
+  },
+  // Ara (Dschungel): paarweise in den Uferbäumen, im Tiefflug übers Wasser mit dem Kescher zu fangen (siehe Macaw.js)
+  macaw: {
+    texture: 'macaw',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 18,
+    restChance: 0.5,
+    restTime: [1, 4],
+    walkTime: [1, 2],
+    stepRate: 9,
+    hop: 2,
+    footW: 5,
+    shadowW: 18,
+    catchWith: ['net'],
+  },
+  // Schlange und Vogelspinne (Dschungel): verstecken sich im Dickicht, fliehen beim Wegschlagen ins nächste (siehe Critter.js)
+  snake: {
+    texture: 'snake',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 14,
+    fleeSpeed: 52, // langsamer als Henrik, aber das Dickicht ist nah
+    restChance: 0.6,
+    restTime: [2, 5],
+    walkTime: [1, 3],
+    stepRate: 6,
+    hop: 0,
+    footW: 6,
+    shadowW: 26,
+    catchWith: ['net'],
+  },
+  tarantula: {
+    texture: 'tarantula',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 60 / 64,
+    speed: 12,
+    fleeSpeed: 48,
+    restChance: 0.6,
+    restTime: [2, 5],
+    walkTime: [1, 2],
+    stepRate: 14,
+    hop: 0,
+    footW: 6,
+    shadowW: 20,
+    catchWith: ['net'],
+  },
+  // Brüllaffe (Dschungel): sitzt unsichtbar oben in den Urwaldbäumen, kommt für eine Banane herunter (siehe Howler.js)
+  howler: {
+    texture: 'howler',
+    eatTexture: 'howler_eat', // sitzt und frisst die Banane
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 30,
+    restChance: 0.4,
+    restTime: [1, 3],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 2,
+    footW: 6,
+    shadowW: 22,
     catchWith: ['lasso'],
   },
   // Japanmakak (Asien): badet in der heißen Quelle, rennt selten wild herum (dann mit dem Lasso), siehe Macaque.js
@@ -635,6 +714,9 @@ export const SKINS = {
   wolf: { id: 'wolf2', name: tr('schwarzer Wolf', 'black wolf'), male: true, wild: 0.1, baby: 0.03 }, // gilt für das ganze Rudel
   lion: { id: 'lion2', name: tr('Schwarzmähnen-Löwe', 'black-maned lion'), male: true, wild: 0.1, baby: 0 }, // ein Löwenbaby hat noch keine Mähne
   zebra: { id: 'zebra2', name: tr('Schoko-Zebra', 'chocolate zebra'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
+  macaw: { id: 'macaw2', name: tr('Blau-gelber Ara', 'blue-and-yellow macaw'), male: true, wild: 0.15, baby: 0.03 }, // gilt für das ganze Paar
+  snake: { id: 'snake2', name: tr('grüne Baumschlange', 'green tree snake'), male: false, wild: 0.15, baby: 0 },
+  tarantula: { id: 'tarantula2', name: tr('Goldene Vogelspinne', 'golden tarantula'), male: false, wild: 0.15, baby: 0 },
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
 

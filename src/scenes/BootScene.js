@@ -39,7 +39,8 @@ const PIXEL_ART = [
   'hay_shelter', 'hay_rack', 'reeds', 'fountain', 'nest_box', 'lion_rock', // Ausstattung ausgebauter Gehege
   'build_stakes', 'build_planks', // Baustelle vor dem Ausbau
   // Aquarium: Fassade im Tierpark, Halle und Wassertanks, Böden, Deko im Tank
-  'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
+  'reptile_facade', 'hutwall_reptiles_x', 'hutwall_reptiles_y', 'post_hutwall_reptiles', 'hutwall_terrarium_x', 'hutwall_terrarium_y',
+  'post_hutwall_terrarium', 'floor_reptiles', 'terrarium_floor', 'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
   'floor_aquarium', 'tank_floor', 'seaweed', 'coral', 'tank_rock', 'shell', 'tank_chest',
   // Unterwasserwelt (Riff)
   'reef_sand0', 'reef_sand1', 'reef_sand2', 'reef_path', 'reef_branch', 'reef_fan', 'reef_brain', 'reef_tube', 'reef_kelp',
@@ -50,10 +51,16 @@ const PIXEL_ART = [
   // Savanne in den Wetterphasen (Platzhalter aus tools/season-placeholders.cjs): Boden bei Starkregen, trockener Boden,
   // Schlamm im ausgetrockneten Wasserloch, kahle Akazie
   'sgrass_rain0', 'sgrass_rain1', 'sgrass_rain2', 'sdry0', 'sdry1', 'sdry2', 'mud', 'acacia_bare',
+  // Dschungel (Platzhalter aus tools/jungle-placeholders.cjs): Boden, Fluss, Steg, Dickicht, Felsklippe, Fischerhütte
+  'jgrass0', 'jgrass1', 'jgrass2', 'jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2', 'jungle_path', 'jungle_water0', 'jungle_water1', 'jungle_dock',
+  'thicket', 'thicket_small', 'thicket_cut', 'cliff', 'jungle_flow0', 'jungle_flow1', 'jungle_flow2', 'jungle_flow3',
+  'mangrove', 'heliconia', 'hibiscus', 'jungle_plant', 'spider_web',
+  'hutwall_jungle_x', 'hutwall_jungle_y', 'post_hutwall_jungle', 'gate_door_jungle_x', 'gate_door_jungle_y', 'hutroof_jungle',
+  'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'planks_jungle',
 ];
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -104,6 +111,8 @@ const ANIMAL_SOUNDS = {
   hyena: 'animal_hyena.wav', // kurzes Kichern beim Fangen
   vulture: 'animal_vulture.wav', // Krächzen
   hippo: 'animal_hippo.wav', // Grunzen (auch ab und zu aus dem Wasserloch)
+  howler: 'animal_howler.wav', // Brüllen (beim Springen von Baum zu Baum und beim Fangen)
+  macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -119,6 +128,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
     this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
     this.load.spritesheet('hero_asia', 'assets/hero_asia.png', HERO_FRAME);
+    this.load.spritesheet('hero_jungle', 'assets/hero_jungle.png', HERO_FRAME);
     this.load.spritesheet('hero_swim', 'assets/hero_swim.png', HERO_FRAME); // Taucheranzug (Riff)
     this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
     this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
@@ -139,6 +149,10 @@ export default class BootScene extends Phaser.Scene {
     for (const w of ['meadow', 'forest', 'savanna', 'asia']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
     this.load.spritesheet('boat', 'assets/boat.png', CAR_FRAME); // Schnellreise in der Unterwasserwelt
+    this.load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
+    // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
+    for (const k of ['canoe', 'canoe_hero']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
+    this.load.spritesheet('waterfall', 'assets/waterfall.png', { frameWidth: 128, frameHeight: 160 }); // Wasserfall im Dschungel (3 Bilder)
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     // Katze 2 (seltener Skin)
     this.load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
@@ -155,8 +169,18 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
     this.load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
     this.load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
+    // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
+    for (const k of ['howler', 'howler_jump', 'howler_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
+    // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
+    // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend und fliegend
+    for (const k of ['macaw', 'macaw2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
+    for (const k of ['macaw_fly', 'macaw2_fly']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
+    for (const k of ['snake', 'snake2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
+    for (const k of ['tarantula', 'tarantula2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
     this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
+    for (const k of ['redpanda', 'redpanda_sit']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
+    this.load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
     this.load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
     this.load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
@@ -234,6 +258,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
     this.load.image('bone_pile', 'assets/bone_pile.png'); // gestreute Knochen (lockt die Hyänen an)
     this.load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
+    this.load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     this.load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
     this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)

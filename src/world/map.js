@@ -8,11 +8,11 @@ import { currentSeason } from './season.js';
 
 // ≈: ausgetrocknetes Wasserloch (Schlamm, Savanne in der Trockenzeit; dort steckt der Lungenfisch)
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
-// h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser)
-const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water' }; // 0: Springbrunnen im See
+// h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
+const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
-const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
+const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
@@ -32,7 +32,7 @@ export const OBJECTS = {
   '-': { key: 'fence_x', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'x' } },
   '|': { key: 'fence_y', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'y' } },
   S: { key: 'sign_fish', originY: 54 / 56, solid: true },
-  W: { key: 'signpost_post', originY: 60 / 64, solid: true }, // Wegweiser: die schrägen Bretter zeichnet die Szene (drawSignBoards)
+  W: { key: 'signpost_post', originY: 60 / 64, solid: true, hitbox: 5 }, // Wegweiser: die schrägen Bretter zeichnet die Szene (drawSignBoards); fest ist nur der dünne Pfosten
   // Savanne
   A: { key: 'acacia', originY: 116 / 128, solid: true, hitbox: 12 },
   Ǎ: { key: 'acacia_bare', originY: 116 / 128, solid: true, hitbox: 12 }, // kahle Akazie (Geier-Voliere; in der Trockenzeit sind alle Akazien kahl)
@@ -104,6 +104,9 @@ export const OBJECTS = {
   '+': { key: 'peacock_perch', originY: 84 / 96, solid: true, hitbox: 6 }, // hohe Sitzstange (Pfauengehege)
   // Aquarium: Fassade am Rand des Tierparks (großes Bild, ragt über den Kartenrand; die Kachelmitte ist die Tür)
   // ganz hinten (gleich über dem Boden): hinter der Fassade liegt nur der Kartenrand, alles auf der Karte steht davor
+  // Reptilienhaus im Dschungel-Bereich des Tierparks (die Kachel ist die Tür; das Haus selbst steht auf Kacheln
+  // außerhalb der Karte); durch die Tür geht es hinein (Übergang ins Level "reptiles")
+  Ř: { key: 'reptile_facade', originX: 228 / 880, originY: 404 / 560, solid: false, noCull: true, depthFixed: -99000 },
   '`': { key: 'aquarium_facade', originX: 760 / 1296, originY: 680 / 752, solid: false, noCull: true, depthFixed: -99000 },
   // Deko in den Wassertanks
   '(': { key: 'seaweed', originY: 100 / 112, solid: false },
@@ -141,6 +144,18 @@ export const OBJECTS = {
   // Bogenbrücken: B entlang ty, E entlang tx; gezeichnet werden sie am Stück (siehe drawBridges in GardenScene)
   B: { solid: false, bridge: 'y' },
   E: { solid: false, bridge: 'x' },
+  // Dschungel: Bootssteg (liegt flach über dem Wasser, begehbar), Dickicht (fest, bis man es mit der Machete wegschlägt;
+  // es wächst wieder nach, siehe Thicket.js und thicketBlock), Felsklippe und Wasserfall (oben links in der Ecke)
+  Ŝ: { key: 'jungle_dock', originY: 0.5, solid: false, floor: true },
+  Ď: { key: 'thicket', originY: 52 / 64, solid: false, thicket: true },
+  Ŕ: { key: 'cliff', originY: 84 / 96, solid: true },
+  Ŵ: { key: 'waterfall', originY: 150 / 160, solid: true, waterfall: true },
+  Ṁ: { key: 'mangrove', originY: 100 / 112, solid: true, hitbox: 12 }, // Mangrove am Ufer (Stelzwurzeln)
+  ľ: { key: 'jungle_plant', originY: 40 / 48, solid: false }, // großblättrige Bodenpflanze (begehbar)
+  ẅ: { key: 'spider_web', originY: 58 / 64, solid: false }, // Spinnennetz zwischen zwei Zweigen (Vogelspinnen-Terrarium)
+  // große Blumen (später fliegen Kolibris zu ihnen): Helikonie und Hibiskus
+  Ḣ: { key: 'heliconia', originY: 88 / 96, solid: true, hitbox: 6, bigFlower: true },
+  ḟ: { key: 'hibiscus', originY: 64 / 72, solid: true, hitbox: 8, bigFlower: true },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
@@ -172,6 +187,7 @@ export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, 
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
 // Grundfläche des Autos (Schnellreise): Strecke vom Vorderrad links unten bis zum Anhänger rechts oben (Welt-Pixel)
 export let CAR_BODY = null;
+export let CAR_BODIES = []; // alle Autos des Levels (das erste ist CAR_BODY; dazu LEVEL.extraCars, z. B. das zweite im Tierpark)
 const CAR_HALF_WIDTH = 10; // so weit neben dieser Strecke ist es noch fest (mal Größe des Autos; dazu kommen die Füße der Figur)
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
@@ -182,9 +198,9 @@ const tilesWith = (ch) => ROWS.flatMap((row, ty) => [...row].flatMap((c, tx) => 
 
 export function setLevel(id) {
   LEVEL_ID = id;
-  // Wetterphase (Savanne): die Angaben der Phase ersetzen die normalen (Tiere, Boden, Geräusch ...), siehe season.js
+  // Wetterphase (Savanne, Dschungel): die Angaben der Phase ersetzen die normalen (Tiere, Boden, Geräusch ...), siehe season.js
   const base = LEVELS[id];
-  const season = base.seasons ? currentSeason() : 'normal';
+  const season = base.seasons ? currentSeason(id) : 'normal';
   LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: 'normal' };
   ROWS = LEVEL.rows;
   // ... und ihre Kartenstücke (größere Teiche im Regen, Schlamm in der Trockenzeit): { tx, ty, rows }
@@ -233,11 +249,15 @@ export function setLevel(id) {
   START = LEVEL.start;
   TOOL_SPOTS = LEVEL.toolSpots;
   EXITS = LEVEL.exits;
-  const car = LEVEL.car;
-  const c = car && tileToWorld(car.tx, car.ty);
-  const k = car?.scale ?? 1; // größere Autos haben eine längere Grundfläche
-  // Mittellinie der Grundfläche (Auto und Anhänger): von vorne links nach hinten rechts, mitten zwischen Vorder- und Hinterkante
-  CAR_BODY = c ? { ax: c.x - 38 * k, ay: c.y - 15 * k, bx: c.x + 42 * k, by: c.y - 33 * k, hw: CAR_HALF_WIDTH * k } : null;
+  // Mittellinie der Grundfläche (Auto und Anhänger): von vorne links nach hinten rechts, mitten zwischen Vorder- und Hinterkante;
+  // größere Autos haben eine längere Grundfläche
+  const body = (car) => {
+    const c = tileToWorld(car.tx, car.ty);
+    const k = car.scale ?? 1;
+    return { ax: c.x - 38 * k, ay: c.y - 15 * k, bx: c.x + 42 * k, by: c.y - 33 * k, hw: CAR_HALF_WIDTH * k };
+  };
+  CAR_BODIES = LEVEL.car ? [LEVEL.car, ...(LEVEL.extraCars ?? [])].map(body) : [];
+  CAR_BODY = CAR_BODIES[0] ?? null;
   const beyondGate = (tx, ty, dy) => {
     while (charAt(tx, ty) === 'G') ty += dy;
     return charAt(tx, ty);
@@ -591,7 +611,7 @@ export function outerWaterCorners(tx, ty) {
   if (!'~owh≈'.includes(c)) return 0;
   // unter der Brücke geht das Wasser weiter; Schlamm und das letzte Wasserloch darin gehen ineinander über (Trockenzeit)
   // Wasser rundet auch zum Schlamm hin ab (darunter liegt dann Schlamm, siehe cornerGroundAt), Schlamm nicht zum Wasser hin
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BE'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~');
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜ'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
@@ -659,10 +679,13 @@ export function objectAt(tx, ty) {
 const SMALL_BUSHES = 'vbk';
 // zusätzliche Hindernisse eines Events (z. B. der Gnu-Strom bei der Großen Wanderung): at(x, y) gibt true, wo es fest ist
 export const eventBlock = { at: null };
+// Dickicht (Dschungel): at(tx, ty) gibt true, solange es an dieser Kachel dicht ist (die Szene setzt es, siehe Thicket.js);
+// ohne Szene (beim Aufbau der Karte) ist alles Dickicht dicht
+export const thicketBlock = { at: null };
 
 export function isBlockedPoint(x, y, wade = false, trample = false) {
   if (eventBlock.at?.(x, y)) return true;
-  if (CAR_BODY && nearSegment(x, y, CAR_BODY) < CAR_BODY.hw) return true;
+  if (CAR_BODIES.some((b) => nearSegment(x, y, b) < b.hw)) return true;
   const { tx, ty } = worldToTile(x, y);
   if (wade && charAt(tx, ty) === '~') return false;
   if (trample && SMALL_BUSHES.includes(charAt(tx, ty))) return false;
@@ -687,8 +710,18 @@ export function isTerrainBlocked(tx, ty) {
 
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
-  if ('~owH '.includes(charAt(tx, ty))) return true; // Leerzeichen: außerhalb der Karte (nichts zu sehen, z. B. neben dem Tierpark)
+  const c = charAt(tx, ty);
+  if ('~owH '.includes(c)) return true; // Leerzeichen: außerhalb der Karte (nichts zu sehen, z. B. neben dem Tierpark)
+  if (c === 'Ď') return thicketBlock.at ? thicketBlock.at(tx, ty) : true;
   return objectAt(tx, ty)?.solid ?? false;
+}
+
+// Kanu (Dschungel): fährt nur auf dem Fluss; Stege, Ufer und das Wasserflugzeug halten es auf
+export function isBoatBlockedPoint(x, y) {
+  if (CAR_BODIES.some((b) => nearSegment(x, y, b) < b.hw)) return true;
+  const { tx, ty } = worldToTile(x, y);
+  if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
+  return charAt(tx, ty) !== '~';
 }
 
 setLevel('park');

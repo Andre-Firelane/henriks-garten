@@ -2,7 +2,10 @@
 // Starkregen: Regenstriche vor allem, der Himmel etwas dunkler, ab und zu ein Blitz, Pfützen auf den Wegen und
 //             Fußspuren im Matsch, die nach einer Weile verblassen.
 // Trockenzeit: Staubteufel – kleine Wirbel, die über die Karte wandern und Henrik ein Stück wegschubsen.
+// Nebel (Dschungel): ein milchiger Schleier, weiter weg von Henrik wird es immer dichter; über dem Fluss und dem
+//             Wasserfallbecken steigen langsam Nebelschwaden auf.
 import Phaser from 'phaser';
+import { glowTexture } from './Fireflies.js';
 import { tileToWorld, worldToTile } from './iso.js';
 import { MAP_W, MAP_H, charAt, isBlocked, isBlockedPoint } from './map.js';
 
@@ -18,6 +21,11 @@ const DEVILS = 2; // so viele Staubteufel wandern gleichzeitig
 const DEVIL_SPEED = 26;
 const DEVIL_PUSH = 80; // so stark schubst er (Pixel pro Sekunde) ...
 const DEVIL_REACH = 30; // ... wen er so nah erwischt
+const FOG_VEIL = 0.22; // milchiger Schleier über allem
+const FOG_CLEAR = 1.6; // so groß ist der klare Bereich um Henrik (Maßstab des Verlaufsbilds)
+const FOG_PUFFS = 45; // so viele Schwaden steigen gleichzeitig auf
+const FOG_NEAR = 700; // nur über Wasser in dieser Entfernung (Welt-Pixel) von Henrik
+const FOG_RISE = 9; // so schnell steigen sie (Pixel pro Sekunde)
 
 export default class Weather {
   constructor(scene, season) {
@@ -25,6 +33,36 @@ export default class Weather {
     this.season = season;
     if (season === 'rain') this.startRain();
     if (season === 'dry') this.startDry();
+    if (season === 'fog') this.startFog();
+  }
+
+  startFog() {
+    const scene = this.scene;
+    const cam = scene.cameras.main;
+    this.veil = scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width * 4, cam.height * 4, 0xe4ebe6, FOG_VEIL).setScrollFactor(0).setDepth(DARK_DEPTH);
+    this.haze = scene.add.image(scene.player.x, scene.player.y, fogTexture(scene)).setScale(FOG_CLEAR).setDepth(DARK_DEPTH + 1);
+    this.water = [];
+    for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) if (charAt(tx, ty) === '~') this.water.push({ tx, ty });
+    this.puffTex = glowTexture(scene);
+    this.puffs = Array.from({ length: FOG_PUFFS }, () => this.newPuff(Math.random()));
+  }
+
+  // eine Nebelschwade über einer Wasserkachel in Henriks Nähe; age: wie weit sie schon aufgestiegen ist (0..1)
+  newPuff(age = 0) {
+    const p = this.scene.player;
+    let t = null;
+    for (let i = 0; i < 12 && this.water.length; i++) {
+      const c = Phaser.Utils.Array.GetRandom(this.water);
+      const w = tileToWorld(c.tx, c.ty);
+      if (Math.hypot(w.x - p.x, (w.y - p.y) * 2) < FOG_NEAR) {
+        t = w;
+        break;
+      }
+    }
+    t ??= { x: p.x + Phaser.Math.Between(-300, 300), y: p.y + Phaser.Math.Between(-150, 150) };
+    const life = Phaser.Math.FloatBetween(7, 12);
+    const img = this.scene.add.image(t.x, t.y, this.puffTex).setTint(0xf4f8f4).setDepth(DARK_DEPTH - 1);
+    return { img, x: t.x + Phaser.Math.Between(-16, 16), y: t.y, life, age: age * life, drift: Phaser.Math.FloatBetween(-5, 5), size: Phaser.Math.FloatBetween(1.6, 2.8) };
   }
 
   startRain() {
@@ -83,6 +121,26 @@ export default class Weather {
   update(dt) {
     if (this.season === 'rain') this.updateRain(dt);
     if (this.season === 'dry') this.updateDry(dt);
+    if (this.season === 'fog') this.updateFog(dt);
+  }
+
+  updateFog(dt) {
+    const p = this.scene.player;
+    this.haze.setPosition(p.x, p.y - 10);
+    for (let i = 0; i < this.puffs.length; i++) {
+      const f = this.puffs[i];
+      f.age += dt;
+      if (f.age >= f.life) {
+        f.img.destroy();
+        this.puffs[i] = this.newPuff(0);
+        continue;
+      }
+      const t = f.age / f.life;
+      f.img
+        .setPosition(f.x + f.drift * f.age, f.y - FOG_RISE * f.age)
+        .setScale(f.size * (0.6 + t * 0.8), f.size * (0.35 + t * 0.4))
+        .setAlpha(Math.sin(Math.PI * t) * 0.55);
+    }
   }
 
   updateRain(dt) {
@@ -198,6 +256,24 @@ function devilTexture(scene) {
     ctx.lineWidth = 1;
     ctx.stroke();
   }
+  tex.refresh();
+  return key;
+}
+
+// Nebel um Henrik: in der Mitte klar, nach außen immer dichter (wie die Dunkelheit der Wolfsnacht, nur weiß)
+function fogTexture(scene) {
+  const key = 'fog_haze';
+  if (scene.textures.exists(key)) return key;
+  const size = 1024;
+  const tex = scene.textures.createCanvas(key, size, size);
+  const ctx = tex.getContext();
+  const g = ctx.createRadialGradient(size / 2, size / 2, size * 0.06, size / 2, size / 2, size / 2);
+  g.addColorStop(0, 'rgba(232, 238, 234, 0)');
+  g.addColorStop(0.35, 'rgba(232, 238, 234, 0.45)');
+  g.addColorStop(0.7, 'rgba(232, 238, 234, 0.8)');
+  g.addColorStop(1, 'rgba(232, 238, 234, 0.9)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
   tex.refresh();
   return key;
 }

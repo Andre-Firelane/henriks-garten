@@ -63,6 +63,11 @@ const THUMBS = {
     ['jellyfish', 64, 96, 2, 0.5, 132, 14],
   ],
   // Wetterwechsel: Wettersymbole statt Tieren ([Zeichen, Schriftgröße in px, links, unten])
+  fireflies: [
+    ['emoji', '🏮', 32, 8, 10],
+    ['emoji', '✨', 30, 66, 34],
+    ['redpanda', 72, 72, 0, 0.7, 98, 2],
+  ],
   weather: [
     ['emoji', '☀️', 34, 8, 14],
     ['emoji', '🌧️', 40, 58, 22],

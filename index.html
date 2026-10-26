@@ -55,7 +55,9 @@
       }
       #chest.show { display: flex; }
       .chest-box {
-        padding: 14px 18px 10px; text-align: center; max-width: 96vw;
+        padding: 14px 18px 10px; text-align: center; max-width: 96vw; box-sizing: border-box;
+        max-height: calc(100% - 16px); overflow-y: auto; /* kleine Bildschirme: die Tafel scrollt (Wischen nach oben und unten) */
+        touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
         background: #f4dcae; border: 4px solid #6b4224; border-radius: 14px; box-shadow: 0 6px 0 #8a5a30;
       }
       .chest-box h2 { margin: 0 0 12px; font-size: 22px; }
@@ -84,8 +86,6 @@
         background: rgba(20, 14, 8, 0.55); font: 15px/1.3 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
       }
       #events.show { display: flex; }
-      /* auf kleinen Bildschirmen: die Tafel scrollt (Wischen nach oben und unten) */
-      .ev-box { max-height: 92vh; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
       .ev-hearts { margin: -6px 0 12px; font-size: 16px; }
       .ev-tabs { display: flex; justify-content: center; gap: 8px; margin: 0 0 12px; }
       .ev-tab {
@@ -160,6 +160,8 @@
       }
       #travel.show { display: flex; }
       .travel-box { width: min(98vw, calc(92vh * 1024 / 572)); text-align: center; }
+      /* Handy: 100vh ist dort höher als das sichtbare Bild (Adressleiste), dvh nicht */
+      @supports (height: 1dvh) { .travel-box { width: min(98vw, calc((92dvh - 30px) * 1024 / 572)); } }
       .travel-map {
         position: relative; width: 100%; aspect-ratio: 1024 / 572; border-radius: 12px;
         background: url(assets/worldmap.jpg) center / 100% 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
@@ -187,6 +189,16 @@
         transform: translate(-50%, -50%) scale(1.15); border-color: #e8a830; box-shadow: 0 0 0 4px rgba(255, 210, 90, 0.8);
       }
       .travel-map .place.here { opacity: 0.75; cursor: default; border-style: dashed; }
+      /* größeres Schild mit mehreren Zielen (Tierpark: Zentrum und Reptilienhaus), die Felder übereinander */
+      .travel-map .place-group {
+        position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 0.25em; width: 7.4em;
+        padding: 0.2em 0.3em 0.35em; box-sizing: border-box; border: 3px solid #6b4224; border-radius: 12px; background: rgba(214, 186, 136, 0.95);
+        font-size: clamp(8px, 1.1cqw, 13px);
+      }
+      .travel-map .place-group > .group-title { font: bold 1em/1.2 "Trebuchet MS", Arial, sans-serif; color: #3a2414; }
+      .travel-map .place-group > .place { position: relative; transform: none; width: 100%; height: 5.2em; font-size: 1em; border-width: 2px; }
+      .travel-map .place-group > .place:hover, .travel-map .place-group > .place.selected { transform: scale(1.06); }
+      .travel-map .place-group > .place > span { font-size: 0.82em; } /* "Reptilienhaus" passt hinein */
       .travel-hint { margin: 6px 0 0; color: #fff8e6; font-size: 16px; text-shadow: 0 1px 2px #000; }
       /* Übersicht (Taste I) */
       #journal {
@@ -195,8 +207,8 @@
       }
       #journal.show { display: flex; }
       .journal-box {
-        width: min(960px, 94vw); max-height: 90vh; overflow-y: auto; padding: 14px 18px;
-        touch-action: pan-y; -webkit-overflow-scrolling: touch; /* auf dem Tablet wischen zum Scrollen */
+        width: min(960px, 94vw); max-height: calc(100% - 16px); overflow-y: auto; padding: 14px 18px; box-sizing: border-box;
+        touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; /* auf dem Tablet wischen zum Scrollen */
         background: #f4dcae; border: 4px solid #6b4224; border-radius: 14px; box-shadow: 0 6px 0 #8a5a30;
       }
       .journal-box h2 { margin: 0 0 10px; font-size: 22px; }
@@ -239,10 +251,12 @@
         position: fixed; right: 16px; bottom: 16px; padding: 10px 16px; min-width: 260px;
         font: 16px/1.6 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
         background: #e8c48a; border: 3px solid #6b4224; border-radius: 10px;
-        box-shadow: 0 4px 0 #8a5a30; pointer-events: none;
+        box-shadow: 0 4px 0 #8a5a30; pointer-events: none; z-index: 6; box-sizing: border-box;
         opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s;
+        max-height: calc(100% - 100px); overflow-y: auto; /* lange Listen scrollen (Wischen oder Mausrad) */
+        touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
       }
-      #sign.show { opacity: 1; transform: none; }
+      #sign.show { opacity: 1; transform: none; pointer-events: auto; }
       #sign b { display: block; margin-bottom: 4px; font-size: 18px; }
       #sign .print-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; line-height: 1.3; }
       #sign .print-row span { max-width: 280px; }
@@ -325,7 +339,24 @@
       #btn-full svg { display: block; margin: auto; }
       /* Auf dem Tablet zeigt der Aktionsknopf das Werkzeug; der Wegweiser rückt nach oben */
       body.touch #tools { display: none; }
-      body.touch #sign { bottom: auto; top: 84px; }
+      body.touch #sign { bottom: auto; top: 84px; max-height: calc(100% - 84px - 160px); } /* über dem Aktionsknopf */
+      /* Handy: Wegweiser kleiner; quer steht er links neben dem Aktionsknopf und darf bis nach unten reichen */
+      @media (max-width: 900px), (max-height: 500px) {
+        #sign { min-width: 0; max-width: min(340px, calc(100% - 32px)); padding: 6px 10px; font-size: 13px; line-height: 1.45; }
+        #sign b { font-size: 15px; }
+        #sign .print-row span { max-width: 240px; }
+        #sign .print-row span b { font-size: 13px; }
+        #sign .arrow { width: 22px; font-size: 16px; }
+      }
+      @media (max-height: 500px) { body.touch #sign { top: 76px; right: 150px; max-height: calc(100% - 88px); max-width: calc(100% - 166px - 40%); } }
+      /* dicker Scrollbalken rechts an scrollenden Tafeln (siehe src/ui/scrollbar.js), statt des unsichtbaren vom Browser */
+      .has-scroll-track { scrollbar-width: none; padding-right: 30px !important; }
+      .has-scroll-track::-webkit-scrollbar { display: none; }
+      .scroll-track {
+        position: fixed; z-index: 40; display: none; width: 14px; border-radius: 7px; background: rgba(107, 66, 36, 0.25); touch-action: none;
+      }
+      .scroll-track.show { display: block; }
+      .scroll-thumb { width: 100%; border-radius: 7px; background: #6b4224; box-shadow: inset 0 0 0 2px #a8743f; cursor: grab; }
       body.touch #hud { max-width: calc(100% - 180px); }
       /* Hinweise am Bildschirmrand: in welcher Richtung eine ausgelegte Falle liegt */
       #markers { position: fixed; inset: 0; pointer-events: none; }

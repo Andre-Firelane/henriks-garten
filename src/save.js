@@ -78,6 +78,7 @@ export function loadSave() {
   }
   for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.since) a.since += shift;
   if (Number.isFinite(game.seasonAnchor)) game.seasonAnchor += shift; // die Wetterphase läuft weiter, wo sie war
+  for (const k of Object.keys(game.seasonAnchors ?? {})) game.seasonAnchors[k] += shift;
   migrateStag();
   save.lastSaved = s.savedAt;
   return s.level;

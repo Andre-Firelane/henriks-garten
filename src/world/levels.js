@@ -376,6 +376,151 @@ export const LEVELS = {
     spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35, peacock: 0.8 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
   },
 
+  // Dschungel: ein breiter Fluss teilt den Urwald in Nord- und Südufer. Man landet mit dem Wasserflugzeug an der kleinen
+  // Insel mitten im Fluss (Fischerhütte); ans Ufer kommt man nur mit dem Kanu (siehe Boat.js), an vier Stegen mit je einer
+  // Werkzeug-Kiste. Dickicht (Ď) schlägt Henrik mit der Machete weg, es wächst langsam nach (siehe Thicket.js). Oben links
+  // versteckt sich hinter Dickicht ein Wasserfall, unten rechts (Südufer) eine große Lichtung, ebenfalls hinter Dickicht
+  // (dort leben später die Gorillas). Wetter: Normal, Starkregen, aufsteigender Nebel (siehe season.js).
+  // Tiere kommen später. Ŝ: Steg, Ŕ: Felsklippe, Ŵ: Wasserfall
+  jungle: {
+    name: tr('Dschungel', 'Jungle'),
+    wip: true, // noch nicht fertig: Hinweis beim Ankommen und auf der Weltkarte
+    // Schnellreise: Wasserflugzeug am Inselufer (bob: schaukelt auf dem Wasser; reach: so nah muss man heran;
+    // arrive: Ankunft auf der Insel statt neben dem Flugzeug)
+    car: { tx: 16.4, ty: 22.6, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 19, ty: 22 } },
+    map: { x: 30, y: 64, icon: 'snake' },
+    rows: [
+      'kJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkk',
+      'JŔŔŔŔŔŔŔŔk.J.....nľf...nfqn..n....ľn.qnľqn.J',
+      'kŔŔ.ŴnḢrĎĎJḟnJ.k.n..n..q...ḟJqJJ.qḢfľqqqn.nk',
+      'kŔr~~~~ĎĎ.J...J.knľ.qkk.J..n.Jn.nqnJg.Ḣ.nqqk',
+      'JŔn~~~~nn.qľ..ľ.ľ.n.kľq..f.kľn...n.kľnq.fqnJ',
+      'kŔn~~~Ď.Jq.k..q..J..ľľ..Jqľ..JnJnJJľ.knk.q.k',
+      'kŔḟĎĎf.Ḣnn.ľJq.qn.ĎĎĎĎĎJf.qľ.JnľĎĎĎJq...q.ľk',
+      'JŔĎĎĎnq.nľľ.ľľ...ĎĎĎĎĎĎĎ.J.ľnn.ĎĎĎĎĎ.n.n...J',
+      'kfĎĎ.n.ĎĎĎĎĎ.q...ĎĎĎĎĎĎĎ.J.ľnkĎĎĎĎĎĎĎḟ..n..k',
+      'k.Ď...ĎĎĎĎĎĎĎ.qk.ĎĎĎĎĎĎĎ.n.nḢ.ĎĎĎĎĎĎĎ.k.nn.k',
+      'J.JJq.ĎĎĎĎĎĎĎ.Ḣ.nkĎĎĎĎĎ.n..ľ..ĎĎĎĎĎĎĎJ..qnfJ',
+      'k.nJJľĎĎĎĎĎĎĎľ.J...f.Jľk..Jn..qĎĎĎĎĎ..qfľ..k',
+      'k...ḢqľĎĎĎĎĎn.qľ...JqkJf...nnk.nĎĎĎ#.ĎĎĎ.f.k',
+      'Jqnľ.n.ľ#ľn.nkn.....ĎnḢnn.ľJ.ľḢJnf.#ĎĎĎĎĎ.ľJ',
+      'kqg..n..##...n.Jn.ṀĎ~~~~~n.Ď..k...##ĎĎĎĎĎ..k',
+      'k.J.ľ...k#.ľ.J..Ḣ~~~~~~~~~~~Ṁ..f.k#qĎĎĎĎĎ.Jk',
+      'Jgn..fJ..#ḟn.nĎṀ~~~~~~~Ŝ~~~~~ĎĎṀ..#e.ĎĎĎJľnJ',
+      'kqgkfn.ľ##ľ.JṀ~~~~~~~~~Ŝ~~~~~~~~~~Ŝ~~.Ṁ.nkJk',
+      'kṀnṀĎ...##Jn.Ṁ~~~~~....#..~~~~~~~~Ŝ~~~~~~Ṁfk',
+      '~~~~~Ṁnľ.#en.Ṁ~~~~..MMMMM..~~~~~~~~~~~~~~~~~',
+      '~~~~~~~~~Ŝ~~~~~~~~..Nap,N.n~~~~~~~~~~~~~~~~~',
+      '~~~~~~~~~Ŝ~~~~~~~~b.N,j,G#.~~~~Ŝ~~~~~~~~~~~~',
+      '~~~~~~~~~~~~~~~~~~..MMMMM#.~~~~Ŝ~~~~~~~~~~~~',
+      '~~~~~~~~~~~~~~~~~~....c..#.~~~~#e.qn.~~~~~~~',
+      '~~~~~~~~~~~~Ŝ~~~~~.f..###..~~~~##n...Ṁ.ĎĎ~~~',
+      'JṀnĎk~~~~~~~Ŝ~~~~~~n..#...~~~~~##f...nľ.J.ṀJ',
+      'k.kJ.ṀṀṀṀṀľ.#e~~~~~~~~Ŝ~~~~~~~~#...fn.JnJJ.k',
+      'knk..ĎĎĎ...k#f.n~~~~~~Ŝ~~~~~~..#..q.n...q.fk',
+      'Jľ..ĎĎĎĎĎn.n#JľľĎ~~~~~~~~~~~Ṁ.f#Jľ.nḢ.nJ.qľJ',
+      'kJ.JĎĎĎĎĎḢ..#.J.ľĎṀṀ~~~~~nĎṀľk.##..n.ĎĎĎ..kk',
+      'kJkľĎĎĎĎĎ...#ffJqn.ľĎnn.ľn.ḟnľľ.#qnnĎĎĎĎĎ..k',
+      'J.n.ĎĎĎĎĎ.nľĎĎĎĎĎ.ľ..nn.k.nľ..ľn#nn.JĎĎĎĎJJJ',
+      'kJ..ĎĎĎĎĎľľĎĎĎĎĎĎĎľ...nn...nĎĎĎĎ##JĎĎĎĎJJĎfk',
+      'k...kĎĎĎ.JnĎĎĎĎĎĎĎ..qľ...ľľĎĎĎĎĎĎ#Jn..nq.ĎJk',
+      'JJn...J..n.ĎĎĎĎĎĎĎḢ...n.q..ĎĎĎĎĎJĎĎ......ľĎJ',
+      'k..n..k.n.k#ĎĎĎĎĎJngJ.nkJkľĎĎĎĎĎĎ.Ď.....O..k',
+      'k.fJ.g...ḟ....J.J.n.ĎĎĎĎĎ.q.ĎĎĎĎĎľ..L......k',
+      'J....J.J.nJkn..kJnĎĎĎĎĎĎĎĎĎ.ľq.JĎ.........ľJ',
+      'kq..q.qnJqnľ...nqḟĎĎĎĎĎĎĎĎĎ.nnnĎJn.........k',
+      'kJ....nkn..fľkqn.nĎĎĎĎĎĎĎĎĎ...JĎĎq.r...r...k',
+      'J..ľqkḟ.J...Jn.ľJnq.ĎĎĎĎĎq..nḟnkJ..........J',
+      'kk...Jľg..ḟnnn...fľ.qf.ľ..f.k...ĎJqq....qľĎk',
+      'kn.J..q.nkJľ.nf.k.Jqľľk.ľnk...J.qĎĎ.q.nn.ĎĎk',
+      'JJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJ',
+    ],
+    grass: ['jgrass0', 'jgrass1', 'jgrass2'],
+    path: 'jungle_path',
+    water: ['water'], // ruhiges Wasser außerhalb des Flusses: das frische, blaue Becken am Wasserfall (der Fluss: siehe flow)
+    // der Fluss fließt: Bilder reihum (helle Streifen wandern mit der Strömung), alle ms Millisekunden; minSize: nur
+    // Wasser ab so vielen Kacheln (nicht das Becken am Wasserfall). current: Strömung (Richtung in Kacheln, Pixel pro
+    // Sekunde), sie treibt das Kanu langsam flussabwärts
+    flow: { frames: ['jungle_flow0', 'jungle_flow1', 'jungle_flow2', 'jungle_flow3'], ms: 280, minSize: 40 },
+    current: { tx: 1, ty: 0, speed: 14 },
+    start: { tx: 19, ty: 22 },
+    enclosures: [], // die Gehege sind im Tierpark
+    hut: { tx0: 20, ty0: 19, tx1: 24, ty1: 22, style: 'jungle' }, // Fischerhütte auf der Insel
+    // Kanu: liegt am Anfang am Südsteg der Insel
+    boat: { tx: 22, ty: 28 },
+    chests: [
+      { tx: 22, ty: 23, tools: ['net', 'lasso', 'banana'] }, // Regal vor der Fischerhütte
+      { tx: 10, ty: 19, tools: ['net', 'lasso', 'banana'] }, // Kisten an den Uferstegen
+      { tx: 35, ty: 16, tools: ['net', 'lasso', 'banana'] },
+      { tx: 13, ty: 26, tools: ['net', 'lasso', 'banana'] },
+      { tx: 32, ty: 23, tools: ['net', 'lasso', 'banana'] },
+    ],
+    hero: 'hero_jungle', // Dschungel-Kleidung mit Machete
+    ambient: 'ambient_jungle', // Dschungel-Geräusche (dazu rauscht oben links der Wasserfall, siehe updateWaterfallSound)
+    ambientVolume: 0.5,
+    background: '#2f5a24',
+    toolSpots: [],
+    exits: [], // hin und zurück nur mit dem Wasserflugzeug
+    spawn: { population: 4, weights: { howler: 1, macaw: 1 } }, // population: Trupps bzw. Paare (ein Trupp Brüllaffen, ein Ara-Paar zählt als ein Platz)
+    // Wetterphasen (siehe src/world/season.js): ersetzen die Angaben oben
+    seasons: {
+      rain: {
+        spawn: { population: 2, weights: { macaw: 1 } }, // bei Starkregen verkriechen sich die Brüllaffen; die Aras sitzen nur in den Bäumen
+        grass: ['jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2'],
+        ambient: 'ambient_savanna_rain', // Regen und Donner
+        ambientVolume: 0.5,
+      },
+      // aufsteigender Nebel: man sieht nicht weit, über dem Fluss steigen Schwaden auf (siehe Weather.js)
+      fog: {
+        ambientVolume: 0.3, // im Nebel ist es stiller
+      },
+    },
+  },
+
+  // Reptilienhaus: eigene, enge Halle hinter der Fassade im Dschungel-Bereich des Tierparks (wie das Aquarium), voller
+  // Dschungelpflanzen. Zwei kleine Terrarien mit Glaswänden: links die Schlangen, rechts die Vogelspinnen (mit Netzen ẅ). Gefangene ziehen beim Betreten des Tierparks hier ein
+  // (siehe sendToHouse in GardenScene)
+  reptiles: {
+    name: tr('Reptilienhaus', 'Reptile House'),
+    rows: [
+      'MMMMMMMMMMMMMMMMMM',
+      'Nľ.ḟ..ľ....ľ..Ḣ.ľN',
+      'N.MMMMMM..MMMMMM.N',
+      'N.N.ľ.rN..Nẅ.ľ.N.N',
+      'N.N.L..N..N..ẅ.N.N',
+      'N.Nn..rN..Nr..ẅN.N',
+      'N.MMMMMM..MMMMMM.N',
+      'Nľ.n....ľ.....n.ľN',
+      'N.##############.N',
+      'NḢ..Ɓ...##...Ɓ..ḟN',
+      'Nľ.ľ....##....ľ.ľN',
+      'MMMMMMMMXXMMMMMMMM',
+    ],
+    grass: ['floor_reptiles'],
+    path: 'asia_path',
+    start: { tx: 8, ty: 10 },
+    enclosures: [
+      { id: 'snakes', name: tr('Schlangen-Terrarium', 'Snake Terrarium'), species: ['snake'], world: 'jungle', seed: { tx: 5, ty: 4 }, slots: [4, 4], signAt: { tx: 4.5, ty: 6.6 }, signOnGlass: true },
+      { id: 'tarantulas', name: tr('Vogelspinnen-Terrarium', 'Tarantula Terrarium'), species: ['tarantula'], world: 'jungle', seed: { tx: 12, ty: 4 }, slots: [4, 4], signAt: { tx: 12.5, ty: 6.6 }, signOnGlass: true },
+    ],
+    // Terrarien zuerst (ihre Wände und ihr Boden gehören zum Terrarium), dann die Halle
+    buildings: [
+      { tx0: 2, ty0: 2, tx1: 7, ty1: 6, style: 'terrarium', noRoof: true },
+      { tx0: 10, ty0: 2, tx1: 15, ty1: 6, style: 'terrarium', noRoof: true },
+      { tx0: 0, ty0: 0, tx1: 17, ty1: 11, style: 'reptiles', noRoof: true, pathFloor: 'asia_path', visitors: true },
+    ],
+    chests: [],
+    toolSpots: [],
+    background: '#1e1a12',
+    ambient: 'ambient_jungle', // ganz leise der Dschungel (warm und feucht)
+    ambientVolume: 0.15,
+    exits: [
+      { tx: 8, ty: 11, to: 'park', arrive: { tx: 86, ty: 72 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 9, ty: 11, to: 'park', arrive: { tx: 86, ty: 72 }, label: tr('Tierpark', 'Zoo') },
+    ],
+    spawn: { population: 0, weights: {} },
+  },
+
   // Aquarium: eigene Zone hinter der Fassade oben links im Tierpark. Eine Halle (Gebäude ohne Dach, man ist immer drin)
   // mit zwei Wassertanks an der Rückwand; darin schwimmen Zierfische (siehe TankFish.js) zwischen Pflanzen und Deko.
   aquarium: {
@@ -514,94 +659,97 @@ export const LEVELS = {
   park: {
     name: tr('Tierpark', 'Zoo'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26 },
-    map: { x: 42, y: 32, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur
+    car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26, name: tr('Zentrum', 'Center') },
+    // zweites Auto unten im Dschungel-Bereich, beim Reptilienhaus (der Weg zum Haupthaus ist weit): auf der Weltkarte ein
+    // eigenes Ziel im Tierpark-Schild (dest), Ankunft daneben
+    extraCars: [{ tx: 89.16, ty: 74.32, texture: 'car_park', frame: 0, scale: 1.26, dest: 'reptiles', name: tr('Reptilienhaus', 'Reptile House'), icon: 'tarantula', arrive: { tx: 88, ty: 76 } }],
+    map: { x: 20, y: 33, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur (in Nordamerika, dort ist Platz für das große Schild)
     // jede Welt hat ihre eigene Seite: Savanne oben, Wald links, Wiese rechts, Asien unten. Die Gehege sind in den
     // Rand eingelassen, ihre Tore zeigen zum Rundweg; der Ausgang in eine Welt liegt mitten in deren Seite.
     rows: [
-      '         f.g.b.f.                3X33333333333333333333333333333333333333333333',
-      '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3....y....v....y....A....3',
-      '         g.K.f.b.                3#].y..............]3...v...A....y.....v...y.3',
-      '         f...b.g.                3#]..A..yyy....A.@.]3......y....v..A......R..3',
-      '         .g.T..K.                3#].....www........]3..y.....y........y......3',
-      '         b..f.g..        333333333#]....wwww........]33...v...........v....y..3',
-      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]....A.......y.A......y.v.3',
-      '         g.b..f..        3.yv.....#########].yyA.y..].y...................A...3',
-      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]...v........R..........y.3',
-      '        Vbbbbbbbb3       3]........]....A.#].......y].............v...........3',
-      '        V.T..f.K.333333333].A.y....]......#G..y..y..]....y.......A........R...3',
-      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y............y...........3',
-      '        Vf.b....g3....y...]........G#.v...#].....A..]vy.R........v.........v..3',
-      '        Vl.Kf.g..3.y...y..]...y..y.]#vy.A.#]........].A...........A.......A...3',
-      '        V.g..f.b.3..y.....[[[[[[[[[[#F....#[[[[[[[[[[....y..v..........v....y.3',
-      '        `#####################################################################3',
-      '        Vgff3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy...v.....y...R.....y.v.3',
-      '        Vlfb3.}......}..|.....|.#....A...A....v.#...R...A........y.........A..3',
-      '        V3333.}.oooo.}..|..u..|.#..y.....y....v.#..vy.............v...........3',
-      'g.f.b.g.f.b.3.}.oooo.}..|.....|.#........yyy..A.#y..A....v.......A..........y.3',
-      'b..T..f.K.g.3.}y.ooo.}..|y.y..|.#..............y#...y.............R...........3',
-      '.K..g.b..T..3.}......}..-------.#..R.....vy..y..#....A..y........v.........A..3',
-      'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v...........y...........3',
-      '22222222222222222222222################################b.R.........A.......v..3',
-      '222k2DDk2222.^^^^^^^^^^#............###.......#MMMMMMM.b33333333333333333333333',
-      '2D22kD222DD2.;.n......;#..y.y.v.....###..%....#N.C...N.b                       ',
-      '2kD2222k22k2.;.P...ww.;#.D.y......v.###..~~...#N....CN.b                       ',
-      '22k2k22k2D22k;.....ww.G#...Av..A.A..###..~~~..#N.....N.b                       ',
-      'DkD222k2k2k2.;...m....G#.......y....###...~~..#MMMGMMM.b                       ',
-      '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b                       ',
-      '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b                       ',
-      'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b                       ',
-      'D22DD2222222.;*...;....#.NZ...z.sN..###Fb.b....g..g..b#b                       ',
-      'kD222D222222m;..P.;....#.N...VYV.N..###-------------..#b                       ',
-      'D2222D2mk....^^^^^^kkn.#.N.......N..###|...........|.b#b                       ',
-      'k2D2222.################.NVt.....N..###|...........|.b#b                       ',
-      '2kk2kk2.------GG---.km.#.Ndix....N..###|....T......---#b                       ',
-      '222D222k|.........|k.n.#.Ns.....ZN..###|.............|#b                       ',
-      'D2D2kD2.|....D....----k#.MMMMGGMMM.####|..@..........|#b                       ',
-      '22k2DD2.|.&..........|m#bg.#####.fb####|...f......T..|#b                       ',
-      '2kkk222.|.P..........|.#..f#####g..####G.............|#X                       ',
-      '2222kD2.|.m......D..n|k#############W##G.............|.b                       ',
-      '2222kk2.|n...........|.################|.........f...|.b                       ',
-      '22kDD22.|...D........|.##........######---...........|.b                       ',
-      '2222222.----...m.....|k#.........######..|...........|.b                       ',
-      ' 2mm...nkmn-----------F#.........######g.-------------.b                       ',
-      ' X######################......n.....###.....ff.b.b...g.b                       ',
-      ' 2.---G---k#.{{{{{{..m.#.......n.n..###.b..gf.T.....bTbb                       ',
-      ' 2--n....--#{{%...{{mD.#....m.m...m.########g.....bff..b                       ',
-      ' 2|..n....|#}..oo..}...#..D.........###..f.#.^^^^^.....b                       ',
-      ' 2|.mU.n..|#}.oooom}.n.#............###g.g.#.;...;.....b                       ',
-      ' 2|n......|#G.oooo.}...#......mm..q.###....#g;...;....bb                       ',
-      ' 2--.....--#}mnooo.}...#.m.P..0K.K..###g..g#.;...;b....b                       ',
-      ' 2.-------m#{{...%{{kkn#............###...b##G...^^^^^.b                       ',
-      ' 2222222.k.#.{{{{{{.k..#....n.q..l..###.bb.#.G.....*.;fb                       ',
-      '       2m..#.......kn..#..n.q.......###..T.##;...w.w.;.b                       ',
-      '       2mm.#.mn....k...#....ll......###..fb.#;.......;.b                       ',
-      '       2.n.#############...q.qq.....###b.b..#^^^^^^^^^.b                       ',
-      '       2.k.n..k......nk#...........####..f..#..b...f...b                       ',
-      '22222222222222222222222################################b                       ',
-      '            5..................q......#................b                       ',
-      '            T..6^^^^^^......K..r......I.K..[[[[[[[[[[[[b                       ',
-      '            5.6^^....^^^K.............#....]...Q......]b                       ',
-      '            T.^^.9.....;......#########...[[.......Q..]b                       ',
-      '            5.;......q.^^l...##.......##..].....K.....]b                       ',
-      '            T.;..hhhh...;...##..KlK.l..##.]...8.....Q.]b                       ',
-      '            5.;.r.hhh...G####.K....q.q.K##[[.....7....]b                       ',
-      '            T.^^...h....G..#..l..q..ll...##G..........]b                       ',
-      '            5..^^......^^..#.lqooooooo.rq.#G..q...q...]b                       ',
-      '            T.K.^^^^^^^^.q.#..ooooooooo...#[[.........]b                       ',
-      '            5....l....q.r..###EEEEEEEEEE###.[[[[[..[[[[b                       ',
-      '            T..rll.qq.q....#.q.oooooooo.l.#.....[[[[...b                       ',
-      '            5..............##..q...ooor...#............b                       ',
-      '            T.[[[[[[[[[[[...##K.r.K..l..l##.[[[[[[[[[[[b                       ',
-      '            5[[.........[[...##...q.K..K##.[[.........]b                       ',
-      '            T]..J...9....[[...##.......####G..q....Q..]b                       ',
-      '            5].........9..G#############...G....w...Q.]b                       ',
-      '            T]L....H......G........#.......]..www8....]b                       ',
-      '            5]....9.......]........#.......]...ww...Q.]b                       ',
-      '            T]..9.....J...]....K...#.......].L....r...]b                       ',
-      '            5].......q...[[....r...#.....q.[[.........]b                       ',
-      '            T[[[[[[[[[[[[[....q..l.#.r......[[[[[[[[[[[b                       ',
-      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb                       ',
+      '         f.g.b.f.                3X33333333333333333333333333333333333333333333                 ',
+      '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3....y....v....y....A....3                 ',
+      '         g.K.f.b.                3#].y..............]3...v...A....y.....v...y.3                 ',
+      '         f...b.g.                3#]..A..yyy....A.@.]3..{{{{{{{{{v..A......R..3                 ',
+      '         .g.T..K.                3#].....www........]3..}.......}......y......3                 ',
+      '         b..f.g..        333333333#]....wwww........]33.}.%ooo..}.....v....y..3                 ',
+      '         .f.g.b.T        3A..A....#[[[[[[[[[y.......]...}.ooooo.}y.A......y.v.3                 ',
+      '         g.b..f..        3.yv.....#########].yyA.y..].y.}oooooo.}.........A...3                 ',
+      '         VVVVVVVV        3[[[[[[[[[[....v.#]..y.....]...}.ooooo.}R..........y.3                 ',
+      '        Vbbbbbbbb3       3]........]....A.#].......y]...}.oooo%.}.v...........3                 ',
+      '        V.T..f.K.333333333].A.y....]......#G..y..y..]...}..oo...}A........R...3                 ',
+      '        Vg..f.T.f3.....v..].....$..G#.y.A.#G........]y..}.......}.y...........3                 ',
+      '        Vf.b....g3....y...]........G#.v...#].....A..]vy.{{{{{G{{{v.........v..3                 ',
+      '        Vl.Kf.g..3.y...y..]...y..y.]#vy.A.#]........].A.....v#....A.......A...3                 ',
+      '        V.g..f.b.3..y.....[[[[[[[[[[#F....#[[[[[[[[[[....y..v#.........v....y.3                 ',
+      '        `#####################################################################3                 ',
+      '        Vgff3v{{{GG{{{..---G---.#.v.....v...y.v.#.v..vy...v.....y...R.....y.v.3                 ',
+      '        Vlfb3.}......}..|.....|.#....A...A....v.#...R...A........y.........A..3                 ',
+      '        V3333.}.oooo.}..|..u..|.#..y.....y....v.#..vy.............v...........3                 ',
+      'g.f.b.g.f.b.3.}.oooo.}..|.....|.#........yyy..A.#y..A....v.......A..........y.3                 ',
+      'b..T..f.K.g.3.}y.ooo.}..|y.y..|.#..............y#...y.............R...........3                 ',
+      '.K..g.b..T..3.}......}..-------.#..R.....vy..y..#....A..y........v.........A..3                 ',
+      'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v...........y...........3                 ',
+      '22222222222222222222222################################b.R.........A.......v..3                 ',
+      '222k2DDk2222.^^^^^^^^^^#............###.......#MMMMMMM.b33333333333333333333333                 ',
+      '2D22kD222DD2.;.n......;#..y.y.v.....###..%....#N.C...N.b                                        ',
+      '2kD2222k22k2.;.P...ww.;#.D.y......v.###..~~...#N....CN.b                                        ',
+      '22k2k22k2D22k;.....ww.G#...Av..A.A..###..~~~..#N.....N.b                                        ',
+      'DkD222k2k2k2.;...m....G#.......y....###...~~..#MMMGMMM.b                                        ',
+      '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b                                        ',
+      '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b                                        ',
+      'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b                                        ',
+      'D22DD2222222.;*...;....#.NZ...z.sN..###Fb.b....g..g..b#b                                        ',
+      'kD222D222222m;..P.;....#.N...VYV.N..###-------------..#b                                        ',
+      'D2222D2mk....^^^^^^kkn.#.N.......N..###|...........|.b#b                                        ',
+      'k2D2222.################.NVt.....N..###|...........|.b#b                                        ',
+      '2kk2kk2.------GG---.km.#.Ndix....N..###|....T......---#b                                        ',
+      '222D222k|.........|k.n.#.Ns.....ZN..###|.............|#b                                        ',
+      'D2D2kD2.|....D....----k#.MMMMGGMMM.####|..@..........|#b                                        ',
+      '22k2DD2.|.&..........|m#bg.#####.fb####|...f......T..|#b                                        ',
+      '2kkk222.|.P..........|.#..f#####g..####G.............|#X                                        ',
+      '2222kD2.|.m......D..n|k#############W##G.............|.b                                        ',
+      '2222kk2.|n...........|.################|.........f...|.b                                        ',
+      '22kDD22.|...D........|.##........######---...........|.b                                        ',
+      '2222222.----...m.....|k#.........######..|...........|.b                                        ',
+      ' 2mm...nkmn-----------F#.........######g.-------------.b                                        ',
+      ' X######################......n.....###.....ff.b.b...g.b                                        ',
+      ' 2.---G---k#.{{{{{{..m.#.......n.n..###.b..gf.T.....bTbb                                        ',
+      ' 2--n....--#{{%...{{mD.#....m.m...m.########g.....bff..b                                        ',
+      ' 2|..n....|#}..oo..}...#..D.........###..f.#.^^^^^.....b                                        ',
+      ' 2|.mU.n..|#}.oooom}.n.#............###g.g.#.;...;.....b                                        ',
+      ' 2|n......|#G.oooo.}...#......mm..q.###....#g;...;....bb                                        ',
+      ' 2--.....--#}mnooo.}...#.m.P..0K.K..###g..g#.;...;b....b                                        ',
+      ' 2.-------m#{{...%{{kkn#............###...b##G...^^^^^.b                                        ',
+      ' 2222222.k.#.{{{{{{.k..#....n.q..l..###.bb.#.G.....*.;fb                                        ',
+      '       2m..#.......kn..#..n.q.......###..T.##;...w.w.;.b                                        ',
+      '       2mm.#.mn....k...#....ll......###..fb.#;.......;.b                                        ',
+      '       2.n.#############...q.qq.....###b.b..#^^^^^^^^^.b                                        ',
+      '       2.k.n..k......nk#...........####..f..#..b...f...b                                        ',
+      '22222222222222222222222################################b    55555555555555555555               5',
+      '            5..................q......#................bbbbb5J[[[[[[[[[[[[[[[Jḟ.               5',
+      '            T..6^^^^^^......K..r......I.K..[[[[[[[[[[[[[[[[b5ľ]n...........ľ]Jľ.               5',
+      '            5.6^^....^^^K.............#....]...Q..........]b5ľ]..J......J...]..ľ               5',
+      '            T.^^.9.....;......#########...[[.......Q....K.]b5.].......ľ.....]qq.               5',
+      '            5.;......q.^^l...##.......##..].....K.........]b5J]...n......ľ..]J.q               5',
+      '            T.;..hhhh...;...##..KlK.l..##.]...8.....Q.....]b5ľ].....J.......]nḢ.               5',
+      '            5.;.r.hhh...G####.K....q.q.K##[[.....7.......Q]b5ľ]...........J.]ľ..               5',
+      '            T.^^...h....G..#..l..q..ll...##G..............]b5.].J......n....].Ḣľ               5',
+      '            5..^^......^^..#.lqooooooo.rq.#G..q...q....q..]b5.]....q.....ḟ..].J.               5',
+      '            T.K.^^^^^^^^.q.#..ooooooooo...#[[.............]b5.[[[[[[[G[[[[[[[.ľ.               5',
+      '            5....l....q.r..###EEEEEEEEEE###.[[[[[..[[[[[[[[b5........#.......ľ.ľ      Ř        5',
+      '            T..rll.qq.q....#.q.oooooooo.l.#W....[[[[...bbbbb5........#..............l.#.l......5',
+      '            5..............##..q...ooor...###################################################..5',
+      '            T.[[[[[[[[[[[...##K.r.K..l..l##.[[[[[[[[[[[b......#......................W.........5',
+      '            5[[.........[[...##...q.K..K##.[[.........]bnn^^^^G^^^^^..Jľ...Jḟ...ľ..q...........5',
+      '            T]..J...9....[[...##.......####G..q....Q..]b..;.....ḟ..;ľ...ľ......................5',
+      '            5].........9..G#############...G....w...Q.]bnḟ;.J.....Ḣ;........ľ..................5',
+      '            T]L....H......G........#.......]..www8....]b..;........;.............ľ.............5',
+      '            5]....9.......]........#.......]...ww...Q.]bJ.;....ľ...;.....ľ............ľ.......ľ5',
+      '            T]..9.....J...]....K...#.......].L....r...]b..;..q...J.;.......................n.qJ5',
+      '            5].......q...[[....r...#.....q.[[.........]bJ.;n.......;................n......ľ.ľ.5',
+      '            T[[[[[[[[[[[[[....q..l.#.r......[[[[[[[[[[[bľ.^^^^^^^^^^ľ...Ḣ..J..nľJ..ḢľJqnJn.Jq.ľ5',
+      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb5555555555555555555555555555555555555555',
     ],
     grass: ['grass0', 'grass1', 'grass2'],
     path: 'park_path',
@@ -615,8 +763,9 @@ export const LEVELS = {
       { id: 'meerkat', name: tr('Erdmännchenbau', 'Meerkat Burrow'), species: ['meerkat'], world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 25, ty: 17 }, slots: [5, 8], upgrade: tr('Erdhügel', 'Dirt mounds'), basic: [[27, 18, ':'], [28, 19, '<']] },
       { id: 'savanna', name: tr('Savannengehege', 'Savanna Enclosure'), species: ['antelope', 'zebra', 'giraffe'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 45, ty: 2 }, quota: { antelope: [5, 8], zebra: [5, 8], giraffe: [3, 5] }, upgrade: tr('Mehr Steppe mit Heu-Unterstand', 'More grassland with a hay shelter'), basic: [[46, 2, ']'], [46, 3, ']'], [46, 4, ']'], [46, 5, '['], [47, 5, '['], [48, 5, '['], [49, 5, '['], [50, 5, '['], [51, 5, '['], [50, 3, '.']] },
       { id: 'gnus', name: tr('Gnu-Steppe', 'Wildebeest Plains'), species: ['gnu'], gate: 'tall', world: 'savanna', unlock: 'gnu', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 26, ty: 3 }, slots: [6, 9], upgrade: tr('Heuraufe', 'Hay rack'), basic: [[31, 2, '.']] },
-      // Savanne, Wetterphasen (rechts am Weg der Savanne, entstehen jeweils mit dem ersten Tier, siehe unlocks)
-      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', unlock: 'hippo', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 57, ty: 4 }, slots: [3, 4], upgrade: tr('Schilf am Ufer', 'Reeds on the bank'), basic: [[58, 5, '.'], [62, 9, '.']] },
+      // Savanne, Wetterphasen (rechts am Weg der Savanne; das Nilpferdbecken steht von Anfang an, die anderen entstehen
+      // jeweils mit dem ersten Tier, siehe unlocks)
+      { id: 'hippos', name: tr('Nilpferdbecken', 'Hippo Pool'), species: ['hippo'], gate: 'chain', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 57, ty: 4 }, slots: [3, 4], upgrade: tr('Schilf am Ufer', 'Reeds on the bank'), basic: [[58, 5, '.'], [62, 9, '.']] },
       { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
       { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Felsenhöhle', 'Rock den'), basic: [[63, 19, '.']] },
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
@@ -634,8 +783,11 @@ export const LEVELS = {
       { id: 'butterflies', name: tr('Schmetterlinge', 'Butterflies'), species: ['butterfly'], world: 'meadow', free: true, slots: [10, 10] }, // flattern frei durch den Park
       { id: 'orangutans', name: tr('Orang-Utan-Gehege', 'Orangutan Enclosure'), species: ['orangutan'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 20, ty: 77 }, slots: [3, 5], upgrade: tr('Hängematte mit Schlafnest', 'Hammock with a sleeping nest'), basic: [[19, 77, ':']] },
       { id: 'tigers', name: tr('Tigergehege', 'Tiger Enclosure'), species: ['tiger'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 49, ty: 78 }, slots: [3, 5], upgrade: tr('Badebecken mit Spielball', 'Pool with a play ball'), basic: [[47, 77, ':'], [48, 77, '<'], [47, 78, '.'], [48, 78, '.'], [46, 77, '.'], [48, 76, '.'], [49, 77, '.']] },
-      { id: 'pandas', name: tr('Pandagehege', 'Panda Enclosure'), species: ['panda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, slots: [2, 4], upgrade: tr('Reifenschaukel und Spielball', 'Tire swing and play ball'), basic: [[49, 66, ':'], [46, 65, '<']] },
+      { id: 'pandas', name: tr('Pandagehege', 'Panda Enclosure'), species: ['panda', 'redpanda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, quota: { panda: [2, 4], redpanda: [3, 5] }, upgrade: tr('Reifenschaukel und Spielball', 'Tire swing and play ball'), basic: [[49, 66, ':'], [46, 65, '<']] }, // rote Pandas wohnen mit im (verbreiterten) Gehege
       { id: 'macaques', name: tr('Affenquelle', 'Monkey Spring'), species: ['macaque'], netRoof: true, gate: 'net', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 19, ty: 64 }, slots: [4, 6], upgrade: tr('Großer Badesee', 'Big bathing lake'), basic: [[20, 65, ':'], [20, 66, '<'], [17, 65, '.'], [19, 67, '.']] },
+      // Dschungel (rechts neben dem Bambuswald): Gehege links, rechts das Reptilienhaus
+      { id: 'howlers', name: tr('Brüllaffen-Gehege', 'Howler Monkey Enclosure'), species: ['howler'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, slots: [4, 6], upgrade: tr('Zusätzlicher Urwaldbaum', 'Another jungle tree'), basic: [[74, 66, ':']] },
+      { id: 'macaws', name: tr('Ara-Voliere', 'Macaw Aviary'), species: ['macaw'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 62, ty: 77 }, slots: [4, 6], upgrade: tr('Zweiter Urwaldbaum', 'Second jungle tree'), basic: [[65, 79, ':']] },
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
     ],
     // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
@@ -644,7 +796,9 @@ export const LEVELS = {
       { area: { tx0: 12, tx1: 78, ty0: 0, ty1: 22 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] }, // mit den Gehegen der Wetterphasen rechts
       { area: { tx0: 56, tx1: 78, ty0: 23, ty1: 24 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] },
       { area: { tx0: 0, tx1: 22, ty0: 23, ty1: 59 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] },
-      { area: { tx0: 12, tx1: 55, ty0: 60, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich
+      { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
+      { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
+      { area: { tx0: 12, tx1: 59, ty0: 60, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
     ],
     // große Bilder jenseits des Kartenrands (ganz hinten): der dunkle Wald hinter dem Wolfswald; Kachel und ihr Punkt im Bild
     backdrops: [{ key: 'wolf_forest_edge', tx: 0, ty: 29, ox: 560, oy: 400 }],
@@ -653,8 +807,6 @@ export const LEVELS = {
     // freischaltbar: das Flamingo-Gehege entsteht, sobald man den ersten Flamingo fängt (Event „Flamingo-Flug“)
     unlocks: [
       // die ersten Tiere der Wetterphasen der Savanne: ihre Gehege entstehen rechts am Savannen-Weg
-      // Nilpferdbecken: großer See mit Schilf am Ufer (Schilf erst nach dem Ausbau, siehe basic)
-      { id: 'hippo', tx: 56, ty: 3, rows: ['{{{{{{{{{', '}.......}', '}.%ooo..}', '}.ooooo.}', '}oooooo.}', '}.ooooo.}', '}.oooo%.}', '}..oo...}', '}.......}', '{{{{{G{{{', '....v#...'] },
       { id: 'vulture', tx: 68, ty: 6, rows: ['^^^^^^^', ';.....;', ';.Ǎ...;', ';.....;', ';...Ǎ.;', ';.....;', ';.....;', '^^^G^^^', '...#...'] }, // Ǎ: kahle Akazien zum Sitzen
       { id: 'hyena', tx: 58, ty: 16, rows: ['v..#..y', '[[[G[[[', '].....]', ']....v]', ']..R..]', '].....]', '].....]', '[[[[[[['] },
       { id: 'warthog', tx: 68, ty: 16, rows: ['R..#..y', '[[[G[[[', '].....]', '].u...]', '].....]', ']...u.]', '].....]', '[[[[[[['] },
@@ -680,11 +832,18 @@ export const LEVELS = {
       { label: tr('Wald', 'Forest'), tx: 12, ty: 46 },
       { label: tr('Wiese', 'Meadow'), tx: 46, ty: 41 },
       { label: tr('Bambuswald', 'Bamboo Forest'), tx: 38, ty: 61 },
+      { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, like: tr('Bambuswald', 'Bamboo Forest') }, // der Weg dorthin führt durch den Bambuswald
+      // kleiner Wegweiser im Bambuswald an der Abzweigung zum Dschungel (at: nur an diesem Pfosten)
+      { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, at: [43, 71] },
+      { label: tr('Tierpark', 'Zoo'), tx: 36, ty: 41, at: [43, 71] },
+      // kleiner Wegweiser beim zweiten Auto (Reptilienhaus): zurück zum Zentrum
+      { label: tr('Zentrum', 'Center'), tx: 36, ty: 41, at: [85, 73] },
     ],
     exits: [
       { tx: 34, ty: 0, to: 'savanna', arrive: { tx: 20, ty: 1 }, label: tr('Savanne', 'Savanna') },
       { tx: 1, ty: 46, to: 'forest', arrive: { tx: 22, ty: 1 }, label: tr('Wald', 'Forest') },
       { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 10, ty: 16 }, label: tr('Aquarium', 'Aquarium') }, // Tür in der Fassade oben links
+      { tx: 86, ty: 70, to: 'reptiles', arrive: { tx: 8, ty: 10 }, label: tr('Reptilienhaus', 'Reptile House') }, // Tür in der Fassade im Dschungel-Bereich
       { tx: 55, ty: 40, to: 'meadow', arrive: { tx: 20, ty: 1 }, label: tr('Wiese', 'Meadow') },
       { tx: 35, ty: 82, to: 'asia', arrive: { tx: 20, ty: 1 }, label: tr('Bambuswald', 'Bamboo Forest') },
     ],

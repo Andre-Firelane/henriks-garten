@@ -15,20 +15,24 @@ export function isTravelMapOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// places: [{ id, name, icon, x, y, status }] (x/y in Prozent der Karte; status: z. B. die Wetterphase der Savanne);
-// current: Gebiet, in dem man gerade ist;
+// places: [{ id, name, icon, x, y, status, parts }] (x/y in Prozent der Karte; status: z. B. die Wetterphase der Savanne;
+// parts: [{ id, name, icon }] – das Gebiet hat mehrere Ziele, z. B. der Tierpark mit Zentrum und Reptilienhaus: dann ein
+// größeres Schild mit einem Feld je Ziel, übereinander); current: Ziel, an dem man gerade ist;
 // onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise.
 // opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mini-Tutorial: hüpfender Pfeil neben diesem Gebiet und
 // der Hinweis statt der Anleitung
 export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   panel = document.getElementById('travel');
-  const markers = places
-    .map(
-      (p) => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}" style="left:${p.x}%;top:${p.y}%">
-        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : ''}</span>
+  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}"${style}>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.wip ? `<small>🚧 ${tr('in Arbeit', 'in progress')}</small>` : ''}</span>
         ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
-      </button>`,
+      </button>`;
+  const markers = places
+    .map((p) =>
+      p.parts
+        ? `<div class="place-group" style="left:${p.x}%;top:${p.y}%"><span class="group-title">${p.name}</span>${p.parts.map((q) => button(q)).join('')}</div>`
+        : button(p, ` style="left:${p.x}%;top:${p.y}%"`),
     )
     .join('');
   panel.innerHTML = `<div class="travel-box">${CLOSE_BUTTON}
@@ -37,7 +41,9 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();
-  const targets = places.filter((p) => p.id !== current);
+  // Ziele zum Auswählen mit WASD: die Felder eines größeren Schilds übereinander (für die Richtung etwas versetzt)
+  const flat = places.flatMap((p) => (p.parts ? p.parts.map((q, i) => ({ ...q, x: p.x, y: p.y + (i - (p.parts.length - 1) / 2) * 9 })) : [p]));
+  const targets = flat.filter((p) => p.id !== current);
   // keys: die Auswahl ist zu sehen (am PC gleich, auf Tablet und Handy erst nach einem Tastendruck – dort tippt man direkt)
   // im Mini-Tutorial ist das Ziel des Pfeils vorausgewählt
   state = { places: targets, selected: Math.max(0, targets.findIndex((p) => p.id === opts.point)), keys: !isTouch(), onTravel, onClose };

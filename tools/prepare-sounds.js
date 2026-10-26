@@ -21,6 +21,10 @@ const SOUNDS = [
   ['Sounds/Hyäne.mp3', 'public/assets/sounds/animal_hyena.wav', 0.4, 1.1, 0.8],
   ['Sounds/Geier.mp3', 'public/assets/sounds/animal_vulture.wav', 0.85, 1.35, 0.8],
   ['Sounds/Nilpferd.mp3', 'public/assets/sounds/animal_hippo.wav', 1.0, 1.6, 0.8], // Nilpferd-Grunzen (Starkregen)
+  // Dschungel: das erste Brüllen des Brüllaffen (beim Springen und Fangen) und Rascheln in der Baumkrone
+  ['Sounds/Brüllaffe.mp3', 'public/assets/sounds/animal_howler.wav', 2.6, 6.0, 0.8],
+  ['Sounds/Baumrascheln.mp3', 'public/assets/sounds/tree_rustle.wav', 0.45, 2.6, 0.8],
+  ['Sounds/Ara.mp3', 'public/assets/sounds/animal_macaw.wav', 1.08, 0.85, 0.8], // erster Ruf des Aras (beim Losfliegen und Fangen)
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
   // Tierrufe beim Fangen (der Name hinter "animal_" ist die Tierart)
@@ -173,6 +177,11 @@ const LOOPS = [
   // Große Wanderung (Savanne): Hufgetrappel der Gnu-Herde; am Anfang eine Sekunde Stille
   { src: 'Sounds/Gnu Event.mp3', dest: 'public/assets/sounds/ambient_migration.mp3', from: 1.3, to: 35.9, fade: 1.5 },
   { src: 'Sounds/Regen.mp3', dest: 'public/assets/sounds/ambient_savanna_rain.mp3', from: 0.5, to: 29.8, fade: 1.5 }, // Savanne bei Starkregen
+  // Dschungel: nur der Anfang der Aufnahme; Wasserfall (oben links im Dschungel, wird lauter, je näher man kommt)
+  { src: 'Sounds/Dschungel Ambient.mp3', dest: 'public/assets/sounds/ambient_jungle.mp3', from: 0.2, to: 32.2, fade: 2 },
+  { src: 'Sounds/Wasserfall ambient.mp3', dest: 'public/assets/sounds/ambient_waterfall.mp3', from: 0.2, to: 45.8, fade: 2 },
+  // Paddeln im Kanu (Dschungel): läuft, solange Henrik im Kanu paddelt
+  { src: 'Sounds/Kanu.mp3', dest: 'public/assets/sounds/canoe_paddle.mp3', from: 0.2, to: 15.0, fade: 1 },
 ];
 for (const { src, dest, from, to, fade } of LOOPS) {
   if (ONLY && !dest.includes(ONLY)) continue;

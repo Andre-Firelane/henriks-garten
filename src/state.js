@@ -13,6 +13,8 @@ export const game = {
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
   tutorial: false, // Mini-Tutorial beim ersten Spiel: Schritt 'car', 'tools', 'sheep' oder 'visit' (siehe showTutorial in GardenScene), danach false
   seasonAnchor: null, // Wetterphasen der Savanne: ab hier beginnt die Runde mit Normal (siehe src/world/season.js)
+  seasonAnchors: {}, // ... und die der anderen Gebiete mit Wetter (Dschungel): { jungle: Zeitpunkt }
+  boat: null, // Kanu im Dschungel: { x, y, riding } (wo es liegt bzw. ob Henrik darin sitzt)
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
 };
 
@@ -30,4 +32,6 @@ export function resetGame() {
   game.upgrades = 0;
   game.tutorial = false;
   game.seasonAnchor = Date.now(); // ein neues Spiel beginnt in der Savanne mit der normalen Phase
+  game.seasonAnchors = {};
+  game.boat = null;
 }

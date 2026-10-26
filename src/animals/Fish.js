@@ -12,6 +12,7 @@ import { footTiles } from '../world/collision.js';
 const FISH_FRAME = { peek: 0, right: 1, left: 2, jump: 3 };
 const FISH_ORIGIN_Y = 60 / 64;
 const WATER_SCALE = 0.38; // so groß im Wasser (Beutel und andere Tiere: 0.5)
+const LUNGFISH_SCALE = 0.75; // der Lungenfisch ist größer (im Wasser und im Schlamm)
 const LUNGFISH_WATERLINE = 40; // Lungenfisch: bis zu dieser Höhe im Bild (von 64) schaut er aus dem Wasser
 
 const HIDDEN_TIME = [2, 6]; // so lange ist nichts zu sehen
@@ -195,7 +196,7 @@ export default class Fish extends Animal {
     const bob = Math.sin(this.scene.time.now / 250 + this.x) * 1;
     this.sprite.setVisible(visible);
     this.sprite.setFrame(frame);
-    if (this.species === 'fish') this.sprite.setScale(WATER_SCALE); // im Wasser etwas kleiner (passend zu den anderen Tieren)
+    if (this.species === 'fish') this.sprite.setScale(this.skin === 'lungfish' ? LUNGFISH_SCALE : WATER_SCALE); // im Wasser etwas kleiner (passend zu den anderen Tieren)
     // der Lungenfisch ist von der Seite gemalt: im Wasser schaut nur sein oberer Teil heraus, der Rest ist unter der Wasserlinie
     if (this.skin === 'lungfish' && !this.inMud()) this.sprite.setCrop(0, 0, this.sprite.frame.width, LUNGFISH_WATERLINE);
     else if (this.sprite.isCropped) this.sprite.setCrop();

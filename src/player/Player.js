@@ -1,7 +1,7 @@
-import { blockedAt } from '../world/collision.js';
+import { blockedAt, boatBlockedAt } from '../world/collision.js';
 import { touch } from '../ui/touch.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
-import { bridgeLift, buildingAt, charAt } from '../world/map.js';
+import { LEVEL, bridgeLift, buildingAt, charAt } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
 
 // Bilder im Spritesheet "hero": Blickrichtung je nach Laufrichtung
@@ -39,6 +39,11 @@ const SWIM_TILT = 8; // so weit neigt er sich beim Schwimmen (Grad)
 const SWIM_SPEED = 0.75; // unter Wasser langsamer als zu Fuß
 const STUNG_TIME = 1.5; // Qualle berührt: so lange (Sekunden) ist er langsamer ...
 const STUNG_SPEED = 0.5; // ... und zwar so viel
+// Kanu (Dschungel): Henrik sitzt darin (unten abgeschnitten), etwas schneller als zu Fuß, schaukelt leicht
+const BOAT_SINK = 15; // so tief sitzt er im Boot
+const BOAT_SPEED = 1.15;
+const BOAT_W = 12; // halbe Länge und Breite des Boots für die Kollision (es fährt nur auf Wasser)
+const BOAT_H = 6;
 
 export default class Player {
   // texture: Spritesheet der Figur (je Gebiet andere Kleidung); swim: schwimmt statt zu laufen (Unterwasserwelt)
@@ -91,6 +96,14 @@ export default class Player {
     this.handLift = HAND_LIFT[key] ?? 0;
   }
 
+  // ins Kanu steigen bzw. aussteigen
+  setBoat(on) {
+    this.boat = on;
+    this.speed = on ? SPEED * BOAT_SPEED : SPEED;
+    this.sink = on ? BOAT_SINK : 0;
+    this.boatBob = 0;
+  }
+
   update(dt) {
     if (this.stung > 0) this.stung -= dt;
     const k = this.keys;
@@ -122,10 +135,11 @@ export default class Player {
       const wading = this.wade && charAt(wx, wy) === '~';
       const step = (this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt * Math.min(1, len)) / len;
       // Achsen getrennt prüfen, damit man an Hindernissen entlanggleitet
+      const blocked = (x, y) => (this.boat ? boatBlockedAt(x, y, BOAT_W, BOAT_H) : blockedAt(x, y, FOOT_W, FOOT_H, this.wade, this.trample));
       const nx = this.x + vx * step;
-      if (!blockedAt(nx, this.y, FOOT_W, FOOT_H, this.wade, this.trample)) this.x = nx;
+      if (!blocked(nx, this.y)) this.x = nx;
       const ny = this.y + vy * step;
-      if (!blockedAt(this.x, ny, FOOT_W, FOOT_H, this.wade, this.trample)) this.y = ny;
+      if (!blocked(this.x, ny)) this.y = ny;
 
       this.walkTime += dt;
       this.recordTrail();
@@ -138,6 +152,17 @@ export default class Player {
     } else {
       this.walkTime = 0;
       this.stepTimer = 0;
+    }
+    // Strömung (Dschungel): das Kanu treibt langsam flussabwärts, auch wenn man nicht paddelt
+    const cur = this.boat && LEVEL.current;
+    if (cur) {
+      const len = Math.hypot(cur.tx, cur.ty);
+      const dx = ((cur.tx - cur.ty) * 32) / len / Math.hypot(32, 16); // Kachelrichtung → Bildschirm (Iso)
+      const dy = ((cur.tx + cur.ty) * 16) / len / Math.hypot(32, 16);
+      const k = cur.speed * dt;
+      if (!boatBlockedAt(this.x + dx * k, this.y, BOAT_W, BOAT_H)) this.x += dx * k;
+      if (!boatBlockedAt(this.x, this.y + dy * k, BOAT_W, BOAT_H)) this.y += dy * k;
+      this.recordTrail();
     }
 
     // Echte Animationen von vorne bzw. hinten (nach links gespiegelt), sonst Standbild mit Hüpfen
@@ -168,15 +193,16 @@ export default class Player {
 
     // Laufen andeuten: leichtes Hüpfen und Wippen (die Laufanimation bewegt sich selbst)
     const phase = this.walkTime * (this.mount ? RIDE_STEP_RATE : STEP_RATE);
-    const hop = moving && !animated && !this.swim ? Math.abs(Math.sin(phase)) * (this.mount ? RIDE_HOP : HOP) : 0;
+    const hop = moving && !animated && !this.swim && !this.boat ? Math.abs(Math.sin(phase)) * (this.mount ? RIDE_HOP : HOP) : 0;
     const float = this.swim ? SWIM_LIFT + Math.sin((this.scene.time.now / 1000) * SWIM_BOB_RATE) * SWIM_BOB : 0;
     const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
     const { tx, ty } = worldToTile(this.x, this.y);
-    const target = this.wade && charAt(tx, ty) === '~' ? WADE_SINK : 0; // im Wasser steht der Büffel tiefer
+    const target = this.boat ? BOAT_SINK : this.wade && charAt(tx, ty) === '~' ? WADE_SINK : 0; // im Wasser steht der Büffel tiefer, im Kanu sitzt Henrik
     this.sink += (target - this.sink) * Math.min(1, dt * WADE_EASE);
     if (this.sink < 0.3) this.sink = 0;
     const sink = this.sink;
-    this.sprite.setPosition(this.x, this.y - hop - float - lift + SPRITE_SINK + sink);
+    const bob = this.boat ? this.boatBob ?? 0 : 0; // schaukelt mit dem Kanu
+    this.sprite.setPosition(this.x, this.y - hop - float - lift + SPRITE_SINK + sink + bob);
     // was unter der Wasserlinie liegt, abschneiden (im Bild gerechnet, Maßstab 0,5)
     if (sink) {
       const f = this.sprite.frame;
@@ -185,17 +211,21 @@ export default class Player {
     } else if (this.sprite.isCropped) this.sprite.setCrop();
     this.ripples.forEach((g, i) =>
       g
-        .setVisible(sink > 2)
+        .setVisible(sink > 2 && !this.boat)
         .setPosition(this.x, this.y + SPRITE_SINK - 1)
         .setScale(1 + Math.sin(this.scene.time.now / 300) * 0.06, 1)
         .setAlpha(Math.min(1, sink / WADE_SINK))
         .setDepth(this.y + (i ? 0.1 : -0.2)), // hinten hinter, vorne vor dem Büffel
     );
     if (this.swim) this.sprite.setAngle(moving ? this.faceX * SWIM_TILT * Math.min(1, len) : 0);
+    else if (this.boat) this.sprite.setAngle(Math.sin(this.scene.time.now / 420) * 2); // paddelt und schaukelt
     else this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount ? 1.5 : 3) : 0);
     this.shadow.setPosition(this.x, this.y - lift - (this.mount ? RIDE_SHADOW_UP : 0)).setVisible(!sink); // im Wasser kein Schatten
     this.shadow.setScale(this.swim ? 0.8 - (float - SWIM_LIFT) * 0.03 : 1 - hop * 0.04); // schwimmend: kleinerer Schatten, der mitwippt
 
+    // im Kanu zeigt Boat.js Henrik im Boot (eigenes Bild), die Figur selbst ist dann nicht zu sehen
+    this.sprite.setVisible(!this.boat);
+    if (this.boat) this.shadow.setVisible(false);
     // Wer weiter unten steht, wird weiter vorne gezeichnet
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
@@ -211,7 +241,7 @@ export default class Player {
   }
 
   playStep() {
-    if (this.swim) return; // unter Wasser keine Schritte
+    if (this.swim || this.boat) return; // unter Wasser und im Kanu keine Schritte
     // drinnen (Haupthaus, Hütten, Aquarium) klingen die Schritte wie auf einem Flur, draußen wie auf Gras
     const { tx, ty } = worldToTile(this.x, this.y);
     const key = !this.mount && buildingAt(tx, ty) && this.scene.cache.audio.exists('step_indoor') ? 'step_indoor' : 'step';

@@ -16,6 +16,8 @@ const PEN_FLY_EVERY = [10, 20]; // in der Voliere: Sekunden zwischen zwei kurzen
 const PEN_FLY_SPEED = 60; // gemächlicher als beim Überflug
 const PEN_ALTITUDE = 26; // so hoch fliegt er höchstens (unter dem Netz)
 const PEN_MIN_DIST = 50; // so weit soll der Flug mindestens gehen
+// Flugbilder mit angelegten Flügeln nach oben rechts: dafür das gespiegelte Bild nach oben links (Flügel ausgestreckt)
+const MIRROR_UP_RIGHT = new Set(['shoebill_fly']);
 
 // Phasen: flying (zum Ziel) → landed → leaving (zum Kartenrand); ohne Landung: flying direkt zum Rand
 export default class Heron extends Animal {
@@ -152,6 +154,7 @@ export default class Heron extends Animal {
       // stehend (auch beim Folgen und im Gehege)
       const key = this.baby && this.kind.babyTexture ? this.kind.babyTexture : this.baseTexture(); // mit Skin: Schuhschnabel
       if (this.sprite.texture.key !== key) this.sprite.setTexture(key).setOrigin(0.5, this.kind.originY);
+      this.sprite.setFlipX(false);
       super.render(moving);
       this.shadow.setScale(1);
       return;
@@ -160,9 +163,11 @@ export default class Heron extends Animal {
     const fly = this.skin ? `${this.skin}_fly` : this.kind.flyTexture;
     if (this.sprite.texture.key !== fly) this.sprite.setTexture(fly).setOrigin(0.5, FLY_ORIGIN_Y);
     const f = this.kind.frames;
+    const mirror = this.faceY <= 0 && this.faceX > 0 && MIRROR_UP_RIGHT.has(fly);
     this.sprite.setFrame(
-      this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft,
+      this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 && !mirror ? f.upRight : f.upLeft,
     );
+    this.sprite.setFlipX(mirror);
     const flap = Math.sin(this.scene.time.now / 120) * 2;
     this.sprite.setPosition(this.x, this.y - this.altitude - 20 + flap);
     this.sprite.setAngle(0);

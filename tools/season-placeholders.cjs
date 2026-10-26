@@ -91,6 +91,17 @@ const JOBS = {
       if (d < 1) return [150, 112, 70];
       return null;
     }),
+  // Glühwürmchen-Abend im Bambuswald: das leuchtende Glas (64 × 64 wie jar); der rote Panda hat echte Bilder
+  // (npm run characters), sein Bild in der Krone erzeugt tools/jungle-placeholders.cjs (redpanda_tree)
+  jar_glow: () => {
+    const p = read('jar');
+    for (let i = 0; i < p.data.length; i += 4) {
+      if (!p.data[i + 3]) continue;
+      const [r, g, b] = p.data.slice(i, i + 3);
+      if (b > r + 20) [p.data[i], p.data[i + 1], p.data[i + 2]] = [255, 210 + (g - r) / 4, 90 + (b - r) / 3]; // das blaue Glas leuchtet warmgelb
+    }
+    return p;
+  },
   // Landschaft
   acacia_bare: () => {
     // kahle, knorrige Akazie (128 × 128, Fuß wie bei acacia): der Stamm der Akazie, oben statt Laub verzweigte Äste

@@ -10,6 +10,7 @@ export default class Pickup {
     this.tool = tool;
     this.collected = false;
     this.armed = armed;
+    this.extras = []; // weitere Bilder, die mit dem Gegenstand verschwinden (z. B. der Schein des leuchtenden Glases)
 
     this.shadow = scene.add.ellipse(x, y, 26, 8, 0x14320a, 0.3).setDepth(y - 0.5);
     this.sprite = scene.add.image(x, y - 6, texture).setOrigin(0.5).setScale(0.5).setAngle(-20).setDepth(y);
@@ -36,6 +37,7 @@ export default class Pickup {
     this.scene.tweens.killTweensOf(this.sprite);
     this.sprite.destroy();
     this.shadow.destroy();
+    for (const e of this.extras) e.destroy();
     return true;
   }
 }

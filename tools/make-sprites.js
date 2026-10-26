@@ -751,11 +751,16 @@ const HUT_STYLES = {
   forest: { wall: '#8a5a30', dark: '#4f3422', light: '#a8743f', cap: '#3f2a1a' },
   savanna: { wall: '#d4bc84', dark: '#a08a58', light: '#e8d8a8', cap: '#8a6a40' },
   asia: { wall: '#c0392b', dark: '#7a1e18', light: '#e05a48', cap: '#2b2b2b' },
+  // Fischerhütte im Dschungel: verwittertes, graubraunes Treibholz mit einem Fischernetz an der Wand
+  jungle: { wall: '#8a7a5a', dark: '#4f4430', light: '#a8987a', cap: '#3f3426' },
   // Katzenhaus im Tierpark: große Glasfronten in einem hellen Holzrahmen, damit man die Katzen von außen sieht
   cathouse: { wall: '#bfe4f0', dark: '#a8743f', light: '#f4ead8', cap: '#8a5a30', glass: true },
   // Aquarium: dunkelblaue Halle mit hellen Fliesenfugen; Wassertanks aus blau schimmerndem Glas mit Metallrahmen
   aquarium: { wall: '#24486a', dark: '#16304a', light: '#3f6f9a', cap: '#0f2236' },
   tank: { wall: '#6ec6e8', dark: '#2f5068', light: '#bfeaff', cap: '#2f5068', glass: true },
+  // Reptilienhaus: Halle aus warmem Naturstein; Terrarien aus Glas im dunklen Holzrahmen
+  reptiles: { wall: '#8a7a5a', dark: '#5a4c36', light: '#a8967a', cap: '#3a3022' },
+  terrarium: { wall: '#cfe8c8', dark: '#5a3a22', light: '#7a5232', cap: '#3f2a1a', glass: true },
 };
 
 // Wandstück entlang tx (die Version entlang ty ist gespiegelt); door: Tür statt Wand
@@ -787,12 +792,44 @@ function hutWall(style, door = false) {
         if (h < 6 || sprosse || (h > 24 && h < 27)) w.paint(x, y, hex(sprosse ? s.light : '#e8dcc4'));
         else if ((x + Math.floor(h)) % 11 === 0 && h > 30) w.paint(x, y, hex('#ffffff', 160)); // Spiegelung
       }
+      if (style === 'reptiles') {
+        // Natursteine: versetzte Reihen mit dunklen Fugen
+        const row = Math.floor(h / 8);
+        if (((Math.floor(h) % 8) + 8) % 8 === 0 || ((x + row * 9) % 18) === 0) w.paint(x, y, hex(s.dark));
+        else if ((x * 3 + row * 7) % 23 === 0) w.paint(x, y, hex(s.light));
+      }
+      if (style === 'jungle') {
+        // liegende, unterschiedlich breite Bretter mit dunklen Fugen und Astlöchern
+        const p = ((Math.floor(h) % 9) + 9) % 9;
+        const row = Math.floor(h / 9);
+        if (p === 0) w.paint(x, y, hex('#2f2618'));
+        else if (p === 1) w.paint(x, y, hex(s.light));
+        else if ((x * 7 + row * 13) % 41 === 0) w.paint(x, y, hex('#3f3426'));
+        else if ((row + Math.floor(x / 11)) % 3 === 0) w.paint(x, y, hex('#7a6c4e'));
+      }
       if (style === 'asia' && (h < 4 || (h > 14 && h < 30 && x % 16 > 3 && x % 16 < 13))) {
         w.paint(x, y, hex(h < 4 ? '#5a1810' : '#f2e2c0')); // Sockel und Papierfenster
       }
     }
   }
   w.poly([up(a, H), up(b, H), up(b, H - 3), up(a, H - 3)], hex(s.cap)); // obere Kante
+  if (style === 'jungle' && !door) {
+    // Fischernetz hängt durch, mit zwei Schwimmern
+    for (let t = 0.12; t <= 0.88; t += 0.08) {
+      const [x0, y0] = at(t, 38 - Math.sin(t * Math.PI) * 4);
+      w.line(x0, y0, x0, y0 + 20 + Math.sin(t * Math.PI) * 6, hex('#d8cca0', 200));
+    }
+    for (let k = 0; k < 4; k++) {
+      for (let t = 0.12; t < 0.88; t += 0.02) {
+        const [x0, y0] = at(t, 36 - k * 5 - Math.sin(t * Math.PI) * (6 - k));
+        w.set(x0, y0, hex('#d8cca0', 200));
+      }
+    }
+    for (const t of [0.3, 0.66]) {
+      const [x0, y0] = at(t, 37);
+      w.circle(x0, y0, 2, hex('#e05a48'));
+    }
+  }
   const o = new Canvas(64, 80);
   o.draw(w, 0, 0);
   if (door) {
@@ -841,6 +878,7 @@ function hutRoof(style, A = 5, B = 4, ov = 0.25) {
     savanna: ['#b8a26c', '#dccb96', '#efe2b8', '#a08a58'],
     asia: ['#323b42', '#3f4a52', '#55636c', '#262e33'],
     cathouse: ['#3f6a8a', '#4f84a8', '#6aa0c4', '#2f5068'],
+    jungle: ['#7a6a3a', '#9a8648', '#b8a45c', '#5a4c28'], // Palmstroh
   }[style].map((c) => hex(c));
   const [back, front, lightC, line] = colors;
   const r = new Canvas(W, Hc);
@@ -850,7 +888,11 @@ function hutRoof(style, A = 5, B = 4, ov = 0.25) {
   r.poly([E.r, E.b, R2], lightC); // Seite in der Sonne
   // Ziegelreihen bzw. Nähte parallel zur Traufe
   for (let y = 0; y < Hc; y++) for (let x = 0; x < W; x++) {
-    if (style === 'savanna' ? (x * 50 + y * 32) % 640 < 30 : (((Math.floor(y - 0.5 * x) % 7) + 7) % 7) === 0) r.paint(x, y, line);
+    if (style === 'jungle') {
+      // Strohhalme: kurze schräge Striche in Reihen
+      if ((x + 2 * y) % 7 === 0 && (Math.floor(y / 5) + x) % 3 !== 0) r.paint(x, y, line);
+      else if ((((Math.floor(y - 0.5 * x) % 9) + 9) % 9) === 0) r.paint(x, y, hex('#c8b46c'));
+    } else if (style === 'savanna' ? (x * 50 + y * 32) % 640 < 30 : (((Math.floor(y - 0.5 * x) % 7) + 7) % 7) === 0) r.paint(x, y, line);
   }
   for (const [p, q] of [[E.l, R1], [E.b, R2], [E.t, R1], [E.r, R2], [R1, R2]]) r.line(p[0], p[1], q[0], q[1], line); // Grate
   r.line(E.l[0], E.l[1], E.b[0], E.b[1], line);
@@ -876,6 +918,25 @@ function hutRoof(style, A = 5, B = 4, ov = 0.25) {
   if (style === 'savanna') {
     o.rect(R2[0] - 1, R2[1] - 16, 2, 16, hex('#6e4c2e')); // Fähnchen
     o.poly([[R2[0] + 1, R2[1] - 16], [R2[0] + 13, R2[1] - 12], [R2[0] + 1, R2[1] - 8]], hex('#3f8a3f'));
+  }
+  if (style === 'jungle') {
+    // ausgefranste Traufe: Strohspitzen hängen über die Kante, ein paar Palmwedel liegen auf dem Dach
+    for (const [p, q] of [[E.l, E.b], [E.b, E.r]]) {
+      for (let t = 0.02; t < 1; t += 0.035) {
+        const x = p[0] + (q[0] - p[0]) * t, y = p[1] + (q[1] - p[1]) * t;
+        o.line(Math.round(x), Math.round(y), Math.round(x + (t * 37 % 3) - 1), Math.round(y + 3 + (t * 53) % 3), hex('#7a6a3a'));
+      }
+    }
+    for (const [fx, fy, d] of [[R1[0] + 10, R1[1] + 30, 1], [R2[0] - 30, R2[1] + 40, -1]]) {
+      for (let i = 0; i < 26; i++) {
+        const x = fx + d * i * 1.6, y = fy + i * 0.9 + Math.sin(i / 5) * 2;
+        o.set(x, y, hex('#3f7a2a'));
+        if (i % 2 === 0) {
+          o.line(Math.round(x), Math.round(y), Math.round(x - d * 3), Math.round(y + 5), hex('#5aa83a'));
+          o.line(Math.round(x), Math.round(y), Math.round(x + d * 2), Math.round(y - 5), hex('#4f9a34'));
+        }
+      }
+    }
   }
   if (style === 'meadow') {
     // kleiner Schornstein
@@ -3335,6 +3396,7 @@ function furnitureStyle(style) {
     forest: { top: '#8a5a30', left: '#3f2a1a', right: '#5a3a22', cushion: '#5f7a3a', cushion2: '#7a9a4c', accent: '#e8b84a' },
     savanna: { top: '#e0c890', left: '#a08a58', right: '#c0a670', cushion: '#7a7a3a', cushion2: '#a8a860', accent: '#c8553d' },
     asia: { top: '#2b2b2b', left: '#7a1e18', right: '#a02a20', cushion: '#c0392b', cushion2: '#e8b84a', accent: '#e8b84a' },
+    jungle: { top: '#a8987a', left: '#4f4430', right: '#6e6048', cushion: '#3f7a6a', cushion2: '#8ab0a0', accent: '#e05a48' },
   }[style];
 }
 
@@ -3410,7 +3472,7 @@ function hutChair(style) {
 function hutPlant(style) {
   const o = new Canvas(64, 80);
   const x = 32, y = 60 - 9; // in die Ecke gerückt
-  const pot = { meadow: ['#c8603d', '#e07a5f'], forest: ['#6b4224', '#8a5a30'], savanna: ['#b8784a', '#d8986a'], asia: ['#3f6a9a', '#e8eef4'] }[style];
+  const pot = { meadow: ['#c8603d', '#e07a5f'], forest: ['#6b4224', '#8a5a30'], savanna: ['#b8784a', '#d8986a'], asia: ['#3f6a9a', '#e8eef4'], jungle: ['#6b4224', '#8a5a30'] }[style];
   if (style === 'asia') {
     // flache Schale mit Bonsai
     o.poly([[x - 11, y - 6], [x + 11, y - 6], [x + 8, y], [x - 8, y]], hex(pot[0]));
@@ -3548,6 +3610,24 @@ function hutFloor(style) {
     if (style === 'savanna') {
       const a = (((Math.floor(k / 3) + Math.floor(l / 3)) % 2) + 2) % 2; // Flechtmuster
       return rand() < 0.05 ? hex('#b8a26c') : a ? hex('#e0c890') : hex('#cfb47a');
+    }
+    if (style === 'reptiles') {
+      // warme Steinplatten der Halle
+      const a = (((Math.floor(k / 8) + Math.floor(l / 8)) % 2) + 2) % 2;
+      if (((k % 8) + 8) % 8 < 1 || ((l % 8) + 8) % 8 < 1) return hex('#5a4c36');
+      return rand() < 0.08 ? hex('#8a7a5a') : a ? hex('#a08c68') : hex('#94805e');
+    }
+    if (style === 'terrarium') {
+      // Erde mit Laub und Moos
+      const r = rand();
+      return r < 0.08 ? hex('#7a5a2a') : r < 0.14 ? hex('#4f7a2a') : r < 0.2 ? hex('#3a2a1a') : hex('#5e4228');
+    }
+    if (style === 'jungle') {
+      // graue, verwitterte Planken mit breiten Fugen
+      const m = ((k % 7) + 7) % 7;
+      if (m < 1) return hex('#3a3022');
+      const base = [hex('#8a7c60'), hex('#7a6e54'), hex('#948670')][((Math.floor(k / 7) % 3) + 3) % 3];
+      return rand() < 0.07 ? hex('#6a5e46') : base;
     }
     // Tatami: Strohgrün mit dunklen Kanten
     const m = ((k % 16) + 16) % 16;
@@ -4028,7 +4108,617 @@ function wolfForestEdge() {
   return o;
 }
 
+// ---------- Dschungel (hinten angehängt; mit ONLY=name1,name2 nur diese Bilder schreiben) ----------
+
+// Urwaldboden: sattes, dunkles Grün mit Moos und etwas Laub, kaum Grashalme (soll nicht nach Wiese aussehen)
+function jungleGrass(variant, wet = false) {
+  const base = hex(wet ? '#336f28' : '#3b7f2e');
+  const light = hex(wet ? '#3f7f30' : '#48903a');
+  const dark = hex(wet ? '#285c20' : '#2f6c26');
+  const c = tile(() => {
+    const r = rand();
+    return r < 0.12 ? dark : r < 0.19 ? light : base;
+  });
+  // Moospolster und dunkle Flecken
+  for (let n = 0; n < 4 + variant; n++) {
+    const x = randInt(12, 52);
+    const y = randInt(7, 24);
+    c.ellipse(x, y, randInt(3, 6), randInt(1, 2), rand() < 0.5 ? dark : hex(wet ? '#2c6624' : '#357a2c'), true);
+  }
+  // Laub und Zweige
+  for (let n = 0; n < 6 + variant * 3; n++) {
+    const x = randInt(8, 55);
+    const y = randInt(5, 26);
+    const col = [hex('#6a5a2a'), hex('#7a6230'), hex('#4f6a24'), hex('#22501c')][randInt(0, 3)];
+    c.paint(x, y, col);
+    c.paint(x + 1, y, col);
+  }
+  // wenige kurze Halme
+  for (let n = 0; n < 5; n++) {
+    const x = randInt(6, 57);
+    const y = randInt(4, 28);
+    if (!inDiamond(x, y) || !inDiamond(x, y - 2)) continue;
+    c.paint(x, y, hex('#22501c'));
+    c.paint(x, y - 1, hex('#3f7a2c'));
+  }
+  // nasser Boden: hier und da glänzt eine kleine Pfütze
+  if (wet) {
+    for (let n = 0; n < 2; n++) {
+      const x = randInt(16, 46);
+      const y = randInt(9, 22);
+      c.ellipse(x, y, 3, 1.2, hex('#5c8a74'), true);
+      c.paint(x - 1, y - 1, hex('#a8c8b8'));
+    }
+  }
+  return c;
+}
+
+// Trampelpfad aus dunkler Erde mit Laub und einer Wurzel
+function junglePath() {
+  const c = tile(() => {
+    const r = rand();
+    return r < 0.1 ? hex('#5e4228') : r < 0.16 ? hex('#8a6640') : hex('#73532f');
+  });
+  for (let n = 0; n < 9; n++) {
+    const x = randInt(8, 55);
+    const y = randInt(5, 26);
+    c.paint(x, y, hex('#4a321c'));
+    c.paint(x + 1, y, [hex('#9a7a3a'), hex('#4f6a24')][n % 2]);
+  }
+  const y0 = randInt(10, 20);
+  for (let x = 20; x < 44; x++) c.paint(x, y0 + Math.round(Math.sin(x / 4) * 1.5), hex('#5a3c22'));
+  return c;
+}
+
+const JUNGLE_LEAVES = ['#1f5a2a', '#2c7232', '#3f8a3c', '#5aa84c'];
+
+// Mangrove am Ufer: Krone wie beim Dschungelbaum, darunter ein Gewirr gebogener Stelzwurzeln; Fuß bei (48, 100)
+function mangrove() {
+  const o = new Canvas(96, 112);
+  // Stelzwurzeln: Bögen vom Stamm zum Boden, mit heller Oberkante
+  const roots = [[-34, 98], [-24, 102], [-13, 104], [-4, 101], [6, 104], [16, 102], [26, 101], [35, 97]];
+  for (const [dx, by] of roots) {
+    const sx = 48 + dx * 0.15;
+    const steps = 30;
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const x = sx + dx * Math.sin((t * Math.PI) / 2);
+      const y = 66 + (by - 66) * t - Math.sin(t * Math.PI) * 10;
+      o.rect(Math.round(x) - 1, Math.round(y), 3, 2, hex('#6b5034'));
+      o.set(Math.round(x) - 1, Math.round(y), hex('#8a6a46'));
+    }
+  }
+  // Stamm
+  o.rect(44, 52, 8, 22, hex('#6b5034'));
+  o.rect(44, 52, 2, 22, hex('#8a6a46'));
+  o.rect(50, 52, 2, 22, hex('#4f3a24'));
+  foliage(
+    o,
+    [
+      [48, 34, 22],
+      [26, 42, 14],
+      [70, 42, 14],
+      [34, 22, 14],
+      [62, 22, 14],
+      [48, 50, 13],
+    ],
+    JUNGLE_LEAVES,
+  );
+  // Luftwurzeln hängen aus der Krone
+  for (const x of [30, 58, 66]) o.line(x, 50, x, 62, hex('#5a4630'));
+  o.outline(INK);
+  return withShadow(96, 112, 48, 100, 34, 8, o);
+}
+
+// großes Blatt mit Schattenseite und Mittelrippe; (x, y) Ansatz, Winkel a, Länge l, halbe Breite w
+function bigLeaf(o, x, y, a, l, w, cols) {
+  const [dark, mid, light] = cols.map((s) => hex(s));
+  const side = (sign) => {
+    const pts = [];
+    for (let i = 0; i <= 10; i++) {
+      const t = i / 10;
+      const r = Math.sin(t * Math.PI) * w * sign;
+      pts.push([x + Math.cos(a) * l * t - Math.sin(a) * r, y + Math.sin(a) * l * t + Math.cos(a) * r]);
+    }
+    return pts;
+  };
+  const left = side(1);
+  const right = side(-1);
+  o.poly([...left, ...right.reverse()], mid);
+  o.poly(left, dark, true);
+  for (let i = 1; i < 10; i++) {
+    const t = i / 10;
+    o.paint(x + Math.cos(a) * l * t, y + Math.sin(a) * l * t, light);
+  }
+}
+
+// Helikonie: hohe Staude mit großen Bananenblättern und einem Blütenstand aus roten Hochblättern mit gelben Spitzen;
+// Fuß bei (32, 88)
+function heliconia() {
+  const o = new Canvas(64, 96);
+  const LEAF = ['#2c7232', '#3f8a3c', '#7cc85e'];
+  bigLeaf(o, 30, 84, -2.3, 34, 7, LEAF);
+  bigLeaf(o, 34, 84, -0.85, 34, 7, LEAF);
+  bigLeaf(o, 31, 84, -1.85, 40, 6, LEAF);
+  bigLeaf(o, 33, 84, -1.25, 38, 6, LEAF);
+  o.rect(31, 18, 2, 64, hex('#3f7a2a'));
+  o.rect(31, 18, 1, 64, hex('#5aa83a'));
+  for (let i = 0; i < 6; i++) {
+    const y = 20 + i * 8;
+    const d = i % 2 ? 1 : -1;
+    o.poly([[32, y], [32 + d * 13, y + 2], [32 + d * 3, y + 7]], hex('#c8282c'));
+    o.poly([[32, y + 1], [32 + d * 9, y + 2.5], [32 + d * 3, y + 5]], hex('#e8483c'), true);
+    o.rect(32 + d * 12 - (d < 0 ? 1 : 0), y + 1, 2, 2, hex('#f6c83a'));
+    o.set(32 + d * 4, y + 3, hex('#ff8a6a'));
+  }
+  o.outline(INK);
+  return withShadow(64, 96, 32, 88, 18, 5, o);
+}
+
+// Hibiskus: runder Strauch mit großen, offenen Blüten (fünf Blätter, dunkle Mitte, langer Stempel); Fuß bei (32, 64)
+function hibiscus() {
+  const o = new Canvas(64, 72);
+  foliage(
+    o,
+    [
+      [32, 40, 16],
+      [18, 48, 11],
+      [46, 48, 11],
+      [32, 52, 12],
+      [24, 30, 10],
+      [41, 30, 10],
+    ],
+    JUNGLE_LEAVES,
+  );
+  const bloom = (cx, cy, r, col, light, dark) => {
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2 - Math.PI / 2;
+      o.ellipse(cx + Math.cos(a) * r * 0.55, cy + Math.sin(a) * r * 0.45, r * 0.5, r * 0.42, hex(col));
+    }
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2 - Math.PI / 2;
+      o.ellipse(cx + Math.cos(a) * r * 0.5 - 0.5, cy + Math.sin(a) * r * 0.4 - 0.8, r * 0.3, r * 0.22, hex(light), true);
+    }
+    o.circle(cx, cy, r * 0.28, hex(dark), true);
+    o.line(cx, cy, cx + 3, cy - 4, hex('#f6e06a'));
+    o.set(cx + 3, cy - 5, hex('#ffffff'));
+  };
+  bloom(22, 32, 8, '#e0304a', '#ff7a86', '#8a1024');
+  bloom(44, 38, 8, '#f0703a', '#ffaa6e', '#a03418');
+  bloom(31, 50, 7, '#e0304a', '#ff7a86', '#8a1024');
+  bloom(48, 54, 5, '#f4c040', '#ffe28a', '#b06a10');
+  o.outline(INK);
+  return withShadow(64, 72, 32, 64, 22, 6, o);
+}
+
+// Dickicht: undurchdringliches Gestrüpp aus dunklem Blattwerk mit Ranken und Farnspitzen; Fuß bei (32, 52)
+function thicket() {
+  const o = new Canvas(64, 64);
+  foliage(
+    o,
+    [
+      [32, 30, 15],
+      [16, 38, 11],
+      [48, 38, 11],
+      [22, 22, 10],
+      [42, 22, 10],
+      [32, 44, 12],
+      [10, 46, 7],
+      [54, 46, 7],
+    ],
+    ['#1a4f24', '#26652c', '#357c36', '#4a9442'],
+  );
+  for (const [x0, y0, x1, y1] of [[8, 40, 30, 16], [56, 42, 36, 14], [20, 50, 44, 30]]) {
+    o.line(x0, y0, x1, y1, hex('#4a3a22'));
+    for (let t = 0.15; t < 1; t += 0.2) o.paint(Math.round(x0 + (x1 - x0) * t), Math.round(y0 + (y1 - y0) * t) - 1, hex('#7a6a3a'));
+  }
+  for (const [x, y, d] of [[14, 30, -1], [50, 28, 1], [30, 14, 1]]) {
+    for (let i = 0; i < 6; i++) o.paint(x + d * i, y - i, hex('#5aa84c'));
+  }
+  o.outline(INK);
+  return withShadow(64, 64, 32, 52, 24, 6, o);
+}
+
+// nachwachsendes Dickicht: ein kleiner Busch zwischen Stümpfen; Fuß bei (32, 52)
+function thicketSmall() {
+  const o = new Canvas(64, 64);
+  foliage(o, [[32, 42, 9], [24, 46, 6], [40, 46, 6]], ['#26652c', '#357c36', '#4a9442', '#62ac52']);
+  for (const [x, y] of [[18, 50], [46, 50]]) {
+    o.rect(x - 3, y, 6, 3, hex('#7a5232'));
+    o.ellipse(x, y, 3, 1.6, hex('#c8a06a'));
+  }
+  o.outline(INK);
+  return withShadow(64, 64, 32, 52, 16, 4, o);
+}
+
+// geschlagenes Dickicht: Stümpfe und abgeschlagene Zweige; Fuß bei (32, 52)
+function thicketCut() {
+  const o = new Canvas(64, 64);
+  for (const [x, y, h] of [[22, 48, 4], [34, 52, 3], [44, 47, 5], [30, 44, 3]]) {
+    o.rect(x - 3, y - h, 6, h + 1, hex('#7a5232'));
+    o.rect(x - 3, y - h, 2, h + 1, hex('#946840'));
+    o.ellipse(x, y - h, 3, 1.5, hex('#d8b07a'));
+    o.set(x, y - h, hex('#a87e4a'));
+  }
+  for (const [x0, y0, x1, y1] of [[12, 54, 22, 51], [40, 55, 52, 52], [26, 56, 30, 53]]) o.line(x0, y0, x1, y1, hex('#5a3c22'));
+  for (const [x, y] of [[14, 52], [20, 55], [48, 54], [38, 50], [52, 50], [28, 57]]) {
+    o.rect(x, y, 2, 1, hex('#3f8a3c'));
+    o.set(x + 1, y - 1, hex('#5aa84c'));
+  }
+  o.outline(INK);
+  return o;
+}
+
+// großblättrige Bodenpflanze (Elefantenohr), begehbar; Fuß bei (32, 40)
+function junglePlant() {
+  const o = new Canvas(64, 48);
+  const LEAF = ['#26652c', '#3f8a3c', '#7cc85e'];
+  bigLeaf(o, 32, 40, -2.6, 22, 7, LEAF);
+  bigLeaf(o, 32, 40, -0.55, 22, 7, LEAF);
+  bigLeaf(o, 32, 40, -1.9, 24, 6, LEAF);
+  bigLeaf(o, 32, 40, -1.2, 24, 6, LEAF);
+  o.outline(hex('#1a4020'));
+  return withShadow(64, 48, 32, 40, 16, 4, o);
+}
+
+// moosiger grauer Felsen (für Klippe und Wasserfall)
+function mossRock(o, cx, cy, rx, ry) {
+  o.ellipse(cx, cy, rx, ry, hex('#6e6c64'));
+  o.ellipse(cx - 2, cy - 3, rx - 3, ry - 3, hex('#8a877c'), true);
+  o.ellipse(cx - 5, cy - 6, rx * 0.45, ry * 0.4, hex('#a8a598'), true);
+  o.ellipse(cx - 7, cy - 8, rx * 0.2, ry * 0.18, hex('#c4c1b2'), true);
+  for (let i = 0; i < rx; i += 2) o.paint(cx - rx * 0.6 + i, cy - ry + 2 + Math.round(Math.sin(i)), hex('#4f8a3a'));
+  o.line(cx + rx * 0.2, cy - ry * 0.3, cx + rx * 0.4, cy + ry * 0.3, hex('#55534c'));
+}
+
+// Felsklippe am Kartenrand: aufgetürmte Felsen; Fuß bei (32, 84)
+function cliff() {
+  const o = new Canvas(64, 96);
+  mossRock(o, 32, 70, 28, 16);
+  mossRock(o, 24, 48, 20, 16);
+  mossRock(o, 40, 40, 20, 15);
+  mossRock(o, 30, 20, 18, 13);
+  o.outline(hex('#33312b'));
+  return withShadow(64, 96, 32, 84, 28, 6, o);
+}
+
+// Wasserfall: zwischen moosigen Felsen fällt das Wasser in Streifen herab, unten schäumt es; 3 Bilder nebeneinander
+// (je 128 × 160, Fuß bei 64/150), die Streifen wandern von Bild zu Bild nach unten
+function waterfall() {
+  const sheet = new Canvas(128 * 3, 160);
+  for (let f = 0; f < 3; f++) {
+    const o = new Canvas(128, 160);
+    for (const [cx, cy, rx, ry] of [[22, 130, 22, 18], [16, 96, 18, 22], [22, 58, 20, 22], [18, 22, 16, 18], [106, 128, 22, 18], [112, 92, 18, 22], [104, 54, 20, 22], [110, 20, 16, 18]]) mossRock(o, cx, cy, rx, ry);
+    const water = new Canvas(128, 160);
+    water.poly([[36, 4], [92, 4], [96, 146], [32, 146]], hex('#5aa6c8'));
+    for (let x = 32; x < 98; x++) {
+      const off = (Math.floor((x - 32) / 3) * 37) % 24;
+      for (let y = 0; y < 146; y++) {
+        const k = (((y - f * 8 + off) % 24) + 24) % 24;
+        if (k < 7) water.paint(x, y, hex('#9ad4ea'));
+        else if (k < 9) water.paint(x, y, hex('#e4f6ff'));
+        else if (k > 20) water.paint(x, y, hex('#4a90b4'));
+      }
+    }
+    o.draw(water, 0, 0);
+    for (let n = 0; n < 26; n++) {
+      const x = 34 + ((n * 23 + f * 9) % 60);
+      const y = 140 + ((n * 7 + f * 3) % 12);
+      o.circle(x, y, 2 + (n % 3), hex(n % 2 ? '#ffffff' : '#d4eef8'));
+    }
+    o.outline(hex('#33312b'));
+    sheet.draw(o, f * 128, 0);
+  }
+  return sheet;
+}
+
+Object.assign(sprites, {
+  'jgrass0.png': jungleGrass(0),
+  'jgrass1.png': jungleGrass(1),
+  'jgrass2.png': jungleGrass(2),
+  'jgrass_rain0.png': jungleGrass(0, true),
+  'jgrass_rain1.png': jungleGrass(1, true),
+  'jgrass_rain2.png': jungleGrass(2, true),
+  'jungle_path.png': junglePath(),
+  'mangrove.png': mangrove(),
+  'heliconia.png': heliconia(),
+  'hibiscus.png': hibiscus(),
+  'thicket.png': thicket(),
+  'thicket_small.png': thicketSmall(),
+  'thicket_cut.png': thicketCut(),
+  'jungle_plant.png': junglePlant(),
+  'cliff.png': cliff(),
+  'waterfall.png': waterfall(),
+});
+
+// Dschungelfluss: trübes, grünlich-braunes Wasser. Die Bewegung: 4 Bilder, in denen helle Strömungsstreifen entlang tx
+// wandern; das Muster wiederholt sich je Kachel (keine Nähte) und das Grundrauschen ist in allen Bildern gleich
+function jungleWater(frame = null, variant = 0) {
+  const noise = (x, y, s) => ((((x * 73856093) ^ (y * 19349663) ^ (s * 83492791)) >>> 0) % 1000) / 1000;
+  const c = tile((x, y) => {
+    const r = noise(x, y, 3 + variant);
+    return r < 0.07 ? hex('#4f6a3e') : r < 0.12 ? hex('#6f8452') : hex('#5f7748');
+  });
+  if (frame == null) {
+    // ruhiges Wasser (Becken am Wasserfall, unter den Stegen): ein paar helle Kräusel
+    for (let n = 0; n < 5; n++) {
+      const x = randInt(10, 50);
+      const y = randInt(6, 25);
+      for (let i = 0; i < randInt(3, 6); i++) c.paint(x + i, y, hex('#8a9c66'));
+    }
+    if (variant === 1) {
+      c.ellipse(24, 14, 4, 2, hex('#3f6a2c'), true); // treibendes Blatt
+      c.paint(23, 13, hex('#6a9a44'));
+    }
+    return c;
+  }
+  for (let y = 0; y < TH; y++) {
+    for (let x = 0; x < TW; x++) {
+      if (!inDiamond(x, y)) continue;
+      const u = ((x + 0.5 - 32) / 32 + (y + 0.5 - 16) / 16) / 2;
+      const v = ((y + 0.5 - 16) / 16 - (x + 0.5 - 32) / 32) / 2;
+      const wave = 2 * u - frame / 4 + 0.18 * Math.sin(2 * Math.PI * 2 * v);
+      const fr = wave - Math.floor(wave);
+      const gate = Math.cos(2 * Math.PI * 3 * v + 1.3 * Math.sin(2 * Math.PI * u)) > 0.15;
+      if (fr < 0.07 && gate) c.set(x, y, hex('#93a470'));
+      else if (fr < 0.1 && gate) c.set(x, y, hex('#7a8e5a'));
+      else if (fr > 0.5 && fr < 0.55 && !gate) c.set(x, y, hex('#4c653a'));
+    }
+  }
+  return c;
+}
+
+Object.assign(sprites, {
+  'jungle_water0.png': jungleWater(null, 0),
+  'jungle_water1.png': jungleWater(null, 1),
+  'jungle_flow0.png': jungleWater(0),
+  'jungle_flow1.png': jungleWater(1),
+  'jungle_flow2.png': jungleWater(2),
+  'jungle_flow3.png': jungleWater(3),
+});
+
+// Banane (Werkzeug in doppelter Auflösung, 64 × 64): ein kleines Bündel aus drei gebogenen Bananen am Stiel
+function banana() {
+  const o = new Canvas(64, 64);
+  const one = (dx, dy, a) => {
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      // Bogen von unten links nach oben rechts, an den Enden schmaler
+      const x = 14 + dx + t * 34 + Math.cos(a) * 0;
+      const y = 44 + dy - t * 22 - Math.sin(t * Math.PI) * 10;
+      const r = 1.5 + Math.sin(t * Math.PI) * 4.5;
+      o.circle(x, y, r, hex('#e8c030'));
+    }
+    for (let i = 3; i <= 37; i++) {
+      const t = i / 40;
+      const x = 14 + dx + t * 34;
+      const y = 44 + dy - t * 22 - Math.sin(t * Math.PI) * 10;
+      o.paint(x - 1, y - 2 - Math.sin(t * Math.PI) * 1.5, hex('#fbe27a'));
+      o.paint(x, y + 2 + Math.sin(t * Math.PI) * 1.5, hex('#c89a20'));
+    }
+    o.rect(14 + dx - 2, 44 + dy - 1, 3, 3, hex('#5a4020')); // Spitze
+  };
+  one(0, 6, 0);
+  one(2, 0, 0);
+  one(5, -6, 0);
+  // Stiel oben rechts
+  o.rect(46, 12, 5, 8, hex('#7a9a3a'));
+  o.rect(46, 10, 5, 3, hex('#5a7a2a'));
+  o.outline(INK);
+  return o;
+}
+
+Object.assign(sprites, { 'banana.png': banana() });
+
+// Reptilienhaus im Dschungel-Bereich des Tierparks: großes Gebäude wie die Aquarium-Fassade, aber aus Naturstein mit
+// grünem, bewachsenem Dach, warmen Glasbändern (drinnen ist es feucht und warm) und einem Echsen-Schild über der Tür.
+// Grundfläche (Kacheln relativ zur Tür): u (tx) -6.5 .. 8.5, v (ty) -11.5 .. 0.5; die Tür liegt vorne links (v = 0,5)
+const RH_W = 880;
+const RH_H = 560;
+const RH_OX = 228; // Mitte der Tür-Kachel im Bild
+const RH_OY = 404;
+function reptileFacade() {
+  const o = new Canvas(RH_W, RH_H);
+  const A = (u, v, z = 0) => [RH_OX + (u - v) * 32, RH_OY + (u + v) * 16 - z];
+  const U0 = -6.5, U1 = 8.5, V0 = -11.5, V1 = 0.5, Z = 88;
+  const quad = (p, col, clip) => o.poly(p, hex(col), clip);
+  // Flächen: vorne-links (Front mit Tür, v = V1), vorne-rechts (Seite, u = U1), Dach
+  quad([A(U0, V1), A(U1, V1), A(U1, V1, Z), A(U0, V1, Z)], '#8a7f62');
+  quad([A(U1, V0), A(U1, V1), A(U1, V1, Z), A(U1, V0, Z)], '#776d52');
+  quad([A(U0, V0, Z), A(U1, V0, Z), A(U1, V1, Z), A(U0, V1, Z)], '#4c6a34');
+  // Natursteinfugen auf Front und Seite
+  for (let z = 10; z < Z - 10; z += 12) {
+    const [x0, y0] = A(U0, V1, z), [x1, y1] = A(U1, V1, z);
+    o.line(x0, y0, x1, y1, hex('#6e654c'));
+    const [x2, y2] = A(U1, V0, z), [x3, y3] = A(U1, V1, z);
+    o.line(x2, y2, x3, y3, hex('#5f573f'));
+  }
+  // Glasbänder (warm leuchtend, Pflanzen dahinter)
+  const glass = (face, a0, a1, z0, z1) => {
+    const P = face === 'front' ? (t, z) => A(t, V1, z) : (t, z) => A(U1, t, z);
+    quad([P(a0, z0), P(a1, z0), P(a1, z1), P(a0, z1)], '#b8d89a');
+    for (let t = a0 + 0.2; t < a1; t += 0.45) {
+      const [x, y] = P(t, z0 + 4);
+      o.ellipse(x, y - 6, 6, 8, hex('#5a9a44'), true); // Blätter hinter der Scheibe
+      o.ellipse(x + 3, y - 12, 4, 5, hex('#3f7a32'), true);
+    }
+    for (let t = a0 + 0.3; t < a1; t += 0.6) {
+      const [x0, y0] = P(t, z0 + 3), [x1, y1] = P(t + 0.15, z1 - 3);
+      o.line(x0, y0, x1, y1, hex('#eef6e0'));
+    }
+    for (let t = a0; t <= a1 + 1e-6; t += 0.6) {
+      const [x0, y0] = P(t, z0), [x1, y1] = P(t, z1);
+      o.line(x0, y0, x1, y1, hex('#3a3426'));
+    }
+  };
+  for (const [a0, a1] of [[-5.6, -1.6], [1.6, 4.4], [5.2, 7.8]]) glass('front', a0, a1, 18, 62);
+  for (const [a0, a1] of [[-10.8, -7.4], [-6.6, -3.2], [-2.4, -0.2]]) glass('side', a0, a1, 18, 62);
+  // Sockel und Dachkante
+  quad([A(U0, V1), A(U1, V1), A(U1, V1, 8), A(U0, V1, 8)], '#5a523c');
+  quad([A(U1, V0), A(U1, V1), A(U1, V1, 8), A(U1, V0, 8)], '#4c4532');
+  quad([A(U0, V1, Z - 8), A(U1, V1, Z - 8), A(U1, V1, Z), A(U0, V1, Z)], '#5f8a3e');
+  quad([A(U1, V0, Z - 8), A(U1, V1, Z - 8), A(U1, V1, Z), A(U1, V0, Z)], '#557c38');
+  // bewachsenes Dach: Büsche und Ranken, die über die Kante hängen
+  for (let n = 0; n < 60; n++) {
+    const u = U0 + 0.6 + rand() * (U1 - U0 - 1.2), v = V0 + 0.6 + rand() * (V1 - V0 - 1.2);
+    const [x, y] = A(u, v, Z);
+    const r = randInt(6, 14);
+    o.ellipse(x, y - r * 0.4, r, r * 0.6, hex('#3a5a2a'), true);
+    o.ellipse(x - 2, y - r * 0.6, r * 0.6, r * 0.35, hex('#5a8a3e'), true);
+  }
+  for (let t = U0 + 0.4; t < U1; t += 0.9) {
+    const [x, y] = A(t, V1, Z - 4);
+    const len = randInt(8, 22);
+    for (let k = 0; k < len; k++) o.set(x + Math.round(Math.sin(k / 3)), y + k, hex(k % 4 ? '#3f7a32' : '#5aa84c'));
+  }
+  // Tür (Holz) über der Tür-Kachel
+  quad([A(-0.75, V1), A(0.75, V1), A(0.75, V1, 48), A(-0.75, V1, 48)], '#3a3426');
+  quad([A(-0.65, V1), A(-0.03, V1), A(-0.03, V1, 44), A(-0.65, V1, 44)], '#7a5232');
+  quad([A(0.03, V1), A(0.65, V1), A(0.65, V1, 44), A(0.03, V1, 44)], '#7a5232');
+  // rundes Schild mit grüner Echse über der Tür
+  const [sx, sy] = A(0, V1, 68);
+  o.ellipse(sx, sy, 17, 15, hex('#3a3426'));
+  o.ellipse(sx, sy, 14, 12, hex('#f4f0dc'));
+  for (let i = 0; i <= 20; i++) {
+    const t = i / 20;
+    const x = sx - 9 + t * 18, y = sy + Math.sin(t * Math.PI * 2) * 3;
+    o.circle(x, y, 2.4 - t * 1.4, hex('#3f9a3a'));
+  }
+  o.circle(sx - 9, sy, 2.8, hex('#3f9a3a'));
+  for (const [dx, dy] of [[-5, 4], [-5, -4], [3, 4], [3, -4]]) o.line(sx + dx, sy, sx + dx - 1, sy + dy, hex('#2f7a2a'));
+  o.set(sx - 10, sy - 1, hex('#1a1a1a'));
+  o.outline(INK);
+  return o;
+}
+
+Object.assign(sprites, { 'reptile_facade.png': reptileFacade() });
+
+// Fischerhütte auf der Insel im Dschungel
+Object.assign(sprites, {
+  'hutwall_jungle_x.png': hutWall('jungle'),
+  'hutwall_jungle_y.png': hutWall('jungle').flipped(),
+  'post_hutwall_jungle.png': hutPost('jungle'),
+  'gate_door_jungle_x.png': hutWall('jungle', true),
+  'gate_door_jungle_y.png': hutWall('jungle', true).flipped(),
+  'hutroof_jungle.png': hutRoof('jungle'),
+  'hut_desk_jungle.png': hutDeskStyled('jungle'),
+  'hut_chair_jungle.png': hutChair('jungle'),
+  'hut_plant_jungle.png': hutPlant('jungle'),
+  'hut_shelf_jungle.png': hutShelf('jungle'),
+  'planks_jungle.png': hutFloor('jungle'),
+});
+
+// Schlange (Platzhalter, bis echte Bilder da sind): 4 Bilder 72 × 48 (Fuß bei 36/40), in Laufrichtung unten-rechts,
+// unten-links, oben-rechts, oben-links; grün mit gelben Flecken, Kopf vorne
+function snakeSheet() {
+  const sheet = new Canvas(72 * 4, 48);
+  [[1, 0.5], [-1, 0.5], [1, -0.5], [-1, -0.5]].forEach(([dx, dy], f) => {
+    const o = new Canvas(72, 48);
+    const n = Math.hypot(dx, dy);
+    const ux = dx / n, uy = dy / n; // Richtung
+    const vx = -uy, vy = ux; // quer dazu
+    const pts = [];
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40 - 0.5; // -0.5 Schwanz … 0.5 Kopf
+      const wave = Math.sin(t * Math.PI * 3) * 6 * (0.6 + t);
+      pts.push([36 + ux * t * 52 + vx * wave * 0.6, 36 + uy * t * 30 + vy * wave * 0.6]);
+    }
+    pts.forEach(([x, y], i) => o.circle(x, y, 1.5 + Math.min(i, 40 - i * 0.6) * 0.12 + (i > 34 ? 0.8 : 0), hex('#3f8a3a')));
+    pts.forEach(([x, y], i) => {
+      if (i % 5 === 2 && i < 36) o.circle(x - 0.5, y - 1, 1.4, hex('#e8c040'), true);
+      o.paint(x - 0.8, y - 1.6, hex('#6ab84c'));
+    });
+    const [hx, hy] = pts[40];
+    o.ellipse(hx + ux * 2, hy + uy * 1.2, 4.2, 3.2, hex('#3f8a3a'));
+    o.set(hx + ux * 3 + vx * 1.5, hy + uy * 1.5 - 1, hex('#1a1a1a'));
+    o.line(hx + ux * 6, hy + uy * 3, hx + ux * 9, hy + uy * 4.5, hex('#d8303a')); // Zunge
+    o.outline(INK);
+    const c = withShadow(72, 48, 36, 40, 24, 4, new Canvas(72, 48));
+    c.draw(o, 0, 0);
+    sheet.draw(c, f * 72, 0);
+  });
+  return sheet;
+}
+
+// Vogelspinne (Platzhalter): 4 Bilder 56 × 40 (Fuß bei 28/32): dunkler, haariger Körper mit orangen Ringen an den Beinen
+function tarantulaSheet() {
+  const sheet = new Canvas(56 * 4, 40);
+  [1, -1, 1, -1].forEach((dir, f) => {
+    const o = new Canvas(56, 40);
+    const back = f >= 2;
+    // acht Beine, gebogen
+    for (let k = 0; k < 4; k++) {
+      for (const side of [-1, 1]) {
+        const a = (-0.9 + k * 0.6) * side;
+        const kx = 28 + Math.cos(a) * 12 * side, ky = 26 + Math.sin(a) * 5 - 6;
+        const fx = 28 + Math.cos(a) * 21 * side, fy = 31 + Math.sin(a) * 6;
+        o.line(28, 25, kx, ky, hex('#3a2418'));
+        o.line(kx, ky, fx, fy, hex('#3a2418'));
+        o.line(28, 26, kx, ky + 1, hex('#4a3020'));
+        o.set((kx + fx) / 2, (ky + fy) / 2, hex('#e08a2a'));
+      }
+    }
+    o.ellipse(28 - dir * (back ? -5 : 5), 23, 8, 6, hex('#3a2418')); // Hinterleib
+    o.ellipse(28 - dir * (back ? -5 : 5) - 2, 21, 4, 2.5, hex('#5a3a26'), true);
+    o.ellipse(28 + dir * (back ? -3 : 4), 25, 5, 4, hex('#4a3020')); // Kopfbrust
+    if (!back) {
+      o.set(28 + dir * 7, 24, hex('#f0e0a0'));
+      o.set(28 + dir * 6, 23, hex('#f0e0a0'));
+    }
+    for (let n = 0; n < 14; n++) o.paint(20 + ((n * 7) % 16), 18 + ((n * 5) % 10), hex('#7a5a3a')); // Härchen
+    o.outline(INK);
+    const c = withShadow(56, 40, 28, 32, 18, 4, new Canvas(56, 40));
+    c.draw(o, 0, 0);
+    sheet.draw(c, f * 56, 0);
+  });
+  return sheet;
+}
+
+// Spinnennetz zwischen zwei Zweigen (Vogelspinnen-Terrarium): 64 × 64, Fuß bei 32/58; die Fäden halb durchsichtig
+function spiderWeb() {
+  const o = new Canvas(64, 64);
+  // zwei schräge Zweige, die aus dem Boden ragen
+  for (const [x0, x1] of [[12, 8], [52, 56]]) {
+    o.line(x0, 58, x1, 8, hex('#6b4a2a'));
+    o.line(x0 + 1, 58, x1 + 1, 8, hex('#8a6440'));
+  }
+  o.outline(INK);
+  const cx = 32, cy = 30;
+  const thread = hex('#f4f4ec', 170);
+  // Speichen vom Mittelpunkt zu den Zweigen und nach oben und unten
+  const ends = [[10, 14], [10, 40], [54, 14], [54, 40], [32, 8], [32, 52], [20, 9], [44, 9], [20, 54], [44, 54]];
+  for (const [ex, ey] of ends) o.line(cx, cy, ex, ey, thread);
+  // Spirale
+  let prev = null;
+  for (let a = 0; a < Math.PI * 10; a += 0.12) {
+    const r = 2 + a * 0.62;
+    if (r > 21) break;
+    const p = [Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r * 0.95)];
+    if (prev) o.line(prev[0], prev[1], p[0], p[1], thread);
+    prev = p;
+  }
+  // ein paar Tautropfen
+  for (const [x, y] of [[24, 22], [40, 34], [30, 42]]) o.set(x, y, hex('#ffffff'));
+  return o;
+}
+
+Object.assign(sprites, {
+  'spider_web.png': spiderWeb(),
+  // Reptilienhaus: Halle aus warmem Naturstein, Terrarien mit Glaswänden im Holzrahmen
+  'hutwall_reptiles_x.png': hutWall('reptiles'),
+  'hutwall_reptiles_y.png': hutWall('reptiles').flipped(),
+  'post_hutwall_reptiles.png': hutPost('reptiles'),
+  'hutwall_terrarium_x.png': hutWall('terrarium'),
+  'hutwall_terrarium_y.png': hutWall('terrarium').flipped(),
+  'post_hutwall_terrarium.png': hutPost('terrarium'),
+  'floor_reptiles.png': hutFloor('reptiles'),
+  'terrarium_floor.png': hutFloor('terrarium'),
+});
+
+// ONLY=jgrass0.png,mangrove.png: nur diese Bilder schreiben (alle anderen bleiben, wie sie sind)
+const ONLY = process.env.ONLY?.split(",");
 for (const [name, canvas] of Object.entries(sprites)) {
+  if (ONLY && !ONLY.includes(name)) continue;
   canvas.save(path.join(OUT, name));
   console.log(`  ${name}  (${canvas.w}x${canvas.h})`);
 }

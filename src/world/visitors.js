@@ -27,6 +27,10 @@ export const APPEAL = {
   peacock: 3,
   butterfly: 1.5,
   macaque: 4,
+  howler: 5, // laut und lustig
+  snake: 5,
+  macaw: 6, // bunt und laut
+  tarantula: 4,
   lion: 5,
   crocodile: 5,
   reeffish: 0.5, // leicht zu fangen, und im Aquarium schwimmen bis zu 30 davon (sonst bringen sie mehr Besucher als seltene Tiere)
@@ -38,6 +42,7 @@ export const APPEAL = {
   wolf: 5,
   gnu: 2.5,
   hippo: 5,
+  redpanda: 5,
   hyena: 4,
   warthog: 3,
   vulture: 3.5,

@@ -71,10 +71,18 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
-    // springt sofort zur nächsten Wetterphase der Savanne (siehe season.js); dauert selbst nicht, keine Pause danach
+    id: 'fireflies',
+    name: tr('Glühwürmchen-Abend', 'Firefly Evening'),
+    text: tr('5 Minuten lang wird es Abend im Bambuswald: Die Laternen leuchten, überall schweben Glühwürmchen. Fang sie mit dem Glas – mit einem leuchtenden Glas lockst du die roten Pandas aus den Kirschbäumen!', 'For 5 minutes it is evening in the bamboo forest: the lanterns glow and fireflies float everywhere. Catch them with the jar – a glowing jar lures the red pandas down from the cherry trees!'),
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
+    // springt sofort zur nächsten Wetterphase der Savanne und des Dschungels (siehe season.js); dauert selbst nicht, keine Pause danach
     id: 'weather',
-    name: tr('Savannen-Wetterwechsel', 'Savanna Weather Change'),
-    text: tr('Die Savanne wechselt sofort in die nächste Wetterphase: Starkregen, Trockenzeit oder wieder normal – mit anderen Tieren!', 'The savanna switches to the next weather phase right away: heavy rain, dry season or back to normal – with different animals!'),
+    name: tr('Wetterwechsel', 'Weather Change'),
+    text: tr('Savanne und Dschungel wechseln sofort in ihre nächste Wetterphase: Starkregen, Trockenzeit, Nebel oder wieder normal – mit anderen Tieren!', 'The savanna and the jungle switch to their next weather phase right away: heavy rain, dry season, fog or back to normal – with different animals!'),
     cost: 25,
     duration: 0,
     cooldown: 0,
@@ -123,7 +131,7 @@ export function formatTime(ms) {
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
 // ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen, Frösche und Wölfe bekommen Babys,
 // im Aquarium Seepferdchen, Schildkröten, Rochen, Kraken und Quallen; Maulwürfe, Reiher, Fische und Koi nicht.
-const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog', wolf: 'wolf',
+const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog', wolf: 'wolf', redpanda: 'redpanda',
   // im Aquarium (Fische und Koi bekommen keine Babys)
   seahorse: 'seahorse', turtle: 'turtle', ray: 'ray', octopus: 'octopus', jellyfish: 'jellyfish' };
 
