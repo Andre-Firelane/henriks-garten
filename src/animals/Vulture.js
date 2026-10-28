@@ -37,10 +37,12 @@ export default class Vulture extends Heron {
     if (this.perched) {
       this.perchTime -= dt;
       if (this.perchTime > 0) return false;
-      // hinunter auf einen freien Platz neben dem Baum
+      // hinunter auf einen freien Platz neben dem Baum (vom Baum aus gesucht, der Ast ragt über den Zaun hinaus)
       this.perched = false;
-      const { tx, ty } = worldToTile(this.x, this.y);
-      const free = [[1, 0], [0, 1], [-1, 0], [0, -1]].map(([dx, dy]) => ({ tx: tx + dx, ty: ty + dy })).find((t) => !isBlocked(t.tx, t.ty) && this.enclosure?.tileSet.has(t.tx + ',' + t.ty));
+      const { tx, ty } = this.perchTile ?? worldToTile(this.x, this.y);
+      const inPen = (t) => !isBlocked(t.tx, t.ty) && this.enclosure?.tileSet.has(t.tx + ',' + t.ty);
+      const free = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]].map(([dx, dy]) => ({ tx: tx + dx, ty: ty + dy })).find(inPen)
+        ?? (this.enclosure?.tiles ?? []).filter(inPen).sort((a, b) => Math.hypot(a.tx - tx, a.ty - ty) - Math.hypot(b.tx - tx, b.ty - ty))[0];
       if (free) Object.assign(this, tileToWorld(free.tx, free.ty));
       this.pickWander();
       return false;
@@ -67,6 +69,12 @@ export default class Vulture extends Heron {
       }
     }
     return super.updateFree(dt, player);
+  }
+
+  // Futter im Tierpark: wer oben im Baum sitzt oder gerade hinfliegt, bleibt dabei und kommt erst danach zum Futter
+  updateFeed(dt) {
+    if (this.perched || this.toPerch || this.penFlight) return this.updatePerch(dt);
+    return super.updateFeed(dt);
   }
 
   restore(state) {

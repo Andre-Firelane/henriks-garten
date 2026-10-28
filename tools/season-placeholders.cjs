@@ -68,7 +68,8 @@ function cracks(p, seed, color, alpha) {
 
 const JOBS = {
   // (die Tiere selbst sind schon echte Bilder, siehe tools/prepare-characters.js und tools/savanna-cut.cjs)
-  // Lungenfisch im Schlamm (Trockenzeit): wie lungfish, unten im Schlamm steckend (4 Bilder 84 × 64)
+  // Lungenfisch im Schlamm (Trockenzeit): wie lungfish, unten im Schlamm steckend (4 Bilder 84 × 64); nur der Bauch
+  // steckt drin, Augen und Maul schauen heraus
   lungfish_mud: () => {
     const p = read('lungfish');
     for (let y = 0; y < p.height; y++) {
@@ -76,8 +77,8 @@ const JOBS = {
         const i = (y * p.width + x) * 4;
         const u = (x % 84) - 42;
         const mound = (u / 24) ** 2 + ((y - 60) / 7) ** 2 < 1; // Schlammhügel, aus dem er herausschaut
-        if (y > p.height * 0.58 && p.data[i + 3]) [p.data[i], p.data[i + 1], p.data[i + 2]] = [92, 66, 40];
-        else if (mound && y > 52) [p.data[i], p.data[i + 1], p.data[i + 2], p.data[i + 3]] = [104, 76, 48, 255];
+        if (y > p.height * 0.8 && p.data[i + 3]) [p.data[i], p.data[i + 1], p.data[i + 2]] = [92, 66, 40];
+        else if (mound && y > 55) [p.data[i], p.data[i + 1], p.data[i + 2], p.data[i + 3]] = [104, 76, 48, 255];
       }
     }
     return p;

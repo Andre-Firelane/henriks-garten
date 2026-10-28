@@ -41,7 +41,7 @@ export const HD = [
   'planks_jungle', 'thicket', 'thicket_cut', 'thicket_small', 'waterfall',
   // Aquarium
   'aq_bench', 'aq_lamp', 'aq_path', 'aq_statue', 'coral', 'floor_aquarium', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'hutwall_tank_x',
-  'hutwall_tank_y',
+  'hutwall_tank_y', 'seaweed', 'tank_chest',
   // Reptilienhaus
   'floor_reptiles', 'terrarium_floor', 'hutwall_reptiles_x', 'hutwall_reptiles_y', 'post_hutwall_reptiles', 'hutwall_terrarium_x',
   'hutwall_terrarium_y', 'post_hutwall_terrarium', 'spider_web',

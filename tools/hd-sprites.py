@@ -60,7 +60,7 @@ def crop(im):
     return im.crop(im.getchannel('A').point(lambda v: 255 if v > 24 else 0).getbbox())
 
 
-def place(new, orig, stretch=False, shadow=SHADOW, solid=255):
+def place(new, orig, stretch=False, shadow=SHADOW, solid=255, axis='x'):
     """new in die opake Box des alten Bilds (vergrößert) setzen, unten mittig; der alte Schatten bleibt (weichgezeichnet).
     shadow=None: jeder Pixel mit Deckkraft 70 ist Schatten (im Tierpark gibt es auch andere Schattenfarben)."""
     big = orig.resize((orig.width * F, orig.height * F), Image.NEAREST)
@@ -79,6 +79,14 @@ def place(new, orig, stretch=False, shadow=SHADOW, solid=255):
         out.paste(Image.new('RGBA', big.size, shadow), (0, 0), mask.point(lambda v: v * shadow[3] // 255))
     x0, y0, x1, y1 = big.getchannel('A').point(lambda v: 255 if v >= solid and v != 70 else 0).getbbox()
     bw, bh = x1 - x0, y1 - y0
+    if stretch == 'ends':
+        # Zäune und Wände: linkes und rechtes Ende (Pfosten) einzeln auf die alten Enden ziehen. Nur in die Box gestreckt
+        # stehen die Pfosten der KI-Bilder etwas anders hoch, dann treffen sie sich nicht mit dem Nachbarteil
+        a = np.asarray(big)[..., 3]
+        dst = side_ends((a >= solid) & (a != 70))
+        src = side_ends(np.asarray(new)[..., 3] > 200)
+        out.alpha_composite(new.transform(big.size, Image.PERSPECTIVE, perspective(src, dst), Image.BICUBIC))
+        return same_ends(out, dst[0][0], dst[2][0], axis) if axis else out  # Tore: nur die Enden (sie haben keine Pfosten)
     if stretch:
         w, h = bw, bh
     else:
@@ -86,6 +94,37 @@ def place(new, orig, stretch=False, shadow=SHADOW, solid=255):
         w, h = max(1, round(new.width * s)), max(1, round(new.height * s))
     out.alpha_composite(new.resize((w, h), Image.LANCZOS), (x0 + (bw - w) // 2, y1 - h))
     return out
+
+
+def same_ends(im, l, r, axis):
+    """Ein Wand- oder Zaunteil ist breiter als ein Kachelschritt (32 × 16 Pixel): sein Ende liegt über dem Anfang des
+    Nachbarteils. Das verdeckte Ende wird eine genaue Kopie des vorne liegenden (die KI malt beide Enden verschieden,
+    sonst sieht man dort eine doppelte, versetzte Kante). Vorne liegt das Teil weiter unten: bei _x rechts, also gilt
+    dessen linkes Ende; bei _y links, also dessen rechtes Ende."""
+    sx, sy = 32 * F, 16 * F
+    ov = int(round(r - l - sx))
+    if ov <= 0:
+        return im
+    l, r = int(round(l)), int(round(r))
+    if axis == 'x':
+        band = im.crop((l, 0, l + ov, im.height))
+        x, dy = r - ov, sy
+    else:
+        band = im.crop((r - ov, 0, r, im.height))
+        x, dy = l, sy  # (bei _y liegt das linke Ende tiefer)
+    out = im.copy()
+    out.paste(Image.new('RGBA', (ov, im.height)), (x, 0))
+    out.alpha_composite(band.transform(band.size, Image.AFFINE, (1, 0, 0, 0, 1, -dy), Image.NEAREST), (x, 0))
+    return out
+
+
+def side_ends(mask, band=0.08):
+    """oberer und unterer Punkt am linken und rechten Ende (in einem schmalen Streifen am Rand)"""
+    ys, xs = np.nonzero(mask)
+    l, r = xs.min(), xs.max()
+    w = max(2, (r - l) * band)
+    left, right = ys[xs <= l + w], ys[xs >= r - w]
+    return [(l, left.min()), (l, left.max() + 1), (r + 1, right.min()), (r + 1, right.max() + 1)]
 
 
 def tile_crop(im):
@@ -397,7 +436,7 @@ for k, p in PARK_OBJS.items():
     place(crop(dehalo(new) if k in HALO else new), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
 for k, paths in PARK_SIDES.items():
     for side, p in zip('xy', paths):
-        im = place(crop(Image.open(p).convert('RGBA')), old(f'{k}_{side}'), True, shadow=None, solid=200)
+        im = place(crop(Image.open(p).convert('RGBA')), old(f'{k}_{side}'), 'ends', shadow=None, solid=200, axis=None if k.startswith('gate') else side)
         (glass(im, GLASS[k]) if k in GLASS else im).save(f'{OUT}/{k}_{side}.png')
 for k, (p, f) in PARK_BIG.items():
     warp(Image.open(p).convert('RGBA'), old(k), f).save(f'{OUT}/{k}.png')
@@ -443,7 +482,7 @@ for k, n in SAV_OBJS.items():
     place(crop(Image.open(sav(n)).convert('RGBA')), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
 for k, n in SAV_SIDES.items():
     for side, m in (('x', n), ('y', n + 1)):
-        place(crop(Image.open(sav(m)).convert('RGBA')), old(f'{k}_{side}'), True, shadow=None, solid=200).save(f'{OUT}/{k}_{side}.png')
+        place(crop(Image.open(sav(m)).convert('RGBA')), old(f'{k}_{side}'), 'ends', shadow=None, solid=200, axis=None if k.startswith('gate') else side).save(f'{OUT}/{k}_{side}.png')
 warp(Image.open(sav(10)).convert('RGBA'), old('hutroof_savanna'), 2).save(f'{OUT}/hutroof_savanna.png')
 bone_pile(crop(Image.open(sav(0)).convert('RGBA')), old('bone_pile')).save(f'{OUT}/bone_pile.png')
 
@@ -456,7 +495,7 @@ for k, n in BAM_OBJS.items():
     place(crop(Image.open(bam(n)).convert('RGBA')), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
 for k, n in {'gate_door_asia': 2, 'hutwall_asia': 10}.items():
     for side, m in (('x', n), ('y', n + 1)):
-        place(crop(Image.open(bam(m)).convert('RGBA')), old(f'{k}_{side}'), True, shadow=None, solid=200).save(f'{OUT}/{k}_{side}.png')
+        place(crop(Image.open(bam(m)).convert('RGBA')), old(f'{k}_{side}'), 'ends', shadow=None, solid=200, axis=None if k.startswith('gate') else side).save(f'{OUT}/{k}_{side}.png')
 warp(Image.open(bam(9)).convert('RGBA'), old('hutroof_asia'), 2).save(f'{OUT}/hutroof_asia.png')
 
 # ---- Riff ----
@@ -495,7 +534,7 @@ for k, n in DSCH_OBJS.items():
     place(crop(dehalo(Image.open(dsch(n)).convert('RGBA'))), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
 for k, n in {'gate_door_jungle': 5, 'hutwall_jungle': 12}.items():
     for side, m in (('x', n), ('y', n + 1)):
-        place(crop(Image.open(dsch(m)).convert('RGBA')), old(f'{k}_{side}'), True, shadow=None, solid=200).save(f'{OUT}/{k}_{side}.png')
+        place(crop(Image.open(dsch(m)).convert('RGBA')), old(f'{k}_{side}'), 'ends', shadow=None, solid=200, axis=None if k.startswith('gate') else side).save(f'{OUT}/{k}_{side}.png')
 warp(Image.open(dsch(11)).convert('RGBA'), old('hutroof_jungle'), 2).save(f'{OUT}/hutroof_jungle.png')
 
 
@@ -534,6 +573,11 @@ office_floor(aqua(6), lum=50).save(f'{OUT}/floor_aquarium.png')  # vier dunkle P
 flatten([tile(alpha_crop(Image.open(aqua(3)).convert('RGBA')), 0.03)])[0].save(f'{OUT}/aq_path.png')  # Mosaik: nur den Umriss weg
 for k, n in {'aq_bench': 0, 'aq_lamp': 2, 'aq_statue': 4, 'coral': 5}.items():
     place(crop(dehalo(Image.open(aqua(n)).convert('RGBA'))), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
+# Seegras und Schatzkiste im Becken (eigene Lieferung): der dunkle Schein um die Figur fällt weg
+for k, name in {'seaweed': 'Seegras', 'tank_chest': 'Kiste'}.items():
+    new = np.asarray(Image.open(f'{A}/scenario-assets-Aquarium/{name}.png').convert('RGBA')).copy()
+    new[new[..., 3] < 200] = 0
+    place(crop(Image.fromarray(new, 'RGBA')), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
 
 
 def lamp_glow(im, color=(255, 242, 176), alpha=65):
@@ -582,11 +626,11 @@ for k, n in {'post_hutwall_reptiles': 6, 'post_hutwall_terrarium': 7, 'spider_we
     place(crop(no_haze(new) if k == 'spider_web' else new), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
 for k, n in {'hutwall_reptiles': 2, 'hutwall_terrarium': 4}.items():
     for side, m in (('x', n), ('y', n + 1)):
-        im = place(crop(Image.open(rept(m)).convert('RGBA')), old(f'{k}_{side}'), True, shadow=None, solid=200)
+        im = place(crop(Image.open(rept(m)).convert('RGBA')), old(f'{k}_{side}'), 'ends', shadow=None, solid=200, axis=None if k.startswith('gate') else side)
         (pale_glass(im, 95) if k == 'hutwall_terrarium' else im).save(f'{OUT}/{k}_{side}.png')  # Terrarienscheiben durchsichtig
 for k, n in {'hutwall_aquarium': 7, 'hutwall_tank': 9}.items():
     for side, m in (('x', n), ('y', n + 1)):
-        im = place(crop(Image.open(aqua(m)).convert('RGBA')), old(f'{k}_{side}'), True, shadow=None, solid=200)
+        im = place(crop(Image.open(aqua(m)).convert('RGBA')), old(f'{k}_{side}'), 'ends', shadow=None, solid=200, axis=None if k.startswith('gate') else side)
         (glass(im, 90) if k == 'hutwall_tank' else im).save(f'{OUT}/{k}_{side}.png')  # Beckenscheiben durchsichtig wie vorher
 import subprocess
 subprocess.run([sys.executable, os.path.join(ROOT, 'tools/park-path.py'), f'{OUT}/park_path.png'], check=True)
