@@ -199,6 +199,12 @@
       .travel-map .place-group > .place { position: relative; transform: none; width: 100%; height: 5.2em; font-size: 1em; border-width: 2px; }
       .travel-map .place-group > .place:hover, .travel-map .place-group > .place.selected { transform: scale(1.06); }
       .travel-map .place-group > .place > span { font-size: 0.82em; } /* "Reptilienhaus" passt hinein */
+      /* Hauptziel (Tierpark-Zentrum) größer als das zweite Auto (Reptilienhaus) */
+      .travel-map .place-group > .place:not(.main) { height: 3.9em; }
+      .travel-map .place-group > .place:not(.main) > .animal-box { font-size: 0.68em; }
+      .travel-map .place-group > .place.main { height: 6.6em; }
+      .travel-map .place-group > .place.main > .animal-box { font-size: 1.2em; }
+      .travel-map .place-group > .place.main > span { font-size: 0.95em; }
       .travel-hint { margin: 6px 0 0; color: #fff8e6; font-size: 16px; text-shadow: 0 1px 2px #000; }
       /* Übersicht (Taste I) */
       #journal {

@@ -61,10 +61,21 @@ export default class Sheep extends Animal {
     return this.farm;
   }
 
+  // Lauf- und Stehanimation nur als normales Schaf; beim Grasen und als Bauernhof-Tier die Standbilder
+  animKey(moving) {
+    return this.grazing || this.farmLook() ? null : super.animKey(moving);
+  }
+
   render(moving) {
     const farm = this.farmLook();
     const key = farm ? `farm_${farm}${this.grazing ? '_eat' : ''}` : this.grazing ? 'sheep_eat' : this.kind.texture;
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
+    // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)
+    const onAnim = !farm && !this.grazing && Object.values(this.kind.anims).includes(this.sprite.texture.key);
+    if (this.sprite.texture.key !== key && !onAnim) {
+      const fromAnim = Object.values(this.kind.anims).includes(this.sprite.texture.key);
+      this.sprite.stop().setFlipX(false);
+      this.sprite.setTexture(key, fromAnim ? 0 : this.sprite.frame.name);
+    }
     super.render(moving);
   }
 }

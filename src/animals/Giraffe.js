@@ -111,12 +111,25 @@ export default class Giraffe extends Animal {
 
   render(moving) {
     if (this.eating?.phase !== 'eat' || this.state === 'following') {
-      if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
+      // vom Fressbild zurück aufs Standbild (eine Animation setzt ihr Bild selbst, siehe Animal.render)
+      const onAnim = Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);
+      if (this.sprite.texture.key !== this.kind.texture && !onAnim) this.sprite.stop().setFlipX(false).setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       return;
     }
-    if (this.sprite.texture.key !== 'giraffe_eat') this.sprite.setTexture('giraffe_eat', 0).setOrigin(0.5, EAT_ORIGIN_Y);
-    this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? 1 : 0) : this.faceX > 0 ? 2 : 3);
+    // Fressen als Animation (nach links gespiegelt); ohne sie das Fressbild
+    const eatAnim = this.faceY > 0 ? 'giraffe_eating' : 'giraffe_eating_back';
+    if (this.scene.anims.exists(eatAnim)) {
+      if (!this.sprite.anims.isPlaying || this.sprite.anims.currentAnim?.key !== eatAnim) {
+        this.sprite.play({ key: eatAnim, startFrame: Math.floor(Math.random() * this.scene.anims.get(eatAnim).frames.length) });
+        this.sprite.setOrigin(0.5, EAT_ORIGIN_Y);
+      }
+      this.sprite.anims.timeScale = 1;
+      this.sprite.setFlipX(this.faceX < 0);
+    } else {
+      if (this.sprite.texture.key !== 'giraffe_eat') this.sprite.stop().setFlipX(false).setTexture('giraffe_eat', 0).setOrigin(0.5, EAT_ORIGIN_Y);
+      this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? 1 : 0) : this.faceX > 0 ? 2 : 3);
+    }
     this.sprite.setPosition(this.x, this.y + SPRITE_SINK);
     this.sprite.setAngle(0);
     this.shadow.setPosition(this.x, this.y);

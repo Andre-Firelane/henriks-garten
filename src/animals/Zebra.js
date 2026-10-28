@@ -14,6 +14,10 @@ const WALK_SPEED = 1.5; // zum Wasser etwas zügiger als beim Grasen
 const SPOTS = 8; // Uferplätze rund um die gewählte Stelle
 const PEN_DRINK_EVERY = [15, 30]; // im Gehege: Sekunden zwischen zwei Gängen zum Wasserloch
 const PEN_CLOSE = 28; // so nah am Uferplatz darf es auch hängen bleiben und trotzdem trinken
+// Maul beim Trinken (gesenkter Kopf), von den Füßen aus gemessen, beim Blick nach rechts (zebra_drinking, halbe Größe)
+const DRINK_MOUTH = { front: [10.7, -2.7], back: [11.5, -8.2] };
+const DRINK_REACH = 0.55; // dorthin soll das Maul: Anteil des Wegs vom Zebra zur Mitte der Wasserkachel
+const DRINK_LEAN_MAX = 20; // höchstens so weit rückt das Bild zum Wasser
 
 export default class Zebra extends Antelope {
   constructor(scene, x, y, allAnimals) {
@@ -203,10 +207,47 @@ export default class Zebra extends Antelope {
     this.eatingLook = on;
   }
 
+  // Beim Trinken ein Stück zum Wasser rücken (nur das Bild, der Platz bleibt auf dem Ufer), damit das Maul im Wasser ist:
+  // das Maul soll knapp hinter der Uferkante liegen (DRINK_REACH des Wegs zur Mitte der Wasserkachel)
+  leanToWater() {
+    const spot = this.drinkSpot ?? this.penDrink?.spot;
+    if (!spot) return; // z. B. am Futter
+    const k = this.sprite.scaleX / 0.5; // Tierbabys sind kleiner
+    const [mx, my] = this.faceY > 0 ? DRINK_MOUTH.front : DRINK_MOUTH.back;
+    let lx = (spot.wx - this.x) * DRINK_REACH - mx * k * (this.faceX < 0 ? -1 : 1);
+    let ly = (spot.wy - this.y) * DRINK_REACH - my * k;
+    const len = Math.hypot(lx, ly);
+    if (len > DRINK_LEAN_MAX) {
+      lx *= DRINK_LEAN_MAX / len;
+      ly *= DRINK_LEAN_MAX / len;
+    }
+    this.sprite.x += lx;
+    this.sprite.y += ly;
+    this.shadow.x += lx;
+    this.shadow.y += ly;
+  }
+
   render(moving) {
     const down = (this.drinking && (this.state === 'wild' || this.state === 'penned')) || this.eatingLook;
+    // Trinken als Animation (zebra_drinking, mit Skin zebra2_drinking; nach links gespiegelt)
+    const drinkAnim = `${this.skin ?? 'zebra'}_drinking${this.faceY > 0 ? '' : '_back'}`;
+    if (down && this.scene.anims.exists(drinkAnim)) {
+      if (!this.sprite.anims.isPlaying || this.sprite.anims.currentAnim?.key !== drinkAnim) {
+        this.sprite.play(drinkAnim); // beugt sich hinunter, trinkt, richtet sich auf (und wieder von vorn)
+      }
+      this.sprite.anims.timeScale = 1;
+      this.sprite.setFlipX(this.faceX < 0);
+      this.placeSprite(false);
+      this.leanToWater();
+      return;
+    }
+    if (this.sprite.texture.key.includes('_drinking')) this.sprite.stop().setFlipX(false).setTexture(this.baseTexture(), 0);
     const key = down ? `${this.skin ?? 'zebra'}_drink` : this.baseTexture(); // mit Skin: zebra2, zebra2_drink
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
+    const onAnim = Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key); // Animation setzt ihr Bild selbst
+    if (this.sprite.texture.key !== key && (down || !onAnim)) {
+      if (onAnim) this.sprite.stop().setFlipX(false);
+      this.sprite.setTexture(key, onAnim ? 0 : this.sprite.frame.name);
+    }
     super.render(moving);
   }
 }

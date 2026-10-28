@@ -101,7 +101,7 @@ export default class Crocodile extends Fish {
 
   // im Wasser: nur der Kopf schaut heraus
   useWaterLook() {
-    this.sprite.setTexture(`${this.skin ?? 'croc'}_water`, 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(0.5); // mit Skin: Albino-Krokodil
+    this.sprite.stop().setFlipX(false).setTexture(`${this.skin ?? 'croc'}_water`, 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(0.5); // mit Skin: Albino-Krokodil
     this.shadow.setVisible(false);
   }
 

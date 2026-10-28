@@ -16,6 +16,8 @@ const PEN_FLY_EVERY = [10, 20]; // in der Voliere: Sekunden zwischen zwei kurzen
 const PEN_FLY_SPEED = 60; // gemächlicher als beim Überflug
 const PEN_ALTITUDE = 26; // so hoch fliegt er höchstens (unter dem Netz)
 const PEN_MIN_DIST = 50; // so weit soll der Flug mindestens gehen
+const FOLLOW_ALTITUDE = 30; // gefangen: so hoch fliegt er hinter dem Spieler her (steht der Spieler, landet er)
+const FOLLOW_CLIMB = 3; // wie schnell er dabei aufsteigt bzw. hinuntergleitet
 // Flugbilder mit angelegten Flügeln nach oben rechts: dafür das gespiegelte Bild nach oben links (Flügel ausgestreckt)
 const MIRROR_UP_RIGHT = new Set(['shoebill_fly']);
 
@@ -150,28 +152,54 @@ export default class Heron extends Animal {
 
   render(moving) {
     const penFlying = this.state === 'penned' && this.penFlight;
-    if (!penFlying && (this.state !== 'wild' || this.phase === 'landed')) {
+    // gefangen: fliegt hinter dem Spieler her, solange der läuft; bleibt er stehen, gleitet er hinunter und landet
+    // (Reiher, Flamingo und Geier; Küken laufen)
+    if (this.state === 'following' && this.kind.followFlies) {
+      const dt = this.scene.game.loop.delta / 1000;
+      const target = moving && !this.baby ? FOLLOW_ALTITUDE : 0; // Küken fliegen noch nicht
+      this.altitude += (target - this.altitude) * Math.min(1, dt * FOLLOW_CLIMB);
+      if (this.altitude < 0.5) this.altitude = 0;
+    }
+    const followFlying = this.state === 'following' && this.altitude > 0;
+    if (!penFlying && !followFlying && (this.state !== 'wild' || this.phase === 'landed')) {
       // stehend (auch beim Folgen und im Gehege)
       const key = this.baby && this.kind.babyTexture ? this.kind.babyTexture : this.baseTexture(); // mit Skin: Schuhschnabel
-      if (this.sprite.texture.key !== key) this.sprite.setTexture(key).setOrigin(0.5, this.kind.originY);
+      // vom Flugbild zurück aufs Standbild (eine Steh-Animation setzt ihr Bild selbst, siehe Animal.render)
+      const onAnim = Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);
+      if (this.sprite.texture.key !== key && !onAnim) {
+        this.sprite.stop();
+        this.sprite.setTexture(key).setOrigin(0.5, this.kind.originY);
+      }
       this.sprite.setFlipX(false);
       super.render(moving);
       this.shadow.setScale(1);
       return;
     }
-    // fliegend: hoch über allem, mit Flügelschlag-Wippen; der Schatten bleibt am Boden
-    const fly = this.skin ? `${this.skin}_fly` : this.kind.flyTexture;
-    if (this.sprite.texture.key !== fly) this.sprite.setTexture(fly).setOrigin(0.5, FLY_ORIGIN_Y);
-    const f = this.kind.frames;
-    const mirror = this.faceY <= 0 && this.faceX > 0 && MIRROR_UP_RIGHT.has(fly);
-    this.sprite.setFrame(
-      this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 && !mirror ? f.upRight : f.upLeft,
-    );
-    this.sprite.setFlipX(mirror);
-    const flap = Math.sin(this.scene.time.now / 120) * 2;
+    // fliegend: über allem (beim Folgen und in der Voliere nur knapp über dem Boden); der Schatten bleibt am Boden
+    const flyAnims = this.skin ? this.kind.skinFlyAnims?.[this.skin] : this.kind.flyAnims; // Schuhschnabel: eigene
+    const anim = flyAnims && (this.faceY > 0 ? flyAnims.down : flyAnims.up);
+    let flap = 0;
+    if (anim && this.scene.anims.exists(anim)) {
+      // Flügelschlag-Animation (nach links gespiegelt)
+      if (this.sprite.texture.key !== anim) this.sprite.setOrigin(0.5, FLY_ORIGIN_Y);
+      this.sprite.play(anim, true);
+      this.sprite.setFlipX(this.faceX < 0);
+    } else {
+      // Flugbild mit Wippen
+      const fly = this.skin ? `${this.skin}_fly` : this.kind.flyTexture;
+      this.sprite.stop();
+      if (this.sprite.texture.key !== fly) this.sprite.setTexture(fly).setOrigin(0.5, FLY_ORIGIN_Y);
+      const f = this.kind.frames;
+      const mirror = this.faceY <= 0 && this.faceX > 0 && MIRROR_UP_RIGHT.has(fly);
+      this.sprite.setFrame(
+        this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 && !mirror ? f.upRight : f.upLeft,
+      );
+      this.sprite.setFlipX(mirror);
+      flap = Math.sin(this.scene.time.now / 120) * 2;
+    }
     this.sprite.setPosition(this.x, this.y - this.altitude - 20 + flap);
     this.sprite.setAngle(0);
-    this.sprite.setDepth(this.altitude > 20 && !penFlying ? 200000 + this.y : this.y);
+    this.sprite.setDepth(this.altitude > 20 && this.state === 'wild' ? 200000 + this.y : this.y);
     this.shadow.setPosition(this.x, this.y);
     this.shadow.setScale(1 - (this.altitude / ALTITUDE) * 0.4);
     this.shadow.setDepth(this.y - 0.5);

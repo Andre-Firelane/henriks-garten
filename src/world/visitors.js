@@ -51,7 +51,7 @@ export const APPEAL = {
 
 const MAX_VISITORS = 16; // im Tierpark (bei so vielen Gehegen brächten neue Tiere sonst kaum noch etwas)
 // Häuser mit eigener Halle haben weniger Platz für Besucher: das Reptilienhaus mit zwei kleinen Terrarien nur wenige
-export const HOUSE_VISITORS = { aquarium: 12, reptiles: 4 };
+export const HOUSE_VISITORS = { aquarium: 8, reptiles: 4 };
 // Tierbaby-Event: Babys sind besonders süß. Es kommen nicht mehr Besucher als sonst, aber sie gehen lieber zu den
 // Gehegen mit Babys (BABY_APPEAL zählt bei der Wahl mit), und wer dort stehen bleibt, gibt zusätzlich im Schnitt
 // 2,5 Herzen (abwechselnd 2 oder 3). Mit einigen Tierpaaren bringt das Event so mehr ein, als es kostet (50 Herzen).

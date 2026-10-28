@@ -19,6 +19,7 @@ const PEN_WALK_TIMEOUT = 8; // kommt es nicht an den Baum, versucht es es späte
 const TREE_KEYS = ['pine', 'dark_tree', 'tree'];
 // Plätze rund um den Stamm, von denen es hinaufklettert (der erste freie wird genommen)
 const CLIMB_SPOTS = [[0, 14], [-18, 9], [18, 9], [-18, -9], [18, -9]];
+const CLIMB_TILT = 50; // beim Klettern so viel Grad mit dem Kopf nach oben bzw. unten geneigt
 
 // Phasen in der Wildnis: up → down → ground → climb → up
 export default class Squirrel extends Animal {
@@ -198,6 +199,12 @@ export default class Squirrel extends Animal {
   render(moving) {
     super.render(moving);
     const c = this.state === 'penned' ? this.penClimb : null;
+    // beim Klettern schräg am Stamm: Kopf nach oben bzw. unten (das Bild schaut nach rechts, nach links gespiegelt)
+    const climb = c ? c.phase : this.state === 'wild' ? this.phase : null;
+    if (climb === 'climb' || climb === 'down') {
+      const headUp = climb === 'climb' ? 1 : -1;
+      this.sprite.setAngle(-CLIMB_TILT * headUp * (this.sprite.flipX ? -1 : 1));
+    }
     if (c && c.phase !== 'walk') {
       // am Baum vor der Krone, ohne Schatten
       this.shadow.setVisible(false);

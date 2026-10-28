@@ -17,13 +17,13 @@ export function isTravelMapOpen() {
 
 // places: [{ id, name, icon, x, y, status, parts }] (x/y in Prozent der Karte; status: z. B. die Wetterphase der Savanne;
 // parts: [{ id, name, icon }] – das Gebiet hat mehrere Ziele, z. B. der Tierpark mit Zentrum und Reptilienhaus: dann ein
-// größeres Schild mit einem Feld je Ziel, übereinander); current: Ziel, an dem man gerade ist;
+// größeres Schild mit einem Feld je Ziel, übereinander; main: das Hauptziel, sein Feld ist größer); current: Ziel, an dem man gerade ist;
 // onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise.
 // opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mini-Tutorial: hüpfender Pfeil neben diesem Gebiet und
 // der Hinweis statt der Anleitung
 export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   panel = document.getElementById('travel');
-  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}" data-id="${p.id}"${style}>
+  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}${p.main ? ' main' : ''}" data-id="${p.id}"${style}>
         ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.wip ? `<small>🚧 ${tr('in Arbeit', 'in progress')}</small>` : ''}</span>
         ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}

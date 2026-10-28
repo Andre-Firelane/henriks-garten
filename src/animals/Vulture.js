@@ -11,7 +11,9 @@ const ALTITUDE = 70;
 const CIRCLE_R = 90; // Radius des Kreisens um den Baum
 const CIRCLE_TIME = [6, 10]; // so lange kreist er, bevor er landet
 const CIRCLE_SPEED = 0.9; // Umdrehungen ... im Bogenmaß pro Sekunde
-const PERCH_H = 58; // so hoch sitzt er über dem Fuß des Baums (in der Krone)
+// Sitzplatz auf dem linken Ast der kahlen Akazie, vom Fuß des Baums aus (der Landeplatz liegt 3 Pixel vor dem Stamm)
+const PERCH_H = 62; // so hoch ...
+const PERCH_X = -24; // ... und so weit links
 const PEN_PERCH_EVERY = [6, 14]; // in der Voliere: so oft fliegt er auf einen der kahlen Bäume ...
 const PEN_PERCH_TIME = [10, 20]; // ... und so lange sitzt er dort
 
@@ -20,8 +22,9 @@ export default class Vulture extends Heron {
     super(scene, x, y, 'vulture');
   }
 
-  // vom Kartenrand heran, dann über dem Baum kreisen und auf ihm landen; perch: Fuß des Baums
-  startCircle(from, perch) {
+  // vom Kartenrand heran, dann über dem Baum kreisen und auf seinem linken Ast landen; tree: Landeplatz vor dem Stamm
+  startCircle(from, tree) {
+    const perch = { x: tree.x + PERCH_X, y: tree.y };
     this.startFlight(from, perch, true);
     this.perch = perch;
     this.phase = 'approach';
@@ -59,7 +62,7 @@ export default class Vulture extends Heron {
           const p = tileToWorld(t.tx, t.ty);
           this.perchTile = t;
           this.toPerch = true;
-          this.penFlight = { from: { x: this.x, y: this.y }, to: { x: p.x, y: p.y + 3 }, done: 0 };
+          this.penFlight = { from: { x: this.x, y: this.y }, to: { x: p.x + PERCH_X, y: p.y + 3 }, done: 0 };
         }
       }
     }

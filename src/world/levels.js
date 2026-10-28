@@ -662,8 +662,8 @@ export const LEVELS = {
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26, name: tr('Zentrum', 'Center') },
     // zweites Auto unten im Dschungel-Bereich, beim Reptilienhaus (der Weg zum Haupthaus ist weit): auf der Weltkarte ein
-    // eigenes Ziel im Tierpark-Schild (dest), Ankunft daneben
-    extraCars: [{ tx: 89.16, ty: 74.32, texture: 'car_park', frame: 0, scale: 1.26, dest: 'reptiles', name: tr('Reptilienhaus', 'Reptile House'), icon: 'tarantula', arrive: { tx: 88, ty: 76 } }],
+    // eigenes Ziel im Tierpark-Schild (dest), Ankunft daneben; erst nach dem ersten Tier aus dem Dschungel (unlock)
+    extraCars: [{ tx: 89.16, ty: 74.32, texture: 'car_park', frame: 0, scale: 1.26, dest: 'reptiles', unlock: 'reptiles', name: tr('Reptilienhaus', 'Reptile House'), icon: 'tarantula', arrive: { tx: 88, ty: 76 } }],
     map: { x: 20, y: 33, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur (in Nordamerika, dort ist Platz für das große Schild)
     // jede Welt hat ihre eigene Seite: Savanne oben, Wald links, Wiese rechts, Asien unten. Die Gehege sind in den
     // Rand eingelassen, ihre Tore zeigen zum Rundweg; der Ausgang in eine Welt liegt mitten in deren Seite.

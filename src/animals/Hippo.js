@@ -164,7 +164,7 @@ export default class Hippo extends Crocodile {
 
   // im Wasser: nur die obere Kopfhälfte
   useWaterLook() {
-    this.sprite.setTexture('hippo_water', 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(HIPPO_SCALE);
+    this.sprite.stop().setFlipX(false).setTexture('hippo_water', 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(HIPPO_SCALE);
     this.shadow.setVisible(false);
   }
 

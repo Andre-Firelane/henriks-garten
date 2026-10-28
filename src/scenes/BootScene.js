@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { openStartScreen } from '../ui/startScreen.js';
 import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
 import { tr } from '../i18n.js';
+import { HD, HD_SCALE, hdFactor, shrinkTexture } from '../world/hd.js';
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -59,6 +60,10 @@ const PIXEL_ART = [
   'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'planks_jungle',
 ];
 
+// Test: neu gemalte Grafiken statt der Pixel-Art aus tools/make-sprites.js (Schlüssel -> Dateiname; leeren = alte Grafik)
+// pine_new: Pine2.png ohne den Schnee am Fuß
+const TEST_ART = {};
+
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
 const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon'];
 
@@ -83,6 +88,88 @@ const SQUIRREL_FRAME = { frameWidth: 56, frameHeight: 60 };
 const FOX_FRAME = { frameWidth: 72, frameHeight: 72 };
 const FOX_SLEEP_FRAME = { frameWidth: 56, frameHeight: 44 };
 const ANTELOPE_FRAME = { frameWidth: 72, frameHeight: 100 };
+// Savannentiere: Laufen, Stehen, Trinken, Fressen, Fliegen (tools/prepare-characters.js), je Bogen [Breite, Höhe, Anzahl Bilder]
+// (breite Bögen sind in zwei Reihen umgebrochen: ohne Anzahl kämen die leeren Felder am Ende als Bilder dazu);
+// optional die Fußlinie, wenn darunter noch etwas hängt (Schwanz des Krokodils), sonst 4 Pixel über dem unteren Rand
+const SAVANNA_ANIMS = {
+  antelope_walk: [72, 100, 10],
+  antelope_walk_back: [72, 100, 18],
+  antelope_idle: [72, 100, 40],
+  antelope_idle_back: [72, 100, 40],
+  antelope2_walk: [72, 100, 32],
+  antelope2_walk_back: [72, 100, 10],
+  antelope2_idle: [72, 100, 20],
+  antelope2_idle_back: [72, 100, 12],
+  zebra_walk: [80, 104, 10],
+  zebra_walk_back: [80, 104, 10],
+  zebra_idle: [80, 104, 40],
+  zebra_idle_back: [80, 104, 40],
+  zebra2_walk: [80, 104, 10],
+  zebra2_walk_back: [80, 104, 10],
+  zebra2_idle: [80, 104, 40],
+  zebra2_idle_back: [80, 104, 40],
+  giraffe_walk: [106, 168, 11],
+  giraffe_walk_back: [104, 168, 10],
+  giraffe_idle: [114, 168, 20],
+  giraffe_idle_back: [128, 168, 39],
+  lion_walk: [74, 96, 10],
+  lion_walk_back: [72, 96, 10],
+  lion_idle: [78, 96, 21],
+  lion_idle_back: [74, 96, 20],
+  lion2_walk: [74, 96, 12],
+  lion2_walk_back: [72, 96, 10],
+  lion2_idle: [82, 96, 18],
+  lion2_idle_back: [72, 96, 40],
+  meerkat_walk: [40, 56, 10],
+  meerkat_walk_back: [40, 56, 12],
+  meerkat_idle: [40, 56, 20],
+  meerkat_idle_back: [40, 56, 40],
+  croc_walk: [72, 104, 10, 88],
+  croc_walk_back: [112, 156, 40, 120],
+  croc_idle: [72, 92, 40],
+  croc_idle_back: [72, 92, 40],
+  croc_albino_walk: [86, 104, 11, 88],
+  croc_albino_walk_back: [76, 104, 12, 88],
+  croc_albino_idle: [78, 92, 40],
+  croc_albino_idle_back: [72, 92, 15],
+  hippo_walk: [96, 88, 14],
+  hippo_walk_back: [96, 88, 11],
+  hippo_idle: [96, 88, 37],
+  hippo_idle_back: [96, 88, 15],
+  hyena_walk: [80, 80, 12],
+  hyena_walk_back: [80, 80, 10],
+  hyena_idle: [80, 80, 26],
+  hyena_idle_back: [80, 80, 20],
+  gnu_walk: [88, 96, 15],
+  gnu_walk_back: [88, 96, 15],
+  gnu_idle: [88, 96, 40],
+  gnu_idle_back: [88, 96, 40],
+  vulture_idle: [88, 108, 38],
+  vulture_idle_back: [88, 108, 32],
+  shoebill_idle: [88, 108, 40],
+  shoebill_idle_back: [88, 108, 40],
+  // Warzenschwein, Flamingo
+  warthog_walk: [80, 88, 10],
+  warthog_walk_back: [80, 88, 33],
+  warthog_idle: [80, 88, 35],
+  warthog_idle_back: [80, 88, 20],
+  flamingo_idle: [88, 108, 36],
+  flamingo_idle_back: [88, 108, 38],
+  flamingo_flap: [104, 100, 16],
+  flamingo_flap_back: [104, 100, 41],
+  // trinken, fressen, fliegen
+  zebra_drinking: [80, 104, 38],
+  zebra_drinking_back: [80, 104, 39],
+  zebra2_drinking: [80, 104, 38],
+  zebra2_drinking_back: [80, 104, 39],
+  giraffe_eating: [108, 180, 21],
+  giraffe_eating_back: [106, 180, 10],
+  vulture_flap: [126, 108, 40],
+  vulture_flap_back: [96, 100, 37],
+  shoebill_flap: [96, 92, 40],
+  shoebill_flap_back: [96, 92, 40],
+};
+
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
 const MEERKAT_FRAME = { frameWidth: 40, frameHeight: 56 };
 const MEERKAT_HOLE_FRAME = { frameWidth: 48, frameHeight: 32 };
@@ -121,9 +208,14 @@ export default class BootScene extends Phaser.Scene {
     super('Boot');
   }
 
+  // überarbeitete Bilder in hoher Auflösung (siehe world/hd.js); nicht bei einem Test-Bild und nicht ohne WebGL
+  useHd(key) {
+    return HD.includes(key) && !TEST_ART[key] && this.game.renderer.type === Phaser.WEBGL;
+  }
+
   preload() {
     this.load.on('progress', setLoadingProgress); // Ladebalken (die Tafel steht schon in index.html)
-    for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${key}.png`);
+    for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${TEST_ART[key] ?? (this.useHd(key) ? `hd/${key}` : key)}.png`);
     this.load.spritesheet('hero', 'assets/hero.png', HERO_FRAME);
     // Kleidung je Gebiet (siehe hero in levels.js)
     this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
@@ -134,8 +226,15 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
     this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
     this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
+    this.load.spritesheet('hero_forest_walk', 'assets/hero_forest_walk.png', HERO_WALK_FRAME); // Wald-Kleidung läuft (Test)
+    this.load.spritesheet('hero_forest_walk_back', 'assets/hero_forest_walk_back.png', HERO_WALK_FRAME);
+    this.load.spritesheet('hero_forest_idle', 'assets/hero_forest_idle.png', HERO_WALK_FRAME);
+    this.load.spritesheet('hero_forest_idle_back', 'assets/hero_forest_idle_back.png', HERO_WALK_FRAME);
+    for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) this.load.spritesheet(`hero_savanna_${k}`, `assets/hero_savanna_${k}.png`, HERO_WALK_FRAME); // Safari-Kleidung
     this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
+    // Lauf- und Stehanimation (Test), von vorne und hinten
+    for (const key of ['sheep_walk', 'sheep_walk_back', 'sheep_idle', 'sheep_idle_back']) this.load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME);
     // Bauernhof-Event: Schafe sehen aus wie Kuh, Schwein oder Ziege (Platzhalter, gleiches Format wie das Schaf)
     for (const k of ['cow', 'pig', 'goat']) {
       const frame = k === 'cow' ? { frameWidth: 96, frameHeight: 88 } : SHEEP_FRAME; // die Kuh ist breiter
@@ -143,32 +242,60 @@ export default class BootScene extends Phaser.Scene {
       this.load.spritesheet(`farm_${k}_eat`, `assets/farm_${k}_eat.png`, frame);
     }
     this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
+    // Lauf- und Stehanimation (Test), von vorne und hinten
+    for (const key of ['cat_walk', 'cat_walk_back', 'cat_idle', 'cat_idle_back']) this.load.spritesheet(key, `assets/${key}.png`, CAT_FRAME);
     this.load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
     for (const k of ['koi1', 'koi2', 'koi3']) this.load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
     this.load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
     for (let n = 1; n <= 8; n++) this.load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
+    // Esel, Pferd und Elefant laufen und stehen (Test)
+    for (const w of ['meadow', 'forest']) {
+      for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) this.load.spritesheet(`ride_${w}_${k}`, `assets/ride_${w}_${k}.png`, { frameWidth: 160, frameHeight: 230 });
+    }
+    // Elefant: die Steh-Bögen sind in zwei Reihen umgebrochen, darum mit Anzahl der Bilder (sonst leere Felder)
+    for (const [k, count] of [['walk', 14], ['walk_back', 26], ['idle', 20], ['idle_back', 21]]) {
+      this.load.spritesheet(`ride_savanna_${k}`, `assets/ride_savanna_${k}.png`, { frameWidth: 160, frameHeight: 230, endFrame: count - 1 });
+    }
     for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
     this.load.spritesheet('boat', 'assets/boat.png', CAR_FRAME); // Schnellreise in der Unterwasserwelt
     this.load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
     // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
     for (const k of ['canoe', 'canoe_hero']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
-    this.load.spritesheet('waterfall', 'assets/waterfall.png', { frameWidth: 128, frameHeight: 160 }); // Wasserfall im Dschungel (3 Bilder)
+    const wf = this.useHd('waterfall') ? HD_SCALE : 1; // große Fassung: Bilder 4-mal so groß, danach verkleinert (shrinkTexture)
+    this.load.spritesheet('waterfall', `assets/${wf > 1 ? 'hd/' : ''}waterfall.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf }); // Wasserfall im Dschungel (3 Bilder)
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     // Katze 2 (seltener Skin)
     this.load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
+    for (const key of ['cat2_walk', 'cat2_walk_back', 'cat2_idle', 'cat2_idle_back']) this.load.spritesheet(key, `assets/${key}.png`, CAT_FRAME); // läuft und steht (Test)
     this.load.spritesheet('cat2_eat', 'assets/cat2_eat.png', CAT_FRAME);
-    this.load.spritesheet('cat2_sleep', 'assets/cat2_sleep.png', CAT_SLEEP_FRAME);
+    this.load.spritesheet('cat2_sleep', 'assets/cat2_sleep.png', { frameWidth: 88, frameHeight: 60 }); // Perserkatze liegt breiter
     this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
     this.load.spritesheet('deer_eat', 'assets/deer_eat.png', DEER_FRAME);
+    this.load.spritesheet('deer_walk', 'assets/deer_walk.png', DEER_FRAME); // Laufanimation von vorne (Test)
+    this.load.spritesheet('deer_walk_back', 'assets/deer_walk_back.png', DEER_FRAME); // dasselbe von hinten
+    this.load.spritesheet('deer_idle', 'assets/deer_idle.png', DEER_FRAME); // steht (Test)
+    this.load.spritesheet('deer_idle_back', 'assets/deer_idle_back.png', DEER_FRAME);
     this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
+    this.load.spritesheet('stag_idle', 'assets/stag_idle.png', STAG_FRAME); // Hirsch steht (Test)
+    this.load.spritesheet('stag_idle_back', 'assets/stag_idle_back.png', STAG_FRAME);
     this.load.spritesheet('stag_eat', 'assets/stag_eat.png', STAG_FRAME);
     this.load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
+    this.load.spritesheet('frog_hop', 'assets/frog_hop.png', { frameWidth: 56, frameHeight: 78 }); // Sprung (Test, siehe Frog.js)
+    this.load.spritesheet('frog_hop_back', 'assets/frog_hop_back.png', { frameWidth: 56, frameHeight: 78 }); // dasselbe von hinten
+    this.load.spritesheet('frog_idle', 'assets/frog_idle.png', { frameWidth: 56, frameHeight: 78 }); // sitzt (Test)
+    this.load.spritesheet('frog2_hop', 'assets/frog2_hop.png', { frameWidth: 56, frameHeight: 78 }); // blauer Frosch hüpft (Test)
+    this.load.spritesheet('frog2_hop_back', 'assets/frog2_hop_back.png', { frameWidth: 56, frameHeight: 78 });
+    this.load.spritesheet('frog_idle_back', 'assets/frog_idle_back.png', { frameWidth: 56, frameHeight: 78 });
     this.load.spritesheet('frog2', 'assets/frog2.png', FROG_FRAME); // seltener blauer Frosch
     this.load.spritesheet('mole', 'assets/mole.png', MOLE_FRAME);
     this.load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
     this.load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
     this.load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
+    this.load.spritesheet('heron_flap', 'assets/heron_flap.png', { frameWidth: 96, frameHeight: 96 }); // Flügelschlag (Test)
+    this.load.spritesheet('heron_idle', 'assets/heron_idle.png', HERON_FRAME); // steht (Test)
+    this.load.spritesheet('heron_idle_back', 'assets/heron_idle_back.png', HERON_FRAME);
+    this.load.spritesheet('heron_flap_back', 'assets/heron_flap_back.png', { frameWidth: 96, frameHeight: 96 });
     this.load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
     for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
@@ -215,8 +342,14 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('fish2', 'assets/fish2.png', FISH_FRAME); // Wels (seltener Skin)
     this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
+    this.load.spritesheet('squirrel_run', 'assets/squirrel_run.png', { frameWidth: 64, frameHeight: 60 }); // rennt (Test)
+    this.load.spritesheet('squirrel_idle', 'assets/squirrel_idle.png', { frameWidth: 64, frameHeight: 60 }); // sitzt (Test)
     this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
     this.load.spritesheet('fox_eat', 'assets/fox_eat.png', FOX_FRAME);
+    this.load.spritesheet('fox_walk', 'assets/fox_walk.png', FOX_FRAME); // Laufanimation von vorne (Test)
+    this.load.spritesheet('fox_walk_back', 'assets/fox_walk_back.png', FOX_FRAME); // dasselbe von hinten
+    this.load.spritesheet('fox_idle', 'assets/fox_idle.png', FOX_FRAME); // steht (Test)
+    this.load.spritesheet('fox_idle_back', 'assets/fox_idle_back.png', FOX_FRAME); // dasselbe von hinten
     this.load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
     this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
     this.load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
@@ -227,6 +360,7 @@ export default class BootScene extends Phaser.Scene {
     // Schoko-Zebra (seltener Skin, umgefärbt mit tools/recolor.js)
     this.load.spritesheet('zebra2', 'assets/zebra2.png', ZEBRA_FRAME);
     this.load.spritesheet('zebra2_drink', 'assets/zebra2_drink.png', ZEBRA_FRAME);
+    for (const [key, [frameWidth, frameHeight, count]] of Object.entries(SAVANNA_ANIMS)) this.load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
     this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
     this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
     this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
@@ -257,7 +391,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('warthog_hole', 'assets/warthog_hole.png'); // sein Erdloch (Platzhalter)
     this.load.spritesheet('vulture', 'assets/vulture.png', HERON_FRAME); // Geier (Trockenzeit)
     this.load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
-    this.load.image('bone_pile', 'assets/bone_pile.png'); // gestreute Knochen (lockt die Hyänen an)
+    this.load.image('bone_pile', `assets/${this.useHd('bone_pile') ? 'hd/' : ''}bone_pile.png`); // gestreute Knochen (lockt die Hyänen an)
     this.load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
     this.load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
@@ -273,9 +407,53 @@ export default class BootScene extends Phaser.Scene {
 
   create() {
     // Pixel-Art scharf vergrößern; Figuren und gedrehte Gegenstände bleiben weich
-    for (const key of PIXEL_ART) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    for (const key of ['hero_walk', 'hero_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 14, repeat: -1 });
+    for (const key of PIXEL_ART) if (!this.useHd(key)) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    for (const key of HD) if (this.useHd(key)) shrinkTexture(this.textures.get(key), hdFactor(key)); // große Bilder in alter Größe anzeigen
+    // Bilder pro Sekunde so, dass ein Doppelschritt etwa 0,7 Sekunden dauert (vorne 10 Bilder, hinten 13)
+    this.anims.create({ key: 'hero_walk', frames: this.anims.generateFrameNumbers('hero_walk'), frameRate: 14, repeat: -1 });
+    this.anims.create({ key: 'hero_walk_back', frames: this.anims.generateFrameNumbers('hero_walk_back'), frameRate: 14, repeat: -1 });
     this.anims.create({ key: 'hero_idle', frames: this.anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
+    this.anims.create({ key: 'hero_forest_walk', frames: this.anims.generateFrameNumbers('hero_forest_walk'), frameRate: 14, repeat: -1 });
+    // von hinten mehr Bilder pro Doppelschritt (etwa 16), daher schneller abspielen
+    this.anims.create({ key: 'hero_forest_walk_back', frames: this.anims.generateFrameNumbers('hero_forest_walk_back'), frameRate: 20, repeat: -1 });
+    this.anims.create({ key: 'hero_forest_idle', frames: this.anims.generateFrameNumbers('hero_forest_idle'), frameRate: 10, repeat: -1 });
+    this.anims.create({ key: 'hero_forest_idle_back', frames: this.anims.generateFrameNumbers('hero_forest_idle_back'), frameRate: 12, repeat: -1 });
+    // Safari-Kleidung: etwas langsamere Schritte als die Wald-Kleidung (ihre Vorlagen haben mehr Bilder pro Schritt)
+    for (const [key, frameRate] of [['hero_savanna_walk', 11], ['hero_savanna_walk_back', 12], ['hero_savanna_idle', 10], ['hero_savanna_idle_back', 12]]) {
+      this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate, repeat: -1 });
+    }
+    for (const key of ['deer_walk', 'deer_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    this.anims.create({ key: 'squirrel_run', frames: this.anims.generateFrameNumbers('squirrel_run'), frameRate: 16, repeat: -1 });
+    this.anims.create({ key: 'fox_walk', frames: this.anims.generateFrameNumbers('fox_walk'), frameRate: 12, repeat: -1 });
+    this.anims.create({ key: 'fox_walk_back', frames: this.anims.generateFrameNumbers('fox_walk_back'), frameRate: 16, repeat: -1 }); // mehr Bilder pro Schritt
+    for (const key of ['fox_idle', 'fox_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    // Frosch im Gehege und beim Folgen: Sprung an Sprung (ducken, Flug, landen); in der Wildnis steuert Frog.js die Bilder
+    this.anims.create({ key: 'frog_hop', frames: this.anims.generateFrameNumbers('frog_hop', { start: 3, end: 18 }), frameRate: 22, repeat: -1 });
+    this.anims.create({ key: 'frog2_hop', frames: this.anims.generateFrameNumbers('frog2_hop', { start: 5, end: 17 }), frameRate: 18, repeat: -1 });
+    this.anims.create({ key: 'frog2_hop_back', frames: this.anims.generateFrameNumbers('frog2_hop_back', { start: 10, end: 28 }), frameRate: 26, repeat: -1 });
+    for (const key of ['frog_idle', 'frog_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    this.anims.create({ key: 'frog_hop_back', frames: this.anims.generateFrameNumbers('frog_hop_back', { start: 3, end: 17 }), frameRate: 21, repeat: -1 });
+    this.anims.create({ key: 'squirrel_idle', frames: this.anims.generateFrameNumbers('squirrel_idle'), frameRate: 10, repeat: -1 });
+    for (const key of ['ride_meadow_walk', 'ride_meadow_walk_back', 'ride_forest_walk']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    // Pferd von hinten: mehrere Schritte in 31 Bildern, etwas schneller, damit es nicht langsamer trabt als von vorne
+    this.anims.create({ key: 'ride_forest_walk_back', frames: this.anims.generateFrameNumbers('ride_forest_walk_back'), frameRate: 14, repeat: -1 });
+    for (const key of ['ride_savanna_walk', 'ride_savanna_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 16, repeat: -1 });
+    for (const key of ['ride_meadow_idle', 'ride_meadow_idle_back', 'ride_forest_idle', 'ride_forest_idle_back', 'ride_savanna_idle', 'ride_savanna_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['cat2_walk', 'cat2_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['cat_walk', 'cat_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['cat_idle', 'cat_idle_back', 'cat2_idle', 'cat2_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['sheep_walk', 'sheep_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['sheep_idle', 'sheep_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['heron_idle', 'heron_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['heron_flap', 'heron_flap_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['stag_idle', 'stag_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['deer_idle', 'deer_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    // Savannentiere: Laufen und Fliegen 12 Bilder pro Sekunde (das Lauftempo passt Animal.render an), sonst 10
+    // Giraffe: lange Beine, gemächliches Tempo – langsamere Schritte, sonst trippelt sie. Geier: ein Flügelschlag hat nur
+    // 5 Bilder, schnell abgespielt flackert er
+    const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7 };
+    for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY) this.textures.get(key).customData.feetY = feetY;
+    for (const key of Object.keys(SAVANNA_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     hideLoading();
     openStartScreen((data) => {
       // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige

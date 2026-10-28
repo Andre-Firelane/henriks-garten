@@ -17,7 +17,20 @@ const TRAIL_MAX = 400;
 const STEP_VOLUME = 0.065; // Lautstärke der Schritte
 const STEP_INTERVAL = 0.35; // Sekunden zwischen zwei Schritt-Geräuschen
 const STEP_DETUNE = 150; // Tonhöhe schwankt um so viele Cent, damit nicht jeder Schritt gleich klingt
-const ANIMATED_HERO = false; // Lauf- und Stehanimation der Figur (Test, vorerst aus; true = an)
+const ANIMATED_HERO = true; // Lauf- und Stehanimation der Figur (Test; false = aus)
+// Animationen je Kleidung (Bilder schauen nach rechts, nach links wird gespiegelt). Ohne idleDown/idleUp steht die Figur
+// still auf einem Bild der Laufanimation (stand: Bildnummer, in dem die Beine nah beieinander sind)
+const HERO_ANIMS = {
+  hero: { walkDown: 'hero_walk', walkUp: 'hero_walk_back', idleDown: 'hero_idle', stand: { up: 0 } },
+  hero_forest: { walkDown: 'hero_forest_walk', walkUp: 'hero_forest_walk_back', idleDown: 'hero_forest_idle', idleUp: 'hero_forest_idle_back' },
+  hero_savanna: { walkDown: 'hero_savanna_walk', walkUp: 'hero_savanna_walk_back', idleDown: 'hero_savanna_idle', idleUp: 'hero_savanna_idle_back' },
+};
+// dasselbe für die Reittiere (Bild des Reittiers mit Henrik darauf)
+const MOUNT_ANIMS = {
+  ride_meadow: { walkDown: 'ride_meadow_walk', walkUp: 'ride_meadow_walk_back', idleDown: 'ride_meadow_idle', idleUp: 'ride_meadow_idle_back' },
+  ride_forest: { walkDown: 'ride_forest_walk', walkUp: 'ride_forest_walk_back', idleDown: 'ride_forest_idle', idleUp: 'ride_forest_idle_back' },
+  ride_savanna: { walkDown: 'ride_savanna_walk', walkUp: 'ride_savanna_walk_back', idleDown: 'ride_savanna_idle', idleUp: 'ride_savanna_idle_back' },
+};
 // Reittier (Event): 30 % schneller, ruhigeres Wippen, Fußpunkt im Bild; die Kollision bleibt so klein wie zu Fuß
 const RIDE_SPEED = 1.3;
 const RIDE_ORIGIN_Y = 224 / 230;
@@ -58,8 +71,9 @@ export default class Player {
     this.texture = texture;
     this.swim = swim;
     this.stung = 0; // Zeit, die das Brennen einer Qualle noch anhält
-    // Lauf- und Stehanimation (Test): gibt es bisher nur in der Wiesen-Kleidung
-    this.canWalkAnim = ANIMATED_HERO && texture === 'hero' && ['hero_walk', 'hero_walk_back', 'hero_idle'].every((key) => scene.anims.exists(key));
+    // Lauf- und Stehanimation (Test): bisher in der Wiesen- und der Wald-Kleidung
+    const anims = HERO_ANIMS[texture];
+    this.anims = ANIMATED_HERO && anims && [anims.walkDown, anims.walkUp].every((key) => scene.anims.exists(key)) ? anims : null;
     this.stepTimer = 0; // Zeit bis zum nächsten Schritt-Geräusch
     // Spur der letzten Positionen, neueste zuletzt: daran laufen gefangene Tiere entlang
     this.trail = [{ x, y }];
@@ -92,7 +106,8 @@ export default class Player {
     this.speed = key ? SPEED * RIDE_SPEED : SPEED;
     this.wade = key === 'ride_asia'; // der Wasserbüffel darf ins Wasser
     this.trample = key === 'ride_savanna'; // der Elefant läuft über kleine Büsche
-    this.sprite.setTexture(key ?? this.texture, this.sprite.frame.name).setOrigin(0.5, key ? RIDE_ORIGIN_Y : 112 / 116);
+    this.sprite.stop(); // eine laufende Animation gehört zum alten Bild
+    this.sprite.setTexture(key ?? this.texture, 0).setOrigin(0.5, key ? RIDE_ORIGIN_Y : 112 / 116);
     this.shadow.setSize(key ? 46 : 26, key ? 11 : 9);
     this.handLift = HAND_LIFT[key] ?? 0;
   }
@@ -168,19 +183,23 @@ export default class Player {
     }
 
     // Echte Animationen von vorne bzw. hinten (nach links gespiegelt), sonst Standbild mit Hüpfen
-    const animated = this.canWalkAnim && !this.mount;
+    const mountAnims = ANIMATED_HERO && this.mount && MOUNT_ANIMS[this.mount];
+    const anims = this.mount ? (mountAnims && this.scene.anims.exists(mountAnims.walkDown) ? mountAnims : null) : this.anims;
+    const animated = !!anims;
     if (animated) {
+      const down = this.faceY > 0;
+      const idle = down ? anims.idleDown : anims.idleUp;
       this.sprite.setFlipX(this.faceX < 0);
       if (moving) {
-        this.sprite.play(this.faceY > 0 ? 'hero_walk' : 'hero_walk_back', true);
+        this.sprite.play(down ? anims.walkDown : anims.walkUp, true);
         this.sprite.anims.timeScale = Math.min(1, len); // Joystick wenig ausgelenkt: kleinere Schritte
-      } else if (this.faceY > 0) {
-        this.sprite.play('hero_idle', true);
+      } else if (idle && this.scene.anims.exists(idle)) {
+        this.sprite.play(idle, true);
         this.sprite.anims.timeScale = 1;
       } else {
-        // Stehen von hinten gibt es noch nicht: erstes Bild der Rückansicht
+        // noch keine Steh-Animation in diese Richtung: ein ruhiges Bild der Laufanimation
         this.sprite.stop();
-        this.sprite.setTexture('hero_walk_back', 0);
+        this.sprite.setTexture(down ? anims.walkDown : anims.walkUp, (down ? anims.stand?.down : anims.stand?.up) ?? 0);
       }
     } else {
       this.sprite.stop();

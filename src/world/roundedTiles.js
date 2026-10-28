@@ -2,6 +2,7 @@
 // aus der normalen Kachel erzeugt: Pixel außerhalb der Rundung werden durchsichtig, darunter liegt Gras.
 import Phaser from 'phaser';
 import { CORNER } from './map.js';
+import { hdScale, shrinkTexture } from './hd.js';
 
 const ROUND = 0.45; // Radius der Rundung in Kachelbreiten (0 = spitz, 0.5 = halbe Kante)
 
@@ -43,6 +44,8 @@ export function roundedTexture(scene, key, mask) {
   }
   tex.context.putImageData(img, 0, 0);
   tex.refresh();
-  tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+  const hd = hdScale(scene, key);
+  if (hd > 1) shrinkTexture(tex, hd); // große Kachel (siehe hd.js): so groß anzeigen wie die normale
+  else tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
   return newKey;
 }

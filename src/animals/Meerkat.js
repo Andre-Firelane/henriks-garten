@@ -42,12 +42,12 @@ export default class Meerkat extends Animal {
   }
 
   useHoleLook() {
-    this.sprite.setTexture('meerkat_hole', this.sprite.frame.name).setOrigin(0.5, HOLE_ORIGIN_Y);
+    this.sprite.stop().setFlipX(false).setTexture('meerkat_hole', 0).setOrigin(0.5, HOLE_ORIGIN_Y); // Richtung setzt render
     this.shadow.setVisible(false);
   }
 
   useStandLook() {
-    this.sprite.setTexture(this.kind.texture, this.sprite.frame.name).setOrigin(0.5, this.kind.originY);
+    this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
     this.sprite.setVisible(true).setScale(this.baby ? 0.3 : 0.5);
     this.shadow.setVisible(true);
   }

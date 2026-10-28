@@ -191,7 +191,8 @@ export default class Lion extends Animal {
     const lying = (this.state === 'wild' || this.state === 'penned') && (this.phase === 'sleep' || this.phase === 'alert');
     if (!lying) {
       // stehend (beim Trotten, Folgen und im Gehege)
-      if (this.sprite.texture.key !== this.lookTexture()) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+      const onAnim = Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key); // Animation setzt ihr Bild selbst
+      if (this.sprite.texture.key !== this.lookTexture() && !onAnim) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       this.sprite.setFlipX(false);
       super.render(moving);
       return;
@@ -199,7 +200,7 @@ export default class Lion extends Animal {
     // liegend: schlafend oder aufmerksam, Kopf in Blickrichtung
     const pose = this.phase === 'sleep' ? 'sleep' : 'alert';
     const key = `${this.skin ?? 'lion'}_${pose}`;
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, 0).setOrigin(0.5, LIE[pose]);
+    if (this.sprite.texture.key !== key) this.sprite.stop().setTexture(key, 0).setOrigin(0.5, LIE[pose]);
     this.sprite.setFlipX(this.faceX < 0);
     this.sprite.setPosition(this.x, this.y + SPRITE_SINK);
     this.sprite.setAngle(0);

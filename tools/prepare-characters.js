@@ -17,6 +17,7 @@ const COW_SCALE = 0.36;
 // Maßstab des Wolfs (laufend, heulend und fressend gleich groß)
 const WOLF_SCALE = 0.213;
 // Maßstab des Nilpferds (an Land und schwimmend gleich groß) und der Hyäne (laufend und fressend)
+const CAT2_SCALE = 0.275; // Perserkatze (Katze 2): Laufen, Fressen und Schlafen im selben Maßstab
 const HIPPO_SCALE = 0.3;
 const HYENA_SCALE = 0.25;
 // Maßstab des Brüllaffen (laufend, springend und fressend gleich groß) und des Kanus (leer und mit Henrik darin)
@@ -137,10 +138,12 @@ const CHARACTERS = [
   { src: 'Sprites/Hirsch frisst.png', out: 'stag_eat.png', frameW: 80, frameH: 112, feetY: 108, scale: 0.292 },
   // Katze im 2×2-Raster
   { src: 'Sprites/Katze frisst.png', out: 'cat_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.175, grid: [2, 2], stripShadow: true },
-  // Katze 2 (seltener Skin, schwarz-weiß getigert): gleicher Maßstab und Aufbau wie die normale Katze
-  { src: 'Sprites/Katze2.png', out: 'cat2.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.214, stripShadow: true },
-  { src: 'Sprites/Katze2 schlafend.png', out: 'cat2_sleep.png', frameW: 56, frameH: 60, feetY: 56, scale: 0.214, stripShadow: true },
-  { src: 'Sprites/Katze2 frisst.png', out: 'cat2_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: 0.175, grid: [2, 2], stripShadow: true },
+  // Katze 2 (seltener Skin, weiße Perserkatze mit Schleife): ohne stripShadow, sonst verschwindet das helle Fell.
+  // Freigestellt mit tools/cutout-white.py (weißes Fell vor weißem Hintergrund; npm run cutout würde das Fell mitnehmen).
+  // Fressen: dasselbe Bild wie beim Laufen (es gibt kein eigenes Fress-Bild)
+  { src: 'Sprites/Katze2 neu.png', out: 'cat2.png', frameW: 72, frameH: 80, feetY: 76, scale: CAT2_SCALE },
+  { src: 'Sprites/Katze2 schlafend neu.png', out: 'cat2_sleep.png', frameW: 88, frameH: 60, feetY: 56, scale: CAT2_SCALE },
+  { src: 'Sprites/Katze2 neu.png', out: 'cat2_eat.png', frameW: 72, frameH: 80, feetY: 76, scale: CAT2_SCALE },
   // Löwe: die 2. Figur steht aufrecht statt zu fressen, dafür die 1. gespiegelt
   { src: 'Sprites/Löwe frisst.png', out: 'lion_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.283, byComponents: true, copyMirror: { 1: 0 } },
   { src: 'Sprites/Löwe2 frisst.png', out: 'lion2_eat.png', frameW: 72, frameH: 96, feetY: 92, scale: 0.283, byComponents: true, copyMirror: { 1: 0 } },
@@ -214,9 +217,9 @@ const CHARACTERS = [
   // Albino-Krokodil (seltener Skin bei Starkregen): wie das Krokodil
   { src: 'Sprites/Krokodil2.png', out: 'croc_albino.png', frameW: 72, frameH: 92, feetY: 88, scale: 0.29 },
   { src: 'Sprites/Krokodil2 Wasser.png', out: 'croc_albino_water.png', frameW: 64, frameH: 44, feetY: 40, figureH: 34, grid: [2, 2] }, // ... im Wasser (wie croc_water)
-  // Lungenfisch (Fisch-Skin): im Bild nach rechts, nach links, auftauchend, springend – im Sheet wie beim Fisch:
-  // auftauchend, rechts, links, springend
-  { src: 'Sprites/Lungenfisch.png', out: 'lungfish.png', frameW: 84, frameH: 64, feetY: 60, figureH: 56, order: [2, 0, 1, 3] },
+  // Lungenfisch (Fisch-Skin): gemalt wie der Fisch (auftauchend, rechts, links, springend); in der Vorlage etwas größer
+  // gezeichnet, darum kleinerer Maßstab: im Spiel so groß wie der Fisch
+  { src: 'Sprites/Lungenfisch.png', out: 'lungfish.png', frameW: 84, frameH: 64, feetY: 60, scale: 0.32 },
   // Nilpferd (Starkregen): unten-rechts, unten-links, oben-rechts, oben-links; im Wasser nur die obere Kopfhälfte (gleicher Maßstab)
   { src: 'Sprites/Nilpferd.png', out: 'hippo.png', frameW: 96, frameH: 88, feetY: 84, scale: HIPPO_SCALE }, // ohne stripShadow: das Nilpferd selbst ist grau (Schatten: savanna-cut)
   { src: 'Sprites/Nilpferd Wasser.png', out: 'hippo_water.png', frameW: 64, frameH: 44, feetY: 40, scale: HIPPO_SCALE },
@@ -491,56 +494,393 @@ function writeSheet(out, sheet) {
 // count: Anzahl der Bilder, falls die letzten Zellen leer sind.
 // Alle Bilder bekommen denselben Maßstab und Versatz (gemeinsamer Rahmen über alle Zellen), damit die Figur nicht zittert.
 const ANIMATIONS = [
-  // Hauptfigur läuft nach unten-rechts (nach links wird im Spiel gespiegelt); gleiche Höhe und Füße wie hero.png
+  // Hauptfigur läuft nach unten-rechts (nach links wird im Spiel gespiegelt); gleiche Höhe und Füße wie hero.png.
+  // Alternative: Animation/Character_Walking2.png (cols: 4, rows: 2; dann frameRate 11 in BootScene.js)
   { src: 'Animation/Character_Walking.png', out: 'hero_walk.png', cols: 5, rows: 2, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
   // Hauptfigur läuft nach oben-rechts (Rückansicht; nach links wird gespiegelt)
   { src: 'Animation/Character_Walking_Back.png', out: 'hero_walk_back.png', cols: 5, rows: 3, count: 13, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // Frosch hüpft (Blick nach rechts): Bild 0-2 sitzen, 3-9 ducken, 10-14 Flug, 15-18 landen (der zweite Sprung im
+  // Original wird nicht gebraucht). Im Flug ist er im Bild selbst angehoben, die Füße bleiben bei feetY = Boden.
+  // Sitzend so groß wie frog.png (44); höherer Rahmen für den Sprung, Fußlinie im selben Verhältnis wie dort (48/52)
+  // Von hinten (Blick nach oben-rechts): 0-2 sitzen, 3-8 ducken, 9-14 Flug, 15-17 landen. Im Original 1,17-mal so groß
+  // gemalt wie von vorne, daher so verkleinert, dass er sitzend gleich groß ist (Maßstab 0,168 statt 0,197)
+  { src: 'Animation/Frosch_hüpft_hinten.png', out: 'frog_hop_back.png', cols: 5, rows: 4, count: 18, frameW: 56, frameH: 78, feetY: 72, figureH: 56.5 },
+  { src: 'Animation/Frosch_hüpft_vorne.png', out: 'frog_hop.png', cols: 5, rows: 8, count: 19, frameW: 56, frameH: 78, feetY: 72, figureH: 62 },
+  // Blauer Frosch (frog2) hüpft, von vorne und hinten; im Original sitzend so groß wie der grüne, daher derselbe Maßstab.
+  // Vorne: 0-4 sitzen, 5-8 ducken, 9-14 Flug, 15-17 landen; hinten: 0-9 sitzen, 10-16 ducken, 17-23 Flug, 24-28 landen
+  { src: 'Animation/Frosch2_hüpft_vorne.png', out: 'frog2_hop.png', cols: 5, rows: 4, count: 18, scale: 0.197, frameW: 56, frameH: 78, feetY: 72 },
+  { src: 'Animation/Frosch2_hüpft_hinten.png', out: 'frog2_hop_back.png', cols: 5, rows: 7, count: 32, scale: 0.168, frameW: 56, frameH: 78, feetY: 72 },
+  // Frosch sitzt (atmet, blinzelt, quakt), von vorne und hinten: steht im Original genau wie im ersten Sprung-Bild,
+  // daher mit Rahmen und Maßstab der Sprung-Sheets (kein Versatz beim Wechsel zwischen Sitzen und Springen)
+  { src: 'Animation/Frosch_idle_vorne.png', out: 'frog_idle.png', cols: 5, rows: 4, boxOf: 'frog_hop.png', frameW: 56, frameH: 78, feetY: 72 },
+  { src: 'Animation/Frosch_idle_hinten.png', out: 'frog_idle_back.png', cols: 5, rows: 4, boxOf: 'frog_hop_back.png', frameW: 56, frameH: 78, feetY: 72 },
+  // Wald-Kleidung (Pfadfinder) läuft, von vorne und von hinten
+  { src: 'Animation/Character_Wald_läuft_vorne.png', out: 'hero_forest_walk.png', cols: 5, rows: 2, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Animation/Character_Wald_läuft_hinten.png', out: 'hero_forest_walk_back.png', cols: 5, rows: 4, count: 17, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // ... und steht (blinzelt, schaut sich um), von vorne und von hinten
+  { src: 'Animation/Character_Wald_idle_vorne.png', out: 'hero_forest_idle.png', cols: 5, rows: 3, count: 13, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Animation/Character_Wald_idle_hinten.png', out: 'hero_forest_idle_back.png', cols: 5, rows: 8, count: 36, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // Safari-Kleidung (Savanne): läuft und steht, von vorne und hinten, wie die Wald-Kleidung
+  { src: 'Animation/Character_Savanne_läuft_vorne.png', out: 'hero_savanna_walk.png', cols: 5, rows: 8, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Animation/Character_Savanne_läuft_hinten.png', out: 'hero_savanna_walk_back.png', cols: 5, rows: 4, count: 18, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Animation/Character_Savanne_idle_vorne.png', out: 'hero_savanna_idle.png', cols: 5, rows: 4, count: 16, dropGreen: true, steady: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Animation/Character_Savanne_idle_hinten.png', out: 'hero_savanna_idle_back.png', cols: 5, rows: 8, dropGreen: true, steady: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
   // Hauptfigur steht (Blick nach unten-rechts, atmet und blinzelt)
   { src: 'Animation/Character_Idle.png', out: 'hero_idle.png', cols: 5, rows: 8, count: 38, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  // Reh läuft nach unten-rechts bzw. oben-rechts (nach links spiegelt das Spiel); gleiche Höhe und Füße wie deer.png
+  { src: 'Animation/Reh_laufen_vorne.png', out: 'deer_walk.png', cols: 5, rows: 3, count: 11, frameW: 72, frameH: 96, feetY: 92, figureH: 84 },
+  { src: 'Animation/Reh_laufen_hinten.png', out: 'deer_walk_back.png', cols: 5, rows: 2, frameW: 72, frameH: 96, feetY: 92, figureH: 84 },
+  // Hirsch (Reh2, seltene Variante des Rehs) steht, von vorne und hinten; Maße wie stag.png. Von hinten ist er im
+  // Original kleiner gemalt, daher fester Maßstab: Rumpf 1,1-mal so breit wie beim Reh, wie bei den Standbildern
+  { src: 'Animation/Reh2_idle_vorne.png', out: 'stag_idle.png', cols: 5, rows: 5, count: 21, scale: 0.392, frameW: 80, frameH: 112, feetY: 108 },
+  { src: 'Animation/Reh2_idle_hinten.png', out: 'stag_idle_back.png', cols: 5, rows: 4, scale: 0.5, frameW: 80, frameH: 112, feetY: 108 },
+  // Reiher fliegt (Flügelschlag), nach unten-rechts bzw. oben-rechts. Fliegende Figuren hängen an ihrer Mitte
+  // (Origin 0,5): Rahmen so, dass der Vogel mittig sitzt; derselbe Maßstab für beide, mit ausgebreiteten Flügeln etwa
+  // so groß wie heron_fly.png
+  { src: 'Animation/Reiher_fliegt_vorne.png', out: 'heron_flap.png', cols: 5, rows: 2, scale: 0.289, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Reiher_fliegt_hinten.png', out: 'heron_flap_back.png', cols: 5, rows: 2, scale: 0.289, frameW: 96, frameH: 96, feetY: 89 },
+  // Reiher steht (schaut sich um, öffnet den Schnabel), von vorne und hinten; gleiche Höhe und Füße wie heron.png
+  { src: 'Animation/Reiher_idle_vorne.png', out: 'heron_idle.png', cols: 5, rows: 5, count: 21, frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
+  { src: 'Animation/Reiher_idle_hinten.png', out: 'heron_idle_back.png', cols: 5, rows: 7, count: 32, frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
+  // Schaf läuft und steht, von vorne (unten-rechts) und hinten (oben-rechts). Im Original gleich groß gemalt, daher ein
+  // gemeinsamer Maßstab: das höchste Bild so hoch wie sheep.png (72)
+  { src: 'Animation/Schaf_läuft_vorne.png', out: 'sheep_walk.png', cols: 5, rows: 2, scale: 0.28, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Schaf_läuft_hinten.png', out: 'sheep_walk_back.png', cols: 5, rows: 2, scale: 0.28, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Schaf_idle_vorne.png', out: 'sheep_idle.png', cols: 5, rows: 4, scale: 0.28, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Schaf_idle_hinten.png', out: 'sheep_idle_back.png', cols: 5, rows: 5, count: 24, scale: 0.28, frameW: 80, frameH: 88, feetY: 84 },
+  // Katze läuft und steht, von vorne (unten-rechts) und hinten (oben-rechts). Im Original gleich groß gemalt, daher ein
+  // gemeinsamer Maßstab: das höchste Bild etwa so hoch wie cat.png (60)
+  { src: 'Animation/Katze_läuft_vorne.png', out: 'cat_walk.png', cols: 5, rows: 2, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Katze_läuft_hinten.png', out: 'cat_walk_back.png', cols: 5, rows: 3, count: 13, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Katze_idle_vorne.png', out: 'cat_idle.png', cols: 5, rows: 2, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Katze_idle_hinten.png', out: 'cat_idle_back.png', cols: 5, rows: 4, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  // Glöckchen-Katze (cat2, seltene Variante) läuft, von vorne und hinten; im selben Maßstab wie die Katze passt sie genau
+  // zu ihren Standbildern (cat2.png). Hinten sind die ersten drei Bilder im Original zu dunkel (eingeblendet)
+  { src: 'Animation/Katze2_läuft_vorne.png', out: 'cat2_walk.png', cols: 5, rows: 3, count: 11, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Katze2_idle_vorne.png', out: 'cat2_idle.png', cols: 5, rows: 2, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Katze2_idle_hinten.png', out: 'cat2_idle_back.png', cols: 5, rows: 4, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Katze2_läuft_hinten.png', out: 'cat2_walk_back.png', cols: 5, rows: 2, evenBrightness: true, scale: 0.245, frameW: 72, frameH: 80, feetY: 76 },
+  // Esel mit Henrik (Reittier Wiese) läuft und steht, von vorne und hinten; Maße wie ride_meadow.png. Im Original klein
+  // und gleich groß gemalt, daher ein gemeinsamer Maßstab (fast 1:1)
+  { src: 'Animation/Esel_läuft_vorne.png', out: 'ride_meadow_walk.png', cols: 5, rows: 2, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Esel_läuft_hinten.png', out: 'ride_meadow_walk_back.png', cols: 5, rows: 4, count: 16, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Esel_idle_vorne.png', out: 'ride_meadow_idle.png', cols: 5, rows: 5, count: 21, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Edel_ide_hinten.png', out: 'ride_meadow_idle_back.png', cols: 5, rows: 4, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  // Pferd mit Henrik (Reittier Wald) läuft und steht, von vorne und hinten; Maße wie ride_forest.png, gemeinsamer Maßstab
+  { src: 'Animation/Pferd_läuft_vorne.png', out: 'ride_forest_walk.png', cols: 5, rows: 2, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Pferd_läuft_hinten.png', out: 'ride_forest_walk_back.png', cols: 5, rows: 7, count: 31, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Pferd_idle_front.png', out: 'ride_forest_idle.png', cols: 5, rows: 5, count: 21, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Pferd_idle_back.png', out: 'ride_forest_idle_back.png', cols: 5, rows: 2, scale: 0.96, frameW: 160, frameH: 230, feetY: 224 },
+  // Elefant mit Henrik (Reittier Savanne) läuft und steht, von vorne und hinten; Maße wie ride_savanna.png, gemeinsamer Maßstab
+  { src: 'Animation/Elefant_läuft_vorne.png', out: 'ride_savanna_walk.png', cols: 5, rows: 3, count: 14, scale: 0.614, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Elefant_läuft_hinten.png', out: 'ride_savanna_walk_back.png', cols: 5, rows: 6, count: 26, scale: 0.614, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Elefant_idle_vorne.png', out: 'ride_savanna_idle.png', cols: 5, rows: 4, steady: true, scale: 0.614, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Elefant_idle_hinten.png', out: 'ride_savanna_idle_back.png', cols: 5, rows: 5, count: 21, steady: true, scale: 0.614, frameW: 160, frameH: 230, feetY: 224 },
+  // Reh steht (schaut sich um, blinzelt), ebenso von vorne und hinten
+  { src: 'Animation/Reh_idle_vorne.png', out: 'deer_idle.png', cols: 5, rows: 4, frameW: 72, frameH: 96, feetY: 92, figureH: 84 },
+  { src: 'Animation/Reh_idle_hinten.png', out: 'deer_idle_back.png', cols: 5, rows: 3, count: 14, frameW: 72, frameH: 96, feetY: 92, figureH: 84 },
+  // Eichhörnchen rennt (Seitenansicht nach rechts). Im Original wechselt die Richtung: die Bilder nach links werden gespiegelt,
+  // die zwei frontalen Wendebilder (10, 23) weggelassen.
+  // Rennen und Sitzen aneinander angeglichen: Höhen so, dass der Kopf gleich groß ist (im Original ist der Kopf beim
+  // Sitzen 1,2-mal so groß), Sättigung auf denselben Mittelwert (0,62; vorher 0,67 bzw. 0,58)
+  { src: 'Animation/EIchhörnchen_laufen_vorne.png', out: 'squirrel_run.png', cols: 5, rows: 6, count: 29, skip: [10, 23], mirror: [11, 12, 13, 14, 24, 25, 26, 27], dropGreen: true, saturate: 0.93, frameW: 64, frameH: 60, feetY: 56, figureH: 50 },
+  // Eichhörnchen sitzt und schaut sich um (Blick nach rechts)
+  { src: 'Animation/Eichhörnchen_idle_vorne.png', out: 'squirrel_idle.png', cols: 5, rows: 5, count: 21, dropGreen: true, saturate: 1.07, frameW: 64, frameH: 60, feetY: 56, figureH: 43 },
+  // Fuchs läuft nach unten-rechts bzw. oben-rechts (nach links spiegelt das Spiel); gleiche Höhe und Füße wie fox.png
+  { src: 'Animation/Fuchs_läuft_vorne.png', out: 'fox_walk.png', cols: 5, rows: 2, dropGreen: true, frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs_läuft_hinten.png', out: 'fox_walk_back.png', cols: 5, rows: 5, count: 24, dropGreen: true, frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  // Fuchs steht, von vorne und von hinten (schaut sich um, blinzelt, wedelt mit dem Schwanz)
+  { src: 'Animation/Fuchs_idle_vorne.png', out: 'fox_idle.png', cols: 5, rows: 4, dropGreen: true, frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs_idle_hinten.png', out: 'fox_idle_back.png', cols: 5, rows: 4, dropGreen: true, frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
   // Löwe liegend (ein Bild, Kopf nach rechts; nach links spiegelt das Spiel). Maßstab 0,23, damit die Mähne
   // so groß ist wie beim stehenden Löwen: schlafend 184 Pixel hoch, aufmerksam 242
   { src: 'Sprites/Löwe schlafend.png', out: 'lion_sleep.png', cols: 1, rows: 1, frameW: 108, frameH: 52, feetY: 48, figureH: 42.3 },
   { src: 'Sprites/Löwe aufmerksam.png', out: 'lion_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
   { src: 'Sprites/Löwe2 schläft.png', out: 'lion2_sleep.png', cols: 1, rows: 1, frameW: 108, frameH: 52, feetY: 48, figureH: 42.3 },
   { src: 'Sprites/Löwe2 aufmerksam.png', out: 'lion2_alert.png', cols: 1, rows: 1, frameW: 108, frameH: 64, feetY: 60, figureH: 55.7 },
+  // Savanne: Maßstab je Bogen so, dass die Figur so hoch ist wie im Standbild (Median aller Bilder); ragt sie oben
+  // hinaus, etwas kleiner. Breitere Figuren bekommen breitere Bilder (die Mitte bleibt die Mitte)
+  // Antilope: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Antilope_läuft_vorne.png', out: 'antelope_walk.png', cols: 5, rows: 2, scale: 0.347, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope_läuft_hinten.png', out: 'antelope_walk_back.png', cols: 5, rows: 4, count: 18, scale: 0.335, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope_idle_vorne.png', out: 'antelope_idle.png', cols: 5, rows: 8, steady: true, scale: 0.278, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope_idle_hinten.png', out: 'antelope_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.282, frameW: 72, frameH: 100, feetY: 96 },
+  // Oryx-Antilope: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Antilope2_läuft_vorne.png', out: 'antelope2_walk.png', cols: 5, rows: 7, count: 32, scale: 0.329, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope2_läuft_hinten.png', out: 'antelope2_walk_back.png', cols: 5, rows: 2, scale: 0.333, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope2_idle_vorne.png', out: 'antelope2_idle.png', cols: 5, rows: 4, steady: true, scale: 0.339, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope2_idle_hinten.png', out: 'antelope2_idle_back.png', cols: 5, rows: 3, count: 12, steady: true, scale: 0.336, frameW: 72, frameH: 100, feetY: 96 },
+  // Zebra: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Zebra_läuft_vorne.png', out: 'zebra_walk.png', cols: 5, rows: 2, scale: 0.384, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra_läuft_hinten.png', out: 'zebra_walk_back.png', cols: 5, rows: 2, scale: 0.289, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra_idle_vorne.png', out: 'zebra_idle.png', cols: 5, rows: 8, steady: true, scale: 0.288, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra_idle_hinten.png', out: 'zebra_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.287, frameW: 80, frameH: 104, feetY: 100 },
+  // Schoko-Zebra: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Zebra2_läuft_vorne.png', out: 'zebra2_walk.png', cols: 5, rows: 2, scale: 0.384, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra2_läuft_hinten.png', out: 'zebra2_walk_back.png', cols: 5, rows: 2, scale: 0.289, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra2_idle_vorne.png', out: 'zebra2_idle.png', cols: 5, rows: 8, steady: true, scale: 0.288, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra2_idle_hinten.png', out: 'zebra2_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.287, frameW: 80, frameH: 104, feetY: 100 },
+  // Giraffe: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Giraffe_läuft_vorne.png', out: 'giraffe_walk.png', cols: 5, rows: 3, count: 11, scale: 0.639, frameW: 106, frameH: 168, feetY: 164 },
+  { src: 'Animation/Giraffe_läuft_hinten.png', out: 'giraffe_walk_back.png', cols: 5, rows: 2, scale: 0.629, frameW: 104, frameH: 168, feetY: 164 },
+  { src: 'Animation/Giraffe_idlie_vorne.png', out: 'giraffe_idle.png', cols: 5, rows: 4, scale: 0.631, frameW: 114, frameH: 168, feetY: 164 },
+  { src: 'Animation/Giraffe_idle_hinten.png', out: 'giraffe_idle_back.png', cols: 5, rows: 8, count: 39, scale: 0.639, frameW: 128, frameH: 168, feetY: 164 },
+  // Löwe: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Löwe_läuft_vorne.png', out: 'lion_walk.png', cols: 5, rows: 2, scale: 0.287, frameW: 74, frameH: 96, feetY: 92 },
+  { src: 'Animation/Löwe_läuft_hinten.png', out: 'lion_walk_back.png', cols: 5, rows: 2, scale: 0.286, frameW: 72, frameH: 96, feetY: 92 },
+  { src: 'Animation/Löwe_idle_vorne.png', out: 'lion_idle.png', cols: 5, rows: 5, count: 21, scale: 0.288, frameW: 78, frameH: 96, feetY: 92 },
+  { src: 'Animation/Löwe_idle_hinten.png', out: 'lion_idle_back.png', cols: 5, rows: 4, scale: 0.286, frameW: 74, frameH: 96, feetY: 92 },
+  // Schwarzmähnen-Löwe: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Löwe2_läuft_vorne.png', out: 'lion2_walk.png', cols: 5, rows: 3, count: 12, scale: 0.289, frameW: 74, frameH: 96, feetY: 92 },
+  { src: 'Animation/Löwe2_läuft_hinten.png', out: 'lion2_walk_back.png', cols: 5, rows: 2, scale: 0.279, frameW: 72, frameH: 96, feetY: 92 },
+  { src: 'Animation/Löwe2_idle_vorne.png', out: 'lion2_idle.png', cols: 5, rows: 4, count: 18, scale: 0.290, frameW: 82, frameH: 96, feetY: 92 },
+  { src: 'Animation/Löwe2_idle_hinten.png', out: 'lion2_idle_back.png', cols: 5, rows: 8, scale: 0.277, frameW: 72, frameH: 96, feetY: 92 },
+  // Erdmännchen: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Erdmännchen_läuft_vorne.png', out: 'meerkat_walk.png', cols: 5, rows: 2, scale: 0.153, frameW: 40, frameH: 56, feetY: 52 },
+  { src: 'Animation/Erdmännchen_läuft_hinten.png', out: 'meerkat_walk_back.png', cols: 5, rows: 3, count: 12, scale: 0.154, frameW: 40, frameH: 56, feetY: 52 },
+  { src: 'Animation/Erdmännchen_idle_vorne.png', out: 'meerkat_idle.png', cols: 5, rows: 4, scale: 0.165, frameW: 40, frameH: 56, feetY: 52 },
+  { src: 'Animation/Erdmännchen_idle_hinten.png', out: 'meerkat_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.158, frameW: 40, frameH: 56, feetY: 52 },
+  // Krokodil: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Krokodil_läuft_vorne.png', out: 'croc_walk.png', cols: 5, rows: 2, alignFeet: 6, scale: 0.234, frameW: 72, frameH: 104, feetY: 88 },
+  { src: 'Animation/Krokodil_läuft_hinten.png', out: 'croc_walk_back.png', cols: 5, rows: 8, alignFeet: 6, scale: 0.31, frameW: 112, frameH: 156, feetY: 120 }, // dünner gezeichnet als im Stehen: größer, in höherem Bild; Füße auf der Linie, der Schwanz hängt darunter
+  { src: 'Animation/Krokodil_idle_vorne.png', out: 'croc_idle.png', cols: 5, rows: 8, steady: true, scale: 0.234, frameW: 72, frameH: 92, feetY: 88 },
+  { src: 'Animation/Krokodil_idle_hinten.png', out: 'croc_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.258, frameW: 72, frameH: 92, feetY: 88 },
+  // Albino-Krokodil: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Krokodil2_läuft_vorne.png', out: 'croc_albino_walk.png', cols: 5, rows: 3, count: 11, alignFeet: 6, scale: 0.237, frameW: 86, frameH: 104, feetY: 88 },
+  { src: 'Animation/Krokodil2_läuft_hinten.png', out: 'croc_albino_walk_back.png', cols: 5, rows: 3, count: 12, alignFeet: 6, scale: 0.238, frameW: 76, frameH: 104, feetY: 88 },
+  { src: 'Animation/Krokodil2_idle_vorne.png', out: 'croc_albino_idle.png', cols: 5, rows: 8, steady: true, scale: 0.228, frameW: 78, frameH: 92, feetY: 88 },
+  { src: 'Animation/Krokodil2_idle_hinten.png', out: 'croc_albino_idle_back.png', cols: 5, rows: 3, steady: true, scale: 0.241, frameW: 72, frameH: 92, feetY: 88 },
+  // Nilpferd: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Nilpferd_läuft_vorne.png', out: 'hippo_walk.png', cols: 5, rows: 3, count: 14, steady: true, alignFeet: true, scale: 0.252, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Nilpferd_läuft_hinten.png', out: 'hippo_walk_back.png', cols: 5, rows: 3, count: 11, steady: true, alignFeet: true, scale: 0.252, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Nilpferd_idle_vorne.png', out: 'hippo_idle.png', cols: 5, rows: 8, count: 37, scale: 0.306, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Nilpferd_idlie_hinten.png', out: 'hippo_idle_back.png', cols: 5, rows: 3, degreen: 'all', scale: 0.288, frameW: 96, frameH: 88, feetY: 84 },
+  // Hyäne: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Hyäne_läuft_vorne.png', out: 'hyena_walk.png', cols: 5, rows: 3, count: 12, scale: 0.232, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Hyäne_läuft_hinten.png', out: 'hyena_walk_back.png', cols: 5, rows: 2, scale: 0.228, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Hyäne_idle_vorne.png', out: 'hyena_idle.png', cols: 5, rows: 6, count: 26, steady: true, scale: 0.233, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Hyäne_idle_hinten.png', out: 'hyena_idle_back.png', cols: 5, rows: 4, steady: true, scale: 0.248, frameW: 80, frameH: 80, feetY: 76 },
+  // Gnu: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
+  { src: 'Animation/Gnu_läuft_vorne.png', out: 'gnu_walk.png', cols: 5, rows: 3, scale: 0.262, frameW: 88, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gnu_läuft_hinten.png', out: 'gnu_walk_back.png', cols: 5, rows: 3, scale: 0.252, frameW: 88, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gnu_idle_vorne.png', out: 'gnu_idle.png', cols: 5, rows: 8, steady: true, scale: 0.246, frameW: 88, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gnu_idle_hinten.png', out: 'gnu_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.252, frameW: 88, frameH: 96, feetY: 92 },
+  // Geier: Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild; fliegend noch ohne Animation)
+  { src: 'Animation/Geier_idle_vorne.png', out: 'vulture_idle.png', cols: 5, rows: 8, count: 38, scale: 0.195, frameW: 88, frameH: 108, feetY: 104 },
+  { src: 'Animation/Geier_idle_hinten.png', out: 'vulture_idle_back.png', cols: 5, rows: 7, count: 32, scale: 0.192, frameW: 88, frameH: 108, feetY: 104 },
+  // Schuhschnabel (Reiher-Skin): Stehen, von vorne und hinten
+  { src: 'Animation/Schuhschnabel_idle_vorne.png', out: 'shoebill_idle.png', cols: 5, rows: 8, degreen: 'all', steady: true, scale: 0.318, frameW: 88, frameH: 108, feetY: 104 },
+  { src: 'Animation/Schuhschnabel_idle_hinten.png', out: 'shoebill_idle_back.png', cols: 5, rows: 8, degreen: 'all', steady: true, scale: 0.320, frameW: 88, frameH: 108, feetY: 104 },
+  // Zebra trinkt, Giraffe frisst (Maßstab wie das Standbild dazu); Geier und Schuhschnabel fliegen (Fläche wie das Flugbild)
+  { src: 'Animation/Zebra_trinkt_vorne.png', out: 'zebra_drinking.png', cols: 5, rows: 8, count: 38, degreen: true, steady: true, scale: 0.359, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra_trinkt_hinten.png', out: 'zebra_drinking_back.png', cols: 5, rows: 8, count: 39, degreen: true, steady: true, scale: 0.374, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra2_trinkt_vorne.png', out: 'zebra2_drinking.png', cols: 5, rows: 8, count: 38, degreen: true, steady: true, scale: 0.359, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra2_trinkt_hinten.png', out: 'zebra2_drinking_back.png', cols: 5, rows: 8, count: 39, degreen: true, steady: true, scale: 0.374, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Giraffe_frisst_vorne.png', out: 'giraffe_eating.png', cols: 5, rows: 5, count: 21, scale: 0.538, frameW: 108, frameH: 180, feetY: 176 },
+  { src: 'Animation/Giraffe_frisst_hinten.png', out: 'giraffe_eating_back.png', cols: 5, rows: 2, scale: 0.815, frameW: 106, frameH: 180, feetY: 176 },
+  { src: 'Animation/Geier_fliegt_vorne.png', out: 'vulture_flap.png', cols: 5, rows: 8, steady: true, scale: 0.288, frameW: 126, frameH: 108, feetY: 104 },
+  { src: 'Animation/Geier_fliegt_hinten.png', out: 'vulture_flap_back.png', cols: 5, rows: 8, count: 37, steady: true, mirror: [...Array(37).keys()], scale: 0.288, frameW: 96, frameH: 100, feetY: 96 }, // im Original nach links: gespiegelt
+  { src: 'Animation/Schuhschnabel_fliegt_vorne.png', out: 'shoebill_flap.png', cols: 5, rows: 8, degreen: 'all', scale: 0.247, frameW: 96, frameH: 92, feetY: 88 },
+  { src: 'Animation/Schuhschnabel_fliegt_hinten.png', out: 'shoebill_flap_back.png', cols: 5, rows: 8, degreen: 'all', mirror: [...Array(40).keys()], scale: 0.247, frameW: 96, frameH: 92, feetY: 88 }, // im Original nach links: gespiegelt
+  // Warzenschwein: Laufen und Stehen; Flamingo: Stehen und Fliegen (Maßstab wie Standbild bzw. Flugbild)
+  { src: 'Animation/Warzenschwein_läuft_vorne.png', out: 'warthog_walk.png', cols: 5, rows: 2, steady: true, scale: 0.258, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Warzenschwein_läuft_hinten.png', out: 'warthog_walk_back.png', cols: 5, rows: 7, count: 33, scale: 0.259, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Warzenschwein_idle_vorne.png', out: 'warthog_idle.png', cols: 5, rows: 7, scale: 0.260, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Warzenschwein_idle_hinten.png', out: 'warthog_idle_back.png', cols: 5, rows: 4, scale: 0.265, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Flamingo_idle_vorne.png', out: 'flamingo_idle.png', cols: 5, rows: 8, count: 36, scale: 0.332, frameW: 88, frameH: 108, feetY: 104 },
+  { src: 'Animation/Flamingo_idle_hinten.png', out: 'flamingo_idle_back.png', cols: 5, rows: 8, count: 38, scale: 0.328, frameW: 88, frameH: 108, feetY: 104 },
+  { src: 'Animation/Flamingo_fliegt_vorne.png', out: 'flamingo_flap.png', cols: 5, rows: 4, count: 16, steady: true, scale: 0.279, frameW: 104, frameH: 100, feetY: 96 },
+  { src: 'Animation/Flamingo_fliegt_hinten.png', out: 'flamingo_flap_back.png', cols: 5, rows: 9, count: 41, steady: true, scale: 0.279, frameW: 104, frameH: 100, feetY: 96 },
   // Wasserflugzeug (Schnellreise im Dschungel), ein Bild
   { src: 'Sprites/Wasserflugzeug.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
 ];
 
-function prepareGrid({ src, out, cols, rows, count = cols * rows, frameW, frameH, feetY, figureH }) {
+// skip: Bilder weglassen (Nummern im Raster); mirror: Bilder, die in die andere Richtung schauen, waagerecht spiegeln;
+// dropGreen: grüne Reste vom Freistellen entfernen; saturate: Farbsättigung mal diesen Faktor (Helligkeit bleibt);
+// boxOf: Rahmen und Maßstab eines anderen Eintrags übernehmen (out), wenn die Figur im Original an derselben Stelle steht
+// (z. B. Sitzen und Springen): dann springt sie beim Wechsel zwischen den Animationen nicht;
+// scale: fester Maßstab statt figureH (z. B. damit eine Variante genauso groß wird wie das Original);
+// evenBrightness: zu dunkle Bilder (z. B. eingeblendet wie im Video) auf die Helligkeit der übrigen anheben;
+// degreen: Grünstich und Grashalme weg (Zebra trinkt); steady: Flimmern dämpfen (siehe steadyFrames); alignFeet: Füße jedes Bilds auf die Fußlinie (siehe prepareGrid)
+function loadGrid({ src, cols, rows, count = cols * rows, skip = [], mirror = [], dropGreen = false, saturate = 1, evenBrightness = false, steady = false, degreen = false }) {
   const img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
   const { width: W, height: H, data } = img;
   const cw = W / cols;
   const ch = H / rows;
+  const frames = [...Array(count).keys()].filter((i) => !skip.includes(i));
 
-  // gemeinsamer Rahmen der sichtbaren Pixel, in Zellkoordinaten
-  const box = { x0: cw, x1: 0, y0: ch, y1: 0 };
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      if (data[(y * W + x) * 4 + 3] <= 20) continue;
-      const cx = x % cw;
-      const cy = y % ch;
-      box.x0 = Math.min(box.x0, cx);
-      box.x1 = Math.max(box.x1, cx);
-      box.y0 = Math.min(box.y0, cy);
-      box.y1 = Math.max(box.y1, cy);
+  if (dropGreen) {
+    for (let k = 0; k < data.length; k += 4) if (data[k + 1] > data[k] + 10 && data[k + 1] > data[k + 2]) data[k + 3] = 0;
+  }
+  if (saturate !== 1) {
+    for (let k = 0; k < data.length; k += 4) {
+      const mx = Math.max(data[k], data[k + 1], data[k + 2]);
+      for (let c = 0; c < 3; c++) data[k + c] = Math.max(0, Math.min(255, Math.round(mx - (mx - data[k + c]) * saturate)));
+    }
+  }
+  if (degreen) {
+    // grünstichiges Fell grau machen (Helligkeit bleibt), kräftig grüne Halme entfernen; türkises Wasser bleibt
+    for (let k = 0; k < data.length; k += 4) {
+      const [r, g, b] = [data[k], data[k + 1], data[k + 2]];
+      if (!data[k + 3] || g <= r || g <= b) continue;
+      // degreen: 'all' (kein Wasser im Bild, z. B. Schuhschnabel): jedes Grün wird grau
+      if (degreen === 'all' || Math.max(r, g, b) - Math.min(r, g, b) <= 40) data[k] = data[k + 1] = data[k + 2] = Math.round((r + g + b) / 3);
+      else if (b < g * 0.7) data[k + 3] = 0;
+    }
+  }
+  if (steady) steadyFrames(img, cols, cw, ch, frames);
+  if (evenBrightness) {
+    // mittlere Helligkeit (hellster Farbanteil) der deckenden Pixel je Bild; Ziel ist der Median aller Bilder
+    const cells = frames.map((i) => ({ ox: (i % cols) * cw, oy: Math.floor(i / cols) * ch }));
+    const mean = cells.map(({ ox, oy }) => {
+      let v = 0;
+      let n = 0;
+      for (let y = oy; y < oy + ch; y++) {
+        for (let x = ox; x < ox + cw; x++) {
+          const k = (y * W + x) * 4;
+          if (data[k + 3] < 250) continue;
+          v += Math.max(data[k], data[k + 1], data[k + 2]);
+          n++;
+        }
+      }
+      return n ? v / n : 0;
+    });
+    const target = [...mean].sort((a, b) => a - b)[Math.floor(mean.length / 2)];
+    cells.forEach(({ ox, oy }, f) => {
+      const gain = mean[f] ? target / mean[f] : 1;
+      if (Math.abs(gain - 1) < 0.05) return;
+      for (let y = oy; y < oy + ch; y++) {
+        for (let x = ox; x < ox + cw; x++) {
+          const k = (y * W + x) * 4;
+          for (let c = 0; c < 3; c++) data[k + c] = Math.min(255, Math.round(data[k + c] * gain));
+        }
+      }
+    });
+  }
+  // Spiegeln innerhalb der Zelle
+  for (const i of mirror) {
+    const ox = (i % cols) * cw;
+    const oy = Math.floor(i / cols) * ch;
+    for (let y = oy; y < oy + ch; y++) {
+      for (let x = 0; x < cw / 2; x++) {
+        const a = (y * W + ox + x) * 4;
+        const b = (y * W + ox + cw - 1 - x) * 4;
+        for (let c = 0; c < 4; c++) [data[a + c], data[b + c]] = [data[b + c], data[a + c]];
+      }
     }
   }
 
-  const scale = figureH / (box.y1 - box.y0 + 1);
+  // gemeinsamer Rahmen der sichtbaren Pixel aller verwendeten Bilder, in Zellkoordinaten
+  const box = { x0: cw, x1: 0, y0: ch, y1: 0 };
+  for (const i of frames) {
+    const ox = (i % cols) * cw;
+    const oy = Math.floor(i / cols) * ch;
+    for (let cy = 0; cy < ch; cy++) {
+      for (let cx = 0; cx < cw; cx++) {
+        if (data[((oy + cy) * W + ox + cx) * 4 + 3] <= 20) continue;
+        box.x0 = Math.min(box.x0, cx);
+        box.x1 = Math.max(box.x1, cx);
+        box.y0 = Math.min(box.y0, cy);
+        box.y1 = Math.max(box.y1, cy);
+      }
+    }
+  }
+
+  return { img, cw, ch, frames, box };
+}
+
+// Flimmern dämpfen: die KI zeichnet Streifen und Flecken in jedem Bild etwas anders, im Stehen flimmert das.
+// Jedes Bild wird mit den zwei Bildern davor und danach gemischt, aber nur in 16x16-Blöcken, die sich im Groben
+// kaum ändern (Kopf und Schwanz, die sich wirklich bewegen, bleiben scharf). Die Bilder laufen im Kreis.
+function steadyFrames(img, cols, cw, ch, frames, B = 16, T = 18, R = 2) {
+  const { width: W, data } = img;
+  const n = frames.length;
+  const at = (f, x, y) => (((Math.floor(frames[f] / cols) * ch + y) * W + (frames[f] % cols) * cw + x) * 4);
+  const bw = Math.floor(cw / B);
+  const bh = Math.floor(ch / B);
+  // grobe Helligkeit je Block (durchsichtig zählt als dunkel)
+  const coarse = frames.map((_, f) => {
+    const g = new Float32Array(bw * bh);
+    for (let y = 0; y < bh * B; y++) {
+      for (let x = 0; x < bw * B; x++) {
+        const k = at(f, x, y);
+        g[Math.floor(y / B) * bw + Math.floor(x / B)] += ((data[k] + data[k + 1] + data[k + 2]) / 3) * (data[k + 3] / 255);
+      }
+    }
+    return g.map((v) => v / (B * B));
+  });
+  const src = Uint8Array.from(data);
+  for (let f = 0; f < n; f++) {
+    for (let y = 0; y < bh * B; y++) {
+      for (let x = 0; x < bw * B; x++) {
+        const k = at(f, x, y);
+        if (src[k + 3] <= 200) continue;
+        const b = Math.floor(y / B) * bw + Math.floor(x / B);
+        let r = src[k], g = src[k + 1], bl = src[k + 2], wsum = 1;
+        for (let d = -R; d <= R; d++) {
+          if (!d) continue;
+          const o = (f + d + n) % n;
+          const j = at(o, x, y);
+          if (src[j + 3] <= 200) continue;
+          const w = Math.max(0, 1 - Math.abs(coarse[f][b] - coarse[o][b]) / T) * (1 - Math.abs(d) / (R + 1));
+          r += src[j] * w;
+          g += src[j + 1] * w;
+          bl += src[j + 2] * w;
+          wsum += w;
+        }
+        data[k] = Math.round(r / wsum);
+        data[k + 1] = Math.round(g / wsum);
+        data[k + 2] = Math.round(bl / wsum);
+      }
+    }
+  }
+}
+
+const MAX_SHEET_W = 4096;
+
+function prepareGrid(entry) {
+  const { src, out, cols, frameW, frameH, feetY, boxOf } = entry;
+  const { img, cw, ch, frames, box: ownBox } = loadGrid(entry);
+  const ref = boxOf && ANIMATIONS.find((a) => a.out === boxOf);
+  if (boxOf && !ref) throw new Error(`${out}: boxOf ${boxOf} nicht gefunden`);
+  const box = ref ? loadGrid(ref).box : ownBox;
+  const scale = entry.scale ?? (ref ? ref.figureH : entry.figureH) / (box.y1 - box.y0 + 1);
   const bw = (box.x1 - box.x0 + 1) * scale;
   const bh = (box.y1 - box.y0 + 1) * scale;
-  const sheet = new PNG({ width: frameW * count, height: frameH });
-  for (let i = 0; i < count; i++) {
+  // höchstens 4096 Pixel breit (größere Texturen kann manches Handy nicht laden): sonst mehrere Reihen
+  const perRow = Math.min(frames.length, Math.floor(MAX_SHEET_W / frameW));
+  const sheet = new PNG({ width: frameW * perRow, height: frameH * Math.ceil(frames.length / perRow) });
+  frames.forEach((i, n) => {
     const ox = (i % cols) * cw;
     const oy = Math.floor(i / cols) * ch;
     const b = { x0: ox + box.x0, x1: ox + box.x1, y0: oy + box.y0, y1: oy + box.y1 };
-    drawScaled(sheet, img, b, scale, i * frameW + Math.round((frameW - bw) / 2), Math.round(feetY - bh), () => true);
-  }
+    const fx = (n % perRow) * frameW;
+    const fy = Math.floor(n / perRow) * frameH;
+    // alignFeet: jedes Bild so verschieben, dass sein unterster Pixel auf der Fußlinie steht (die KI lässt die Figur
+    // sonst von Bild zu Bild etwas auf und ab hüpfen). Eine Zahl statt true: unterste Zeile mit einem so breiten Stück
+    // Figur (in Pixeln im Spiel), dünne Schwanzspitzen darunter zählen nicht (Krokodil von hinten)
+    let lift = 0;
+    if (entry.alignFeet) {
+      const minRun = entry.alignFeet === true ? 1 : entry.alignFeet / scale;
+      let bottom = -1;
+      for (let y = b.y1; y >= b.y0 && bottom < 0; y--) {
+        let run = 0;
+        for (let x = b.x0; x <= b.x1; x++) {
+          run = img.data[(y * img.width + x) * 4 + 3] > 20 ? run + 1 : 0;
+          if (run >= minRun) {
+            bottom = y;
+            break;
+          }
+        }
+      }
+      if (bottom >= 0) lift = Math.round((b.y1 - bottom) * scale);
+    }
+    drawScaled(sheet, img, b, scale, fx + Math.round((frameW - bw) / 2), fy + Math.round(feetY - bh) + lift, () => true);
+  });
   if (bw > frameW) console.warn(`${src}: Figur ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
 
   writeSheet(out, sheet);
-  console.log(`${out}: ${count} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
+  console.log(`${out}: ${frames.length} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
 }
 
 // ONLY=hero_jungle.png,canoe.png: nur diese Bilder neu erzeugen

@@ -5,7 +5,8 @@ export default class TrapTool {
   constructor(scene, player) {
     this.scene = scene;
     this.player = player;
-    this.sprite = scene.add.image(0, 0, 'trap').setScale(0.3);
+    this.sprite = scene.add.image(0, 0, 'trap');
+    this.sprite.setScale(19 / this.sprite.width); // klein an der Seite (die ausgelegte Falle ist viel größer)
   }
 
   use() {

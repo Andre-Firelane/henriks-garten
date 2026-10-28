@@ -10,6 +10,8 @@ import { tr } from '../i18n.js';
 export const SPECIES = {
   sheep: {
     texture: 'sheep',
+    // Test; nach links gespiegelt. Beim Grasen und als Bauernhof-Tier die Standbilder (siehe Sheep.js)
+    anims: { walkDown: 'sheep_walk', walkUp: 'sheep_walk_back', idleDown: 'sheep_idle', idleUp: 'sheep_idle_back' },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 25, // gemütlich, deutlich langsamer als der Spieler (80)
@@ -25,6 +27,9 @@ export const SPECIES = {
   cat: {
     texture: 'cat',
     eatTexture: 'cat_eat', // beim Fressen am Futter im Tierpark
+    // Test; nach links gespiegelt (nicht beim Fressen und Schlafen)
+    anims: { walkDown: 'cat_walk', walkUp: 'cat_walk_back', idleDown: 'cat_idle', idleUp: 'cat_idle_back' },
+    skinAnims: { cat2: { walkDown: 'cat2_walk', walkUp: 'cat2_walk_back', idleDown: 'cat2_idle', idleUp: 'cat2_idle_back' } }, // Glöckchen-Katze
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 60, // flink, aber noch langsamer als der Spieler
@@ -40,6 +45,9 @@ export const SPECIES = {
   deer: {
     texture: 'deer',
     eatTexture: 'deer_eat', // beim Fressen am Futter im Tierpark
+    // Animationen nach rechts (Test; nach links gespiegelt, nicht beim Fressen)
+    anims: { walkDown: 'deer_walk', walkUp: 'deer_walk_back', idleDown: 'deer_idle', idleUp: 'deer_idle_back' },
+    skinAnims: { stag: { idleDown: 'stag_idle', idleUp: 'stag_idle_back' } }, // Hirsch: bisher nur Stehen (Laufen mit Standbild)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 30,
@@ -58,6 +66,8 @@ export const SPECIES = {
   // Antilope (Savanne): wie das Reh, lebt aber in kleinen Gruppen (siehe Antelope.js); nur mit dem Lasso
   antelope: {
     texture: 'antelope',
+    anims: { walkDown: 'antelope_walk', walkUp: 'antelope_walk_back', idleDown: 'antelope_idle', idleUp: 'antelope_idle_back' }, // Savanne
+    skinAnims: { antelope2: { walkDown: 'antelope2_walk', walkUp: 'antelope2_walk_back', idleDown: 'antelope2_idle', idleUp: 'antelope2_idle_back' } },
     eatTexture: 'antelope_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 96 / 100,
@@ -78,6 +88,8 @@ export const SPECIES = {
   // und ist dann auch durch Berühren fangbar (siehe Zebra.js)
   zebra: {
     texture: 'zebra',
+    anims: { walkDown: 'zebra_walk', walkUp: 'zebra_walk_back', idleDown: 'zebra_idle', idleUp: 'zebra_idle_back' }, // Savanne
+    skinAnims: { zebra2: { walkDown: 'zebra2_walk', walkUp: 'zebra2_walk_back', idleDown: 'zebra2_idle', idleUp: 'zebra2_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 100 / 104,
     speed: 28,
@@ -96,6 +108,7 @@ export const SPECIES = {
   // Erdmännchen (Savanne): Kolonie aus 3 bis 5 mit einem Wächter (siehe Meerkat.js); nur mit dem Kescher
   meerkat: {
     texture: 'meerkat',
+    anims: { walkDown: 'meerkat_walk', walkUp: 'meerkat_walk_back', idleDown: 'meerkat_idle', idleUp: 'meerkat_idle_back' }, // Savanne
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 52 / 56,
     speed: 22,
@@ -113,6 +126,8 @@ export const SPECIES = {
   // Löwe (Savanne): döst unter Akazien, nur durch Kraulen fangbar, solange er schläft (siehe Lion.js)
   lion: {
     texture: 'lion',
+    anims: { walkDown: 'lion_walk', walkUp: 'lion_walk_back', idleDown: 'lion_idle', idleUp: 'lion_idle_back' }, // Savanne
+    skinAnims: { lion2: { walkDown: 'lion2_walk', walkUp: 'lion2_walk_back', idleDown: 'lion2_idle', idleUp: 'lion2_idle_back' } },
     eatTexture: 'lion_eat', // beim Fressen am Futter im Tierpark
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
@@ -129,6 +144,8 @@ export const SPECIES = {
   // Krokodil (Savanne): taucht wie der Fisch in Wasserlöchern auf; nur mit dem Lasso (siehe Crocodile.js)
   crocodile: {
     texture: 'croc', // an Land (gefangen); im Wasser "croc_water"
+    anims: { walkDown: 'croc_walk', walkUp: 'croc_walk_back', idleDown: 'croc_idle', idleUp: 'croc_idle_back' }, // Savanne
+    skinAnims: { croc_albino: { walkDown: 'croc_albino_walk', walkUp: 'croc_albino_walk_back', idleDown: 'croc_albino_idle', idleUp: 'croc_albino_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 88 / 92,
     speed: 12, // gemütliches Schwimmen im Krokodilteich
@@ -145,6 +162,7 @@ export const SPECIES = {
   // (siehe feedGiraffe in GardenScene)
   giraffe: {
     texture: 'giraffe',
+    anims: { walkDown: 'giraffe_walk', walkUp: 'giraffe_walk_back', idleDown: 'giraffe_idle', idleUp: 'giraffe_idle_back' }, // Savanne
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 164 / 168,
     speed: 16,
@@ -161,6 +179,8 @@ export const SPECIES = {
   // Eichhörnchen sitzen meist auf ihrem Baum (siehe Squirrel.js)
   squirrel: {
     texture: 'squirrel',
+    // Test: rennt in Seitenansicht (auch beim Klettern) und sitzt (im Baum und am Boden); nach links gespiegelt
+    anims: { walkDown: 'squirrel_run', idleDown: 'squirrel_idle', idleUp: 'squirrel_idle' },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 56 / 60,
     speed: 45,
@@ -178,6 +198,7 @@ export const SPECIES = {
   fox: {
     texture: 'fox',
     eatTexture: 'fox_eat', // beim Fressen am Futter im Tierpark
+    anims: { walkDown: 'fox_walk', walkUp: 'fox_walk_back', idleDown: 'fox_idle', idleUp: 'fox_idle_back' }, // Test; nach links gespiegelt
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 35,
@@ -196,6 +217,7 @@ export const SPECIES = {
   // Gnu (Savanne, nur bei der Großen Wanderung): läuft aus dem Strom der Herde heraus und wieder hinein (siehe Gnu.js)
   gnu: {
     texture: 'gnu',
+    anims: { walkDown: 'gnu_walk', walkUp: 'gnu_walk_back', idleDown: 'gnu_idle', idleUp: 'gnu_idle_back' }, // Savanne
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 28,
@@ -228,6 +250,9 @@ export const SPECIES = {
   // Frösche hüpfen im Kreis (siehe Frog.js) und leben gern am Wasser
   frog: {
     texture: 'frog',
+    // Test: hüpft und sitzt (nach links gespiegelt); siehe Frog.js
+    anims: { walkDown: 'frog_hop', walkUp: 'frog_hop_back', idleDown: 'frog_idle', idleUp: 'frog_idle_back' },
+    skinAnims: { frog2: { walkDown: 'frog2_hop', walkUp: 'frog2_hop_back' } }, // blauer Frosch (sitzt noch ohne Animation)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 48 / 52,
     speed: 30, // nur im Gehege, sonst hüpft er im Kreis
@@ -262,6 +287,11 @@ export const SPECIES = {
   heron: {
     texture: 'heron',
     flyTexture: 'heron_fly',
+    flyAnims: { down: 'heron_flap', up: 'heron_flap_back' }, // Flügelschlag (Test; nach links gespiegelt)
+    skinFlyAnims: { shoebill: { down: 'shoebill_flap', up: 'shoebill_flap_back' } },
+    followFlies: true, // fliegt gefangen hinter dem Spieler her (wie Flamingo und Geier)
+    anims: { idleDown: 'heron_idle', idleUp: 'heron_idle_back' }, // steht (Test); beim Staksen das Standbild
+    skinAnims: { shoebill: { idleDown: 'shoebill_idle', idleUp: 'shoebill_idle_back' } }, // Schuhschnabel steht
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 104 / 108,
     speed: 25,
@@ -295,6 +325,7 @@ export const SPECIES = {
   // Nilpferd (Starkregen): schwimmt im Wasserloch, grast ab und zu am Ufer; nur an Land fangbar (siehe Hippo.js)
   hippo: {
     texture: 'hippo',
+    anims: { walkDown: 'hippo_walk', walkUp: 'hippo_walk_back', idleDown: 'hippo_idle', idleUp: 'hippo_idle_back' }, // Savanne
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 14,
@@ -312,6 +343,9 @@ export const SPECIES = {
   // Geier (Trockenzeit): kreist über der Savanne und landet oben auf einer kahlen Akazie (siehe Vulture.js)
   vulture: {
     texture: 'vulture',
+    anims: { idleDown: 'vulture_idle', idleUp: 'vulture_idle_back' }, // steht
+    flyAnims: { down: 'vulture_flap', up: 'vulture_flap_back' }, // Flügelschlag (nach links gespiegelt)
+    followFlies: true,
     flyTexture: 'vulture_fly',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 104 / 108,
@@ -328,6 +362,7 @@ export const SPECIES = {
   // Hyäne (Trockenzeit): versteckt, kichert; mit Knochen angelockt frisst sie, dann mit dem Lasso (siehe Hyena.js)
   hyena: {
     texture: 'hyena',
+    anims: { walkDown: 'hyena_walk', walkUp: 'hyena_walk_back', idleDown: 'hyena_idle', idleUp: 'hyena_idle_back' }, // Savanne
     eatTexture: 'hyena_eat',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
@@ -344,6 +379,7 @@ export const SPECIES = {
   // Warzenschwein (Trockenzeit): flitzt ins Erdloch, sobald man näher kommt; man lauert davor (siehe Warthog.js)
   warthog: {
     texture: 'warthog',
+    anims: { walkDown: 'warthog_walk', walkUp: 'warthog_walk_back', idleDown: 'warthog_idle', idleUp: 'warthog_idle_back' }, // Savanne
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 18,
@@ -536,6 +572,9 @@ export const SPECIES = {
     texture: 'flamingo',
     flyTexture: 'flamingo_fly',
     babyTexture: 'flamingo_baby',
+    anims: { idleDown: 'flamingo_idle', idleUp: 'flamingo_idle_back' }, // steht (Küken: Standbild)
+    flyAnims: { down: 'flamingo_flap', up: 'flamingo_flap_back' }, // Flügelschlag (nach links gespiegelt)
+    followFlies: true,
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 104 / 108,
     speed: 25,
@@ -699,6 +738,7 @@ export function isCatchable(kind) {
 }
 
 const FOLLOW_SPEED = 100; // beim Hinterherlaufen schneller als der Spieler, damit es aufholt
+const FOLLOW_SLACK = 0.5; // so viele Pixel darf es beim Folgen hinter seinem Platz zurückbleiben, ohne nachzurücken
 export const FOLLOW_GAP = 34; // Abstand zwischen den Tieren auf der Spur des Spielers
 export const CATCH_DIST = 22; // so nah muss der Spieler ran, um es zu fangen
 const FOOT_H = 3;
@@ -735,6 +775,12 @@ export const SKINS = {
   tarantula: { id: 'tarantula2', name: tr('Goldene Vogelspinne', 'golden tarantula'), male: false, wild: 0.15, baby: 0 },
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
+
+// Abspieltempo der Laufanimation: beim normalen Gehtempo (kind.speed) 1, schneller beim Wegrennen und Hinterherlaufen.
+// Nicht ganz proportional (Hoch 0,6), sonst trippeln die Beine bei hohem Tempo zu hektisch: dreifaches Tempo -> knapp doppelt so schnell
+function walkAnimSpeed(speed, normal) {
+  return Phaser.Math.Clamp(Math.pow((speed ?? normal) / normal, 0.6), 0.7, 2.2);
+}
 
 // Skins dieser Art, die hier und jetzt vorkommen können (Gebiet und Wetterphase)
 function skinsHere(species) {
@@ -794,6 +840,8 @@ export default class Animal {
       return;
     }
     let moving = false;
+    const x0 = this.x;
+    const y0 = this.y;
     if (this.state === 'following') {
       // Der Spur des Spielers folgen; ist sie noch zu kurz, einfach in die Nähe laufen
       const target = player.trailPoint(this.followGap);
@@ -803,7 +851,9 @@ export default class Animal {
       const dx = tx - this.x;
       const dy = ty - this.y;
       const d = Math.hypot(dx, dy);
-      if (d > stop) {
+      // mit etwas Spielraum: sonst rückt es nach dem Ankommen (Rundung) in jedem Bild ein winziges Stück nach
+      // und gilt als laufend, obwohl es steht (Laufanimation statt Stehen)
+      if (d > stop + FOLLOW_SLACK) {
         // beim Reiten ist der Spieler schneller: dann laufen sie entsprechend schneller hinterher
         const step = Math.min(Math.max(FOLLOW_SPEED, (player.speed ?? 0) * 1.25) * dt, d - stop);
         // Die Spur ist begehbar, daher ohne Kollision: so bleibt es nirgends hängen
@@ -818,6 +868,9 @@ export default class Animal {
 
     if (moving) this.walkTime += dt * (this.fleeing ? 1.8 : 1); // auf der Flucht schnellere Schritte
     else this.walkTime = 0;
+    // tatsächliches Tempo (geglättet): danach richtet sich die Geschwindigkeit der Laufanimation
+    const v = dt > 0 ? Math.hypot(this.x - x0, this.y - y0) / dt : 0;
+    this.moveSpeed = (this.moveSpeed ?? v) + (v - (this.moveSpeed ?? v)) * Math.min(1, dt * 8);
     this.render(moving);
   }
 
@@ -936,6 +989,36 @@ export default class Animal {
 
   // Bild, Blickrichtung und Wippen beim Laufen
   render(moving) {
+    // Animationen (kind.anims, mit Skin kind.skinAnims): ersetzen Standbilder und Wippen. Fehlt walkUp, gilt walkDown
+    // für alle Richtungen; ohne idleDown/idleUp bleibt es im Stehen beim Standbild
+    const anims = this.animSet();
+    if (anims) {
+      const animKeys = Object.values(anims);
+      const key = this.animKey(moving);
+      const usable = !!key && !this.eatingLook && this.scene.anims.exists(key);
+      if (usable && (this.sprite.texture.key === this.baseTexture() || animKeys.includes(this.sprite.texture.key))) {
+        if (!this.sprite.anims.isPlaying || this.sprite.anims.currentAnim?.key !== key) {
+          // Stehen: an zufälliger Stelle beginnen, damit nicht alle Tiere im Gleichtakt blinzeln
+          const startFrame = moving ? 0 : Math.floor(Math.random() * this.scene.anims.get(key).frames.length);
+          this.sprite.play({ key, startFrame });
+          // höhere Bilder: Fußlinie bleibt gleich weit über dem unteren Rand, außer der Bogen nennt seine eigene
+          // (Krokodil läuft: der Schwanz hängt unter die Füße)
+          const feetY = this.sprite.texture.customData.feetY;
+          const below = this.scene.textures.getFrame(this.baseTexture(), 0).height * (1 - this.kind.originY);
+          this.sprite.setOrigin(0.5, feetY ? feetY / this.sprite.frame.height : 1 - below / this.sprite.frame.height);
+        }
+        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed) : 1;
+        this.sprite.setFlipX(this.faceX < 0);
+        this.placeSprite(false);
+        return;
+      }
+      if (animKeys.includes(this.sprite.texture.key)) {
+        this.sprite.stop();
+        this.sprite.setFlipX(false);
+        this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+      }
+    }
+
     // zwischen Lauf- und Fress-Bild wechseln (andere Bilder wie Schlafen setzen die Unterklassen selbst)
     if (this.kind.eatTexture || this.skin) {
       // (auch vom normalen Bild auf das des Skins; andere Bilder wie Schlafen setzen die Unterklassen selbst)
@@ -948,12 +1031,29 @@ export default class Animal {
         ? this.faceX < 0 ? this.kind.frames.downLeft : this.kind.frames.downRight
         : this.faceX > 0 ? this.kind.frames.upRight : this.kind.frames.upLeft,
     );
+    this.placeSprite(moving);
+  }
 
+  // Animationen dieses Tiers: kind.anims, mit Skin die des Skins (kind.skinAnims) oder keine
+  animSet() {
+    return this.skin ? this.kind.skinAnims?.[this.skin] ?? null : this.kind.anims ?? null;
+  }
+
+  // welche der Animationen (animSet) gerade läuft, oder keine (dann Standbild)
+  animKey(moving) {
+    const anims = this.animSet();
+    const down = this.faceY > 0;
+    if (moving) return down ? anims.walkDown : anims.walkUp ?? anims.walkDown;
+    return down ? anims.idleDown : anims.idleUp;
+  }
+
+  // Position, Wippen beim Laufen (wobble) und Zeichenreihenfolge
+  placeSprite(wobble) {
     const phase = this.walkTime * this.kind.stepRate;
-    const hop = moving ? Math.abs(Math.sin(phase)) * this.kind.hop : 0;
+    const hop = wobble ? Math.abs(Math.sin(phase)) * this.kind.hop : 0;
     const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
     this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK);
-    this.sprite.setAngle(moving ? Math.sin(phase) * 2 : 0);
+    this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : 0);
     this.shadow.setPosition(this.x, this.y - lift);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);

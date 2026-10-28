@@ -122,12 +122,17 @@ export default class Fox extends Animal {
 
   render(moving) {
     if (!(this.state === 'penned' && this.sleeping)) {
-      if (this.sprite.texture.key !== this.lookTexture()) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+      // nach dem Schlafen zurück aufs normale Bild (die Laufanimation setzt ihr Bild selbst)
+      const key = this.sprite.texture.key;
+      if (key !== this.lookTexture() && !Object.values(this.kind.anims).includes(key)) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       return;
     }
     // eingerollt
-    if (this.sprite.texture.key !== 'fox_sleep') this.sprite.setTexture('fox_sleep', 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
+    if (this.sprite.texture.key !== 'fox_sleep') {
+      this.sprite.stop().setFlipX(false);
+      this.sprite.setTexture('fox_sleep', 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
+    }
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     this.sprite.setPosition(this.x, this.y + SPRITE_SINK);

@@ -112,6 +112,7 @@ import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
+import { hdScale } from '../world/hd.js';
 import Net from '../tools/Net.js';
 import Lasso from '../tools/Lasso.js';
 import TrapTool from '../tools/TrapTool.js';
@@ -294,6 +295,11 @@ const ANCHOR_RING = [19, -18]; // ... und dort am Anker (vom Ankerpunkt des Bild
 const SEA_TINT = [0x1a7ad0, 0.24]; // blaue Tönung über allem unter Wasser
 const SEA_BUBBLES = 260; // alle so viele Millisekunden steigt irgendwo im Bild ein Bläschen auf
 const CAR_DIST = 30; // so nah (über die Hitbox hinaus) muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen – von jeder Seite
+const SHADOW_PAD = 8; // so viel höher ist das Schattenbild eines Autos als das Auto (siehe carShadow)
+// so viele Boden-Flächen (je 1024 x 1024, 4 MB) darf der Boden in doppelter Auflösung höchstens haben (Wald und Wiese: 13,
+// Tierpark: 37). Handys und Geräte mit wenig Speicher: nur die kleinen Gebiete, der Tierpark bleibt einfach aufgelöst
+const SMALL_DEVICE = Math.min(screen.width, screen.height) < 600 || (navigator.deviceMemory ?? 8) <= 4;
+const GROUND_HD_CHUNKS = SMALL_DEVICE ? 16 : 40;
 const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
 const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS-Pixel)
@@ -719,6 +725,7 @@ export default class GardenScene extends Phaser.Scene {
       const { x, y } = tileToWorld(car.tx, car.ty);
       const k = car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
       const img = this.add.sprite(x, y + 4 - (car.float ?? 0), car.texture, car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
+      if (car.texture.startsWith('car_')) this.add.image(img.x, img.y, this.carShadow(car.texture, car.frame)).setOrigin(0.5, 136 / (140 + SHADOW_PAD)).setScale(0.5 * k).setDepth(y - 1).setAlpha(0.43);
       img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearCar ? this.openCarMap() : this.tooFar()));
       const label = this.add
         .text(x, y - 76 * k, tr('Schnellreise ▸', 'Fast travel ▸'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
@@ -1066,6 +1073,44 @@ export default class GardenScene extends Phaser.Scene {
         this.tweens.add({ targets: b, y: y - Phaser.Math.Between(90, 180), x: x + Phaser.Math.Between(-10, 10), alpha: 0, duration: Phaser.Math.Between(2200, 3600), ease: 'Sine.easeIn', onComplete: () => b.destroy() });
       },
     });
+  }
+
+  // Bodenschatten eines Autos (mit Anhänger), aus dem Umriss des Bilds: unter jeder Spalte ein Streifen am unteren Rand,
+  // über die Lücken zwischen den Rädern hinweg geglättet und weichgezeichnet. Wird einmal pro Bild erzeugt
+  carShadow(key, frame) {
+    const sk = `${key}_${frame}_shadow`;
+    if (this.textures.exists(sk)) return sk;
+    const f = this.textures.getFrame(key, frame);
+    const w = f.cutWidth;
+    const h = f.cutHeight;
+    const src = document.createElement('canvas');
+    src.width = w;
+    src.height = h;
+    const sctx = src.getContext('2d');
+    sctx.drawImage(f.source.image, f.cutX, f.cutY, w, h, 0, 0, w, h);
+    const alpha = sctx.getImageData(0, 0, w, h).data;
+    const bottom = new Array(w).fill(-1);
+    for (let x = 0; x < w; x++) {
+      let n = 0;
+      for (let y = h - 1; y >= 0; y--) if (alpha[(y * w + x) * 4 + 3] > 200 && n++ === 0) bottom[x] = y;
+      if (n < 8) bottom[x] = -1; // einzelne Pixel werfen keinen Schatten
+    }
+    src.height = h + SHADOW_PAD; // etwas höher: der Schatten reicht unter die Räder
+    sctx.fillStyle = '#14320a';
+    for (let x = 0; x < w; x++) {
+      if (bottom[x] < 0) continue;
+      let b = bottom[x];
+      for (let d = -12; d <= 12; d++) if (bottom[x + d] > b) b = bottom[x + d];
+      sctx.fillRect(x, b - 12, 1, 18);
+    }
+    const out = document.createElement('canvas');
+    out.width = w;
+    out.height = h + SHADOW_PAD;
+    const ctx = out.getContext('2d');
+    ctx.filter = 'blur(3px)';
+    ctx.drawImage(src, 0, 0);
+    this.textures.addCanvas(sk, out);
+    return sk;
   }
 
   // Boot in der Unterwasserwelt: schaukelt langsam auf und ab, sein Schatten liegt auf dem Meeresboden, und ein Seil führt
@@ -1655,17 +1700,24 @@ export default class GardenScene extends Phaser.Scene {
   // Boden einmal in große Flächen (je 1024 x 1024 Pixel) malen statt tausender einzelner Kacheln, die sonst in jedem Bild
   // neu gezeichnet würden
   bakeGround(list) {
-    const CHUNK = 1024;
     const PAD = 4; // die Flächen überlappen ein wenig, damit an den Nahtstellen keine feine Linie durchscheint
     const minX = Math.min(...list.map(([x]) => x)) - TILE_W / 2;
     const minY = Math.min(...list.map(([, y]) => y)) - TILE_H / 2;
+    // Kacheln in hoher Auflösung (siehe hd.js): Boden feiner malen (bis doppelt), so fein, wie es die Zahl der Flächen
+    // erlaubt (jede Fläche belegt 4 MB Grafikspeicher; leere Flächen ohne Kachel werden nicht angelegt). Große Gebiete
+    // wie der Tierpark bekommen so eine Zwischenstufe statt gleich der einfachen Auflösung
+    const hd = list.some(([, , key]) => hdScale(this, key) > 1);
+    const areas = (r) => new Set(list.map(([x, y]) => Math.floor(((x - minX) * r) / 1024) + ',' + Math.floor(((y - minY) * r) / 1024))).size;
+    const res = hd ? [2, 1.5, 1.25, 1.1].find((r) => areas(r) <= GROUND_HD_CHUNKS) ?? 1 : 1;
+    const CHUNK = 1024 / res; // so viel Welt deckt eine Fläche ab (die Fläche selbst hat immer 1024 Pixel)
     const chunks = new Map();
     const chunk = (i, j) => {
       const k = i + ',' + j;
       if (!chunks.has(k)) {
-        const rt = this.add.renderTexture(minX + i * CHUNK - PAD, minY + j * CHUNK - PAD, CHUNK + 2 * PAD, CHUNK + 2 * PAD);
-        rt.setOrigin(0).setDepth(-100000 + (i + j) * 0.001);
-        rt.texture.setFilter(Phaser.Textures.FilterMode.NEAREST); // scharfe Kanten, keine weichgezeichneten Ränder
+        const rt = this.add.renderTexture(minX + i * CHUNK - PAD, minY + j * CHUNK - PAD, (CHUNK + 2 * PAD) * res, (CHUNK + 2 * PAD) * res);
+        rt.setOrigin(0).setScale(1 / res).setDepth(-100000 + (i + j) * 0.001);
+        // Pixel-Art: scharfe Kanten; gezeichnete Kacheln (hohe Auflösung): weich, sonst wirken sie treppig
+        rt.texture.setFilter(hd ? Phaser.Textures.FilterMode.LINEAR : Phaser.Textures.FilterMode.NEAREST);
         chunks.set(k, rt);
       }
       return chunks.get(k);
@@ -1676,7 +1728,7 @@ export default class GardenScene extends Phaser.Scene {
       const j0 = Math.floor((y - TILE_H / 2 - PAD - minY) / CHUNK), j1 = Math.floor((y + TILE_H / 2 + PAD - minY) / CHUNK);
       for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
         const rt = chunk(i, j);
-        rt.stamp(key, undefined, x - rt.x, y - rt.y);
+        rt.stamp(key, undefined, (x - rt.x) * res, (y - rt.y) * res, { scale: res });
       }
     }
   }
@@ -2504,8 +2556,9 @@ export default class GardenScene extends Phaser.Scene {
   updateTrapMarkers() {
     const cam = this.cameras.main;
     const view = cam.worldView;
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const z = this.scale.zoom; // Spielpixel -> Seitenpixel (das Spiel zeichnet in Display-Auflösung, siehe main.js)
+    const W = this.scale.width * z;
+    const H = this.scale.height * z;
     const top = Math.max(MARKER_MARGIN, this.hud.getBoundingClientRect().bottom + 26);
     // Hinweise auf ausgelegte Fallen nur im Wald (dort gibt es die Falle); woanders keine
     const traps = LEVEL_ID === 'forest' ? game.traps : [];
@@ -2518,8 +2571,8 @@ export default class GardenScene extends Phaser.Scene {
         target = tileToWorld(exit.tx, exit.ty);
       }
       // Bildschirmposition (etwas oberhalb des Fußpunkts, wo man die Falle sieht)
-      const sx = (target.x - view.x) * cam.zoom;
-      const sy = (target.y - 8 - view.y) * cam.zoom;
+      const sx = (target.x - view.x) * cam.zoom * z;
+      const sy = (target.y - 8 - view.y) * cam.zoom * z;
       const onScreen = sx > 0 && sx < W && sy > 0 && sy < H;
       let el = this.markers.get(t.id);
       if (onScreen) {
@@ -2738,7 +2791,7 @@ export default class GardenScene extends Phaser.Scene {
         y: l.map.y,
         status: l.seasons ? this.seasonStatus(id) : null,
         wip: !!l.wip, // noch in Arbeit (Hinweis auf dem Schild)
-        parts: l.extraCars?.some((c) => c.dest) ? [{ id, name: l.car.name ?? l.name, icon: l.map.icon }, ...l.extraCars.filter((c) => c.dest).map((c) => ({ id: `${id}:${c.dest}`, name: c.name, icon: c.icon ?? l.map.icon }))] : null,
+        parts: this.carDests(l).length ? [{ id, name: l.car.name ?? l.name, icon: l.map.icon, main: true }, ...this.carDests(l).map((c) => ({ id: `${id}:${c.dest}`, name: c.name, icon: c.icon ?? l.map.icon }))] : null,
       }));
     const at = this.nearCarInfo?.dest ? `${LEVEL_ID}:${this.nearCarInfo.dest}` : LEVEL_ID; // an welchem Auto man steht
     this.scene.pause();
@@ -2757,6 +2810,12 @@ export default class GardenScene extends Phaser.Scene {
           ? { point: 'park', side: 'left', hint: tr('Bring die Schafe nach Hause – fahr zurück in den <b>Tierpark</b>!', 'Take the sheep home – drive back to your <b>zoo</b>!') }
           : {},
     );
+  }
+
+  // weitere Ziele eines Gebiets auf der Weltkarte (zweites Auto); das Reptilienhaus erst nach dem ersten Dschungel-Tier
+  // (oder wenn dort schon Tiere wohnen, z. B. in einem älteren Spielstand)
+  carDests(level) {
+    return (level.extraCars ?? []).filter((c) => c.dest && (!c.unlock || game.unlocked.includes(c.unlock) || game.levels[c.dest]?.animals?.length));
   }
 
   // Schnellreise: wie ein Gebietswechsel (Tiere kommen mit), Ankunft vor dem Auto im Zielgebiet
@@ -3544,6 +3603,8 @@ export default class GardenScene extends Phaser.Scene {
       game.unlocked.push('flamingo');
       this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} ${tr('Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.', 'Your first flamingo! A flamingo enclosure was built in your zoo, across from the main building.')}`));
     }
+    // das erste Tier aus dem Dschungel: auf der Weltkarte kann man jetzt direkt zum Reptilienhaus fahren
+    if (LEVEL_ID === 'jungle' && !game.unlocked.includes('reptiles')) game.unlocked.push('reptiles');
     // der erste Wolf: im Tierpark entsteht am Waldrand der Wolfswald
     if (animal.species === 'wolf' && !game.unlocked.includes('wolves')) {
       game.unlocked.push('wolves');

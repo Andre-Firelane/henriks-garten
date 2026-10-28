@@ -5,6 +5,7 @@
 import { game } from '../state.js';
 import { tileToWorld, worldToTile } from './iso.js';
 import { LEVEL, LEVEL_ID, charAt } from './map.js';
+import { pixelAlpha } from './hd.js';
 
 const BOARD_DIST = 40; // so nah muss man (auf dem Steg) am Kanu stehen, um einzusteigen
 const LAND_DIST = 12; // so nah muss das Kanu an einem Steg sein, um auszusteigen (direkt dran, sonst steigt man beim Fangen aus Versehen aus)
@@ -99,7 +100,6 @@ export default class Boat {
     const b = this.img.getBounds();
     const pts = [];
     for (const fx of [0.3, 0.5, 0.7]) for (const fy of [0.4, 0.6, 0.8]) pts.push([b.x + b.width * fx, b.y + b.height * fy]);
-    const textures = this.scene.textures;
     return this.scene.cullables.some((o) => {
       if (!o.visible || o.depth <= this.img.depth || o.depth >= GHOST_DEPTH || !o.frame) return false;
       const ob = o.getBounds();
@@ -109,7 +109,7 @@ export default class Boat {
         let lx = (px - ob.x) / Math.abs(o.scaleX);
         const ly = (py - ob.y) / Math.abs(o.scaleY);
         if (o.flipX) lx = o.frame.width - lx;
-        return (textures.getPixelAlpha(Math.floor(lx), Math.floor(ly), o.texture.key, o.frame.name) ?? 0) > 128;
+        return (pixelAlpha(this.scene, Math.floor(lx), Math.floor(ly), o.texture.key, o.frame.name) ?? 0) > 128;
       });
     });
   }

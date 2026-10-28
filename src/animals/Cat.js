@@ -181,7 +181,10 @@ export default class Cat extends Animal {
 
   render(moving) {
     if (!this.sleeping) {
-      if (this.sprite.texture.key !== this.lookTexture()) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+      // nach dem Schlafen zurück aufs normale Bild (eine Animation setzt ihr Bild selbst, siehe Animal.render)
+      const key = this.sprite.texture.key;
+      const onAnim = Object.values(this.animSet() ?? {}).includes(key);
+      if (key !== this.lookTexture() && !onAnim) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       // beim Sprung angehoben, der Schatten bleibt am Boden
       if (this.lift) this.sprite.setPosition(this.sprite.x, this.sprite.y - this.lift);
@@ -190,7 +193,10 @@ export default class Cat extends Animal {
     }
     // eingerollt oben auf dem Kissen
     const sleep = `${this.baseTexture()}_sleep`; // cat_sleep bzw. cat2_sleep
-    if (this.sprite.texture.key !== sleep) this.sprite.setTexture(sleep, 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
+    if (this.sprite.texture.key !== sleep) {
+      this.sprite.stop().setFlipX(false);
+      this.sprite.setTexture(sleep, 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
+    }
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     this.sprite.setPosition(this.x, this.y - this.lift + SPRITE_SINK);

@@ -6,7 +6,8 @@ export default class Trap {
     this.scene = scene;
     this.x = x;
     this.y = y;
-    this.sprite = scene.add.image(x, y, 'trap').setOrigin(0.5, 52 / 56).setScale(0.5).setDepth(y + 0.2);
+    this.sprite = scene.add.image(x, y, 'trap').setOrigin(0.5, 52 / 56).setDepth(y + 0.2);
+    this.sprite.setScale(64 / this.sprite.width); // 64 Pixel breit (doppelt so groß wie früher), egal wie groß das Bild ist
     this.alert = null;
   }
 
@@ -21,7 +22,7 @@ export default class Trap {
       repeatDelay: 900,
     });
     this.alert = this.scene.add
-      .text(this.x, this.y - 40, '!', {
+      .text(this.x, this.y - 62, '!', {
         fontFamily: 'Trebuchet MS, Arial',
         fontSize: '18px',
         fontStyle: 'bold',

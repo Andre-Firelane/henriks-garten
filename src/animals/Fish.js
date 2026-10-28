@@ -12,8 +12,7 @@ import { footTiles } from '../world/collision.js';
 const FISH_FRAME = { peek: 0, right: 1, left: 2, jump: 3 };
 const FISH_ORIGIN_Y = 60 / 64;
 const WATER_SCALE = 0.38; // so groß im Wasser (Beutel und andere Tiere: 0.5)
-const LUNGFISH_SCALE = 0.75; // der Lungenfisch ist größer (im Wasser und im Schlamm)
-const LUNGFISH_WATERLINE = 40; // Lungenfisch: bis zu dieser Höhe im Bild (von 64) schaut er aus dem Wasser
+const MUD_SCALE = 0.5; // Lungenfisch im Schlamm (lungfish_mud); im Wasser so groß wie der Fisch
 
 const HIDDEN_TIME = [2, 6]; // so lange ist nichts zu sehen
 const BUBBLE_TIME = [1, 3]; // so lange blubbert es, bevor er auftaucht
@@ -52,7 +51,6 @@ export default class Fish extends Animal {
   }
 
   useBagLook() {
-    this.sprite.setCrop(); // im Beutel ganz (im Wasser ist der Lungenfisch unten abgeschnitten, siehe render)
     this.sprite.setTexture(this.kind.bagTexture, this.kind.frames.downRight).setOrigin(0.5, this.kind.originY).setScale(0.5);
     this.sprite.setVisible(true);
     this.shadow.setVisible(true);
@@ -196,13 +194,8 @@ export default class Fish extends Animal {
     const bob = Math.sin(this.scene.time.now / 250 + this.x) * 1;
     this.sprite.setVisible(visible);
     this.sprite.setFrame(frame);
-    if (this.species === 'fish') this.sprite.setScale(this.skin === 'lungfish' ? LUNGFISH_SCALE : WATER_SCALE); // im Wasser etwas kleiner (passend zu den anderen Tieren)
-    // der Lungenfisch ist von der Seite gemalt: im Wasser schaut nur sein oberer Teil heraus, der Rest ist unter der Wasserlinie
-    if (this.skin === 'lungfish' && !this.inMud()) this.sprite.setCrop(0, 0, this.sprite.frame.width, LUNGFISH_WATERLINE);
-    else if (this.sprite.isCropped) this.sprite.setCrop();
-    // abgeschnitten: die Wasserlinie dorthin, wo sonst der Bauch ist
-    const sink = this.sprite.isCropped ? (60 - LUNGFISH_WATERLINE) * this.sprite.scaleY : 0;
-    this.sprite.setPosition(this.x, this.y + 4 + bob + sink);
+    if (this.species === 'fish') this.sprite.setScale(this.inMud() && this.skin === 'lungfish' ? MUD_SCALE : WATER_SCALE); // im Wasser etwas kleiner (passend zu den anderen Tieren)
+    this.sprite.setPosition(this.x, this.y + 4 + bob);
     this.sprite.setAngle(0);
     this.sprite.setDepth(this.y);
   }
