@@ -461,6 +461,33 @@
         .start-box .start-btn { padding: 5px 10px; font-size: 17px; }
         .start-box .start-btn.test { font-size: 15px; }
       }
+      /* Vorschau beim allerersten Start (src/ui/featureTour.js): großes Bildschirmfoto, darunter Text und Weiter-Knopf */
+      #tour {
+        position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center;
+        background: var(--bg, none) center / cover #2d4a22; font: 15px/1.3 "Trebuchet MS", Arial, sans-serif; color: #2b1d14;
+      }
+      #tour.show { display: flex; }
+      .tour-box {
+        display: flex; flex-direction: column; gap: 12px; width: min(720px, 94vw); max-height: calc(100% - 16px); overflow-y: auto;
+        padding: 14px; box-sizing: border-box; text-align: center;
+        background: #f4dcae; border: 4px solid #6b4224; border-radius: 16px; box-shadow: 0 6px 0 #8a5a30, 0 8px 24px rgba(0, 0, 0, 0.45);
+      }
+      .tour-img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border: 3px solid #6b4224; border-radius: 10px; box-sizing: border-box; background: #2d4a22; }
+      .tour-text { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .tour-text h2 { margin: 0; font-size: 26px; color: #6b4224; }
+      .tour-text p { margin: 0; font-size: 17px; max-width: 560px; }
+      .tour-dots { display: flex; gap: 8px; }
+      .tour-dots span { width: 12px; height: 12px; border-radius: 50%; background: #d4b07a; }
+      .tour-dots span.on { background: #6b4224; }
+      .tour-next { max-width: 360px; font-size: 26px; padding: 14px 10px; }
+      /* Handy quer: Bild links, Text rechts */
+      @media (max-height: 500px) {
+        .tour-box { flex-direction: row; align-items: center; width: min(900px, 96vw); padding: 10px; }
+        .tour-img { width: 58%; flex: none; }
+        .tour-text h2 { font-size: 20px; }
+        .tour-text p { font-size: 14px; }
+        .tour-next { font-size: 20px; padding: 8px 10px; }
+      }
       .lang-btn {
         padding: 5px 14px; border: 2px solid #a8743f; border-radius: 10px; background: #e8c48a; cursor: pointer;
         font: bold 15px "Trebuchet MS", Arial, sans-serif; color: #3a2414;
@@ -501,6 +528,7 @@
     <div id="markers"></div>
     <div id="menu"></div>
     <div id="start"></div>
+    <div id="tour"></div>
     <div id="stick-zone"></div>
     <div id="stick"><div id="stick-knob"></div></div>
     <button id="btn-action" aria-label="Aktion"></button>

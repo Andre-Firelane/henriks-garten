@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { openStartScreen } from '../ui/startScreen.js';
+import { openFeatureTour, tourSeen } from '../ui/featureTour.js';
 import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
 import { tr } from '../i18n.js';
 import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
@@ -216,7 +217,7 @@ export default class BootScene extends Phaser.Scene {
   // Erst nur das Menü (Startbildschirm, ist HTML); die Bilder und Töne lädt das Spiel, sobald man dort etwas gewählt hat
   create() {
     hideLoading();
-    openStartScreen((data) => {
+    const menu = () => openStartScreen((data) => {
       showLoading(tr('Das Spiel wird geladen …', 'Loading the game …'), 0);
       this.load.on('progress', setLoadingProgress);
       this.load.once('complete', () => {
@@ -228,6 +229,8 @@ export default class BootScene extends Phaser.Scene {
       this.queueAssets();
       this.load.start();
     });
+    if (tourSeen()) menu();
+    else openFeatureTour(menu); // allererster Start: erst die kleine Vorschau
   }
 
   queueAssets() {
