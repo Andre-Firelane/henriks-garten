@@ -2,6 +2,7 @@
 // und von Hand im Menü. Solange das Spiel zu ist, steht die Zeit still: Events, Pausen und die Herzen der Besucher
 // laufen beim Laden dort weiter, wo gespeichert wurde. Das Test-Spiel speichert nie.
 import { game, resetGame } from './state.js';
+import { tileToWorld, worldToTile } from './world/iso.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -80,8 +81,31 @@ export function loadSave() {
   if (Number.isFinite(game.seasonAnchor)) game.seasonAnchor += shift; // die Wetterphase läuft weiter, wo sie war
   for (const k of Object.keys(game.seasonAnchors ?? {})) game.seasonAnchors[k] += shift;
   migrateStag();
+  if (!s.game.parkSplit) splitPark();
   save.lastSaved = s.savedAt;
   return s.level;
+}
+
+// Früher war der Tierpark eine einzige Karte, jetzt sind es drei Abschnitte (park, park2, park3; siehe levels.js): die
+// gespeicherten Tiere und Werkzeuge ziehen nach der Zeile ihrer Kachel in ihren Abschnitt und bekommen dessen Koordinaten
+// (Versatz der Ausschnitte wie in levels.js). Die Herzen der Abwesenheit kommen ab dem nächsten Besuch je Abschnitt.
+function splitPark() {
+  game.parkSplit = true;
+  game.parkIncome = null;
+  const old = game.levels.park;
+  if (!old) return;
+  const cut = { park: [0, 22], park2: [8, 0], park3: [12, 59] };
+  const sectionOf = (ty) => (ty <= 22 ? 'park2' : ty >= 60 ? 'park3' : 'park');
+  const levels = { park: { animals: [], pickups: [] }, park2: { animals: [], pickups: [] }, park3: { animals: [], pickups: [] } };
+  const move = (list, item) => {
+    const id = sectionOf(worldToTile(item.x, item.y).ty);
+    const o = tileToWorld(0, 0);
+    const d = tileToWorld(-cut[id][0], -cut[id][1]);
+    levels[id][list].push({ ...item, x: item.x + d.x - o.x, y: item.y + d.y - o.y });
+  };
+  for (const a of old.animals ?? []) move('animals', a);
+  for (const p of old.pickups ?? []) move('pickups', p);
+  Object.assign(game.levels, levels);
 }
 
 // Früher war der Hirsch eine eigene Tierart, jetzt ist er ein seltenes Aussehen (Skin) des Rehs

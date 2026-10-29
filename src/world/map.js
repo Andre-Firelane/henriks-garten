@@ -187,7 +187,7 @@ export let SHORE_TILES; // Uferplätze an wilden Teichen zum Trinken: { tx, ty, 
 export let PEN_SHORE_TILES; // dasselbe an den Teichen in Gehegen (Zebras im Gehege)
 // Grundfläche des Autos (Schnellreise): Strecke vom Vorderrad links unten bis zum Anhänger rechts oben (Welt-Pixel)
 export let CAR_BODY = null;
-export let CAR_BODIES = []; // alle Autos des Levels (das erste ist CAR_BODY; dazu LEVEL.extraCars, z. B. das zweite im Tierpark)
+export let CAR_BODIES = []; // alle Autos des Levels (das erste ist CAR_BODY; dazu LEVEL.extraCars)
 const CAR_HALF_WIDTH = 10; // so weit neben dieser Strecke ist es noch fest (mal Größe des Autos; dazu kommen die Füße der Figur)
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
 export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)

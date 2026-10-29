@@ -7,7 +7,8 @@ export const game = {
   nextTrapId: 1,
   hearts: 0, // Bewunderungsherzen der Besucher im Tierpark (zum Eintauschen, kommt später)
   heartsBy: {}, // Statistik: so viele Herzen hat jede Tierart (bzw. 'icecream' der Eisstand) gebracht
-  parkIncome: null, // so viele Herzen bringt der Tierpark pro Minute, solange man woanders ist (beim Verlassen gemerkt)
+  parkIncome: null, // so viele Herzen bringt jeder Tierpark-Abschnitt pro Minute, solange man woanders ist: { park: {...}, ... } (beim Verlassen gemerkt)
+  parkSplit: true, // der Tierpark ist in drei Abschnitte geteilt (ältere Spielstände ziehen beim Laden um, siehe splitPark in save.js)
   events: {},
   unlocked: [],
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
@@ -26,6 +27,7 @@ export function resetGame() {
   game.hearts = 0;
   game.heartsBy = {};
   game.parkIncome = null;
+  game.parkSplit = true;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};

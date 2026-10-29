@@ -1,7 +1,7 @@
 // Die Level (Biome). Jede Zeile ist eine Reihe Kacheln (ty), jedes Zeichen eine Kachel (tx).
 //
 // Boden:   .  Gras     #  Weg     =  Acker     ~  Wasser
-//          X  Übergang in ein anderes Level (siehe exits)
+//          X  Übergang in ein anderes Level (siehe exits; nur noch zwischen den Abschnitten des Tierparks)
 // Objekte:
 //          T  Apfelbaum   b  Busch        r  Stein
 //          f  rote Blumen g  gelbe Blumen
@@ -30,7 +30,7 @@ import { tr } from '../i18n.js';
 
 // Savanne in der normalen Phase; Starkregen und Trockenzeit leiten ihre Karten daraus ab (siehe savanna.seasons)
 const SAVANNA_ROWS = [
-  'AvvvvvvRvAvvvvvvRvAvXvvvvRvAvvvvvvRvAvvv',
+  'AvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvv',
   'R...................#..................v',
   'v.y.....v..y.....y..#...........yv...v.v',
   'v.....v.......y..y..#..................v',
@@ -49,7 +49,7 @@ const SAVANNA_ROWS = [
   'v.................y.#.y................R',
   'v.yv....A..R........#...A........y.....v',
   'A...................#.............y.yA.v',
-  'X##############################........v',
+  'v##############################........v',
   'v..........#.MMMMM..#..................v',
   'v..........#.Nap,N..#...v.....R........v',
   'v...y.y....#.N,j,G###.....A......y.....v',
@@ -104,7 +104,7 @@ export const LEVELS = {
     car: { tx: 12.16, ty: 26.48, texture: 'car_park', frame: 0, scale: 1.26 },
     map: { x: 51.5, y: 34, icon: 'sheep' },
     rows: [
-      'TTbbTTTTbbTTTTTTbTTTXTTTTbTTTTTbTTTTTbTT',
+      'TTbbTTTTbbTTTTTTbTTTTTTTTbTTTTTbTTTTTbTT',
       'T..f................#..................T',
       'b...................#..g.........T.....T',
       'b............f..Tf..#..gg..............T',
@@ -123,7 +123,7 @@ export const LEVELS = {
       'b......~~~~~~~~~....#........b...f.....T',
       'T......f~~~~~~~~T...#.............gf...T',
       'T..................W#..................b',
-      'X######################################X',
+      'T######################################T',
       'T.......g..#........#..................T',
       'T...fffgfff#.MMMMM..#..................T',
       'b...fggfggf#.Nap,N..#......g......~~~..T',
@@ -143,7 +143,7 @@ export const LEVELS = {
       'b......f...g........#................T.T',
       'T...g.ggg.ggg.......#......fg.b........T',
       'T..........f........#..................b',
-      'TTbbTTTTTTbTTTTTbTTTXTbbbTTTTTbTTTbbbTTT',
+      'TTbbTTTTTTbTTTTTbTTTTTbbbTTTTTbTTTbbbTTT',
     ],
     grass: ['grass0', 'grass1', 'grass2'],
     path: 'path',
@@ -156,13 +156,7 @@ export const LEVELS = {
     ],
     ambient: 'ambient_meadow', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [],
-    // Übergänge: wer auf die Kachel tritt, kommt im Ziel-Level an der Kachel "arrive" heraus
-    exits: [
-      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 0, ty: 19, to: 'forest', arrive: { tx: 37, ty: 18 }, label: tr('Wald', 'Forest') },
-      { tx: 39, ty: 19, to: 'savanna', arrive: { tx: 1, ty: 19 }, label: tr('Savanne', 'Savanna') },
-      { tx: 20, ty: 39, to: 'asia', arrive: { tx: 20, ty: 46 }, label: tr('Bambuswald', 'Bamboo Forest') },
-    ],
+    exits: [], // in die anderen Gebiete und in den Tierpark nur mit dem Auto
     // Spawner: so viele wilde Tiere sind ungefähr gleichzeitig unterwegs; die Zahlen dahinter sind die
     // Wahrscheinlichkeiten (je größer, desto häufiger). Tiere verschwinden nach einer Weile und neue kommen.
     spawn: { population: 17, weights: { sheep: 6, cat: 2, fish: 2, frog: 1.6, mole: 0.6, butterfly: 3 } },
@@ -176,7 +170,7 @@ export const LEVELS = {
     car: { tx: 24.16, ty: 16.24, texture: 'car_forest', frame: 1, scale: 1.1 },
     map: { x: 53, y: 16, icon: 'stag' },
     rows: [
-      'PPPPPPPPPPPPPPPPPPPPPPXPPPPPPPPPPPPPPPPP',
+      'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
       'P...P.....n..........m#.....P....n.....P',
       'Pk.......D.....k.D....#nm.........D...kP',
       'PP....P........P.D....#mn...n..n....k.kP',
@@ -194,7 +188,7 @@ export const LEVELS = {
       'PP.....kk.PD..PPDP...n####.c...#..P...kP',
       'PP......k......P.P..D.###......#.......P',
       'PPPPD.Dnkmn...D.......###......#......DP',
-      'PD......###############################X',
+      'PD......###############################P',
       'Pkn.......DnnnnD.#......#..............P',
       'PD..P....PkD.....#m..P..#.D.........P..P',
       'PP..D.....Pm.....#......#......m......kP',
@@ -229,10 +223,7 @@ export const LEVELS = {
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
     ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [],
-    exits: [
-      { tx: 22, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 39, ty: 18, to: 'meadow', arrive: { tx: 1, ty: 19 }, label: tr('Wiese', 'Meadow') },
-    ],
+    exits: [], // nur mit dem Auto
     spawn: { population: 12, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, frog: 1.6, fox: 1 } }, // jedes zehnte Reh ist ein Hirsch (Skin)
     herons: { every: [50, 110], landChance: 0.5 },
   },
@@ -257,10 +248,7 @@ export const LEVELS = {
     ambient: 'ambient_savanna', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     ambientVolume: 0.35, // etwas leiser als in den anderen Gebieten (0.55)
     toolSpots: [],
-    exits: [
-      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 0, ty: 19, to: 'meadow', arrive: { tx: 38, ty: 19 }, label: tr('Wiese', 'Meadow') },
-    ],
+    exits: [], // nur mit dem Auto
     // Hier leben Antilopen (Gazellen) und Zebras in Gruppen zu 2 bis 4, etwa gleich häufig, und Giraffen;
     // keine Fischreiher. Giraffen sind viel seltener und erscheinen meist an Bäumen
     // Erdmännchen kommen als Kolonie (3 bis 5), seltener als Antilopen und Zebras
@@ -303,7 +291,7 @@ export const LEVELS = {
     car: { tx: 13.16, ty: 41.54, texture: 'car_asia', frame: 1, scale: 1.3 },
     map: { x: 78, y: 37, icon: 'koi' },
     rows: [
-      'JQQJQQJQQJQQJQQJQQJQXJQQJQQJQQJQQJQQJQQk',
+      'JQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQk',
       'Q.....nqnq....q.q...#...qqq.QQ.Q..qQQQqk',
       'Q......nJ.n.Jn.J.J..#...qqQ...QQq.qQq..k',
       'J..J.J........nnn...#......Q....qqQQq..k',
@@ -350,7 +338,7 @@ export const LEVELS = {
       'Q..q................I...........hhh....k',
       'J..........n........#.....K....r.......k',
       'Q............K......#..................k',
-      'kkkkkkkkkkkkkkkkkkkkXkkkkkkkkkkkkkkkkkkk',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
     ],
     grass: ['agrass0', 'agrass1', 'agrass2'],
     path: 'asia_path',
@@ -367,11 +355,7 @@ export const LEVELS = {
     ambient: 'ambient_asia', // Asien-Geräusche, leise über die Wiesengeräusche gelegt (siehe tools/prepare-sounds.js)
     background: '#3f7a35',
     toolSpots: [],
-    // Eingang im Süden: unten am Hauptweg, unter dem roten Tor hindurch
-    exits: [
-      { tx: 20, ty: 0, to: 'park', arrive: { tx: 37, ty: 42 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 20, ty: 47, to: 'meadow', arrive: { tx: 20, ty: 38 }, label: tr('Wiese', 'Meadow') },
-    ],
+    exits: [], // nur mit dem Auto
     // Koi leben im Koi-Teich (nur als Schatten zu sehen, bis man sie mit Fischfutter anlockt)
     spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35, peacock: 0.8 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
   },
@@ -516,8 +500,8 @@ export const LEVELS = {
     ambient: 'ambient_jungle', // ganz leise der Dschungel (warm und feucht)
     ambientVolume: 0.15,
     exits: [
-      { tx: 8, ty: 11, to: 'park', arrive: { tx: 86, ty: 72 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 9, ty: 11, to: 'park', arrive: { tx: 86, ty: 72 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 8, ty: 11, to: 'park3', arrive: { tx: 74, ty: 13 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 9, ty: 11, to: 'park3', arrive: { tx: 74, ty: 13 }, label: tr('Tierpark', 'Zoo') },
     ],
     spawn: { population: 0, weights: {} },
   },
@@ -585,8 +569,8 @@ export const LEVELS = {
     ambient: 'ambient_reef', // leise das Riff-Rauschen (wie unter Wasser)
     ambientVolume: 0.18,
     exits: [
-      { tx: 10, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 11, ty: 18, to: 'park', arrive: { tx: 10, ty: 15 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 10, ty: 18, to: 'park2', arrive: { tx: 2, ty: 15 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 11, ty: 18, to: 'park2', arrive: { tx: 2, ty: 15 }, label: tr('Tierpark', 'Zoo') },
     ],
     spawn: { population: 0, weights: {} }, // die Zierfische sind keine Tiere
   },
@@ -654,20 +638,19 @@ export const LEVELS = {
     // Rochen gleiten in großen Bögen, höchstens zwei zugleich (fangen durch Mitschwimmen, siehe Ray.js)
     spawn: { population: 15, weights: { reeffish: 1, seahorse: 0.3, octopus: 0.2, turtle: 0.1, ray: 0.2 } },
   },
+};
 
-  // Tierpark: alle Gehege aus allen Welten. Gefangene Tiere ziehen beim Betreten automatisch in ihr Gehege ein
-  // (siehe moveFollowersIntoPens in GardenScene). Erreichbar oben aus jeder Welt.
-  park: {
-    name: tr('Tierpark', 'Zoo'),
-    // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26, name: tr('Zentrum', 'Center') },
-    // zweites Auto unten im Dschungel-Bereich, beim Reptilienhaus (der Weg zum Haupthaus ist weit): auf der Weltkarte ein
-    // eigenes Ziel im Tierpark-Schild (dest), Ankunft daneben; erst nach dem ersten Tier aus dem Dschungel (unlock)
-    extraCars: [{ tx: 89.16, ty: 74.32, texture: 'car_park', frame: 0, scale: 1.26, dest: 'reptiles', unlock: 'reptiles', name: tr('Reptilienhaus', 'Reptile House'), icon: 'tarantula', arrive: { tx: 88, ty: 76 } }],
-    map: { x: 20, y: 33, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur (in Nordamerika, dort ist Platz für das große Schild)
-    // jede Welt hat ihre eigene Seite: Savanne oben, Wald links, Wiese rechts, Asien unten. Die Gehege sind in den
-    // Rand eingelassen, ihre Tore zeigen zum Rundweg; der Ausgang in eine Welt liegt mitten in deren Seite.
-    rows: [
+// Tierpark: alle Gehege aus allen Welten, in drei Abschnitte geteilt (jeder ein eigenes Level, damit der Aufbau auf dem
+// Handy schnell geht): Zentrum mit Wiese und Wald (park), Savanne mit dem Aquarium (park2), Bambuswald mit dem Dschungel
+// (park3). Zu Fuß geht es vom Zentrum oben in die Savanne und unten in den Bambuswald, sonst mit dem Auto (jeder
+// Abschnitt hat eins). Gefangene Tiere ziehen beim Betreten eines Abschnitts in ihr Gehege ein, auch wenn es in einem
+// anderen Abschnitt liegt (siehe moveFollowersIntoPens in GardenScene).
+// Unten steht der ganze Tierpark als eine Karte (Savanne oben, Wald links, Wiese rechts, Asien unten); alle Angaben
+// sind in ihren Kacheln geschrieben, parkSection() schneidet daraus die Abschnitte und rechnet die Kacheln um.
+export const PARK_LEVELS = ['park', 'park2', 'park3'];
+export const isPark = (id) => PARK_LEVELS.includes(id);
+
+const PARK_ROWS = [
       '         f.g.b.f.                3X33333333333333333333333333333333333333333333                 ',
       '         .b..g..T                3#[[[[[[[[[[[[[[[[[[3....y....v....y....A....3                 ',
       '         g.K.f.b.                3#].y..............]3...v...A....y.....v...y.3                 ',
@@ -751,14 +734,13 @@ export const LEVELS = {
       '            5].......q...[[....r...#.....q.[[.........]bJ.;n.......;................n......ľ.ľ.5',
       '            T[[[[[[[[[[[[[....q..l.#.r......[[[[[[[[[[[bľ.^^^^^^^^^^ľ...Ḣ..J..nľJ..ḢľJqnJn.Jq.ľ5',
       '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb5555555555555555555555555555555555555555',
-    ],
-    grass: ['grass0', 'grass1', 'grass2'],
-    path: 'park_path',
-    start: { tx: 29, ty: 40 }, // Spielstart: auf dem Vorplatz vor dem Haupthaus (aus den Welten kommt man am Wegweiser an)
-    // ground/water: Boden und Teichwasser im Gehege, passend zur Welt, aus der die Tiere kommen
-    // Gehege: slots = Plätze [vor, nach dem Ausbau]; basic = so sieht es vor dem Ausbau aus (Innenzaun bzw. ohne Ausstattung);
-    // upgrade = was der Ausbau am Hauptrechner bringt (siehe penLevel in state.js)
-    enclosures: [
+];
+
+// ground/water: Boden und Teichwasser im Gehege, passend zur Welt, aus der die Tiere kommen
+// Gehege: slots = Plätze [vor, nach dem Ausbau]; basic = so sieht es vor dem Ausbau aus (Innenzaun bzw. ohne Ausstattung);
+// upgrade = was der Ausbau am Hauptrechner bringt (siehe penLevel in state.js)
+// Jedes Gehege liegt in dem Abschnitt, in dem sein Startpunkt (seed) liegt; freie ohne Startpunkt sagen es selbst (section)
+const PARK_PENS = [
       { id: 'crocodile', name: tr('Krokodilteich', 'Crocodile Pond'), species: ['crocodile'], gate: 'chain', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 15, ty: 17 }, slots: [2, 3], upgrade: tr('Größerer Teich', 'Bigger pond'), basic: [[17, 20, ':'], [18, 20, '<'], [19, 20, '.']] },
       { id: 'lion', name: tr('Löwengehege', 'Lion Enclosure'), species: ['lion'], gate: 'tall', world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 27, ty: 9 }, slots: [3, 5], upgrade: tr('Großer Löwenfelsen', 'Big lion rock'), basic: [[32, 11, ':']] },
       { id: 'meerkat', name: tr('Erdmännchenbau', 'Meerkat Burrow'), species: ['meerkat'], world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 25, ty: 17 }, slots: [5, 8], upgrade: tr('Erdhügel', 'Dirt mounds'), basic: [[27, 18, ':'], [28, 19, '<']] },
@@ -780,8 +762,8 @@ export const LEVELS = {
       { id: 'aviary', name: tr('Reiher-Voliere', 'Heron Aviary'), species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 47, ty: 55 }, slots: [6, 9], upgrade: tr('Zweiter Flügel mit Nistkasten und Wasserstelle', 'Second wing with a nest box and a water hole'), basic: [[49, 54, ';'], [49, 55, ';'], [49, 56, ';'], [51, 54, '.'], [51, 55, '.']] },
       { id: 'flamingos', name: tr('Flamingos', 'Flamingos'), species: ['flamingo'], netRoof: true, gate: 'net', world: 'park', unlock: 'flamingo', seed: { tx: 27, ty: 50 }, slots: [6, 9], upgrade: tr('Großer See mit Springbrunnen', 'Big lake with a fountain'), basic: [[30, 52, 'w'], [28, 51, ':'], [28, 52, '<'], [28, 53, '.'], [32, 51, '.'], [32, 52, '.'], [32, 53, '.'], [29, 50, '.'], [29, 54, '.'], [30, 50, '.'], [30, 54, '.'], [31, 50, '.'], [31, 54, '.'], [27, 49, '.'], [33, 49, '.'], [27, 55, '.'], [33, 55, '.']] },
       // Pfauen haben kein Gehege: sie laufen frei im Tierpark herum (höchstens 8, kein Ausbau)
-      { id: 'peacocks', name: tr('Pfauen', 'Peacocks'), species: ['peacock'], world: 'asia', free: true, slots: [8, 8] },
-      { id: 'butterflies', name: tr('Schmetterlinge', 'Butterflies'), species: ['butterfly'], world: 'meadow', free: true, slots: [10, 10] }, // flattern frei durch den Park
+      { id: 'peacocks', name: tr('Pfauen', 'Peacocks'), species: ['peacock'], world: 'asia', free: true, slots: [8, 8], section: 'park3' },
+      { id: 'butterflies', name: tr('Schmetterlinge', 'Butterflies'), species: ['butterfly'], world: 'meadow', free: true, slots: [10, 10], section: 'park' }, // flattern frei durch den Park
       { id: 'orangutans', name: tr('Orang-Utan-Gehege', 'Orangutan Enclosure'), species: ['orangutan'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 20, ty: 77 }, slots: [3, 5], upgrade: tr('Hängematte mit Schlafnest', 'Hammock with a sleeping nest'), basic: [[19, 77, ':']] },
       { id: 'tigers', name: tr('Tigergehege', 'Tiger Enclosure'), species: ['tiger'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 49, ty: 78 }, slots: [3, 5], upgrade: tr('Badebecken mit Spielball', 'Pool with a play ball'), basic: [[47, 77, ':'], [48, 77, '<'], [47, 78, '.'], [48, 78, '.'], [46, 77, '.'], [48, 76, '.'], [49, 77, '.']] },
       { id: 'pandas', name: tr('Pandagehege', 'Panda Enclosure'), species: ['panda', 'redpanda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, quota: { panda: [2, 4], redpanda: [3, 5] }, upgrade: tr('Reifenschaukel und Spielball', 'Tire swing and play ball'), basic: [[49, 66, ':'], [46, 65, '<']] }, // rote Pandas wohnen mit im (verbreiterten) Gehege
@@ -790,64 +772,170 @@ export const LEVELS = {
       { id: 'howlers', name: tr('Affen-Gehege', 'Monkey Enclosure'), species: ['howler', 'gibbon'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, quota: { howler: [4, 6], gibbon: [3, 5] }, upgrade: tr('Zusätzlicher Urwaldbaum', 'Another jungle tree'), basic: [[74, 66, ':']] }, // Brüllaffen und Gibbons zusammen
       { id: 'macaws', name: tr('Ara-Voliere', 'Macaw Aviary'), species: ['macaw'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 62, ty: 77 }, slots: [4, 6], upgrade: tr('Zweiter Urwaldbaum', 'Second jungle tree'), basic: [[65, 79, ':']] },
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
-    ],
-    // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
-    grounds: [
-      { area: { tx0: 8, tx1: 16, ty0: 0, ty1: 18 }, ground: ['grass0', 'grass1', 'grass2'] }, // Wiese ums Aquarium (vor der Savanne, die erste Fläche gilt)
-      { area: { tx0: 12, tx1: 78, ty0: 0, ty1: 22 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] }, // mit den Gehegen der Wetterphasen rechts
-      { area: { tx0: 56, tx1: 78, ty0: 23, ty1: 24 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] },
-      { area: { tx0: 0, tx1: 22, ty0: 23, ty1: 59 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] },
-      { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
-      { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
-      { area: { tx0: 12, tx1: 59, ty0: 60, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
-    ],
-    // große Bilder jenseits des Kartenrands (ganz hinten): der dunkle Wald hinter dem Wolfswald; Kachel und ihr Punkt im Bild
-    backdrops: [{ key: 'wolf_forest_edge', tx: 0, ty: 29, ox: 560, oy: 400 }],
-    // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
-    buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
-    // freischaltbar: das Flamingo-Gehege entsteht, sobald man den ersten Flamingo fängt (Event „Flamingo-Flug“)
-    unlocks: [
-      // die ersten Tiere der Wetterphasen der Savanne: ihre Gehege entstehen rechts am Savannen-Weg
-      { id: 'vulture', tx: 68, ty: 6, rows: ['^^^^^^^', ';.....;', ';.Ǎ...;', ';.....;', ';...Ǎ.;', ';.....;', ';.....;', '^^^G^^^', '...#...'] }, // Ǎ: kahle Akazien zum Sitzen
-      { id: 'hyena', tx: 56, ty: 16, rows: ['..v..#..y', '[[[[[G[[[', '].......]', ']......v]', ']....R..]', '].y.....]', '].......]', '[[[[[[[[['] }, // nach dem Ausbau zwei Spalten breiter (siehe basic)
-      { id: 'warthog', tx: 68, ty: 16, rows: ['R..#..y', '[[[G[[[', '].....]', '].u...]', '].....]', ']...u.]', '].....]', '[[[[[[['] },
-      // das erste Gnu: nördlich vom Löwengehege, am oberen Kartenrand, entsteht die Gnu-Steppe
-      { id: 'gnu', tx: 20, ty: 0, rows: ['[[[[[[[[[[[[[[', ']..A.....y...]', '].....y....&.]', '].y..........G', ']......A.....]', ']..y.....v...]', '[[[[[[[[[[[[[['] },
-      // der erste Wolf: am linken Kartenrand im Wald-Bereich entsteht der Wolfswald (dahinter dunkler Wald, siehe backdrops)
-      { id: 'wolves', tx: 0, ty: 23, rows: ['[[[[[[[[[[[[', 'PPDPDPPPPPP]', '.DPDPPPDPPP]', '.D..PDPP.nP]', 'PPP........]', '.D...O...n.]', 'PD..Py.D..y]', 'DPP.....L..]', 'PP.R...n...]', 'Py.....m...]', 'PP.D.......]', '[[[[[[[[[G[['] },
-      { id: 'flamingo', tx: 24, ty: 43, rows: ['#....##..###', '.....##..###', '.....##..###', '.....##.....', 'b^^^^GG^^^^^', '.;.........;', '.;.f.....g.;', '.;...www...;', '.;..wwwww..;', '.;..wwwww..;', '.;..wwwww..;', '.;...www...;', '.;.g.....f.;', '.;.........;', 'b^^^^^^^^^^^', '............'] },
-    ],
-    // Fische im Pflaster: von der Wegkreuzung oben bei der Savanne bis zum Aquarium, die Nasen zeigen dorthin
-    pathMarks: [31, 28, 25, 22, 19, 16, 13].map((tx) => ({ tx, ty: 15, dir: { tx: -1, ty: 0 } })),
-    iceStand: { tx: 25, ty: 40 }, // Eisstand-Event: der Eiswagen steht mitten im Park vor dem Haupthaus, links am Vorplatz
-    computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
-    feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 37, ty: 14, world: 'savanna' }, { tx: 22, ty: 45, world: 'forest' }],
-    toolSpots: [],
+];
+
+// freischaltbar: Gehege, die mit dem ersten Tier ihrer Art entstehen (je im Abschnitt, in dem ihre Kacheln liegen)
+const PARK_UNLOCKS = [
+  // die ersten Tiere der Wetterphasen der Savanne: ihre Gehege entstehen rechts am Savannen-Weg
+  { id: 'vulture', tx: 68, ty: 6, rows: ['^^^^^^^', ';.....;', ';.Ǎ...;', ';.....;', ';...Ǎ.;', ';.....;', ';.....;', '^^^G^^^', '...#...'] }, // Ǎ: kahle Akazien zum Sitzen
+  { id: 'hyena', tx: 56, ty: 16, rows: ['..v..#..y', '[[[[[G[[[', '].......]', ']......v]', ']....R..]', '].y.....]', '].......]', '[[[[[[[[['] }, // nach dem Ausbau zwei Spalten breiter (siehe basic)
+  { id: 'warthog', tx: 68, ty: 16, rows: ['R..#..y', '[[[G[[[', '].....]', '].u...]', '].....]', ']...u.]', '].....]', '[[[[[[['] },
+  // das erste Gnu: nördlich vom Löwengehege, am oberen Kartenrand, entsteht die Gnu-Steppe
+  { id: 'gnu', tx: 20, ty: 0, rows: ['[[[[[[[[[[[[[[', ']..A.....y...]', '].....y....&.]', '].y..........G', ']......A.....]', ']..y.....v...]', '[[[[[[[[[[[[[['] },
+  // der erste Wolf: am linken Kartenrand im Wald-Bereich entsteht der Wolfswald (dahinter dunkler Wald, siehe backdrops)
+  { id: 'wolves', tx: 0, ty: 23, rows: ['[[[[[[[[[[[[', 'PPDPDPPPPPP]', '.DPDPPPDPPP]', '.D..PDPP.nP]', 'PPP........]', '.D...O...n.]', 'PD..Py.D..y]', 'DPP.....L..]', 'PP.R...n...]', 'Py.....m...]', 'PP.D.......]', '[[[[[[[[[G[['] },
+  // das Flamingo-Gehege entsteht, sobald man den ersten Flamingo fängt (Event „Flamingo-Flug“)
+  { id: 'flamingo', tx: 24, ty: 43, rows: ['#....##..###', '.....##..###', '.....##..###', '.....##.....', 'b^^^^GG^^^^^', '.;.........;', '.;.f.....g.;', '.;...www...;', '.;..wwwww..;', '.;..wwwww..;', '.;..wwwww..;', '.;...www...;', '.;.g.....f.;', '.;.........;', 'b^^^^^^^^^^^', '............'] },
+];
+
+// in welchem Abschnitt eine Zeile der ganzen Karte liegt
+const sectionOf = (ty) => (ty <= 22 ? 'park2' : ty >= 60 ? 'park3' : 'park');
+
+// Kacheln einer Angabe um (dx, dy) verschieben: tx/ty, Rechtecke (tx0 … ty1), die Dreiergruppen in basic und at: [tx, ty]
+// (Richtungen wie dir bleiben, wie sie sind)
+function shiftDef(v, dx, dy) {
+  if (Array.isArray(v)) return v.map((x) => shiftDef(x, dx, dy));
+  if (!v || typeof v !== 'object') return v;
+  const out = {};
+  for (const [k, x] of Object.entries(v)) {
+    if (k === 'dir') out[k] = x;
+    else if (['tx', 'tx0', 'tx1'].includes(k)) out[k] = x + dx;
+    else if (['ty', 'ty0', 'ty1'].includes(k)) out[k] = x + dy;
+    else if (k === 'basic') out[k] = x.map(([tx, ty, c]) => [tx + dx, ty + dy, c]);
+    else if (k === 'at') out[k] = [x[0] + dx, x[1] + dy];
+    else out[k] = shiftDef(x, dx, dy);
+  }
+  return out;
+}
+
+// Randzeile an einer Schnittkante (beginnt bei Spalte x0): Füller, an den Wegen (Spalten xs) ein Übergang X
+const edgeRow = (x0, fill, xs) => [...fill].map((c, i) => (xs.includes(x0 + i) ? 'X' : c)).join('');
+
+// Ein Abschnitt: Ausschnitt x0..x1, y0..y1 der ganzen Karte. edits: [tx, ty, Zeichen] ändern die Karte vorher (Randzeilen,
+// zugemachte Ausgänge). Alle anderen Angaben in Kacheln der ganzen Karte, nur exits schon in Kacheln des Abschnitts
+// (ihr arrive gehört zum Ziel)
+function parkSection(id, { x0, x1, y0, y1, edits, exits, ...def }) {
+  const rows = [...PARK_ROWS];
+  for (const [tx, ty, s] of edits) rows[ty] = rows[ty].slice(0, tx) + s + rows[ty].slice(tx + s.length);
+  return {
+    grass: ['grass0', 'grass1', 'grass2'],
+    path: 'park_path',
     ambient: 'ambient_meadow',
     background: '#4f8a2f',
-    // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
-    signScale: 1.25,
-    sections: [
-      { label: tr('Savanne', 'Savanna'), tx: 38, ty: 18 },
-      { label: tr('Aquarium', 'Aquarium'), tx: 10, ty: 15, like: tr('Savanne', 'Savanna') }, // der Weg dorthin führt an der Savanne vorbei
-      { label: tr('Wald', 'Forest'), tx: 12, ty: 46 },
-      { label: tr('Wiese', 'Meadow'), tx: 46, ty: 41 },
-      { label: tr('Bambuswald', 'Bamboo Forest'), tx: 38, ty: 61 },
-      { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, like: tr('Bambuswald', 'Bamboo Forest') }, // der Weg dorthin führt durch den Bambuswald
-      // kleiner Wegweiser im Bambuswald an der Abzweigung zum Dschungel (at: nur an diesem Pfosten)
-      { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, at: [43, 71] },
-      { label: tr('Tierpark', 'Zoo'), tx: 36, ty: 41, at: [43, 71] },
-      // kleiner Wegweiser beim zweiten Auto (Reptilienhaus): zurück zum Zentrum
-      { label: tr('Zentrum', 'Center'), tx: 36, ty: 41, at: [85, 73] },
-    ],
-    exits: [
-      { tx: 34, ty: 0, to: 'savanna', arrive: { tx: 20, ty: 1 }, label: tr('Savanne', 'Savanna') },
-      { tx: 1, ty: 46, to: 'forest', arrive: { tx: 22, ty: 1 }, label: tr('Wald', 'Forest') },
-      { tx: 8, ty: 15, to: 'aquarium', arrive: { tx: 10, ty: 16 }, label: tr('Aquarium', 'Aquarium') }, // Tür in der Fassade oben links
-      { tx: 86, ty: 70, to: 'reptiles', arrive: { tx: 8, ty: 10 }, label: tr('Reptilienhaus', 'Reptile House') }, // Tür in der Fassade im Dschungel-Bereich
-      { tx: 55, ty: 40, to: 'meadow', arrive: { tx: 20, ty: 1 }, label: tr('Wiese', 'Meadow') },
-      { tx: 35, ty: 82, to: 'asia', arrive: { tx: 20, ty: 1 }, label: tr('Bambuswald', 'Bamboo Forest') },
-    ],
+    toolSpots: [],
     spawn: { population: 0, weights: {} },
-  },
-};
+    ...shiftDef(
+      {
+        ...def,
+        enclosures: PARK_PENS.filter((e) => (e.section ?? sectionOf(e.seed.ty)) === id),
+        unlocks: PARK_UNLOCKS.filter((u) => sectionOf(u.ty) === id),
+      },
+      -x0,
+      -y0,
+    ),
+    rows: rows.slice(y0, y1 + 1).map((r) => r.slice(x0, x1 + 1)),
+    exits,
+  };
+}
+
+// Zentrum: Haupthaus, Wiese (rechts) und Wald (links). Oben geht es in die Savanne, unten in den Bambuswald
+LEVELS.park = parkSection('park', {
+  x0: 0, x1: 55, y0: 22, y1: 60,
+  edits: [
+    [0, 22, edgeRow(0, '2'.repeat(23) + '4'.repeat(33), [32, 48])],
+    [0, 60, edgeRow(0, '2'.repeat(23) + '4'.repeat(33), [38])],
+    [1, 46, '2'], // früher der Ausgang in den Wald
+    [55, 40, 'b'], // ... und auf die Wiese
+  ],
+  name: tr('Tierpark', 'Zoo'),
+  part: { name: tr('Zentrum', 'Center'), icon: 'hero' }, // Feld im Tierpark-Schild der Weltkarte
+  // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
+  car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26 },
+  map: { x: 20, y: 33, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur (in Nordamerika, dort ist Platz für das große Schild)
+  start: { tx: 29, ty: 40 }, // Spielstart: auf dem Vorplatz vor dem Haupthaus
+  // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
+  grounds: [{ area: { tx0: 0, tx1: 22, ty0: 22, ty1: 60 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] }],
+  // große Bilder jenseits des Kartenrands (ganz hinten): der dunkle Wald hinter dem Wolfswald; Kachel und ihr Punkt im Bild
+  backdrops: [{ key: 'wolf_forest_edge', tx: 0, ty: 29, ox: 560, oy: 400 }],
+  // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
+  buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
+  iceStand: { tx: 25, ty: 40 }, // Eisstand-Event: der Eiswagen steht mitten im Park vor dem Haupthaus, links am Vorplatz
+  computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
+  feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 22, ty: 45, world: 'forest' }],
+  // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
+  signScale: 1.25,
+  sections: [
+    { label: tr('Savanne', 'Savanna'), tx: 40, ty: 22 },
+    { label: tr('Aquarium', 'Aquarium'), tx: 40, ty: 22, like: tr('Savanne', 'Savanna') }, // der Weg dorthin führt durch die Savanne
+    { label: tr('Wald', 'Forest'), tx: 12, ty: 46 },
+    { label: tr('Wiese', 'Meadow'), tx: 46, ty: 41 },
+    { label: tr('Bambuswald', 'Bamboo Forest'), tx: 38, ty: 60 },
+    { label: tr('Dschungel', 'Jungle'), tx: 38, ty: 60, like: tr('Bambuswald', 'Bamboo Forest') }, // der Weg dorthin führt durch den Bambuswald
+  ],
+  exits: [
+    { tx: 32, ty: 0, to: 'park2', arrive: { tx: 24, ty: 22 }, label: tr('Savanne & Aquarium', 'Savanna & Aquarium') },
+    { tx: 48, ty: 0, to: 'park2', arrive: { tx: 40, ty: 22 }, label: tr('Savanne & Aquarium', 'Savanna & Aquarium') },
+    { tx: 38, ty: 38, to: 'park3', arrive: { tx: 26, ty: 1 }, label: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle') },
+  ],
+});
+
+// Savanne mit dem Aquarium (Tür in der Fassade oben links). Unten geht es zurück ins Zentrum
+LEVELS.park2 = parkSection('park2', {
+  x0: 8, x1: 78, y0: 0, y1: 24,
+  edits: [
+    [34, 0, '3'], // früher der Ausgang in die Savanne
+    [8, 23, edgeRow(8, '3'.repeat(47), [32, 48])],
+    [8, 24, ' '.repeat(47)],
+    [33, 21, 'W'], // Wegweiser an der Kreuzung beim Auto
+  ],
+  name: tr('Tierpark: Savanne & Aquarium', 'Zoo: Savanna & Aquarium'),
+  background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
+  part: { name: tr('Savanne & Aquarium', 'Savanna & Aquarium'), icon: 'giraffe' },
+  car: { tx: 37.16, ty: 19.32, texture: 'car_park', frame: 0, scale: 1.26 },
+  start: { tx: 32, ty: 22 },
+  grounds: [
+    { area: { tx0: 8, tx1: 16, ty0: 0, ty1: 18 }, ground: ['grass0', 'grass1', 'grass2'] }, // Wiese ums Aquarium (vor der Savanne, die erste Fläche gilt)
+    { area: { tx0: 8, tx1: 78, ty0: 0, ty1: 24 }, ground: ['sgrass0', 'sgrass1', 'sgrass2'] }, // mit den Gehegen der Wetterphasen rechts
+  ],
+  // Fische im Pflaster: von der Wegkreuzung oben bei der Savanne bis zum Aquarium, die Nasen zeigen dorthin
+  pathMarks: [31, 28, 25, 22, 19, 16, 13].map((tx) => ({ tx, ty: 15, dir: { tx: -1, ty: 0 } })),
+  feeders: [{ tx: 37, ty: 14, world: 'savanna' }],
+  sections: [
+    { label: tr('Aquarium', 'Aquarium'), tx: 8, ty: 15 },
+    { label: tr('Zentrum', 'Center'), tx: 32, ty: 24 },
+  ],
+  exits: [
+    { tx: 24, ty: 23, to: 'park', arrive: { tx: 32, ty: 1 }, label: tr('Zentrum', 'Center') },
+    { tx: 40, ty: 23, to: 'park', arrive: { tx: 48, ty: 1 }, label: tr('Zentrum', 'Center') },
+    { tx: 0, ty: 15, to: 'aquarium', arrive: { tx: 10, ty: 16 }, label: tr('Aquarium', 'Aquarium') }, // Tür in der Fassade oben links
+  ],
+});
+
+// Bambuswald und rechts daneben der Dschungel mit dem Reptilienhaus. Oben geht es zurück ins Zentrum
+LEVELS.park3 = parkSection('park3', {
+  x0: 12, x1: 95, y0: 59, y1: 82,
+  edits: [
+    [12, 59, edgeRow(12, '5'.repeat(44), [38])],
+    [35, 82, 'b'], // früher der Ausgang in den Bambuswald
+  ],
+  name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
+  part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
+  car: { tx: 38.16, ty: 78.32, texture: 'car_park', frame: 0, scale: 1.26 },
+  start: { tx: 38, ty: 60 },
+  grounds: [
+    { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
+    { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
+    { area: { tx0: 12, tx1: 59, ty0: 59, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
+  ],
+  sections: [
+    // kleiner Wegweiser im Bambuswald an der Abzweigung zum Dschungel (at: nur an diesem Pfosten)
+    { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, at: [43, 71] },
+    { label: tr('Zentrum', 'Center'), tx: 38, ty: 59, at: [43, 71] },
+    // kleiner Wegweiser beim Reptilienhaus: zurück zum Zentrum
+    { label: tr('Zentrum', 'Center'), tx: 38, ty: 59, at: [85, 73] },
+  ],
+  exits: [
+    { tx: 26, ty: 0, to: 'park', arrive: { tx: 38, ty: 37 }, label: tr('Zentrum', 'Center') },
+    { tx: 74, ty: 11, to: 'reptiles', arrive: { tx: 8, ty: 10 }, label: tr('Reptilienhaus', 'Reptile House') }, // Tür in der Fassade im Dschungel-Bereich
+  ],
+});

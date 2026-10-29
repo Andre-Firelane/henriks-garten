@@ -510,7 +510,7 @@
         document.documentElement.lang = l;
         if (l === "en") document.querySelector("#loading .loading-text").textContent = "Loading the game …";
         // Hintergrund für Lade- und Startbildschirm: ein Bildschirmfoto aus einer zufälligen Welt
-        var bgs = ["meadow", "forest", "savanna", "asia", "reef", "aquarium"];
+        var bgs = ["park", "meadow", "forest", "savanna", "asia", "jungle", "reef", "aquarium"];
         document.documentElement.style.setProperty("--bg", "url(assets/bg/bg_" + bgs[Math.floor(Math.random() * bgs.length)] + ".jpg)");
       })();
     </script>
