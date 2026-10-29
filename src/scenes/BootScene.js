@@ -93,7 +93,6 @@ const ANTELOPE_FRAME = { frameWidth: 72, frameHeight: 100 };
 // (breite Bögen sind in zwei Reihen umgebrochen: ohne Anzahl kämen die leeren Felder am Ende als Bilder dazu);
 // optional die Fußlinie, wenn darunter noch etwas hängt (Schwanz des Krokodils), sonst 4 Pixel über dem unteren Rand
 const SAVANNA_ANIMS = {
-  antelope_walk: [72, 100, 10],
   antelope_walk_back: [72, 100, 18],
   antelope_idle: [72, 100, 40],
   antelope_idle_back: [72, 100, 40],
@@ -101,8 +100,6 @@ const SAVANNA_ANIMS = {
   antelope2_walk_back: [72, 100, 10],
   antelope2_idle: [72, 100, 20],
   antelope2_idle_back: [72, 100, 12],
-  zebra_walk: [80, 104, 10],
-  zebra_walk_back: [80, 104, 10],
   zebra_idle: [80, 104, 40],
   zebra_idle_back: [80, 104, 40],
   zebra2_walk: [80, 104, 10],
@@ -137,10 +134,6 @@ const SAVANNA_ANIMS = {
   hippo_walk_back: [96, 88, 11],
   hippo_idle: [96, 88, 37],
   hippo_idle_back: [96, 88, 15],
-  hyena_walk: [80, 80, 12],
-  hyena_walk_back: [80, 80, 10],
-  hyena_idle: [80, 80, 26],
-  hyena_idle_back: [80, 80, 20],
   gnu_walk: [88, 96, 15],
   gnu_walk_back: [88, 96, 15],
   gnu_idle: [88, 96, 40],
@@ -169,6 +162,55 @@ const SAVANNA_ANIMS = {
   vulture_flap_back: [96, 100, 37],
   shoebill_flap: [96, 92, 40],
   shoebill_flap_back: [96, 92, 40],
+};
+
+// Animationen aus Videos (tools/prepare-characters.js), je Bogen [Breite, Höhe, Anzahl Bilder]. Sie laufen mit 24 Bildern
+// pro Sekunde wie im Video; Stehen (_idle) vor und zurück, weil die Videos nicht nahtlos im Kreis laufen. Ein Bild
+// (Anzahl 1) ist ein Standbild, das wie eine Animation eingesetzt wird (Japanmakak sitzt)
+const VIDEO_ANIMS = {
+  antelope_walk: [72, 100, 24],
+  // Spielfigur und Wasserbüffel im Bambuswald
+  hero_asia_walk: [88, 116, 44],
+  hero_asia_walk_back: [88, 116, 16],
+  hero_asia_idle: [88, 116, 59],
+  hero_asia_idle_back: [88, 116, 49],
+  ride_asia_walk: [160, 230, 27],
+  ride_asia_walk_back: [160, 230, 21],
+  ride_asia_idle: [160, 230, 51],
+  ride_asia_idle_back: [160, 230, 51],
+  zebra_walk: [80, 104, 24],
+  zebra_walk_back: [80, 104, 25],
+  hyena_walk: [80, 80, 24],
+  hyena_walk_back: [80, 80, 25],
+  hyena_idle: [80, 80, 49],
+  hyena_idle_back: [80, 80, 47],
+  panda_walk: [88, 96, 26],
+  panda_walk_back: [88, 96, 25],
+  panda_idle: [88, 96, 94],
+  redpanda_walk: [72, 72, 30],
+  tiger_walk: [120, 104, 32],
+  tiger_walk_back: [120, 104, 27],
+  tiger_idle: [120, 104, 34],
+  tiger_idle_back: [120, 104, 47],
+  tiger2_walk: [120, 104, 30],
+  tiger2_walk_back: [120, 104, 24],
+  tiger2_idle: [120, 104, 48],
+  tiger2_idle_back: [120, 104, 24],
+  peacock_walk: [96, 96, 30],
+  peacock_walk_back: [96, 96, 73],
+  peacock2_walk: [96, 96, 32],
+  macaque_walk: [72, 72, 30],
+  macaque_sit: [72, 72, 1],
+  macaque_sit_back: [72, 72, 1],
+  macaque_walk_back: [72, 72, 24],
+  orangutan_walk: [96, 96, 34],
+  orangutan_walk_back: [96, 96, 44],
+  orangutan_idle: [96, 96, 76],
+  orangutan_wave: [112, 96, 81],
+  orangutan2_walk: [96, 96, 26],
+  orangutan2_walk_back: [96, 96, 46],
+  orangutan2_idle: [96, 96, 93],
+  orangutan2_wave: [112, 96, 48],
 };
 
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
@@ -349,9 +391,9 @@ export default class BootScene extends Phaser.Scene {
       this.load.image(`${k}_tree`, `assets/${k}_tree.png`);
     }
     // Tiger (Asien) und der weiße Tiger (seltene Variante); _peek: neugieriges Gesicht im Bambus
-    for (const k of ['tiger_eat', 'tiger2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 80 });
+    for (const k of ['tiger_eat', 'tiger2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 120, frameHeight: 104 });
     for (const k of ['tiger', 'tiger2']) {
-      this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 80 });
+      this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 120, frameHeight: 104 });
       this.load.image(`${k}_peek`, `assets/${k}_peek.png`);
     }
     this.load.spritesheet('flamingo', 'assets/flamingo.png', HERON_FRAME); // Flamingo-Flug (Event)
@@ -380,6 +422,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('zebra2', 'assets/zebra2.png', ZEBRA_FRAME);
     this.load.spritesheet('zebra2_drink', 'assets/zebra2_drink.png', ZEBRA_FRAME);
     for (const [key, [frameWidth, frameHeight, count]] of Object.entries(SAVANNA_ANIMS)) this.load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
+    for (const [key, [frameWidth, frameHeight, count]] of Object.entries(VIDEO_ANIMS)) this.load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
     this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
     this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
     this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
@@ -474,5 +517,6 @@ export default class BootScene extends Phaser.Scene {
     const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7 };
     for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
+    for (const key of Object.keys(VIDEO_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 24, repeat: -1, yoyo: key.includes('_idle') });
   }
 }

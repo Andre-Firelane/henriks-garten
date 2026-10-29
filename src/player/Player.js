@@ -24,12 +24,14 @@ const HERO_ANIMS = {
   hero: { walkDown: 'hero_walk', walkUp: 'hero_walk_back', idleDown: 'hero_idle', stand: { up: 0 } },
   hero_forest: { walkDown: 'hero_forest_walk', walkUp: 'hero_forest_walk_back', idleDown: 'hero_forest_idle', idleUp: 'hero_forest_idle_back' },
   hero_savanna: { walkDown: 'hero_savanna_walk', walkUp: 'hero_savanna_walk_back', idleDown: 'hero_savanna_idle', idleUp: 'hero_savanna_idle_back' },
+  hero_asia: { walkDown: 'hero_asia_walk', walkUp: 'hero_asia_walk_back', idleDown: 'hero_asia_idle', idleUp: 'hero_asia_idle_back' }, // Videos
 };
 // dasselbe für die Reittiere (Bild des Reittiers mit Henrik darauf)
 const MOUNT_ANIMS = {
   ride_meadow: { walkDown: 'ride_meadow_walk', walkUp: 'ride_meadow_walk_back', idleDown: 'ride_meadow_idle', idleUp: 'ride_meadow_idle_back' },
   ride_forest: { walkDown: 'ride_forest_walk', walkUp: 'ride_forest_walk_back', idleDown: 'ride_forest_idle', idleUp: 'ride_forest_idle_back' },
   ride_savanna: { walkDown: 'ride_savanna_walk', walkUp: 'ride_savanna_walk_back', idleDown: 'ride_savanna_idle', idleUp: 'ride_savanna_idle_back' },
+  ride_asia: { walkDown: 'ride_asia_walk', walkUp: 'ride_asia_walk_back', idleDown: 'ride_asia_idle', idleUp: 'ride_asia_idle_back' }, // Videos
 };
 // Reittier (Event): 30 % schneller, ruhigeres Wippen, Fußpunkt im Bild; die Kollision bleibt so klein wie zu Fuß
 const RIDE_SPEED = 1.3;

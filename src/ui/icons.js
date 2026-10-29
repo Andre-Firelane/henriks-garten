@@ -17,7 +17,7 @@ const SHEETS = {
   heron: [88, 108, 4, 0],
   flamingo: [88, 108, 4, 0],
   panda: [88, 96, 4, 0],
-  tiger: [96, 80, 4, 0],
+  tiger: [120, 104, 4, 0],
   orangutan: [88, 88, 4, 0],
   peacock: [96, 96, 4, 0],
   macaque: [72, 72, 4, 0],

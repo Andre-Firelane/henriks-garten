@@ -180,7 +180,7 @@ export const SPECIES = {
   squirrel: {
     texture: 'squirrel',
     // Test: rennt in Seitenansicht (auch beim Klettern) und sitzt (im Baum und am Boden); nach links gespiegelt
-    anims: { walkDown: 'squirrel_run', idleDown: 'squirrel_idle', idleUp: 'squirrel_idle' },
+    anims: { walkDown: 'squirrel_run', walkUp: 'squirrel_run', idleDown: 'squirrel_idle', idleUp: 'squirrel_idle' },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 56 / 60,
     speed: 45,
@@ -309,6 +309,7 @@ export const SPECIES = {
   redpanda: {
     texture: 'redpanda',
     eatTexture: 'redpanda_sit', // sitzt (unten am leuchtenden Glas)
+    anims: { walkDown: 'redpanda_walk', walkUp: 'redpanda_walk' }, // Video, nur von vorne (auch nach oben)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 26,
@@ -474,6 +475,8 @@ export const SPECIES = {
   // Japanmakak (Asien): badet in der heißen Quelle, rennt selten wild herum (dann mit dem Lasso), siehe Macaque.js
   macaque: {
     texture: 'macaque',
+    // Video; im Stehen (und oben im Baum) sitzt er (Einzelbilder); Baden: Standbild
+    anims: { walkDown: 'macaque_walk', walkUp: 'macaque_walk_back', idleDown: 'macaque_sit', idleUp: 'macaque_sit_back' },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 30,
@@ -489,6 +492,8 @@ export const SPECIES = {
   // Panda (Asien): bleibt beim Bambus, sitzt und frisst; fangen mit Grünfutter (siehe Panda.js)
   panda: {
     texture: 'panda',
+    // Video; im Stehen sitzt und frisst er (idle = fressen, siehe Panda.js), bisher nur von vorne
+    anims: { walkDown: 'panda_walk', walkUp: 'panda_walk_back', idleDown: 'panda_idle' },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 18,
@@ -505,6 +510,8 @@ export const SPECIES = {
   tiger: {
     texture: 'tiger',
     eatTexture: 'tiger_eat', // beim Fressen am Futter im Tierpark
+    anims: { walkDown: 'tiger_walk', walkUp: 'tiger_walk_back', idleDown: 'tiger_idle', idleUp: 'tiger_idle_back' }, // Video
+    skinAnims: { tiger2: { walkDown: 'tiger2_walk', walkUp: 'tiger2_walk_back', idleDown: 'tiger2_idle', idleUp: 'tiger2_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 22,
@@ -521,6 +528,9 @@ export const SPECIES = {
   orangutan: {
     texture: 'orangutan',
     eatTexture: 'orangutan_eat', // sitzt und frisst (am Futter im Tierpark)
+    // Video; sitzt und frisst (auch oben im Baum und mit Blick nach oben); wave: winkt im Baum (siehe Orangutan.js)
+    anims: { walkDown: 'orangutan_walk', walkUp: 'orangutan_walk_back', idleDown: 'orangutan_idle', idleUp: 'orangutan_idle', wave: 'orangutan_wave' },
+    skinAnims: { orangutan2: { walkDown: 'orangutan2_walk', walkUp: 'orangutan2_walk_back', idleDown: 'orangutan2_idle', idleUp: 'orangutan2_idle', wave: 'orangutan2_wave' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 16,
@@ -553,6 +563,8 @@ export const SPECIES = {
   },
   peacock: {
     texture: 'peacock',
+    anims: { walkDown: 'peacock_walk', walkUp: 'peacock_walk_back' }, // Video; Stehen und Rad: Standbilder
+    skinAnims: { peacock2: { walkDown: 'peacock2_walk' } }, // weißer Pfau: bisher nur von vorne
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 24,
@@ -989,8 +1001,8 @@ export default class Animal {
 
   // Bild, Blickrichtung und Wippen beim Laufen
   render(moving) {
-    // Animationen (kind.anims, mit Skin kind.skinAnims): ersetzen Standbilder und Wippen. Fehlt walkUp, gilt walkDown
-    // für alle Richtungen; ohne idleDown/idleUp bleibt es im Stehen beim Standbild
+    // Animationen (kind.anims, mit Skin kind.skinAnims): ersetzen Standbilder und Wippen. Fehlt eine Animation für
+    // die Richtung (z. B. walkUp oder idleUp), zeigt es dort das Standbild
     const anims = this.animSet();
     if (anims) {
       const animKeys = Object.values(anims);
@@ -999,7 +1011,8 @@ export default class Animal {
       if (usable && (this.sprite.texture.key === this.baseTexture() || animKeys.includes(this.sprite.texture.key))) {
         if (!this.sprite.anims.isPlaying || this.sprite.anims.currentAnim?.key !== key) {
           // Stehen: an zufälliger Stelle beginnen, damit nicht alle Tiere im Gleichtakt blinzeln
-          const startFrame = moving ? 0 : Math.floor(Math.random() * this.scene.anims.get(key).frames.length);
+          const idle = key === anims.idleDown || key === anims.idleUp;
+          const startFrame = idle ? Math.floor(Math.random() * this.scene.anims.get(key).frames.length) : 0;
           this.sprite.play({ key, startFrame });
           // höhere Bilder: Fußlinie bleibt gleich weit über dem unteren Rand, außer der Bogen nennt seine eigene
           // (Krokodil läuft: der Schwanz hängt unter die Füße)
@@ -1034,6 +1047,20 @@ export default class Animal {
     this.placeSprite(moving);
   }
 
+  // ein Bild der Unterklasse zeigen (Standbild, Fressen, Baden …). useLook lässt eine laufende Animation weiterlaufen
+  // (ob eine läuft, entscheidet Animal.render); showStill hält sie an, für Bilder, die keine Animation sind
+  useLook(key, originY = this.kind.originY) {
+    const cur = this.sprite.texture.key;
+    if (cur === key || Object.values(this.animSet() ?? {}).includes(cur)) return;
+    this.showStill(key, originY);
+  }
+  showStill(key, originY = this.kind.originY) {
+    if (this.sprite.texture.key === key) return;
+    this.sprite.stop();
+    this.sprite.setFlipX(false);
+    this.sprite.setTexture(key, 0).setOrigin(0.5, originY);
+  }
+
   // Animationen dieses Tiers: kind.anims, mit Skin die des Skins (kind.skinAnims) oder keine
   animSet() {
     return this.skin ? this.kind.skinAnims?.[this.skin] ?? null : this.kind.anims ?? null;
@@ -1043,7 +1070,7 @@ export default class Animal {
   animKey(moving) {
     const anims = this.animSet();
     const down = this.faceY > 0;
-    if (moving) return down ? anims.walkDown : anims.walkUp ?? anims.walkDown;
+    if (moving) return down ? anims.walkDown : anims.walkUp;
     return down ? anims.idleDown : anims.idleUp;
   }
 

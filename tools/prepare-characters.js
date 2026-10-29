@@ -4,6 +4,7 @@
 
 import { PNG } from 'pngjs';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
 // frameW/frameH/feetY müssen zu den Werten in src/scenes/BootScene.js und den Figuren-Klassen passen.
@@ -184,7 +185,7 @@ const CHARACTERS = [
   // Panda (Asien): laufend und sitzend mit Bambus, gleicher Maßstab; beide Rückansichten schauen nach rechts,
   // daher oben-links = oben-rechts gespiegelt. Freigestellt mit npm run cutout
   { src: 'Sprites/Panda.png', out: 'panda.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE * 1.2, copyMirror: { 3: 2 } }, // laufend etwas größer
-  { src: 'Sprites/Panda frisst.png', out: 'panda_eat.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE, copyMirror: { 3: 2 } },
+  { src: 'Sprites/Panda frisst.png', out: 'panda_eat.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE * 1.1, copyMirror: { 3: 2 } }, // so groß wie panda_idle
   // Japanmakak (Asien): laufend und badend (in der heißen Quelle, mit Handtuch), gleicher Maßstab; beide Rückansichten
   // schauen nach rechts, daher oben-links = oben-rechts gespiegelt. Freigestellt mit npm run cutout
   { src: 'Sprites/Affe.png', out: 'macaque.png', frameW: 72, frameH: 72, feetY: 68, scale: MACAQUE_SCALE, copyMirror: { 3: 2 } },
@@ -193,23 +194,26 @@ const CHARACTERS = [
   { src: 'Sprites/Flamingo fliegend.png', out: 'flamingo_fly.png', frameW: 104, frameH: 100, feetY: 96, figureH: 88, byComponents: true }, // Flügel reichen in die Nachbarspalten
   { src: 'Sprites/Flamingo Baby.png', out: 'flamingo_baby.png', frameW: 88, frameH: 108, feetY: 104, figureH: 96 },
   // Tiger (Asien): laufend und fressend, gleicher Maßstab
-  { src: 'Sprites/Tiger.png', out: 'tiger.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
-  { src: 'Sprites/Tiger frisst.png', out: 'tiger_eat.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
+  // Tiger 1,3 * 0,85 = 1,1-mal so groß wie zuerst (passt besser zum Kopf, der aus dem Bambus schaut); Rahmen 120x104, Fußlinie 99/104
+  { src: 'Sprites/Tiger.png', out: 'tiger.png', frameW: 120, frameH: 104, feetY: 99, scale: 0.3094 },
+  { src: 'Sprites/Tiger frisst.png', out: 'tiger_eat.png', frameW: 120, frameH: 104, feetY: 99, scale: 0.3094 },
   // weißer Tiger (seltene Variante): gleicher Aufbau und Maßstab
-  { src: 'Sprites/Tiger2.png', out: 'tiger2.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
-  { src: 'Sprites/Tiger2 frisst.png', out: 'tiger2_eat.png', frameW: 96, frameH: 80, feetY: 76, scale: 0.28 },
+  { src: 'Sprites/Tiger2.png', out: 'tiger2.png', frameW: 120, frameH: 104, feetY: 99, scale: 0.3094 },
+  { src: 'Sprites/Tiger2 frisst.png', out: 'tiger2_eat.png', frameW: 120, frameH: 104, feetY: 99, scale: 0.3094 },
   // Orang-Utan: auf allen Vieren und sitzend beim Fressen (das sitzende Bild nimmt er auch oben im Baum, siehe tree-peeks.cjs)
   { src: 'Sprites/Orang Utan.png', out: 'orangutan.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
-  { src: 'Sprites/Orang Utan sitzt und frisst.png', out: 'orangutan_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
+  { src: 'Sprites/Orang Utan sitzt und frisst.png', out: 'orangutan_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.308 },
   // Flanschen-Männchen (seltene Variante): gleiches Format und gleicher Maßstab
   { src: 'Sprites/Orang Utan2.png', out: 'orangutan2.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
-  { src: 'Sprites/Orang Utan2 sitzt und frisst.png', out: 'orangutan2_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.28 },
+  { src: 'Sprites/Orang Utan2 sitzt und frisst.png', out: 'orangutan2_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: 0.308 },
   // Pfau mit Rad und ohne (bei Pfau.png ist das Rad der Vorderansichten weggeschnitten, siehe tools/peacock-cut.cjs)
   { src: 'Sprites/Pfau Rad.png', out: 'peacock_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
-  { src: 'Sprites/Pfau.png', out: 'peacock.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
+  // stehend etwas kleiner als das Rad: so groß wie der laufende Pfau (Video), vorher 0,32 und damit ca. 20 % zu groß
+  { src: 'Sprites/Pfau.png', out: 'peacock.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.265 },
   // weißer Pfau (seltene Variante): Rad der Vorderansichten mit dem blauen Pfau als Schablone weggeschnitten (tools/peacock2-cut.cjs)
   { src: 'Sprites/Pfau2 Rad.png', out: 'peacock2_wheel.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
-  { src: 'Sprites/Pfau2.png', out: 'peacock2.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32 },
+  // Rückansichten (nach oben, dafür gibt es noch kein Video) auf 82 %: sonst größer als der blaue Pfau von hinten
+  { src: 'Sprites/Pfau2.png', out: 'peacock2.png', frameW: 96, frameH: 96, feetY: 92, scale: 0.32, viewScale: { 2: 0.82, 3: 0.82 } },
   // Savanne, Wetterphasen: freigestellt mit npm run cutout und tools/savanna-cut.cjs
   // Schuhschnabel (Reiher-Skin bei Starkregen): stehend und fliegend (ohne Beine) wie der Reiher
   { src: 'Sprites/Schuhschnabel.png', out: 'shoebill.png', frameW: 88, frameH: 108, feetY: 104, figureH: 100, stripShadow: true },
@@ -370,7 +374,8 @@ function gridToRow(img, cols, rows) {
 // scale: fester Maßstab statt figureH (z. B. gleich groß wie das Laufbild); copyMirror: { Ziel: Quelle } – Bild Ziel
 // wird durch das gespiegelte Bild Quelle ersetzt (falls eine Ansicht fehlt); order: [Figur für Bild 0, 1, 2, 3], falls
 // die Ansichten im Original anders angeordnet sind (z. B. der Lungenfisch: auftauchend, rechts, links, springend)
-function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, stripShadow = false, byComponents = false, grid = null, mirror = [], copyMirror = {}, order = null }) {
+// viewScale: { Ansicht: Faktor } einzelne Ansichten kleiner oder größer (z. B. eine zu groß gemalte Rückansicht)
+function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, stripShadow = false, byComponents = false, grid = null, mirror = [], copyMirror = {}, order = null, viewScale = {} }) {
   let img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (grid) img = gridToRow(img, ...grid);
   const { width: W, height: H, data } = img;
@@ -406,11 +411,12 @@ function prepare({ src, out, frameW, frameH, feetY, figureH, scale: fixedScale, 
   const sheet = new PNG({ width: frameW * 4, height: frameH });
 
   boxes.forEach((b, i) => {
-    const bw = (b.x1 - b.x0 + 1) * scale;
-    const bh = (b.y1 - b.y0 + 1) * scale;
+    const s = scale * (viewScale[i] ?? 1);
+    const bw = (b.x1 - b.x0 + 1) * s;
+    const bh = (b.y1 - b.y0 + 1) * s;
     const offX = i * frameW + Math.round((frameW - bw) / 2);
     const offY = Math.round(feetY - bh);
-    drawScaled(sheet, img, b, scale, offX, offY, (sx, sy) => owner[sy * W + sx] === i); // Teile anderer Figuren ausblenden
+    drawScaled(sheet, img, b, s, offX, offY, (sx, sy) => owner[sy * W + sx] === i); // Teile anderer Figuren ausblenden
     if (mirror.includes(i)) mirrorFrame(sheet, i * frameW, frameW);
     if (bw > frameW) console.warn(`${src}: Figur ${i} ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
     if (bh > feetY + 0.5) console.warn(`${src}: Figur ${i} ist höher als der Frame (${bh.toFixed(0)} > ${feetY})`);
@@ -601,7 +607,7 @@ const ANIMATIONS = [
   // Savanne: Maßstab je Bogen so, dass die Figur so hoch ist wie im Standbild (Median aller Bilder); ragt sie oben
   // hinaus, etwas kleiner. Breitere Figuren bekommen breitere Bilder (die Mitte bleibt die Mitte)
   // Antilope: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
-  { src: 'Animation/Antilope_läuft_vorne.png', out: 'antelope_walk.png', cols: 5, rows: 2, scale: 0.347, frameW: 72, frameH: 100, feetY: 96 },
+  { src: 'Animation/Antilope_läuft_vorne.mp4', out: 'antelope_walk.png', scale: 0.693, frameW: 72, frameH: 100, feetY: 96 }, // Video
   { src: 'Animation/Antilope_läuft_hinten.png', out: 'antelope_walk_back.png', cols: 5, rows: 4, count: 18, scale: 0.335, frameW: 72, frameH: 100, feetY: 96 },
   { src: 'Animation/Antilope_idle_vorne.png', out: 'antelope_idle.png', cols: 5, rows: 8, steady: true, scale: 0.278, frameW: 72, frameH: 100, feetY: 96 },
   { src: 'Animation/Antilope_idle_hinten.png', out: 'antelope_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.282, frameW: 72, frameH: 100, feetY: 96 },
@@ -611,8 +617,8 @@ const ANIMATIONS = [
   { src: 'Animation/Antilope2_idle_vorne.png', out: 'antelope2_idle.png', cols: 5, rows: 4, steady: true, scale: 0.339, frameW: 72, frameH: 100, feetY: 96 },
   { src: 'Animation/Antilope2_idle_hinten.png', out: 'antelope2_idle_back.png', cols: 5, rows: 3, count: 12, steady: true, scale: 0.336, frameW: 72, frameH: 100, feetY: 96 },
   // Zebra: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
-  { src: 'Animation/Zebra_läuft_vorne.png', out: 'zebra_walk.png', cols: 5, rows: 2, scale: 0.384, frameW: 80, frameH: 104, feetY: 100 },
-  { src: 'Animation/Zebra_läuft_hinten.png', out: 'zebra_walk_back.png', cols: 5, rows: 2, scale: 0.289, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Zebra_läuft_vorne.mp4', out: 'zebra_walk.png', scale: 0.74, frameW: 80, frameH: 104, feetY: 100 }, // Video
+  { src: 'Animation/Zebra_läuft_hinten.mp4', out: 'zebra_walk_back.png', scale: 0.74, frameW: 80, frameH: 104, feetY: 100 }, // Video
   { src: 'Animation/Zebra_idle_vorne.png', out: 'zebra_idle.png', cols: 5, rows: 8, steady: true, scale: 0.288, frameW: 80, frameH: 104, feetY: 100 },
   { src: 'Animation/Zebra_idle_hinten.png', out: 'zebra_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.287, frameW: 80, frameH: 104, feetY: 100 },
   // Schoko-Zebra: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
@@ -656,10 +662,10 @@ const ANIMATIONS = [
   { src: 'Animation/Nilpferd_idle_vorne.png', out: 'hippo_idle.png', cols: 5, rows: 8, count: 37, scale: 0.306, frameW: 96, frameH: 88, feetY: 84 },
   { src: 'Animation/Nilpferd_idlie_hinten.png', out: 'hippo_idle_back.png', cols: 5, rows: 3, degreen: 'all', scale: 0.288, frameW: 96, frameH: 88, feetY: 84 },
   // Hyäne: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
-  { src: 'Animation/Hyäne_läuft_vorne.png', out: 'hyena_walk.png', cols: 5, rows: 3, count: 12, scale: 0.232, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Hyäne_läuft_hinten.png', out: 'hyena_walk_back.png', cols: 5, rows: 2, scale: 0.228, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Hyäne_idle_vorne.png', out: 'hyena_idle.png', cols: 5, rows: 6, count: 26, steady: true, scale: 0.233, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Hyäne_idle_hinten.png', out: 'hyena_idle_back.png', cols: 5, rows: 4, steady: true, scale: 0.248, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Hyäne_läuft_vorne.mp4', out: 'hyena_walk.png', scale: 0.9, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_läuft_hinten.mp4', out: 'hyena_walk_back.png', scale: 0.9, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_idle_vorne.mp4', out: 'hyena_idle.png', scale: 0.18, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_idle_hinten.mp4', out: 'hyena_idle_back.png', scale: 0.18, frameW: 80, frameH: 80, feetY: 76 }, // Video
   // Gnu: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
   { src: 'Animation/Gnu_läuft_vorne.png', out: 'gnu_walk.png', cols: 5, rows: 3, scale: 0.262, frameW: 88, frameH: 96, feetY: 92 },
   { src: 'Animation/Gnu_läuft_hinten.png', out: 'gnu_walk_back.png', cols: 5, rows: 3, scale: 0.252, frameW: 88, frameH: 96, feetY: 92 },
@@ -691,23 +697,85 @@ const ANIMATIONS = [
   { src: 'Animation/Flamingo_idle_hinten.png', out: 'flamingo_idle_back.png', cols: 5, rows: 8, count: 38, scale: 0.328, frameW: 88, frameH: 108, feetY: 104 },
   { src: 'Animation/Flamingo_fliegt_vorne.png', out: 'flamingo_flap.png', cols: 5, rows: 4, count: 16, steady: true, scale: 0.279, frameW: 104, frameH: 100, feetY: 96 },
   { src: 'Animation/Flamingo_fliegt_hinten.png', out: 'flamingo_flap_back.png', cols: 5, rows: 9, count: 41, steady: true, scale: 0.279, frameW: 104, frameH: 100, feetY: 96 },
+  // Tiere aus Videos (MP4 vor Greenscreen, vorne nach unten-rechts, hinten nach oben-rechts). Die Tiere füllen in den
+  // Videos etwa gleich viel vom Bild aus: je Tierart ein Maßstab bezogen auf die Videogröße (128 bzw. 640 Pixel), so dass
+  // das Laufen von vorne so groß ist wie das Standbild; Sitzen und Liegen sind dadurch von selbst niedriger. Einzelne
+  // Videos sind anders gezoomt, dort ist der Maßstab angepasst (Tiger steht hinten, Panda läuft hinten, Orang-Utan2)
+  // Bambuswald: Panda, Roter Panda (nur von vorne, schaut im Video nach links), Tiger, Pfau, Japanmakak
+  { src: 'Animation/Panda_läuft_vorne.mp4', out: 'panda_walk.png', scale: 0.883, frameW: 88, frameH: 96, feetY: 92 },
+  { src: 'Animation/Panda_läuft_hinten.mp4', out: 'panda_walk_back.png', scale: 0.218, frameW: 88, frameH: 96, feetY: 92 },
+  // Panda sitzt und frisst Bambus (= Stehen): die ersten 13 Bilder zoomen heran (Panda wächst), daher erst ab Bild 13;
+  // im Video sinkt er langsam ab und steigt wieder (5 Pixel), daher stabilize. Etwas größer als zuerst (Höhe 80)
+  { src: 'Animation/Panda_idle.webm', out: 'panda_idle.png', range: [13, 106], stabilize: true, scale: 0.79, frameW: 88, frameH: 96, feetY: 92 },
+  { src: 'Animation/RoterPanda_läuft_vorne.mp4', out: 'redpanda_walk.png', mirror: 'all', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tiger_läuft_vorne.mp4', out: 'tiger_walk.png', scale: 0.1945, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger_läuft_hinten.mp4', out: 'tiger_walk_back.png', scale: 0.9724, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger_idle_vorne.mp4', out: 'tiger_idle.png', scale: 0.9724, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger_idle_hinten.mp4', out: 'tiger_idle_back.png', scale: 0.2497, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger2_läuft_vorne.mp4', out: 'tiger2_walk.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger2_läuft_hinten.mp4', out: 'tiger2_walk_back.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger2_idle_vorne.mp4', out: 'tiger2_idle.png', scale: 0.1978, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger2_idle_hinten.mp4', out: 'tiger2_idle_back.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Pfau_läuft_vorne.mp4', out: 'peacock_walk.png', scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
+  // von hinten: ein Ausschnitt, der sauber im Kreis läuft
+  { src: 'Animation/Pfau_läuft_hinten.mp4', out: 'peacock_walk_back.png', range: [23, 95], scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Pfau2_läuft_vorne.mp4', out: 'peacock2_walk.png', scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
+  // Japanmakak sitzt (Einzelbilder, für das Stehen): im Original 1,39-mal so groß gemalt wie der stehende (Gesicht),
+  // daher so verkleinert, dass er zum Laufen passt (sitzend ca. 60 hoch); von hinten schaut er nach links: gespiegelt
+  { src: 'Tiersprites Test/Japanmakak_sitzt_vorne.png', out: 'macaque_sit.png', cols: 1, rows: 1, scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Tiersprites Test/Japanmakak_sitzt_hinten.png', out: 'macaque_sit_back.png', cols: 1, rows: 1, mirror: 'all', scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Japanmakak_läuft_vorne.mp4', out: 'macaque_walk.png', range: [3, 32], scale: 0.653, frameW: 72, frameH: 72, feetY: 68 },
+  // von hinten: ab Bild 38 dreht er sich im Video um (dann von vorne); Bilder 8-31 laufen nahtlos im Kreis.
+  // 10 % größer als vorne, sonst wirkt er von hinten kleiner (gleiche Fläche wie von vorne)
+  { src: 'Animation/Japanmakak_läuft_hinten.mp4', out: 'macaque_walk_back.png', range: [8, 31], scale: 0.718, frameW: 72, frameH: 72, feetY: 68 },
+  // Spielfigur im Bambuswald (Kleidung Asien), Höhe wie die anderen Kleidungen (108); gemeinsamer Maßstab für alle vier.
+  // Laufen: Ausschnitte, die nahtlos im Kreis laufen
+  { src: 'Animation/Character_bambuswald_läuft_vorne.mp4', out: 'hero_asia_walk.png', range: [26, 69], scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', range: [9, 24], scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  // Wasserbüffel mit Henrik (Reittier Asien), Maße wie ride_asia.png (Höhe 160)
+  { src: 'Animation/Wasserbüffel_läuft_vorne.mp4', out: 'ride_asia_walk.png', range: [8, 34], scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Wasserbüffel_läuft_hinten.mp4', out: 'ride_asia_walk_back.png', range: [9, 29], scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Wasserbüffel_idle_vorne.mp4', out: 'ride_asia_idle.png', scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Wasserbüffel_idle_hinten.mp4', out: 'ride_asia_idle_back.png', scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
+  // Dschungel: Orang-Utan und Orang-Utan mit Backenwülsten (orangutan2); Sitzen nur von vorne, Winken etwas breiter (Arm).
+  // 10 % größer als zuerst, daher Rahmen 96x96 (Fußlinie 92/96, fast wie orangutan.png mit 84/88)
+  { src: 'Animation/Orangutan_läuft_vorne.mp4', out: 'orangutan_walk.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Orangutan_läuft_hinten.mp4', out: 'orangutan_walk_back.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
+  // Sitzen und Winken: im Video dunkler und matter als das Laufen (Fell Helligkeit 148 statt ca. 170), daher angeglichen
+  { src: 'Animation/Orangutan_idle_vorne.mp4', out: 'orangutan_idle.png', saturate: 1.18, brightness: 1.16, scale: 0.198, frameW: 96, frameH: 96, feetY: 92 },
+  // Winken: nur der Teil mit erhobener Hand (er winkt im Baum nur kurz); etwas kleiner, damit er so groß ist wie beim Sitzen
+  // offsetX: Körper genau dort, wo er beim Sitzen sitzt (der erhobene Arm verschiebt ihn sonst im Rahmen)
+  { src: 'Animation/Orangutan_winkt.mp4', out: 'orangutan_wave.png', range: [14, 94], saturate: 1.05, brightness: 1.14, scale: 0.891, offsetX: -9, frameW: 112, frameH: 96, feetY: 92 },
+  { src: 'Animation/Urangutan2_läuft_vorne.mp4', out: 'orangutan2_walk.png', scale: 0.2233, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Oranutan2_läuft_hinten.mp4', out: 'orangutan2_walk_back.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Orangutan2_idle_vorne.mp4', out: 'orangutan2_idle.png', scale: 0.176, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Orangutan2_winken.mp4', out: 'orangutan2_wave.png', range: [8, 55], scale: 0.792, offsetX: -4, frameW: 112, frameH: 96, feetY: 92 },
   // Wasserflugzeug (Schnellreise im Dschungel), ein Bild
   { src: 'Sprites/Wasserflugzeug.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
 ];
 
-// skip: Bilder weglassen (Nummern im Raster); mirror: Bilder, die in die andere Richtung schauen, waagerecht spiegeln;
+// skip: Bilder weglassen (Nummern im Raster); mirror: Bilder, die in die andere Richtung schauen, waagerecht spiegeln ('all': alle);
 // dropGreen: grüne Reste vom Freistellen entfernen; saturate: Farbsättigung mal diesen Faktor (Helligkeit bleibt);
 // boxOf: Rahmen und Maßstab eines anderen Eintrags übernehmen (out), wenn die Figur im Original an derselben Stelle steht
 // (z. B. Sitzen und Springen): dann springt sie beim Wechsel zwischen den Animationen nicht;
 // scale: fester Maßstab statt figureH (z. B. damit eine Variante genauso groß wird wie das Original);
 // evenBrightness: zu dunkle Bilder (z. B. eingeblendet wie im Video) auf die Helligkeit der übrigen anheben;
-// degreen: Grünstich und Grashalme weg (Zebra trinkt); steady: Flimmern dämpfen (siehe steadyFrames); alignFeet: Füße jedes Bilds auf die Fußlinie (siehe prepareGrid)
-function loadGrid({ src, cols, rows, count = cols * rows, skip = [], mirror = [], dropGreen = false, saturate = 1, evenBrightness = false, steady = false, degreen = false }) {
-  const img = PNG.sync.read(fs.readFileSync(path.resolve(src)));
+// degreen: Grünstich und Grashalme weg (Zebra trinkt); steady: Flimmern dämpfen (siehe steadyFrames); alignFeet: Füße jedes Bilds auf die Fußlinie (siehe prepareGrid).
+// Statt eines Spritesheets geht auch ein Video (.mp4) vor Greenscreen: dann ohne cols/rows, jedes Videobild ist ein Bild (siehe readVideo);
+// range: [von, bis] nur diese Bilder (z. B. ein Ausschnitt eines Videos, der sauber im Kreis läuft);
+// stabilize: Wackeln der Kamera ausgleichen (siehe stabilizeFrames); brightness: Helligkeit mal diesen Faktor
+function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false }) {
+  const video = /\.(mp4|mov|webm)$/i.test(src);
+  const img = video ? readVideo(src) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
+  if (video) [cols, rows] = [img.frames, 1];
+  count ??= cols * rows;
   const { width: W, height: H, data } = img;
   const cw = W / cols;
   const ch = H / rows;
-  const frames = [...Array(count).keys()].filter((i) => !skip.includes(i));
+  const frames = [...Array(count).keys()].filter((i) => !skip.includes(i) && (!range || (i >= range[0] && i <= range[1])));
+  if (mirror === 'all') mirror = frames; // alle Bilder schauen in die falsche Richtung
 
   if (dropGreen) {
     for (let k = 0; k < data.length; k += 4) if (data[k + 1] > data[k] + 10 && data[k + 1] > data[k + 2]) data[k + 3] = 0;
@@ -717,6 +785,9 @@ function loadGrid({ src, cols, rows, count = cols * rows, skip = [], mirror = []
       const mx = Math.max(data[k], data[k + 1], data[k + 2]);
       for (let c = 0; c < 3; c++) data[k + c] = Math.max(0, Math.min(255, Math.round(mx - (mx - data[k + c]) * saturate)));
     }
+  }
+  if (brightness !== 1) {
+    for (let k = 0; k < data.length; k += 4) for (let c = 0; c < 3; c++) data[k + c] = Math.min(255, Math.round(data[k + c] * brightness));
   }
   if (degreen) {
     // grünstichiges Fell grau machen (Helligkeit bleibt), kräftig grüne Halme entfernen; türkises Wasser bleibt
@@ -757,6 +828,7 @@ function loadGrid({ src, cols, rows, count = cols * rows, skip = [], mirror = []
       }
     });
   }
+  if (stabilize) stabilizeFrames(img, cols, cw, ch, frames);
   // Spiegeln innerhalb der Zelle
   for (const i of mirror) {
     const ox = (i % cols) * cw;
@@ -786,7 +858,160 @@ function loadGrid({ src, cols, rows, count = cols * rows, skip = [], mirror = []
     }
   }
 
-  return { img, cw, ch, frames, box };
+  return { img, cw, ch, frames, box, cols };
+}
+
+// Video vor Greenscreen als Bilderreihe (alle Bilder nebeneinander, wie ein Spritesheet mit einer Zeile), freigestellt.
+// Braucht ffmpeg/ffprobe (im PATH). Hintergrund sind zwei Farben, die das Skript selbst findet: die Farbe am Bildrand und
+// das kräftige Grün (manche Videos haben einen Kasten in kräftigem Grün um die Figur und außen einen anderen Grünton
+// oder Grau). Was einer der beiden Farben oder einer Mischung daraus nahe ist, wird durchsichtig, Übergänge halb.
+// Grüne Teile der Figur (Blätter) bleiben, solange sie sich deutlich vom Hintergrund unterscheiden. Am Rand der Figur
+// wird der grüne Schimmer entfernt (Grün höchstens so stark wie Rot oder Blau)
+const KEY_NEAR = 45; // so nah an einer Hintergrundfarbe: ganz durchsichtig
+const KEY_FAR = 100; // ab so weit weg: ganz Figur
+function readVideo(src) {
+  const file = path.resolve(src);
+  const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file])
+    .toString().trim().split(',').map(Number);
+  const raw = execFileSync('ffmpeg', ['-v', 'error', '-i', file, '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-'], { maxBuffer: 1 << 30 });
+  const frames = Math.floor(raw.length / (w * h * 3));
+  const at = (f, x, y) => ((f * h + y) * w + x) * 3;
+
+  // Hintergrundfarben: Median am Rand des ersten Bilds und häufigstes kräftiges, helles Grün (der Rand kann selbst
+  // ein dunkleres Grün sein)
+  const edge = [];
+  for (let x = 0; x < w; x++) edge.push(at(0, x, 0), at(0, x, h - 1));
+  for (let y = 0; y < h; y++) edge.push(at(0, 0, y), at(0, w - 1, y));
+  const median = (c) => edge.map((s) => raw[s + c]).sort((p, q) => p - q)[edge.length >> 1];
+  const border = [median(0), median(1), median(2)];
+  const counts = new Map();
+  for (let s = 0; s < w * h * 3; s += 3) {
+    const [r, g, b] = [raw[s], raw[s + 1], raw[s + 2]];
+    if (g < 200 || g - Math.max(r, b) < 120) continue;
+    const q = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+    counts.set(q, (counts.get(q) ?? 0) + 1);
+  }
+  let top = null;
+  for (const [q, c] of counts) if (!top || c > top[1]) top = [q, c];
+  const key = top ? [((top[0] >> 10) << 3) + 4, (((top[0] >> 5) & 31) << 3) + 4, ((top[0] & 31) << 3) + 4] : border;
+
+  // Abstand einer Farbe zur Strecke zwischen den beiden Hintergrundfarben (deckt auch Mischpixel an der Kastenkante ab)
+  const d = key.map((v, c) => border[c] - v);
+  const dd = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+  const dist = (r, g, b) => {
+    const p = [r - key[0], g - key[1], b - key[2]];
+    const t = dd ? Math.max(0, Math.min(1, (p[0] * d[0] + p[1] * d[1] + p[2] * d[2]) / dd)) : 0;
+    return Math.hypot(p[0] - t * d[0], p[1] - t * d[1], p[2] - t * d[2]);
+  };
+
+  // Hintergrund ist, was vom Bildrand aus zusammenhängend erreichbar ist (wie ein Farbeimer von außen): Farben innerhalb
+  // der Figur bleiben, auch wenn sie dem Randton ähneln (graues Fell neben grauem Rand). Eingeschlossene Lücken
+  // (zwischen den Beinen) werden nur am kräftigen Grün erkannt, das in keinem Fell vorkommt
+  const img = new PNG({ width: w * frames, height: h });
+  const d0 = new Float32Array(w * h);
+  const seen = new Uint8Array(w * h);
+  for (let f = 0; f < frames; f++) {
+    seen.fill(0);
+    const stack = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const s = at(f, x, y);
+        const k = (y * img.width + f * w + x) * 4;
+        d0[y * w + x] = dist(raw[s], raw[s + 1], raw[s + 2]);
+        img.data[k] = raw[s];
+        img.data[k + 1] = raw[s + 1];
+        img.data[k + 2] = raw[s + 2];
+        const dk = Math.hypot(raw[s] - key[0], raw[s + 1] - key[1], raw[s + 2] - key[2]);
+        img.data[k + 3] = dk <= KEY_NEAR ? 0 : dk >= KEY_FAR ? 255 : Math.round((255 * (dk - KEY_NEAR)) / (KEY_FAR - KEY_NEAR));
+        if ((x === 0 || y === 0 || x === w - 1 || y === h - 1) && d0[y * w + x] < KEY_FAR) {
+          seen[y * w + x] = 1;
+          stack.push(y * w + x);
+        }
+      }
+    }
+    while (stack.length) {
+      const p = stack.pop();
+      const x = p % w;
+      const y = (p - x) / w;
+      const dp = d0[p];
+      const ka = (y * img.width + f * w + x) * 4 + 3;
+      img.data[ka] = Math.min(img.data[ka], dp <= KEY_NEAR ? 0 : Math.round((255 * (dp - KEY_NEAR)) / (KEY_FAR - KEY_NEAR)));
+      if (dp > KEY_NEAR) continue; // halb durchsichtiger Rand der Figur: nicht weiter hinein
+      for (const q of [x > 0 && p - 1, x < w - 1 && p + 1, y > 0 && p - w, y < h - 1 && p + w]) {
+        if (q === false || seen[q] || d0[q] >= KEY_FAR) continue;
+        seen[q] = 1;
+        stack.push(q);
+      }
+    }
+  }
+  // grüner Schimmer: nur am Rand der Figur (halb durchsichtig oder nah an Durchsichtigem), innen bleibt Grün grün
+  const A = (x, y) => img.data[(y * img.width + x) * 4 + 3];
+  for (let y = 0; y < h; y++) {
+    for (let X = 0; X < img.width; X++) {
+      const k = (y * img.width + X) * 4;
+      if (!img.data[k + 3]) continue;
+      const x = X % w;
+      // bis zu zwei Pixel vom Rand (Mischpixel aus der Videokompression liegen oft eine Reihe tiefer)
+      let edgy = img.data[k + 3] < 255;
+      for (let dy = -2; dy <= 2 && !edgy; dy++) {
+        for (let dx = -2; dx <= 2 && !edgy; dx++) {
+          if (x + dx < 0 || x + dx >= w || y + dy < 0 || y + dy >= h) continue;
+          edgy = A(X + dx, y + dy) < 255;
+        }
+      }
+      if (edgy) img.data[k + 1] = Math.min(img.data[k + 1], Math.max(img.data[k], img.data[k + 2]));
+    }
+  }
+  img.frames = frames;
+  return img;
+}
+
+// Wackeln ausgleichen (Panda frisst: die Figur sinkt im Video langsam ab und steigt wieder): jedes Bild wird so verschoben,
+// dass sein unterer Teil (untere 45 %: Körper, Beine, Boden) möglichst genau auf dem des mittleren Bilds liegt.
+// Kopf und Arme, die sich wirklich bewegen, liegen darüber und zählen nicht mit
+function stabilizeFrames(img, cols, cw, ch, frames, R = 8) {
+  const { width: W, data } = img;
+  const cell = (i) => [(i % cols) * cw, Math.floor(i / cols) * ch];
+  const get = (src, i, x, y) => {
+    if (x < 0 || y < 0 || x >= cw || y >= ch) return [0, 0];
+    const [ox, oy] = cell(i);
+    const k = ((oy + y) * W + ox + x) * 4;
+    return [src[k + 3], ((src[k] + src[k + 1] + src[k + 2]) / 3) * (src[k + 3] / 255)];
+  };
+  const src = Uint8Array.from(data);
+  const ref = frames[frames.length >> 1];
+  const y0 = Math.round(ch * 0.55);
+  for (const i of frames) {
+    let best = { dx: 0, dy: 0, e: Infinity };
+    for (let dy = -R; dy <= R; dy++) {
+      for (let dx = -R; dx <= R; dx++) {
+        let e = 0;
+        for (let y = y0; y < ch && e < best.e; y++) {
+          for (let x = 0; x < cw; x++) {
+            const p = get(src, ref, x, y);
+            const q = get(src, i, x + dx, y + dy);
+            e += Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]);
+          }
+        }
+        if (e < best.e) best = { dx, dy, e };
+      }
+    }
+    if (!best.dx && !best.dy) continue;
+    const [ox, oy] = cell(i);
+    for (let y = 0; y < ch; y++) {
+      for (let x = 0; x < cw; x++) {
+        const k = ((oy + y) * W + ox + x) * 4;
+        const sx = x + best.dx;
+        const sy = y + best.dy;
+        if (sx < 0 || sy < 0 || sx >= cw || sy >= ch) {
+          data[k + 3] = 0;
+          continue;
+        }
+        const j = ((oy + sy) * W + ox + sx) * 4;
+        for (let c = 0; c < 4; c++) data[k + c] = src[j + c];
+      }
+    }
+  }
 }
 
 // Flimmern dämpfen: die KI zeichnet Streifen und Flecken in jedem Bild etwas anders, im Stehen flimmert das.
@@ -839,8 +1064,8 @@ function steadyFrames(img, cols, cw, ch, frames, B = 16, T = 18, R = 2) {
 const MAX_SHEET_W = 4096;
 
 function prepareGrid(entry) {
-  const { src, out, cols, frameW, frameH, feetY, boxOf } = entry;
-  const { img, cw, ch, frames, box: ownBox } = loadGrid(entry);
+  const { src, out, frameW, frameH, feetY, boxOf } = entry;
+  const { img, cw, ch, frames, box: ownBox, cols } = loadGrid(entry);
   const ref = boxOf && ANIMATIONS.find((a) => a.out === boxOf);
   if (boxOf && !ref) throw new Error(`${out}: boxOf ${boxOf} nicht gefunden`);
   const box = ref ? loadGrid(ref).box : ownBox;
@@ -875,7 +1100,8 @@ function prepareGrid(entry) {
       }
       if (bottom >= 0) lift = Math.round((b.y1 - bottom) * scale);
     }
-    drawScaled(sheet, img, b, scale, fx + Math.round((frameW - bw) / 2), fy + Math.round(feetY - bh) + lift, () => true);
+    // offsetX: Figur im Rahmen waagerecht verschieben (z. B. damit der Körper beim Winken dort sitzt, wo er beim Sitzen sitzt)
+    drawScaled(sheet, img, b, scale, fx + Math.round((frameW - bw) / 2) + (entry.offsetX ?? 0), fy + Math.round(feetY - bh) + lift, () => true);
   });
   if (bw > frameW) console.warn(`${src}: Figur ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
 

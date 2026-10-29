@@ -263,7 +263,7 @@ export default class Macaque extends Animal {
   render(moving) {
     const bathing = (this.phase === 'bath') && (this.state === 'wild' || this.state === 'penned');
     if (!bathing) {
-      if (this.sprite.texture.key !== this.kind.texture) this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
+      this.useLook(this.kind.texture);
       super.render(moving && this.phase !== 'climb');
       this.sprite.setVisible(true);
       if (this.lift) this.sprite.setPosition(this.sprite.x, this.sprite.y - this.lift);
@@ -272,7 +272,7 @@ export default class Macaque extends Animal {
       return;
     }
     // in der Quelle: nur Kopf und Schultern, abgetaucht gar nicht zu sehen
-    if (this.sprite.texture.key !== 'macaque_bath') this.sprite.setTexture('macaque_bath', 0).setOrigin(0.5, BATH_ORIGIN_Y);
+    this.showStill('macaque_bath', BATH_ORIGIN_Y);
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     const bob = Math.sin(this.scene.time.now / 700 + this.x) * 0.8;

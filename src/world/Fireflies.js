@@ -17,6 +17,10 @@ const RED_PANDAS = 2; // so viele rote Pandas sitzen gleichzeitig in den Kirschb
 const REFILL_DELAY = 15; // nach einem Fang kommt erst nach so vielen Sekunden ein neuer dazu
 const LANTERN_UP = 30; // Höhe des Lichts über dem Fuß der Steinlaterne
 const TORII_UP = 86; // ... und über dem Fuß des roten Tors
+// Lichtschein auf dem Boden: auf dem Boden unter allen Figuren (sonst leuchtet er über Tiere und Spieler, die darin stehen),
+// damit auch unter der Dämmerung; die halb deckt ihn ab, daher doppelt so stark
+const POOL_DEPTH = -98000;
+const POOL_ALPHA = 0.7; // mal Dämmerung
 
 export default class FireflyEvening {
   constructor(scene) {
@@ -34,7 +38,7 @@ export default class FireflyEvening {
         const p = tileToWorld(tx, ty);
         const big = c === 'I';
         const img = scene.add.image(p.x, p.y - (big ? TORII_UP : LANTERN_UP), glow).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffb050).setScale(big ? 1.4 : 1.1).setAlpha(0).setDepth(NIGHT_DEPTH + 1);
-        const pool = scene.add.ellipse(p.x, p.y + 2, big ? 90 : 60, big ? 30 : 20, 0xffc070, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(NIGHT_DEPTH + 1);
+        const pool = scene.add.ellipse(p.x, p.y + 2, big ? 90 : 60, big ? 30 : 20, 0xffc070, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(POOL_DEPTH);
         this.lights.push({ img, pool, phase: Math.random() * 10, big });
       }
     }
@@ -80,7 +84,7 @@ export default class FireflyEvening {
     for (const l of this.lights) {
       const flicker = 0.85 + Math.sin(this.time * 7 + l.phase) * 0.06 + Math.sin(this.time * 13 + l.phase * 2) * 0.04;
       l.img.setAlpha(this.dark.fillAlpha * 1.5 * flicker);
-      l.pool.setFillStyle(0xffc070, this.dark.fillAlpha * 0.35 * flicker);
+      l.pool.setFillStyle(0xffc070, this.dark.fillAlpha * POOL_ALPHA * flicker);
     }
     for (const f of this.flies) {
       if (f.gone) continue;

@@ -18,6 +18,7 @@ const CROWN_UP = 104; // Höhe der Baumkrone über dem Fuß des Urwaldbaums (Bil
 const SWING_MS = 900; // so lange schwingt er von Krone zu Krone
 const SWING_ARC = 36; // so hoch ist der Bogen dabei
 const CALL_VOLUME = 0.5;
+const TREE_SEAT = 16; // mit Sitz-Animation: so weit unter der Mitte der Krone sitzt er (Füße)
 
 export default class Orangutan extends Animal {
   constructor(scene, x, y) {
@@ -44,6 +45,9 @@ export default class Orangutan extends Animal {
     const key = `${this.baseTexture()}_tree`;
     this.peek ??= this.scene.add.image(0, 0, key).setOrigin(0.5, 40 / 64).setScale(0.6);
     this.peek.setTexture(key).setPosition(this.x, this.y - CROWN_UP).setDepth(this.y + 2).setVisible(true).setFlipX(Math.random() < 0.5);
+    // mit Sitz-Animation schaut er in dieselbe Richtung wie das Bild im Laub
+    this.faceX = this.peek.flipX ? -1 : 1;
+    this.faceY = 1;
   }
 
   inTree() {
@@ -218,12 +222,22 @@ export default class Orangutan extends Animal {
     this.scene.tweens.add({ targets: t, y: y - 8, duration: ms, onComplete: () => t.destroy() });
   }
 
+  // im Baum: sitzt (Sitz-Animation) bzw. winkt
+  animKey(moving) {
+    const set = this.animSet();
+    if (set && this.inTree()) return this.phase === 'wave' && set.wave ? set.wave : set.idleDown;
+    return super.animKey(moving);
+  }
+
   render(moving) {
     super.render(moving);
     const up = this.aloft();
-    this.sprite.setVisible(!up);
+    // im Baum mit Sitz-Animation ganz zu sehen, vor der Krone; ohne (und beim Schwingen) nur Kopf und Arme im Laub
+    const seated = this.inTree() && !!this.animKey(false) && this.scene.anims.exists(this.animKey(false));
+    if (seated) this.sprite.setPosition(this.x, this.y - CROWN_UP + TREE_SEAT).setDepth(this.y + 2);
+    this.sprite.setVisible(!up || seated);
     this.shadow.setVisible(!up);
-    this.peek?.setVisible(up);
+    this.peek?.setVisible(up && !seated);
     const key = `${this.baseTexture()}_tree`; // seltene Variante: wird erst nach dem Erzeugen ausgewürfelt
     if (this.peek && this.peek.texture.key !== key) this.peek.setTexture(key);
   }

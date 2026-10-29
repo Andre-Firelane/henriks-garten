@@ -92,8 +92,9 @@ export default class Peacock extends Animal {
 
   render(moving) {
     if (this.flying && this.sprite.alpha < 1) return; // im Flug bewegt ihn der Tween
-    const key = this.wheel ? `${this.baseTexture()}_wheel` : this.lookTexture();
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
+    // Rad: Standbild (hält eine Laufanimation an); sonst darf eine Animation weiterlaufen
+    if (this.wheel) this.showStill(`${this.baseTexture()}_wheel`);
+    else this.useLook(this.lookTexture());
     super.render(this.wheel ? false : moving);
   }
 

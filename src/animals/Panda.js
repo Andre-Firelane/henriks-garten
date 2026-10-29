@@ -145,10 +145,14 @@ export default class Panda extends Animal {
   }
 
   render(moving) {
-    const eating = this.sit?.phase === 'eat' && this.state !== 'following';
-    const key = eating ? 'panda_eat' : this.lookTexture();
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name).setOrigin(0.5, eating ? EAT_ORIGIN_Y : this.kind.originY);
-    if (!eating) return super.render(moving);
+    // sitzt und frisst: am Bambus, und auch sonst im Stehen. Mit Fress-Animation (panda_idle, wie Stehen) zeigt
+    // Animal.render sie; ohne (z. B. Blick nach oben) das Fress-Standbild
+    const eating = (this.sit?.phase === 'eat' && this.state !== 'following') || !moving;
+    if (!eating || this.animKey(false)) {
+      this.useLook(this.lookTexture());
+      return super.render(eating ? false : moving);
+    }
+    this.showStill('panda_eat', EAT_ORIGIN_Y);
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     this.sprite.setPosition(this.x, this.y + SPRITE_SINK);
