@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { openStartScreen } from '../ui/startScreen.js';
 import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
 import { tr } from '../i18n.js';
-import { HD, HD_SCALE, hdFactor, shrinkTexture } from '../world/hd.js';
+import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -213,9 +213,25 @@ export default class BootScene extends Phaser.Scene {
     return HD.includes(key) && !TEST_ART[key] && this.game.renderer.type === Phaser.WEBGL;
   }
 
-  preload() {
-    this.load.on('progress', setLoadingProgress); // Ladebalken (die Tafel steht schon in index.html)
-    for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${TEST_ART[key] ?? (this.useHd(key) ? `hd/${key}` : key)}.png`);
+  // Erst nur das Menü (Startbildschirm, ist HTML); die Bilder und Töne lädt das Spiel, sobald man dort etwas gewählt hat
+  create() {
+    hideLoading();
+    openStartScreen((data) => {
+      showLoading(tr('Das Spiel wird geladen …', 'Loading the game …'), 0);
+      this.load.on('progress', setLoadingProgress);
+      this.load.once('complete', () => {
+        this.setupAssets();
+        // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige
+        showLoading(tr('Das Spiel startet …', 'Starting the game …'));
+        afterPaint(() => this.scene.start('Garden', data));
+      });
+      this.queueAssets();
+      this.load.start();
+    });
+  }
+
+  queueAssets() {
+    for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${TEST_ART[key] ?? (this.useHd(key) ? `${HD_DIR}/${key}` : key)}.png`);
     this.load.spritesheet('hero', 'assets/hero.png', HERO_FRAME);
     // Kleidung je Gebiet (siehe hero in levels.js)
     this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
@@ -262,8 +278,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
     // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
     for (const k of ['canoe', 'canoe_hero']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
-    const wf = this.useHd('waterfall') ? HD_SCALE : 1; // große Fassung: Bilder 4-mal so groß, danach verkleinert (shrinkTexture)
-    this.load.spritesheet('waterfall', `assets/${wf > 1 ? 'hd/' : ''}waterfall.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf }); // Wasserfall im Dschungel (3 Bilder)
+    const wf = this.useHd('waterfall') ? hdFactor('waterfall') : 1; // große Fassung: Bilder 4-mal (Handy 2-mal) so groß, danach verkleinert (shrinkTexture)
+    this.load.spritesheet('waterfall', `assets/${wf > 1 ? `${HD_DIR}/` : ''}waterfall.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf }); // Wasserfall im Dschungel (3 Bilder)
     this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     // Katze 2 (seltener Skin)
     this.load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
@@ -391,7 +407,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('warthog_hole', 'assets/warthog_hole.png'); // sein Erdloch (Platzhalter)
     this.load.spritesheet('vulture', 'assets/vulture.png', HERON_FRAME); // Geier (Trockenzeit)
     this.load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
-    this.load.image('bone_pile', `assets/${this.useHd('bone_pile') ? 'hd/' : ''}bone_pile.png`); // gestreute Knochen (lockt die Hyänen an)
+    this.load.image('bone_pile', `assets/${this.useHd('bone_pile') ? `${HD_DIR}/` : ''}bone_pile.png`); // gestreute Knochen (lockt die Hyänen an)
     this.load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
     this.load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)
     this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
@@ -405,7 +421,8 @@ export default class BootScene extends Phaser.Scene {
     for (const [species, file] of Object.entries(ANIMAL_SOUNDS)) this.load.audio(`animal_${species}`, `assets/sounds/${file}`);
   }
 
-  create() {
+  // nach dem Laden: Bilder vorbereiten, Animationen anlegen
+  setupAssets() {
     // Pixel-Art scharf vergrößern; Figuren und gedrehte Gegenstände bleiben weich
     for (const key of PIXEL_ART) if (!this.useHd(key)) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
     for (const key of HD) if (this.useHd(key)) shrinkTexture(this.textures.get(key), hdFactor(key)); // große Bilder in alter Größe anzeigen
@@ -454,11 +471,5 @@ export default class BootScene extends Phaser.Scene {
     const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7 };
     for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
-    hideLoading();
-    openStartScreen((data) => {
-      // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige
-      showLoading(tr('Das Spiel startet …', 'Starting the game …'));
-      afterPaint(() => this.scene.start('Garden', data));
-    });
   }
 }

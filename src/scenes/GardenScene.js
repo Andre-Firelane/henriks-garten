@@ -122,7 +122,7 @@ import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
 import BallTool from '../tools/BallTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIcons } from '../ui/icons.js';
-import { touchHandlers, setTouchTool, isTouch } from '../ui/touch.js';
+import { touchHandlers, setTouchTool, isTouch, IS_PHONE } from '../ui/touch.js';
 import { openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
@@ -130,6 +130,9 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
+// auf dem Handy näher heran (der Bildschirm ist klein): etwa 310 Welt-Pixel, in Viertelschritten (die meisten Bilder
+// sind ohnehin hochaufgelöst, ein krummer Zoom fällt kaum auf)
+const PHONE_VIEW_H = 310;
 // Reihenfolge der Tierarten in der Anzeige
 // Tierarten, die es nur in einer Wetterphase der Savanne gibt (für die Übersicht: "Savanne (☀️ Trockenzeit)")
 const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: 'dry' };
@@ -1751,7 +1754,8 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   fitZoom() {
-    this.cameras.main.setZoom(Math.max(1, Math.round(this.scale.height / VIEW_H)));
+    const h = this.scale.height;
+    this.cameras.main.setZoom(IS_PHONE ? Math.max(1, Math.round((h / PHONE_VIEW_H) * 4) / 4) : Math.max(1, Math.round(h / VIEW_H)));
   }
 
   // Zufällige freie Kachel außerhalb des Geheges mit Abstand zu den Kacheln in "taken"

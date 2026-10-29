@@ -635,3 +635,4 @@ for k, n in {'hutwall_aquarium': 7, 'hutwall_tank': 9}.items():
 import subprocess
 subprocess.run([sys.executable, os.path.join(ROOT, 'tools/park-path.py'), f'{OUT}/park_path.png'], check=True)
 print('ok', len(os.listdir(OUT)))
+subprocess.run([sys.executable, os.path.join(ROOT, 'tools/hd-phone.py')], check=True, cwd=ROOT)  # Handy-Fassung (hd2/)

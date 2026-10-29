@@ -1,6 +1,8 @@
 // Bilder in höherer Auflösung (public/assets/hd/, aus tools/hd-sprites.py): sie werden so groß angezeigt wie die
 // alten Pixel-Sprites, behalten beim Heranzoomen aber ihre Details. Dazu bekommt jedes Bild seine alte Größe
 // (Breite, Höhe, Fußpunkt bleiben gleich), zeigt aber das ganze große Bild.
+import { IS_PHONE } from '../ui/touch.js';
+
 export const HD_SCALE = 4;
 
 export const HD = [
@@ -49,7 +51,9 @@ export const HD = [
 
 // sehr große Bilder (Dächer, Gebäude) sind nur 2- bzw. 1-mal so groß, sonst zu viel Speicher
 const SCALE = { hutroof_cathouse: 2, hutroof_office: 2, hutroof_savanna: 2, hutroof_asia: 2, hutroof_jungle: 2, aquarium_facade: 1, reptile_facade: 1 };
-export const hdFactor = (key) => SCALE[key] ?? HD_SCALE;
+// auf dem Handy die halb so großen Bilder aus hd2/ (tools/hd-phone.py): ein Viertel des Speichers
+export const HD_DIR = IS_PHONE ? 'hd2' : 'hd';
+export const hdFactor = (key) => (IS_PHONE ? Math.max(1, (SCALE[key] ?? HD_SCALE) / 2) : (SCALE[key] ?? HD_SCALE));
 
 // Bilder einer großen Textur auf die kleine Größe bringen; die Bildkoordinaten (UV) zeigen weiter auf das ganze Bild.
 // Das gilt nur für WebGL (der Canvas-Renderer, falls es kein WebGL gibt, würde nur einen Ausschnitt zeigen)

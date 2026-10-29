@@ -14,6 +14,10 @@ const ICON = (d) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none"
 const ICON_EXPAND = ICON('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>');
 const ICON_SHRINK = ICON('<path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/>');
 
+// Handy (nicht Tablet): Finger-Bedienung und eine kurze Bildschirmseite unter 600 CSS-Pixeln. Dort kleinere Bilder
+// (siehe world/hd.js) und etwas näher herangezoomt (siehe fitZoom in GardenScene)
+export const IS_PHONE = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
+
 // Die Szene trägt hier ein, was die Knöpfe tun (wird bei jedem Levelwechsel neu gesetzt)
 export const touchHandlers = { action: null, menu: null };
 
