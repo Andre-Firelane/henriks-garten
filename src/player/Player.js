@@ -24,6 +24,7 @@ const HERO_ANIMS = {
   hero: { walkDown: 'hero_walk', walkUp: 'hero_walk_back', idleDown: 'hero_idle', stand: { up: 0 } },
   hero_forest: { walkDown: 'hero_forest_walk', walkUp: 'hero_forest_walk_back', idleDown: 'hero_forest_idle', idleUp: 'hero_forest_idle_back' },
   hero_savanna: { walkDown: 'hero_savanna_walk', walkUp: 'hero_savanna_walk_back', idleDown: 'hero_savanna_idle', idleUp: 'hero_savanna_idle_back' },
+  hero_jungle: { walkDown: 'hero_jungle_walk', walkUp: 'hero_jungle_walk_back', idleDown: 'hero_jungle_idle', idleUp: 'hero_jungle_idle_back' }, // Videos
   hero_asia: { walkDown: 'hero_asia_walk', walkUp: 'hero_asia_walk_back', idleDown: 'hero_asia_idle', idleUp: 'hero_asia_idle_back' }, // Videos
   // Taucher (Riff): dieselbe Schwimm-Animation beim Schwimmen und Stillhalten (Video)
   hero_swim: { walkDown: 'hero_swim_anim', walkUp: 'hero_swim_anim_back', idleDown: 'hero_swim_anim', idleUp: 'hero_swim_anim_back' },
@@ -34,6 +35,8 @@ const MOUNT_ANIMS = {
   ride_forest: { walkDown: 'ride_forest_walk', walkUp: 'ride_forest_walk_back', idleDown: 'ride_forest_idle', idleUp: 'ride_forest_idle_back' },
   ride_savanna: { walkDown: 'ride_savanna_walk', walkUp: 'ride_savanna_walk_back', idleDown: 'ride_savanna_idle', idleUp: 'ride_savanna_idle_back' },
   ride_asia: { walkDown: 'ride_asia_walk', walkUp: 'ride_asia_walk_back', idleDown: 'ride_asia_idle', idleUp: 'ride_asia_idle_back' }, // Videos
+  ride_jungle: { walkDown: 'ride_jungle_walk', walkUp: 'ride_jungle_walk_back', idleDown: 'ride_jungle_idle', idleUp: 'ride_jungle_idle_back' }, // Maultier
+  ride_reef: { walkDown: 'ride_reef_walk', walkUp: 'ride_reef_walk_back', idleDown: 'ride_reef_idle', idleUp: 'ride_reef_idle_back' }, // Seabob
 };
 // Reittier (Event): 30 % schneller, ruhigeres Wippen, Fußpunkt im Bild; die Kollision bleibt so klein wie zu Fuß
 const RIDE_SPEED = 1.3;
@@ -46,7 +49,7 @@ const WADE_SINK = 14; // so tief steht der Wasserbüffel im Wasser (bis zum halb
 const WADE_EASE = 6; // so schnell sinkt er ein bzw. taucht wieder auf
 const WADE_SPEED = 0.6; // im Wasser watet er langsamer
 // so viel höher als zu Fuß hält Henrik auf dem Reittier seine Hände (dort sitzen die Werkzeuge)
-const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31 };
+const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31, ride_jungle: 21, ride_reef: 14 };
 const RIDE_SHADOW_UP = 5; // Schatten unter der Mitte der Hufe statt unter dem vordersten Huf
 // Schwimmen (Unterwasserwelt): Henrik schwebt über dem Meeresboden, wippt langsam auf und ab und neigt sich in Schwimmrichtung
 const SWIM_LIFT = 16; // so hoch über dem Boden
@@ -54,6 +57,7 @@ const SWIM_BOB = 2.5; // so weit wippt er auf und ab
 const SWIM_BOB_RATE = 1.8; // ... so schnell
 const SWIM_TILT = 8; // so weit neigt er sich beim Schwimmen (Grad)
 const SWIM_SPEED = 0.75; // unter Wasser langsamer als zu Fuß
+const SWIM_HAND_LIFT = 6; // Taucher: die Hände sitzen höher als zu Fuß (lange Flossen unten)
 const STUNG_TIME = 1.5; // Qualle berührt: so lange (Sekunden) ist er langsamer ...
 const STUNG_SPEED = 0.5; // ... und zwar so viel
 // Kanu (Dschungel): Henrik sitzt darin (unten abgeschnitten), etwas schneller als zu Fuß, schaukelt leicht
@@ -87,7 +91,7 @@ export default class Player {
     this.sprite.setOrigin(0.5, 112 / 116).setScale(0.5);
     this.mount = null; // Reittier-Bild (z. B. ride_meadow) oder null
     this.speed = swim ? SPEED * SWIM_SPEED : SPEED;
-    this.handLift = 0; // Werkzeuge: so viel höher als zu Fuß
+    this.handLift = swim ? SWIM_HAND_LIFT : 0; // Werkzeuge: so viel höher als zu Fuß
     this.sink = 0; // so tief steht der Wasserbüffel gerade im Wasser
     // heller Ring auf dem Wasser um den watenden Büffel: die hintere Hälfte hinter ihm, die vordere davor
     this.ripples = [Math.PI, 0].map((from) => {
@@ -200,10 +204,15 @@ export default class Player {
       } else if (idle && this.scene.anims.exists(idle)) {
         this.sprite.play(idle, true);
         this.sprite.anims.timeScale = 1;
-      } else {
+      } else if (anims.stand) {
         // noch keine Steh-Animation in diese Richtung: ein ruhiges Bild der Laufanimation
         this.sprite.stop();
         this.sprite.setTexture(down ? anims.walkDown : anims.walkUp, (down ? anims.stand?.down : anims.stand?.up) ?? 0);
+      } else {
+        // keine Steh-Animation: das Standbild der Kleidung
+        this.sprite.stop();
+        this.sprite.setFlipX(false);
+        this.sprite.setTexture(this.texture, down ? (this.faceX < 0 ? FRAME.downLeft : FRAME.downRight) : this.faceX > 0 ? FRAME.upRight : FRAME.upLeft);
       }
     } else {
       this.sprite.stop();

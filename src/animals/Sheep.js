@@ -9,6 +9,13 @@ const GRAZE_TIME = [3, 6]; // so lange grast es
 // Bauernhof-Event: freie Schafe sehen reihum aus wie Kuh, Schwein oder Ziege (verhalten sich aber weiter wie Schafe).
 // Wer so gefangen wird, behält das Aussehen für immer; nach dem Event sind die freien wieder Schafe.
 const FARM_LOOKS = ['cow', 'pig', 'goat'];
+// Animationen der Bauernhof-Tiere (Videos); das Schwein steht im Standbild
+const FARM_ANIMS = {
+  cow: { walkDown: 'farm_cow_walk', walkUp: 'farm_cow_walk_back', idleDown: 'farm_cow_idle', idleUp: 'farm_cow_idle_back' },
+  pig: { walkDown: 'farm_pig_walk', walkUp: 'farm_pig_walk_back' },
+  goat: { walkDown: 'farm_goat_walk', walkUp: 'farm_goat_walk_back', idleDown: 'farm_goat_idle', idleUp: 'farm_goat_idle_back' },
+};
+const ALL_ANIM_KEYS = Object.values(FARM_ANIMS).flatMap((a) => Object.values(a));
 let farmCounter = 0;
 
 export default class Sheep extends Animal {
@@ -61,18 +68,30 @@ export default class Sheep extends Animal {
     return this.farm;
   }
 
-  // Lauf- und Stehanimation nur als normales Schaf; beim Grasen und als Bauernhof-Tier die Standbilder
+  // als Bauernhof-Tier dessen Bild und Animationen
+  baseTexture() {
+    const farm = this.farmLook();
+    return farm ? `farm_${farm}` : super.baseTexture();
+  }
+
+  animSet() {
+    const farm = this.farmLook();
+    return farm ? FARM_ANIMS[farm] : super.animSet();
+  }
+
+  // beim Grasen das Standbild
   animKey(moving) {
-    return this.grazing || this.farmLook() ? null : super.animKey(moving);
+    return this.grazing ? null : super.animKey(moving);
   }
 
   render(moving) {
     const farm = this.farmLook();
     const key = farm ? `farm_${farm}${this.grazing ? '_eat' : ''}` : this.grazing ? 'sheep_eat' : this.kind.texture;
     // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)
-    const onAnim = !farm && !this.grazing && Object.values(this.kind.anims).includes(this.sprite.texture.key);
+    const allAnims = [...Object.values(this.kind.anims), ...ALL_ANIM_KEYS];
+    const onAnim = !this.grazing && Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);
     if (this.sprite.texture.key !== key && !onAnim) {
-      const fromAnim = Object.values(this.kind.anims).includes(this.sprite.texture.key);
+      const fromAnim = allAnims.includes(this.sprite.texture.key);
       this.sprite.stop().setFlipX(false);
       this.sprite.setTexture(key, fromAnim ? 0 : this.sprite.frame.name);
     }

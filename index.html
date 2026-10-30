@@ -348,6 +348,18 @@
         font: 34px/1 Arial, sans-serif; background: rgba(60, 40, 20, 0.75); border: 3px solid #fff8e6;
         box-shadow: 0 4px 0 #2b1d14;
       }
+      /* am PC derselbe Knopf über dem Aktionshinweis, mit der Taste Q darauf (auch anklickbar) */
+      body.riding:not(.touch) #btn-swap {
+        display: block; position: fixed; right: 24px; bottom: 104px; width: 64px; height: 64px; border-radius: 50%; cursor: pointer;
+        font: 30px/1 Arial, sans-serif; background: rgba(60, 40, 20, 0.75); border: 3px solid #fff8e6;
+        box-shadow: 0 4px 0 #2b1d14;
+      }
+      body.riding:not(.touch) #btn-swap::after {
+        content: "Q"; position: absolute; right: -8px; bottom: -6px; padding: 1px 7px;
+        font: bold 16px/1.2 "Trebuchet MS", Arial, sans-serif; color: #2b1d14; background: #fff8e6; border-radius: 6px;
+        box-shadow: 0 2px 0 #2b1d14;
+      }
+      body.riding:not(.touch) #sign { bottom: 184px; } /* Wegweiser-Tafel dann über beiden */
       /* Menü-Knopf oben rechts (auch am PC; dort geht auch Esc) */
       #btn-menu {
         position: fixed; right: 16px; top: 16px; z-index: 5; width: 52px; height: 52px; border-radius: 12px; cursor: pointer;

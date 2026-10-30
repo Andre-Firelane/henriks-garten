@@ -164,6 +164,9 @@ const CHARACTERS = [
   // Reittiere (Event): Henrik auf Esel (Wiese), Pferd (Wald), Elefant (Savanne), Wasserbüffel (Asien), je in der Kleidung
   // der Welt. Gleicher Frame für alle; die Größe so, dass Henrik auf allen etwa gleich groß aussieht. Freigestellt mit npm run cutout
   { src: 'Sprites/Character Esel.png', out: 'ride_meadow.png', frameW: 160, frameH: 230, feetY: 224, figureH: 132 },
+  // Maultier (Reittier Dschungel) und Seabob (Reittier Riff), Standbilder wie beim Esel
+  { src: 'Sprites/Character Maultier.png', out: 'ride_jungle.png', frameW: 160, frameH: 230, feetY: 224, figureH: 140 },
+  { src: 'Sprites/Seabob.png', out: 'ride_reef.png', frameW: 160, frameH: 230, feetY: 224, figureH: 125, byComponents: true }, // Flossen ragen in die Nachbarspalten
   { src: 'Sprites/Character Pferd.png', out: 'ride_forest.png', frameW: 160, frameH: 230, feetY: 224, figureH: 150 },
   { src: 'Sprites/Character Elefant.png', out: 'ride_savanna.png', frameW: 160, frameH: 230, feetY: 224, figureH: 196 },
   { src: 'Sprites/Character Wasserbüffel.png', out: 'ride_asia.png', frameW: 160, frameH: 230, feetY: 224, figureH: 160 },
@@ -736,6 +739,96 @@ const ANIMATIONS = [
   { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', loopBlend: 1, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  // Wolf und schwarzer Wolf (Wolfsnacht): laufen und stehen (Videos), so groß wie wolf.png (Höhe 69). Heulen und Fressen
+  // bleiben Standbilder (siehe Wolf.js). Laufen läuft nicht sauber im Kreis: Zwischenbilder
+  { src: 'Animation/Wolf Läuft vorne.mp4', out: 'wolf_walk.png', loopBlend: 2, scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf läuft hinten.mp4', out: 'wolf_walk_back.png', loopBlend: 2, scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf idle vorne.webm', out: 'wolf_idle.png', scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf idle hinten.webm', out: 'wolf_idle_back.png', scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf2 läuft vorne.mp4', out: 'wolf2_walk.png', loopBlend: 1, scale: 0.231, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf2 läuft hinten.mp4', out: 'wolf2_walk_back.png', loopBlend: 1, scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf2 idle vorne.webm', out: 'wolf2_idle.png', scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf2 idle hinten.webm', out: 'wolf2_idle_back.png', scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
+  // Spielfigur im Dschungel läuft (Videos); im Stehen das Standbild (hero_jungle). Höhe wie die anderen Kleidungen (108)
+  { src: 'Animation/Character Dschungel läuft vorne.mp4', out: 'hero_jungle_walk.png', scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Charcter Dschungel läuft hinten.mp4', out: 'hero_jungle_walk_back.png', scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  // (kleine Videos mit 128 Pixeln nie vergrößern, Maßstab höchstens 1: sonst werden sie unscharf)
+  // Bauernhof-Event (Schafe als Kuh, Schwein, Ziege): laufen und stehen (Videos), so groß wie farm_*.png. Das Schwein
+  // hat kein Steh-Video (Standbild)
+  { src: 'Animation/Kuh läuft vorne.mp4', out: 'farm_cow_walk.png', loopBlend: 2, scale: 0.97, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Kuh läuft hinten.mp4', out: 'farm_cow_walk_back.png', scale: 0.235, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Kuh idle vorne.webm', out: 'farm_cow_idle.png', scale: 0.97, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/kuh hinten idle.webm', out: 'farm_cow_idle_back.png', scale: 1, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Schwein läuft vorne.mp4', out: 'farm_pig_walk.png', loopBlend: 1, scale: 0.63, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/schwein läuft hinten.mp4', out: 'farm_pig_walk_back.png', loopBlend: 1, scale: 0.63, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege läuft vorne.mp4', out: 'farm_goat_walk.png', scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege läuft hinten.mp4', out: 'farm_goat_walk_back.png', scale: 0.155, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege idle vorne.mp4', out: 'farm_goat_idle.png', scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege idle hinten.webm', out: 'farm_goat_idle_back.png', scale: 0.75, frameW: 80, frameH: 88, feetY: 84 },
+  // Dschungel (Videos). Fehlt eine Rückansicht, nimmt das Spiel die Vorderansicht; ohne Steh-Animation das Standbild.
+  // Kleine Videos (128/192 Pixel) nie über Maßstab 1. Spielfigur steht:
+  { src: 'Animation/Character Dschungel idle vorne.mp4', out: 'hero_jungle_idle.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character Dschungel idle hinten.mp4', out: 'hero_jungle_idle_back.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  // Ara und Blau-gelber Ara: sitzen (nur vorne) und fliegen (Flügelschlag, breiterer Rahmen)
+  { src: 'Animation/Ara idle vorne.webm', out: 'macaw_idle.png', scale: 0.195, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Ara2 idle vorne.webm', out: 'macaw2_idle.png', scale: 0.52, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Ara fliegt vorne.mp4', out: 'macaw_flap.png', loopBlend: 1, scale: 0.75, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara fliegt hinten.mp4', out: 'macaw_flap_back.png', scale: 0.15, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara2 fliegt vorne.mp4', out: 'macaw2_flap.png', loopBlend: 1, scale: 0.27, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara2 fliegt hinten.mp4', out: 'macaw2_flap_back.png', scale: 0.55, frameW: 104, frameH: 96, feetY: 92 },
+  // Schlange und grüne Baumschlange: kriechen (von vorne im Video nach links; ausgestreckt länger, breiterer Rahmen) und
+  // liegen eingerollt (nur vorne)
+  { src: 'Animation/Schlnage läuft vorne.webm', out: 'snake_walk.png', mirror: 'all', scale: 0.48, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange läuft_hinten.mp4', out: 'snake_walk_back.png', keyPerFrame: true, loopBlend: 1, scale: 0.27, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange idle vorne.mp4', out: 'snake_idle.png', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange2 läuft vorne.webm', out: 'snake2_walk.png', mirror: 'all', scale: 0.48, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange2 läuft hinten.webm', out: 'snake2_walk_back.png', scale: 0.5, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange2 idle vorne.webm', out: 'snake2_idle.png', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
+  // Vogelspinne und Goldene Vogelspinne: krabbeln
+  { src: 'Animation/Spinne läuft vorne.mp4', out: 'tarantula_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne2 läuft vorne.mp4', out: 'tarantula2_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, frameW: 64, frameH: 64, feetY: 60 },
+  // Brüllaffe und Gibbon: laufen und sitzen (Springen bleibt Standbild)
+  { src: 'Animation/Brüllaffe läuft vorne.mp4', out: 'howler_walk.png', mirror: 'all', scale: 0.81, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe läuft hinten.mp4', out: 'howler_walk_back.png', mirror: 'all', loopBlend: 2, scale: 0.81, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe Idle vorne.webm', out: 'howler_idle.png', scale: 0.81, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Gibbon läuft vorne.mp4', out: 'gibbon_walk.png', loopBlend: 1, scale: 0.196, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Gibbon läuft hinten.mp4', out: 'gibbon_walk_back.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Gibbon idle vorne.mp4', out: 'gibbon_idle.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Gibbon idle hinten.webm', out: 'gibbon_idle_back.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
+  // Henrik paddelt im Kanu (etwas breiter als canoe_hero.png, Paddel)
+  { src: 'Animation/Kanu paddelt vorne.mp4', out: 'canoe_paddle_anim.png', loopBlend: 1, scale: 0.34, frameW: 160, frameH: 152, feetY: 148 },
+  { src: 'Animation/Kanu paddelt hinten.mp4', out: 'canoe_paddle_anim_back.png', loopBlend: 2, scale: 0.34, frameW: 160, frameH: 152, feetY: 148 },
+  // Reittiere: Maultier (Dschungel) und Seabob (Riff), laufen bzw. schwimmen und stehen
+  { src: 'Animation/Maultier läuft vorne.mp4', out: 'ride_jungle_walk.png', loopBlend: 2, scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Maultier läuft hinten.mp4', out: 'ride_jungle_walk_back.png', range: [18, 57], scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Maultier idle vorne.mp4', out: 'ride_jungle_idle.png', scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Maultier idle hinten.mp4', out: 'ride_jungle_idle_back.png', scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  // Seabob von vorne: der Hintergrund wechselt im Video zwischen zwei Grüntönen
+  { src: 'Animation/Seabob schwimmt vorne.mp4', out: 'ride_reef_walk.png', keyPerFrame: true, scale: 0.25, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Seabob schwimmt hinten.mp4', out: 'ride_reef_walk_back.png', range: [15, 44], loopBlend: 1, scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Seabob idle vorne.mp4', out: 'ride_reef_idle.png', keyPerFrame: true, clipAbove: 150, scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Seabob idle hinten.mp4', out: 'ride_reef_idle_back.png', scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
+  // Riff-Tiere schwimmen (Videos; dieselbe Animation beim Schwimmen und Stillhalten), vorne nach unten-rechts, hinten nach
+  // oben-rechts; Rahmen wie die Standbilder (etwas breiter, wo Tentakel und Flossen weiter ausholen), Maßstab so, dass sie
+  // im Schnitt so groß sind wie diese. Der Rochen von vorne und das Seepferdchen (vorne und hinten) schauen im Video nach links.
+  // loopBlend, wo das Video nicht ganz sauber im Kreis läuft
+  { src: 'Animation/Rochen schwimmt vorne.mp4', out: 'ray_swim.png', mirror: 'all', scale: 0.92, frameW: 112, frameH: 80, feetY: 76 },
+  { src: 'Animation/Rochen schwimmt hinten.mp4', out: 'ray_swim_back.png', loopBlend: 1, scale: 0.2, frameW: 112, frameH: 80, feetY: 76 },
+  { src: 'Animation/Rochen2 schwimmt vorne.mp4', out: 'ray2_swim.png', mirror: 'all', scale: 0.92, frameW: 112, frameH: 80, feetY: 76 },
+  { src: 'Animation/Rochen2 schwimmt hinten.mp4', out: 'ray2_swim_back.png', loopBlend: 1, scale: 0.92, frameW: 112, frameH: 80, feetY: 76 },
+  { src: 'Animation/Seepferdchen schwimmt vorne.mp4', out: 'seahorse_swim.png', mirror: 'all', scale: 0.455, frameW: 48, frameH: 64, feetY: 60 },
+  { src: 'Animation/Seepferdchen schwimmt hinten.mp4', out: 'seahorse_swim_back.png', mirror: 'all', scale: 0.143, frameW: 48, frameH: 64, feetY: 60 },
+  { src: 'Animation/Schildkröte schwimmt vorne.mp4', out: 'turtle_swim.png', scale: 0.85, frameW: 112, frameH: 88, feetY: 84 },
+  // von hinten steigen Blasen über und unter ihr auf: oben und unten abgeschnitten (das Spiel zeichnet eigene)
+  { src: 'Animation/Schildkröte schwimmt hinten.mp4', out: 'turtle_swim_back.png', clipAbove: 110, clipBelow: 530, scale: 0.19, frameW: 112, frameH: 88, feetY: 84 },
+  // Krake: nur von vorne (auch nach oben)
+  { src: 'Animation/Krake schwimmt vorne.mp4', out: 'octopus_swim.png', loopBlend: 1, scale: 0.75, frameW: 88, frameH: 72, feetY: 68 },
+  { src: 'Animation/Qualle schwimmt vorne.mp4', out: 'jellyfish_swim.png', mirror: 'all', scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
+  { src: 'Animation/Qualle schwimmt hinten.mp4', out: 'jellyfish_swim_back.png', loopBlend: 1, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
+  { src: 'Animation/Qualle2 schwimt vorne.mp4', out: 'jellyfish2_swim.png', loopBlend: 2, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
+  { src: 'Animation/Qualle2 schwimmt hinten.mp4', out: 'jellyfish2_swim_back.png', loopBlend: 2, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
   // Henrik taucht (Riff): eine Animation für Schwimmen und Stillhalten, von vorne und hinten. Die Blasen aus dem Video
   // (oberhalb des Kopfs) weg, das Spiel zeichnet eigene; so groß wie hero_swim.png (Kopf bis Flossen ca. 105).
   // Vorne: kein sauberer Schleifenpunkt, zwei Zwischenbilder zurück zum Anfang. Hinten: Bilder 22-85 laufen fast im Kreis
@@ -789,10 +882,12 @@ const ANIMATIONS = [
 // range: [von, bis] nur diese Bilder (z. B. ein Ausschnitt eines Videos, der sauber im Kreis läuft);
 // stabilize: Wackeln der Kamera ausgleichen (siehe stabilizeFrames); brightness: Helligkeit mal diesen Faktor;
 // clipBelow: alles unterhalb dieser Zeile (in der Zelle) weg, z. B. was der Figur herunterfällt und unter ihren Füßen landet;
-// clipAbove: ebenso alles oberhalb (z. B. aufsteigende Blasen, die das Spiel selbst zeichnet)
-function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove }) {
+// clipAbove: ebenso alles oberhalb (z. B. aufsteigende Blasen, die das Spiel selbst zeichnet);
+// keyPerFrame: Video wechselt zwischen Hintergrundtönen (Hintergrund je Bild erkennen, siehe readVideo);
+// dropShadowGreen: dunkelgrüne Reste (gemalter Schatten auf dem Greenscreen): Pixel mit so viel mehr Grün als Rot/Blau weg
+function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
-  const img = video ? readVideo(src) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
+  const img = video ? readVideo(src, keyPerFrame) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
   count ??= cols * rows;
   const { width: W, height: H, data } = img;
@@ -812,6 +907,9 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
   }
   if (clipBelow !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch > clipBelow) data[k + 3] = 0;
+  }
+  if (dropShadowGreen !== undefined) {
+    for (let k = 0; k < data.length; k += 4) if (data[k + 1] - Math.max(data[k], data[k + 2]) > dropShadowGreen) data[k + 3] = 0;
   }
   if (clipAbove !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch < clipAbove) data[k + 3] = 0;
@@ -899,7 +997,7 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
 // wird der grüne Schimmer entfernt (Grün höchstens so stark wie Rot oder Blau)
 const KEY_NEAR = 45; // so nah an einer Hintergrundfarbe: ganz durchsichtig
 const KEY_FAR = 100; // ab so weit weg: ganz Figur
-function readVideo(src) {
+function readVideo(src, perFrame = false) {
   const file = path.resolve(src);
   const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file])
     .toString().trim().split(',').map(Number);
@@ -909,25 +1007,40 @@ function readVideo(src) {
 
   // Hintergrundfarben: Median am Rand des ersten Bilds und häufigstes kräftiges, helles Grün (der Rand kann selbst
   // ein dunkleres Grün sein)
-  const edge = [];
-  for (let x = 0; x < w; x++) edge.push(at(0, x, 0), at(0, x, h - 1));
-  for (let y = 0; y < h; y++) edge.push(at(0, 0, y), at(0, w - 1, y));
-  const median = (c) => edge.map((s) => raw[s + c]).sort((p, q) => p - q)[edge.length >> 1];
-  const border = [median(0), median(1), median(2)];
+  // Randton je Bild (manche Videos wechseln mittendrin zwischen zwei Grüntönen); kräftiges Grün aus allen Bildern
+  const borderOf = (f) => {
+    const edge = [];
+    for (let x = 0; x < w; x++) edge.push(at(f, x, 0), at(f, x, h - 1));
+    for (let y = 0; y < h; y++) edge.push(at(f, 0, y), at(f, w - 1, y));
+    const median = (c) => edge.map((s) => raw[s + c]).sort((p, q) => p - q)[edge.length >> 1];
+    return [median(0), median(1), median(2)];
+  };
   const counts = new Map();
-  for (let s = 0; s < w * h * 3; s += 3) {
-    const [r, g, b] = [raw[s], raw[s + 1], raw[s + 2]];
-    if (g < 200 || g - Math.max(r, b) < 120) continue;
-    const q = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
-    counts.set(q, (counts.get(q) ?? 0) + 1);
+  // perFrame (Option keyPerFrame): kräftiges Grün aus Bildern über das ganze Video, Randton je Bild; sonst beides aus dem
+  // ersten Bild (so bleiben die übrigen Videos genau wie bisher)
+  const stride = perFrame ? Math.max(1, Math.floor(frames / 8)) : frames;
+  for (let f = 0; f < frames; f += stride) {
+    for (let s = f * w * h * 3; s < (f + 1) * w * h * 3; s += 3) {
+      const [r, g, b] = [raw[s], raw[s + 1], raw[s + 2]];
+      if (g < 200 || g - Math.max(r, b) < 120) continue;
+      const q = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+      counts.set(q, (counts.get(q) ?? 0) + 1);
+    }
   }
   let top = null;
   for (const [q, c] of counts) if (!top || c > top[1]) top = [q, c];
-  const key = top ? [((top[0] >> 10) << 3) + 4, (((top[0] >> 5) & 31) << 3) + 4, ((top[0] & 31) << 3) + 4] : border;
+  const keyColor = top ? [((top[0] >> 10) << 3) + 4, (((top[0] >> 5) & 31) << 3) + 4, ((top[0] & 31) << 3) + 4] : null;
 
   // Abstand einer Farbe zur Strecke zwischen den beiden Hintergrundfarben (deckt auch Mischpixel an der Kastenkante ab)
-  const d = key.map((v, c) => border[c] - v);
-  const dd = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+  let key;
+  let d;
+  let dd;
+  const useFrame = (f) => {
+    const border = borderOf(perFrame ? f : 0);
+    key = keyColor ?? border;
+    d = key.map((v, c) => border[c] - v);
+    dd = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+  };
   const dist = (r, g, b) => {
     const p = [r - key[0], g - key[1], b - key[2]];
     const t = dd ? Math.max(0, Math.min(1, (p[0] * d[0] + p[1] * d[1] + p[2] * d[2]) / dd)) : 0;
@@ -941,6 +1054,7 @@ function readVideo(src) {
   const d0 = new Float32Array(w * h);
   const seen = new Uint8Array(w * h);
   for (let f = 0; f < frames; f++) {
+    useFrame(f);
     seen.fill(0);
     const stack = [];
     for (let y = 0; y < h; y++) {

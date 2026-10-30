@@ -194,17 +194,30 @@ export default class Macaw extends Animal {
     const fly = this.flying() || follow;
     const altitude = follow ? FOLLOW_UP : this.altitude;
     const base = this.baseTexture();
-    const key = fly ? `${base}_fly` : base;
-    if (this.sprite.texture.key !== key && this.scene.textures.exists(key)) this.sprite.setTexture(key, this.sprite.frame.name);
-    super.render(moving && !fly && !altitude);
-    // im Flug immer die Vorderansicht nach rechts (Bild 1), nach links gespiegelt – auch beim Flug nach oben
-    if (fly) this.sprite.setFrame(0).setFlipX(this.faceX < 0);
-    else this.sprite.setFlipX(false);
+    // Flügelschlag-Animation (Video) für die Blickrichtung, sonst das Flugbild
+    const flaps = this.skin ? this.kind.skinFlyAnims?.[this.skin] : this.kind.flyAnims;
+    const flap = fly && flaps && (this.faceY > 0 ? flaps.down : flaps.up);
+    const flapping = flap && this.scene.anims.exists(flap);
+    // gelandet: zurück aufs normale Bild, damit die Sitz-Animation greift
+    if (!fly && flaps && Object.values(flaps).includes(this.sprite.texture.key)) this.showStill(base);
+    if (flapping) {
+      if (!this.sprite.anims.isPlaying || this.sprite.anims.currentAnim?.key !== flap) this.sprite.play(flap);
+      this.sprite.setFlipX(this.faceX < 0);
+      this.placeSprite(false);
+    } else {
+      const key = fly ? `${base}_fly` : base;
+      if (fly) this.sprite.stop();
+      if (this.sprite.texture.key !== key && this.scene.textures.exists(key)) this.sprite.setTexture(key, this.sprite.frame.name);
+      super.render(moving && !fly && !altitude);
+      // im Flug immer die Vorderansicht nach rechts (Bild 1), nach links gespiegelt – auch beim Flug nach oben
+      if (fly) this.sprite.setFrame(0).setFlipX(this.faceX < 0);
+      else if (!this.sprite.anims.isPlaying) this.sprite.setFlipX(false);
+    }
     this.shadow.setVisible(fly || !altitude); // oben in der Krone ohne Schatten am Boden
     if (!altitude && !fly) return;
     // in der Luft bzw. oben in der Krone: höher gezeichnet; im Flug mit Flügelschlag-Wippen
-    const flap = fly ? Math.sin(this.scene.time.now / 90) * 1.5 : 0;
-    this.sprite.setY(this.sprite.y - altitude + flap);
+    const bob = fly && !flapping ? Math.sin(this.scene.time.now / 90) * 1.5 : 0; // Flügelschlag-Wippen (ohne Animation)
+    this.sprite.setY(this.sprite.y - altitude + bob);
     this.sprite.setAngle(0); // im Flug aufrecht (wie gemalt)
     this.sprite.setDepth(altitude > 30 && fly ? HIGH_DEPTH : this.y + 2);
     this.shadow.setScale(1 - Math.min(0.6, altitude / 160));

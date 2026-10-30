@@ -201,15 +201,28 @@ export default class Howler extends Animal {
     });
   }
 
+  // fressen = sitzen: mit Sitz-Animation (Banane in der Hand) die statt des Fress-Standbilds
+  setEating(on) {
+    super.setEating(on);
+    if (this.animSet()?.idleDown && this.scene.anims.exists(this.animSet().idleDown)) this.eatingLook = false;
+  }
+
   render(moving) {
     // oben im Baum sieht man ihn nicht (nur beim Springen)
     const hidden = this.state === 'wild' && this.phase === 'tree';
     this.sprite.setVisible(!hidden);
     this.shadow.setVisible(!hidden && this.lift < CROWN_UP * 0.5);
-    // im Sprung das Sprungbild (Arme nach vorn)
-    const key = this.phase === 'jump' && this.scene.textures.exists(`${this.species}_jump`) ? `${this.species}_jump` : this.lookTexture();
-    if (this.sprite.texture.key !== key) this.sprite.setTexture(key, this.sprite.frame.name);
+    // im Sprung das Sprungbild (Arme nach vorn, Standbild); sonst laufen bzw. sitzen (Animationen, siehe Animal.render)
+    const jump = this.phase === 'jump' && this.scene.textures.exists(`${this.species}_jump`) ? `${this.species}_jump` : null;
+    if (!jump && this.sprite.texture.key === `${this.species}_jump`) this.showStill(this.lookTexture());
     super.render(moving && !this.lift);
+    if (jump) {
+      const f = this.kind.frames;
+      this.sprite.stop();
+      this.sprite.setFlipX(false);
+      if (this.sprite.texture.key !== jump) this.sprite.setTexture(jump);
+      this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
+    }
     if (this.lift) {
       this.sprite.setY(this.sprite.y - this.lift);
       if (this.phase === 'jump') this.sprite.setDepth(JUMP_DEPTH); // vor den Kronen

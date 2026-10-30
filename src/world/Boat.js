@@ -16,6 +16,8 @@ const CANOE_ORIGIN_Y = 148 / 152; // Fuß des Bilds (Unterkante des Rumpfs) ...
 const CANOE_DOWN = 14; // ... liegt so weit unter Henriks Platz, damit das Boot um ihn herum liegt
 // Bilder der Kanus (leer und mit Henrik darin) je Blickrichtung wie bei der Spielfigur
 const FRAME = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
+// Henrik paddelt (Videos): beim Fahren nach unten bzw. oben, nach links gespiegelt; im Stillstand das Standbild
+const PADDLE_ANIMS = { down: 'canoe_paddle_anim', up: 'canoe_paddle_anim_back' };
 const GHOST_DEPTH = 99000; // die Kontur liegt über allem auf der Karte (unter Nacht, Wetter und Beschriftungen) ...
 const GHOST_ALPHA = 0.55; // ... und scheint so durch Bäume und Pflanzen, die das Kanu verdecken (nur, wenn es verdeckt ist)
 const GHOST_CHECK = 0.15; // so oft (Sekunden) wird geprüft, ob etwas das Kanu verdeckt
@@ -32,6 +34,11 @@ export default class Boat {
     this.hidden = false; // verdeckt gerade etwas das Kanu?
     this.checkIn = 0;
     outlineTexture(scene, 'canoe_hero');
+    // auch für die Paddel-Animationen (gleich beim Start, sonst ruckelt es beim ersten Paddeln)
+    for (const anim of Object.values(PADDLE_ANIMS)) {
+      const tex = scene.anims.get(anim)?.frames[0]?.textureKey;
+      if (tex) outlineTexture(scene, tex);
+    }
     this.time = 0;
     this.paddle = null; // Geräusch beim Paddeln (wird beim ersten Mal nachgeladen)
     scene.events.once('shutdown', () => this.paddle?.destroy());
@@ -63,12 +70,25 @@ export default class Boat {
     const key = this.state.riding ? 'canoe_hero' : 'canoe';
     const bob = Math.sin(this.time * 2.2) * BOB;
     const tilt = this.state.riding && p.moving ? Math.sin(this.time * 6) * 1.5 : 0; // paddelt
+    const anim = this.state.riding && p.moving ? (p.faceY > 0 ? PADDLE_ANIMS.down : PADDLE_ANIMS.up) : null;
+    if (anim && this.scene.anims.exists(anim)) {
+      if (!this.img.anims.isPlaying || this.img.anims.currentAnim?.key !== anim) this.img.play(anim);
+      this.img.setFlipX(p.faceX < 0);
+    } else {
+      this.img.stop();
+      this.img.setFlipX(false).setTexture(key, this.state.frame);
+    }
     this.img
-      .setTexture(key, this.state.frame)
       .setPosition(this.state.x, this.state.y + CANOE_DOWN + bob)
-      .setAngle(tilt)
+      .setAngle(anim ? 0 : tilt)
       .setDepth(this.state.y + (this.state.riding ? 0 : -0.3));
-    this.ghost.setTexture(`${key}_outline`, this.state.frame).setPosition(this.img.x, this.img.y).setAngle(tilt);
+    // Kontur: genau das gerade gezeigte Bild (beim Paddeln das Bild der Animation, gespiegelt wie das Kanu)
+    this.ghost
+      .setTexture(outlineTexture(this.scene, this.img.texture.key), this.img.frame.name)
+      .setOrigin(this.img.originX, this.img.originY)
+      .setFlipX(this.img.flipX)
+      .setPosition(this.img.x, this.img.y)
+      .setAngle(this.img.angle);
     this.checkIn -= dt;
     if (this.checkIn <= 0) {
       this.checkIn = GHOST_CHECK;
@@ -173,7 +193,7 @@ export default class Boat {
 }
 
 // Kontur eines Bilds (heller Rand außen um alles Sichtbare), einmal erzeugt und gemerkt; mit denselben Einzelbildern
-// wie das Spritesheet
+// wie das Spritesheet (auch die Bildstreifen der Animationen)
 function outlineTexture(scene, key) {
   const out = `${key}_outline`;
   if (scene.textures.exists(out)) return out;

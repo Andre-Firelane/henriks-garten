@@ -81,10 +81,18 @@ export default class Wolf extends Animal {
     // heulend bzw. fressend (beim Ruhen) mit eigenem Bild (schwarzer Wolf: wolf2_howl, wolf2_eat)
     const base = this.skin ?? 'wolf';
     const pose = this.state === 'wild' && this.pack && !this.pack.running ? (this.pack.phase === 'howl' ? `${base}_howl` : this.pack.phase === 'rest' && this.eats ? `${base}_eat` : null) : null;
+    // nach dem Heulen bzw. Fressen zurück aufs normale Bild, damit Lauf- und Steh-Animation wieder greifen
+    const key = this.sprite.texture.key;
+    if (!pose && (key === `${base}_howl` || (key === `${base}_eat` && !this.eatingLook))) this.showStill(this.lookTexture());
     super.render(moving);
-    // erst danach: die Grundlage setzt sonst wieder das Laufbild
-    if (pose && this.sprite.texture.key !== pose) this.sprite.setTexture(pose, this.sprite.frame.name);
-    else if (!pose && this.sprite.texture.key.endsWith('_howl')) this.sprite.setTexture(this.lookTexture(), this.sprite.frame.name);
+    // erst danach: Heulen und Fressen als Standbild in Blickrichtung (die Grundlage setzt sonst die Animation)
+    if (pose) {
+      const f = this.kind.frames;
+      this.sprite.stop();
+      this.sprite.setFlipX(false);
+      if (this.sprite.texture.key !== pose) this.sprite.setTexture(pose);
+      this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
+    }
   }
 }
 

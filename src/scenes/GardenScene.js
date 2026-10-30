@@ -398,7 +398,7 @@ const BALL_KEEP = 20000; // so lange bleibt der Ball liegen, wenn der Tiger nich
 const MAX_MACAQUES = 6; // so viele Japanmakaken baden höchstens in den wilden Quellen (sie verteilen sich)
 const FLAMINGO_EVERY = [6, 12]; // Sekunden zwischen zwei Flamingos (Reiher: 50–110)
 const FLAMINGO_LAND = 0.6; // so oft landen sie (am Wasser)
-const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_savanna', asia: 'ride_asia' };
+const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_savanna', asia: 'ride_asia', jungle: 'ride_jungle', reef: 'ride_reef' }; // Dschungel: Maultier, Riff: Seabob
 const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),

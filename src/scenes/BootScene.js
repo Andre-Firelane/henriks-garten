@@ -169,6 +169,79 @@ const SAVANNA_ANIMS = {
 // (Anzahl 1) ist ein Standbild, das wie eine Animation eingesetzt wird (Japanmakak sitzt)
 const VIDEO_ANIMS = {
   antelope_walk: [72, 100, 24],
+  // Wolf und schwarzer Wolf (Wolfsnacht); Dschungel-Kleidung der Spielfigur
+  wolf_walk: [80, 80, 26],
+  wolf_walk_back: [80, 80, 61],
+  wolf_idle: [80, 80, 107],
+  wolf_idle_back: [80, 80, 107],
+  wolf2_walk: [80, 80, 25],
+  wolf2_walk_back: [80, 80, 27],
+  wolf2_idle: [80, 80, 107],
+  wolf2_idle_back: [80, 80, 107],
+  hero_jungle_walk: [88, 116, 25],
+  hero_jungle_walk_back: [88, 116, 24],
+  hero_jungle_idle: [88, 116, 53],
+  hero_jungle_idle_back: [88, 116, 84],
+  // Bauernhof-Event: Kuh, Schwein, Ziege
+  farm_cow_walk: [96, 88, 106],
+  farm_cow_walk_back: [96, 88, 64],
+  farm_cow_idle: [96, 88, 107],
+  farm_cow_idle_back: [96, 88, 107],
+  farm_pig_walk: [80, 88, 26],
+  farm_pig_walk_back: [80, 88, 27],
+  farm_goat_walk: [80, 88, 59],
+  farm_goat_walk_back: [80, 88, 24],
+  farm_goat_idle: [80, 88, 51],
+  farm_goat_idle_back: [80, 88, 107],
+  // Dschungel-Tiere
+  macaw_idle: [64, 80, 107],
+  macaw2_idle: [64, 80, 107],
+  macaw_flap: [104, 96, 87],
+  macaw_flap_back: [104, 96, 24],
+  macaw2_flap: [104, 96, 39],
+  macaw2_flap_back: [104, 96, 104],
+  snake_walk: [96, 72, 107],
+  snake_walk_back: [96, 72, 94],
+  snake_idle: [72, 72, 51],
+  snake2_walk: [96, 72, 107],
+  snake2_walk_back: [96, 72, 107],
+  snake2_idle: [72, 72, 107],
+  tarantula_walk: [64, 64, 24],
+  tarantula_walk_back: [64, 64, 24],
+  tarantula2_walk: [64, 64, 24],
+  tarantula2_walk_back: [64, 64, 86],
+  howler_walk: [88, 88, 26],
+  howler_walk_back: [88, 88, 34],
+  howler_idle: [88, 88, 107],
+  gibbon_walk: [88, 88, 25],
+  gibbon_walk_back: [88, 88, 34],
+  gibbon_idle: [88, 88, 68],
+  gibbon_idle_back: [88, 88, 107],
+  canoe_paddle_anim: [160, 152, 29],
+  canoe_paddle_anim_back: [160, 152, 49],
+  // Reittiere Maultier (Dschungel) und Seabob (Riff)
+  ride_jungle_walk: [160, 230, 26],
+  ride_jungle_walk_back: [160, 230, 40],
+  ride_jungle_idle: [160, 230, 49],
+  ride_jungle_idle_back: [160, 230, 51],
+  ride_reef_walk: [160, 230, 32],
+  ride_reef_walk_back: [160, 230, 31],
+  ride_reef_idle: [160, 230, 90],
+  ride_reef_idle_back: [160, 230, 50],
+  // Riff-Tiere schwimmen (auch im Stillhalten)
+  ray_swim: [112, 80, 50],
+  ray_swim_back: [112, 80, 47],
+  ray2_swim: [112, 80, 50],
+  ray2_swim_back: [112, 80, 47],
+  seahorse_swim: [48, 64, 103],
+  seahorse_swim_back: [48, 64, 35],
+  turtle_swim: [112, 88, 102],
+  turtle_swim_back: [112, 88, 48],
+  octopus_swim: [88, 72, 55],
+  jellyfish_swim: [72, 96, 42],
+  jellyfish_swim_back: [72, 96, 61],
+  jellyfish2_swim: [72, 96, 45],
+  jellyfish2_swim_back: [72, 96, 60],
   // Spielfigur taucht (Riff), für Schwimmen und Stillhalten
   hero_swim_anim: [88, 116, 50],
   hero_swim_anim_back: [88, 116, 65],
@@ -314,7 +387,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['koi1', 'koi2', 'koi3']) this.load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
     this.load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
     for (let n = 1; n <= 8; n++) this.load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
-    for (const w of ['meadow', 'forest', 'savanna', 'asia']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
+    for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     // Esel, Pferd und Elefant laufen und stehen (Test)
     for (const w of ['meadow', 'forest']) {
       for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) this.load.spritesheet(`ride_${w}_${k}`, `assets/ride_${w}_${k}.png`, { frameWidth: 160, frameHeight: 230 });

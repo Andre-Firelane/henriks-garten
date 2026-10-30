@@ -120,7 +120,7 @@ export default class Jellyfish extends ReefFish {
     }
     // pulsieren: beim Zusammenziehen schmaler und länger
     const s = this.swimScale() * this.babyScale();
-    const squeeze = this.rising() ? Math.sin((this.pulse / RISE_TIME) * Math.PI) * 0.12 : 0;
+    const squeeze = this.rising() && !this.swimAnim() ? Math.sin((this.pulse / RISE_TIME) * Math.PI) * 0.12 : 0; // mit Animation pulsiert sie im Video
     this.sprite.setScale(s * (1 - squeeze), s * (1 + squeeze));
     const dark = this.dark();
     if (dark) this.sprite.setDepth(DARK_DEPTH + 10 + this.y * 0.001);

@@ -235,6 +235,9 @@ export const SPECIES = {
   wolf: {
     texture: 'wolf',
     eatTexture: 'wolf_eat', // beim Fressen am Futter im Tierpark
+    // Videos; Heulen und Fressen bleiben Standbilder (siehe Wolf.js)
+    anims: { walkDown: 'wolf_walk', walkUp: 'wolf_walk_back', idleDown: 'wolf_idle', idleUp: 'wolf_idle_back' },
+    skinAnims: { wolf2: { walkDown: 'wolf2_walk', walkUp: 'wolf2_walk_back', idleDown: 'wolf2_idle', idleUp: 'wolf2_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 22,
@@ -398,6 +401,11 @@ export const SPECIES = {
   // Ara (Dschungel): paarweise in den Uferbäumen, im Tiefflug übers Wasser mit dem Kescher zu fangen (siehe Macaw.js)
   macaw: {
     texture: 'macaw',
+    // Videos: sitzt (nur vorne, auch mit Blick nach oben); fliegt mit Flügelschlag (siehe Macaw.js)
+    anims: { idleDown: 'macaw_idle', idleUp: 'macaw_idle' },
+    skinAnims: { macaw2: { idleDown: 'macaw2_idle', idleUp: 'macaw2_idle' } },
+    flyAnims: { down: 'macaw_flap', up: 'macaw_flap_back' },
+    skinFlyAnims: { macaw2: { down: 'macaw2_flap', up: 'macaw2_flap_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 18,
@@ -413,6 +421,8 @@ export const SPECIES = {
   // Schlange und Vogelspinne (Dschungel): verstecken sich im Dickicht, fliehen beim Wegschlagen ins nächste (siehe Critter.js)
   snake: {
     texture: 'snake',
+    anims: { walkDown: 'snake_walk', walkUp: 'snake_walk_back', idleDown: 'snake_idle', idleUp: 'snake_idle' }, // Videos
+    skinAnims: { snake2: { walkDown: 'snake2_walk', walkUp: 'snake2_walk_back', idleDown: 'snake2_idle', idleUp: 'snake2_idle' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 14,
@@ -428,6 +438,8 @@ export const SPECIES = {
   },
   tarantula: {
     texture: 'tarantula',
+    anims: { walkDown: 'tarantula_walk', walkUp: 'tarantula_walk_back' }, // Videos; im Stehen das Standbild
+    skinAnims: { tarantula2: { walkDown: 'tarantula2_walk', walkUp: 'tarantula2_walk_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 60 / 64,
     speed: 12,
@@ -444,6 +456,7 @@ export const SPECIES = {
   // Gibbon (Dschungel, nur bei Nebel): wie der Brüllaffe (siehe Howler.js)
   gibbon: {
     texture: 'gibbon',
+    anims: { walkDown: 'gibbon_walk', walkUp: 'gibbon_walk_back', idleDown: 'gibbon_idle', idleUp: 'gibbon_idle_back' }, // Videos; Springen: Standbild
     eatTexture: 'gibbon_eat',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
@@ -460,6 +473,7 @@ export const SPECIES = {
   // Brüllaffe (Dschungel): sitzt unsichtbar oben in den Urwaldbäumen, kommt für eine Banane herunter (siehe Howler.js)
   howler: {
     texture: 'howler',
+    anims: { walkDown: 'howler_walk', walkUp: 'howler_walk_back', idleDown: 'howler_idle', idleUp: 'howler_idle' }, // Videos; Springen: Standbild
     eatTexture: 'howler_eat', // sitzt und frisst die Banane
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
@@ -641,6 +655,7 @@ export const SPECIES = {
   // swimFrames: Bilder im Spritesheet "seahorse", frames/originY gelten für den Beutel an Land
   seahorse: {
     texture: 'seahorse',
+    anims: { walkDown: 'seahorse_swim', walkUp: 'seahorse_swim_back' }, // schwimmt (auch im Stillhalten), siehe ReefFish.render
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -659,6 +674,7 @@ export const SPECIES = {
   // swimFrames: Bilder im Spritesheet "octopus", frames/originY gelten für den Beutel an Land
   octopus: {
     texture: 'octopus',
+    anims: { walkDown: 'octopus_swim', walkUp: 'octopus_swim' }, // nur von vorne
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -678,6 +694,7 @@ export const SPECIES = {
   // swimFrames: Bilder im Spritesheet "turtle", frames/originY gelten für den Beutel an Land
   turtle: {
     texture: 'turtle',
+    anims: { walkDown: 'turtle_swim', walkUp: 'turtle_swim_back' }, // im Netz das Standbild (siehe ReefFish.swimAnim)
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -696,6 +713,8 @@ export const SPECIES = {
   // swimFrames: Bilder im Spritesheet "jellyfish", frames/originY gelten für den Beutel an Land
   jellyfish: {
     texture: 'jellyfish',
+    anims: { walkDown: 'jellyfish_swim', walkUp: 'jellyfish_swim_back' },
+    skinAnims: { jellyfish2: { walkDown: 'jellyfish2_swim', walkUp: 'jellyfish2_swim_back' } }, // Goldqualle
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -714,6 +733,8 @@ export const SPECIES = {
   // frames/originY gelten für den Beutel an Land
   ray: {
     texture: 'ray',
+    anims: { walkDown: 'ray_swim', walkUp: 'ray_swim_back' },
+    skinAnims: { ray2: { walkDown: 'ray2_swim', walkUp: 'ray2_swim_back' } }, // Mantarochen
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },

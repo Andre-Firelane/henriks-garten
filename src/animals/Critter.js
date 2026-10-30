@@ -89,8 +89,9 @@ export default class Critter extends Animal {
 
   render(moving) {
     super.render(moving);
-    // flach am Boden: kein Hüpfen, nur ein leichtes Schlängeln bzw. Trippeln
-    this.sprite.setAngle(moving ? Math.sin(this.walkTime * (this.species === 'snake' ? 9 : 22)) * (this.species === 'snake' ? 4 : 2) : 0);
+    // flach am Boden: kein Hüpfen, nur ein leichtes Schlängeln bzw. Trippeln (mit Animation bewegt sie sich im Video)
+    const wiggle = moving && !this.sprite.anims.isPlaying;
+    this.sprite.setAngle(wiggle ? Math.sin(this.walkTime * (this.species === 'snake' ? 9 : 22)) * (this.species === 'snake' ? 4 : 2) : 0);
   }
 
   catch() {

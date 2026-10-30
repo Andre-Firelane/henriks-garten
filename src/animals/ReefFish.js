@@ -51,6 +51,15 @@ export default class ReefFish extends Animal {
     return tank ? TANK_SCALE : SCALE;
   }
 
+  // Schwimm-Animation für die Blickrichtung (kind.anims bzw. skinAnims), oder null (dann Standbild); im Netz zappelt
+  // die Schildkröte im Standbild
+  swimAnim() {
+    if (this.netted?.()) return null;
+    const set = this.animSet();
+    const key = set && (this.faceY > 0 ? set.walkDown : set.walkUp);
+    return key && this.scene.anims.exists(key) ? key : null;
+  }
+
   // Tierbaby (Event): kleiner als die Eltern
   babyScale() {
     return this.baby ? BABY_SCALE : 1;
@@ -175,7 +184,10 @@ export default class ReefFish extends Animal {
   render(moving) {
     const bag = this.state === 'following' && !LEVEL.sea;
     if (bag) {
-      if (this.sprite.texture.key !== this.kind.bagTexture) this.sprite.setTexture(this.kind.bagTexture, 0).setOrigin(0.5, this.kind.originY).setScale(0.5);
+      if (this.sprite.texture.key !== this.kind.bagTexture) {
+        this.sprite.stop().setFlipX(false);
+        this.sprite.setTexture(this.kind.bagTexture, 0).setOrigin(0.5, this.kind.originY).setScale(0.5);
+      }
       this.shadow.setVisible(true).setScale(1).setAlpha(1);
       super.render(moving);
       return;
@@ -183,11 +195,24 @@ export default class ReefFish extends Animal {
     if (this.state === 'following') this.h += (FOLLOW_HEIGHT - this.h) * 0.05;
     const tank = this.inTank();
     const base = this.skin ?? this.kind.texture; // seltene Variante mit eigenem Bild (Goldqualle)
-    const wag = SWIM_SHEETS[base] && this.scene.textures.exists(SWIM_SHEETS[base]);
+    // Schwimm-Animation (Videos: Rochen, Seepferdchen, Schildkröte, Krake, Qualle), beim Schwimmen und Stillhalten
+    const anim = this.swimAnim();
+    if (anim) {
+      if (!this.sprite.anims.isPlaying || this.sprite.anims.currentAnim?.key !== anim) {
+        this.sprite.play({ key: anim, startFrame: Math.floor(Math.random() * this.scene.anims.get(anim).frames.length) });
+      }
+      this.sprite.setOrigin(0.5, 0.5).setFlipX(this.faceX < 0).setScale(this.swimScale(tank) * this.babyScale()).setAngle(0);
+    } else {
+      if (this.sprite.anims.isPlaying) this.sprite.stop();
+      this.sprite.setFlipX(false);
+    }
+    const wag = !anim && SWIM_SHEETS[base] && this.scene.textures.exists(SWIM_SHEETS[base]);
     const look = wag ? SWIM_SHEETS[base] : base;
-    if (this.sprite.texture.key !== look) this.sprite.setTexture(look).setOrigin(0.5, 0.5);
+    if (!anim && this.sprite.texture.key !== look) this.sprite.setTexture(look).setOrigin(0.5, 0.5);
     this.sprite.setScale(this.swimScale(tank) * this.babyScale()).setAngle(0);
-    if (wag) {
+    if (anim) {
+      // Bild setzt die Animation
+    } else if (wag) {
       // Flossenschlag: schneller, wenn er schneller schwimmt (jeder Fisch in eigenem Takt)
       const rate = Phaser.Math.Linear(WAG_RATE[0], WAG_RATE[1], Phaser.Math.Clamp((this.moveSpeed ?? 0) / 40, 0, 1));
       this.wagT = (this.wagT ?? Math.random()) + (this.scene.game.loop.delta / 1000) * rate;
