@@ -13,7 +13,9 @@ const WALK_TIMEOUT = 30; // wer bis dahin nicht am Wasser ist, gibt auf
 const WALK_SPEED = 1.5; // zum Wasser etwas zügiger als beim Grasen
 const SPOTS = 8; // Uferplätze rund um die gewählte Stelle
 const PEN_DRINK_EVERY = [15, 30]; // im Gehege: Sekunden zwischen zwei Gängen zum Wasserloch
-const PEN_CLOSE = 28; // so nah am Uferplatz darf es auch hängen bleiben und trotzdem trinken
+const PEN_CLOSE = 28; // so nah am Uferplatz darf es auch hängen bleiben und trotzdem trinken ...
+const PEN_WATER_REACH = 46; // ... aber nur, wenn das Wasser so nah ist (Abstand zur Mitte der Wasserkachel, etwa eine Kachel)
+const PEN_GIVE_UP = 2; // so lange hängt es fest, ohne trinken zu können, dann versucht es es später an anderer Stelle
 // Maul beim Trinken (gesenkter Kopf), von den Füßen aus gemessen, beim Blick nach rechts (zebra_drinking, halbe Größe)
 const DRINK_MOUTH = { front: [10.7, -2.7], back: [11.5, -8.2] };
 const DRINK_REACH = 0.55; // dorthin soll das Maul: Anteil des Wegs vom Zebra zur Mitte der Wasserkachel
@@ -107,11 +109,18 @@ export default class Zebra extends Antelope {
       return super.updateFree(dt, player);
     }
     if (this.drinking) return false;
+    if (t.stuck > PEN_GIVE_UP) {
+      this.penDrink = null;
+      this.penDrinkAt = now + Phaser.Math.FloatBetween(...PEN_DRINK_EVERY);
+      return super.updateFree(dt, player);
+    }
     const dx = t.spot.x - this.x;
     const dy = t.spot.y - this.y;
     const d = Math.hypot(dx, dy);
-    // angekommen – oder kurz vor dem Ufer hängen geblieben: dann trinkt es eben von dort
-    if (d < 3 || (t.stuck > 0.5 && d < PEN_CLOSE)) {
+    // angekommen – oder kurz vor dem Ufer hängen geblieben: dann trinkt es eben von dort, aber nur mit dem Wasser
+    // in Reichweite (sonst trinkt es im Sand); hängt es weiter weg fest, gibt es auf
+    const nearWater = Math.hypot(t.spot.wx - this.x, (t.spot.wy - this.y) * 2) < PEN_WATER_REACH;
+    if (d < 3 || (t.stuck > 0.5 && d < PEN_CLOSE && nearWater)) {
       this.drinking = true;
       this.faceX = Math.sign(t.spot.wx - this.x) || this.faceX;
       this.faceY = Math.sign(t.spot.wy - this.y) || this.faceY;

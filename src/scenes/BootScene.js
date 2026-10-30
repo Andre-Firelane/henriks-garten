@@ -318,8 +318,8 @@ export default class BootScene extends Phaser.Scene {
     for (const [k, count] of [['walk', 14], ['walk_back', 26], ['idle', 20], ['idle_back', 21]]) {
       this.load.spritesheet(`ride_savanna_${k}`, `assets/ride_savanna_${k}.png`, { frameWidth: 160, frameHeight: 230, endFrame: count - 1 });
     }
-    for (const k of ['car_park', 'car_forest', 'car_savanna', 'car_asia']) this.load.spritesheet(k, `assets/${k}.png`, CAR_FRAME); // Schnellreise
-    this.load.spritesheet('boat', 'assets/boat.png', CAR_FRAME); // Schnellreise in der Unterwasserwelt
+    this.load.spritesheet('car_zoo', 'assets/car_zoo.png', CAR_FRAME); // Zooauto (Schnellreise, in allen Gebieten)
+    this.load.spritesheet('boat_zoo', 'assets/boat_zoo.png', { frameWidth: 240, frameHeight: 160 }); // Zoo-Boot (Schnellreise in der Unterwasserwelt)
     this.load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
     // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
     for (const k of ['canoe', 'canoe_hero']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
@@ -517,6 +517,8 @@ export default class BootScene extends Phaser.Scene {
     const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7 };
     for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
-    for (const key of Object.keys(VIDEO_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 24, repeat: -1, yoyo: key.includes('_idle') });
+    // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
+    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31 };
+    for (const key of Object.keys(VIDEO_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') });
   }
 }

@@ -144,8 +144,9 @@ export const SPECIES = {
   // Krokodil (Savanne): taucht wie der Fisch in Wasserlöchern auf; nur mit dem Lasso (siehe Crocodile.js)
   crocodile: {
     texture: 'croc', // an Land (gefangen); im Wasser "croc_water"
-    anims: { walkDown: 'croc_walk', walkUp: 'croc_walk_back', idleDown: 'croc_idle', idleUp: 'croc_idle_back' }, // Savanne
-    skinAnims: { croc_albino: { walkDown: 'croc_albino_walk', walkUp: 'croc_albino_walk_back', idleDown: 'croc_albino_idle', idleUp: 'croc_albino_idle_back' } },
+    // Savanne; Laufen auch nach oben mit der Animation von vorne
+    anims: { walkDown: 'croc_walk', walkUp: 'croc_walk', idleDown: 'croc_idle', idleUp: 'croc_idle_back' },
+    skinAnims: { croc_albino: { walkDown: 'croc_albino_walk', walkUp: 'croc_albino_walk', idleDown: 'croc_albino_idle', idleUp: 'croc_albino_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 88 / 92,
     speed: 12, // gemütliches Schwimmen im Krokodilteich

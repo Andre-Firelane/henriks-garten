@@ -136,11 +136,19 @@ export function isTouch() {
   return document.body.classList.contains('touch');
 }
 
-// Aktionsknopf zeigt das getragene Werkzeug (oder ist ausgegraut)
+// Aktionsknopf zeigt das getragene Werkzeug (oder ist ausgegraut; am PC dann ausgeblendet)
 // id: Werkzeug (Bild assets/<id>.png); image: anderes Bild, z. B. die Weltkarte am Auto
 export function setTouchTool(id, image) {
   if (!ui) return;
   const src = image ?? (id ? `assets/${id}.png` : null);
+  const bg = src ? `url("${src}")` : '';
+  if (ui.action.style.backgroundImage === bg) return;
   ui.action.classList.toggle('empty', !src);
-  ui.action.style.backgroundImage = src ? `url(${src})` : '';
+  ui.action.style.backgroundImage = bg;
+  // neue Möglichkeit ohne Werkzeug (Auto, Regal, Winken …): kurz aufpulsieren, damit man sie bemerkt
+  ui.action.classList.remove('hint');
+  if (src && !id) {
+    void ui.action.offsetWidth; // Animation neu starten
+    ui.action.classList.add('hint');
+  }
 }

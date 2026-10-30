@@ -322,6 +322,22 @@
       }
       body.touch #btn-action.pressed { transform: translateY(4px); box-shadow: 0 1px 0 #2b1d14; }
       body.touch #btn-action.empty { opacity: 0.35; }
+      /* am PC derselbe runde Bildhinweis, etwas kleiner und mit der Taste E darauf (auch mit der Maus anklickbar); ohne Aktion weg */
+      body:not(.touch) #btn-action:not(.empty) {
+        display: block; position: fixed; right: 20px; bottom: 20px; width: 84px; height: 84px; border-radius: 50%; cursor: pointer;
+        background: rgba(60, 40, 20, 0.75) center / 70% no-repeat; border: 3px solid #fff8e6;
+        box-shadow: 0 4px 0 #2b1d14;
+      }
+      body:not(.touch) #btn-action::after {
+        content: "E"; position: absolute; right: -6px; bottom: -6px; padding: 1px 7px;
+        font: bold 16px/1.2 "Trebuchet MS", Arial, sans-serif; color: #2b1d14; background: #fff8e6; border-radius: 6px;
+        box-shadow: 0 2px 0 #2b1d14;
+      }
+      body:not(.touch) #sign { right: 120px; } /* Wegweiser-Tafel links neben dem Knopf */
+      body:not(.touch) #btn-action.pressed { transform: translateY(3px); box-shadow: 0 1px 0 #2b1d14; }
+      /* etwas zum Anfassen in der Nähe (Auto, Regal, Orang-Utan …): Knopf pulsiert kurz auf */
+      #btn-action.hint { animation: action-hint 0.5s ease-out 2; }
+      @keyframes action-hint { 50% { scale: 1.15; } }
       /* Werkzeug wechseln, solange man reitet (Reittier-Event) */
       #btn-swap { display: none; }
       body.touch.riding #btn-swap {

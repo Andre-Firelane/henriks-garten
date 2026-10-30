@@ -301,7 +301,7 @@ const TANK_WATER_UP = 112; // Höhe der Wasseroberfläche (knapp unter der Oberk
 // obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
 const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
 const BOAT_BOB = 3; // so weit schaukelt das Boot in der Unterwasserwelt auf und ab (Pixel)
-const BOAT_ROPE = [-24, -27]; // dort am Boot (links hinten, Welt-Pixel vom Ankerpunkt des Bilds, mal Größe) hängt das Ankerseil
+const BOAT_ROPE = [-40, -30]; // dort am Boot (vorne am Bug, Welt-Pixel vom Ankerpunkt des Bilds, mal Größe) hängt das Ankerseil
 const ANCHOR_RING = [19, -18]; // ... und dort am Anker (vom Ankerpunkt des Bilds "anchor_sack")
 const SEA_TINT = [0x1a7ad0, 0.24]; // blaue Tönung über allem unter Wasser
 const SEA_BUBBLES = 260; // alle so viele Millisekunden steigt irgendwo im Bild ein Bläschen auf

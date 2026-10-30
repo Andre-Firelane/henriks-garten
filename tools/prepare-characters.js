@@ -716,14 +716,15 @@ const ANIMATIONS = [
   { src: 'Animation/Tiger2_läuft_hinten.mp4', out: 'tiger2_walk_back.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger2_idle_vorne.mp4', out: 'tiger2_idle.png', scale: 0.1978, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger2_idle_hinten.mp4', out: 'tiger2_idle_back.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
-  { src: 'Animation/Pfau_läuft_vorne.mp4', out: 'peacock_walk.png', scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
+  // nach vorne etwas kleiner (89 %), sonst größer als der stehende Pfau
+  { src: 'Animation/Pfau_läuft_vorne.mp4', out: 'peacock_walk.png', scale: 0.83, frameW: 96, frameH: 96, feetY: 92 },
   // von hinten: ein Ausschnitt, der sauber im Kreis läuft
   { src: 'Animation/Pfau_läuft_hinten.mp4', out: 'peacock_walk_back.png', range: [23, 95], scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
   { src: 'Animation/Pfau2_läuft_vorne.mp4', out: 'peacock2_walk.png', scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
   // Japanmakak sitzt (Einzelbilder, für das Stehen): im Original 1,39-mal so groß gemalt wie der stehende (Gesicht),
   // daher so verkleinert, dass er zum Laufen passt (sitzend ca. 60 hoch); von hinten schaut er nach links: gespiegelt
-  { src: 'Tiersprites Test/Japanmakak_sitzt_vorne.png', out: 'macaque_sit.png', cols: 1, rows: 1, scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
-  { src: 'Tiersprites Test/Japanmakak_sitzt_hinten.png', out: 'macaque_sit_back.png', cols: 1, rows: 1, mirror: 'all', scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Sprites/Japanmakak_sitzt_vorne.png', out: 'macaque_sit.png', cols: 1, rows: 1, scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Sprites/Japanmakak_sitzt_hinten.png', out: 'macaque_sit_back.png', cols: 1, rows: 1, mirror: 'all', scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
   { src: 'Animation/Japanmakak_läuft_vorne.mp4', out: 'macaque_walk.png', range: [3, 32], scale: 0.653, frameW: 72, frameH: 72, feetY: 68 },
   // von hinten: ab Bild 38 dreht er sich im Video um (dann von vorne); Bilder 8-31 laufen nahtlos im Kreis.
   // 10 % größer als vorne, sonst wirkt er von hinten kleiner (gleiche Fläche wie von vorne)
@@ -750,10 +751,20 @@ const ANIMATIONS = [
   { src: 'Animation/Orangutan_winkt.mp4', out: 'orangutan_wave.png', range: [14, 94], saturate: 1.05, brightness: 1.14, scale: 0.891, offsetX: -9, frameW: 112, frameH: 96, feetY: 92 },
   { src: 'Animation/Urangutan2_läuft_vorne.mp4', out: 'orangutan2_walk.png', scale: 0.2233, frameW: 96, frameH: 96, feetY: 92 },
   { src: 'Animation/Oranutan2_läuft_hinten.mp4', out: 'orangutan2_walk_back.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
-  { src: 'Animation/Orangutan2_idle_vorne.mp4', out: 'orangutan2_idle.png', scale: 0.176, frameW: 96, frameH: 96, feetY: 92 },
+  // ab Bild 28 fällt ihm etwas aus der Hand bis weit unter die Füße: unterhalb der Füße (Zeile 490) abgeschnitten
+  { src: 'Animation/Orangutan2_idle_vorne.mp4', out: 'orangutan2_idle.png', clipBelow: 490, scale: 0.2024, frameW: 96, frameH: 96, feetY: 92 },
   { src: 'Animation/Orangutan2_winken.mp4', out: 'orangutan2_wave.png', range: [8, 55], scale: 0.792, offsetX: -4, frameW: 112, frameH: 96, feetY: 92 },
-  // Wasserflugzeug (Schnellreise im Dschungel), ein Bild
-  { src: 'Sprites/Wasserflugzeug.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
+  // Zooauto mit Anhänger (Schnellreise, in allen Gebieten): ein Bild, Fahrtrichtung unten-links wie bisher Bild 0/1 der
+  // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
+  // (ca. 199,183,172) in der unteren Hälfte entfernt
+  { src: 'Sprites/Zooauto.png', out: 'car_zoo.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 131 },
+  // Zoo-Boot (Schnellreise im Riff), ersetzt das Pixel-Boot boat.png aus make-sprites. Höher als dieses (Kabine, Kran),
+  // daher Rahmen 240x160; der Rumpf liegt unten so weit über dem Ankerpunkt wie bisher (25 von 160 wie 21 von 140 ...).
+  // Quelle freigestellt mit npm run cutout -- Sprites/Boot.jpg Sprites/Boot.png 840,110 775,180 895,180 780,90 777,91
+  // 750,105 765,105 720,120 756,120 724,150 885,150 913,184 901,195 809,77 (Lücken am Kran), dann Bodenschatten entfernt
+  { src: 'Sprites/Boot.png', out: 'boat_zoo.png', cols: 1, rows: 1, frameW: 240, frameH: 160, feetY: 130, figureH: 127 },
+  // Wasserflugzeug (Schnellreise im Dschungel), ein Bild; neue Fassung im Zoo-Stil (Quelle freigestellt, Schatten entfernt)
+  { src: 'Sprites/Wasserflugzeug neu.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
 ];
 
 // skip: Bilder weglassen (Nummern im Raster); mirror: Bilder, die in die andere Richtung schauen, waagerecht spiegeln ('all': alle);
@@ -765,8 +776,9 @@ const ANIMATIONS = [
 // degreen: Grünstich und Grashalme weg (Zebra trinkt); steady: Flimmern dämpfen (siehe steadyFrames); alignFeet: Füße jedes Bilds auf die Fußlinie (siehe prepareGrid).
 // Statt eines Spritesheets geht auch ein Video (.mp4) vor Greenscreen: dann ohne cols/rows, jedes Videobild ist ein Bild (siehe readVideo);
 // range: [von, bis] nur diese Bilder (z. B. ein Ausschnitt eines Videos, der sauber im Kreis läuft);
-// stabilize: Wackeln der Kamera ausgleichen (siehe stabilizeFrames); brightness: Helligkeit mal diesen Faktor
-function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false }) {
+// stabilize: Wackeln der Kamera ausgleichen (siehe stabilizeFrames); brightness: Helligkeit mal diesen Faktor;
+// clipBelow: alles unterhalb dieser Zeile (in der Zelle) weg, z. B. was der Figur herunterfällt und unter ihren Füßen landet
+function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
   const img = video ? readVideo(src) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
@@ -785,6 +797,9 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
       const mx = Math.max(data[k], data[k + 1], data[k + 2]);
       for (let c = 0; c < 3; c++) data[k + c] = Math.max(0, Math.min(255, Math.round(mx - (mx - data[k + c]) * saturate)));
     }
+  }
+  if (clipBelow !== undefined) {
+    for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch > clipBelow) data[k + 3] = 0;
   }
   if (brightness !== 1) {
     for (let k = 0; k < data.length; k += 4) for (let c = 0; c < 3; c++) data[k + c] = Math.min(255, Math.round(data[k + c] * brightness));

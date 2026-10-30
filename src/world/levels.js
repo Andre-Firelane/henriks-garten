@@ -101,7 +101,7 @@ export const LEVELS = {
   meadow: {
     name: tr('Wiese', 'Meadow'),
     // Schnellreise: Auto (Kachel, Bild, Größe) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 12.16, ty: 26.48, texture: 'car_park', frame: 0, scale: 1.26 },
+    car: { tx: 12.16, ty: 26.48, texture: 'car_zoo', frame: 0, scale: 1.26 },
     map: { x: 51.5, y: 34, icon: 'sheep' },
     rows: [
       'TTbbTTTTbbTTTTTTbTTTTTTTTbTTTTTbTTTTTbTT',
@@ -167,7 +167,7 @@ export const LEVELS = {
   forest: {
     name: tr('Wald', 'Forest'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 24.16, ty: 16.24, texture: 'car_forest', frame: 1, scale: 1.1 },
+    car: { tx: 24.16, ty: 16.24, texture: 'car_zoo', frame: 0, scale: 1.1 },
     map: { x: 53, y: 16, icon: 'stag' },
     rows: [
       'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
@@ -231,7 +231,7 @@ export const LEVELS = {
   savanna: {
     name: tr('Savanne', 'Savanna'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 12.16, ty: 25.32, texture: 'car_savanna', frame: 0, scale: 1.15 },
+    car: { tx: 12.16, ty: 25.32, texture: 'car_zoo', frame: 0, scale: 1.15 },
     map: { x: 58, y: 63, icon: 'giraffe' },
     rows: SAVANNA_ROWS,
     grass: ['sgrass0', 'sgrass1', 'sgrass2'],
@@ -288,7 +288,7 @@ export const LEVELS = {
   asia: {
     name: tr('Bambuswald', 'Bamboo Forest'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 13.16, ty: 41.54, texture: 'car_asia', frame: 1, scale: 1.3 },
+    car: { tx: 13.16, ty: 41.54, texture: 'car_zoo', frame: 0, scale: 1.3 },
     map: { x: 78, y: 37, icon: 'koi' },
     rows: [
       'JQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQk',
@@ -581,7 +581,7 @@ export const LEVELS = {
   reef: {
     name: tr('Riff', 'Reef'),
     // Schnellreise: ein kleines Boot, das über dem Meeresboden schwimmt (float: so hoch, in Pixeln)
-    car: { tx: 18.16, ty: 14.5, texture: 'boat', frame: 0, scale: 1.5, float: 30 },
+    car: { tx: 18.16, ty: 14.5, texture: 'boat_zoo', frame: 0, scale: 1.5, float: 30 },
     map: { x: 89, y: 66, icon: 'reeffish' }, // Great Barrier Reef vor Australien (Clownfisch)
     rows: [
 'ÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖÖ',
@@ -850,7 +850,7 @@ LEVELS.park = parkSection('park', {
   name: tr('Tierpark', 'Zoo'),
   part: { name: tr('Zentrum', 'Center'), icon: 'hero' }, // Feld im Tierpark-Schild der Weltkarte
   // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-  car: { tx: 34, ty: 44, texture: 'car_park', frame: 1, scale: 1.26 },
+  car: { tx: 34, ty: 44, texture: 'car_zoo', frame: 0, scale: 1.26 },
   map: { x: 20, y: 33, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur (in Nordamerika, dort ist Platz für das große Schild)
   start: { tx: 29, ty: 40 }, // Spielstart: auf dem Vorplatz vor dem Haupthaus
   // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
@@ -891,7 +891,7 @@ LEVELS.park2 = parkSection('park2', {
   name: tr('Tierpark: Savanne & Aquarium', 'Zoo: Savanna & Aquarium'),
   background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
   part: { name: tr('Savanne & Aquarium', 'Savanna & Aquarium'), icon: 'giraffe' },
-  car: { tx: 37.16, ty: 19.32, texture: 'car_park', frame: 0, scale: 1.26 },
+  car: { tx: 37.16, ty: 19.32, texture: 'car_zoo', frame: 0, scale: 1.26 },
   start: { tx: 32, ty: 22 },
   grounds: [
     { area: { tx0: 8, tx1: 16, ty0: 0, ty1: 18 }, ground: ['grass0', 'grass1', 'grass2'] }, // Wiese ums Aquarium (vor der Savanne, die erste Fläche gilt)
@@ -920,7 +920,7 @@ LEVELS.park3 = parkSection('park3', {
   ],
   name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
-  car: { tx: 38.16, ty: 78.32, texture: 'car_park', frame: 0, scale: 1.26 },
+  car: { tx: 38.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26 },
   start: { tx: 38, ty: 60 },
   grounds: [
     { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
