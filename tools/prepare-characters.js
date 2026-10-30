@@ -736,6 +736,12 @@ const ANIMATIONS = [
   { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', loopBlend: 1, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  // Henrik taucht (Riff): eine Animation für Schwimmen und Stillhalten, von vorne und hinten. Die Blasen aus dem Video
+  // (oberhalb des Kopfs) weg, das Spiel zeichnet eigene; so groß wie hero_swim.png (Kopf bis Flossen ca. 105).
+  // Vorne: kein sauberer Schleifenpunkt, zwei Zwischenbilder zurück zum Anfang. Hinten: Bilder 22-85 laufen fast im Kreis
+  // (ein Zwischenbild); das letzte Bild hat einen anderen Grünton und lässt sich nicht freistellen
+  { src: 'Animation/Character schwimmt vorne.mp4', out: 'hero_swim_anim.png', clipAbove: 145, loopBlend: 2, scale: 0.29, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character schwimmt hinten.mp4', out: 'hero_swim_anim_back.png', range: [22, 85], clipAbove: 140, loopBlend: 1, scale: 0.29, frameW: 88, frameH: 116, feetY: 112 },
   // Wasserbüffel mit Henrik (Reittier Asien), Maße wie ride_asia.png (Höhe 160)
   { src: 'Animation/Wasserbüffel_läuft_vorne.mp4', out: 'ride_asia_walk.png', range: [8, 34], scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
   { src: 'Animation/Wasserbüffel_läuft_hinten.mp4', out: 'ride_asia_walk_back.png', range: [9, 29], scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
@@ -764,11 +770,9 @@ const ANIMATIONS = [
   // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
   // (ca. 199,183,172) in der unteren Hälfte entfernt
   { src: 'Sprites/Zooauto.png', out: 'car_zoo.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 131 },
-  // Zoo-Boot (Schnellreise im Riff), ersetzt das Pixel-Boot boat.png aus make-sprites. Höher als dieses (Kabine, Kran),
-  // daher Rahmen 240x160; der Rumpf liegt unten so weit über dem Ankerpunkt wie bisher (25 von 160 wie 21 von 140 ...).
-  // Quelle freigestellt mit npm run cutout -- Sprites/Boot.jpg Sprites/Boot.png 840,110 775,180 895,180 780,90 777,91
-  // 750,105 765,105 720,120 756,120 724,150 885,150 913,184 901,195 809,77 (Lücken am Kran), dann Bodenschatten entfernt
-  { src: 'Sprites/Boot.png', out: 'boat_zoo.png', cols: 1, rows: 1, frameW: 240, frameH: 160, feetY: 130, figureH: 127 },
+  // Zoo-U-Boot (Schnellreise im Riff), schwebt über dem Meeresboden; Rahmen 240x160 wie das frühere Zoo-Boot (Sprites/Boot.png).
+  // Quelle freigestellt mit npm run cutout -- Sprites/Unterseeboot.jpg Sprites/Unterseeboot.png
+  { src: 'Sprites/Unterseeboot.png', out: 'boat_zoo.png', cols: 1, rows: 1, frameW: 240, frameH: 160, feetY: 130, figureH: 127 },
   // Wasserflugzeug (Schnellreise im Dschungel), ein Bild; neue Fassung im Zoo-Stil. Quelle freigestellt mit npm run cutout --
   // "Sprites/Wasserflugzeug neu.jpg" "Sprites/Wasserflugzeug neu.png" 336,160 337,176 352,176 (Lücke unter dem Flügel), Schatten entfernt
   { src: 'Sprites/Wasserflugzeug neu.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
@@ -784,8 +788,9 @@ const ANIMATIONS = [
 // Statt eines Spritesheets geht auch ein Video (.mp4) vor Greenscreen: dann ohne cols/rows, jedes Videobild ist ein Bild (siehe readVideo);
 // range: [von, bis] nur diese Bilder (z. B. ein Ausschnitt eines Videos, der sauber im Kreis läuft);
 // stabilize: Wackeln der Kamera ausgleichen (siehe stabilizeFrames); brightness: Helligkeit mal diesen Faktor;
-// clipBelow: alles unterhalb dieser Zeile (in der Zelle) weg, z. B. was der Figur herunterfällt und unter ihren Füßen landet
-function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow }) {
+// clipBelow: alles unterhalb dieser Zeile (in der Zelle) weg, z. B. was der Figur herunterfällt und unter ihren Füßen landet;
+// clipAbove: ebenso alles oberhalb (z. B. aufsteigende Blasen, die das Spiel selbst zeichnet)
+function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
   const img = video ? readVideo(src) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
@@ -807,6 +812,9 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
   }
   if (clipBelow !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch > clipBelow) data[k + 3] = 0;
+  }
+  if (clipAbove !== undefined) {
+    for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch < clipAbove) data[k + 3] = 0;
   }
   if (brightness !== 1) {
     for (let k = 0; k < data.length; k += 4) for (let c = 0; c < 3; c++) data[k + c] = Math.min(255, Math.round(data[k + c] * brightness));

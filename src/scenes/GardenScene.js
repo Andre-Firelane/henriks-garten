@@ -300,9 +300,7 @@ const TANK_TOP = 120; // Oberkante der Glaswände (Bild "hutwall_tank")
 const TANK_WATER_UP = 112; // Höhe der Wasseroberfläche (knapp unter der Oberkante der 120 Pixel hohen Glaswände)
 // obere Ecke der Grundfläche im Dachbild, falls nicht wie bei den Hütten (siehe officeRoofAnchor in tools/make-sprites.js)
 const ROOF_ANCHOR = { office: [283, 90] }; // Glasdach: auch von außen halb durchsichtig, damit man die Katzen sieht
-const BOAT_BOB = 3; // so weit schaukelt das Boot in der Unterwasserwelt auf und ab (Pixel)
-const BOAT_ROPE = [-40, -30]; // dort am Boot (vorne am Bug, Welt-Pixel vom Ankerpunkt des Bilds, mal Größe) hängt das Ankerseil
-const ANCHOR_RING = [19, -18]; // ... und dort am Anker (vom Ankerpunkt des Bilds "anchor_sack")
+const BOAT_BOB = 3; // so weit schaukelt das U-Boot in der Unterwasserwelt auf und ab (Pixel)
 const SEA_TINT = [0x1a7ad0, 0.24]; // blaue Tönung über allem unter Wasser
 const SEA_BUBBLES = 260; // alle so viele Millisekunden steigt irgendwo im Bild ein Bläschen auf
 const CAR_DIST = 30; // so nah (über die Hitbox hinaus) muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen – von jeder Seite
@@ -721,7 +719,6 @@ export default class GardenScene extends Phaser.Scene {
 
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
     this.car = null;
-    this.boatRope = null;
     this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
     this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
@@ -749,7 +746,7 @@ export default class GardenScene extends Phaser.Scene {
       if (car.bob) this.tweens.add({ targets: img, y: img.y - BOAT_BOB * 0.5, duration: 1700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' }); // Wasserflugzeug (Dschungel): schaukelt auf dem Fluss
     }
     this.car = this.cars[0] ?? null;
-    if (LEVEL.car?.float) this.floatBoat(); // Boot (Unterwasserwelt): schaukelt über dem Boden, Seil hinunter zum Anker
+    if (LEVEL.car?.float) this.floatBoat(); // U-Boot (Unterwasserwelt): schaukelt über dem Boden
     this.nearCar = false;
     this.showTutorial();
 
@@ -988,6 +985,9 @@ export default class GardenScene extends Phaser.Scene {
       (MAP_W + MAP_H) * (TILE_H / 2) + TILE_H * 4,
     );
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
+    // Unterwasserwelt: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel pro Bild je Achse);
+    // schräg rasten Figur und Kamera sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie Stottern aus
+    cam.roundPixels = !LEVEL.sea;
   }
 
   // Bogenbrücken: Bohlen als geschwungenes Band über dem Wasser, rote Geländer an beiden Seiten.
@@ -1128,27 +1128,12 @@ export default class GardenScene extends Phaser.Scene {
     return sk;
   }
 
-  // Boot in der Unterwasserwelt: schaukelt langsam auf und ab, sein Schatten liegt auf dem Meeresboden, und ein Seil führt
-  // hinunter zum Anker, an dem der Werkzeug-Sack hängt (Kiste mit anchor: true)
+  // U-Boot in der Unterwasserwelt: schaukelt langsam auf und ab, sein Schatten liegt auf dem Meeresboden
   floatBoat() {
     const { x, y, img, k } = this.car;
     const base = img.y;
     this.add.ellipse(x + 2, y - 22 * k, 120 * k, 28 * k, 0x0a2a40, 0.22).setDepth(-99980).setAngle(-12);
     this.tweens.add({ targets: img, y: base - BOAT_BOB, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    const anchor = (LEVEL.chests ?? []).find((c) => c.anchor);
-    if (!anchor) return;
-    const a = tileToWorld(anchor.tx, anchor.ty);
-    const end = { x: a.x + ANCHOR_RING[0], y: a.y + ANCHOR_RING[1] };
-    const rope = this.add.graphics().setDepth(Math.min(a.y, y) - 1);
-    this.boatRope = () => {
-      const top = { x: x + BOAT_ROPE[0] * k, y: img.y + BOAT_ROPE[1] * k };
-      const pts = [];
-      for (let i = 0; i <= 12; i++) {
-        const t = i / 12;
-        pts.push({ x: top.x + (end.x - top.x) * t, y: top.y + (end.y - top.y) * t + Math.sin(t * Math.PI) * 10 }); // hängt etwas durch
-      }
-      rope.clear().lineStyle(2, 0x6b4a2a, 1).strokePoints(pts);
-    };
   }
 
   startSteam() {
@@ -4106,7 +4091,6 @@ export default class GardenScene extends Phaser.Scene {
     this.updatePenCalls(dt);
     this.updatePeacockCall(dt);
     for (const f of this.tankFish) f.update(dt); // Zierfische im Aquarium und Fischschwärme im Riff
-    this.boatRope?.();
     this.cullStatic();
     if (this.riding) this.updateMount(); // in Gebäuden ab-, draußen wieder aufsteigen
     this.eventTimer -= dt;

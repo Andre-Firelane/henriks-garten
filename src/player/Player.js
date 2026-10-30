@@ -25,6 +25,8 @@ const HERO_ANIMS = {
   hero_forest: { walkDown: 'hero_forest_walk', walkUp: 'hero_forest_walk_back', idleDown: 'hero_forest_idle', idleUp: 'hero_forest_idle_back' },
   hero_savanna: { walkDown: 'hero_savanna_walk', walkUp: 'hero_savanna_walk_back', idleDown: 'hero_savanna_idle', idleUp: 'hero_savanna_idle_back' },
   hero_asia: { walkDown: 'hero_asia_walk', walkUp: 'hero_asia_walk_back', idleDown: 'hero_asia_idle', idleUp: 'hero_asia_idle_back' }, // Videos
+  // Taucher (Riff): dieselbe Schwimm-Animation beim Schwimmen und Stillhalten (Video)
+  hero_swim: { walkDown: 'hero_swim_anim', walkUp: 'hero_swim_anim_back', idleDown: 'hero_swim_anim', idleUp: 'hero_swim_anim_back' },
 };
 // dasselbe für die Reittiere (Bild des Reittiers mit Henrik darauf)
 const MOUNT_ANIMS = {

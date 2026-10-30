@@ -136,7 +136,7 @@ export function isTouch() {
   return document.body.classList.contains('touch');
 }
 
-// Aktionsknopf zeigt das getragene Werkzeug (oder ist ausgegraut; am PC dann ausgeblendet)
+// Aktionsknopf zeigt das getragene Werkzeug (oder ist ausgegraut); am PC zeigt das die Leiste #tools unten rechts
 // id: Werkzeug (Bild assets/<id>.png); image: anderes Bild, z. B. die Weltkarte am Auto
 export function setTouchTool(id, image) {
   if (!ui) return;

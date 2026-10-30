@@ -34,7 +34,7 @@ export const HD = [
   'asia_path', 'planks_asia', 'gate_door_asia_x', 'gate_door_asia_y', 'hutwall_asia_x', 'hutwall_asia_y', 'hutroof_asia', 'hut_chair_asia',
   'hut_chest_small', 'hut_desk_asia', 'hut_plant_asia', 'hut_shelf_asia', 'jar', 'jar_glow', 'koifood',
   // Riff
-  'anchor_sack', 'reef_algae', 'reef_anemone', 'reef_brain', 'reef_brain2', 'reef_branch', 'reef_branch2', 'reef_dark', 'reef_fan',
+  'anchor_sack', 'boat_zoo', 'reef_algae', 'reef_anemone', 'reef_brain', 'reef_brain2', 'reef_branch', 'reef_branch2', 'reef_dark', 'reef_fan',
   'reef_fan2', 'reef_gravel', 'reef_kelp', 'reef_path', 'reef_rock', 'reef_sand0', 'reef_sand1', 'reef_sand2', 'reef_seagrass',
   'reef_starfish', 'reef_tube', 'reef_tube2', 'scissors', 'shell', 'tank_rock',
   // Dschungel (waterfall ist ein Bildstreifen, siehe BootScene)

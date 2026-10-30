@@ -169,6 +169,9 @@ const SAVANNA_ANIMS = {
 // (Anzahl 1) ist ein Standbild, das wie eine Animation eingesetzt wird (Japanmakak sitzt)
 const VIDEO_ANIMS = {
   antelope_walk: [72, 100, 24],
+  // Spielfigur taucht (Riff), für Schwimmen und Stillhalten
+  hero_swim_anim: [88, 116, 50],
+  hero_swim_anim_back: [88, 116, 65],
   // Spielfigur und Wasserbüffel im Bambuswald
   hero_asia_walk: [88, 116, 44],
   hero_asia_walk_back: [88, 116, 25],
@@ -321,7 +324,8 @@ export default class BootScene extends Phaser.Scene {
       this.load.spritesheet(`ride_savanna_${k}`, `assets/ride_savanna_${k}.png`, { frameWidth: 160, frameHeight: 230, endFrame: count - 1 });
     }
     this.load.spritesheet('car_zoo', 'assets/car_zoo.png', CAR_FRAME); // Zooauto (Schnellreise, in allen Gebieten)
-    this.load.spritesheet('boat_zoo', 'assets/boat_zoo.png', { frameWidth: 240, frameHeight: 160 }); // Zoo-Boot (Schnellreise in der Unterwasserwelt)
+    const bz = this.useHd('boat_zoo') ? hdFactor('boat_zoo') : 1; // Zoo-U-Boot (Schnellreise in der Unterwasserwelt), groß wie der Wasserfall
+    this.load.spritesheet('boat_zoo', `assets/${bz > 1 ? `${HD_DIR}/` : ''}boat_zoo.png`, { frameWidth: 240 * bz, frameHeight: 160 * bz });
     this.load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
     // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
     for (const k of ['canoe', 'canoe_hero']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
@@ -374,8 +378,10 @@ export default class BootScene extends Phaser.Scene {
     this.load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
     this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
     this.load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
+    this.load.spritesheet('minifish_swim', 'assets/minifish_swim.png', { frameWidth: 20, frameHeight: 16 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
     this.load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
     this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
+    this.load.spritesheet('reeffish_swim', 'assets/reeffish_swim.png', { frameWidth: 96, frameHeight: 64 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
     for (const k of ['jellyfish', 'jellyfish2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)

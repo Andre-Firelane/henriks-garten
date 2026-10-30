@@ -23,7 +23,7 @@
 //          l  Steinlaterne   I  rotes Tor (Torii) über dem Weg   h  heiße Quelle   B  Brücke über den Teich
 //          4  Busch      5  dichter Busch   6  Bambus (Füller)   (niedrige Füller rechts neben den Gehegen, damit sie die Tiere nicht verdecken)
 // Riff:   ü  Astkoralle   Ü  Fächerkoralle   ö  Hirnkoralle   ä  Röhrenkoralle   (û Û ô â: dieselben in anderen Farben)   ß  Riesentang   §  Seestern
-//          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Sack am Anker (Werkzeuge)   /  Muschel   ?  Steine
+//          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Werkzeug-Sack   /  Muschel   ?  Steine
 // Aquarium: Ł  Quallen-Lampe   Ś  Delfin-Statue   Ɓ  Bank
 
 import { tr } from '../i18n.js';
@@ -576,11 +576,11 @@ export const LEVELS = {
   },
 
   // Unterwasserwelt: ein buntes Riff vor Australien. Henrik schwimmt (schwebt über dem Meeresboden), Fischschwärme ziehen
-  // umher (Deko wie im Aquarium, nicht fangbar). Hin und zurück nur mit dem Boot (Schnellreise); die Werkzeuge liegen im
-  // Sack, der mit dem Anker vom Boot heruntergelassen wurde. Tiere kommen später.
+  // umher (Deko wie im Aquarium, nicht fangbar). Hin und zurück nur mit dem U-Boot (Schnellreise); die Werkzeuge liegen im
+  // Sack am Meeresboden.
   reef: {
     name: tr('Riff', 'Reef'),
-    // Schnellreise: ein kleines Boot, das über dem Meeresboden schwimmt (float: so hoch, in Pixeln)
+    // Schnellreise: ein kleines U-Boot, das über dem Meeresboden schwebt (float: so hoch, in Pixeln)
     car: { tx: 18.16, ty: 14.5, texture: 'boat_zoo', frame: 0, scale: 1.5, float: 30 },
     map: { x: 89, y: 66, icon: 'reeffish' }, // Great Barrier Reef vor Australien (Clownfisch)
     rows: [
@@ -624,7 +624,7 @@ export const LEVELS = {
     start: { tx: 19, ty: 16 },
     enclosures: [],
     chests: [
-      { tx: 16, ty: 17, tools: ['net', 'scissors'], anchor: true }, // Sack am Anker (Kescher, Schere); das Seil führt hinauf zum Boot
+      { tx: 16, ty: 17, tools: ['net', 'scissors'], anchor: true }, // Werkzeug-Sack (Kescher, Schere)
     ],
     hero: 'hero_swim', // Henrik im Taucheranzug
     ambient: 'ambient_reef',

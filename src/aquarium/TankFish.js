@@ -19,6 +19,9 @@ export const SWIM_HEIGHT = [12, 104]; // so hoch über dem Boden schweben sie (d
 const BUBBLE_EVERY = [4, 12];
 const SPREAD = 0.45; // so weit (Kacheln) verteilen sich Schwarmfische um den gemeinsamen Punkt
 const SPREAD_UP = 10; // ... und so weit in der Höhe
+// Schwanzflosse wackelt: Bild "minifish_swim" (tools/fish-wag.cjs) mit WAG_FRAMES Bildern je Fischbild
+const WAG_FRAMES = 4;
+const WAG_RATE = 2.2; // Flossenschläge pro Sekunde
 
 // ein Schwarm (oder ein einzelner Fisch) mit gemeinsamem Ziel
 class School {
@@ -61,7 +64,8 @@ class TankFish {
     this.school = school;
     this.frame = frame;
     this.offset = { tx: Phaser.Math.FloatBetween(-SPREAD, SPREAD), ty: Phaser.Math.FloatBetween(-SPREAD, SPREAD), h: Phaser.Math.FloatBetween(-SPREAD_UP, SPREAD_UP) };
-    this.sprite = scene.add.sprite(0, 0, 'minifish', frame * 2).setOrigin(0.5).setScale(school.tank.scale ?? 1);
+    this.wag = scene.textures.exists('minifish_swim');
+    this.sprite = scene.add.sprite(0, 0, this.wag ? 'minifish_swim' : 'minifish', frame * 2 * (this.wag ? WAG_FRAMES : 1)).setOrigin(0.5).setScale(school.tank.scale ?? 1);
     this.phase = Math.random() * 10;
     this.lag = Phaser.Math.FloatBetween(0.6, 1.4); // jeder schwimmt ein wenig anders hinterher
     this.pos = { ...school.pos };
@@ -89,7 +93,8 @@ class TankFish {
     const h = Phaser.Math.Clamp(s.h + this.offset.h, h0, h1);
     const p = tileToWorld(this.pos.tx, this.pos.ty);
     const bob = Math.sin(this.phase * 2.4) * 1.5;
-    this.sprite.setFrame(this.frame * 2 + (this.faceRight ? 0 : 1));
+    const look = this.frame * 2 + (this.faceRight ? 0 : 1);
+    this.sprite.setFrame(this.wag ? look * WAG_FRAMES + (Math.floor(this.phase * WAG_RATE * WAG_FRAMES) % WAG_FRAMES) : look);
     this.sprite.setPosition(p.x, p.y - h + bob);
     this.sprite.setDepth(p.y + 0.5); // zwischen Rückwand und vorderer Glasscheibe (siehe drawTanks)
     this.bubbleIn -= dt;

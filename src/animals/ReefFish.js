@@ -22,6 +22,10 @@ const BOB = 1.5; // leichtes Auf und Ab
 const BABY_SCALE = 0.55; // Tierbabys (Event) sind so viel kleiner
 const FLEE_CHANCE = 2 / 3; // kommt man nah, schwimmt eine Gruppe nur mit dieser Wahrscheinlichkeit davon ...
 const FLEE_ROLL = 4; // ... und würfelt nach so vielen Sekunden neu, wenn man in der Nähe bleibt
+// Schwanzflosse wackelt (tools/fish-wag.cjs): je Bild WAG_FRAMES Bilder; Flossenschläge pro Sekunde je nach Tempo
+const SWIM_SHEETS = { reeffish: 'reeffish_swim' };
+const WAG_FRAMES = 4;
+const WAG_RATE = [1.6, 4]; // gemütlich bzw. auf der Flucht
 
 export default class ReefFish extends Animal {
   // variant: Art (0 bis REEF_KINDS - 1), sonst zufällig; herd: Gruppe, zu der er gehört (oder null);
@@ -178,10 +182,17 @@ export default class ReefFish extends Animal {
     }
     if (this.state === 'following') this.h += (FOLLOW_HEIGHT - this.h) * 0.05;
     const tank = this.inTank();
-    const look = this.skin ?? this.kind.texture; // seltene Variante mit eigenem Bild (Goldqualle)
+    const base = this.skin ?? this.kind.texture; // seltene Variante mit eigenem Bild (Goldqualle)
+    const wag = SWIM_SHEETS[base] && this.scene.textures.exists(SWIM_SHEETS[base]);
+    const look = wag ? SWIM_SHEETS[base] : base;
     if (this.sprite.texture.key !== look) this.sprite.setTexture(look).setOrigin(0.5, 0.5);
     this.sprite.setScale(this.swimScale(tank) * this.babyScale()).setAngle(0);
-    this.sprite.setFrame(this.swimFrame());
+    if (wag) {
+      // Flossenschlag: schneller, wenn er schneller schwimmt (jeder Fisch in eigenem Takt)
+      const rate = Phaser.Math.Linear(WAG_RATE[0], WAG_RATE[1], Phaser.Math.Clamp((this.moveSpeed ?? 0) / 40, 0, 1));
+      this.wagT = (this.wagT ?? Math.random()) + (this.scene.game.loop.delta / 1000) * rate;
+      this.sprite.setFrame(this.swimFrame() * WAG_FRAMES + (Math.floor(this.wagT * WAG_FRAMES) % WAG_FRAMES));
+    } else this.sprite.setFrame(this.swimFrame());
     const bob = Math.sin(this.phase * 2.2 + this.offset.x) * BOB;
     this.sprite.setPosition(this.x, this.y - this.h + bob);
     // im Tank zwischen Rückwand und vorderer Glasscheibe einsortiert (wie die Zierfische, siehe drawTanks)

@@ -504,11 +504,16 @@ RIFF_TILES = [{'reef_sand0': riff(16), 'reef_sand1': riff(17), 'reef_sand2': rif
 for group in RIFF_TILES:
     for k, t in zip(group, flatten([tile(alpha_crop(Image.open(p).convert('RGBA'))) for p in group.values()])):
         t.save(f'{OUT}/{k}.png')
-RIFF_OBJS = {'anchor_sack': 0, 'reef_anemone': 4, 'reef_brain': 5, 'reef_brain2': 6, 'reef_branch': 7, 'reef_branch2': 8, 'reef_fan': 10,
+RIFF_OBJS = {'reef_anemone': 4, 'reef_brain': 5, 'reef_brain2': 6, 'reef_branch': 7, 'reef_branch2': 8, 'reef_fan': 10,
              'reef_fan2': 11, 'reef_kelp': 13, 'reef_rock': 15, 'reef_starfish': 20, 'reef_tube': 21, 'reef_tube2': 22, 'scissors': 23,
              'shell': 24, 'tank_rock': 25}
 for k, n in RIFF_OBJS.items():
     place(crop(dehalo(Image.open(riff(n)).convert('RGBA'))), old(k), shadow=None, solid=200).save(f'{OUT}/{k}.png')
+# Werkzeug-Sack im Riff: orangefarbener Packsack mit Kescher (freigestellt mit npm run cutout -- "Sprites/Riff Sack.jpg"
+# "Sprites/Riff Sack.png" 500,165 625,415 630,430: Lücken im Griff und hinter dem Riemen)
+place(crop(Image.open(os.path.join(ROOT, 'Sprites/Riff Sack.png')).convert('RGBA')), old('anchor_sack'), shadow=None, solid=200).save(f'{OUT}/anchor_sack.png')
+# Zoo-U-Boot (Schnellreise im Riff): wird groß gezeigt (scale 1.5), daher auch in HD; ein Bild, gleiche Lage wie boat_zoo.png
+place(crop(Image.open(os.path.join(ROOT, 'Sprites/Unterseeboot.png')).convert('RGBA')), Image.open(f'{A}/boat_zoo.png').convert('RGBA'), shadow=None, solid=200).save(f'{OUT}/boat_zoo.png')
 
 
 def boat_sheet(new, orig):
