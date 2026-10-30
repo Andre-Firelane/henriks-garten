@@ -6,7 +6,9 @@ import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
 import { isTouch, IS_PHONE } from './touch.js';
 
-const PHONE_ZOOM = 1.45; // auf dem Handy ist die Karte so viel größer (zum Verschieben), die Schilder wachsen mit
+const MARGIN = 6; // so viel Rand um die Schilder beim Verschieben (Handy)
+const HINT_SPACE = 30; // unten frei für den Hinweis
+const PHONE_ZOOM = 1.2; // auf dem Handy füllt die Karte den Bildschirm und ist dazu noch so viel größer (zum Verschieben)
 
 let panel = null;
 let state = null;
@@ -43,14 +45,22 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();
-  // herangezoomt: so verschieben, dass das eigene Gebiet (im Tutorial das Ziel des Pfeils) in der Mitte liegt
+  // herangezoomt: so verschieben, dass alle Schilder zu sehen sind (frei bleibt unten der Hinweis). Passen sie nicht
+  // alle hinein, gewinnt das Tierpark-Schild (das wichtigste, oben links): abgeschnitten wird dann unten bzw. rechts
   if (IS_PHONE) {
     const scroll = panel.querySelector('.travel-scroll');
-    const focus = places.find((p) => p.id === (opts.point ?? current) || p.parts?.some((q) => q.id === (opts.point ?? current))) ?? places[0];
-    if (focus) {
-      scroll.scrollLeft = (focus.x / 100) * scroll.scrollWidth - scroll.clientWidth / 2;
-      scroll.scrollTop = (focus.y / 100) * scroll.scrollHeight - scroll.clientHeight / 2;
-    }
+    const s = scroll.getBoundingClientRect();
+    const view = { w: scroll.clientWidth, h: scroll.clientHeight - HINT_SPACE };
+    const rects = [...panel.querySelectorAll('.travel-map > .place, .travel-map > .place-group')].map((el) => el.getBoundingClientRect());
+    const box = {
+      left: Math.min(...rects.map((r) => r.left)) - s.left - MARGIN,
+      top: Math.min(...rects.map((r) => r.top)) - s.top - MARGIN,
+      right: Math.max(...rects.map((r) => r.right)) - s.left + MARGIN,
+      bottom: Math.max(...rects.map((r) => r.bottom)) - s.top + MARGIN,
+    };
+    const fit = (lo, hi, size) => (hi - lo <= size ? (lo + hi - size) / 2 : lo); // mittig, sonst bündig am Anfang
+    scroll.scrollLeft = fit(box.left, box.right, view.w);
+    scroll.scrollTop = fit(box.top, box.bottom, view.h);
   }
   // Ziele zum Auswählen mit WASD: die Felder eines größeren Schilds übereinander (für die Richtung etwas versetzt)
   const flat = places.flatMap((p) => (p.parts ? p.parts.map((q, i) => ({ ...q, x: p.x, y: p.y + (i - (p.parts.length - 1) / 2) * 9 })) : [p]));

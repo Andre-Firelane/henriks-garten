@@ -744,6 +744,11 @@ const ANIMATIONS = [
   // Dschungel: Orang-Utan und Orang-Utan mit Backenwülsten (orangutan2); Sitzen nur von vorne, Winken etwas breiter (Arm).
   // 10 % größer als zuerst, daher Rahmen 96x96 (Fußlinie 92/96, fast wie orangutan.png mit 84/88)
   { src: 'Animation/Orangutan_läuft_vorne.mp4', out: 'orangutan_walk.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
+  // Sprung von Baum zu Baum: das Video zeigt zwei Sprünge, gebraucht wird der erste (ducken, abspringen, fliegen mit
+  // ausgestreckten Armen, landen); breiterer Rahmen für die ausgestreckten Arme. Die Bilder folgen dem Sprung (Orangutan.js)
+  { src: 'Animation/Orangutan_sprung.mp4', out: 'orangutan_jump.png', range: [14, 53], scale: 0.99, frameW: 112, frameH: 96, feetY: 92 },
+  // dasselbe für den Orang-Utan mit Backenwülsten (ein Sprung im Video)
+  { src: 'Animation/Orangutan2_sprung.mp4', out: 'orangutan2_jump.png', range: [12, 50], scale: 0.99, frameW: 112, frameH: 96, feetY: 92 },
   { src: 'Animation/Orangutan_läuft_hinten.mp4', out: 'orangutan_walk_back.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
   // Sitzen und Winken: im Video dunkler und matter als das Laufen (Fell Helligkeit 148 statt ca. 170), daher angeglichen
   { src: 'Animation/Orangutan_idle_vorne.mp4', out: 'orangutan_idle.png', saturate: 1.18, brightness: 1.16, scale: 0.198, frameW: 96, frameH: 96, feetY: 92 },

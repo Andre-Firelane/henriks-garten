@@ -164,7 +164,17 @@
       @supports (height: 1dvh) { .travel-box { width: min(98vw, calc((92dvh - 30px) * 1024 / 572)); } }
       /* auf dem Handy ist die Karte größer als die Tafel (--map-zoom) und lässt sich mit dem Finger verschieben */
       .travel-scroll { border-radius: 12px; }
-      .travel-box.phone .travel-scroll { overflow: auto; max-height: calc(92dvh - 30px); -webkit-overflow-scrolling: touch; }
+      /* Handy: die Karte füllt den ganzen Bildschirm (mindestens so hoch und so breit wie er, mal --map-zoom) und lässt sich
+         verschieben; Schließen oben rechts und der Hinweis unten liegen darüber */
+      .travel-box.phone { position: fixed; inset: 0; width: auto; }
+      .travel-box.phone .travel-scroll { position: absolute; inset: 0; overflow: auto; border-radius: 0; -webkit-overflow-scrolling: touch; }
+      .travel-box.phone .travel-map { width: calc(max(100vw, 100dvh * 1024 / 572) * var(--map-zoom, 1)); border-radius: 0; box-shadow: none; }
+      .travel-box.phone > .ov-close { position: absolute; top: 10px; right: 10px; margin: 0; z-index: 4; }
+      .travel-box.phone > .travel-hint:not(.tut) {
+        position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 24px);
+        margin: 0; z-index: 3; pointer-events: none; font-size: 13px; padding: 4px 12px; border-radius: 12px;
+        background: rgba(43, 29, 20, 0.82); text-shadow: none; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      }
       .travel-map {
         position: relative; width: calc(100% * var(--map-zoom, 1)); aspect-ratio: 1024 / 572; border-radius: 12px;
         background: url(assets/worldmap.jpg) center / 100% 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
@@ -176,6 +186,8 @@
         font: bold 13px "Trebuchet MS", Arial, sans-serif; color: #3a2414; cursor: pointer; transition: transform 0.12s;
       }
       .travel-map .place > span { font-size: 0.9em; line-height: 1.15; margin-top: 0.45em; } /* lange Namen wie "Bambuswald" passen hinein; etwas Abstand zum Bild */
+      /* Tierbild mittig in seinem Feld statt unten: flache Tiere (Fisch) stehen sonst direkt auf dem Namen */
+      .travel-map .place > .animal-box { align-items: center; }
       .travel-map .place small { display: block; font-size: 0.85em; font-weight: normal; }
       /* Wetterphase der Savanne mit Countdown: gut lesbar unter dem Schild */
       .travel-map .place > .season-tag {

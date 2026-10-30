@@ -204,6 +204,8 @@ const VIDEO_ANIMS = {
   macaque_sit_back: [72, 72, 1],
   macaque_walk_back: [72, 72, 24],
   orangutan_walk: [96, 96, 34],
+  orangutan_jump: [112, 96, 40], // Bilder einzeln gezeigt, passend zum Sprung (siehe Orangutan.js)
+  orangutan2_jump: [112, 96, 39],
   orangutan_walk_back: [96, 96, 44],
   orangutan_idle: [96, 96, 76],
   orangutan_wave: [112, 96, 81],

@@ -15,7 +15,23 @@ const WAVES_NEEDED = 3; // so oft muss man zurückwinken, dann kommt er herunter
 const DOWN_TIME = 15; // so lange sitzt er unten, dann klettert er wieder hinauf
 const JUMP_RANGE = 5; // so viele Kacheln weit springt er höchstens zum nächsten Baum
 const CROWN_UP = 104; // Höhe der Baumkrone über dem Fuß des Urwaldbaums (Bild "jungle_tree")
-const SWING_MS = 900; // so lange schwingt er von Krone zu Krone
+const SWING_MS = 1100; // so lange schwingt er von Krone zu Krone
+// Sprung-Bilder je Aussehen: die Bilder laufen mit dem Sprung mit, vom Ducken bis zur Landung. Phasen im Sheet und wann
+// sie im Sprung kommen (Anteil der Zeit): ducken und abstoßen, solange er noch fast am Baum ist; fliegen über den Bogen;
+// landen, wenn er am Ziel ankommt
+const JUMPS = {
+  orangutan: { key: 'orangutan_jump', phases: [{ until: 0.12, frames: [0, 10] }, { until: 0.88, frames: [10, 27] }, { until: 1, frames: [27, 39] }] },
+  orangutan2: { key: 'orangutan2_jump', phases: [{ until: 0.12, frames: [0, 12] }, { until: 0.88, frames: [12, 28] }, { until: 1, frames: [28, 38] }] },
+};
+const JUMP_SHEETS = Object.fromEntries(Object.entries(JUMPS).map(([k, j]) => [k, j.key]));
+function jumpFrame(phases, p) {
+  let from = 0;
+  for (const { until, frames: [a, b] } of phases) {
+    if (p <= until) return Math.round(a + ((p - from) / (until - from)) * (b - a));
+    from = until;
+  }
+  return phases.at(-1).frames[1];
+}
 const SWING_ARC = 36; // so hoch ist der Bogen dabei
 const CALL_VOLUME = 0.5;
 const TREE_SEAT = 16; // mit Sitz-Animation: so weit unter der Mitte der Krone sitzt er (Füße)
@@ -159,12 +175,13 @@ export default class Orangutan extends Animal {
       t: 1,
       duration: SWING_MS,
       ease: 'Sine.easeInOut',
-      onUpdate: () => {
+      onUpdate: (tween) => {
         if (!this.peek?.active) return;
         const x = from.x + (to.x - from.x) * k.t;
         const y = from.y + (to.y - from.y) * k.t - CROWN_UP - Math.sin(Math.PI * k.t) * SWING_ARC;
         this.peek.setPosition(x, y).setDepth(Math.max(from.y, to.y) + 2).setAngle(Math.sin(Math.PI * 2 * k.t) * 15);
-        this.swingPos = { x, y, depth: Math.max(from.y, to.y) + 2 }; // für die Laufanimation (siehe render)
+        // für Sprung- bzw. Laufanimation (siehe render); p: Anteil der Zeit (k.t ist die verlangsamte Bewegung)
+        this.swingPos = { x, y, p: tween.progress, depth: Math.max(from.y, to.y) + 2 };
       },
       onComplete: () => {
         if (this.state !== 'wild' || this.phase !== 'swing') return;
@@ -240,12 +257,26 @@ export default class Orangutan extends Animal {
   }
 
   render(moving) {
+    // nach dem Sprung zurück aufs normale Bild, damit Sitz- und Laufanimation wieder greifen
+    if (!this.swinging() && Object.values(JUMP_SHEETS).includes(this.sprite.texture.key)) this.showStill(this.lookTexture());
     super.render(moving);
     const up = this.aloft();
     // im Baum mit Sitz-Animation ganz zu sehen, vor der Krone; beim Sprung mit der Laufanimation im Bogen;
     // ohne Animation nur Kopf und Arme im Laub
     const anim = this.animKey(false);
     const seated = (this.inTree() || this.swinging()) && !!anim && this.scene.anims.exists(anim);
+    const jump = this.swinging() && JUMP_SHEETS[this.skin ?? 'orangutan'];
+    if (jump && this.scene.textures.exists(jump)) {
+      // Sprung-Bilder passend zum Fortschritt des Sprungs (statt der Laufanimation)
+      const n = this.scene.textures.get(jump).frameTotal - 1; // ohne das Gesamtbild (__BASE)
+      this.sprite.stop();
+      if (this.sprite.texture.key !== jump) this.sprite.setTexture(jump);
+      this.sprite.setFrame(Math.min(n - 1, jumpFrame(JUMPS[this.skin ?? 'orangutan'].phases, this.swingPos.p))).setFlipX(this.faceX < 0).setOrigin(0.5, this.kind.originY);
+      this.sprite.setPosition(this.swingPos.x, this.swingPos.y + TREE_SEAT).setDepth(this.swingPos.depth).setVisible(true);
+      this.shadow.setVisible(false);
+      this.peek?.setVisible(false);
+      return;
+    }
     if (seated && this.swinging()) this.sprite.setPosition(this.swingPos.x, this.swingPos.y + TREE_SEAT).setDepth(this.swingPos.depth);
     else if (seated) this.sprite.setPosition(this.x, this.y - CROWN_UP + TREE_SEAT).setDepth(this.y + 2);
     this.sprite.setVisible(!up || seated);
