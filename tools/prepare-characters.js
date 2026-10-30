@@ -732,7 +732,8 @@ const ANIMATIONS = [
   // Spielfigur im Bambuswald (Kleidung Asien), Höhe wie die anderen Kleidungen (108); gemeinsamer Maßstab für alle vier.
   // Laufen: Ausschnitte, die nahtlos im Kreis laufen
   { src: 'Animation/Character_bambuswald_läuft_vorne.mp4', out: 'hero_asia_walk.png', range: [26, 69], scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
-  { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', range: [9, 24], scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  // von hinten (neue Fassung): ein ganzer Doppelschritt, nur vom letzten Bild zurück zum ersten fehlt eins: ein Zwischenbild
+  { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', loopBlend: 1, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   // Wasserbüffel mit Henrik (Reittier Asien), Maße wie ride_asia.png (Höhe 160)
@@ -763,7 +764,8 @@ const ANIMATIONS = [
   // Quelle freigestellt mit npm run cutout -- Sprites/Boot.jpg Sprites/Boot.png 840,110 775,180 895,180 780,90 777,91
   // 750,105 765,105 720,120 756,120 724,150 885,150 913,184 901,195 809,77 (Lücken am Kran), dann Bodenschatten entfernt
   { src: 'Sprites/Boot.png', out: 'boat_zoo.png', cols: 1, rows: 1, frameW: 240, frameH: 160, feetY: 130, figureH: 127 },
-  // Wasserflugzeug (Schnellreise im Dschungel), ein Bild; neue Fassung im Zoo-Stil (Quelle freigestellt, Schatten entfernt)
+  // Wasserflugzeug (Schnellreise im Dschungel), ein Bild; neue Fassung im Zoo-Stil. Quelle freigestellt mit npm run cutout --
+  // "Sprites/Wasserflugzeug neu.jpg" "Sprites/Wasserflugzeug neu.png" 336,160 337,176 352,176 (Lücke unter dem Flügel), Schatten entfernt
   { src: 'Sprites/Wasserflugzeug neu.png', out: 'seaplane.png', cols: 1, rows: 1, frameW: 240, frameH: 140, feetY: 136, figureH: 128 },
 ];
 
@@ -1088,8 +1090,12 @@ function prepareGrid(entry) {
   const bw = (box.x1 - box.x0 + 1) * scale;
   const bh = (box.y1 - box.y0 + 1) * scale;
   // höchstens 4096 Pixel breit (größere Texturen kann manches Handy nicht laden): sonst mehrere Reihen
-  const perRow = Math.min(frames.length, Math.floor(MAX_SHEET_W / frameW));
-  const sheet = new PNG({ width: frameW * perRow, height: frameH * Math.ceil(frames.length / perRow) });
+  // loopBlend: so viele Zwischenbilder am Ende, die vom letzten zum ersten Bild überblenden (fehlt dem Video ein Bild
+  // zur sauberen Schleife, wird der Sprung zurück zum Anfang so zu normalen Schritten)
+  const blend = entry.loopBlend ?? 0;
+  const total = frames.length + blend;
+  const perRow = Math.min(total, Math.floor(MAX_SHEET_W / frameW));
+  const sheet = new PNG({ width: frameW * perRow, height: frameH * Math.ceil(total / perRow) });
   frames.forEach((i, n) => {
     const ox = (i % cols) * cw;
     const oy = Math.floor(i / cols) * ch;
@@ -1119,9 +1125,30 @@ function prepareGrid(entry) {
     drawScaled(sheet, img, b, scale, fx + Math.round((frameW - bw) / 2) + (entry.offsetX ?? 0), fy + Math.round(feetY - bh) + lift, () => true);
   });
   if (bw > frameW) console.warn(`${src}: Figur ist breiter als der Frame (${bw.toFixed(0)} > ${frameW})`);
+  const at = (n) => [(n % perRow) * frameW, Math.floor(n / perRow) * frameH];
+  for (let j = 1; j <= blend; j++) {
+    const t = j / (blend + 1);
+    const [ax, ay] = at(frames.length - 1);
+    const [bx, by] = at(0);
+    const [cx, cy] = at(frames.length - 1 + j);
+    for (let y = 0; y < frameH; y++) {
+      for (let x = 0; x < frameW; x++) {
+        const p = ((ay + y) * sheet.width + ax + x) * 4;
+        const q = ((by + y) * sheet.width + bx + x) * 4;
+        const o = ((cy + y) * sheet.width + cx + x) * 4;
+        // mit vormultipliziertem Alpha mischen, sonst bekommen halb durchsichtige Ränder dunkle Säume
+        const pa = (sheet.data[p + 3] / 255) * (1 - t);
+        const qa = (sheet.data[q + 3] / 255) * t;
+        const a = pa + qa;
+        if (!a) continue;
+        for (let c = 0; c < 3; c++) sheet.data[o + c] = Math.round((sheet.data[p + c] * pa + sheet.data[q + c] * qa) / a);
+        sheet.data[o + 3] = Math.round(a * 255);
+      }
+    }
+  }
 
   writeSheet(out, sheet);
-  console.log(`${out}: ${frames.length} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
+  console.log(`${out}: ${total} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
 }
 
 // ONLY=hero_jungle.png,canoe.png: nur diese Bilder neu erzeugen

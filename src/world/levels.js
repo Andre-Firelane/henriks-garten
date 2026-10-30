@@ -289,7 +289,7 @@ export const LEVELS = {
     name: tr('Bambuswald', 'Bamboo Forest'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 13.16, ty: 41.54, texture: 'car_zoo', frame: 0, scale: 1.3 },
-    map: { x: 78, y: 37, icon: 'koi' },
+    map: { x: 78, y: 37, icon: 'panda' },
     rows: [
       'JQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQk',
       'Q.....nqnq....q.q...#...qqq.QQ.Q..qQQQqk',
@@ -372,7 +372,7 @@ export const LEVELS = {
     // Schnellreise: Wasserflugzeug am Inselufer (bob: schaukelt auf dem Wasser; reach: so nah muss man heran;
     // arrive: Ankunft auf der Insel statt neben dem Flugzeug)
     car: { tx: 16.4, ty: 22.6, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 19, ty: 22 } },
-    map: { x: 30, y: 64, icon: 'snake' },
+    map: { x: 30, y: 64, icon: 'macaw' },
     rows: [
       'kJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkk',
       'JŔŔŔŔŔŔŔŔk.J.....nľf...nfqn..n....ľn.qnľqn.J',

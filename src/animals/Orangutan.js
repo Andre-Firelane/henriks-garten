@@ -150,6 +150,9 @@ export default class Orangutan extends Animal {
     this.tree = tree; // schon reserviert, damit kein anderer dorthin springt
     this.phase = 'swing';
     this.peek?.setFlipX(to.x < from.x);
+    // Blickrichtung für die Laufanimation beim Sprung
+    this.faceX = Math.sign(to.x - from.x) || this.faceX;
+    this.faceY = to.y >= from.y ? 1 : -1;
     const k = { t: 0 };
     this.scene.tweens.add({
       targets: k,
@@ -161,10 +164,12 @@ export default class Orangutan extends Animal {
         const x = from.x + (to.x - from.x) * k.t;
         const y = from.y + (to.y - from.y) * k.t - CROWN_UP - Math.sin(Math.PI * k.t) * SWING_ARC;
         this.peek.setPosition(x, y).setDepth(Math.max(from.y, to.y) + 2).setAngle(Math.sin(Math.PI * 2 * k.t) * 15);
+        this.swingPos = { x, y, depth: Math.max(from.y, to.y) + 2 }; // für die Laufanimation (siehe render)
       },
       onComplete: () => {
         if (this.state !== 'wild' || this.phase !== 'swing') return;
         Object.assign(this, to);
+        this.swingPos = null;
         this.peek?.setAngle(0);
         this.phase = 'tree';
         this.phaseTime = Phaser.Math.FloatBetween(...SIT_TIME);
@@ -222,19 +227,27 @@ export default class Orangutan extends Animal {
     this.scene.tweens.add({ targets: t, y: y - 8, duration: ms, onComplete: () => t.destroy() });
   }
 
-  // im Baum: sitzt (Sitz-Animation) bzw. winkt
+  // im Baum: sitzt (Sitz-Animation) bzw. winkt; beim Sprung von Baum zu Baum: Laufanimation
   animKey(moving) {
     const set = this.animSet();
     if (set && this.inTree()) return this.phase === 'wave' && set.wave ? set.wave : set.idleDown;
+    if (set && this.swinging()) return super.animKey(true);
     return super.animKey(moving);
+  }
+
+  swinging() {
+    return this.state === 'wild' && this.phase === 'swing' && !!this.swingPos;
   }
 
   render(moving) {
     super.render(moving);
     const up = this.aloft();
-    // im Baum mit Sitz-Animation ganz zu sehen, vor der Krone; ohne (und beim Schwingen) nur Kopf und Arme im Laub
-    const seated = this.inTree() && !!this.animKey(false) && this.scene.anims.exists(this.animKey(false));
-    if (seated) this.sprite.setPosition(this.x, this.y - CROWN_UP + TREE_SEAT).setDepth(this.y + 2);
+    // im Baum mit Sitz-Animation ganz zu sehen, vor der Krone; beim Sprung mit der Laufanimation im Bogen;
+    // ohne Animation nur Kopf und Arme im Laub
+    const anim = this.animKey(false);
+    const seated = (this.inTree() || this.swinging()) && !!anim && this.scene.anims.exists(anim);
+    if (seated && this.swinging()) this.sprite.setPosition(this.swingPos.x, this.swingPos.y + TREE_SEAT).setDepth(this.swingPos.depth);
+    else if (seated) this.sprite.setPosition(this.x, this.y - CROWN_UP + TREE_SEAT).setDepth(this.y + 2);
     this.sprite.setVisible(!up || seated);
     this.shadow.setVisible(!up);
     this.peek?.setVisible(up && !seated);

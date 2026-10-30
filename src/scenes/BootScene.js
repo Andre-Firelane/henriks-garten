@@ -171,7 +171,7 @@ const VIDEO_ANIMS = {
   antelope_walk: [72, 100, 24],
   // Spielfigur und Wasserbüffel im Bambuswald
   hero_asia_walk: [88, 116, 44],
-  hero_asia_walk_back: [88, 116, 16],
+  hero_asia_walk_back: [88, 116, 25],
   hero_asia_idle: [88, 116, 59],
   hero_asia_idle_back: [88, 116, 49],
   ride_asia_walk: [160, 230, 27],

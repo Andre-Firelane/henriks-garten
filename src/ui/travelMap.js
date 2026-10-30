@@ -4,7 +4,9 @@
 import { animalIconSquare } from './icons.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
-import { isTouch } from './touch.js';
+import { isTouch, IS_PHONE } from './touch.js';
+
+const PHONE_ZOOM = 1.45; // auf dem Handy ist die Karte so viel größer (zum Verschieben), die Schilder wachsen mit
 
 let panel = null;
 let state = null;
@@ -35,12 +37,21 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
         : button(p, ` style="left:${p.x}%;top:${p.y}%"`),
     )
     .join('');
-  panel.innerHTML = `<div class="travel-box">${CLOSE_BUTTON}
-      <div class="travel-map">${markers}</div>
+  panel.innerHTML = `<div class="travel-box${IS_PHONE ? ' phone' : ''}" style="--map-zoom:${IS_PHONE ? PHONE_ZOOM : 1}">${CLOSE_BUTTON}
+      <div class="travel-scroll"><div class="travel-map">${markers}</div></div>
       <p class="travel-hint${opts.hint ? ' tut' : ''}">${opts.hint ? `<span class="tut-hint">${opts.hint}</span>` : tr('Wohin soll die Reise gehen? Tippe auf ein Gebiet – oder wähle mit <b>WASD</b> und fahre mit <b>E</b> los.', 'Where do you want to go? Tap an area – or choose with <b>WASD</b> and drive off with <b>E</b>.')}</p>
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();
+  // herangezoomt: so verschieben, dass das eigene Gebiet (im Tutorial das Ziel des Pfeils) in der Mitte liegt
+  if (IS_PHONE) {
+    const scroll = panel.querySelector('.travel-scroll');
+    const focus = places.find((p) => p.id === (opts.point ?? current) || p.parts?.some((q) => q.id === (opts.point ?? current))) ?? places[0];
+    if (focus) {
+      scroll.scrollLeft = (focus.x / 100) * scroll.scrollWidth - scroll.clientWidth / 2;
+      scroll.scrollTop = (focus.y / 100) * scroll.scrollHeight - scroll.clientHeight / 2;
+    }
+  }
   // Ziele zum Auswählen mit WASD: die Felder eines größeren Schilds übereinander (für die Richtung etwas versetzt)
   const flat = places.flatMap((p) => (p.parts ? p.parts.map((q, i) => ({ ...q, x: p.x, y: p.y + (i - (p.parts.length - 1) / 2) * 9 })) : [p]));
   const targets = flat.filter((p) => p.id !== current);

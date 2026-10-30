@@ -162,8 +162,11 @@
       .travel-box { width: min(98vw, calc(92vh * 1024 / 572)); text-align: center; }
       /* Handy: 100vh ist dort höher als das sichtbare Bild (Adressleiste), dvh nicht */
       @supports (height: 1dvh) { .travel-box { width: min(98vw, calc((92dvh - 30px) * 1024 / 572)); } }
+      /* auf dem Handy ist die Karte größer als die Tafel (--map-zoom) und lässt sich mit dem Finger verschieben */
+      .travel-scroll { border-radius: 12px; }
+      .travel-box.phone .travel-scroll { overflow: auto; max-height: calc(92dvh - 30px); -webkit-overflow-scrolling: touch; }
       .travel-map {
-        position: relative; width: 100%; aspect-ratio: 1024 / 572; border-radius: 12px;
+        position: relative; width: calc(100% * var(--map-zoom, 1)); aspect-ratio: 1024 / 572; border-radius: 12px;
         background: url(assets/worldmap.jpg) center / 100% 100%; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
         container-type: inline-size; /* die Schilder richten ihre Größe nach der Kartenbreite (cqw) */
       }
@@ -172,7 +175,7 @@
         padding: 3px 2px 4px; border: 3px solid #6b4224; border-radius: 12px; background: rgba(244, 220, 174, 0.92);
         font: bold 13px "Trebuchet MS", Arial, sans-serif; color: #3a2414; cursor: pointer; transition: transform 0.12s;
       }
-      .travel-map .place > span { font-size: 0.9em; line-height: 1.15; } /* lange Namen wie "Bambuswald" passen hinein */
+      .travel-map .place > span { font-size: 0.9em; line-height: 1.15; margin-top: 0.45em; } /* lange Namen wie "Bambuswald" passen hinein; etwas Abstand zum Bild */
       .travel-map .place small { display: block; font-size: 0.85em; font-weight: normal; }
       /* Wetterphase der Savanne mit Countdown: gut lesbar unter dem Schild */
       .travel-map .place > .season-tag {
@@ -198,7 +201,7 @@
       .travel-map .place-group > .group-title { font: bold 1em/1.2 "Trebuchet MS", Arial, sans-serif; color: #3a2414; }
       .travel-map .place-group > .place { position: relative; transform: none; width: 100%; height: 5.2em; font-size: 1em; border-width: 2px; }
       .travel-map .place-group > .place:hover, .travel-map .place-group > .place.selected { transform: scale(1.06); }
-      .travel-map .place-group > .place > span { font-size: 0.82em; } /* "Reptilienhaus" passt hinein */
+      .travel-map .place-group > .place > span { font-size: 0.82em; margin-top: 0.3em; } /* "Reptilienhaus" passt hinein */
       /* Hauptziel (Tierpark-Zentrum) größer als das zweite Auto (Reptilienhaus) */
       .travel-map .place-group > .place:not(.main) { height: 3.9em; }
       .travel-map .place-group > .place:not(.main) > .animal-box { font-size: 0.68em; }

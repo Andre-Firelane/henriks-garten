@@ -306,6 +306,7 @@ const ANCHOR_RING = [19, -18]; // ... und dort am Anker (vom Ankerpunkt des Bild
 const SEA_TINT = [0x1a7ad0, 0.24]; // blaue Tönung über allem unter Wasser
 const SEA_BUBBLES = 260; // alle so viele Millisekunden steigt irgendwo im Bild ein Bläschen auf
 const CAR_DIST = 30; // so nah (über die Hitbox hinaus) muss man am Auto stehen, um mit der Aktionstaste die Weltkarte zu öffnen – von jeder Seite
+const SEA_TINT_DEPTH = 99990; // blaue Tönung der Unterwasserwelt (darüber nur Lichtstrahlen, das Boot und die Beschriftungen)
 const SHADOW_PAD = 8; // so viel höher ist das Schattenbild eines Autos als das Auto (siehe carShadow)
 // so viele Boden-Flächen (je 1024 x 1024, 4 MB) darf der Boden in doppelter Auflösung höchstens haben (Wald und Wiese: 13,
 // Tierpark: 37). Handys und Geräte mit wenig Speicher: nur die kleinen Gebiete, der Tierpark bleibt einfach aufgelöst
@@ -735,7 +736,8 @@ export default class GardenScene extends Phaser.Scene {
     for (const [i, car] of (LEVEL.car ? [LEVEL.car, ...(LEVEL.extraCars ?? [])] : []).entries()) {
       const { x, y } = tileToWorld(car.tx, car.ty);
       const k = car.scale ?? 1; // alle Autos etwa gleich groß (siehe car.scale in levels.js)
-      const img = this.add.sprite(x, y + 4 - (car.float ?? 0), car.texture, car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(y);
+      // das Boot (float) schwimmt oben auf dem Wasser: über der blauen Tönung und den Lichtstrahlen der Unterwasserwelt
+      const img = this.add.sprite(x, y + 4 - (car.float ?? 0), car.texture, car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(car.float ? SEA_TINT_DEPTH + 2 : y);
       if (car.texture.startsWith('car_')) this.add.image(img.x, img.y, this.carShadow(car.texture, car.frame)).setOrigin(0.5, 136 / (140 + SHADOW_PAD)).setScale(0.5 * k).setDepth(y - 1).setAlpha(0.43);
       img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearCar ? this.openCarMap() : this.tooFar()));
       const label = this.add
@@ -1066,12 +1068,12 @@ export default class GardenScene extends Phaser.Scene {
     const area = { tx0: 1, tx1: MAP_W - 2, ty0: 1, ty1: MAP_H - 2, height: sea.fishHeight, scale: sea.fishScale };
     this.tankFish.push(stockTank(this, area, sea.fish));
     // Tönung und Lichtstrahlen hängen am Bildschirm (groß genug für jeden Zoom), unter den Beschriftungen
-    this.add.rectangle(0, 0, 8000, 8000, ...SEA_TINT).setScrollFactor(0).setDepth(99990);
+    this.add.rectangle(0, 0, 8000, 8000, ...SEA_TINT).setScrollFactor(0).setDepth(SEA_TINT_DEPTH);
     const { width: w, height: h } = this.scale;
     for (let i = 0; i < 5; i++) {
       const x = (w * (i + 0.5)) / 5 + Phaser.Math.Between(-40, 40);
       const top = Phaser.Math.Between(26, 60);
-      const ray = this.add.graphics().setScrollFactor(0).setDepth(99991).setBlendMode(Phaser.BlendModes.ADD);
+      const ray = this.add.graphics().setScrollFactor(0).setDepth(SEA_TINT_DEPTH + 1).setBlendMode(Phaser.BlendModes.ADD);
       ray.fillStyle(0xbfe8ff, 0.07).fillPoints([{ x: x - top / 2, y: -h }, { x: x + top / 2, y: -h }, { x: x + top * 2.5 - 180, y: h * 2 }, { x: x - top - 180, y: h * 2 }], true);
       this.tweens.add({ targets: ray, alpha: 0.35, duration: Phaser.Math.Between(2500, 4500), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }

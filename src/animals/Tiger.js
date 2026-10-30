@@ -21,6 +21,7 @@ const ROMP_SPEED = 75;
 const ROMP_TURN = [0.4, 0.9]; // so oft schlägt er einen Haken
 const DASH_SPEED = 95; // ... und rennt zurück in den Bambus
 const PEEK_UP = 6; // das Gesicht sitzt etwas über dem Boden
+const PEEK_SCALE = 0.43; // Größe des Kopfs im Bambus (vorher 0,5; etwas kleiner, passend zum animierten Tiger)
 
 export default class Tiger extends Animal {
   constructor(scene, x, y) {
@@ -71,7 +72,7 @@ export default class Tiger extends Animal {
     this.phaseTime = CURIOUS_TIME;
     this.faceX = Math.sign(ball.x - this.x) || 1;
     this.faceY = 1;
-    this.peek = this.scene.add.image(this.x, this.y - PEEK_UP, `${this.baseTexture()}_peek`).setOrigin(0.5, 60 / 64).setScale(0.5).setAlpha(0);
+    this.peek = this.scene.add.image(this.x, this.y - PEEK_UP, `${this.baseTexture()}_peek`).setOrigin(0.5, 60 / 64).setScale(PEEK_SCALE).setAlpha(0);
     this.peek.setFlipX(this.faceX < 0).setDepth(this.y + 40); // vor dem Bambus, damit man das Gesicht sieht
     this.question = this.scene.add
       .text(this.x + 10, this.y - PEEK_UP - 34, '?', { fontFamily: 'Trebuchet MS, Arial', fontSize: '14px', fontStyle: 'bold', color: '#ffffff', stroke: '#2b1d14', strokeThickness: 3, resolution: 4 })
