@@ -61,7 +61,8 @@ export default class Weather {
     }
     t ??= { x: p.x + Phaser.Math.Between(-300, 300), y: p.y + Phaser.Math.Between(-150, 150) };
     const life = Phaser.Math.FloatBetween(7, 12);
-    const img = this.scene.add.image(t.x, t.y, this.puffTex).setTint(0xf4f8f4).setDepth(DARK_DEPTH - 1);
+    // erst unsichtbar: sonst ist sie ein Bild lang voll deckend zu sehen (weißes Aufblitzen), bis updateFog sie einblendet
+    const img = this.scene.add.image(t.x, t.y, this.puffTex).setTint(0xf4f8f4).setDepth(DARK_DEPTH - 1).setAlpha(0);
     return { img, x: t.x + Phaser.Math.Between(-16, 16), y: t.y, life, age: age * life, drift: Phaser.Math.FloatBetween(-5, 5), size: Phaser.Math.FloatBetween(1.6, 2.8) };
   }
 

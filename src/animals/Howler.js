@@ -21,7 +21,7 @@ export const LURE_DIST = 60; // so nah muss die Banane am Fuß seines Baums lieg
 const CLIMB_MS = 1200; // so lange klettert er herunter bzw. hinauf
 const EAT_TIME = 10; // so lange frisst er unten die Banane – in der Zeit fängt man ihn mit dem Lasso
 const CALL_VOLUME = 0.7; // Brüllen ganz nah ...
-const CALL_HEAR = 300; // ... und so weit (Welt-Pixel, etwa 9 Kacheln) hört man es noch – nur in der Nähe
+const CALL_HEAR = 420; // ... und so weit (Welt-Pixel, etwa 13 Kacheln) hört man es noch
 
 export default class Howler extends Animal {
   constructor(scene, x, y, species = 'howler') {
@@ -212,8 +212,10 @@ export default class Howler extends Animal {
     const hidden = this.state === 'wild' && this.phase === 'tree';
     this.sprite.setVisible(!hidden);
     this.shadow.setVisible(!hidden && this.lift < CROWN_UP * 0.5);
-    // im Sprung das Sprungbild (Arme nach vorn, Standbild); sonst laufen bzw. sitzen (Animationen, siehe Animal.render)
-    const jump = this.phase === 'jump' && this.scene.textures.exists(`${this.species}_jump`) ? `${this.species}_jump` : null;
+    // im Sprung und beim Klettern am Stamm das Sprungbild (Arme nach vorn, Standbild); sonst laufen bzw. sitzen
+    // (Animationen, siehe Animal.render)
+    const climbing = (this.phase === 'down' || this.phase === 'up') && this.lift > 0;
+    const jump = (this.phase === 'jump' || climbing) && this.scene.textures.exists(`${this.species}_jump`) ? `${this.species}_jump` : null;
     if (!jump && this.sprite.texture.key === `${this.species}_jump`) this.showStill(this.lookTexture());
     super.render(moving && !this.lift);
     if (jump) {

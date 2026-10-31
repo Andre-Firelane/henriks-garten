@@ -1,7 +1,7 @@
 // Fischreiher: fliegt in regelmäßigen Abständen über die Karte. Manche landen an einer Uferstelle,
 // stehen dort etwa 30 Sekunden (nur dann kann man sie fangen) und fliegen danach weiter.
 // Die Szene startet die Überflüge (siehe updateHerons in GardenScene); hier steckt der Flug selbst.
-// In der Voliere fliegt er ab und zu eine kurze Strecke zu einer anderen Stelle.
+// In der Voliere steht er und fliegt ab und zu eine kurze Strecke zu einer anderen Stelle (auch zum Futter).
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
@@ -16,6 +16,7 @@ const PEN_FLY_EVERY = [10, 20]; // in der Voliere: Sekunden zwischen zwei kurzen
 const PEN_FLY_SPEED = 60; // gemächlicher als beim Überflug
 const PEN_ALTITUDE = 26; // so hoch fliegt er höchstens (unter dem Netz)
 const PEN_MIN_DIST = 50; // so weit soll der Flug mindestens gehen
+const PEN_TURN = [3, 8]; // Reiher, Schuhschnabel, Flamingo stehen im Gehege nur: so oft drehen sie sich um (Sekunden)
 const FOLLOW_ALTITUDE = 30; // gefangen: so hoch fliegt er hinter dem Spieler her (steht der Spieler, landet er)
 const FOLLOW_CLIMB = 3; // wie schnell er dabei aufsteigt bzw. hinuntergleitet
 // Flugbilder mit angelegten Flügeln nach oben rechts: dafür das gespiegelte Bild nach oben links (Flügel ausgestreckt)
@@ -88,18 +89,50 @@ export default class Heron extends Animal {
     return false;
   }
 
-  // In der Voliere: herumstaksen, ab und zu kurz zu einer anderen Stelle fliegen
+  // In der Voliere: stehen (Geier: herumstaksen), ab und zu kurz zu einer anderen Stelle fliegen
   updatePen(dt, player) {
     const f = this.penFlight;
     if (this.baby) return super.updateFree(dt, player); // Küken fliegen noch nicht
     if (!f) {
       this.penFlyTime = (this.penFlyTime ?? Phaser.Math.FloatBetween(3, PEN_FLY_EVERY[1])) - dt;
-      if (this.penFlyTime > 0) return super.updateFree(dt, player);
+      if (this.penFlyTime > 0) return this.kind.penStands ? this.standStill(dt) : super.updateFree(dt, player);
       this.penFlyTime = Phaser.Math.FloatBetween(...PEN_FLY_EVERY);
       const to = this.penLandingSpot();
       if (to) this.penFlight = { from: { x: this.x, y: this.y }, to, done: 0 };
       return false;
     }
+    return this.flyPen(dt);
+  }
+
+  // stehen bleiben und sich ab und zu umdrehen
+  standStill(dt) {
+    this.dirX = 0;
+    this.dirY = 0;
+    this.turnIn = (this.turnIn ?? Phaser.Math.FloatBetween(...PEN_TURN)) - dt;
+    if (this.turnIn <= 0) {
+      this.turnIn = Phaser.Math.FloatBetween(...PEN_TURN);
+      if (Math.random() < 0.6) this.faceX = -this.faceX;
+      else this.faceY = -this.faceY;
+    }
+    return false;
+  }
+
+  // Futter im Tierpark: hinfliegen statt hinlaufen (Reiher, Schuhschnabel, Flamingo; Küken laufen)
+  updateFeed(dt) {
+    const food = this.feed;
+    if (!this.kind.penStands || this.baby || food.phase !== 'walk') return super.updateFeed(dt);
+    if (!this.penFlight) {
+      if (Math.hypot(food.spot.x - this.x, food.spot.y - this.y) < 3) return super.updateFeed(dt);
+      this.penFlight = { from: { x: this.x, y: this.y }, to: { ...food.spot }, done: 0 };
+    }
+    this.flyPen(dt);
+    if (!this.penFlight) return super.updateFeed(dt); // gelandet: beginnt zu fressen
+    return false;
+  }
+
+  // ein Stück des kurzen Flugs in der Voliere
+  flyPen(dt) {
+    const f = this.penFlight;
     const total = Math.hypot(f.to.x - f.from.x, f.to.y - f.from.y);
     f.done = Math.min(total, f.done + PEN_FLY_SPEED * dt);
     const k = f.done / total;

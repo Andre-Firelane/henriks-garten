@@ -3,7 +3,7 @@
 // Dschungel: alle 5 Minuten ein Wechsel: Normal → Starkregen → aufsteigender Nebel
 // dann von vorn. Eine Runde beginnt immer mit Normal, ab dem Anker des Gebiets (beim ersten Spielen gesetzt; die Savanne
 // nutzt game.seasonAnchor, die anderen game.seasonAnchors[Gebiet]).
-// Das Event "Wetterwechsel" springt sofort zur nächsten Phase (skipSeason).
+// Wer sich in der Hütte ins Bett legt, wacht in der nächsten Phase wieder auf (skipSeason, nur für dieses Gebiet).
 // Was sich in den Phasen ändert (Karte, Tiere, Boden), steht in levels.js unter <Gebiet>.seasons.
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
@@ -63,7 +63,7 @@ export function currentSeason(level = 'savanna', now = Date.now()) {
   return seasonState(level, now).id;
 }
 
-// Event "Wetterwechsel": die nächste Phase beginnt jetzt (die Uhr läuft von dort normal weiter)
+// Ausgeschlafen (Bett in der Hütte): die nächste Phase beginnt jetzt (die Uhr läuft von dort normal weiter)
 export function skipSeason(level = 'savanna', now = Date.now()) {
   setAnchor(level, anchor(level, now) - seasonState(level, now).left);
 }

@@ -67,6 +67,8 @@ export const OBJECTS = {
   N: { key: 'hutwall_y', originY: 60 / 80, solid: true, fence: { kind: 'hut', axis: 'y' } },
   p: { key: 'hut_desk', styled: true, originY: 44 / 64, solid: true, hitbox: 14 },
   j: { key: 'hut_chair', styled: true, originY: 44 / 64, solid: true, hitbox: 8 },
+  Ƀ: { key: 'hut_bed', styled: true, originY: 1, solid: true, bed: true }, // Bett: ausruhen, danach ist das Wetter eine Phase weiter (Savanne, Dschungel); Lage siehe BED_LOOK in GardenScene
+  ɓ: { invisible: true, solid: true }, // zweite Kachel unter einem Bett (das Bett liegt über zwei Kacheln)
   a: { key: 'hut_plant', styled: true, originY: 60 / 80, solid: true, hitbox: 10 },
   // Regal an der Wand: nicht fest (die Wand dahinter hält auf), weiter hinten gezeichnet, damit man davor steht
   c: { key: 'hut_shelf', styled: true, originY: 80 / 96, solid: false, depthShift: -14, chest: true },
@@ -615,6 +617,18 @@ export function outerWaterCorners(tx, ty) {
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
+}
+
+// Ecken einer Landkachel, die ins Wasser ragen (beide Nachbarn an der Ecke und der schräge sind Wasser): nur in Gebieten
+// mit roundShore (Dschungel). Die Kachel wird dort abgerundet, darunter liegt Wasser (siehe GardenScene)
+export function outerLandCorners(tx, ty) {
+  if (!LEVEL.roundShore) return 0;
+  const c = charAt(tx, ty);
+  if (c === ' ' || '~owh≈BEŜ'.includes(c)) return 0;
+  const water = (x, y) => charAt(x, y) === '~';
+  const ul = water(tx - 1, ty), ur = water(tx, ty - 1), dr = water(tx + 1, ty), dl = water(tx, ty + 1);
+  return (ul && ur && water(tx - 1, ty - 1) ? CORNER.top : 0) | (ur && dr && water(tx + 1, ty - 1) ? CORNER.right : 0)
+    | (dr && dl && water(tx + 1, ty + 1) ? CORNER.bottom : 0) | (dl && ul && water(tx - 1, ty + 1) ? CORNER.left : 0);
 }
 
 // Boden unter den abgerundeten Ecken einer Wasserkachel: Schlamm, wenn das Wasser im Schlammloch liegt (Trockenzeit),

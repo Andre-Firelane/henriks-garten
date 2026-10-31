@@ -2351,6 +2351,7 @@ const sprites = {
   'aq_statue.png': aqStatue(),
   'jar.png': jarItem(), // Quallenglas (Werkzeug beim Quallen-Event)
   'scissors.png': scissorsItem(), // Schere: Schildkröten aus dem Netz schneiden (Riff)
+  'rod.png': rodItem(), // Angel: Piranhas vom Kanu aus angeln (Dschungel, Regenzeit)
   'lantern.png': lanternItem(), // Laterne in Henriks Hand (Wolfsnacht)
   'wolf_forest_edge.png': wolfForestEdge(), // dunkler Wald hinter dem Wolfswald (jenseits des linken Kartenrands im Tierpark)
 };
@@ -4061,6 +4062,20 @@ function scissorsItem() {
   for (const [x, y] of [[20, 46], [34, 50]]) for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
     if (dx * dx + dy * dy <= 16) o.d[((y + dy) * 64 + x + dx) * 4 + 3] = 0;
   }
+  return o;
+}
+
+// Angel: schräge Rute mit Rolle, die Schnur hängt mit einer rot-weißen Pose herab (doppelte Auflösung)
+function rodItem() {
+  const o = new Canvas(64, 64);
+  for (let k = 0; k <= 1; k++) o.line(8 + k, 58, 52 + k, 6, k ? hex('#7a4e2d') : hex('#b07a40')); // Rute
+  o.rect(6, 52, 7, 8, hex('#3a3028')); // Griff
+  o.circle(17, 47, 4, hex('#8a9098')); // Rolle
+  o.circle(17, 47, 1.5, hex('#3a3028'));
+  o.outline(INK);
+  for (let y = 7; y <= 40; y++) o.set(53, y, hex('#e8eef2', 220)); // Schnur
+  o.circle(53, 43, 3.5, hex('#e8423a')); // Pose: oben rot ...
+  for (let y = 44; y <= 47; y++) for (let x = 50; x <= 56; x++) if ((x - 53) ** 2 + (y - 43) ** 2 <= 12.25) o.set(x, y, hex('#ffffff')); // ... unten weiß
   return o;
 }
 

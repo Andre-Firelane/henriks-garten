@@ -4,6 +4,9 @@ const SHEETS = {
   // Bildbreite, Bildhöhe, Anzahl Bilder im Sheet (je Zeile), welches Bild gezeigt wird (und die Datei, falls sie anders heißt,
   // und die Zahl der Zeilen bei Rastern)
   sheep: [80, 88, 4, 0],
+  cow: [96, 88, 4, 0, 'farm_cow'], // Bauernhof-Event: gefangene Schafe als Kuh, Schwein oder Ziege
+  pig: [80, 88, 4, 0, 'farm_pig'],
+  goat: [80, 88, 4, 0, 'farm_goat'],
   cat: [72, 80, 4, 0],
   deer: [72, 96, 4, 0],
   stag: [80, 112, 4, 0],
@@ -34,6 +37,7 @@ const SHEETS = {
   giraffe: [104, 168, 4, 0],
   reeffish: [96, 64, 12, 0, 'reeffish', 4], // Riff-Fische: der Clownfisch steht für alle (Raster: 12 Bilder je Zeile, 4 Zeilen)
   seahorse: [48, 64, 4, 0],
+  piranha: [96, 64, 2, 0],
   octopus: [72, 72, 4, 0],
   turtle: [112, 88, 4, 0],
   jellyfish: [64, 96, 4, 0],

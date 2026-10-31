@@ -2,11 +2,11 @@
 // Krone, über dem Fluss im Tiefflug dicht übers Wasser, dann wieder hinauf in einen Uferbaum drüben. Nur im Tiefflug
 // fängt man einen mit dem Kescher – am besten vom Kanu aus, wenn man vorausahnt, wohin sie fliegen. Bei Starkregen
 // sitzen sie nur in den Bäumen und fliegen nicht.
-// In der Voliere sitzt er am Boden oder in den Bäumen und fliegt ab und zu eine kurze Strecke.
+// In der Voliere sitzt er auf Bäumen und Sitzstangen und fliegt von Platz zu Platz.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { LEVEL, MAP_W, MAP_H, charAt, inPen, isBlocked } from '../world/map.js';
+import { LEVEL, MAP_W, MAP_H, charAt, inPen, isBlocked, objectAt } from '../world/map.js';
 
 const PERCH_UP = { J: 98, Ṁ: 62 }; // so hoch sitzt er in der Krone (Urwaldbaum, Mangrove)
 const SHORE_RANGE = 3; // Uferbäume: höchstens so viele Kacheln vom Fluss entfernt
@@ -22,6 +22,15 @@ const HIGH_DEPTH = 98990; // hoch in der Luft vor allen Bäumen
 const PEN_FLY_EVERY = [8, 16]; // in der Voliere: so oft fliegt er eine kurze Strecke
 const PEN_ALTITUDE = 26;
 const PEN_FLY_SPEED = 55;
+// Sitzplätze in der Voliere je Objekt: [Versatz zur Seite, Höhe über dem Boden] (Urwaldbaum: in der Krone, Sitzstange:
+// oberer und unterer Querbalken, Mangrove: in der Krone)
+const PEN_SEATS = {
+  jungle_tree: [[-12, 96], [12, 92], [0, 100]],
+  peacock_perch: [[-8, 32], [9, 21]],
+  mangrove: [[-10, 60], [10, 58]],
+};
+const PEN_SIT = [5, 12]; // so lange sitzt er, dann fliegt er zu einem anderen Platz
+const PEN_ARC = 18; // so viel höher fliegt er zwischen zwei Plätzen
 
 export default class Macaw extends Animal {
   constructor(scene, x, y) {
@@ -154,8 +163,73 @@ export default class Macaw extends Animal {
     this.scene.macawCall?.(this);
   }
 
-  // in der Voliere: herumhüpfen, ab und zu eine kurze Strecke fliegen
+  // in der Voliere: sitzt nur auf Bäumen und Sitzstangen (PEN_SEATS) und fliegt ab und zu zu einem anderen freien
+  // Platz. Gibt es keinen Sitzplatz (mehr), wie früher: am Boden herumhüpfen und kurze Strecken fliegen
   updatePen(dt, player) {
+    const seats = this.penSeats();
+    if (!seats.length) return this.updatePenGround(dt, player);
+    const f = this.penFlight;
+    if (!f) {
+      // noch kein Platz (gerade eingezogen, geladen): gleich auf einen freien setzen
+      if (!this.seat || !seats.some((t) => t.key === this.seat.key)) {
+        const free = this.freeSeats(seats);
+        if (!free.length) return this.updatePenGround(dt, player);
+        this.sitOn(Phaser.Utils.Array.GetRandom(free));
+      }
+      this.x = this.seat.x;
+      this.y = this.seat.y;
+      this.altitude = this.seat.up;
+      this.penFlyIn = (this.penFlyIn ?? Phaser.Math.FloatBetween(2, PEN_SIT[1])) - dt;
+      if (this.penFlyIn > 0) return false;
+      this.penFlyIn = Phaser.Math.FloatBetween(...PEN_SIT);
+      const free = this.freeSeats(seats).filter((t) => Math.hypot(t.x - this.x, t.y - this.y) > 20);
+      const to = Phaser.Utils.Array.GetRandom(free);
+      if (!to) return false;
+      const from = this.seat;
+      this.sitOn(to); // gleich reservieren, damit kein anderer dorthin fliegt
+      this.penFlight = { from: { x: from.x, y: from.y, up: from.up }, to, done: 0, total: Math.max(1, Math.hypot(to.x - from.x, to.y - from.y)) };
+      return false;
+    }
+    // im Bogen von Platz zu Platz (Höhe von Sitz zu Sitz, dazwischen etwas höher)
+    f.done = Math.min(f.total, f.done + PEN_FLY_SPEED * dt);
+    const k = f.done / f.total;
+    this.x = f.from.x + (f.to.x - f.from.x) * k;
+    this.y = f.from.y + (f.to.y - f.from.y) * k;
+    this.altitude = f.from.up + (f.to.up - f.from.up) * k + Math.sin(k * Math.PI) * PEN_ARC;
+    this.faceX = Math.sign(f.to.x - f.from.x) || this.faceX;
+    this.faceY = Math.sign(f.to.y - f.from.y) || this.faceY;
+    if (k >= 1) this.penFlight = null;
+    return true;
+  }
+
+  // Sitzplätze in der eigenen Voliere (Bäume und Sitzstangen, je Objekt ein paar Plätze)
+  penSeats() {
+    const e = this.enclosure;
+    if (!e) return [];
+    const seats = []; // jedes Mal neu (nach einem Ausbau kommen Plätze dazu)
+    for (const { tx, ty } of e.tiles) {
+      const spots = PEN_SEATS[objectAt(tx, ty)?.key];
+      if (!spots) continue;
+      const p = tileToWorld(tx, ty);
+      spots.forEach(([dx, up], i) => seats.push({ key: `${tx},${ty},${i}`, x: p.x + dx, y: p.y + 2, up }));
+    }
+    return seats;
+  }
+
+  freeSeats(seats) {
+    const taken = new Set(this.scene.animals.filter((a) => a !== this && a.species === 'macaw' && a.state === 'penned' && a.seat).map((a) => a.seat.key));
+    return seats.filter((t) => !taken.has(t.key));
+  }
+
+  sitOn(seat) {
+    this.seat = seat;
+    // Blick vom Stamm weg (zur Seite, auf der er sitzt), meist nach vorne
+    this.faceY = 1;
+  }
+
+  // ohne Sitzplätze: herumhüpfen, ab und zu eine kurze Strecke fliegen
+  updatePenGround(dt, player) {
+    this.seat = null;
     const f = this.penFlight;
     if (!f) {
       this.altitude = 0;
@@ -166,7 +240,7 @@ export default class Macaw extends Animal {
       const t = Phaser.Utils.Array.GetRandom(spots);
       if (t) {
         const to = tileToWorld(t.tx, t.ty);
-        this.penFlight = { from: { x: this.x, y: this.y }, to, done: 0, total: Math.max(1, Math.hypot(to.x - this.x, to.y - this.y)) };
+        this.penFlight = { from: { x: this.x, y: this.y, up: 0 }, to: { ...to, up: 0 }, done: 0, total: Math.max(1, Math.hypot(to.x - this.x, to.y - this.y)) };
       }
       return false;
     }
@@ -206,8 +280,10 @@ export default class Macaw extends Animal {
       this.placeSprite(false);
     } else {
       const key = fly ? `${base}_fly` : base;
-      if (fly) this.sprite.stop();
-      if (this.sprite.texture.key !== key && this.scene.textures.exists(key)) this.sprite.setTexture(key, this.sprite.frame.name);
+      if (fly) {
+        this.sprite.stop();
+        if (this.sprite.texture.key !== key && this.scene.textures.exists(key)) this.sprite.setTexture(key, this.sprite.frame.name);
+      } else this.useLook(key); // eine laufende Sitz-Animation weiterlaufen lassen (sonst startet sie jedes Bild neu)
       super.render(moving && !fly && !altitude);
       // im Flug immer die Vorderansicht nach rechts (Bild 1), nach links gespiegelt – auch beim Flug nach oben
       if (fly) this.sprite.setFrame(0).setFlipX(this.faceX < 0);
@@ -219,7 +295,7 @@ export default class Macaw extends Animal {
     const bob = fly && !flapping ? Math.sin(this.scene.time.now / 90) * 1.5 : 0; // Flügelschlag-Wippen (ohne Animation)
     this.sprite.setY(this.sprite.y - altitude + bob);
     this.sprite.setAngle(0); // im Flug aufrecht (wie gemalt)
-    this.sprite.setDepth(altitude > 30 && fly ? HIGH_DEPTH : this.y + 2);
+    this.sprite.setDepth(altitude > 30 && fly && this.state !== 'penned' ? HIGH_DEPTH : this.y + 2); // in der Voliere unter dem Netz
     this.shadow.setScale(1 - Math.min(0.6, altitude / 160));
   }
 
@@ -243,6 +319,7 @@ export default class Macaw extends Animal {
     this.altitude = 0;
     this.phase = null;
     this.penFlight = null;
+    this.seat = null;
   }
 }
 

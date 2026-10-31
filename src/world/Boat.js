@@ -18,6 +18,10 @@ const CANOE_DOWN = 14; // ... liegt so weit unter Henriks Platz, damit das Boot 
 const FRAME = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
 // Henrik paddelt (Videos): beim Fahren nach unten bzw. oben, nach links gespiegelt; im Stillstand das Standbild
 const PADDLE_ANIMS = { down: 'canoe_paddle_anim', up: 'canoe_paddle_anim_back' };
+// Piranha-Box hinten im Kanu, sobald ein Piranha mitfährt: Versatz [x, y] vom Kanu (Unterkante der Box, nach rechts
+// blickend; nach links gespiegelt) je Bild, damit sie im Heck auf dem Bootsboden steht, und Größe
+const BOX_AT = { down: [-20, -36], up: [-14, -13], paddleDown: [-12, -32], paddleUp: [-14, -16] };
+const BOX_SCALE = 0.22;
 const GHOST_DEPTH = 99000; // die Kontur liegt über allem auf der Karte (unter Nacht, Wetter und Beschriftungen) ...
 const GHOST_ALPHA = 0.55; // ... und scheint so durch Bäume und Pflanzen, die das Kanu verdecken (nur, wenn es verdeckt ist)
 const GHOST_CHECK = 0.15; // so oft (Sekunden) wird geprüft, ob etwas das Kanu verdeckt
@@ -42,6 +46,7 @@ export default class Boat {
     this.time = 0;
     this.paddle = null; // Geräusch beim Paddeln (wird beim ersten Mal nachgeladen)
     scene.events.once('shutdown', () => this.paddle?.destroy());
+    this.box = scene.add.image(0, 0, 'piranha_box').setOrigin(0.5, 1).setScale(BOX_SCALE).setVisible(false);
     this.near = null; // 'board' (einsteigen möglich), { dock } (aussteigen möglich) oder null
     if (this.state.riding) {
       const p = scene.player;
@@ -96,6 +101,18 @@ export default class Boat {
     }
     const target = this.hidden ? GHOST_ALPHA : 0;
     this.ghost.setAlpha(this.ghost.alpha + (target - this.ghost.alpha) * Math.min(1, dt * 8));
+    // gefangene Piranhas fahren in einer Box hinten im Kanu mit (sie selbst sind dann nicht zu sehen, siehe Piranha.js)
+    const piranhas = this.state.riding && this.scene.followers?.some((a) => a.species === 'piranha');
+    this.box.setVisible(!!piranhas);
+    if (piranhas) {
+      const down = p.faceY > 0;
+      const [bx, by] = BOX_AT[anim ? (down ? 'paddleDown' : 'paddleUp') : down ? 'down' : 'up'];
+      this.box
+        .setPosition(this.img.x + p.faceX * bx, this.img.y + by)
+        .setFlipX(p.faceX < 0)
+        .setAngle(this.img.angle)
+        .setDepth(this.img.depth + 0.05); // im Boot (Henrik und Kanu sind ein Bild: die Box liegt obenauf)
+    }
     // das getragene Werkzeug (z. B. der Kescher) hält Henrik auch im Kanu in der Hand: vor dem Boot gezeichnet
     if (this.state.riding) this.scene.tool?.sprite?.setDepth(this.img.depth + 0.2);
     if (this.state.riding) p.boatBob = bob;

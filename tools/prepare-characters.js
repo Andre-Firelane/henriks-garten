@@ -23,6 +23,7 @@ const HIPPO_SCALE = 0.3;
 const HYENA_SCALE = 0.25;
 // Maßstab des Brüllaffen (laufend, springend und fressend gleich groß) und des Kanus (leer und mit Henrik darin)
 const HOWLER_SCALE = 0.25;
+const HOWLER_STAND_SCALE = 0.278; // Brüllaffe stehend so groß wie der Gibbon (fressend und springend passt HOWLER_SCALE schon)
 const CANOE_SCALE = 0.57;
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
@@ -244,7 +245,7 @@ const CHARACTERS = [
   // Brüllaffe: im Bild nach links, nach rechts, Rückansicht nach links oben, nach rechts oben – im Sheet wie üblich
   // unten-rechts, unten-links, oben-rechts, oben-links. Fressend: von vorne sitzend, seitlich sitzend (nach rechts),
   // zweimal stehend nach rechts (oben-links ist davon das Spiegelbild)
-  { src: 'Sprites/Brüllaffe.png', out: 'howler.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, order: [1, 0, 3, 2] },
+  { src: 'Sprites/Brüllaffe.png', out: 'howler.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_STAND_SCALE, order: [1, 0, 3, 2] },
   // springend: beide Vorderansichten greifen nach rechts (unten-links ist das Spiegelbild), Rückansichten nach links oben, rechts oben
   { src: 'Sprites/Brüllaffe springt.png', out: 'howler_jump.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, byComponents: true, copyMirror: { 1: 0 }, order: [0, 1, 3, 2] },
   { src: 'Sprites/Brüllaffe frisst.png', out: 'howler_eat.png', frameW: 88, frameH: 88, feetY: 84, scale: HOWLER_SCALE, copyMirror: { 3: 2 }, order: [1, 0, 2, 3] },
@@ -765,6 +766,11 @@ const ANIMATIONS = [
   { src: 'Animation/Ziege läuft hinten.mp4', out: 'farm_goat_walk_back.png', scale: 0.155, frameW: 80, frameH: 88, feetY: 84 },
   { src: 'Animation/Ziege idle vorne.mp4', out: 'farm_goat_idle.png', scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
   { src: 'Animation/Ziege idle hinten.webm', out: 'farm_goat_idle_back.png', scale: 0.75, frameW: 80, frameH: 88, feetY: 84 },
+  // Piranha (Dschungel, Regenzeit): Seitenansicht wie die Riff-Fische (Bild 0 nach rechts, 1 nach links, Rahmen wie
+  // reeffish); im Original nach links, daher gespiegelt und dann noch einmal ungespiegelt angehängt. Quelle freigestellt
+  // mit npm run cutout, danach nur die größte Fläche behalten (Blasen und Wasserstriche weg). Transportbox wie fishbag
+  { src: 'Sprites/Piranha.png', out: 'piranha.png', cols: 1, rows: 1, mirror: 'all', withMirror: true, frameW: 96, frameH: 64, feetY: 58, figureH: 44 },
+  { src: 'Sprites/Piranha Box.png', out: 'piranha_box.png', cols: 1, rows: 1, frameW: 64, frameH: 76, feetY: 72, figureH: 52 },
   // Dschungel (Videos). Fehlt eine Rückansicht, nimmt das Spiel die Vorderansicht; ohne Steh-Animation das Standbild.
   // Kleine Videos (128/192 Pixel) nie über Maßstab 1. Spielfigur steht:
   { src: 'Animation/Character Dschungel idle vorne.mp4', out: 'hero_jungle_idle.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
@@ -786,13 +792,13 @@ const ANIMATIONS = [
   { src: 'Animation/Schlange2 idle vorne.webm', out: 'snake2_idle.png', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
   // Vogelspinne und Goldene Vogelspinne: krabbeln
   { src: 'Animation/Spinne läuft vorne.mp4', out: 'tarantula_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
-  { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft vorne.mp4', out: 'tarantula2_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
-  { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, frameW: 64, frameH: 64, feetY: 60 },
-  // Brüllaffe und Gibbon: laufen und sitzen (Springen bleibt Standbild)
-  { src: 'Animation/Brüllaffe läuft vorne.mp4', out: 'howler_walk.png', mirror: 'all', scale: 0.81, frameW: 88, frameH: 88, feetY: 84 },
-  { src: 'Animation/Brüllaffe läuft hinten.mp4', out: 'howler_walk_back.png', mirror: 'all', loopBlend: 2, scale: 0.81, frameW: 88, frameH: 88, feetY: 84 },
-  { src: 'Animation/Brüllaffe Idle vorne.webm', out: 'howler_idle.png', scale: 0.81, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
+  // Brüllaffe und Gibbon: laufen und sitzen (Springen bleibt Standbild); der Brüllaffe so groß wie der Gibbon
+  { src: 'Animation/Brüllaffe läuft vorne.mp4', out: 'howler_walk.png', mirror: 'all', scale: 0.9, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe läuft hinten.mp4', out: 'howler_walk_back.png', mirror: 'all', loopBlend: 2, scale: 0.94, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe Idle vorne.webm', out: 'howler_idle.png', scale: 0.886, frameW: 88, frameH: 88, feetY: 84 },
   { src: 'Animation/Gibbon läuft vorne.mp4', out: 'gibbon_walk.png', loopBlend: 1, scale: 0.196, frameW: 88, frameH: 88, feetY: 84 },
   { src: 'Animation/Gibbon läuft hinten.mp4', out: 'gibbon_walk_back.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
   { src: 'Animation/Gibbon idle vorne.mp4', out: 'gibbon_idle.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
@@ -1220,7 +1226,8 @@ function prepareGrid(entry) {
   // loopBlend: so viele Zwischenbilder am Ende, die vom letzten zum ersten Bild überblenden (fehlt dem Video ein Bild
   // zur sauberen Schleife, wird der Sprung zurück zum Anfang so zu normalen Schritten)
   const blend = entry.loopBlend ?? 0;
-  const total = frames.length + blend;
+  // withMirror: hinter den Bildern noch einmal alle, waagerecht gespiegelt (z. B. Fisch nach rechts, dann nach links)
+  const total = (frames.length + blend) * (entry.withMirror ? 2 : 1);
   const perRow = Math.min(total, Math.floor(MAX_SHEET_W / frameW));
   const sheet = new PNG({ width: frameW * perRow, height: frameH * Math.ceil(total / perRow) });
   frames.forEach((i, n) => {
@@ -1274,6 +1281,20 @@ function prepareGrid(entry) {
     }
   }
 
+  if (entry.withMirror) {
+    const half = total / 2;
+    for (let n = 0; n < half; n++) {
+      const [ax, ay] = at(n);
+      const [bx, by] = at(n + half);
+      for (let y = 0; y < frameH; y++) {
+        for (let x = 0; x < frameW; x++) {
+          const src = ((ay + y) * sheet.width + ax + x) * 4;
+          const dst = ((by + y) * sheet.width + bx + frameW - 1 - x) * 4;
+          for (let c = 0; c < 4; c++) sheet.data[dst + c] = sheet.data[src + c];
+        }
+      }
+    }
+  }
   writeSheet(out, sheet);
   console.log(`${out}: ${total} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
 }

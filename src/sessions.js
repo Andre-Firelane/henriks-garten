@@ -1,12 +1,13 @@
 // Spielrunden zählen, ohne Cookies: beim Start einer Runde und danach immer wieder mit der bisherigen Spieldauer eine
 // kurze Meldung an die Netlify Function (netlify/functions/session). Die Kennung der Runde ist zufällig und wird nirgends
 // gespeichert – so lässt sich niemand wiedererkennen. Gezählt wird nur die Zeit, in der das Spiel zu sehen ist.
+// Dazu kommt, welche Tiere in der Runde gefangen und welche Events gestartet wurden (nur die Anzahl je Art).
 import { lang } from './i18n.js';
 
 const API = '/api/session';
 const UPDATE_EVERY = 2 * 60 * 1000; // so oft geht die Spieldauer zwischendurch raus (falls der Browser die Seite einfach wegwirft)
 
-let session = null; // { id, played: bisher gespielte Millisekunden, visibleSince }
+let session = null; // { id, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl } }
 
 function device() {
   const ua = navigator.userAgent;
@@ -35,12 +36,25 @@ function send(body, beacon = false) {
 }
 
 function update(beacon) {
-  if (session) send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000) }, beacon);
+  if (session) send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), catches: session.catches, events: session.events }, beacon);
+}
+
+function count(map, key) {
+  map[key] = (map[key] ?? 0) + 1;
+}
+
+// für die Statistik: ein Tier gefangen (Bauernhof-Schafe zählen als Kuh, Schwein oder Ziege) bzw. ein Event gestartet
+export function countCatch(species) {
+  if (session) count(session.catches, species);
+}
+
+export function countEvent(id) {
+  if (session) count(session.events, id);
 }
 
 // neue Runde vom Startbildschirm aus; kind: 'continue', 'new' oder 'test'
 export function startSession(kind) {
-  session = { id: randomId(), played: 0, visibleSince: document.visibilityState === 'visible' ? Date.now() : null };
+  session = { id: randomId(), played: 0, visibleSince: document.visibilityState === 'visible' ? Date.now() : null, catches: {}, events: {} };
   send({ type: 'start', id: session.id, kind, lang, device: device() });
 }
 

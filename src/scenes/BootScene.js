@@ -58,7 +58,7 @@ const PIXEL_ART = [
   'thicket', 'thicket_small', 'thicket_cut', 'cliff', 'jungle_flow0', 'jungle_flow1', 'jungle_flow2', 'jungle_flow3',
   'mangrove', 'heliconia', 'hibiscus', 'jungle_plant', 'spider_web',
   'hutwall_jungle_x', 'hutwall_jungle_y', 'post_hutwall_jungle', 'gate_door_jungle_x', 'gate_door_jungle_y', 'hutroof_jungle',
-  'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'planks_jungle',
+  'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'hut_bed_savanna', 'hut_bed_jungle', 'hut_bed_savanna_sleep', 'hut_bed_jungle_sleep', 'planks_jungle',
 ];
 
 // Test: neu gemalte Grafiken statt der Pixel-Art aus tools/make-sprites.js (Schlüssel -> Dateiname; leeren = alte Grafik)
@@ -66,7 +66,7 @@ const PIXEL_ART = [
 const TEST_ART = {};
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -454,6 +454,10 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('minifish_swim', 'assets/minifish_swim.png', { frameWidth: 20, frameHeight: 16 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
     this.load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
     this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
+    // Piranha (Dschungel, Regenzeit): schwimmt wie die Riff-Fische; gefangen in der Transportbox
+    this.load.spritesheet('piranha', 'assets/piranha.png', { frameWidth: 96, frameHeight: 64 });
+    this.load.spritesheet('piranha_swim', 'assets/piranha_swim.png', { frameWidth: 96, frameHeight: 64 });
+    this.load.spritesheet('piranha_box', 'assets/piranha_box.png', { frameWidth: 64, frameHeight: 76 });
     this.load.spritesheet('reeffish_swim', 'assets/reeffish_swim.png', { frameWidth: 96, frameHeight: 64 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
     this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
     this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
@@ -595,7 +599,8 @@ export default class BootScene extends Phaser.Scene {
     // Savannentiere: Laufen und Fliegen 12 Bilder pro Sekunde (das Lauftempo passt Animal.render an), sonst 10
     // Giraffe: lange Beine, gemächliches Tempo – langsamere Schritte, sonst trippelt sie. Geier: ein Flügelschlag hat nur
     // 5 Bilder, schnell abgespielt flackert er
-    const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7 };
+    // Gnu: rennt mit der Herde fast doppelt so schnell wie sein Gehtempo (die Animation wird dafür schneller), daher langsamer angesetzt
+    const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7, gnu_walk: 7, gnu_walk_back: 7 };
     for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo

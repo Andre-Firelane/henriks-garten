@@ -5,7 +5,8 @@
 import Phaser from 'phaser';
 import ReefFish from './ReefFish.js';
 
-const CAMO_ALPHA = 0.16; // so durchsichtig ist sie getarnt
+const CAMO_ALPHA = 0.36; // so durchsichtig ist sie getarnt (noch gut zu entdecken) ...
+const CAMO_SHIMMER = 0.1; // ... und flimmert dabei langsam etwas auf und ab, damit sie ins Auge fällt
 const SEEN_ALPHA = 0.9; // ... und so deutlich, wenn sie flieht
 const NOTICE_DIST = 95; // so nah darf man kommen, dann schwimmt sie los
 const CALM_DIST = 190; // ist man wieder so weit weg, tarnt sie sich wieder
@@ -119,7 +120,8 @@ export default class Octopus extends ReefFish {
       return;
     }
     // getarnt fast unsichtbar (ohne Schatten), auf der Flucht deutlich zu sehen
-    const goal = this.mode === 'camo' ? CAMO_ALPHA : SEEN_ALPHA;
+    const shimmer = Math.sin(this.scene.time.now / 700 + this.x) * CAMO_SHIMMER;
+    const goal = this.mode === 'camo' ? CAMO_ALPHA + shimmer : SEEN_ALPHA;
     this.look += (goal - this.look) * 0.08;
     this.sprite.setAlpha(this.look);
     this.shadow.setVisible(this.mode !== 'camo');

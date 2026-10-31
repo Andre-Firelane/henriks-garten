@@ -23,7 +23,7 @@ const BABY_SCALE = 0.55; // Tierbabys (Event) sind so viel kleiner
 const FLEE_CHANCE = 2 / 3; // kommt man nah, schwimmt eine Gruppe nur mit dieser Wahrscheinlichkeit davon ...
 const FLEE_ROLL = 4; // ... und würfelt nach so vielen Sekunden neu, wenn man in der Nähe bleibt
 // Schwanzflosse wackelt (tools/fish-wag.cjs): je Bild WAG_FRAMES Bilder; Flossenschläge pro Sekunde je nach Tempo
-const SWIM_SHEETS = { reeffish: 'reeffish_swim' };
+const SWIM_SHEETS = { reeffish: 'reeffish_swim', piranha: 'piranha_swim' };
 const WAG_FRAMES = 4;
 const WAG_RATE = [1.6, 4]; // gemütlich bzw. auf der Flucht
 

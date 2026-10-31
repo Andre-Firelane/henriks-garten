@@ -294,6 +294,7 @@ export const SPECIES = {
     flyAnims: { down: 'heron_flap', up: 'heron_flap_back' }, // Flügelschlag (Test; nach links gespiegelt)
     skinFlyAnims: { shoebill: { down: 'shoebill_flap', up: 'shoebill_flap_back' } },
     followFlies: true, // fliegt gefangen hinter dem Spieler her (wie Flamingo und Geier)
+    penStands: true, // im Gehege: steht nur oder fliegt (läuft nicht herum, auch nicht zum Futter; siehe Heron.js)
     anims: { idleDown: 'heron_idle', idleUp: 'heron_idle_back' }, // steht (Test); beim Staksen das Standbild
     skinAnims: { shoebill: { idleDown: 'shoebill_idle', idleUp: 'shoebill_idle_back' } }, // Schuhschnabel steht
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
@@ -602,6 +603,7 @@ export const SPECIES = {
     anims: { idleDown: 'flamingo_idle', idleUp: 'flamingo_idle_back' }, // steht (Küken: Standbild)
     flyAnims: { down: 'flamingo_flap', up: 'flamingo_flap_back' }, // Flügelschlag (nach links gespiegelt)
     followFlies: true,
+    penStands: true,
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 104 / 108,
     speed: 25,
@@ -650,6 +652,23 @@ export const SPECIES = {
     fleeDist: 70, // kommt man näher, flüchten sie ...
     fleeSpeed: 45, // ... deutlich langsamer als der Taucher (60): mit dem Kescher holt man sie ein
     catchWith: ['net'],
+  },
+  // Piranha (Dschungel, Regenzeit): Schwärme im Fluss, nur mit der Angel vom Kanu aus (siehe Piranha.js, RodTool.js);
+  // schwimmt wie die Riff-Fische, gefangen in der Transportbox
+  piranha: {
+    texture: 'piranha',
+    bagTexture: 'piranha_box',
+    frames: { downRight: 0, downLeft: 0, upLeft: 0, upRight: 0 },
+    originY: 72 / 76,
+    speed: 14,
+    restChance: 0,
+    restTime: [1, 2],
+    walkTime: [1, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 4,
+    shadowW: 22,
+    catchWith: ['rod'],
   },
   // Seepferdchen (Riff): verstecken sich in Korallen und schauen nur kurz heraus (siehe Seahorse.js);
   // swimFrames: Bilder im Spritesheet "seahorse", frames/originY gelten für den Beutel an Land

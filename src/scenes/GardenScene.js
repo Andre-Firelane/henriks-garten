@@ -22,6 +22,7 @@ import {
   groundAt,
   grassAt,
   outerWaterCorners,
+  outerLandCorners,
   cornerGroundAt,
   objectAt,
   charAt,
@@ -79,6 +80,7 @@ import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
 import { afterPaint, hideLoading, setLoadingBackground, showLoading } from '../ui/loading.js';
 import ReefFish from '../animals/ReefFish.js';
+import Piranha from '../animals/Piranha.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
 import Turtle, { CUTS_NEEDED, CUT_DIST } from '../animals/Turtle.js';
@@ -102,6 +104,7 @@ import Thicket from '../world/Thicket.js';
 import Boat from '../world/Boat.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
+import RodTool from '../tools/RodTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
@@ -112,7 +115,7 @@ import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
-import { hdScale } from '../world/hd.js';
+import { HD, HD_DIR, hdScale } from '../world/hd.js';
 import Net from '../tools/Net.js';
 import Lasso from '../tools/Lasso.js';
 import TrapTool from '../tools/TrapTool.js';
@@ -127,6 +130,7 @@ import { openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
+import { countCatch, countEvent } from '../sessions.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
@@ -136,7 +140,7 @@ const PHONE_VIEW_H = 310;
 // Reihenfolge der Tierarten in der Anzeige
 // Tierarten, die es nur in einer Wetterphase der Savanne gibt (für die Übersicht: "Savanne (☀️ Trockenzeit)")
 const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: 'dry' };
-const ALL_SPECIES = ['macaw', 'snake', 'tarantula', 'howler', 'gibbon', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['macaw', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -191,6 +195,7 @@ const CATCH_TIPS = {
   tiger: tr('Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!', 'Prowls through the bamboo as a dark shadow. Roll the ball over, walk away a bit and keep your distance while it looks curious. It only plays for a moment and then dashes off – quick, the lasso!'),
   macaw: tr('Aras sitzen paarweise in den Bäumen am Fluss. Fliegen sie ans andere Ufer, gehen sie über dem Wasser in den Tiefflug – dann erwischst du sie mit dem Kescher, am besten vom Kanu aus!', 'Macaws sit in pairs in the trees by the river. When they fly to the other bank, they swoop low over the water – then you can catch them with the net, best from the canoe!'),
   snake: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
+  piranha: tr('Nur bei Starkregen im Dschungel: im Fluss wirbeln Piranha-Schwärme als dunkle Schatten. Hol die Angel aus dem Regal, paddle mit dem Kanu hin und wirf aus. Zuckt die Pose und erscheint ein „!“, schnell noch einmal drücken!', 'Only during heavy rain in the jungle: piranha schools swirl as dark shadows in the river. Get the fishing rod from the shelf, paddle there in the canoe and cast. When the float jerks and a “!” appears, press again quickly!'),
   tarantula: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
   gibbon: tr('Nur bei Nebel im Dschungel. Wie der Brüllaffe sitzt er unsichtbar oben im Urwaldbaum – merk dir, wohin er springt, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in fog in the jungle. Like the howler monkey it sits unseen high up in a jungle tree – remember where it jumps, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
   howler: tr('Nur bei normalem Wetter. Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in normal weather. It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
@@ -265,6 +270,7 @@ const ANIMAL_INFO = {
   giraffe: tr(['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'], ['Giraffe', 'Huge hoofs, almost as big as a plate, with two round halves.']),
   macaw: tr(['Ara', 'Mit seinem kräftigen Schnabel knackt er sogar harte Nüsse – und er kann bis zu 60 Jahre alt werden.'], ['Macaw', 'Its powerful beak can crack even hard nuts – and it can live up to 60 years.']),
   snake: tr(['Schlange', 'Sie riecht mit der Zunge: Beim Züngeln fängt sie Duftteilchen aus der Luft ein.'], ['Snake', 'It smells with its tongue: flicking it catches scent particles from the air.']),
+  piranha: tr(['Piranha', 'Mit seinen messerscharfen Zähnen kann er sogar Nüsse knacken – meist frisst er aber Insekten, Fische und Früchte.'], ['Piranha', 'Its razor-sharp teeth can even crack nuts – but mostly it eats insects, fish and fruit.']),
   tarantula: tr(['Vogelspinne', 'Sie hat acht Beine und acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Tarantula', 'It has eight legs and eight eyes – but still doesn’t see very well.']),
   gibbon: tr(['Gibbon', 'Mit seinen langen Armen schwingt er sich von Ast zu Ast – bis zu 15 Meter weit mit einem Schwung.'], ['Gibbon', 'With its long arms it swings from branch to branch – up to 15 metres in a single swing.']),
   howler: tr(['Brüllaffe', 'Sein Brüllen hört man kilometerweit – er ist eines der lautesten Tiere der Welt.'], ['Howler monkey', 'Its howl can be heard for miles – it is one of the loudest animals in the world.']),
@@ -283,12 +289,19 @@ const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekun
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
 const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
+// Betten in den Hütten (je Hüttenstil): Verschiebung des Bilds von der Bett-Kachel aus (es liegt über zwei Kacheln:
+// das Himmelbett längs nach unten rechts, die Hängematte quer nach links) und wo über dem Kopfkissen die Zs aufsteigen
+const BED_LOOK = {
+  savanna: { dx: 12, dy: 30, head: [-22, -38] },
+  jungle: { dx: -32, dy: 16, head: [-26, -34] },
+};
+const SLEEP_FADE = 3000; // so lange wird es beim Einschlafen dunkel (Millisekunden)
 const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen (auch am Futterautomaten)
 const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Futter hineinzuwerfen
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['butterfly', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
+const NO_PEN_FEED = ['butterfly', 'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
@@ -375,7 +388,7 @@ const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt de
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const BABY_LEVELS = [...PARK_LEVELS, 'aquarium'];// dort gibt es beim Tierbaby-Event Nachwuchs
 const AQUA = ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'];
-const REPTILES = ['snake', 'tarantula']; // ziehen ins Reptilienhaus (in dessen Terrarien)
+const REPTILES = ['snake', 'tarantula', 'piranha']; // ziehen ins Reptilienhaus (in dessen Terrarien bzw. ins Piranha-Becken)
 // Häuser mit eigener Halle (eigenes Level): welche Tierarten dort in die Becken bzw. Terrarien ziehen
 const HOUSES = { aquarium: AQUA, reptiles: REPTILES };
 const houseOf = (species) => Object.keys(HOUSES).find((h) => HOUSES[h].includes(species)) ?? null;
@@ -421,6 +434,12 @@ const TOOLS = {
     create: (scene, player) => new ParkFoodTool(scene, player),
     name: tr('Futter', 'Food'),
     hint: tr('Wirf es am Zaun ins Gehege – dann kommen die Tiere zum Fressen', 'Throw it over the fence into an enclosure – the animals will come to eat'),
+  },
+  rod: {
+    create: (scene, player) => new RodTool(scene, player),
+    name: tr('Angel', 'Fishing rod'),
+    catches: ['piranha'],
+    hint: (list) => tr(`Damit angelst du ${animalIcons(list)} vom Kanu aus – beißt einer an, schnell drücken!`, `Fish for ${animalIcons(list)} from the canoe – when one bites, press quickly!`),
   },
   scissors: {
     create: (scene, player) => new ScissorsTool(scene, player),
@@ -508,6 +527,8 @@ export default class GardenScene extends Phaser.Scene {
     setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'park'));
     this.leaving = false;
     this.signs = [];
+    this.beds = []; // Betten in den Hütten (Kacheln): dort kann man sich ausruhen
+    this.resting = false;
     this.chestSprites = new Map(); // Bilder der Regale und Kisten je Kachel ("tx,ty"), für den Pfeil im Mini-Tutorial
     this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
 
@@ -533,12 +554,25 @@ export default class GardenScene extends Phaser.Scene {
         } else if (corners) {
           ground.push([x, y, cornerGroundAt(tx, ty)]); // Gras, im Schlammloch Schlamm
           ground.push([x, y, roundedTexture(this, groundAt(tx, ty), corners)]);
+        } else if (outerLandCorners(tx, ty)) {
+          // Rasenecke, die ins Wasser ragt: abgerundet, darunter das Wasser des Nachbarn (am Fluss fließend)
+          const land = outerLandCorners(tx, ty);
+          const [wx, wy] = [[tx - 1, ty], [tx, ty - 1], [tx + 1, ty], [tx, ty + 1]].find(([a, b]) => charAt(a, b) === '~');
+          const round = roundedTexture(this, groundAt(tx, ty), land);
+          if (river?.has(wx + ',' + wy)) {
+            this.flowTiles.push({ img: this.add.image(x, y, LEVEL.flow.frames[0]).setDepth(-99998), corners: 0 });
+            this.add.image(x, y, round).setDepth(-99997.9);
+          } else {
+            ground.push([x, y, groundAt(wx, wy)]);
+            ground.push([x, y, round]);
+          }
         } else {
           ground.push([x, y, groundAt(tx, ty)]);
         }
 
         const obj = objectAt(tx, ty);
         if (obj?.bridge) continue; // Brücken werden unten am Stück gezeichnet
+        if (obj?.bed) this.beds.push({ tx, ty });
         if (obj?.fence) {
           const imgs = this.addFence(tx, ty, obj);
           // vordere Hüttenwände (zur Kamera hin) werden durchsichtig, wenn man drin ist
@@ -557,6 +591,8 @@ export default class GardenScene extends Phaser.Scene {
         } else if (obj?.key === 'signpost_post') {
           this.signs.push({ x, y });
           this.drawSignBoards(x, y, tx, ty);
+        } else if (obj?.invisible) {
+          // nur fest, ohne Bild (z. B. die zweite Kachel unter einem Bett)
         } else if (obj) {
           const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : LEVEL.objectKeys?.[charAt(tx, ty)] ?? obj.key; // Einrichtung passend zur Hütte (auch außen an der Wand)
           // depthShift nur in Hütten (z. B. die Kiste vor der Rückwand); draußen gilt die normale Tiefe, sonst steht sie vor der Spielfigur
@@ -566,8 +602,16 @@ export default class GardenScene extends Phaser.Scene {
           if (charAt(tx, ty) === 'J') this.crownImages.set(`${tx},${ty}`, img); // Urwaldbäume: die Krone raschelt (Brüllaffen) // Dickicht: das Bild wechselt, wenn es geschlagen wird und nachwächst
           if (obj.waterfall) {
             this.waterfalls.push({ x, y, img });
-            this.time.addEvent({ delay: 140, loop: true, callback: () => img.setFrame((Number(img.frame.name) + 1) % 3) }); // das Wasser fällt
+            this.time.addEvent({ delay: 110, loop: true, callback: () => img.setFrame((Number(img.frame.name) + 1) % (img.texture.frameTotal - 1)) }); // das Wasser fällt (tools/waterfall-flow.py)
             this.time.addEvent({ delay: SPRAY_EVERY, loop: true, callback: () => this.waterfallSpray(x, y) }); // unten steigt Gischt auf
+          }
+          if (obj.bed) {
+            // Bett: über zwei Kacheln (siehe BED_LOOK); beim Schlafen wechselt das Bild (mit Henrik darin)
+            const style = buildingAt(tx, ty, 1)?.style;
+            const look = BED_LOOK[style] ?? { dx: 0, dy: 0, head: [0, -30] };
+            img.setPosition(x + look.dx, y + look.dy).setDepth(y + look.dy);
+            const bed = this.beds.find((b) => b.tx === tx && b.ty === ty);
+            Object.assign(bed, { img, key, head: { x: x + look.dx + look.head[0], y: y + look.dy + look.head[1] } });
           }
           if (obj.noCull) img.noCull = true; // große Bilder (Aquarium-Fassade) nicht ausblenden, nur weil ihr Ankerpunkt außerhalb ist
           if (obj.chest && obj.styled && !buildingAt(tx, ty)) {
@@ -934,6 +978,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearChest && !this.leaving) {
         this.openChest(this.nearChest); // an der Kiste: Werkzeug auswählen
+        return;
+      }
+      if (this.nearBed && !this.leaving) {
+        this.rest(); // am Bett: ausruhen, danach ist das Wetter weiter
         return;
       }
       const pen = this.penAtSign();
@@ -1362,6 +1410,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Koi(this, this.animals, variant)
         : species === 'reeffish'
           ? new ReefFish(this, x, y, variant)
+        : species === 'piranha'
+          ? new Piranha(this, x, y)
         : species === 'butterfly'
           ? new Butterfly(this, x, y, variant)
         : species === 'seahorse'
@@ -1475,6 +1525,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     // Brüllaffen: ein kleiner Trupp unsichtbar oben in nahe beieinander stehenden Urwaldbäumen
     if (species === 'howler' || species === 'gibbon') return this.finishSpawn(Howler.spawnTroop(this, species), false); // Gibbons genauso (bei Nebel)
+    // Piranhas: ein Schwarm mitten im Fluss
+    if (species === 'piranha') return this.finishSpawn(Piranha.spawnSchool(this), fadeIn);
     // Aras: ein Paar in einem Uferbaum (fängt man einen, fliegt der andere davon)
     if (species === 'macaw') return this.finishSpawn(Macaw.spawnPair(this), false);
     // Orang-Utans sitzen oben in den Urwaldbäumen (höchstens MAX_ORANGUTANS gleichzeitig)
@@ -1830,19 +1882,13 @@ export default class GardenScene extends Phaser.Scene {
         this.scene.resume();
         if (tab === 'pens') return this.upgradePen(id);
         startEvent(id);
+        countEvent(id);
         this.updateHud();
         if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
         if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
         if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
         if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
         if (id === 'fireflies') this.showToast(tr('✨ Glühwürmchen-Abend! Im Bambuswald wird es Abend – in der Hütte liegt ein Glas für die Glühwürmchen.', '✨ Firefly Evening! It is getting dark in the bamboo forest – there is a jar for the fireflies in the hut.'));
-        if (id === 'weather') {
-          // Savanne und Dschungel springen beide in ihre nächste Wetterphase
-          for (const level of SEASON_LEVELS) skipSeason(level);
-          const say = (level) => SEASON_INFO[seasonState(level).id];
-          if (!SEASON_LEVELS.includes(LEVEL_ID)) this.showToast(tr(`🌦️ Neues Wetter! Savanne: ${say('savanna').icon} ${say('savanna').name} · Dschungel: ${say('jungle').icon} ${say('jungle').name}`, `🌦️ New weather! Savanna: ${say('savanna').icon} ${say('savanna').name} · Jungle: ${say('jungle').icon} ${say('jungle').name}`));
-          this.seasonTimer = 0; // hier gleich umbauen (siehe updateSeason)
-        }
         if (id === 'migration') this.showToast(tr('🦬 Große Wanderung! Unten links in der Savanne zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing through the lower left of the savanna – keep your lasso ready.'));
         if (id === 'wolves') this.showToast(tr('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.', '🐺 Wolf Night! It is dark in the forest – follow the glowing tracks to the wolves with your lantern.'));
         if (id === 'jellyfish') this.showToast(tr('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.', '🪼 Jellyfish Swarm! Jellyfish are drifting through the reef – the jellyfish jar is in the bag at the anchor.'));
@@ -2122,7 +2168,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna) || (s === 'redpanda' && l === LEVELS.asia) || ((s === 'snake' || s === 'tarantula' || s === 'gibbon') && l === LEVELS.jungle) || (l === LEVELS.savanna && !l.spawn.weights[s] && SEASON_SPECIES[s]))
+        .filter((l) => l.spawn.weights[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna) || (s === 'redpanda' && l === LEVELS.asia) || ((s === 'snake' || s === 'tarantula' || s === 'gibbon' || s === 'piranha') && l === LEVELS.jungle) || (l === LEVELS.savanna && !l.spawn.weights[s] && SEASON_SPECIES[s]))
         .map((l) => (l === LEVELS.savanna && SEASON_SPECIES[s] && !l.spawn.weights[s] ? `${l.name} (${SEASON_INFO[SEASON_SPECIES[s]].icon} ${SEASON_INFO[SEASON_SPECIES[s]].name})` : l.name));
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -2196,9 +2242,16 @@ export default class GardenScene extends Phaser.Scene {
       // in der Hütte das Werkzeug-Regal, sonst (z. B. auf der Teichinsel) eine kleine Kiste
       const house = buildingAt(this.nearChest.tx, this.nearChest.ty, 1); // Regal in oder an der Hütte
       const own = objectAt(this.nearChest.tx, this.nearChest.ty); // eigenes Bild und eigener Name (z. B. der Sack am Anker im Riff)
-      const img = own?.chestName ? `assets/${own.key}.png` : house ? `assets/hut_shelf_${house.style}.png` : 'assets/hut_chest_small.png';
+      const key = own?.chestName ? own.key : house ? `hut_shelf_${house.style}` : 'hut_chest_small';
+      const img = `assets/${HD.includes(key) ? `${HD_DIR}/` : ''}${key}.png`; // große Fassung, falls es eine gibt (das kleine Bild ist teils noch das alte)
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr(`${own?.chestName ?? (house ? 'Regal' : 'Kiste')} öffnen`, `Open ${own?.chestName ?? (house ? 'shelf' : 'chest')}`)}</span></div>`;
+      return;
+    }
+    if (this.nearBed) {
+      const img = `assets/${HD_DIR}/hut_bed_${buildingAt(this.nearBed.tx, this.nearBed.ty, 1)?.style ?? LEVEL_ID}.png`;
+      setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Ausruhen', 'Rest')} 💤</span></div>`;
       return;
     }
     if (this.nearTurtle && this.toolId === 'scissors') {
@@ -3159,7 +3212,39 @@ export default class GardenScene extends Phaser.Scene {
     this.waterfallSound.setVolume(WATERFALL_VOLUME * k * k);
   }
 
-  // Wetterphase der Savanne gewechselt (Uhr oder Event "Savannen-Wetterwechsel"): die Savanne neu aufbauen, man bleibt
+  // Im Bett ausruhen: Henrik schläft ein und wacht in der nächsten Wetterphase des Gebiets wieder auf (Savanne, Dschungel)
+  rest() {
+    if (!SEASON_LEVELS.includes(LEVEL_ID)) return this.showToast(tr('💤 Du ruhst dich kurz aus.', '💤 You take a short rest.'));
+    const bed = this.nearBed;
+    this.resting = true;
+    this.leaving = true; // solange er schläft, steht alles still
+    // Henrik liegt im Bett (eigenes Bild), die Figur und was er trägt verschwinden
+    if (bed.img && this.textures.exists(`${bed.key}_sleep`)) bed.img.setTexture(`${bed.key}_sleep`);
+    this.player.sprite?.setVisible(false);
+    this.player.shadow?.setVisible(false);
+    this.tool?.sprite?.setVisible(false);
+    // über ihm steigen langsam Zs auf
+    const head = bed.head ?? tileToWorld(bed.tx, bed.ty);
+    let n = 0;
+    this.time.addEvent({
+      delay: 650,
+      repeat: Math.floor(SLEEP_FADE / 650),
+      callback: () => {
+        const z = this.add.text(head.x + (n % 2 ? 4 : -2), head.y, 'Z', { fontFamily: '"Trebuchet MS", Arial, sans-serif', fontStyle: 'bold', fontSize: '14px', color: '#fff8e6', stroke: '#2b1d14', strokeThickness: 3 }).setOrigin(0.5).setDepth(head.y + 99999).setScale(0.6 + (n % 3) * 0.2);
+        n++;
+        this.tweens.add({ targets: z, x: z.x + 14, y: z.y - 34, scale: z.scale * 1.6, alpha: { from: 1, to: 0 }, duration: 2200, ease: 'Sine.easeOut', onComplete: () => z.destroy() });
+      },
+    });
+    // das Bild wird langsam schwarz; dann ist das Wetter eine Phase weiter (Umbau siehe updateSeason)
+    this.cameras.main.fadeOut(SLEEP_FADE, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.leaving = false;
+      skipSeason(LEVEL_ID);
+      this.seasonTimer = 0;
+    });
+  }
+
+  // Wetterphase gewechselt (Uhr oder ausgeschlafen im Bett): das Gebiet neu aufbauen, man bleibt
   // an seinem Platz, die Tiere, die einem folgen, kommen mit; die wilden Tiere der alten Phase sind weg
   updateSeason(dt) {
     this.seasonTimer -= dt;
@@ -3188,11 +3273,15 @@ export default class GardenScene extends Phaser.Scene {
       normal: tr('🌿 In der Savanne ist wieder normales Wetter.', '🌿 The savanna is back to normal weather.'),
     }[now.id];
     writeSave(LEVEL_ID);
+    // nach dem Schlafen: langsam dunkel, und beim Aufwachen steht dabei, dass man ausgeschlafen hat
+    const restart = () => {
+      showLoading(this.resting ? tr('Du schläfst … 💤', 'You are sleeping … 💤') : tr('Das Wetter wechselt …', 'The weather is changing …'));
+      const note = this.resting ? `${tr('😴 Ausgeschlafen!', '😴 Well rested!')} ${text}` : text;
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, seasonNote: note }));
+    };
+    if (this.resting) return restart(); // eingeschlafen: das Bild ist schon schwarz (siehe rest)
     this.cameras.main.fadeOut(400);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      showLoading(tr('Das Wetter wechselt …', 'The weather is changing …'));
-      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, seasonNote: text }));
-    });
+    this.cameras.main.once('camerafadeoutcomplete', restart);
   }
 
   // Knochen vor sich streuen (Werkzeug "Knochen"): lockt die Hyänen an, wenn sie gerade kichern; danach hat man gleich
@@ -3681,6 +3770,7 @@ export default class GardenScene extends Phaser.Scene {
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = !isPark(LEVEL_ID) && this.parkPenFull(animal.species, animal.origin);
     animal.catch();
+    countCatch(animal.farm ?? animal.species);
     this.followers.push(animal);
     if (animal.species === 'tiger') this.expireBall(animal); // der Ball bleibt noch eine Weile liegen
     // Hinweise beim Fangen in einer Meldung, je eine Zeile (sonst überschreibt einer den anderen, z. B. seltener Wolf + Rudel rennt weg)
@@ -3803,7 +3893,7 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw', 'piranha'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
@@ -4006,6 +4096,15 @@ export default class GardenScene extends Phaser.Scene {
     }) ?? null;
     if (chest !== this.nearChest) {
       this.nearChest = chest;
+      this.updateToolbar();
+    }
+    // am Bett: die Aktionstaste legt Henrik schlafen
+    const bed = this.beds.find((b) => {
+      const p = b.img ?? tileToWorld(b.tx, b.ty);
+      return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 2;
+    }) ?? null;
+    if (bed !== this.nearBed) {
+      this.nearBed = bed;
       this.updateToolbar();
     }
     // in einem Gebäude: Dach und vordere Wände durchsichtig, damit man das Innere sieht
