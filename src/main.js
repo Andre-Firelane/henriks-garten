@@ -39,7 +39,20 @@ const game = new Phaser.Game({
 watchGpuTextures(game); // Bilder erst beim Malen auf die Grafikkarte (sonst friert das Tablet ein)
 window.addEventListener('resize', () => game.scale.resize(...size()));
 if (params.has('fps')) {
-  const box = Object.assign(document.createElement('div'), { style: 'position:fixed;left:4px;bottom:4px;z-index:99;font:bold 14px monospace;color:#fff;background:#000a;padding:2px 6px;pointer-events:none' });
+  const box = Object.assign(document.createElement('div'), { style: 'position:fixed;left:4px;bottom:4px;z-index:99;max-width:60vw;font:bold 14px monospace;color:#fff;background:#000a;padding:2px 6px;pointer-events:none' });
   document.body.append(box);
-  setInterval(() => (box.textContent = `${Math.round(game.loop.actualFps)} fps · ${game.canvas.width}×${game.canvas.height} · ${Math.round(gpu.bytes / 2 ** 20)} MB`), 500);
+  // zur Fehlersuche auf dem Tablet: verlorene Grafik (WebGL-Kontext), Fehler beim Hochladen, letzter Absturz
+  const diag = { lost: 0, restored: 0, error: '' };
+  window.addEventListener('error', (e) => (diag.error = e.message));
+  window.addEventListener('unhandledrejection', (e) => (diag.error = String(e.reason)));
+  game.events.once(Phaser.Core.Events.READY, () => {
+    game.canvas.addEventListener('webglcontextlost', () => diag.lost++);
+    game.canvas.addEventListener('webglcontextrestored', () => diag.restored++);
+  });
+  setInterval(() => {
+    const gl = game.renderer?.gl;
+    box.textContent = `${Math.round(game.loop.actualFps)} fps · ${game.canvas.width}×${game.canvas.height} · ${Math.round(gpu.bytes / 2 ** 20)} MB` +
+      ` · ${gl ? `WebGL max ${gl.getParameter(gl.MAX_TEXTURE_SIZE)}` : 'Canvas'} · hoch ${gpu.uploads} · GL-Fehler ${gpu.errors}` +
+      ` · verloren ${diag.lost}/${diag.restored}${diag.error ? ` · ${diag.error}` : ''}`;
+  }, 500);
 }

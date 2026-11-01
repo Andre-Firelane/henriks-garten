@@ -111,6 +111,10 @@ const CHARACTERS = [
   // Jaguar und Panther (Jaguar2): unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Jaguar.png', out: 'jaguar.png', frameW: 104, frameH: 96, feetY: 92, scale: 0.307 },
   { src: 'Sprites/Jaguar2.png', out: 'panther.png', frameW: 104, frameH: 96, feetY: 92, scale: 0.307 },
+  // Gorilla (Dschungel, Nebel): unten-rechts, unten-links, zweimal oben-rechts (die mit dem silbernen Rücken, gespiegelt für
+  // oben-links); freigestellt mit npm run cutout und
+  // tools/gorilla-cut.py (ohne die gemalten Bodeninseln)
+  { src: 'Sprites/Gorilla.png', out: 'gorilla.png', frameW: 104, frameH: 96, feetY: 92, figureH: 80, copyMirror: { 3: 2 } },
   // Zebra stehend und trinkend (Kopf unten); gleicher Maßstab für beide: 92/328 Pixel, beim Trinken ist die Figur 212 statt 328 hoch
   { src: 'Sprites/Zebra.png', out: 'zebra.png', frameW: 80, frameH: 104, feetY: 100, figureH: 92 },
   { src: 'Sprites/Zebra trinkt.png', out: 'zebra_drink.png', frameW: 80, frameH: 104, feetY: 100, figureH: 59.5 },
@@ -831,6 +835,12 @@ const ANIMATIONS = [
   { src: 'Animation/Jaguar2 rennt hinten.webm', out: 'panther_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Jaguar2 idle vorne.mp4', out: 'panther_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Jaguar2 idle hinten.mp4', out: 'panther_idle_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  // Gorilla: Laufen und Stehen (vorne, hinten) und Trommeln auf die Brust (aufrichten, trommeln, zurück; siehe BootScene)
+  { src: 'Animation/Gorilla läuft vorne.webm', out: 'gorilla_walk.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla läuft hinten.mp4', out: 'gorilla_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla idle vorne.webm', out: 'gorilla_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla idle hinten.webm', out: 'gorilla_idle_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla trommelt.mp4', out: 'gorilla_drum.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft vorne.mp4', out: 'tarantula2_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },

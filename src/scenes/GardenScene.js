@@ -84,6 +84,7 @@ import ReefFish from '../animals/ReefFish.js';
 import Piranha from '../animals/Piranha.js';
 import Iguana from '../animals/Iguana.js';
 import Jaguar from '../animals/Jaguar.js';
+import Gorilla from '../animals/Gorilla.js';
 import WaterfallSun from '../world/WaterfallSun.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
@@ -109,6 +110,7 @@ import Boat from '../world/Boat.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import RodTool from '../tools/RodTool.js';
+import DrumTool from '../tools/DrumTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
@@ -148,7 +150,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 // Jeder Pool wird für sich aufgefüllt, so nehmen sich die Tiere der beiden nicht gegenseitig die Plätze weg
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['macaw', 'toucan', 'iguana', 'jaguar', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -167,6 +169,8 @@ const CATCH_TOOLS = {
   scissors: ['scissors', tr('Schere', 'Scissors')],
   jar: ['jar', tr('Quallenglas', 'Jellyfish jar')],
   swim: ['hand', tr('Mitschwimmen', 'Swim along')],
+  rod: ['rod', tr('Angel', 'Fishing rod')],
+  drum: ['drum', tr('Trommel-Duell', 'Drum duel')],
 };
 const CATCH_TIPS = {
   fish: tr('Nur wenn er nach den Luftblasen auftaucht.', 'Only when it comes up after the air bubbles.'),
@@ -201,6 +205,7 @@ const CATCH_TIPS = {
   peacock: tr('Scheu – kommst du zu nah, rennt er weg oder fliegt sogar davon. Warte, bis er ein Rad schlägt: dann kannst du ihn berühren oder keschern.', 'Shy – if you get too close, it runs or even flies away. Wait until it fans out its tail: then you can touch it or net it.'),
   orangutan: tr('Sitzt oben im Urwaldbaum. Stell dich ohne Werkzeug darunter und warte, bis er winkt – dann schnell zurückwinken! Dreimal geschafft, kommt er herunter.', 'Sits high up in a jungle tree. Stand underneath without a tool and wait until it waves – then quickly wave back! Do it three times and it climbs down.'),
   tiger: tr('Streift als dunkler Schatten durch den Bambus. Roll den Ball hin, geh ein Stück weg und halt Abstand, wenn er neugierig schaut. Er spielt nur kurz und flitzt dann los – schnell das Lasso!', 'Prowls through the bamboo as a dark shadow. Roll the ball over, walk away a bit and keep your distance while it looks curious. It only plays for a moment and then dashes off – quick, the lasso!'),
+  gorilla: tr('Nur bei Nebel auf der Lichtung im Dschungel (unten rechts hinter dem Dickicht). Hol die Trommel aus dem Regal und trommle bei den Gorillas: einer stellt sich vor dich und trommelt auf seine Brust. Trommle genauso oft nach – drei Runden lang!', 'Only in fog, on the clearing in the jungle (bottom right, behind the thicket). Get the drum from the shelf and drum near the gorillas: one stands in front of you and beats its chest. Drum the same number of times – for three rounds!'),
   jaguar: tr('Bei jedem Wetter im Dschungel. Er schläft oben in einem Urwaldbaum – nur sein Schwanz hängt heraus und pendelt. Ab und zu springt er herunter und rennt zu einem anderen Baum, immer auf derselben Route. Merk sie dir und lauer ihm mit dem Lasso auf!', 'In the jungle in any weather. It sleeps high up in a jungle tree – only its tail hangs down and swings. Now and then it jumps down and runs to another tree, always on the same route. Remember it and lie in wait with the lasso!'),
   iguana: tr('Nur bei normalem Wetter am Wasserfall im Dschungel (hinter dem Dickicht oben links). Warte, bis die Sonne auf den Wasserfall scheint: dann sonnen sich die Leguane auf den Steinen. Fang sie mit dem Kescher aus etwas Abstand – kommst du dem Stein zu nah, plumpsen sie ins Wasser!', 'Only in normal weather at the waterfall in the jungle (behind the thicket, top left). Wait until the sun shines on the waterfall: then the iguanas bask on the rocks. Catch them with the net from a little distance – get too close to the rock and they plop into the water!'),
   toucan: tr('Nur bei Starkregen im Dschungel. Der Tukan sitzt allein in den Bäumen am Fluss. Fliegt er ans andere Ufer, geht er über dem Wasser in den Tiefflug – dann erwischst du ihn mit dem Kescher, am besten vom Kanu aus!', 'Only in heavy rain in the jungle. The toucan sits alone in the trees by the river. When it flies to the other bank, it swoops low over the water – then you can catch it with the net, best from the canoe!'),
@@ -280,6 +285,7 @@ const ANIMAL_INFO = {
   lion: tr(['Löwe', 'Wie eine riesige Katzenpfote: großer Ballen, vier Zehen, keine Krallenspuren.'], ['Lion', 'Like a giant cat paw: a big pad, four toes, no claw marks.']),
   crocodile: tr(['Krokodil', 'Fünf gespreizte Zehen mit Krallen – und dazwischen die Schleifspur vom Schwanz.'], ['Crocodile', 'Five spread-out toes with claws – and the drag mark of the tail in between.']),
   giraffe: tr(['Giraffe', 'Riesige Paarhufe, fast so groß wie ein Teller, mit zwei runden Hälften.'], ['Giraffe', 'Huge hoofs, almost as big as a plate, with two round halves.']),
+  gorilla: tr(['Gorilla', 'Gorillas trommeln mit den flachen Händen auf die Brust – das hört man bis zu einen Kilometer weit.'], ['Gorilla', 'Gorillas beat their chests with flat hands – you can hear it up to a kilometre away.']),
   jaguar: tr(['Jaguar', 'Er ist die größte Katze Amerikas und schwimmt sehr gern – anders als die meisten Katzen.'], ['Jaguar', 'It is the biggest cat in the Americas and loves to swim – unlike most cats.']),
   iguana: tr(['Grüner Leguan', 'Fällt er bei Gefahr vom Ast ins Wasser, kann er bis zu 30 Minuten lang tauchen.'], ['Green iguana', 'When it drops from a branch into the water to escape danger, it can stay under for up to 30 minutes.']),
   toucan: tr(['Tukan', 'Sein riesiger Schnabel ist ganz leicht – innen hohl wie ein Schwamm. Damit pflückt er Früchte, an die er sonst nicht herankäme.'], ['Toucan', 'Its huge beak is very light – hollow inside like a sponge. With it, it picks fruit it could not reach otherwise.']),
@@ -366,7 +372,7 @@ const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
 // welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
 const PEN_CALLS = { lion: 'lion_roar', deer: null, peacock: null }; // Pfauen rufen im Park nur selten über alles hinweg (siehe updatePeacockCall)
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
-const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
+const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', gorilla: 'gorilla_beat', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -388,7 +394,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
+    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -452,6 +458,12 @@ const TOOLS = {
     create: (scene, player) => new ParkFoodTool(scene, player),
     name: tr('Futter', 'Food'),
     hint: tr('Wirf es am Zaun ins Gehege – dann kommen die Tiere zum Fressen', 'Throw it over the fence into an enclosure – the animals will come to eat'),
+  },
+  drum: {
+    create: (scene, player) => new DrumTool(scene, player),
+    name: tr('Trommel', 'Drum'),
+    catches: ['gorilla'],
+    hint: (list) => tr(`Trommle bei den ${animalIcons(list)} – und dann genauso oft wie sie auf ihre Brust!`, `Drum near the ${animalIcons(list)} – then exactly as often as they beat their chests!`),
   },
   rod: {
     create: (scene, player) => new RodTool(scene, player),
@@ -978,7 +990,8 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ESC', () => this.openGameMenu());
     saveHandlers.snapshot = () => this.saveGame();
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
-    const useTool = () => {
+    const useTool = (event) => {
+      if (event?.repeat) return; // gedrückt gehalten: nur der erste Druck zählt (z. B. beim Trommeln)
       if (this.nearBoat && !this.leaving) {
         this.useBoat(); // am Steg: ins Kanu steigen bzw. aussteigen
         return;
@@ -1024,7 +1037,7 @@ export default class GardenScene extends Phaser.Scene {
       const tool = this.tool;
       if (this.leaving || !tool || tool.active) return; // läuft schon ein Schwung, zählt der Druck nicht
       tool.use();
-      if (this.cache.audio.exists('whoosh')) this.sound.play('whoosh', { volume: WHOOSH_VOLUME });
+      if (!(tool instanceof DrumTool) && this.cache.audio.exists('whoosh')) this.sound.play('whoosh', { volume: WHOOSH_VOLUME }); // die Trommel klingt selbst
     };
     this.input.keyboard.on(`keydown-${ACTION_KEY}`, useTool);
     this.input.keyboard.on('keydown-ENTER', useTool);
@@ -1467,6 +1480,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Iguana(this, x, y)
         : species === 'jaguar'
           ? new Jaguar(this, x, y)
+        : species === 'gorilla'
+          ? new Gorilla(this, x, y)
         : species === 'snake' || species === 'tarantula'
           ? new Critter(this, x, y, species)
         : species === 'macaw' || species === 'toucan'
@@ -1530,6 +1545,17 @@ export default class GardenScene extends Phaser.Scene {
       }
     }
     this.spawnIguanas();
+    this.spawnGorillas();
+  }
+
+  // Gorillas auf der Lichtung (nur bei Nebel): eine Gruppe aus LEVEL.gorillas.count, eigener Pool
+  spawnGorillas() {
+    const max = LEVEL.gorillas?.count ?? 0;
+    const wild = this.animals.filter((a) => a.species === 'gorilla' && a.state === 'wild').length;
+    for (let i = wild; i < max; i++) {
+      const [a] = Gorilla.spawnOnClearing(this);
+      if (a) a.life = Phaser.Math.FloatBetween(...LIFETIME);
+    }
   }
 
   // Leguane am Wasserfall: ein eigener kleiner Pool (LEVEL.waterfallSun.iguanas), versteckt bis die Sonne kommt
@@ -1714,6 +1740,7 @@ export default class GardenScene extends Phaser.Scene {
     const pool = spawnPools(LEVEL).find((q) => this.wildUnits(q) < q.population);
     if (pool) this.spawnOne([worldToTile(p.x, p.y), ...TOOL_SPOTS], true, pool);
     this.spawnIguanas();
+    this.spawnGorillas();
   }
 
   // Fischreiher: alle paar Sekunden fliegt einer über die Karte; manche landen an einer Uferstelle
@@ -2222,7 +2249,7 @@ export default class GardenScene extends Phaser.Scene {
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const places = Object.values(LEVELS)
-        .filter((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna) || (s === 'redpanda' && l === LEVELS.asia) || ((s === 'snake' || s === 'tarantula' || s === 'gibbon' || s === 'piranha' || s === 'iguana') && l === LEVELS.jungle) || (l === LEVELS.savanna && !l.spawn.weights[s] && SEASON_SPECIES[s]))
+        .filter((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons) || (s === 'flamingo' && FLAMINGO_WORLDS.includes(l === LEVELS.meadow ? 'meadow' : l === LEVELS.forest ? 'forest' : l === LEVELS.savanna ? 'savanna' : '')) || (s === 'jellyfish' && l === LEVELS.reef) || (s === 'wolf' && l === LEVELS.forest) || (s === 'gnu' && l === LEVELS.savanna) || (s === 'redpanda' && l === LEVELS.asia) || ((s === 'snake' || s === 'tarantula' || s === 'gibbon' || s === 'piranha' || s === 'iguana' || s === 'gorilla') && l === LEVELS.jungle) || (l === LEVELS.savanna && !l.spawn.weights[s] && SEASON_SPECIES[s]))
         .map((l) => (l === LEVELS.savanna && SEASON_SPECIES[s] && !spawnWeights(l)[s] ? `${l.name} (${SEASON_INFO[SEASON_SPECIES[s]].icon} ${SEASON_INFO[SEASON_SPECIES[s]].name})` : l.name));
       const tools = SPECIES[s].catchWith.map((t) => `<span class="catch">${toolImg(t)}${CATCH_TOOLS[t][1]}</span>`).join('');
       const n = home[s] ?? 0;
@@ -2335,7 +2362,7 @@ export default class GardenScene extends Phaser.Scene {
   toolHint(id) {
     const t = TOOLS[id];
     if (!t.catches) return t.hint;
-    const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun);
+    const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun) || (s === 'gorilla' && !!LEVEL.gorillas);
     const list = t.catches.filter(here);
     return list.length ? t.hint(list) : '';
   }
@@ -3948,7 +3975,7 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)

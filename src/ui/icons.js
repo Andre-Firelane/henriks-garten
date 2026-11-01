@@ -29,6 +29,7 @@ const SHEETS = {
   anteater: [104, 72, 4, 0],
   iguana: [96, 56, 4, 0],
   jaguar: [104, 96, 4, 0],
+  gorilla: [104, 96, 4, 0],
   panther: [104, 96, 4, 0],
   iguana2: [96, 56, 4, 0],
   snake: [72, 72, 4, 0],

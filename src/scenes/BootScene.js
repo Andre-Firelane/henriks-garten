@@ -67,7 +67,7 @@ const PIXEL_ART = [
 const TEST_ART = {};
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -168,6 +168,9 @@ const SAVANNA_ANIMS = {
 // Animationen aus Videos (tools/prepare-characters.js), je Bogen [Breite, Höhe, Anzahl Bilder]. Sie laufen mit 24 Bildern
 // pro Sekunde wie im Video; Stehen (_idle) vor und zurück, weil die Videos nicht nahtlos im Kreis laufen. Ein Bild
 // (Anzahl 1) ist ein Standbild, das wie eine Animation eingesetzt wird (Japanmakak sitzt)
+// Stücke der Trommel-Animation des Gorillas: [erstes Bild, letztes Bild, Wiederholungen (-1: endlos)]. Das Aufrichten
+// dauert 1 Sekunde, so lange wie die Pause vor seinem ersten Schlag (siehe DrumTool.js)
+const GORILLA_DRUM = { gorilla_drum_in: [0, 23, 0], gorilla_drum_loop: [24, 92, -1], gorilla_drum_out: [93, 101, 0] };
 const VIDEO_ANIMS = {
   antelope_walk: [72, 100, 24],
   // Wolf und schwarzer Wolf (Wolfsnacht); Dschungel-Kleidung der Spielfigur
@@ -230,6 +233,11 @@ const VIDEO_ANIMS = {
   jaguar_walk: [104, 96, 107],
   jaguar_walk_back: [104, 96, 107],
   jaguar_idle: [104, 96, 85],
+  gorilla_walk: [104, 96, 107],
+  gorilla_walk_back: [104, 96, 42],
+  gorilla_idle: [104, 96, 107],
+  gorilla_idle_back: [104, 96, 107],
+  gorilla_drum: [104, 96, 102], // trommelt auf die Brust: aufrichten, trommeln, zurück (siehe GORILLA_DRUM)
   panther_walk: [104, 96, 24],
   panther_walk_back: [104, 96, 107],
   panther_idle: [104, 96, 35],
@@ -465,6 +473,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
     this.load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
     for (const k of ['iguana', 'iguana2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
+    this.load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
+    this.load.spritesheet('gorilla', 'assets/gorilla.png', { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung)
     for (const k of ['jaguar', 'panther']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 96 }); // Jaguar und Panther (seltene Variante)
     for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
     // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
@@ -634,5 +644,9 @@ export default class BootScene extends Phaser.Scene {
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
     const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31 };
     for (const key of Object.keys(VIDEO_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') });
+    // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)
+    for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {
+      this.anims.create({ key, frames: this.anims.generateFrameNumbers('gorilla_drum', { start, end }), frameRate: 24, repeat });
+    }
   }
 }

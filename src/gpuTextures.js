@@ -12,8 +12,10 @@ const MB = 1024 * 1024;
 const KEEP_MS = 3000; // was eben noch gemalt wurde, bleibt auf jeden Fall
 
 const touch = matchMedia('(pointer: coarse)').matches;
-const vram = Number(new URLSearchParams(location.search).get('vram'));
-export const gpu = { bytes: 0, budget: (vram || (touch ? 256 : 1536)) * MB };
+const params = new URLSearchParams(location.search);
+const vram = Number(params.get('vram'));
+const diagnose = params.has('fps');
+export const gpu = { bytes: 0, budget: (vram || (touch ? 256 : 1536)) * MB, uploads: 0, errors: 0 };
 
 const uploaded = new Set();
 let now = 0;
@@ -26,6 +28,8 @@ function upload(w) {
   w._tex = gl.createTexture();
   w._processTexture();
   gl.activeTexture(unit);
+  gpu.uploads++;
+  if (diagnose && gl.getError() !== gl.NO_ERROR) gpu.errors++; // (nur mit ?fps: getError bremst)
   w._bytes = w.pixels.width * w.pixels.height * 4;
   uploaded.add(w);
   gpu.bytes += w._bytes;

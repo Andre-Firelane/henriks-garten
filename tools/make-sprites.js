@@ -2352,6 +2352,7 @@ const sprites = {
   'jar.png': jarItem(), // Quallenglas (Werkzeug beim Quallen-Event)
   'scissors.png': scissorsItem(), // Schere: Schildkröten aus dem Netz schneiden (Riff)
   'rod.png': rodItem(), // Angel: Piranhas vom Kanu aus angeln (Dschungel, Regenzeit)
+  'drum.png': drumItem(), // Trommel: Gorillas zum Trommel-Duell herausfordern (Dschungel, Nebel)
   'lantern.png': lanternItem(), // Laterne in Henriks Hand (Wolfsnacht)
   'wolf_forest_edge.png': wolfForestEdge(), // dunkler Wald hinter dem Wolfswald (jenseits des linken Kartenrands im Tierpark)
 };
@@ -4076,6 +4077,23 @@ function rodItem() {
   for (let y = 7; y <= 40; y++) o.set(53, y, hex('#e8eef2', 220)); // Schnur
   o.circle(53, 43, 3.5, hex('#e8423a')); // Pose: oben rot ...
   for (let y = 44; y <= 47; y++) for (let x = 50; x <= 56; x++) if ((x - 53) ** 2 + (y - 43) ** 2 <= 12.25) o.set(x, y, hex('#ffffff')); // ... unten weiß
+  return o;
+}
+
+// Trommel: Holzkörper mit Fell oben, rotes Band mit Schnürung (doppelte Auflösung)
+function drumItem() {
+  const o = new Canvas(64, 64);
+  const ell = (cx, cy, rx, ry, col) => {
+    for (let y = Math.floor(cy - ry); y <= cy + ry; y++) for (let x = Math.floor(cx - rx); x <= cx + rx; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) o.set(x, y, col);
+  };
+  ell(32, 54, 18, 6, hex('#7a4e2d')); // Boden
+  o.rect(14, 22, 37, 32, hex('#a8693a')); // Holzkörper
+  for (const x of [20, 30, 40]) o.rect(x, 24, 2, 30, hex('#8e5530')); // Maserung
+  o.rect(14, 28, 37, 6, hex('#c8423a')); // rotes Band
+  for (let i = 0; i < 6; i++) o.line(16 + i * 6, 28, 19 + i * 6, 33, hex('#f2d9a0')); // Schnürung
+  ell(32, 22, 18, 7, hex('#f0dcb0')); // Fell
+  ell(28, 20, 7, 2.5, hex('#fff2d6')); // Glanz
+  o.outline(INK);
   return o;
 }
 

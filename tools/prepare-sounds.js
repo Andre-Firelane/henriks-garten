@@ -26,6 +26,7 @@ const SOUNDS = [
   ['Sounds/Baumrascheln.mp3', 'public/assets/sounds/tree_rustle.wav', 0.45, 2.6, 0.8],
   ['Sounds/Gibbon.mp3', 'public/assets/sounds/animal_gibbon.wav', 0.05, 4.0, 0.8], // Rufe des Gibbons (beim Springen und Fangen)
   ['Sounds/Ara.mp3', 'public/assets/sounds/animal_macaw.wav', 1.08, 0.85, 0.8], // erster Ruf des Aras (beim Losfliegen und Fangen)
+  ['Sounds/Gorilla.mp3', 'public/assets/sounds/gorilla_beat.wav', 0.08, 0.35, 0.8], // ein Schlag auf die Brust (Trommel-Duell, siehe DrumTool.js)
   ['Sounds/Tukan.mp3', 'public/assets/sounds/animal_toucan.wav', 0.35, 1.0, 0.8], // die ersten beiden Rufe des Tukans (Starkregen; beim Losfliegen und Fangen)
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],

@@ -441,11 +441,11 @@ export const LEVELS = {
     // Kanu: liegt am Anfang am Südsteg der Insel
     boat: { tx: 22, ty: 27 },
     chests: [
-      { tx: 22, ty: 23, tools: ['net', 'lasso', 'banana', 'rod'] }, // Regal vor der Fischerhütte
-      { tx: 7, ty: 18, tools: ['net', 'lasso', 'banana', 'rod'] }, // Kisten an den Uferstegen (ein paar Schritte weg vom Steg, sonst öffnet man sie statt einzusteigen)
-      { tx: 33, ty: 14, tools: ['net', 'lasso', 'banana', 'rod'] },
-      { tx: 11, ty: 28, tools: ['net', 'lasso', 'banana', 'rod'] },
-      { tx: 33, ty: 24, tools: ['net', 'lasso', 'banana', 'rod'] },
+      { tx: 22, ty: 23, tools: ['net', 'lasso', 'banana', 'rod', 'drum'] }, // Regal vor der Fischerhütte
+      { tx: 7, ty: 18, tools: ['net', 'lasso', 'banana', 'rod', 'drum'] }, // Kisten an den Uferstegen (ein paar Schritte weg vom Steg, sonst öffnet man sie statt einzusteigen)
+      { tx: 33, ty: 14, tools: ['net', 'lasso', 'banana', 'rod', 'drum'] },
+      { tx: 11, ty: 28, tools: ['net', 'lasso', 'banana', 'rod', 'drum'] },
+      { tx: 33, ty: 24, tools: ['net', 'lasso', 'banana', 'rod', 'drum'] },
     ],
     hero: 'hero_jungle', // Dschungel-Kleidung mit Machete
     ambient: 'ambient_jungle', // Dschungel-Geräusche (dazu rauscht oben links der Wasserfall, siehe updateWaterfallSound)
@@ -472,6 +472,8 @@ export const LEVELS = {
       // aufsteigender Nebel: man sieht nicht weit, über dem Fluss steigen Schwaden auf (siehe Weather.js)
       fog: {
         waterfallSun: null, // im Nebel auch nicht
+        // Gorillas auf der Lichtung unten rechts (hinter dem Dickicht): eigener Pool, siehe Gorilla.js und DrumTool.js
+        gorillas: { tx0: 34, ty0: 34, tx1: 42, ty1: 41, count: 3 },
         weatherSpawn: { population: 4, weights: { gibbon: 1, macaw: 1 } }, // im Nebel: Gibbons statt Brüllaffen, die Aras fliegen weiter
         ambientVolume: 0.18, // im Nebel ist es stiller
       },
@@ -753,16 +755,31 @@ const PARK_ROWS = [
       '            5....l....q.r..###EEEEEEEEEE###[[[[[[[[[[[[[[[[b5........#.......ľ.ľ      Ř        5',
       '            T..rll.qq.q....#.q.oooooooo.l.#W...........bbbbb5........#..............l.#.l......5',
       '            5..............##..q...ooor...###################################################..5',
-      '            T[[[[[[[[[[[[[[.##K.r.K..l..l##[[[[[[[[[[[[b......#......................W.........5',
-      '            5]............]..##...q.K..K##.]..........]bnn^^^^G^^^^^^^^^^^^^^^^.[[[[[[[G[[[[[[[5',
-      '            T]..J...9.....]...##.......####G..q....Q..]b..;..........+......ľ.;.].............]5',
-      '            5].........9..G#############...G....w...Q.]bnḟ;.ľ..............+..;.]..J......ľ...]5',
-      '            T]L....H......G........#.......]..www8....]b..;..........+........;.]........ľ....]5',
-      '            5]....9.......]........#.......]...ww...Q.]bJ.;...+...........J...;.].ľ.....n...J.]5',
-      '            T]..9.....J...]....K...#.......].L....r...]b..;........ľ..J..+....;.]....J....ľ...]5',
-      '            5].......q....]....r...#.....q.]..........]bJ.;.ḟ..........ľ.....ľ;.].n.......q.ľ.]5',
-      '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ.^^^^^^^^^^^^^^^^^^^^^ľ[[[[[[[[[[[[[[[5',
-      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb5555555555555555555555555555555555555555',
+      '            T[[[[[[[[[[[[[[.##K.r.K..l..l##[[[[[[[[[[[[b......#.................#....W.........5',
+      '            5]............]..##...q.K..K##.]..........]bnn^^^^G^^^^^^^^^^^^^^^^.#.[[[[[G[[[[[[[5',
+      '            T]..J...9.....]...##.......####G..q....Q..]b..;..........+......ľ.;.#.]...........]5',
+      '            5].........9..G#############...G....w...Q.]bnḟ;.ľ..............+..;.#.]J......ľ...]5',
+      '            T]L....H......G........#.......]..www8....]b..;..........+........;.#.]......ľ....]5',
+      '            5]....9.......]........#.......]...ww...Q.]bJ.;...+...........J...;.#.].....n...J.]5',
+      '            T]..9.....J...]....K...#.......].L....r...]b..;........ľ..J..+....;.#.]..J....ľ...]5',
+      '            5].......q....]....r...#.....q.]..........]bJ.;.ḟ..........ľ.....ľ;.#.].......q.ľ.]5',
+      '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ.^^^^^^^^^^^^^^^^^^^^^ľ#.[[[[[[[[[[[[[5',
+      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb........................#..............5',
+      '                                                       5ľ.n....ľ...q......ľ...n.#.q....ľ...n...5',
+      '                                                       5.#####################################.5',
+      '                                                       5.q...ľ...n......ľ...q....ľ....n...q.ľ..5',
+      '                                                       5.[[[[[[[[G[[[[[[[[[..[[[[[[[[G[[[[[[[[[5',
+      '                                                       5.]..ľ.......n.....]..]..n.....ľ...q...]5',
+      '                                                       5.]...J..q.....J...]..]...J.........J..]5',
+      '                                                       5.].n.....r.....ľ..]..].q....L.....n...]5',
+      '                                                       5.]....ľ........J..]..]......ľ.....J...]5',
+      '                                                       5.]..J........n.q..]..]..ľ........q....]5',
+      '                                                       5.].....q..ľ.......]..]....J..n........]5',
+      '                                                       5.].ľ...J......J...]..].n...L........ľ.]5',
+      '                                                       5.]......n.....ľ...]..]......q.....J...]5',
+      '                                                       5.]..q.....ľ.......]..]..ľ.....n.......]5',
+      '                                                       5.[[[[[[[[[[[[[[[[[[..[[[[[[[[[[[[[[[[[[5',
+      '                                                       55555555555555555555555555555555555555555',
 ];
 
 // ground/water: Boden und Teichwasser im Gehege, passend zur Welt, aus der die Tiere kommen
@@ -801,7 +818,9 @@ const PARK_PENS = [
       { id: 'howlers', name: tr('Affen-Gehege', 'Monkey Enclosure'), species: ['howler', 'gibbon'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, quota: { howler: [4, 7], gibbon: [3, 6] }, upgrade: tr('Größeres Gehege mit zwei Urwaldbäumen', 'Bigger enclosure with two jungle trees'), basic: [[71, 61, ']'], [71, 62, ']'], [71, 63, ']'], [71, 64, ']'], [71, 65, ']'], [71, 66, ']'], [71, 67, ']'], [71, 68, ']'], [74, 66, ':']] }, // Brüllaffen und Gibbons zusammen; vor dem Ausbau Innenzaun in Spalte 71
       // große Voliere mit vielen Sitzplätzen (Urwaldbäume J, Sitzstangen +): die Aras sitzen nur dort und fliegen hin und her
       { id: 'macaws', name: tr('Ara- und Tukan-Voliere', 'Macaw and Toucan Aviary'), species: ['macaw', 'toucan'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 66, ty: 77 }, quota: { macaw: [4, 9], toucan: [3, 6] }, upgrade: tr('Größere Voliere mit Urwaldbaum und mehr Sitzstangen', 'Bigger aviary with a jungle tree and more perches'), basic: [[71, 75, ';'], [71, 76, ';'], [71, 77, ';'], [71, 78, ';'], [71, 79, ';'], [71, 80, ';'], [74, 78, ':'], [75, 76, ':'], [73, 79, ':']] }, // vor dem Ausbau Innennetz in Spalte 71
-      { id: 'anteaters', name: tr('Ameisenbär-Gehege', 'Anteater Enclosure'), species: ['anteater'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 87, ty: 77 }, slots: [4, 6], upgrade: tr('Größeres Gehege mit zweitem Ameisenbaum', 'Bigger enclosure with a second ant tree'), basic: [[89, 75, ']'], [89, 76, ']'], [89, 77, ']'], [89, 78, ']'], [89, 79, ']'], [89, 80, ']'], [92, 78, '.']] }, // rechts neben der Ara-Voliere; frisst Ameisen an den Urwaldbäumen; vor dem Ausbau Innenzaun in Spalte 89
+      { id: 'anteaters', name: tr('Ameisenbär-Gehege', 'Anteater Enclosure'), species: ['anteater'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 86, ty: 77 }, slots: [4, 6], upgrade: tr('Größeres Gehege mit zweitem Ameisenbaum', 'Bigger enclosure with a second ant tree'), basic: [[89, 75, ']'], [89, 76, ']'], [89, 77, ']'], [89, 78, ']'], [89, 79, ']'], [89, 80, ']'], [92, 78, '.']] }, // rechts neben der Ara-Voliere; frisst Ameisen an den Urwaldbäumen; vor dem Ausbau Innenzaun in Spalte 89
+      { id: 'jaguars', name: tr('Jaguar-Gehege', 'Jaguar Enclosure'), species: ['jaguar'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 61, ty: 91 }, slots: [2, 4], upgrade: tr('Größeres Gehege mit mehr Kletterbäumen', 'Bigger enclosure with more climbing trees'), basic: [[66, 87, ']'], [66, 88, ']'], [66, 89, ']'], [66, 90, ']'], [66, 91, ']'], [66, 92, ']'], [66, 93, ']'], [66, 94, ']'], [66, 95, ']']] }, // unten links im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 66
+      { id: 'gorillas', name: tr('Gorilla-Gehege', 'Gorilla Enclosure'), species: ['gorilla'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 81, ty: 91 }, slots: [3, 5], upgrade: tr('Größeres Gehege mit Kletterbäumen und Baumstämmen', 'Bigger enclosure with climbing trees and logs'), basic: [[87, 87, ']'], [87, 88, ']'], [87, 89, ']'], [87, 90, ']'], [87, 91, ']'], [87, 92, ']'], [87, 93, ']'], [87, 94, ']'], [87, 95, ']']] }, // unten rechts im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 87
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
 ];
 
@@ -944,7 +963,7 @@ LEVELS.park2 = parkSection('park2', {
 
 // Bambuswald und rechts daneben der Dschungel mit dem Reptilienhaus. Oben geht es zurück ins Zentrum
 LEVELS.park3 = parkSection('park3', {
-  x0: 12, x1: 95, y0: 59, y1: 82,
+  x0: 12, x1: 95, y0: 59, y1: 97, // unten im Dschungel-Teil: Jaguar- und Gorilla-Gehege (Zeilen 83 bis 97)
   edits: [
     [12, 59, edgeRow(12, '5'.repeat(44), [38])],
     [35, 82, 'b'], // früher der Ausgang in den Bambuswald
@@ -954,8 +973,8 @@ LEVELS.park3 = parkSection('park3', {
   car: { tx: 38.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26 },
   start: { tx: 38, ty: 60 },
   grounds: [
-    { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
-    { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 82 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
+    { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
+    { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
     { area: { tx0: 12, tx1: 59, ty0: 59, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
   ],
   sections: [

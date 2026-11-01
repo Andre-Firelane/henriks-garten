@@ -526,6 +526,22 @@ export const SPECIES = {
     shadowW: 34,
     catchWith: ['lasso'],
   },
+  // Gorilla (Dschungel, nur bei Nebel, auf der Lichtung): nur durch ein gewonnenes Trommel-Duell (siehe Gorilla.js, DrumTool.js)
+  gorilla: {
+    texture: 'gorilla',
+    anims: { walkDown: 'gorilla_walk', walkUp: 'gorilla_walk_back', idleDown: 'gorilla_idle', idleUp: 'gorilla_idle_back' }, // Videos
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 14,
+    restChance: 0.6,
+    restTime: [2, 5],
+    walkTime: [1.5, 3],
+    stepRate: 6,
+    hop: 1,
+    footW: 10,
+    shadowW: 40,
+    catchWith: ['drum'],
+  },
   // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am
   // Baum, auch durch Berühren (siehe Anteater.js). Läuft durch Dickicht hindurch (thicket)
   anteater: {
