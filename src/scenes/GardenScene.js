@@ -366,7 +366,7 @@ const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
 // welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
 const PEN_CALLS = { lion: 'lion_roar', deer: null, peacock: null }; // Pfauen rufen im Park nur selten über alles hinweg (siehe updatePeacockCall)
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
-const CALL_FALLBACK = { tiger: 'lion_roar', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
+const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise

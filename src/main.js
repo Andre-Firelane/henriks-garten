@@ -6,6 +6,7 @@ import { setupUpdateCheck } from './update.js';
 import { setupSessions } from './sessions.js';
 import { setupLoadingErrors } from './ui/loading.js';
 import { setupScrollbars } from './ui/scrollbar.js';
+import { gpu, watchGpuTextures } from './gpuTextures.js';
 
 setupTouchControls();
 setupUpdateCheck();
@@ -35,9 +36,10 @@ const game = new Phaser.Game({
   },
   scene: [BootScene, GardenScene],
 });
+watchGpuTextures(game); // Bilder erst beim Malen auf die Grafikkarte (sonst friert das Tablet ein)
 window.addEventListener('resize', () => game.scale.resize(...size()));
 if (params.has('fps')) {
   const box = Object.assign(document.createElement('div'), { style: 'position:fixed;left:4px;bottom:4px;z-index:99;font:bold 14px monospace;color:#fff;background:#000a;padding:2px 6px;pointer-events:none' });
   document.body.append(box);
-  setInterval(() => (box.textContent = `${Math.round(game.loop.actualFps)} fps · ${game.canvas.width}×${game.canvas.height}`), 500);
+  setInterval(() => (box.textContent = `${Math.round(game.loop.actualFps)} fps · ${game.canvas.width}×${game.canvas.height} · ${Math.round(gpu.bytes / 2 ** 20)} MB`), 500);
 }
