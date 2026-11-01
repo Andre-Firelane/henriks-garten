@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate, enclosureAt, accepts, bridgeLift, LEVEL, LEVEL_ID } from '../world/map.js';
+import { inPen, isGate, enclosureAt, accepts, bridgeLift, raiseAt, LEVEL, LEVEL_ID } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
@@ -400,6 +400,24 @@ export const SPECIES = {
     catchWith: ['lasso'],
   },
   // Ara (Dschungel): paarweise in den Uferbäumen, im Tiefflug übers Wasser mit dem Kescher zu fangen (siehe Macaw.js)
+  // Tukan (Dschungel, nur bei Starkregen): wie der Ara, aber allein (siehe Macaw.js)
+  toucan: {
+    texture: 'toucan',
+    // Videos: sitzt (vorne und hinten); fliegt mit Flügelschlag
+    anims: { idleDown: 'toucan_idle', idleUp: 'toucan_idle_back' },
+    flyAnims: { down: 'toucan_flap', up: 'toucan_flap_back' },
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 18,
+    restChance: 0.5,
+    restTime: [1, 4],
+    walkTime: [1, 2],
+    stepRate: 9,
+    hop: 2,
+    footW: 5,
+    shadowW: 18,
+    catchWith: ['net'],
+  },
   macaw: {
     texture: 'macaw',
     // Videos: sitzt (nur vorne, auch mit Blick nach oben); fliegt mit Flügelschlag (siehe Macaw.js)
@@ -470,6 +488,44 @@ export const SPECIES = {
     footW: 6,
     shadowW: 22,
     catchWith: ['lasso'],
+  },
+  // Leguan (Dschungel, normales Wetter, nur am Wasserfall): sonnt sich, wenn die Sonne auf den Wasserfall scheint; nur mit
+  // dem Kescher, berührt plumpst er ins Wasser (siehe Iguana.js). Nur Seitenansichten: nach oben wie nach unten
+  iguana: {
+    texture: 'iguana',
+    anims: { walkDown: 'iguana_walk', walkUp: 'iguana_walk', idleDown: 'iguana_idle', idleUp: 'iguana_idle' }, // Videos
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 52 / 56,
+    speed: 16,
+    restChance: 0.6,
+    restTime: [2, 5],
+    walkTime: [1, 2],
+    stepRate: 12,
+    hop: 0.5,
+    footW: 6,
+    shadowW: 26,
+    catchWith: ['net'],
+    thicket: true,
+  },
+  // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am
+  // Baum, auch durch Berühren (siehe Anteater.js). Läuft durch Dickicht hindurch (thicket)
+  anteater: {
+    texture: 'anteater',
+    anims: { walkDown: 'anteater_walk', walkUp: 'anteater_walk_back', idleDown: 'anteater_idle', idleUp: 'anteater_idle_back' }, // Videos
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 22,
+    restChance: 0.4,
+    restTime: [1.5, 4],
+    walkTime: [1.5, 3],
+    stepRate: 9,
+    hop: 1,
+    footW: 8,
+    shadowW: 34,
+    fleeDist: 60,
+    fleeSpeed: 86, // etwas schneller als Henrik (80)
+    catchWith: ['lasso', 'touch'], // Berühren nur beim Fressen am Baum
+    thicket: true,
   },
   // Brüllaffe (Dschungel): sitzt unsichtbar oben in den Urwaldbäumen, kommt für eine Banane herunter (siehe Howler.js)
   howler: {
@@ -1119,7 +1175,8 @@ export default class Animal {
   placeSprite(wobble) {
     const phase = this.walkTime * this.kind.stepRate;
     const hop = wobble ? Math.abs(Math.sin(phase)) * this.kind.hop : 0;
-    const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
+    // auf einer Bogenbrücke etwas höher; im Terrarium auf einem Sockel um dessen Höhe
+    const lift = bridgeLift(this.x, this.y) + (this.state === 'penned' ? raiseAt(...Object.values(worldToTile(this.x, this.y))) : 0);
     this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK);
     this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : 0);
     this.shadow.setPosition(this.x, this.y - lift);
@@ -1154,7 +1211,7 @@ export default class Animal {
   // Darf das Tier mit seinen Füßen an Position x/y stehen?
   blocked(x, y) {
     if (this.state === 'following') return false;
-    if (blockedAt(x, y, this.kind.footW, FOOT_H)) return true;
+    if (blockedAt(x, y, this.kind.footW, FOOT_H, false, false, this.kind.thicket)) return true;
     // Im Gehege bleibt es drin, wilde Tiere laufen nicht von selbst hinein
     if (this.state === 'penned') return this.enclosureFullyAt(x, y) !== this.enclosure;
     return footTiles(x, y, this.kind.footW, FOOT_H).some(

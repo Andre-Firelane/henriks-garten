@@ -49,6 +49,8 @@ export const HD = [
   // Reptilienhaus
   'floor_reptiles', 'terrarium_floor', 'hutwall_reptiles_x', 'hutwall_reptiles_y', 'post_hutwall_reptiles', 'hutwall_terrarium_x',
   'hutwall_terrarium_y', 'post_hutwall_terrarium', 'spider_web',
+  // große Glasterrarien, das der Spinnen auf einem Sockel, und der Eckpfosten der Wassertanks (tools/terrarium-glass.py)
+  'hutwall_terrarium_raised_x', 'hutwall_terrarium_raised_y', 'post_hutwall_terrarium_raised', 'hutwall_terrarium_raised_back_x', 'hutwall_terrarium_raised_back_y', 'post_hutwall_terrarium_raised_back', 'post_hutwall_tank',
 ];
 
 // sehr große Bilder (Dächer, Gebäude) sind nur 2- bzw. 1-mal so groß, sonst zu viel Speicher

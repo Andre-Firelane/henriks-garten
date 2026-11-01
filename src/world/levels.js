@@ -52,8 +52,8 @@ const SAVANNA_ROWS = [
   'A...................#.............y.yA.v',
   'v##############################........v',
   'v..........#.MMMMM..#..................v',
-  'v..........#.NaɃɓN..#...v.....R........v',
-  'v...y.y....#.N,,,G###.....A......y.....v',
+  'v..........#.NɃ,aN..#...v.....R........v',
+  'v...y.y....#.Nɓ,,G###.....A......y.....v',
   'v...R......##MMMMM..#...............R..v',
   'v.......v..###.c....#...v..A...y.......A',
   'v..........##....yy.#..................R',
@@ -385,9 +385,9 @@ export const LEVELS = {
       'JŔŔŔŔŔŔŔŔk.J.....nľf...nfqn..n....ľn.qnľqn.J',
       'kŔŔ.ŴnḢrĎĎJḟnJ.k.n..n..q...ḟJqJJ.qḢfľqqqn.nk',
       'kŔr~~~~ĎĎ.J...J.knľ.qkk.J..n.Jn.nqnJg.Ḣ.nqqk',
-      'JŔn~~~~nn.qľ..ľ.ľ.n.kľq..f.kľn...n.kľnq.fqnJ',
+      'JŔO~~~~nn.qľ..ľ.ľ.n.kľq..f.kľn...n.kľnq.fqnJ',
       'kŔn~~~Ď.Jq.k..q..J..ľľ..Jqľ..JnJnJJľ.knk.q.k',
-      'kŔḟĎĎf.Ḣnn.ľJq.qn.ĎĎĎĎĎJf.qľ.JnľĎĎĎJq...q.ľk',
+      'kŔḟnĎO.nnn.ľJq.qn.ĎĎĎĎĎJf.qľ.JnľĎĎĎJq...q.ľk',
       'JŔĎĎĎnq.nľľ.ľľ...ĎĎĎĎĎĎĎ.J.ľnn.ĎĎĎĎĎ.n.n...J',
       'kfĎĎ.n.ĎĎĎĎĎ.q...ĎĎĎĎĎĎĎ.J.ľnkĎĎĎĎĎĎĎḟ..n..k',
       'k.Ď...ĎĎĎĎĎĎĎ.qk.ĎĎĎĎĎĎĎ.n.nḢ.ĎĎĎĎĎĎĎ.k.nn.k',
@@ -453,26 +453,35 @@ export const LEVELS = {
     background: '#2f5a24',
     toolSpots: [],
     exits: [], // hin und zurück nur mit dem Wasserflugzeug
-    spawn: { population: 4, weights: { howler: 1, macaw: 1 } }, // population: Trupps bzw. Paare (ein Trupp Brüllaffen, ein Ara-Paar zählt als ein Platz)
+    // Plätze (population: ein Trupp Brüllaffen, ein Ara-Paar, ein Piranha-Schwarm zählt als einer). spawn gilt bei jedem
+    // Wetter, weatherSpawn ist der eigene Pool der Wetterlage (die Wetterphasen unten ersetzen nur ihn)
+    spawn: { population: 1, weights: { anteater: 1 } }, // Ameisenbären bei jedem Wetter
+    weatherSpawn: { population: 4, weights: { howler: 1, macaw: 1 } }, // normales Wetter: Brüllaffen und Aras in den Uferbäumen
+    // Sonne am Wasserfall (nur bei normalem Wetter, siehe WaterfallSun.js): Fläche ums Becken, in der sich höchstens
+    // so viele Leguane verstecken und sonnen (eigener Pool, siehe Iguana.js)
+    waterfallSun: { tx0: 1, ty0: 1, tx1: 9, ty1: 7, iguanas: 2 },
     // Wetterphasen (siehe src/world/season.js): ersetzen die Angaben oben
     seasons: {
       rain: {
-        spawn: { population: 4, weights: { macaw: 1, piranha: 1 } }, // bei Starkregen verkriechen sich die Brüllaffen; die Aras sitzen nur in den Bäumen, im Fluss wirbeln Piranha-Schwärme
+        waterfallSun: null, // bei Starkregen keine Sonne (und keine Leguane)
+        weatherSpawn: { population: 4, weights: { piranha: 1, toucan: 1 } }, // bei Starkregen verkriechen sich Brüllaffen und Aras; im Fluss wirbeln Piranha-Schwärme, in den Uferbäumen sitzen Tukane
         grass: ['jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2'],
         ambient: 'ambient_savanna_rain', // Regen und Donner
         ambientVolume: 0.5,
       },
       // aufsteigender Nebel: man sieht nicht weit, über dem Fluss steigen Schwaden auf (siehe Weather.js)
       fog: {
-        spawn: { population: 4, weights: { gibbon: 1, macaw: 1 } }, // im Nebel: Gibbons statt Brüllaffen
+        waterfallSun: null, // im Nebel auch nicht
+        weatherSpawn: { population: 4, weights: { gibbon: 1, macaw: 1 } }, // im Nebel: Gibbons statt Brüllaffen, die Aras fliegen weiter
         ambientVolume: 0.18, // im Nebel ist es stiller
       },
     },
   },
 
   // Reptilienhaus: eigene, enge Halle hinter der Fassade im Dschungel-Bereich des Tierparks (wie das Aquarium), voller
-  // Dschungelpflanzen. Zwei kleine Terrarien mit Glaswänden: links die Schlangen, rechts die Vogelspinnen (mit Netzen ẅ),
-  // unten links das Piranha-Becken. Gefangene ziehen beim Betreten des Tierparks hier ein
+  // Dschungelpflanzen. Große Glasterrarien voller Pflanzen (tools/terrarium-glass.py): links die Schlangen, rechts die
+  // Vogelspinnen (auf einem Sockel, mit Netzen ẅ), unten links das Piranha-Becken, unten rechts das Leguan-Terrarium
+  // (Ast und Steine zum Sonnen). Gefangene ziehen beim Betreten des Tierparks hier ein
   // (siehe sendToHouse in GardenScene)
   reptiles: {
     name: tr('Reptilienhaus', 'Reptile House'),
@@ -480,19 +489,19 @@ export const LEVELS = {
       'MMMMMMMMMMMMMMMMMM',
       'Nľ.ḟ..ľ....ľ..Ḣ.ľN',
       'N.MMMMMM..MMMMMM.N',
-      'N.N.ľ.rN..Nẅ.ľ.N.N',
-      'N.N.L..N..N..ẅ.N.N',
-      'N.Nn..rN..Nr..ẅN.N',
+      'N.NḢľnrN..Nẅnľ.N.N',
+      'N.NqL.ľN..Nľ.ẅnN.N',
+      'N.Nn.qrN..NrnľẅN.N',
       'N.MMMMMM..MMMMMM.N',
       'Nľ.n....ľ.....n.ľN',
       'N................N',
       'N.ľ............ľ.N',
       'N.##############.N',
-      'N.MMMMMM##...Ɓ..ḟN',
-      'N.N...(N##....ľ.ľN',
-      'N.N(...N##..Ḣ...ľN',
-      'N.N....N##....ľ..N',
-      'N.MMMMMM##...Ɓ..ḟN',
+      'N.MMMMMM##MMMMMM.N',
+      'N.N...(N##NľḢrnN.N',
+      'N.N(...N##NqL.ľN.N',
+      'N.N....N##NrnḟľN.N',
+      'N.MMMMMM##MMMMMM.N',
       'NḢ..ľ...##....ľ.ľN',
       'MMMMMMMMXXMMMMMMMM',
     ],
@@ -503,13 +512,15 @@ export const LEVELS = {
       // Piranha-Becken unten links (Wasserbecken wie im Aquarium, ohne Zierfische, mit zwei Seegras-Büscheln)
       { id: 'piranhas', name: tr('Piranha-Becken', 'Piranha Tank'), species: ['piranha'], world: 'jungle', seed: { tx: 4, ty: 13 }, slots: [6, 6], signAt: { tx: 4.5, ty: 15.6 }, signOnGlass: true },
       { id: 'snakes', name: tr('Schlangen-Terrarium', 'Snake Terrarium'), species: ['snake'], world: 'jungle', seed: { tx: 5, ty: 4 }, slots: [4, 4], signAt: { tx: 4.5, ty: 6.6 }, signOnGlass: true },
+      { id: 'iguanas', name: tr('Leguan-Terrarium', 'Iguana Terrarium'), species: ['iguana'], world: 'jungle', seed: { tx: 12, ty: 12 }, slots: [3, 3], signAt: { tx: 12.5, ty: 15.6 }, signOnGlass: true },
       { id: 'tarantulas', name: tr('Vogelspinnen-Terrarium', 'Tarantula Terrarium'), species: ['tarantula'], world: 'jungle', seed: { tx: 12, ty: 4 }, slots: [4, 4], signAt: { tx: 12.5, ty: 6.6 }, signOnGlass: true },
     ],
     // Terrarien zuerst (ihre Wände und ihr Boden gehören zum Terrarium), dann die Halle
     buildings: [
       { tx0: 2, ty0: 2, tx1: 7, ty1: 6, style: 'terrarium', noRoof: true },
-      { tx0: 10, ty0: 2, tx1: 15, ty1: 6, style: 'terrarium', noRoof: true },
+      { tx0: 10, ty0: 2, tx1: 15, ty1: 6, style: 'terrarium_raised', raise: 28, noRoof: true }, // Vogelspinnen auf einem Sockel (raise wie RAISE in tools/terrarium-glass.py)
       { tx0: 2, ty0: 11, tx1: 7, ty1: 15, style: 'tank', noRoof: true, noDeco: true }, // Piranha-Becken
+      { tx0: 10, ty0: 11, tx1: 15, ty1: 15, style: 'terrarium', noRoof: true }, // Leguan-Terrarium
       { tx0: 0, ty0: 0, tx1: 17, ty1: 17, style: 'reptiles', noRoof: true, pathFloor: 'asia_path', visitors: true },
     ],
     chests: [],
@@ -743,14 +754,14 @@ const PARK_ROWS = [
       '            T..rll.qq.q....#.q.oooooooo.l.#W...........bbbbb5........#..............l.#.l......5',
       '            5..............##..q...ooor...###################################################..5',
       '            T[[[[[[[[[[[[[[.##K.r.K..l..l##[[[[[[[[[[[[b......#......................W.........5',
-      '            5]............]..##...q.K..K##.]..........]bnn^^^^G^^^^^^^^^^^^^^^^.ľ..q...........5',
-      '            T]..J...9.....]...##.......####G..q....Q..]b..;..........+......ľ.;................5',
-      '            5].........9..G#############...G....w...Q.]bnḟ;.ľ...J..........+..;................5',
-      '            T]L....H......G........#.......]..www8....]b..;..........+........;..ľ.............5',
-      '            5]....9.......]........#.......]...ww...Q.]bJ.;...+...........J...;.......ľ.......ľ5',
-      '            T]..9.....J...]....K...#.......].L....r...]b..;........ľ.....+....;............n.qJ5',
-      '            5].......q....]....r...#.....q.]..........]bJ.;.ḟ..........ľ.....ľ;.....n......ľ.ľ.5',
-      '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ.^^^^^^^^^^^^^^^^^^^^^ľJ..ḢľJqnJn.Jq.ľ5',
+      '            5]............]..##...q.K..K##.]..........]bnn^^^^G^^^^^^^^^^^^^^^^.[[[[[[[G[[[[[[[5',
+      '            T]..J...9.....]...##.......####G..q....Q..]b..;..........+......ľ.;.].............]5',
+      '            5].........9..G#############...G....w...Q.]bnḟ;.ľ..............+..;.]..J......ľ...]5',
+      '            T]L....H......G........#.......]..www8....]b..;..........+........;.]........ľ....]5',
+      '            5]....9.......]........#.......]...ww...Q.]bJ.;...+...........J...;.].ľ.....n...J.]5',
+      '            T]..9.....J...]....K...#.......].L....r...]b..;........ľ..J..+....;.]....J....ľ...]5',
+      '            5].......q....]....r...#.....q.]..........]bJ.;.ḟ..........ľ.....ľ;.].n.......q.ľ.]5',
+      '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ.^^^^^^^^^^^^^^^^^^^^^ľ[[[[[[[[[[[[[[[5',
       '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb5555555555555555555555555555555555555555',
 ];
 
@@ -789,7 +800,8 @@ const PARK_PENS = [
       // Dschungel (rechts neben dem Bambuswald): Gehege links, rechts das Reptilienhaus
       { id: 'howlers', name: tr('Affen-Gehege', 'Monkey Enclosure'), species: ['howler', 'gibbon'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, quota: { howler: [4, 6], gibbon: [3, 5] }, upgrade: tr('Zusätzlicher Urwaldbaum', 'Another jungle tree'), basic: [[74, 66, ':']] }, // Brüllaffen und Gibbons zusammen
       // große Voliere mit vielen Sitzplätzen (Urwaldbäume J, Sitzstangen +): die Aras sitzen nur dort und fliegen hin und her
-      { id: 'macaws', name: tr('Ara-Voliere', 'Macaw Aviary'), species: ['macaw'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 66, ty: 77 }, slots: [6, 9], upgrade: tr('Zweiter Urwaldbaum und mehr Sitzstangen', 'Second jungle tree and more perches'), basic: [[74, 78, ':'], [75, 76, ':'], [73, 79, ':']] },
+      { id: 'macaws', name: tr('Ara- und Tukan-Voliere', 'Macaw and Toucan Aviary'), species: ['macaw', 'toucan'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 66, ty: 77 }, quota: { macaw: [6, 9], toucan: [3, 5] }, upgrade: tr('Zweiter Urwaldbaum und mehr Sitzstangen', 'Second jungle tree and more perches'), basic: [[74, 78, ':'], [75, 76, ':'], [73, 79, ':']] },
+      { id: 'anteaters', name: tr('Ameisenbär-Gehege', 'Anteater Enclosure'), species: ['anteater'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 87, ty: 77 }, slots: [3, 5], upgrade: tr('Zusätzlicher Ameisenbaum', 'Another ant tree'), basic: [[92, 78, '.']] }, // rechts neben der Ara-Voliere; frisst Ameisen an den Urwaldbäumen
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
 ];
 

@@ -12,7 +12,7 @@ import { currentSeason } from './season.js';
 const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
-const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
+const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
@@ -538,6 +538,13 @@ export function buildingAt(tx, ty, margin = 0) {
   return buildings().find((h) => tx >= h.tx0 - margin && tx <= h.tx1 + margin && ty >= h.ty0 - margin && ty <= h.ty1 + margin) ?? null;
 }
 
+// Terrarium auf einem Sockel (Gebäude mit raise, z. B. die Vogelspinnen im Reptilienhaus): so viel höher liegt sein Inneres
+// (Boden, Pflanzen, Tiere) an dieser Kachel, sonst 0
+export function raiseAt(tx, ty) {
+  const h = buildingAt(tx, ty);
+  return h?.raise && tx > h.tx0 && tx < h.tx1 && ty > h.ty0 && ty < h.ty1 ? h.raise : 0;
+}
+
 // Liegt die Kachel in der Hütte bzw. einem Gebäude (samt Wänden)?
 export function inHut(tx, ty, margin = 0) {
   return !!buildingAt(tx, ty, margin);
@@ -563,8 +570,9 @@ export function exitAt(tx, ty) {
 export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
   let house = buildingAt(tx, ty);
-  // unter den Glaswänden eines Wassertanks: Boden der Halle drumherum (der Sand liegt nur innen)
-  if (house?.style === 'tank' && (tx === house.tx0 || tx === house.tx1 || ty === house.ty0 || ty === house.ty1)) {
+  // unter den Glaswänden eines Wassertanks bzw. eines Terrariums auf einem Sockel: Boden der Halle drumherum (der Sand
+  // bzw. die Erde liegt nur innen)
+  if ((house?.style === 'tank' || house?.raise) && (tx === house.tx0 || tx === house.tx1 || ty === house.ty0 || ty === house.ty1)) {
     house = buildings().find((b) => b !== house && tx >= b.tx0 && tx <= b.tx1 && ty >= b.ty0 && ty <= b.ty1) ?? house;
   }
   if (house?.pathFloor && PATH_CHARS.includes(c)) return house.pathFloor; // eigener Weg im Gebäude (Mosaik im Aquarium)
@@ -697,12 +705,13 @@ export const eventBlock = { at: null };
 // ohne Szene (beim Aufbau der Karte) ist alles Dickicht dicht
 export const thicketBlock = { at: null };
 
-export function isBlockedPoint(x, y, wade = false, trample = false) {
+export function isBlockedPoint(x, y, wade = false, trample = false, thicket = false) {
   if (eventBlock.at?.(x, y)) return true;
   if (CAR_BODIES.some((b) => nearSegment(x, y, b) < b.hw)) return true;
   const { tx, ty } = worldToTile(x, y);
   if (wade && charAt(tx, ty) === '~') return false;
   if (trample && SMALL_BUSHES.includes(charAt(tx, ty))) return false;
+  if (thicket && charAt(tx, ty) === 'Ď') return false;
   const hitbox = objectAt(tx, ty)?.hitbox;
   if (!hitbox) return isBlocked(tx, ty);
   const c = tileToWorld(tx, ty);

@@ -102,6 +102,10 @@ const CHARACTERS = [
   // Giraffe frisst (Kopf hoch in die Akazie): unten-rechts, unten-links (falsch herum gemalt, wird gespiegelt), oben-rechts, oben-links.
   // Etwas kleiner als die laufende Giraffe (0,40 statt 0,47), sonst wirkt sie neben der Akazie zu groß. Freigestellt mit npm run cutout
   { src: 'Sprites/Giraffe frisst.png', out: 'giraffe_eat.png', frameW: 96, frameH: 180, feetY: 176, figureH: 172, mirror: [1] },
+  // Ameisenbär (Dschungel): 2×2-Raster, oben beide nach unten-links (die erste wird gespiegelt), unten oben-rechts, oben-links
+  { src: 'Sprites/Ameisenbär.png', out: 'anteater.png', frameW: 104, frameH: 72, feetY: 68, scale: 0.07, grid: [2, 2], mirror: [0] },
+  // Leguan (Dschungel): 2×2-Raster, nur Seitenansichten (oben beide nach links, unten nach rechts und links); nach oben wie nach unten
+  { src: 'Sprites/Leguan.png', out: 'iguana.png', frameW: 96, frameH: 56, feetY: 52, scale: 0.174, grid: [2, 2], order: [2, 0, 2, 1] },
   // Zebra stehend und trinkend (Kopf unten); gleicher Maßstab für beide: 92/328 Pixel, beim Trinken ist die Figur 212 statt 328 hoch
   { src: 'Sprites/Zebra.png', out: 'zebra.png', frameW: 80, frameH: 104, feetY: 100, figureH: 92 },
   { src: 'Sprites/Zebra trinkt.png', out: 'zebra_drink.png', frameW: 80, frameH: 104, feetY: 100, figureH: 59.5 },
@@ -259,6 +263,9 @@ const CHARACTERS = [
   // und fliegend (aufrecht gemalt, das Spiel neigt ihn in Flugrichtung; die Rückansichten schauen beide nach rechts oben)
   { src: 'Sprites/Ara.png', out: 'macaw.png', frameW: 64, frameH: 80, feetY: 76, scale: 0.165, order: [0, 1, 3, 2] },
   { src: 'Sprites/Ara2.png', out: 'macaw2.png', frameW: 64, frameH: 80, feetY: 76, scale: 0.165, order: [0, 1, 3, 2] },
+  // Tukan (Dschungel, Starkregen): sitzend und fliegend, im Bild vorne-rechts, hinten-rechts, vorne-links, hinten-links
+  { src: 'Sprites/Tucan sitzt.png', out: 'toucan.png', frameW: 64, frameH: 80, feetY: 76, scale: 0.18, order: [0, 2, 1, 3] },
+  { src: 'Sprites/Tucan fliegt.png', out: 'toucan_fly.png', frameW: 88, frameH: 80, feetY: 76, scale: 0.18, byComponents: true, order: [0, 2, 1, 3] },
   { src: 'Sprites/Ara fliegend.png', out: 'macaw_fly.png', frameW: 88, frameH: 80, feetY: 76, scale: 0.165, byComponents: true, copyMirror: { 3: 2 } },
   { src: 'Sprites/Ara2 fliegend.png', out: 'macaw2_fly.png', frameW: 88, frameH: 80, feetY: 76, scale: 0.165, byComponents: true, copyMirror: { 3: 2 } },
   // roter Panda (Glühwürmchen-Abend): laufend und sitzend, im Bild nach links, rechts, Rücken nach links oben, rechts oben
@@ -668,8 +675,8 @@ const ANIMATIONS = [
   // Hyäne: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
   { src: 'Animation/Hyäne_läuft_vorne.mp4', out: 'hyena_walk.png', scale: 0.9, frameW: 80, frameH: 80, feetY: 76 }, // Video
   { src: 'Animation/Hyäne_läuft_hinten.mp4', out: 'hyena_walk_back.png', scale: 0.9, frameW: 80, frameH: 80, feetY: 76 }, // Video
-  { src: 'Animation/Hyäne_idle_vorne.mp4', out: 'hyena_idle.png', scale: 0.18, frameW: 80, frameH: 80, feetY: 76 }, // Video
-  { src: 'Animation/Hyäne_idle_hinten.mp4', out: 'hyena_idle_back.png', scale: 0.18, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_idle_vorne.mp4', out: 'hyena_idle.png', scale: 0.2, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_idle_hinten.mp4', out: 'hyena_idle_back.png', scale: 0.2, frameW: 80, frameH: 80, feetY: 76 }, // Video
   // Gnu: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
   { src: 'Animation/Gnu_läuft_vorne.png', out: 'gnu_walk.png', cols: 5, rows: 3, scale: 0.262, frameW: 88, frameH: 96, feetY: 92 },
   { src: 'Animation/Gnu_läuft_hinten.png', out: 'gnu_walk_back.png', cols: 5, rows: 3, scale: 0.252, frameW: 88, frameH: 96, feetY: 92 },
@@ -778,6 +785,11 @@ const ANIMATIONS = [
   // Ara und Blau-gelber Ara: sitzen (nur vorne) und fliegen (Flügelschlag, breiterer Rahmen)
   { src: 'Animation/Ara idle vorne.webm', out: 'macaw_idle.png', scale: 0.195, frameW: 64, frameH: 80, feetY: 76 },
   { src: 'Animation/Ara2 idle vorne.webm', out: 'macaw2_idle.png', scale: 0.52, frameW: 64, frameH: 80, feetY: 76 },
+  // Tukan: sitzen (vorne und hinten) und fliegen; alle nach rechts gefilmt
+  { src: 'Animation/Tucan idle vorne.webm', out: 'toucan_idle.png', scale: 0.64, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Tucan idle hinten.webm', out: 'toucan_idle_back.png', scale: 0.7, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Tucan fliegt vorne.webm', out: 'toucan_flap.png', scale: 0.55, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Tucan fliegt hinten.mp4', out: 'toucan_flap_back.png', scale: 0.68, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Ara fliegt vorne.mp4', out: 'macaw_flap.png', loopBlend: 1, scale: 0.75, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Ara fliegt hinten.mp4', out: 'macaw_flap_back.png', scale: 0.15, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Ara2 fliegt vorne.mp4', out: 'macaw2_flap.png', loopBlend: 1, scale: 0.27, frameW: 104, frameH: 96, feetY: 92 },
@@ -792,6 +804,16 @@ const ANIMATIONS = [
   { src: 'Animation/Schlange2 idle vorne.webm', out: 'snake2_idle.png', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
   // Vogelspinne und Goldene Vogelspinne: krabbeln
   { src: 'Animation/Spinne läuft vorne.mp4', out: 'tarantula_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
+  // Ameisenbär (Dschungel): Laufen und Stehen von vorne (nach links gefilmt, gespiegelt) und hinten; beim Fressen steht er
+  // aufgerichtet am Baum (nur ein Bild, nach links; freigestellt mit npm run cutout)
+  { src: 'Animation/Ameisenbär läuft vorne.mp4', out: 'anteater_walk.png', scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär läuft hinten.mp4', out: 'anteater_walk_back.png', scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär idle vorne.webm', out: 'anteater_idle.png', scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär idle hinten.mp4', out: 'anteater_idle_back.png', scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Sprites/Ameisenbär frisst.png', out: 'anteater_eat.png', cols: 1, rows: 1, scale: 0.145, frameW: 88, frameH: 80, feetY: 76 },
+  // Leguan: Laufen und Stehen (nach links gefilmt, gespiegelt; ohne eigene Rückansicht)
+  { src: 'Animation/Leguan läuft.mp4', out: 'iguana_walk.png', scale: 0.26, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  { src: 'Animation/Leguan idle.webm', out: 'iguana_idle.png', scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
   { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft vorne.mp4', out: 'tarantula2_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },

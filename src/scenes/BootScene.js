@@ -42,7 +42,8 @@ const PIXEL_ART = [
   'build_stakes', 'build_planks', // Baustelle vor dem Ausbau
   // Aquarium: Fassade im Tierpark, Halle und Wassertanks, Böden, Deko im Tank
   'reptile_facade', 'hutwall_reptiles_x', 'hutwall_reptiles_y', 'post_hutwall_reptiles', 'hutwall_terrarium_x', 'hutwall_terrarium_y',
-  'post_hutwall_terrarium', 'floor_reptiles', 'terrarium_floor', 'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
+  'post_hutwall_terrarium', 'hutwall_terrarium_raised_x', 'hutwall_terrarium_raised_y', 'post_hutwall_terrarium_raised', 'hutwall_terrarium_raised_back_x', 'hutwall_terrarium_raised_back_y', 'post_hutwall_terrarium_raised_back',
+  'floor_reptiles', 'terrarium_floor', 'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
   'floor_aquarium', 'tank_floor', 'seaweed', 'coral', 'tank_rock', 'shell', 'tank_chest',
   // Unterwasserwelt (Riff)
   'reef_sand0', 'reef_sand1', 'reef_sand2', 'reef_path', 'reef_branch', 'reef_fan', 'reef_brain', 'reef_tube', 'reef_kelp',
@@ -197,6 +198,10 @@ const VIDEO_ANIMS = {
   macaw_idle: [64, 80, 107],
   macaw2_idle: [64, 80, 107],
   macaw_flap: [104, 96, 87],
+  toucan_idle: [64, 80, 107],
+  toucan_idle_back: [64, 80, 107],
+  toucan_flap: [104, 96, 107],
+  toucan_flap_back: [104, 96, 29],
   macaw_flap_back: [104, 96, 24],
   macaw2_flap: [104, 96, 39],
   macaw2_flap_back: [104, 96, 104],
@@ -217,6 +222,12 @@ const VIDEO_ANIMS = {
   gibbon_walk_back: [88, 88, 34],
   gibbon_idle: [88, 88, 68],
   gibbon_idle_back: [88, 88, 107],
+  anteater_walk: [104, 72, 24],
+  iguana_walk: [96, 56, 85],
+  iguana_idle: [96, 56, 107],
+  anteater_walk_back: [104, 72, 25],
+  anteater_idle: [104, 72, 107],
+  anteater_idle_back: [104, 72, 103],
   canoe_paddle_anim: [160, 152, 29],
   canoe_paddle_anim_back: [160, 152, 49],
   // Reittiere Maultier (Dschungel) und Seabob (Riff)
@@ -322,6 +333,7 @@ const ANIMAL_SOUNDS = {
   howler: 'animal_howler.wav', // Brüllen (beim Springen von Baum zu Baum und beim Fangen)
   gibbon: 'animal_gibbon.wav', // Rufe (beim Springen von Baum zu Baum und beim Fangen)
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
+  toucan: 'animal_toucan.wav', // Tukan-Ruf (beim Losfliegen und beim Fangen)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -438,11 +450,15 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('heron_flap_back', 'assets/heron_flap_back.png', { frameWidth: 96, frameHeight: 96 });
     this.load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
+    // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
+    this.load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
+    this.load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
+    this.load.spritesheet('iguana', 'assets/iguana.png', { frameWidth: 96, frameHeight: 56 }); // Leguan
     for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
     // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
     // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend und fliegend
-    for (const k of ['macaw', 'macaw2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
-    for (const k of ['macaw_fly', 'macaw2_fly']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
+    for (const k of ['macaw', 'macaw2', 'toucan']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
+    for (const k of ['macaw_fly', 'macaw2_fly', 'toucan_fly']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
     for (const k of ['snake', 'snake2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
     for (const k of ['tarantula', 'tarantula2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 64 });
     this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle

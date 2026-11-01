@@ -1,12 +1,12 @@
 // Ara (Dschungel): lebt paarweise in den Bäumen am Flussufer. Ab und zu fliegt das Paar ans andere Ufer: hoch aus der
 // Krone, über dem Fluss im Tiefflug dicht übers Wasser, dann wieder hinauf in einen Uferbaum drüben. Nur im Tiefflug
-// fängt man einen mit dem Kescher – am besten vom Kanu aus, wenn man vorausahnt, wohin sie fliegen. Bei Starkregen
-// sitzen sie nur in den Bäumen und fliegen nicht.
-// In der Voliere sitzt er auf Bäumen und Sitzstangen und fliegt von Platz zu Platz.
+// fängt man einen mit dem Kescher – am besten vom Kanu aus, wenn man vorausahnt, wohin sie fliegen.
+// Der Tukan (nur bei Starkregen, statt der Aras) macht es genauso, lebt aber allein statt im Paar.
+// In der Voliere (Aras und Tukane zusammen) sitzt er auf Bäumen und Sitzstangen und fliegt von Platz zu Platz.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { LEVEL, MAP_W, MAP_H, charAt, inPen, isBlocked, objectAt } from '../world/map.js';
+import { MAP_W, MAP_H, charAt, inPen, isBlocked, objectAt } from '../world/map.js';
 
 const PERCH_UP = { J: 98, Ṁ: 62 }; // so hoch sitzt er in der Krone (Urwaldbaum, Mangrove)
 const SHORE_RANGE = 3; // Uferbäume: höchstens so viele Kacheln vom Fluss entfernt
@@ -22,19 +22,20 @@ const HIGH_DEPTH = 98990; // hoch in der Luft vor allen Bäumen
 const PEN_FLY_EVERY = [8, 16]; // in der Voliere: so oft fliegt er eine kurze Strecke
 const PEN_ALTITUDE = 26;
 const PEN_FLY_SPEED = 55;
-// Sitzplätze in der Voliere je Objekt: [Versatz zur Seite, Höhe über dem Boden] (Urwaldbaum: in der Krone, Sitzstange:
-// oberer und unterer Querbalken, Mangrove: in der Krone)
+// Sitzplätze in der Voliere je Objekt: [Versatz zur Seite, Höhe über dem Boden] (Urwaldbaum: oben auf der Krone,
+// Sitzstange: oberer und unterer Querbalken, Mangrove: oben auf der Krone). Gemessen an den Bildern (Weltgröße wie
+// gezeichnet), die Füße landen SPRITE_SINK + 2 tiefer
 const PEN_SEATS = {
-  jungle_tree: [[-12, 96], [12, 92], [0, 100]],
-  peacock_perch: [[-8, 32], [9, 21]],
-  mangrove: [[-10, 60], [10, 58]],
+  jungle_tree: [[-16, 122], [16, 116], [0, 132]],
+  peacock_perch: [[-6, 68], [5, 47]],
+  mangrove: [[-12, 76], [12, 72]],
 };
 const PEN_SIT = [5, 12]; // so lange sitzt er, dann fliegt er zu einem anderen Platz
 const PEN_ARC = 18; // so viel höher fliegt er zwischen zwei Plätzen
 
 export default class Macaw extends Animal {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'macaw');
+  constructor(scene, x, y, species = 'macaw') {
+    super(scene, x, y, species);
     this.altitude = 0;
     this.phase = null; // wild: 'perch' → 'fly' → 'perch'
   }
@@ -77,6 +78,16 @@ export default class Macaw extends Animal {
     });
   }
 
+  // ein einzelner Vogel (Tukan) in einem Uferbaum; gibt ihn zurück
+  static spawnSingle(scene, species) {
+    const tree = Phaser.Utils.Array.GetRandom(Macaw.shoreTrees());
+    if (!tree) return [];
+    const a = scene.createAnimal(species, 0, 0);
+    a.perchIn(tree, 0);
+    a.perchTime = Phaser.Math.FloatBetween(...PERCH_TIME);
+    return [a];
+  }
+
   // in der Krone sitzen (i: zweiter des Paars etwas daneben)
   perchIn(tree, i = this.pair?.members.indexOf(this) ?? 0) {
     this.tree = tree;
@@ -110,7 +121,6 @@ export default class Macaw extends Animal {
     if (this.phase === 'perch') {
       // der erste des Paars entscheidet, wann es losgeht; der zweite folgt ihm
       if (this.pair && this.pair.members[0] !== this) return false;
-      if (LEVEL.season === 'rain') return false; // bei Starkregen bleiben sie sitzen
       this.perchTime -= dt;
       if (this.perchTime <= 0) this.flyAcross();
       return false;
@@ -217,7 +227,7 @@ export default class Macaw extends Animal {
   }
 
   freeSeats(seats) {
-    const taken = new Set(this.scene.animals.filter((a) => a !== this && a.species === 'macaw' && a.state === 'penned' && a.seat).map((a) => a.seat.key));
+    const taken = new Set(this.scene.animals.filter((a) => a !== this && a instanceof Macaw && a.state === 'penned' && a.seat).map((a) => a.seat.key));
     return seats.filter((t) => !taken.has(t.key));
   }
 

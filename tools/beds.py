@@ -59,6 +59,44 @@ def clear_white(path, thr=245, min_area=50):
             ys, xs = zip(*reg); a[ys, xs, 3] = 0
     return Image.fromarray(a, 'RGBA')
 
+def coeffs(dst, src):
+    # Koeffizienten für Image.PERSPECTIVE: bildet Ausgabe-Punkte (dst) auf Quell-Punkte (src) ab
+    A, b = [], []
+    for (x, y), (u, v) in zip(dst, src):
+        A += [[x, y, 1, 0, 0, 0, -u * x, -u * y], [0, 0, 0, x, y, 1, -v * x, -v * y]]
+        b += [u, v]
+    return np.linalg.solve(np.array(A, float), np.array(b, float)).tolist()
+
+def iso_bed(key, empty, sleep, src_feet, feet):
+    # Himmelbett aufs Iso-Raster ziehen (gespiegelt): eine Verformung, bei der senkrechte Linien senkrecht bleiben (die
+    # Pfosten kippen nicht), so gewählt, dass die vier Bettfüße möglichst genau auf den Bodenpunkten (feet, Welt-Pixel um
+    # die Mitte der Bett-Kachel) landen. Gibt Größe und Ankerpunkt (Kachelmitte als Bruchteil des Bilds) aus.
+    S = np.array(src_feet, float)
+    D = np.array(feet, float)
+    Sc, Dc = S - S.mean(0), D - D.mean(0)
+    # x' = a*x ; y' = c*x + k*y (kleinste Quadrate)
+    a = (Sc[:, 0] @ Dc[:, 0]) / (Sc[:, 0] @ Sc[:, 0])
+    (c, k), *_ = np.linalg.lstsq(Sc, Dc[:, 1], rcond=None)
+    M = np.array([[a, 0], [c, k]])
+    print(key, 'Füße landen bei', np.round(Sc @ M.T + D.mean(0), 1).tolist())
+    src_box = np.array([[0, 0], [1024, 0], [1024, 572], [0, 572]], float)
+    # Ausdehnung des Ergebnisses aus dem sichtbaren Teil der Quelle
+    bb = empty.getchannel('A').getbbox()
+    vis = np.array([[1024 - bb[2], bb[1]], [1024 - bb[0], bb[1]], [1024 - bb[0], bb[3]], [1024 - bb[2], bb[3]]], float)
+    w = (vis - S.mean(0)) @ M.T + D.mean(0)
+    xmin, ymin = np.floor(w.min(0)) - 2
+    xmax, ymax = np.ceil(w.max(0)) + 2
+    Mi = np.linalg.inv(M)
+    for f, d in ((1, 'public/assets'), (4, 'public/assets/hd'), (2, 'public/assets/hd2')):
+        W, H = int((xmax - xmin) * f), int((ymax - ymin) * f)
+        # Ausgabe-Pixel (X, Y) -> Welt (X/f + xmin, Y/f + ymin) -> Quelle
+        A = Mi / f
+        off = S.mean(0) + Mi @ (np.array([xmin, ymin]) - D.mean(0))
+        coef = (A[0, 0], A[0, 1], off[0], A[1, 0], A[1, 1], off[1])
+        for suffix, im in (('', empty), ('_sleep', sleep)):
+            im.transpose(Image.FLIP_LEFT_RIGHT).transform((W, H), Image.AFFINE, coef, Image.BICUBIC).save(f'{d}/{key}{suffix}.png')
+    print(key, [int(xmax - xmin), int(ymax - ymin)], 'Anker', round(-xmin / (xmax - xmin), 4), round(-ymin / (ymax - ymin), 4))
+
 def save(key, empty, sleep, width):
     box = np.array(empty.getchannel('A').getbbox())
     b2 = np.array(sleep.getchannel('A').getbbox())
@@ -70,5 +108,14 @@ def save(key, empty, sleep, width):
             im.resize((width * f, h * f), Image.LANCZOS).save(f'{d}/{key}{suffix}.png')
     print(key, width, h)
 
-save('hut_bed_savanna', clear_white('Sprites/Bett Savanne.png'), clear_white('Sprites/Bett Savanne schläft.png'), 104)
+# Himmelbett: gespiegelt, damit es längs an der Wand gegenüber der Tür steht (Kopfende hinten); Füße in der Quelle nach
+# dem Spiegeln: Kopfende an der Wand, Kopfende vorne, Fußende an der Wand, Fußende vorne. Ziel: 0,85 x 1,7 Kacheln,
+# an die Wand (tx - 0,45) und hinten bis ty - 0,4 (in Welt-Pixeln: x = (a - b) * 32, y = (a + b) * 16)
+iso = lambda a, b: ((a - b) * 32, (a + b) * 16)
+bed_empty = clear_white('Sprites/Bett Savanne.png')
+bed_sleep = clear_white('Sprites/Bett Savanne schläft.png')
+bed_sleep.paste(bed_empty.crop((465, 195, 540, 258)), (465, 195))  # gemaltes „zzz“ weg (gespiegelt sähe es aus wie „sss“; die Zs steigen im Spiel auf)
+iso_bed('hut_bed_savanna', bed_empty, bed_sleep,
+        [(1024 - 464, 325), (1024 - 225, 435), (1024 - 812, 445), (1024 - 573, 555)],
+        [iso(-0.45, -0.4), iso(0.4, -0.4), iso(-0.45, 1.3), iso(0.4, 1.3)])
 save('hut_bed_jungle', hammock('Sprites/Bet Dschungel.png'), hammock('Sprites/Bett Dchnungel schläft.png'), 100)

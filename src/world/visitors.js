@@ -29,8 +29,11 @@ export const APPEAL = {
   macaque: 4,
   howler: 5, // laut und lustig
   gibbon: 5,
+  anteater: 5,
+  iguana: 5,
   snake: 3,
   macaw: 6, // bunt und laut
+  toucan: 6,
   tarantula: 3,
   lion: 6,
   crocodile: 6,
