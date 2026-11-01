@@ -225,6 +225,17 @@ const VIDEO_ANIMS = {
   anteater_walk: [104, 72, 24],
   iguana_walk: [96, 56, 85],
   iguana_idle: [96, 56, 107],
+  iguana2_walk: [96, 56, 29],
+  iguana2_idle: [96, 56, 37],
+  jaguar_walk: [104, 96, 107],
+  jaguar_walk_back: [104, 96, 107],
+  jaguar_idle: [104, 96, 85],
+  panther_walk: [104, 96, 24],
+  panther_walk_back: [104, 96, 107],
+  panther_idle: [104, 96, 35],
+  panther_idle_back: [104, 96, 24],
+  jaguar_tail_idle: [48, 48, 85], // der Schwanz, der aus der Baumkrone hängt (tools/jaguar-tail.py)
+  panther_tail_idle: [48, 48, 85],
   anteater_walk_back: [104, 72, 25],
   anteater_idle: [104, 72, 107],
   anteater_idle_back: [104, 72, 103],
@@ -453,7 +464,8 @@ export default class BootScene extends Phaser.Scene {
     // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
     this.load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
     this.load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
-    this.load.spritesheet('iguana', 'assets/iguana.png', { frameWidth: 96, frameHeight: 56 }); // Leguan
+    for (const k of ['iguana', 'iguana2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
+    for (const k of ['jaguar', 'panther']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 96 }); // Jaguar und Panther (seltene Variante)
     for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
     // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
     // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend und fliegend

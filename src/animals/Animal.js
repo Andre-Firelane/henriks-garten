@@ -494,6 +494,7 @@ export const SPECIES = {
   iguana: {
     texture: 'iguana',
     anims: { walkDown: 'iguana_walk', walkUp: 'iguana_walk', idleDown: 'iguana_idle', idleUp: 'iguana_idle' }, // Videos
+    skinAnims: { iguana2: { walkDown: 'iguana2_walk', walkUp: 'iguana2_walk', idleDown: 'iguana2_idle', idleUp: 'iguana2_idle' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 52 / 56,
     speed: 16,
@@ -506,6 +507,24 @@ export const SPECIES = {
     shadowW: 26,
     catchWith: ['net'],
     thicket: true,
+  },
+  // Jaguar (Dschungel, bei jedem Wetter; selten als Panther): schläft im Baum (nur der Schwanz hängt heraus), rennt ab und
+  // zu auf seiner festen Route zu einem anderen Baum; nur mit dem Lasso (siehe Jaguar.js)
+  jaguar: {
+    texture: 'jaguar',
+    anims: { walkDown: 'jaguar_walk', walkUp: 'jaguar_walk_back', idleDown: 'jaguar_idle', idleUp: 'jaguar_idle' }, // Videos (Stehen nur von vorne)
+    skinAnims: { panther: { walkDown: 'panther_walk', walkUp: 'panther_walk_back', idleDown: 'panther_idle', idleUp: 'panther_idle_back' } },
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 26,
+    restChance: 0.5,
+    restTime: [2, 5],
+    walkTime: [1.5, 3],
+    stepRate: 10,
+    hop: 1,
+    footW: 9,
+    shadowW: 34,
+    catchWith: ['lasso'],
   },
   // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am
   // Baum, auch durch Berühren (siehe Anteater.js). Läuft durch Dickicht hindurch (thicket)
@@ -879,6 +898,8 @@ export const SKINS = {
   wolf: { id: 'wolf2', name: tr('schwarzer Wolf', 'black wolf'), male: true, wild: 0.1, baby: 0.03 }, // gilt für das ganze Rudel
   lion: { id: 'lion2', name: tr('Schwarzmähnen-Löwe', 'black-maned lion'), male: true, wild: 0.1, baby: 0 }, // ein Löwenbaby hat noch keine Mähne
   zebra: { id: 'zebra2', name: tr('Schoko-Zebra', 'chocolate zebra'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
+  iguana: { id: 'iguana2', name: tr('Blauer Leguan', 'blue iguana'), male: true, wild: 0.12, baby: 0.03 }, // türkis mit orangem Kamm
+  jaguar: { id: 'panther', name: tr('Panther', 'black panther'), male: true, wild: 0.1, baby: 0.03 }, // schwarzer Jaguar
   macaw: { id: 'macaw2', name: tr('Blau-gelber Ara', 'blue-and-yellow macaw'), male: true, wild: 0.15, baby: 0.03 }, // gilt für das ganze Paar
   snake: { id: 'snake2', name: tr('grüne Baumschlange', 'green tree snake'), male: false, wild: 0.15, baby: 0 },
   tarantula: { id: 'tarantula2', name: tr('Goldene Vogelspinne', 'golden tarantula'), male: false, wild: 0.15, baby: 0 },

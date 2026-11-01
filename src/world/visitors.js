@@ -31,6 +31,7 @@ export const APPEAL = {
   gibbon: 5,
   anteater: 5,
   iguana: 5,
+  jaguar: 6,
   snake: 3,
   macaw: 6, // bunt und laut
   toucan: 6,

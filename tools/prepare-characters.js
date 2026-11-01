@@ -106,6 +106,11 @@ const CHARACTERS = [
   { src: 'Sprites/Ameisenbär.png', out: 'anteater.png', frameW: 104, frameH: 72, feetY: 68, scale: 0.07, grid: [2, 2], mirror: [0] },
   // Leguan (Dschungel): 2×2-Raster, nur Seitenansichten (oben beide nach links, unten nach rechts und links); nach oben wie nach unten
   { src: 'Sprites/Leguan.png', out: 'iguana.png', frameW: 96, frameH: 56, feetY: 52, scale: 0.174, grid: [2, 2], order: [2, 0, 2, 1] },
+  // seltener Leguan (Leguan2): wie der Leguan, 2×2-Raster mit Seitenansichten
+  { src: 'Sprites/Leguan2.png', out: 'iguana2.png', frameW: 96, frameH: 56, feetY: 52, scale: 0.174, grid: [2, 2], order: [2, 0, 2, 1] },
+  // Jaguar und Panther (Jaguar2): unten-rechts, unten-links, oben-rechts, oben-links
+  { src: 'Sprites/Jaguar.png', out: 'jaguar.png', frameW: 104, frameH: 96, feetY: 92, scale: 0.307 },
+  { src: 'Sprites/Jaguar2.png', out: 'panther.png', frameW: 104, frameH: 96, feetY: 92, scale: 0.307 },
   // Zebra stehend und trinkend (Kopf unten); gleicher Maßstab für beide: 92/328 Pixel, beim Trinken ist die Figur 212 statt 328 hoch
   { src: 'Sprites/Zebra.png', out: 'zebra.png', frameW: 80, frameH: 104, feetY: 100, figureH: 92 },
   { src: 'Sprites/Zebra trinkt.png', out: 'zebra_drink.png', frameW: 80, frameH: 104, feetY: 100, figureH: 59.5 },
@@ -814,6 +819,18 @@ const ANIMATIONS = [
   // Leguan: Laufen und Stehen (nach links gefilmt, gespiegelt; ohne eigene Rückansicht)
   { src: 'Animation/Leguan läuft.mp4', out: 'iguana_walk.png', scale: 0.26, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
   { src: 'Animation/Leguan idle.webm', out: 'iguana_idle.png', scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  // seltener Leguan: nach links gefilmt, gespiegelt
+  { src: 'Animation/Leguan2 läuft.mp4', out: 'iguana2_walk.png', scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  { src: 'Animation/Leguan2 idle.mp4', out: 'iguana2_idle.png', scale: 0.27, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  // Jaguar: Laufen (vorne, hinten) und Stehen (nur vorne); aus dem Stehen schneidet tools/jaguar-tail.py den Schwanz
+  { src: 'Animation/Jaguar läuft vorne.webm', out: 'jaguar_walk.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar läuft hinten.webm', out: 'jaguar_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar idle vorne.mp4', out: 'jaguar_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  // Panther (Jaguar2): Laufen und Stehen, vorne und hinten; alle nach rechts gefilmt
+  { src: 'Animation/Jaguar2 läuft vorne.mp4', out: 'panther_walk.png', scale: 0.19, keyPerFrame: true, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar2 rennt hinten.webm', out: 'panther_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar2 idle vorne.mp4', out: 'panther_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar2 idle hinten.mp4', out: 'panther_idle_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft vorne.mp4', out: 'tarantula2_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
