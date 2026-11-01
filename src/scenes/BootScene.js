@@ -450,6 +450,8 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
     this.load.spritesheet('stag_idle', 'assets/stag_idle.png', STAG_FRAME); // Hirsch steht (Test)
     this.load.spritesheet('stag_idle_back', 'assets/stag_idle_back.png', STAG_FRAME);
+    this.load.spritesheet('stag_walk', 'assets/stag_walk.png', STAG_FRAME); // Hirsch läuft
+    this.load.spritesheet('stag_walk_back', 'assets/stag_walk_back.png', STAG_FRAME);
     this.load.spritesheet('stag_eat', 'assets/stag_eat.png', STAG_FRAME);
     this.load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
     this.load.spritesheet('frog_hop', 'assets/frog_hop.png', { frameWidth: 56, frameHeight: 78 }); // Sprung (Test, siehe Frog.js)
@@ -608,7 +610,7 @@ export default class BootScene extends Phaser.Scene {
     for (const [key, frameRate] of [['hero_savanna_walk', 11], ['hero_savanna_walk_back', 12], ['hero_savanna_idle', 10], ['hero_savanna_idle_back', 12]]) {
       this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate, repeat: -1 });
     }
-    for (const key of ['deer_walk', 'deer_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['deer_walk', 'deer_walk_back', 'stag_walk', 'stag_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
     this.anims.create({ key: 'squirrel_run', frames: this.anims.generateFrameNumbers('squirrel_run'), frameRate: 16, repeat: -1 });
     this.anims.create({ key: 'fox_walk', frames: this.anims.generateFrameNumbers('fox_walk'), frameRate: 12, repeat: -1 });
     this.anims.create({ key: 'fox_walk_back', frames: this.anims.generateFrameNumbers('fox_walk_back'), frameRate: 16, repeat: -1 }); // mehr Bilder pro Schritt

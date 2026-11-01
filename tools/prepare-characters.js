@@ -560,6 +560,9 @@ const ANIMATIONS = [
   // Original kleiner gemalt, daher fester Maßstab: Rumpf 1,1-mal so breit wie beim Reh, wie bei den Standbildern
   { src: 'Animation/Reh2_idle_vorne.png', out: 'stag_idle.png', cols: 5, rows: 5, count: 21, scale: 0.392, frameW: 80, frameH: 112, feetY: 108 },
   { src: 'Animation/Reh2_idle_hinten.png', out: 'stag_idle_back.png', cols: 5, rows: 4, scale: 0.5, frameW: 80, frameH: 112, feetY: 108 },
+  // Hirsch läuft (wie das Reh nach unten-rechts bzw. oben-rechts); im Original so groß gemalt wie beim Stehen, daher derselbe Maßstab
+  { src: 'Animation/Reh2_läuft_vorne.png', out: 'stag_walk.png', cols: 5, rows: 4, count: 17, scale: 0.392, alignFeet: true, frameW: 80, frameH: 112, feetY: 108 },
+  { src: 'Animation/Reh2_läuft_hinten.png', out: 'stag_walk_back.png', cols: 5, rows: 8, count: 39, scale: 0.485, alignFeet: true, frameW: 80, frameH: 112, feetY: 108 },
   // Reiher fliegt (Flügelschlag), nach unten-rechts bzw. oben-rechts. Fliegende Figuren hängen an ihrer Mitte
   // (Origin 0,5): Rahmen so, dass der Vogel mittig sitzt; derselbe Maßstab für beide, mit ausgebreiteten Flügeln etwa
   // so groß wie heron_fly.png

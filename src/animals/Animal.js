@@ -47,7 +47,7 @@ export const SPECIES = {
     eatTexture: 'deer_eat', // beim Fressen am Futter im Tierpark
     // Animationen nach rechts (Test; nach links gespiegelt, nicht beim Fressen)
     anims: { walkDown: 'deer_walk', walkUp: 'deer_walk_back', idleDown: 'deer_idle', idleUp: 'deer_idle_back' },
-    skinAnims: { stag: { idleDown: 'stag_idle', idleUp: 'stag_idle_back' } }, // Hirsch: bisher nur Stehen (Laufen mit Standbild)
+    skinAnims: { stag: { walkDown: 'stag_walk', walkUp: 'stag_walk_back', idleDown: 'stag_idle', idleUp: 'stag_idle_back' } }, // Hirsch läuft und steht
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 30,
