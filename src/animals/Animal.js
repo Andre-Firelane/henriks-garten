@@ -538,8 +538,8 @@ export const SPECIES = {
     walkTime: [1.5, 3],
     stepRate: 6,
     hop: 1,
-    footW: 10,
-    shadowW: 40,
+    footW: 11,
+    shadowW: 46,
     catchWith: ['drum'],
   },
   // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am

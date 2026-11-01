@@ -7,10 +7,12 @@ import { tileToWorld } from '../world/iso.js';
 import { LEVEL, isBlocked } from '../world/map.js';
 
 const COME_SPEED = 1.6; // zum Duell etwas zügiger als beim Herumstreifen
+const SIZE = 0.58; // etwas größer gezeichnet als die anderen Tiere (0,5): die Videos sind klein, größer erzeugt wären sie unscharf
 
 export default class Gorilla extends Animal {
   constructor(scene, x, y) {
     super(scene, x, y, 'gorilla');
+    this.sprite.setScale(SIZE);
     this.mode = 'roam'; // wild: 'roam' (herumstreifen), 'come' (zum Duell), 'duel', 'leave' (zurück zur Gruppe)
   }
 
@@ -147,12 +149,13 @@ export default class Gorilla extends Animal {
   render(moving) {
     // beim Trommeln die Trommel-Animation (nach links gespiegelt), sonst wie alle Tiere
     if (this.drum && this.state === 'wild') {
-      this.sprite.setFlipX(this.faceX < 0);
+      this.sprite.setFlipX(this.faceX < 0).setScale(this.baby ? 0.3 : SIZE);
       this.placeSprite(false);
       return;
     }
     // nach dem Trommeln zurück aufs normale Bild, dann greift wieder die Steh- bzw. Laufanimation
     if (this.sprite.texture.key === 'gorilla_drum') this.sprite.stop().setFlipX(false).setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
     super.render(moving);
+    this.sprite.setScale(this.baby ? 0.3 : SIZE);
   }
 }
