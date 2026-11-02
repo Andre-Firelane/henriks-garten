@@ -1,5 +1,6 @@
 // Sprache des Spiels: Deutsch oder Englisch. Beim ersten Start nach der Browsersprache (Deutsch nur, wenn der Browser
-// auf Deutsch steht, sonst Englisch), danach so, wie man es auf dem Startbildschirm gewählt hat.
+// auf Deutsch steht, sonst Englisch) – außer die Adresse gibt eine vor (?lang=en, z. B. die Seite auf itch.io) –, danach
+// so, wie man es auf dem Startbildschirm gewählt hat.
 // Umschalten lädt die Seite neu: viele Texte stehen in Konstanten, die beim Laden einmal gebaut werden.
 const KEY = 'my-little-zoo-lang';
 
@@ -8,6 +9,8 @@ function detect() {
     const saved = localStorage.getItem(KEY);
     if (saved === 'de' || saved === 'en') return saved;
   } catch {}
+  const param = new URLSearchParams(location.search).get('lang');
+  if (param === 'de' || param === 'en') return param;
   const browser = (navigator.languages?.[0] ?? navigator.language ?? '').toLowerCase();
   return browser.startsWith('de') ? 'de' : 'en';
 }
