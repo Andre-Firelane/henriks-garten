@@ -60,6 +60,10 @@ const PIXEL_ART = [
   'mangrove', 'heliconia', 'hibiscus', 'jungle_plant', 'spider_web',
   'hutwall_jungle_x', 'hutwall_jungle_y', 'post_hutwall_jungle', 'gate_door_jungle_x', 'gate_door_jungle_y', 'hutroof_jungle',
   'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'hut_bed_savanna', 'hut_bed_jungle', 'hut_bed_savanna_sleep', 'hut_bed_jungle_sleep', 'planks_jungle',
+  // Eiswelt (Platzhalter aus tools/ice-placeholders.cjs): Schnee, Polarmeer, zugefrorenes Meer, Eisfelsen, Forschungsstation
+  'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block', 'snow_drift',
+  'hutwall_ice_x', 'hutwall_ice_y', 'post_hutwall_ice', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
+  'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
 ];
 
 // Test: neu gemalte Grafiken statt der Pixel-Art aus tools/make-sprites.js (Schlüssel -> Dateiname; leeren = alte Grafik)
@@ -186,6 +190,10 @@ const VIDEO_ANIMS = {
   hero_jungle_walk_back: [88, 116, 24],
   hero_jungle_idle: [88, 116, 53],
   hero_jungle_idle_back: [88, 116, 84],
+  hero_ice_walk: [88, 145, 24], // Eiswelt (Parka): höher wegen der Kapuze, Fußlinie im selben Verhältnis (140 / 145)
+  hero_ice_walk_back: [88, 145, 22],
+  hero_ice_idle: [104, 145, 80],
+  hero_ice_idle_back: [104, 145, 84],
   // Bauernhof-Event: Kuh, Schwein, Ziege
   farm_cow_walk: [96, 88, 106],
   farm_cow_walk_back: [96, 88, 64],
@@ -392,6 +400,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
     this.load.spritesheet('hero_asia', 'assets/hero_asia.png', HERO_FRAME);
     this.load.spritesheet('hero_jungle', 'assets/hero_jungle.png', HERO_FRAME);
+    this.load.spritesheet('hero_ice', 'assets/hero_ice.png', HERO_FRAME); // Eiswelt (Parka)
     this.load.spritesheet('hero_swim', 'assets/hero_swim.png', HERO_FRAME); // Taucheranzug (Riff)
     this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
     this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten

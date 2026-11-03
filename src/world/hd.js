@@ -51,10 +51,14 @@ export const HD = [
   'hutwall_terrarium_y', 'post_hutwall_terrarium', 'spider_web',
   // große Glasterrarien, das der Spinnen auf einem Sockel, und der Eckpfosten der Wassertanks (tools/terrarium-glass.py)
   'hutwall_terrarium_raised_x', 'hutwall_terrarium_raised_y', 'post_hutwall_terrarium_raised', 'hutwall_terrarium_raised_back_x', 'hutwall_terrarium_raised_back_y', 'post_hutwall_terrarium_raised_back', 'post_hutwall_tank',
+  // Eiswelt (Platzhalter)
+  'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block', 'snow_drift',
+  'hutwall_ice_x', 'hutwall_ice_y', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
+  'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
 ];
 
 // sehr große Bilder (Dächer, Gebäude) sind nur 2- bzw. 1-mal so groß, sonst zu viel Speicher
-const SCALE = { hutroof_cathouse: 2, hutroof_office: 2, hutroof_savanna: 2, hutroof_asia: 2, hutroof_jungle: 2, aquarium_facade: 1, reptile_facade: 1 };
+const SCALE = { hutroof_cathouse: 2, hutroof_office: 2, hutroof_savanna: 2, hutroof_asia: 2, hutroof_jungle: 2, hutroof_ice: 2, aquarium_facade: 1, reptile_facade: 1 };
 // auf dem Handy die halb so großen Bilder aus hd2/ (tools/hd-phone.py): ein Viertel des Speichers
 export const HD_DIR = IS_PHONE ? 'hd2' : 'hd';
 export const hdFactor = (key) => (IS_PHONE ? Math.max(1, (SCALE[key] ?? HD_SCALE) / 2) : (SCALE[key] ?? HD_SCALE));

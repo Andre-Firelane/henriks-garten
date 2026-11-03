@@ -23,6 +23,7 @@ import { raiseAt,
   grassAt,
   outerWaterCorners,
   outerLandCorners,
+  isShoreWater,
   cornerGroundAt,
   objectAt,
   charAt,
@@ -103,9 +104,10 @@ import Macaw from '../animals/Macaw.js';
 import BananaTool from '../tools/BananaTool.js';
 import FireflyEvening, { glowTexture } from '../world/Fireflies.js';
 import Weather from '../world/Weather.js';
-import { SEASON_INFO, SEASON_LEVELS, seasonState, skipSeason } from '../world/season.js';
+import { SEASON_INFO, SEASON_LEVELS, firstSeason, seasonState, skipSeason } from '../world/season.js';
 import Thicket from '../world/Thicket.js';
 import Boat from '../world/Boat.js';
+import Floes from '../world/Floes.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import RodTool from '../tools/RodTool.js';
@@ -317,8 +319,12 @@ const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Wer
 const BED_LOOK = {
   savanna: { dx: 0, dy: 0, origin: [0.6239, 0.6726], depth: 14, head: [4, -24] },
   jungle: { dx: -32, dy: 16, head: [-26, -34] },
+  ice: { dx: 0, dy: 0, origin: [0.623, 0.6745], depth: 14, head: [7, -18] }, // Stockbett der Forschungsstation (Henrik schläft unten)
 };
 const SLEEP_FADE = 3000; // so lange wird es beim Einschlafen dunkel (Millisekunden)
+const COLD_WARN = 0.75; // Kälte (Eiswelt bei Nacht): ab hier die Warnung, bei 1 ist Henrik zu kalt zum Fangen
+const COLD_TINT = 0x9fd0ff; // so bläulich wird er dabei
+const COLD_HINT_GAP = 4; // so viele Sekunden mindestens zwischen zwei Hinweisen, wenn er es trotzdem versucht
 const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen (auch am Futterautomaten)
 const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Futter hineinzuwerfen
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
@@ -461,7 +467,8 @@ function worldsOf(s) {
   }
   return WILD_WORLDS.flatMap((level) => {
     const base = LEVELS[level];
-    const phases = [['normal', base], ...Object.entries(base.seasons ?? {}).map(([k, v]) => [k, { ...base, ...v }])];
+    const first = firstSeason(level); // die Angaben des Gebiets selbst gelten für die erste Phase (Normal bzw. Tag)
+    const phases = [[first, base], ...Object.entries(base.seasons ?? {}).filter(([k]) => k !== first).map(([k, v]) => [k, { ...base, ...v }])];
     const found = phases.filter(([, l]) => livesIn(l, s)).map(([k]) => k);
     if (!found.length) return [];
     if (found.length === phases.length) return [{ level, extra: null }];
@@ -641,7 +648,7 @@ export default class GardenScene extends Phaser.Scene {
         } else if (outerLandCorners(tx, ty)) {
           // Rasenecke, die ins Wasser ragt: abgerundet, darunter das Wasser des Nachbarn (am Fluss fließend)
           const land = outerLandCorners(tx, ty);
-          const [wx, wy] = [[tx - 1, ty], [tx, ty - 1], [tx + 1, ty], [tx, ty + 1]].find(([a, b]) => charAt(a, b) === '~');
+          const [wx, wy] = [[tx - 1, ty], [tx, ty - 1], [tx + 1, ty], [tx, ty + 1]].find(([a, b]) => isShoreWater(charAt(tx, ty), charAt(a, b)));
           const round = roundedTexture(this, groundAt(tx, ty), land);
           if (river?.has(wx + ',' + wy)) {
             this.flowTiles.push({ img: this.add.image(x, y, LEVEL.flow.frames[0]).setDepth(-99998), corners: 0 });
@@ -910,6 +917,8 @@ export default class GardenScene extends Phaser.Scene {
     // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel), findet es am Inselsteg
     if (LEVEL.boat && !data.seasonNote && game.boat) game.boat = null;
     this.boat = LEVEL.boat ? new Boat(this) : null;
+    this.floes = LEVEL.floes ? new Floes(this) : null; // Eisschollen (Eiswelt am Tag)
+    this.coldHintIn = 0;
     this.nearBoat = null;
     if (!this.boat?.riding) this.unstickPlayer();
 
@@ -1150,9 +1159,10 @@ export default class GardenScene extends Phaser.Scene {
       (MAP_W + MAP_H) * (TILE_H / 2) + TILE_H * 4,
     );
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
-    // Unterwasserwelt: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel pro Bild je Achse);
-    // schräg rasten Figur und Kamera sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie Stottern aus
-    cam.roundPixels = !LEVEL.sea;
+    // Unterwasserwelt und Eiswelt: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel pro Bild
+    // je Achse); Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie Stottern
+    // aus (in der Eiswelt vor dem gleichmäßigen Schnee besonders beim Laufen nach links und rechts zu sehen)
+    cam.roundPixels = !LEVEL.sea && !LEVEL.snow;
   }
 
   // Bogenbrücken: Bohlen als geschwungenes Band über dem Wasser, rote Geländer an beiden Seiten.
@@ -2363,6 +2373,16 @@ export default class GardenScene extends Phaser.Scene {
       const s = seasonState(LEVEL_ID);
       if (s.id === LEVEL.season) lines.unshift(`${SEASON_INFO[s.id].icon} ${SEASON_INFO[s.id].name} · ${tr(`noch ${formatTime(s.left)}`, `${formatTime(s.left)} left`)} → ${SEASON_INFO[s.next].icon}`);
     }
+    // Eiswelt bei Nacht: wie warm Henrik noch ist
+    if (LEVEL.cold) {
+      const cold = game.cold ?? 0;
+      // Balken: voll und orange, wenn er warm ist, kürzer und hellblau, je kälter es wird
+      const k = 1 - cold;
+      const bar = `<span style="display:inline-block;width:5em;height:0.6em;border-radius:0.3em;background:rgba(255,255,255,0.3);vertical-align:middle;overflow:hidden"><span style="display:block;height:100%;width:${Math.round(k * 100)}%;background:${k > 0.25 ? '#ffb347' : '#a8dcff'}"></span></span>`;
+      lines.splice(1, 0, cold >= 1
+        ? tr('🥶 Zu kalt zum Fangen – wärm dich in der Station auf!', '🥶 Too cold to catch animals – warm up at the station!')
+        : `🌡️ ${tr('Wärme', 'Warmth')} ${bar}`);
+    }
     this.eventBanner.classList.toggle('show', lines.length > 0);
     if (lines.length) this.eventBanner.innerHTML = lines.join('<br>');
     this.layoutHudStack(); // direkt unter den Zähler oben links (auf dem Tablet ist er größer und kann umbrechen)
@@ -2469,7 +2489,7 @@ export default class GardenScene extends Phaser.Scene {
       [img('lasso'), tr('<b>Lasso:</b> für scheue und große Tiere – wirf es aus der Ferne, sonst rennen sie weg.', '<b>Lasso:</b> for shy and big animals – throw it from a distance, or they run away.')],
       [img('trap'), tr('<b>Falle:</b> im Wald auslegen und weggehen – irgendwann geht ein Tier hinein.', '<b>Trap:</b> set it in the forest and walk away – sooner or later an animal walks in.')],
       [img('banana'), tr('<b>Locken:</b> Grünfutter, Bananen, Knochen, ein Ball … locken besondere Tiere an.', '<b>Lure:</b> leafy greens, bananas, bones, a ball … lure special animals.')],
-      ['<span class="way-icon">🌦️</span>', tr('<b>Wetter:</b> In der Savanne und im Dschungel wechselt das Wetter – manche Tiere kommen nur bei Regen, Nebel oder Trockenzeit.', '<b>Weather:</b> In the savanna and the jungle the weather changes – some animals only appear in rain, fog or the dry season.')],
+      ['<span class="way-icon">🌦️</span>', tr('<b>Wetter:</b> In der Savanne und im Dschungel wechselt das Wetter, in der Eiswelt Tag und Nacht – manche Tiere kommen nur bei Regen, Nebel oder Trockenzeit.', '<b>Weather:</b> In the savanna and the jungle the weather changes, in the ice world day and night – some animals only appear in rain, fog or the dry season.')],
       ['<span class="way-icon">🎉</span>', tr('<b>Events:</b> Am Computer im Haupthaus startest du mit Herzen Events. Manche bringen ganz neue Tiere: Flamingos, Wölfe, Gnus, Quallen, rote Pandas.', '<b>Events:</b> Start events with hearts at the computer in the main building. Some bring brand-new animals: flamingos, wolves, wildebeest, jellyfish, red pandas.')],
       ['<span class="way-icon">✨</span>', tr('<b>Selten:</b> Viele Tiere gibt es ab und zu in einer seltenen Variante – etwa einen Hirsch statt eines Rehs. Sie locken besonders viele Besucher an. Mit dem Event „Seltene Tiere“ triffst du sie viel öfter.', '<b>Rare:</b> Many animals now and then come in a rare variant – like a stag instead of a deer. They attract lots of visitors. With the “Rare Animals” event you meet them much more often.')],
     ];
@@ -3180,11 +3200,14 @@ export default class GardenScene extends Phaser.Scene {
     return this.followers.filter((a) => a.species === 'sheep').length + this.sheepAtHome() >= SHEEP_QUEST;
   }
 
-  // Regal (oder Kiste, Sack) dieser Welt: oberer Rand des Bilds, für den Pfeil im Mini-Tutorial
+  // Regal (oder Kiste, Sack) dieser Welt: oberer Rand des Bilds (bzw. die obere Mitte des Schranks, peak), für den
+  // Pfeil im Mini-Tutorial
   chestPoint() {
     for (const c of LEVEL.chests ?? []) {
       const img = this.chestSprites?.get(`${c.tx},${c.ty}`);
-      if (img) return { x: img.x, y: img.y - img.displayHeight * img.originY + 6 };
+      if (!img) continue;
+      const [px, py] = objectAt(c.tx, c.ty)?.peak ?? [img.originX, 0];
+      return { x: img.x + (px - img.originX) * img.displayWidth, y: img.y + (py - img.originY) * img.displayHeight + 6 };
     }
     return null;
   }
@@ -3703,7 +3726,10 @@ export default class GardenScene extends Phaser.Scene {
     this.saveLevelState();
     game.levels[LEVEL_ID].animals = game.levels[LEVEL_ID].animals.filter((a) => a.state !== 'wild');
     const arrive = worldToTile(this.player.x, this.player.y);
-    const text = LEVEL_ID === 'jungle' ? {
+    const text = LEVEL_ID === 'ice' ? {
+      night: tr('🌙 Es wird Nacht. Das Meer friert zu – jetzt kommst du zu Fuß auf die Inseln. Aber es ist eisig kalt: wärm dich zwischendurch in der Forschungsstation auf!', '🌙 Night is falling. The sea is freezing over – now you can walk to the islands. But it is icy cold: warm up at the station now and then!'),
+      day: tr('☀️ Es wird Tag. Das Eis bricht auf – zu den Inseln fahren jetzt wieder die Eisschollen.', '☀️ Day is breaking. The ice is breaking up – ice floes ferry you to the islands again.'),
+    }[now.id] : LEVEL_ID === 'jungle' ? {
       rain: tr('🌧️ Starkregen im Dschungel! Es prasselt und donnert.', '🌧️ Heavy rain in the jungle! It is pouring and thundering.'),
       fog: tr('🌫️ Über dem Fluss steigt Nebel auf – man sieht kaum noch etwas.', '🌫️ Fog is rising over the river – you can hardly see anything.'),
       normal: tr('🌿 Im Dschungel ist wieder normales Wetter.', '🌿 The jungle is back to normal weather.'),
@@ -3722,6 +3748,58 @@ export default class GardenScene extends Phaser.Scene {
     if (this.resting) return restart(); // eingeschlafen: das Bild ist schon schwarz (siehe rest)
     this.cameras.main.fadeOut(400);
     this.cameras.main.once('camerafadeoutcomplete', restart);
+  }
+
+  // Kälte in der Eiswelt (nachts, LEVEL.cold): draußen kühlt Henrik langsam aus (game.cold von 0 bis 1 in cold.minutes
+  // Minuten), ist ihm zu kalt, fängt er keine Tiere mehr (tooCold). In der Station und direkt davor wird er schnell wieder warm.
+  // Er wird dabei immer bläulicher, und wenn er durchgefroren ist, zittert er und sein Atem dampft. Am Tag ist er warm.
+  updateCold(dt) {
+    const c = LEVEL.cold;
+    const p = this.player;
+    if (!c) {
+      if (game.cold) game.cold = 0;
+      return;
+    }
+    const before = game.cold ?? 0;
+    const { tx, ty } = worldToTile(p.x, p.y);
+    const warm = !!buildingAt(tx, ty, 1);
+    const cold = warm ? Math.max(0, before - dt / c.warmSeconds) : Math.min(1, before + dt / (c.minutes * 60));
+    game.cold = cold;
+    if (before < COLD_WARN && cold >= COLD_WARN) this.showToast(tr('🥶 Henrik wird kalt! Wärm dich bald in der Station auf.', '🥶 Henrik is getting cold! Warm up at the station soon.'));
+    if (before < 1 && cold >= 1) {
+      this.showToast(tr('🥶 Henrik ist durchgefroren – mit klammen Fingern fängt er keine Tiere. Ab in die Station zum Aufwärmen!', '🥶 Henrik is frozen through – with numb fingers he cannot catch animals. Off to the station to warm up!'));
+      this.updateEventBanner();
+    }
+    if (before >= COLD_WARN && cold < COLD_WARN && warm) {
+      this.showToast(tr('☀️ Henrik ist wieder schön warm.', '☀️ Henrik is nice and warm again.'));
+      this.updateEventBanner();
+    }
+    // bläulich (ab der Hälfte), zittern und Atemwölkchen (durchgefroren)
+    const k = Phaser.Math.Clamp((cold - 0.5) * 2, 0, 1);
+    if (k > 0) {
+      const tint = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(0xffffff), Phaser.Display.Color.ValueToColor(COLD_TINT), 1, k);
+      p.sprite.setTint(Phaser.Display.Color.GetColor(tint.r, tint.g, tint.b));
+    } else if (before > 0.5) p.sprite.clearTint();
+    if (cold >= 1) {
+      p.sprite.x += Math.sin(this.time.now / 22) * 0.9;
+      this.breathIn = (this.breathIn ?? 0) - dt;
+      if (this.breathIn <= 0) {
+        this.breathIn = 1.6;
+        const puff = this.add.ellipse(p.x + p.faceX * 7, p.y - 46, 6, 4, 0xffffff, 0.7).setDepth(p.y + 1);
+        this.tweens.add({ targets: puff, x: puff.x + p.faceX * 10, y: puff.y - 8, scale: 2.2, alpha: 0, duration: 1100, onComplete: () => puff.destroy() });
+      }
+    }
+    this.coldHintIn -= dt;
+  }
+
+  // zu kalt zum Fangen? (dann ein Hinweis, aber nicht bei jedem Versuch)
+  tooCold() {
+    if (!LEVEL.cold || (game.cold ?? 0) < 1) return false;
+    if (this.coldHintIn <= 0) {
+      this.coldHintIn = COLD_HINT_GAP;
+      this.showToast(tr('🥶 Zu kalt! Mit klammen Fingern fängt Henrik nichts – wärm dich erst in der Station auf.', '🥶 Too cold! With numb fingers Henrik cannot catch anything – warm up at the station first.'));
+    }
+    return true;
   }
 
   // Knochen vor sich streuen (Werkzeug "Knochen"): lockt die Hyänen an, wenn sie gerade kichern; danach hat man gleich
@@ -4178,6 +4256,7 @@ export default class GardenScene extends Phaser.Scene {
     // die im selben Kescherschwung mit erwischt wurden) – so fängt man wirklich nur eins
     // (Tiere aus der Falle sind 'trapped' und dürfen natürlich mit)
     if (animal.state === 'following' || animal.state === 'penned' || !this.animals.includes(animal)) return;
+    if (this.tooCold()) return; // Eiswelt bei Nacht: mit klammen Fingern fängt man nichts
     animal.origin ??= LEVEL_ID;
     // der erste Flamingo: im Tierpark entsteht das Flamingo-Gehege
     if (animal.species === 'flamingo' && !game.unlocked.includes('flamingo')) {
@@ -4482,6 +4561,7 @@ export default class GardenScene extends Phaser.Scene {
     // Begrenzen, damit nach einem Tab-Wechsel kein Riesensprung passiert
     const dt = Math.min(delta, 50) / 1000;
     this.player.update(dt);
+    this.floes?.update(dt); // auf einer fahrenden Scholle fährt Henrik mit
 
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
@@ -4603,6 +4683,12 @@ export default class GardenScene extends Phaser.Scene {
         a.sprite.setVisible(true);
         a.shadow?.setVisible(true);
       }
+      // auf einer fahrenden Eisscholle: Tiere, die folgen, stehen mit darauf
+      if (a.state === 'following' && this.floes?.carrier) {
+        Object.assign(a, this.floes.seat(this.followers.indexOf(a)));
+        a.render(false);
+        continue;
+      }
       a.update(dt, this.player);
     }
     if (this.thicket?.update(dt)) this.updateToolbar();
@@ -4634,6 +4720,7 @@ export default class GardenScene extends Phaser.Scene {
     this.hyenaPack?.update(dt);
     this.weather?.update(dt);
     this.updateSeason(dt);
+    this.updateCold(dt);
     this.updateSpawner(dt);
     if (!this.wolfNight) this.updateHerons(dt);
     this.updateGate(dt);

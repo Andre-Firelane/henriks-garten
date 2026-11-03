@@ -4,15 +4,16 @@ import { LEVELS } from './levels.js';
 import { game } from '../state.js';
 import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 import { tr } from '../i18n.js';
-import { currentSeason } from './season.js';
+import { currentSeason, firstSeason } from './season.js';
 
 // ≈: ausgetrocknetes Wasserloch (Schlamm, Savanne in der Trockenzeit; dort steckt der Lungenfisch)
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
-const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water' }; // 0: Springbrunnen im See
+// ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar)
+const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
-const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
+const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
 
 // Objekte: Textur, Ankerpunkt (Kachelmitte im Bild) und ob man dagegen läuft.
 // hitbox: nur ein Kreis mit diesem Radius um die Kachelmitte ist fest (z. B. der Baumstamm); ohne hitbox die ganze Kachel.
@@ -71,7 +72,7 @@ export const OBJECTS = {
   ɓ: { invisible: true, solid: true }, // zweite Kachel unter einem Bett (das Bett liegt über zwei Kacheln)
   a: { key: 'hut_plant', styled: true, originY: 60 / 80, solid: true, hitbox: 10 },
   // Regal an der Wand: nicht fest (die Wand dahinter hält auf), weiter hinten gezeichnet, damit man davor steht
-  c: { key: 'hut_shelf', styled: true, originY: 80 / 96, solid: false, depthShift: -14, chest: true },
+  c: { key: 'hut_shelf', styled: true, originY: 80 / 96, solid: false, depthShift: -14, chest: true, peak: [0.79, 0.26] }, // peak: obere Mitte des Schranks im Bild (Pfeil im Mini-Tutorial, siehe tools/shelves.py)
   // kleine Werkzeug-Kiste (Teichinsel in Asien): steht neben der Bogenbrücke und wird vor deren Geländer gezeichnet
   e: { key: 'hut_chest_small', originY: 44 / 64, solid: true, hitbox: 10, chest: true, depthShift: 30 },
   // Haupthaus im Tierpark: großer Schreibtisch über drei Kacheln (Y in der Mitte, V daneben: unsichtbar, aber fest)
@@ -158,6 +159,10 @@ export const OBJECTS = {
   // große Blumen (später fliegen Kolibris zu ihnen): Helikonie und Hibiskus
   Ḣ: { key: 'heliconia', originY: 88 / 96, solid: true, hitbox: 6, bigFlower: true },
   ḟ: { key: 'hibiscus', originY: 64 / 72, solid: true, hitbox: 8, bigFlower: true },
+  // Eiswelt: Eisfelsen, Eisblock und Schneewehe (begehbar)
+  ê: { key: 'ice_rock', originY: 18 / 24, solid: true, hitbox: 12 },
+  Ê: { key: 'ice_block', originY: 46 / 56, solid: true, hitbox: 18 },
+  ẽ: { key: 'snow_drift', originY: 18 / 24, solid: false },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
@@ -203,7 +208,7 @@ export function setLevel(id) {
   // Wetterphase (Savanne, Dschungel): die Angaben der Phase ersetzen die normalen (Tiere, Boden, Geräusch ...), siehe season.js
   const base = LEVELS[id];
   const season = base.seasons ? currentSeason(id) : 'normal';
-  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: 'normal' };
+  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: base.seasons ? firstSeason(id) : 'normal' };
   ROWS = LEVEL.rows;
   // ... und ihre Kartenstücke (größere Teiche im Regen, Schlamm in der Trockenzeit): { tx, ty, rows }
   for (const u of LEVEL.mapPatches ?? []) {
@@ -585,6 +590,7 @@ export function groundAt(tx, ty) {
   const water = enclosureAt(tx, ty)?.water ?? LEVEL.water;
   if (g === 'fishpond' && !water) return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
   if ((g === 'water' || g === 'fishpond') && water) return water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % water.length];
+  if (g === 'sea_ice' && LEVEL.seaIce) return LEVEL.seaIce[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % LEVEL.seaIce.length]; // Varianten der Eisfläche
   if (g) return g;
   return grassAt(tx, ty);
 }
@@ -618,32 +624,40 @@ function patchNoise(tx, ty, layer) {
 export const CORNER = { top: 1, right: 2, bottom: 4, left: 8 };
 export function outerWaterCorners(tx, ty) {
   const c = charAt(tx, ty);
-  if (!'~owh≈'.includes(c)) return 0;
+  if (!'~owh≈ɨ'.includes(c)) return 0;
   // unter der Brücke geht das Wasser weiter; Schlamm und das letzte Wasserloch darin gehen ineinander über (Trockenzeit)
-  // Wasser rundet auch zum Schlamm hin ab (darunter liegt dann Schlamm, siehe cornerGroundAt), Schlamm nicht zum Wasser hin
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜ'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~');
+  // Wasser rundet auch zum Schlamm hin ab (darunter liegt dann Schlamm, siehe cornerGroundAt), Schlamm nicht zum Wasser hin.
+  // Zugefrorenes Meer (Eiswelt bei Nacht) rundet zum Schnee hin ab; zum offenen Wasser hin rundet das Eis selbst ab wie
+  // ein Ufer (siehe outerLandCorners)
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜ'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~') && !(c === 'ɨ' && charAt(x, y) === '~');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
 }
 
 // Ecken einer Landkachel, die ins Wasser ragen (beide Nachbarn an der Ecke und der schräge sind Wasser): nur in Gebieten
-// mit roundShore (Dschungel). Die Kachel wird dort abgerundet, darunter liegt Wasser (siehe GardenScene)
+// mit roundShore (Dschungel, Eiswelt). Die Kachel wird dort abgerundet, darunter liegt Wasser (siehe GardenScene).
+// In der Eiswelt bei Nacht zählt das zugefrorene Meer für den Schnee wie Wasser (darunter liegt dann Eis)
 export function outerLandCorners(tx, ty) {
   if (!LEVEL.roundShore) return 0;
   const c = charAt(tx, ty);
   if (c === ' ' || '~owh≈BEŜ'.includes(c)) return 0;
-  const water = (x, y) => charAt(x, y) === '~';
+  const water = (x, y) => isShoreWater(c, charAt(x, y));
   const ul = water(tx - 1, ty), ur = water(tx, ty - 1), dr = water(tx + 1, ty), dl = water(tx, ty + 1);
   return (ul && ur && water(tx - 1, ty - 1) ? CORNER.top : 0) | (ur && dr && water(tx + 1, ty - 1) ? CORNER.right : 0)
     | (dr && dl && water(tx + 1, ty + 1) ? CORNER.bottom : 0) | (dl && ul && water(tx - 1, ty + 1) ? CORNER.left : 0);
 }
 
+// Liegt neben einer Landkachel (c) hier Wasser, zu dem hin sie abgerundet wird? (Eis nur zum offenen Wasser hin)
+export function isShoreWater(c, n) {
+  return n === '~' || (n === 'ɨ' && c !== 'ɨ');
+}
+
 // Boden unter den abgerundeten Ecken einer Wasserkachel: Schlamm, wenn das Wasser im Schlammloch liegt (Trockenzeit),
-// sonst Gras
+// Eis am zugefrorenen Meer (Eiswelt bei Nacht), sonst Gras
 export function cornerGroundAt(tx, ty) {
   if (charAt(tx, ty) === '~') {
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (charAt(tx + dx, ty + dy) === '≈') return groundAt(tx + dx, ty + dy);
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if ('≈ɨ'.includes(charAt(tx + dx, ty + dy))) return groundAt(tx + dx, ty + dy);
   }
   return grassAt(tx, ty);
 }
@@ -704,9 +718,13 @@ export const eventBlock = { at: null };
 // Dickicht (Dschungel): at(tx, ty) gibt true, solange es an dieser Kachel dicht ist (die Szene setzt es, siehe Thicket.js);
 // ohne Szene (beim Aufbau der Karte) ist alles Dickicht dicht
 export const thicketBlock = { at: null };
+// Eisschollen (Eiswelt): at(x, y) gibt true, wo gerade eine Scholle schwimmt (die Szene setzt es, siehe Floes.js)
+export const floeFloor = { at: null };
 
-export function isBlockedPoint(x, y, wade = false, trample = false, thicket = false) {
+// floe: auf Eisschollen laufen (nur Henrik)
+export function isBlockedPoint(x, y, wade = false, trample = false, thicket = false, floe = false) {
   if (eventBlock.at?.(x, y)) return true;
+  if (floe && floeFloor.at?.(x, y)) return false;
   if (CAR_BODIES.some((b) => nearSegment(x, y, b) < b.hw)) return true;
   const { tx, ty } = worldToTile(x, y);
   if (wade && charAt(tx, ty) === '~') return false;

@@ -4,10 +4,12 @@
 // Trockenzeit: Staubteufel – kleine Wirbel, die über die Karte wandern und Henrik ein Stück wegschubsen.
 // Nebel (Dschungel): ein milchiger Schleier, weiter weg von Henrik wird es immer dichter; über dem Fluss und dem
 //             Wasserfallbecken steigen langsam Nebelschwaden auf.
+// Eiswelt: es rieselt immer leicht Schnee (snow), Henrik hinterlässt Fußspuren; nachts (night) ist es dunkel, am Himmel ziehen Polarlichter und am
+//             Forschungsstation leuchtet warmes Licht.
 import Phaser from 'phaser';
 import { glowTexture } from './Fireflies.js';
 import { tileToWorld, worldToTile } from './iso.js';
-import { MAP_W, MAP_H, charAt, isBlocked, isBlockedPoint } from './map.js';
+import { LEVEL, MAP_W, MAP_H, buildingAt, buildings, charAt, isBlocked, isBlockedPoint } from './map.js';
 
 const DROPS = 150; // so viele Regenstriche sind gleichzeitig zu sehen
 const DARK = 0.2; // so dunkel ist der Himmel bei Starkregen
@@ -17,6 +19,7 @@ const PUDDLE_CHANCE = 0.3; // so viele Wegkacheln haben eine Pfütze
 const STEP_GAP = 14; // alle so viele Pixel eine Fußspur
 const STEP_FADE = 9000; // so lange (ms) bleibt sie zu sehen
 const MAX_STEPS = 60;
+const SNOW_STEP_FADE = 25000; // Fußspuren im Schnee bleiben länger zu sehen
 const DEVILS = 2; // so viele Staubteufel wandern gleichzeitig
 const DEVIL_SPEED = 26;
 const DEVIL_PUSH = 80; // so stark schubst er (Pixel pro Sekunde) ...
@@ -26,6 +29,12 @@ const FOG_CLEAR = 1.6; // so groß ist der klare Bereich um Henrik (Maßstab des
 const FOG_PUFFS = 45; // so viele Schwaden steigen gleichzeitig auf
 const FOG_NEAR = 700; // nur über Wasser in dieser Entfernung (Welt-Pixel) von Henrik
 const FOG_RISE = 9; // so schnell steigen sie (Pixel pro Sekunde)
+const FLAKES = 90; // so viele Schneeflocken sind gleichzeitig zu sehen
+const FLAKE_FALL = [18, 38]; // so schnell fallen sie (Pixel pro Sekunde)
+const NIGHT_DARK = 0.45; // so dunkel ist es nachts in der Eiswelt
+const AURORA = [0x5dffb0, 0x48e0e8, 0xa47bff]; // Farben der Polarlichter (grün, türkis, violett)
+const AURORA_SHOW = [7, 16]; // so viele Sekunden leuchtet ein Band, wenn es auftaucht ...
+const AURORA_PAUSE = [8, 30]; // ... und so lange ist es danach weg
 
 export default class Weather {
   constructor(scene, season) {
@@ -34,6 +43,47 @@ export default class Weather {
     if (season === 'rain') this.startRain();
     if (season === 'dry') this.startDry();
     if (season === 'fog') this.startFog();
+    if (LEVEL.night) this.startNight();
+    if (LEVEL.snow) this.startSnow();
+  }
+
+  // Nacht in der Eiswelt: dunkelblau, oben am Himmel wehen Polarlichter (Bänder, die langsam wandern und pulsieren),
+  // an der Forschungsstation scheint warmes Licht durch die Tür
+  startNight() {
+    const scene = this.scene;
+    const cam = scene.cameras.main;
+    this.night = scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width * 4, cam.height * 4, 0x081634, NIGHT_DARK).setScrollFactor(0).setDepth(DARK_DEPTH);
+    const band = auroraTexture(scene);
+    this.aurora = AURORA.map((color, i) =>
+      ({ img: scene.add.image(0, 0, band).setScrollFactor(0).setDepth(DARK_DEPTH + 1).setBlendMode(Phaser.BlendModes.ADD).setTint(color).setAlpha(0), phase: i * 2.1, speed: 0.05 + i * 0.02, show: 0, wait: Phaser.Math.FloatBetween(1, 12) }),
+    );
+    this.time = 0;
+    const glow = glowTexture(scene);
+    for (const h of buildings()) {
+      const door = tileToWorld(h.tx1, h.ty0 + 2);
+      scene.add.image(door.x + 10, door.y, glow).setTint(0xffb050).setScale(3.2, 2).setAlpha(0.55).setBlendMode(Phaser.BlendModes.ADD).setDepth(DARK_DEPTH + 1);
+    }
+  }
+
+  // Schneeflocken im sichtbaren Bereich (Bildschirm-Koordinaten wie der Regen), fallen langsam und schaukeln dabei
+  startSnow() {
+    this.steps = [];
+    this.lastStep = null;
+    this.snow = this.scene.add.graphics().setScrollFactor(0).setDepth(DARK_DEPTH + 2);
+    this.flakes = Array.from({ length: FLAKES }, () => this.newFlake(true));
+  }
+
+  newFlake(anywhere) {
+    const cam = this.scene.cameras.main;
+    const vw = cam.width / cam.zoom;
+    const vh = cam.height / cam.zoom;
+    return {
+      x: cam.width / 2 + Phaser.Math.FloatBetween(-vw / 2 - 20, vw / 2 + 20),
+      y: cam.height / 2 + (anywhere ? Phaser.Math.FloatBetween(-vh / 2, vh / 2) : -vh / 2 - Phaser.Math.FloatBetween(0, 30)),
+      r: Phaser.Math.FloatBetween(0.6, 1.5),
+      speed: Phaser.Math.FloatBetween(...FLAKE_FALL),
+      sway: Phaser.Math.FloatBetween(0, Math.PI * 2),
+    };
   }
 
   startFog() {
@@ -123,6 +173,57 @@ export default class Weather {
     if (this.season === 'rain') this.updateRain(dt);
     if (this.season === 'dry') this.updateDry(dt);
     if (this.season === 'fog') this.updateFog(dt);
+    if (this.aurora) this.updateAurora(dt);
+    if (this.flakes) {
+      this.updateSnow(dt);
+      this.updateSteps('~GX', 0x7f97b0, 0.42, SNOW_STEP_FADE); // Fußspuren im Schnee (auch auf dem Schneeweg und dem Eis)
+    }
+  }
+
+  updateSnow(dt) {
+    const cam = this.scene.cameras.main;
+    const vh = cam.height / cam.zoom;
+    const g = this.snow;
+    g.clear();
+    for (let i = 0; i < this.flakes.length; i++) {
+      const f = this.flakes[i];
+      f.sway += dt;
+      f.y += f.speed * dt;
+      f.x += Math.sin(f.sway * 1.3) * 10 * dt - 4 * dt; // schaukelt, ein Hauch Wind von rechts
+      if (f.y > cam.height / 2 + vh / 2 + 10) this.flakes[i] = this.newFlake(false);
+      g.fillStyle(0xffffff, 0.55 + f.r * 0.25);
+      g.fillCircle(f.x, f.y, f.r);
+    }
+  }
+
+  // Polarlichter: dezente Bänder am oberen Bildrand, jedes wandert langsam seitwärts und wellt sich. Sie leuchten nicht
+  // dauernd: jedes taucht ab und zu auf (AURORA_SHOW Sekunden, an einer anderen Stelle), flackert dabei unruhig und
+  // verschwindet wieder für AURORA_PAUSE Sekunden
+  updateAurora(dt) {
+    this.time += dt;
+    const cam = this.scene.cameras.main;
+    const vw = cam.width / cam.zoom;
+    const vh = cam.height / cam.zoom;
+    for (const [i, a] of this.aurora.entries()) {
+      const t = this.time * a.speed + a.phase;
+      a.img
+        .setPosition(cam.width / 2 + Math.sin(t) * vw * 0.25, cam.height / 2 - vh * (0.47 - i * 0.025) + Math.sin(t * 1.7) * vh * 0.015)
+        .setDisplaySize(vw * 1.3, vh * (0.15 + Math.sin(t * 2.3) * 0.03))
+        .setAngle(Math.sin(t * 0.8) * 3 - 2 + i * 1.5);
+      a.wait -= dt;
+      if (a.show <= 0) {
+        a.img.setAlpha(0);
+        if (a.wait > 0) continue;
+        a.show = a.length = Phaser.Math.FloatBetween(...AURORA_SHOW);
+        a.phase = Phaser.Math.FloatBetween(0, 10);
+        continue;
+      }
+      a.show -= dt;
+      if (a.show <= 0) a.wait = Phaser.Math.FloatBetween(...AURORA_PAUSE);
+      const env = Math.sin(Math.PI * Math.max(0, a.show) / a.length); // langsam auf- und abblenden
+      const flicker = 0.75 + Math.sin(this.time * 5.3 + i) * 0.15 + Math.sin(this.time * 11.7 + i * 2) * 0.1;
+      a.img.setAlpha(0.26 * env * flicker);
+    }
   }
 
   updateFog(dt) {
@@ -171,22 +272,24 @@ export default class Weather {
         ],
       });
     }
-    // Fußspuren im Matsch (nicht auf dem Weg und nicht im Wasser)
+    this.updateSteps('#~GX', 0x3a2a18, 0.45, STEP_FADE); // Fußspuren im Matsch (nicht auf dem Weg und nicht im Wasser)
+  }
+
+  // Fußspuren hinter Henrik (Matsch im Regen, Schnee in der Eiswelt), abwechselnd links und rechts; skip: auf diesen
+  // Kacheln keine; nach fade Millisekunden verblassen sie
+  updateSteps(skip, color, alpha, fade) {
     const p = this.scene.player;
     if (!this.lastStep) this.lastStep = { x: p.x, y: p.y, left: false };
-    if (Math.hypot(p.x - this.lastStep.x, (p.y - this.lastStep.y) * 2) > STEP_GAP) {
-      const { tx, ty } = worldToTile(p.x, p.y);
-      const c = charAt(tx, ty);
-      const left = !this.lastStep.left;
-      this.lastStep = { x: p.x, y: p.y, left };
-      if (c !== '#' && c !== '~' && c !== 'G' && c !== 'X') {
-        const side = left ? -3 : 3;
-        const step = this.scene.add.ellipse(p.x + side, p.y + side * 0.5, 5, 2.5, 0x3a2a18, 0.45).setDepth(-99989);
-        this.scene.tweens.add({ targets: step, alpha: 0, delay: STEP_FADE * 0.6, duration: STEP_FADE * 0.4, onComplete: () => step.destroy() });
-        this.steps.push(step);
-        if (this.steps.length > MAX_STEPS) this.steps.shift().destroy();
-      }
-    }
+    if (Math.hypot(p.x - this.lastStep.x, (p.y - this.lastStep.y) * 2) <= STEP_GAP) return;
+    const { tx, ty } = worldToTile(p.x, p.y);
+    const left = !this.lastStep.left;
+    this.lastStep = { x: p.x, y: p.y, left };
+    if (skip.includes(charAt(tx, ty)) || buildingAt(tx, ty) || p.boat || this.scene.floes?.carrier) return;
+    const side = left ? -3 : 3;
+    const step = this.scene.add.ellipse(p.x + side, p.y + side * 0.5, 5, 2.5, color, alpha).setDepth(-99989);
+    this.scene.tweens.add({ targets: step, alpha: 0, delay: fade * 0.6, duration: fade * 0.4, onComplete: () => step.destroy() });
+    this.steps.push(step);
+    if (this.steps.length > MAX_STEPS) this.steps.shift().destroy();
   }
 
   updateDry(dt) {
@@ -256,6 +359,30 @@ function devilTexture(scene) {
     ctx.strokeStyle = `rgba(150, 118, 72, ${0.35 - i * 0.025})`;
     ctx.lineWidth = 1;
     ctx.stroke();
+  }
+  tex.refresh();
+  return key;
+}
+
+// Polarlicht-Band: weiß (wird eingefärbt), unten eine helle Kante, nach oben ausgefranste Strahlen, die verblassen
+function auroraTexture(scene) {
+  const key = 'aurora_band';
+  if (scene.textures.exists(key)) return key;
+  const W = 512;
+  const H = 128;
+  const tex = scene.textures.createCanvas(key, W, H);
+  const ctx = tex.getContext();
+  for (let x = 0; x < W; x += 2) {
+    const edge = H * 0.72 + Math.sin(x / 37) * 9 + Math.sin(x / 13) * 4; // Unterkante wellt sich
+    const top = edge - H * (0.35 + 0.25 * (0.5 + 0.5 * Math.sin(x / 23 + Math.sin(x / 71) * 2))); // Strahlen verschieden hoch
+    const side = Math.min(1, x / (W * 0.18), (W - x) / (W * 0.18)); // links und rechts ausblenden
+    const g = ctx.createLinearGradient(0, top, 0, edge + 6);
+    g.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    g.addColorStop(0.75, `rgba(255, 255, 255, ${0.55 * side})`);
+    g.addColorStop(0.92, `rgba(255, 255, 255, ${0.9 * side})`);
+    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, top, 2, edge + 6 - top);
   }
   tex.refresh();
   return key;

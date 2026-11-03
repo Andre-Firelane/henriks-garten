@@ -2,8 +2,8 @@
 // Ein Schwung fängt Tiere in einem größeren Bereich direkt vor dem Spieler (nur Arten mit 'net' in catchWith).
 import ZoneTool from './ZoneTool.js';
 
-const REST_ANGLE = -40; // Haltung beim Tragen: nach hinten geneigt, damit das Netz nicht vor dem Gesicht hängt
-const SWING_ANGLE = 95; // so weit schwingt er nach vorne
+const REST_ANGLE = 25; // Haltung beim Tragen: nach vorne geneigt, damit das Netz nicht vor dem Gesicht hängt
+const SWING_ANGLE = 75; // so weit schwingt er nach vorne (endet etwa waagerecht)
 
 export default class Net extends ZoneTool {
   // id/texture/origin: für Werkzeuge, die genauso geschwungen werden (Quallenglas)

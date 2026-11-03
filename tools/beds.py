@@ -119,3 +119,31 @@ iso_bed('hut_bed_savanna', bed_empty, bed_sleep,
         [(1024 - 464, 325), (1024 - 225, 435), (1024 - 812, 445), (1024 - 573, 555)],
         [iso(-0.45, -0.4), iso(0.4, -0.4), iso(-0.45, 1.3), iso(0.4, 1.3)])
 save('hut_bed_jungle', hammock('Sprites/Bet Dschungel.png'), hammock('Sprites/Bett Dchnungel schläft.png'), 100)
+def flat_bed(key, empty, sleep, src_feet, center, scale, head, angle=0, mirror=True):
+    # Bett, das schon schräg gemalt ist (Stockbett): höchstens gespiegelt (mirror), um angle Grad gedreht (um die Mitte der
+    # Füße; wie in Bildprogrammen: negativ = gegen den Uhrzeigersinn) und gleichmäßig verkleinert, nicht verzerrt. Die Mitte der vier Bettfüße (src_feet, nach dem
+    # Spiegeln) landet bei center (Welt-Pixel um die Mitte der Bett-Kachel).
+    # Gibt Größe, Ankerpunkt (Kachelmitte als Bruchteil des Bilds) und die Lage des Kopfkissens (head) im Spiel aus.
+    fx, fy = np.array(src_feet, float).mean(0)
+    flip = lambda im: im.transpose(Image.FLIP_LEFT_RIGHT) if mirror else im
+    empty, sleep = (flip(im).rotate(-angle, Image.BICUBIC, center=(fx, fy)) for im in (empty, sleep))
+    t = np.radians(-angle)  # das Kopfkissen dreht mit (Bildkoordinaten: y nach unten)
+    hx, hy = head[0] - fx, head[1] - fy
+    head = (fx + hx * np.cos(t) + hy * np.sin(t), fy - hx * np.sin(t) + hy * np.cos(t))
+    b1, b2 = empty.getchannel('A').getbbox(), sleep.getchannel('A').getbbox()
+    box = (min(b1[0], b2[0]), min(b1[1], b2[1]), max(b1[2], b2[2]), max(b1[3], b2[3]))
+    w, h = (box[2] - box[0]) * scale, (box[3] - box[1]) * scale
+    ox, oy = (fx - box[0]) * scale - center[0], (fy - box[1]) * scale - center[1]  # Kachelmitte im Bild
+    for f, d in ((1, 'public/assets'), (4, 'public/assets/hd'), (2, 'public/assets/hd2')):
+        for suffix, im in (('', empty), ('_sleep', sleep)):
+            im.crop(box).resize((round(w * f), round(h * f)), Image.LANCZOS).save(f'{d}/{key}{suffix}.png')
+    print(key, [round(w), round(h)], 'Anker', round(ox / w, 4), round(oy / h, 4),
+          'Kopf', [round((head[0] - fx) * scale + center[0]), round((head[1] - fy) * scale + center[1])])
+
+# Stockbett der Forschungsstation (Eiswelt): schon in der richtigen Perspektive gemalt (Kopfende hinten rechts, längs an
+# der Wand gegenüber der Tür), daher weder gespiegelt noch gedreht oder verzerrt, nur verkleinert. Füße in der Quelle (der
+# hintere links ist verdeckt: aus den drei anderen ergänzt); ihre Mitte kommt dorthin, wo beim Himmelbett die Mitte der
+# Grundfläche liegt
+foot = np.array([iso(-0.45, -0.4), iso(0.4, -0.4), iso(-0.45, 1.3), iso(0.4, 1.3)]).mean(0)
+flat_bed('hut_bed_ice', clear_white('Sprites/Bett Eis.png'), clear_white('Sprites/Bett Eis schläft.png'),
+         [(420, 700), (175, 600), (805, 520), (560, 420)], foot, 0.129, (660, 405), mirror=False)

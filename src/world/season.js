@@ -1,7 +1,8 @@
 // Wetterphasen nach der echten Uhr, je Gebiet ein eigener Kreislauf:
 // Savanne: Normal (20 min) → Starkregen (15) → Normal (20) → Trockenzeit (15)
 // Dschungel: alle 5 Minuten ein Wechsel: Normal → Starkregen → aufsteigender Nebel
-// dann von vorn. Eine Runde beginnt immer mit Normal, ab dem Anker des Gebiets (beim ersten Spielen gesetzt; die Savanne
+// Eiswelt: Tag (8 min) → Nacht (8 min)
+// dann von vorn. Eine Runde beginnt immer mit der ersten Phase (Normal bzw. Tag), ab dem Anker des Gebiets (beim ersten Spielen gesetzt; die Savanne
 // nutzt game.seasonAnchor, die anderen game.seasonAnchors[Gebiet]).
 // Wer sich in der Hütte ins Bett legt, wacht in der nächsten Phase wieder auf (skipSeason, nur für dieses Gebiet).
 // Was sich in den Phasen ändert (Karte, Tiere, Boden), steht in levels.js unter <Gebiet>.seasons.
@@ -21,6 +22,10 @@ const CYCLES = {
     ['rain', 5 * MINUTE],
     ['fog', 5 * MINUTE],
   ],
+  ice: [
+    ['day', 8 * MINUTE],
+    ['night', 8 * MINUTE],
+  ],
 };
 export const SEASON_LEVELS = Object.keys(CYCLES);
 
@@ -29,7 +34,14 @@ export const SEASON_INFO = {
   rain: { icon: '🌧️', name: tr('Starkregen', 'Heavy Rain') },
   dry: { icon: '☀️', name: tr('Trockenzeit', 'Dry Season') },
   fog: { icon: '🌫️', name: tr('Nebel', 'Fog') },
+  day: { icon: '☀️', name: tr('Tag', 'Day') },
+  night: { icon: '🌙', name: tr('Nacht', 'Night') },
 };
+
+// erste Phase einer Runde (die Angaben des Gebiets selbst gelten für sie): Normal, in der Eiswelt der Tag
+export function firstSeason(level) {
+  return CYCLES[level]?.[0][0] ?? 'normal';
+}
 
 function anchor(level, now) {
   if (level === 'savanna') {
@@ -56,7 +68,7 @@ export function seasonState(level = 'savanna', now = Date.now()) {
     if (t < ms) return { id, left: ms - t, next: cycle[(i + 1) % cycle.length][0], index: i };
     t -= ms;
   }
-  return { id: 'normal', left: cycle[0][1], next: cycle[1][0], index: 0 };
+  return { id: cycle[0][0], left: cycle[0][1], next: cycle[1][0], index: 0 };
 }
 
 export function currentSeason(level = 'savanna', now = Date.now()) {

@@ -255,6 +255,10 @@ const CHARACTERS = [
   { src: 'Sprites/Geier fliegend.png', out: 'vulture_fly.png', frameW: 96, frameH: 92, feetY: 88, figureH: 80, stripShadow: true, byComponents: true, copyMirror: { 2: 3 } },
   // Dschungel: freigestellt mit npm run cutout und tools/jungle-cut.cjs
   { src: 'Sprites/Charakter Dschungel.png', out: 'hero_jungle.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Sprites/Character Eis.png', out: 'hero_ice.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 }, // Eiswelt (Parka)
+  // Pinguin (Eiswelt): gemalt sind nur zwei Ansichten (vorne nach links unten, hinten nach rechts oben); die anderen beiden
+  // gespiegelt, zusammengesetzt in „Pinguin 4 Ansichten.png“ (unten-rechts, unten-links, oben-rechts, oben-links)
+  { src: 'Sprites/Pinguin 4 Ansichten.png', out: 'penguin.png', frameW: 72, frameH: 80, feetY: 76, figureH: 66 },
   // Brüllaffe: im Bild nach links, nach rechts, Rückansicht nach links oben, nach rechts oben – im Sheet wie üblich
   // unten-rechts, unten-links, oben-rechts, oben-links. Fressend: von vorne sitzend, seitlich sitzend (nach rechts),
   // zweimal stehend nach rechts (oben-links ist davon das Spiegelbild)
@@ -794,6 +798,14 @@ const ANIMATIONS = [
   // Kleine Videos (128/192 Pixel) nie über Maßstab 1. Spielfigur steht:
   { src: 'Animation/Character Dschungel idle vorne.mp4', out: 'hero_jungle_idle.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character Dschungel idle hinten.mp4', out: 'hero_jungle_idle_back.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  // Spielfigur in der Eiswelt (Parka): laufen und stehen (Videos), Maßstab wie im Dschungel. Laufen: je ein Doppelschritt,
+  // der nahtlos im Kreis läuft (vorne das ganze Video, hinten 22 Bilder); Stehen breiter (die Machete ragt heraus), ohne die Atemwolke.
+  // Höher als die anderen Kleidungen (die Kapuze); Fußlinie im selben Verhältnis (140 / 145 = 112 / 116), siehe Player.js
+  // Laufen: Fußlinie 5 Pixel tiefer, damit die Sohlen so tief stehen wie beim Stehen (dort reicht der Schatten bis 140)
+  { src: 'Animation/Character Eis läuft vorne.mp4', out: 'hero_ice_walk.png', dropShadowGreen: 25, scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
+  { src: 'Animation/Character Eis läuft hinten.mp4', out: 'hero_ice_walk_back.png', range: [10, 31], scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
+  { src: 'Animation/Character Eis idle vorne.mp4', out: 'hero_ice_idle.png', dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
+  { src: 'Animation/Character Eis idle hinten.mp4', out: 'hero_ice_idle_back.png', dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
   // Ara und Blau-gelber Ara: sitzen (nur vorne) und fliegen (Flügelschlag, breiterer Rahmen)
   { src: 'Animation/Ara idle vorne.webm', out: 'macaw_idle.png', scale: 0.195, frameW: 64, frameH: 80, feetY: 76 },
   { src: 'Animation/Ara2 idle vorne.webm', out: 'macaw2_idle.png', scale: 0.52, frameW: 64, frameH: 80, feetY: 76 },
@@ -942,8 +954,71 @@ const ANIMATIONS = [
 // clipBelow: alles unterhalb dieser Zeile (in der Zelle) weg, z. B. was der Figur herunterfällt und unter ihren Füßen landet;
 // clipAbove: ebenso alles oberhalb (z. B. aufsteigende Blasen, die das Spiel selbst zeichnet);
 // keyPerFrame: Video wechselt zwischen Hintergrundtönen (Hintergrund je Bild erkennen, siehe readVideo);
-// dropShadowGreen: dunkelgrüne Reste (gemalter Schatten auf dem Greenscreen): Pixel mit so viel mehr Grün als Rot/Blau weg
-function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen }) {
+// dropShadowGreen: dunkelgrüne Reste (gemalter Schatten auf dem Greenscreen): Pixel mit so viel mehr Grün als Rot/Blau weg;
+// whiteBreath: Halbdurchsichtiges vor dem Greenscreen (Atemwölkchen) ist grün geworden: grünstichige Pixel weiß und zart;
+// onlyFigure: Grünstichiges weg und je Bild nur das größte zusammenhängende Stück behalten (z. B. ohne die Atemwolke)
+// in einem Bild (Zelle ox, oy, w x h) nur das größte zusammenhängende sichtbare Stück behalten, alles andere durchsichtig.
+// Zusammenhang wird an der um THIN Pixel geschrumpften Figur geprüft: dünne Linien (z. B. der Umriss einer Atemwolke),
+// die nur über einen schmalen Steg an der Figur hängen, zählen nicht dazu; danach wieder so weit aufgefüllt
+const THIN = 3;
+function keepLargestPart(data, W, ox, oy, w, h) {
+  const solid = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) solid[y * w + x] = data[((oy + y) * W + ox + x) * 4 + 3] ? 1 : 0;
+  // schrumpfen bzw. wachsen lassen (Quadrat mit Radius r), getrennt nach Zeilen und Spalten
+  const grow = (src, r, all) => {
+    const tmp = new Uint8Array(w * h);
+    const out = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let v = all ? 1 : 0;
+      for (let d = -r; d <= r; d++) {
+        const b = x + d >= 0 && x + d < w ? src[y * w + x + d] : 0;
+        v = all ? v & b : v | b;
+      }
+      tmp[y * w + x] = v;
+    }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let v = all ? 1 : 0;
+      for (let d = -r; d <= r; d++) {
+        const b = y + d >= 0 && y + d < h ? tmp[(y + d) * w + x] : 0;
+        v = all ? v & b : v | b;
+      }
+      out[y * w + x] = v;
+    }
+    return out;
+  };
+  const core = grow(solid, THIN, true);
+  const label = new Int32Array(w * h);
+  const sizes = [0];
+  const stack = [];
+  for (let start = 0; start < w * h; start++) {
+    if (label[start] || !core[start]) continue;
+    const id = sizes.length;
+    let n = 0;
+    label[start] = id;
+    stack.push(start);
+    while (stack.length) {
+      const p = stack.pop();
+      n++;
+      const x = p % w;
+      const y = Math.floor(p / w);
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const q = ny * w + nx;
+        if (label[q] || !core[q]) continue;
+        label[q] = id;
+        stack.push(q);
+      }
+    }
+    sizes.push(n);
+  }
+  const keepId = sizes.indexOf(Math.max(...sizes));
+  const kept = new Uint8Array(w * h);
+  for (let p = 0; p < w * h; p++) kept[p] = label[p] === keepId ? 1 : 0;
+  const keep = grow(kept, THIN + 1, false);
+  for (let p = 0; p < w * h; p++) if (!keep[p]) data[((oy + Math.floor(p / w)) * W + ox + (p % w)) * 4 + 3] = 0;
+}
+
+function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
   const img = video ? readVideo(src, keyPerFrame) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
@@ -969,6 +1044,15 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
   if (dropShadowGreen !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (data[k + 1] - Math.max(data[k], data[k + 2]) > dropShadowGreen) data[k + 3] = 0;
   }
+  if (whiteBreath) {
+    for (let k = 0; k < data.length; k += 4) {
+      if (!data[k + 3] || data[k + 1] - Math.max(data[k], data[k + 2]) < 12) continue;
+      data[k] = 236;
+      data[k + 1] = 242;
+      data[k + 2] = 248;
+      data[k + 3] = Math.min(data[k + 3], 170);
+    }
+  }
   if (clipAbove !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch < clipAbove) data[k + 3] = 0;
   }
@@ -984,6 +1068,11 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
       if (degreen === 'all' || Math.max(r, g, b) - Math.min(r, g, b) <= 40) data[k] = data[k + 1] = data[k + 2] = Math.round((r + g + b) / 3);
       else if (b < g * 0.7) data[k + 3] = 0;
     }
+  }
+  if (onlyFigure) {
+    // halb Durchsichtiges vor dem Greenscreen (die Atemwolke) ist grünstichig: weg, dann hängt die Wolke nicht mehr an der Figur
+    for (let k = 0; k < data.length; k += 4) if (data[k + 3] && data[k + 1] - Math.max(data[k], data[k + 2]) >= 12) data[k + 3] = 0;
+    for (const i of frames) keepLargestPart(data, W, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch);
   }
   if (steady) steadyFrames(img, cols, cw, ch, frames);
   if (evenBrightness) {

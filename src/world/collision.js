@@ -12,14 +12,15 @@ export function footTiles(x, y, fw, fh) {
 }
 
 // Stehen die Füße an Position x/y auf etwas Festem? wade: Wasser ist begehbar (Wasserbüffel),
-// trample: kleine Büsche sind begehbar (Elefant), thicket: Dickicht ist begehbar (Ameisenbär)
-export function blockedAt(x, y, fw, fh, wade = false, trample = false, thicket = false) {
+// trample: kleine Büsche sind begehbar (Elefant), thicket: Dickicht ist begehbar (Ameisenbär),
+// floe: Eisschollen sind begehbar (Henrik in der Eiswelt)
+export function blockedAt(x, y, fw, fh, wade = false, trample = false, thicket = false, floe = false) {
   return [
     [x - fw, y],
     [x + fw, y],
     [x, y - fh],
     [x, y + fh],
-  ].some(([px, py]) => isBlockedPoint(px, py, wade, trample, thicket));
+  ].some(([px, py]) => isBlockedPoint(px, py, wade, trample, thicket, floe));
 }
 
 // Kanu: liegt ein Rand des Boots (halbe Länge fw, halbe Breite fh) nicht mehr auf dem Fluss?

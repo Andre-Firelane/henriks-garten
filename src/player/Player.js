@@ -25,6 +25,7 @@ const HERO_ANIMS = {
   hero_forest: { walkDown: 'hero_forest_walk', walkUp: 'hero_forest_walk_back', idleDown: 'hero_forest_idle', idleUp: 'hero_forest_idle_back' },
   hero_savanna: { walkDown: 'hero_savanna_walk', walkUp: 'hero_savanna_walk_back', idleDown: 'hero_savanna_idle', idleUp: 'hero_savanna_idle_back' },
   hero_jungle: { walkDown: 'hero_jungle_walk', walkUp: 'hero_jungle_walk_back', idleDown: 'hero_jungle_idle', idleUp: 'hero_jungle_idle_back' }, // Videos
+  hero_ice: { walkDown: 'hero_ice_walk', walkUp: 'hero_ice_walk_back', idleDown: 'hero_ice_idle', idleUp: 'hero_ice_idle_back' }, // Videos
   hero_asia: { walkDown: 'hero_asia_walk', walkUp: 'hero_asia_walk_back', idleDown: 'hero_asia_idle', idleUp: 'hero_asia_idle_back' }, // Videos
   // Taucher (Riff): dieselbe Schwimm-Animation beim Schwimmen und Stillhalten (Video)
   hero_swim: { walkDown: 'hero_swim_anim', walkUp: 'hero_swim_anim_back', idleDown: 'hero_swim_anim', idleUp: 'hero_swim_anim_back' },
@@ -160,7 +161,7 @@ export default class Player {
       const wading = this.wade && charAt(wx, wy) === '~';
       const step = (this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt * Math.min(1, len)) / len;
       // Achsen getrennt prüfen, damit man an Hindernissen entlanggleitet
-      const blocked = (x, y) => (this.boat ? boatBlockedAt(x, y, BOAT_W, BOAT_H) : blockedAt(x, y, FOOT_W, FOOT_H, this.wade, this.trample));
+      const blocked = (x, y) => (this.boat ? boatBlockedAt(x, y, BOAT_W, BOAT_H) : blockedAt(x, y, FOOT_W, FOOT_H, this.wade, this.trample, false, true));
       const nx = this.x + vx * step;
       if (!blocked(nx, this.y)) this.x = nx;
       const ny = this.y + vy * step;

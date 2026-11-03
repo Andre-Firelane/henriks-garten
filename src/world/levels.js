@@ -26,6 +26,7 @@
 // Riff:   ü  Astkoralle   Ü  Fächerkoralle   ö  Hirnkoralle   ä  Röhrenkoralle   (û Û ô â: dieselben in anderen Farben)   ß  Riesentang   §  Seestern
 //          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Werkzeug-Sack   /  Muschel   ?  Steine
 // Aquarium: Ł  Quallen-Lampe   Ś  Delfin-Statue   Ɓ  Bank
+// Eiswelt: ê  Eisfelsen   Ê  Eisblock   ẽ  Schneewehe (begehbar)   ɨ  zugefrorenes Meer (nachts, siehe freezeSea)
 
 import { tr } from '../i18n.js';
 
@@ -97,6 +98,63 @@ function dryUp(rows, keep) {
   return rows.map((r, y) => [...r].map((c, x) => (c === '~' && Math.hypot(x - keep.tx, y - keep.ty) > keep.r ? '≈' : c)).join(''));
 }
 
+// Eiswelt: Festland in der Mitte mit der Forschungsstation, vier Inseln, die ihre Ecken bis an den Kartenrand füllen
+// (dazwischen 4 Kacheln breite Meeresarme), an den Seiten des Festlands offenes Meer (dort liegt das Wasserflugzeug). Erzeugt mit einem kleinen Skript, danach von Hand
+const ICE_ROWS = [
+  'Ê..Ê..êêêêÊêê~~~~~~~~~~~~~~~~~~~~~.Êêê.êê.ê.ê.',
+  'ê......ê....~~~~~~~~~~~~~~~~~~~~~~....Ê......ê',
+  'Ê.......ê...~~~~~~~~~~~~~~~~~~~~~~...Ê.......Ê',
+  'ê...........~~~~~...~~~~~~~~~~~~~~...........Ê',
+  'ê...ẽ.......~~~~~...~~~~~~~~~~~~~~...Ê..Ê....ê',
+  '.ẽ..ê........~~~~~~.ẽ..ẽ....~~~~~~...........ê',
+  'êê..Êê...ê...~~~~~~...ẽẽ...ẽ~~~~~~...........Ê',
+  'Ê.ê..........~~~~............~~~~~..........Êê',
+  'Ê............~~~~...ê........~~~~~...........ê',
+  'ê..ẽ...ẽ.....~~~~#.....ẽẽ.ê.ê~~~~~.ẽ.........ê',
+  'Ê.....ẽê.....~~~~#.........êẽ~~~~~.ẽ..e......Ê',
+  '...Ê...Ê..e..~~~~#...........~~~~~êê.....êẽ.êê',
+  'ê~~Ê....ẽ.~~~~~~~#..........~~~~~~.........~~Ê',
+  '~~~~~~~~~~~~~~~~~#........ê.~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~########....~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~.....#....~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~ẽ....#....~~~~~~~~~~~~~~~~~',
+  '~~~...ẽ...~~.ẽ..~~......#......~~...#...~~~~~~',
+  '~~~.......~~ẽ.ẽ.~~......#......~~...#......~~~',
+  '~~~................MMMMM#...........#......~~~',
+  '~~~....ẽ...ẽ....ẽ..NɃ,,N#...........#......~~~',
+  '~~~........ẽ.......Nɓ,,G##################.~~~',
+  '~~~................MMMMM#..................~~~',
+  '~~~.ẽ................c..#.ê..ê.............~~~',
+  '~~~.ê.........ê.........#.ẽ...ẽÊ...ẽ.......~~~',
+  '~~~.ẽê........ê..Ê.ẽ..ê.#..................~~~',
+  '~~~..........ẽẽ.........#.................Ê~~~',
+  '~~~.....................#.................~~~~',
+  '~~~~~~...####################.~~......ẽ..Ê~~~~',
+  '~~~~~~~~~~~~~~~~~...........#~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~.....ẽ.....#~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~.......ê.#~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~.........#~~~~~~~~~~~~~~~~~',
+  'ê...........~~~~~.ê.......ẽ.#~~~~~~~..Ê.......',
+  'ê.......ê...~~~~~..ẽê.......#~~~~............ê',
+  'êÊ...ê.....e~~~~~...........#~~~~...........êÊ',
+  'Ê.ê...ê.....~~~~~...........#~~~~.....êê...ẽ.ê',
+  '..........ê.~~~~~..ẽ.........~~~~............ê',
+  'ê......ê....Ê~~~~..ẽ.....Êêẽ.~~~~..e.........ê',
+  'ê.Ê..........~~~~~~.........ê~~~~..........ê.Ê',
+  'ê............~~~~~~........ẽ.~~~~~....ê......Ê',
+  'ê......ê....Ê~~~~...........ê~~~~~............',
+  '.....ê...Ê.ê.~~~~...~~...~~..~~~~~........Ê..ê',
+  '......Ê.ê...~~~~~~~~~~~~~~~~~~~~~~...........Ê',
+  '.ẽ..ê.......~~~~~~~~~~~~~~~~~~~~~~...........Ê',
+  'ÊêêÊ.ê...ê..Ê~~~~~~~~~~~~~~~~~~~~~êÊÊ.ÊÊêêÊêÊê',
+];
+
+// Nacht in der Eiswelt: das Meer zwischen Festland und Inseln friert zu (man läuft hinüber); nur das offene Meer am
+// Kartenrand (open Kacheln breit) bleibt Wasser
+function freezeSea(rows, open) {
+  const h = rows.length;
+  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && x >= open && y >= open && x < r.length - open && y < h - open ? 'ɨ' : c)).join(''));
+}
 
 export const LEVELS = {
   meadow: {
@@ -369,7 +427,6 @@ export const LEVELS = {
   // Tiere kommen später. Ŝ: Steg, Ŕ: Felsklippe, Ŵ: Wasserfall
   jungle: {
     name: tr('Dschungel', 'Jungle'),
-    wip: true, // noch nicht fertig: Hinweis beim Ankommen und auf der Weltkarte
     // Schnellreise: Wasserflugzeug am Inselufer (bob: schaukelt auf dem Wasser; reach: so nah muss man heran;
     // arrive: Ankunft auf der Insel statt neben dem Flugzeug)
     car: { tx: 16.4, ty: 22.6, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 19, ty: 22 } },
@@ -470,6 +527,71 @@ export const LEVELS = {
         gorillas: { tx0: 34, ty0: 34, tx1: 42, ty1: 41, count: 3 },
         weatherSpawn: { population: 4, weights: { gibbon: 1, macaw: 1 } }, // im Nebel: Gibbons statt Brüllaffen, die Aras fliegen weiter
         ambientVolume: 0.18, // im Nebel ist es stiller
+      },
+    },
+  },
+
+  // Eiswelt: Tag und Nacht wechseln alle 8 Minuten (siehe season.js; in der Forschungsstation kann man bis zur nächsten Phase schlafen).
+  // Am Tag treiben Eisschollen als Fähren über die Meeresarme zu den Inseln (siehe Floes.js), nachts friert das Meer
+  // zwischen den Inseln zu und man läuft bequem hinüber – dafür ist es so kalt, dass Henrik nach ein paar Minuten keine
+  // Tiere mehr fangen kann, bis er sich in der Forschungsstation aufgewärmt hat (cold). Es schneit immer leicht (siehe Weather.js).
+  // Tiere kommen später.
+  ice: {
+    name: tr('Eiswelt', 'Ice World'),
+    wip: true, // noch nicht fertig: Hinweis beim Ankommen und auf der Weltkarte
+    // Schnellreise: Wasserflugzeug im offenen Meer rechts vom Festland (wie im Dschungel)
+    car: { tx: 44, ty: 21.5, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 41, ty: 21 } },
+    map: { x: 40, y: 17, icon: 'penguin' }, // Grönland
+    rows: ICE_ROWS,
+    grass: ['snow0', 'snow1', 'snow2'],
+    path: 'snow_path',
+    water: ['ice_water0', 'ice_water0', 'ice_water1'],
+    roundShore: true, // Schneeecken, die ins Meer ragen, sind abgerundet
+    start: { tx: 41, ty: 21 },
+    enclosures: [], // die Gehege sind im Tierpark
+    hut: { tx0: 19, ty0: 19, tx1: 23, ty1: 22, style: 'ice' }, // Forschungsstation (Metall, flaches Dach mit Teleskop; mit Bett)
+    chests: [
+      { tx: 21, ty: 23, tools: ['net', 'lasso'] }, // Regal vor der Station
+      { tx: 10, ty: 11, tools: ['net', 'lasso'] }, // Kisten auf den vier Inseln
+      { tx: 38, ty: 10, tools: ['net', 'lasso'] },
+      { tx: 35, ty: 38, tools: ['net', 'lasso'] },
+      { tx: 11, ty: 35, tools: ['net', 'lasso'] },
+    ],
+    hero: 'hero_ice', // Kleidung in der Eiswelt (Parka mit Fellkapuze)
+    background: '#1f4f73',
+    toolSpots: [],
+    exits: [], // hin und zurück nur mit dem Wasserflugzeug
+    snow: true, // es rieselt immer leicht Schnee (siehe Weather.js)
+    // Eisschollen (siehe Floes.js), Lage in Kacheln. ferries: tragen Henrik zwischen Festland (from) und Insel (to) hin
+    // und her und liegen an beiden Ufern wait Sekunden an (travel: Sekunden für die Fahrt, shift: Versatz im Takt);
+    // drift: kleine Schollen zur Zierde, die langsam über das offene Meer am Rand treiben (period: Sekunden hin und zurück)
+    floes: {
+      r: 1.25, // Größe der Fähren (Kacheln von der Mitte bis zum Rand)
+      wait: 5,
+      travel: 7,
+      ferries: [
+        { from: [16, 9], to: [13, 9], shift: 0 },
+        { from: [36, 16], to: [36, 13], shift: 6 },
+        { from: [29, 36], to: [32, 36], shift: 12 },
+        { from: [9, 29], to: [9, 32], shift: 18 },
+      ],
+      drift: [
+        { from: [1, 14], to: [1, 31], r: 0.55, period: 150 },
+        { from: [15, 1], to: [32, 1], r: 0.6, period: 160 },
+        { from: [14, 44], to: [32, 44], r: 0.5, period: 140 },
+        { from: [44, 25], to: [44, 32], r: 0.45, period: 90 },
+      ],
+    },
+    // Tag und Nacht (siehe season.js): die Angaben der Nacht ersetzen die oben
+    seasons: {
+      day: {},
+      night: {
+        rows: freezeSea(ICE_ROWS, 3),
+        floes: null, // die Schollen sind ins Eis eingefroren
+        seaIce: ['sea_ice0', 'sea_ice1', 'sea_ice2'], // helle, glatte Eisfläche (tools/sea-ice.py)
+        night: true, // dunkel, Polarlicht am Himmel, warmes Licht an der Station (siehe Weather.js)
+        // so viele Minuten draußen, bis Henrik zu kalt zum Fangen ist; so viele Sekunden in der Station, bis er wieder warm ist
+        cold: { minutes: 3, warmSeconds: 3 },
       },
     },
   },
