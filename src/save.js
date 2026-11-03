@@ -85,6 +85,7 @@ export function loadSave() {
   if (!s.game.parkSplit) splitPark();
   if (!s.game.caughtSpecies) migrateCaught(!s.game.quests);
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
+  syncQuests();
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
   save.lastSaved = s.savedAt;
   return s.level;
@@ -120,6 +121,15 @@ function migrateCaught(oldQuests) {
   for (const a of game.followers) species.add(a.species);
   game.caughtSpecies = [...species];
   if (oldQuests && Object.keys(game.events).length) game.quests = { done: [...QUEST_IDS] };
+}
+
+// Starter-Aufgaben, die laut Spielstand schon geschafft sind, aber in einer älteren Fassung noch nicht abgehakt wurden
+// (z. B. gab es die Eisstand-Aufgabe noch nicht): still abhaken, damit Aufgaben und Tutorial zusammenpassen
+function syncQuests() {
+  const done = game.quests.done;
+  const add = (id) => done.includes(id) || done.push(id);
+  if (game.events.icecream) add('icecream'); // der Eisstand lief schon einmal
+  if ((game.levels.park?.animals ?? []).filter((a) => a.species === 'sheep' && a.state === 'penned').length >= 3) add('sheep');
 }
 
 // Früher war der Hirsch eine eigene Tierart, jetzt ist er ein seltenes Aussehen (Skin) des Rehs
