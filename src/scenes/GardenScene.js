@@ -229,7 +229,7 @@ const CONTROLS = `<h3>${tr('Steuerung', 'Controls')}</h3>
       ['<kbd>I</kbd>', tr('Tierbuch', 'Animal Book')],
       ['<kbd>Q</kbd>', tr('Werkzeug wechseln (beim Reiten)', 'switch tool (while riding)')],
       ['<kbd>Esc</kbd>', tr('Menü', 'menu')],
-      [tr('Maus', 'Mouse'), tr('Regal, Auto, Computer oder Schild anklicken, wenn du direkt daneben stehst', 'click the shelf, car, computer or a sign when you stand right next to it')],
+      [tr('Linksklick', 'Left click'), tr('wie <kbd>E</kbd>: Werkzeug benutzen; Regal, Auto, Computer oder Schild anklicken, wenn du direkt daneben stehst', 'like <kbd>E</kbd>: use your tool; click the shelf, car, computer or a sign when you stand right next to it')],
     ])}</div>
     <div class="ctl-box"><b>📱 ${tr('Tablet und Handy', 'Tablet and phone')}</b>${controlRows([
       [tr('linke Hälfte', 'left half'), tr('Finger aufsetzen und ziehen: laufen', 'put your finger down and drag: walk')],
@@ -563,8 +563,13 @@ const TOOLS = {
 // Köder: locken diese Tiere an (gefangen werden sie dann mit dem Lasso oder sie folgen von selbst)
 const TOOL_LURES = { ball: ['tiger'], banana: ['howler', 'gibbon'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
 // alle Tierarten, die man mit diesem Werkzeug fängt oder lockt (null: mit leeren Händen, also durch Berühren)
-const toolAnimals = (id) =>
-  id ? TOOLS[id].catches ?? TOOL_LURES[id] ?? SPECIES_ORDER.filter((s) => SPECIES[s].catchWith.includes(id)) : SPECIES_ORDER.filter((s) => SPECIES[s].catchWith.some((t) => t === 'touch' || t === 'swim'));
+// (aus den Tierarten selbst, catchWith in Animal.js – dazu, was das Werkzeug selbst aufzählt)
+const toolAnimals = (id) => {
+  if (!id) return SPECIES_ORDER.filter((s) => SPECIES[s].catchWith.some((t) => t === 'touch' || t === 'swim'));
+  if (TOOL_LURES[id]) return TOOL_LURES[id];
+  const own = TOOLS[id].catches ?? [];
+  return SPECIES_ORDER.filter((s) => SPECIES[s].catchWith.includes(id) || own.includes(s));
+};
 // Regal: die Tiere dieser Welt zum Werkzeug als kleine Bilder; noch nie gefangene als Schatten, Wetter- und Event-Tiere
 // mit ihrem Zeichen
 function toolAnimalsHtml(id) {
@@ -581,7 +586,7 @@ function toolAnimalsHtml(id) {
 function houseTanks(level) {
   const aq = LEVELS[level];
   return aq.enclosures.map((e) => {
-    const b = aq.buildings.find((h) => (h.style === 'tank' || h.style === 'terrarium') && e.seed.tx >= h.tx0 && e.seed.tx <= h.tx1 && e.seed.ty >= h.ty0 && e.seed.ty <= h.ty1);
+    const b = aq.buildings.find((h) => (h.style === 'tank' || h.style.startsWith('terrarium')) && e.seed.tx >= h.tx0 && e.seed.tx <= h.tx1 && e.seed.ty >= h.ty0 && e.seed.ty <= h.ty1);
     // cap: alle Plätze; capFor(Art): Plätze dieser Art (Becken mit quota haben je Art eigene, z. B. Schildkröten und Rochen)
     const capFor = (species) => (e.quota ? e.quota[species]?.[0] ?? 0 : e.slots[0]);
     const cap = e.quota ? Object.values(e.quota).reduce((s, q) => s + q[0], 0) : e.slots[0];
@@ -1114,6 +1119,12 @@ export default class GardenScene extends Phaser.Scene {
     };
     this.input.keyboard.on(`keydown-${ACTION_KEY}`, useTool);
     this.input.keyboard.on('keydown-ENTER', useTool);
+    // am PC: Linksklick ins Bild wie die Aktionstaste (Regal, Auto, Computer und Schilder haben ihre eigenen Klicks;
+    // auf Tablet und Handy gibt es dafür den Aktionsknopf)
+    this.input.on('pointerdown', (pointer, over) => {
+      if (pointer.wasTouch || pointer.button !== 0 || over.length) return;
+      useTool();
+    });
     // Übersicht über Tiere und Werkzeuge (Taste I oder Tippen auf das Abzeichen oben links)
     this.input.keyboard.on('keydown-I', () => this.showJournal());
     // beim Reiten: Werkzeug wechseln (Q bzw. der Werkzeug-Knopf auf dem Tablet) – überall, ohne zur Hütte zu gehen
@@ -2579,7 +2590,7 @@ export default class GardenScene extends Phaser.Scene {
     const t = TOOLS[id];
     if (!t.catches) return t.hint;
     const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun) || (s === 'gorilla' && !!LEVEL.gorillas);
-    const list = t.catches.filter(here);
+    const list = toolAnimals(id).filter(here);
     return list.length ? t.hint(list) : '';
   }
 
