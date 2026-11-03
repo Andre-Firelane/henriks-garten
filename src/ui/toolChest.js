@@ -12,23 +12,27 @@ export function isToolChestOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// items: [{ id, name, image }] (id null = Hände frei); current: getragenes Werkzeug; onPick(id) beim Auswählen
-export function openToolChest(items, current, onPick, onClose) {
+// items: [{ id, name, image, animals }] (id null = Hände frei; animals: HTML der Tiere, die man damit fängt); current: getragenes Werkzeug; onPick(id) beim Auswählen
+// tutorial: { id, hint } – im Mini-Tutorial zeigt ein roter Pfeil auf dieses Werkzeug (vorausgewählt), darunter der Hinweis
+export function openToolChest(items, current, onPick, onClose, tutorial = null) {
   panel = document.getElementById('chest');
   panel.innerHTML = `<div class="chest-box">${CLOSE_BUTTON}
       <h2>${tr('Was möchtest du mitnehmen?', 'What do you want to take?')}</h2>
       <div class="chest-items">${items
         .map(
           (it, i) => `<button class="chest-item${it.id === current ? ' carried' : ''}" data-i="${i}">
+            ${tutorial && it.id === tutorial.id ? '<span class="chest-pointer">▼</span>' : ''}
             <img src="assets/${it.image}.png" alt=""><span>${it.name}</span>${it.id === current ? `<small>${tr('in der Hand', 'in your hand')}</small>` : ''}
+            ${it.animals ? `<span class="chest-animals">${it.animals}</span>` : ''}
           </button>`,
         )
         .join('')}</div>
+      ${tutorial ? `<p class="chest-tut">${tutorial.hint}</p>` : ''}
       <p class="chest-hint">${tr('Tippe auf ein Werkzeug – oder wähle mit <b>A</b>/<b>D</b> und nimm es mit <b>E</b>.', 'Tap a tool – or choose with <b>A</b>/<b>D</b> and take it with <b>E</b>.')}</p>
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();
-  const start = Math.max(0, items.findIndex((it) => it.id !== current));
+  const start = tutorial ? Math.max(0, items.findIndex((it) => it.id === tutorial.id)) : Math.max(0, items.findIndex((it) => it.id !== current));
   state = { items, selected: start, onPick, onClose };
   highlight();
   // erst nach diesem Tastendruck reagieren, sonst nimmt die Taste E gleich etwas heraus

@@ -123,7 +123,7 @@ export const LEVELS = {
       'T...g...~~~~~~~.....#..................T',
       'b......~~~~~~~~~....#........b...f.....T',
       'T......f~~~~~~~~T...#.............gf...T',
-      'T..................W#..................b',
+      'T...................#..................b',
       'T######################################T',
       'T.......g..#........#..................T',
       'T...fffgfff#.MMMMM..#..................T',
@@ -158,12 +158,6 @@ export const LEVELS = {
     ambient: 'ambient_meadow', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [],
     exits: [], // in die anderen Gebiete und in den Tierpark nur mit dem Auto
-    // Wegweiser an der Kreuzung: zeigt auf Ziele hier auf der Wiese (in die anderen Gebiete geht es nur mit dem Auto)
-    sections: [
-      { label: tr('Hütte', 'Hut'), tx: 15, ty: 22 },
-      { label: tr('Auto', 'Car'), tx: 12, ty: 26 },
-      { label: tr('Teich', 'Pond'), tx: 35, ty: 24 },
-    ],
     // Spawner: so viele wilde Tiere sind ungefähr gleichzeitig unterwegs; die Zahlen dahinter sind die
     // Wahrscheinlichkeiten (je größer, desto häufiger). Tiere verschwinden nach einer Weile und neue kommen.
     spawn: { population: 17, weights: { sheep: 6, cat: 2, fish: 2, frog: 1.6, mole: 0.6, butterfly: 3 } },

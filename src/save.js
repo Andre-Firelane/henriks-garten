@@ -3,6 +3,7 @@
 // laufen beim Laden dort weiter, wo gespeichert wurde. Das Test-Spiel speichert nie.
 import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
+import { QUEST_IDS } from './world/quests.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -82,6 +83,9 @@ export function loadSave() {
   for (const k of Object.keys(game.seasonAnchors ?? {})) game.seasonAnchors[k] += shift;
   migrateStag();
   if (!s.game.parkSplit) splitPark();
+  if (!s.game.caughtSpecies) migrateCaught(!s.game.quests);
+  if (!Array.isArray(game.bookNew)) game.bookNew = [];
+  if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
   save.lastSaved = s.savedAt;
   return s.level;
 }
@@ -106,6 +110,16 @@ function splitPark() {
   for (const a of old.animals ?? []) move('animals', a);
   for (const p of old.pickups ?? []) move('pickups', p);
   Object.assign(game.levels, levels);
+}
+
+// Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik
+// ablesen. Wer schon ein Event gestartet hat, kennt das Spiel – für ihn sind die Starter-Aufgaben erledigt.
+function migrateCaught(oldQuests) {
+  const species = new Set(Object.keys(game.heartsBy).filter((s) => s !== 'icecream'));
+  for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.state === 'penned') species.add(a.species);
+  for (const a of game.followers) species.add(a.species);
+  game.caughtSpecies = [...species];
+  if (oldQuests && Object.keys(game.events).length) game.quests = { done: [...QUEST_IDS] };
 }
 
 // Früher war der Hirsch eine eigene Tierart, jetzt ist er ein seltenes Aussehen (Skin) des Rehs

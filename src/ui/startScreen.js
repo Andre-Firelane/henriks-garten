@@ -34,14 +34,14 @@ export function openStartScreen(onStart) {
   const s = readSave();
   panel.innerHTML = `<div class="start-box">
       <img class="start-logo" src="assets/logo.png" alt="My Little Zoo">
-      <button class="start-btn" data-act="continue"${s ? '' : ' disabled'}>▶ ${tr('Weiterspielen', 'Continue')}<small>${s ? savedText(s) : tr('noch kein Spielstand', 'no saved game yet')}</small></button>
-      <button class="start-btn" data-act="new">✿ ${tr('Neues Spiel', 'New game')}</button>
+      <button class="start-btn" data-act="continue"${s ? '' : ' disabled'}>${tr('Weiterspielen', 'Continue')}<small>${s ? savedText(s) : tr('noch kein Spielstand', 'no saved game yet')}</small></button>
+      <button class="start-btn" data-act="new">${tr('Neues Spiel', 'New game')}</button>
       <div class="start-ask">
         <p>${tr('Wirklich neu anfangen? Der alte Spielstand wird gelöscht.', 'Really start over? Your saved game will be deleted.')}</p>
         <button class="start-btn small danger" data-act="new-yes">${tr('Ja, neu anfangen', 'Yes, start over')}</button>
         <button class="start-btn small" data-act="new-no">${tr('Nein', 'No')}</button>
       </div>
-      <button class="start-btn test" data-act="test">🔧 ${tr('Test-Spiel', 'Test game')}<small>${tr('wird nicht gespeichert', 'will not be saved')}</small></button>
+      <button class="start-btn test" data-act="test">${tr('Test-Spiel', 'Test game')}<small>${tr('wird nicht gespeichert', 'will not be saved')}</small></button>
       <div class="start-lang">
         <button class="lang-btn${lang === 'de' ? ' on' : ''}" data-lang="de">Deutsch</button>
         <button class="lang-btn${lang === 'en' ? ' on' : ''}" data-lang="en">English</button>

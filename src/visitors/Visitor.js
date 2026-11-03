@@ -23,6 +23,7 @@ const SCORE_EVERY = 3; // Sekunden zwischen zwei Neuberechnungen der Anziehung
 // einem Gehege); dort wartet er kurz, bekommt sein Eis (ein Herz) und trägt es eine Weile in der Hand
 const ICE_CHANCE = 0.6;
 const ICE_BUY_TIME = [2, 3.5];
+const ICE_WALK_IN = 6; // Mini-Tutorial: so viele Felder vor dem Eiswagen taucht der erste Eis-Kunde auf (siehe sendToIce)
 const ICE_EAT_TIME = [40, 70]; // so lange hält er das Eis, dann ist es aufgegessen
 const ICE_LOOKS = ['icecream', 'icecream2', 'icecream3'];
 const ICE_HEARTS = 2; // so viele Herzen bringt jedes verkaufte Eis
@@ -337,6 +338,42 @@ export class VisitorCrowd {
   // Eisstand-Event: ab und zu (wer noch keins hatte) zum Eiswagen statt zum nächsten Gehege
   maybeIce(v) {
     if (v.ice || !isActive('icecream') || Math.random() > ICE_CHANCE) return false;
+    return this.goToIce(v);
+  }
+
+  // Eisstand gerade im Mini-Tutorial gestartet: gleich holt sich jemand ein Eis – der Besucher, der dem Eiswagen am
+  // nächsten an einem Gehege steht, sonst ein neuer vom Ausgang
+  sendToIce() {
+    if (!LEVEL.iceStand || this.visitors.some((v) => v.goal === 'ice' || v.phase === 'buy')) return;
+    const stand = tileToWorld(LEVEL.iceStand.tx, LEVEL.iceStand.ty);
+    const dist = (v) => Math.hypot(v.x - stand.x, v.y - stand.y);
+    const v = this.visitors.filter((u) => !u.ice && u.phase === 'look').sort((a, b) => dist(a) - dist(b))[0];
+    if (v) {
+      this.release(v);
+      if (!this.goToIce(v) && !this.sendToPen(v)) this.sendHome(v);
+      return;
+    }
+    // sonst ein neuer, vom Ausgang am nächsten beim Eiswagen (damit er nicht ewig unterwegs ist)
+    const exit = [...this.grid.exits].sort((u, w) => dist(tileToWorld(u.tx, u.ty)) - dist(tileToWorld(w.tx, w.ty)))[0];
+    if (!exit) return;
+    const p = tileToWorld(exit.tx, exit.ty);
+    const fresh = new Visitor(this.scene, this, p.x, p.y, this.pickLook());
+    this.visitors.push(fresh);
+    fresh.sprite.setAlpha(0);
+    this.scene.tweens.add({ targets: fresh.sprite, alpha: 1, duration: 500 });
+    if (!this.goToIce(fresh)) return this.remove(fresh);
+    // nicht den ganzen Weg vom Ausgang laufen: ein paar Felder vor dem Eiswagen auftauchen
+    const skip = fresh.route.length - ICE_WALK_IN;
+    if (skip > 0) {
+      const p = fresh.route[skip - 1];
+      fresh.x = p.x;
+      fresh.y = p.y;
+      fresh.route = fresh.route.slice(skip);
+    }
+  }
+
+  // zum Eiswagen laufen (an einen freien Platz davor); false, wenn es keinen gibt
+  goToIce(v) {
     const free = this.grid.ice.filter((s) => !s.taken);
     if (!free.length) return false;
     const set = new Set(free.map((s) => s.tx + ',' + s.ty));
@@ -372,10 +409,21 @@ export class VisitorCrowd {
     if (!this.sendToPen(v)) this.remove(v);
   }
 
-  // Besucher direkt an einen freien Platz stellen (beim Betreten des Parks)
-  placeAtPen() {
-    const o = this.pickPen(null);
-    if (!o) return;
+  // Mini-Tutorial: an diesem Gehege soll immer jemand stehen (sonst wirkt der Hinweis "sieh zu, wie die Besucher deine
+  // Schafe mögen" seltsam, solange der Park noch fast leer ist). Fehlt einer, taucht er sanft an einem freien Platz auf
+  ensureAt(e) {
+    if (this.visitors.some((v) => v.pen === e && v.phase !== 'leave')) return;
+    const spots = (this.grid.spots.get(e) ?? []).filter((s) => !s.taken);
+    if (!spots.length) return;
+    const v = this.placeAtPen({ e, spots }, false);
+    v.sprite.setAlpha(0);
+    this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
+  }
+
+  // Besucher direkt an einen freien Platz stellen (beim Betreten des Parks); partial: schon eine Weile dort (nicht alle
+  // gehen gleichzeitig weiter). Gibt den Besucher zurück
+  placeAtPen(o = this.pickPen(null), partial = true) {
+    if (!o) return null;
     const spot = Phaser.Utils.Array.GetRandom(o.spots);
     const p = this.standPoint(spot);
     const v = new Visitor(this.scene, this, p.x, p.y, this.pickLook());
@@ -384,12 +432,14 @@ export class VisitorCrowd {
     v.spot = spot;
     v.pen = o.e;
     v.arrive();
+    if (!partial) return v;
     // nicht alle gleichzeitig weitergehen; Herzen nur noch für die restliche Zeit
     const k = Math.random();
     v.timer *= k;
     v.heartsLeft = Math.round(v.heartsLeft * k);
     v.heartAt = v.timer * 0.75;
     v.heartStep = v.heartAt / Math.max(1, v.heartsLeft);
+    return v;
   }
 
   // Futter ins Gehege werfen, wenn dort gerade Tiere fressen können (nicht zu oft dasselbe Gehege)

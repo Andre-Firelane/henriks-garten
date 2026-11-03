@@ -1,4 +1,4 @@
-// Menü (Knopf oben rechts oder Esc): weiterspielen, von Hand speichern, zurück zum Startbildschirm.
+// Menü (Knopf oben rechts oder Esc): weiterspielen, Steuerung ansehen, von Hand speichern, zurück zum Startbildschirm.
 // Das Spiel pausiert so lange. Esc schließt das Menü wieder.
 import { save } from '../save.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
@@ -24,17 +24,19 @@ function render() {
   panel.innerHTML = `<div class="chest-box menu-box">${CLOSE_BUTTON}
       <img class="menu-logo" src="assets/logo.png" alt="My Little Zoo">
       <h2>${tr('Menü', 'Menu')}</h2>
-      <button class="start-btn" data-act="resume">▶ ${tr('Weiterspielen', 'Resume')}</button>
-      <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>💾 ${tr('Speichern', 'Save')}</button>
-      <button class="start-btn" data-act="title">⌂ ${tr('Zum Startbildschirm', 'Title screen')}</button>
+      <button class="start-btn" data-act="resume">${tr('Weiterspielen', 'Resume')}</button>
+      <button class="start-btn" data-act="controls">${tr('Steuerung', 'Controls')}</button>
+      <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>${tr('Speichern', 'Save')}</button>
+      <button class="start-btn" data-act="title">${tr('Zum Startbildschirm', 'Title screen')}</button>
       <p class="menu-saved">${savedLine()}</p>
     </div>`;
 }
 
-// onSave(): speichert, gibt true zurück, wenn es geklappt hat; onTitle(): zurück zum Startbildschirm; onClose(): Menü zu
-export function openMenu(onSave, onTitle, onClose) {
+// onSave(): speichert, gibt true zurück, wenn es geklappt hat; onTitle(): zurück zum Startbildschirm; onClose(): Menü zu;
+// onControls(): Steuerung zeigen (nach dem Schließen des Menüs)
+export function openMenu(onSave, onTitle, onClose, onControls) {
   panel = document.getElementById('menu');
-  state = { onSave, onTitle, onClose };
+  state = { onSave, onTitle, onClose, onControls };
   render();
   panel.classList.add('show');
   openedAt = performance.now();
@@ -59,7 +61,11 @@ function onClick(e) {
   if (!e.target.closest('.menu-box')) return close(); // neben die Tafel tippen schließt
   if (!b) return;
   if (act === 'resume') close();
-  else if (act === 'save' && !b.disabled) {
+  else if (act === 'controls') {
+    const cb = state.onControls;
+    close();
+    cb();
+  } else if (act === 'save' && !b.disabled) {
     const ok = state.onSave();
     render();
     panel.querySelector('.menu-saved').textContent = ok ? tr('Gespeichert ✓', 'Saved ✓') : tr('Speichern hat nicht geklappt', 'Saving did not work');
