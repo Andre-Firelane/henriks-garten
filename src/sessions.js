@@ -1,13 +1,14 @@
 // Spielrunden zählen, ohne Cookies: beim Start einer Runde und danach immer wieder mit der bisherigen Spieldauer eine
 // kurze Meldung an die Netlify Function (netlify/functions/session). Die Kennung der Runde ist zufällig und wird nirgends
 // gespeichert – so lässt sich niemand wiedererkennen. Gezählt wird nur die Zeit, in der das Spiel zu sehen ist.
-// Dazu kommt, welche Tiere in der Runde gefangen und welche Events gestartet wurden (nur die Anzahl je Art).
+// Dazu kommt, welche Tiere in der Runde gefangen und welche Events gestartet wurden (nur die Anzahl je Art), und welche
+// Tafeln im Tierpark gezeigt bzw. was dort gewählt wurde (promos).
 import { lang } from './i18n.js';
 
 const API = '/api/session';
 const UPDATE_EVERY = 2 * 60 * 1000; // so oft geht die Spieldauer zwischendurch raus (falls der Browser die Seite einfach wegwirft)
 
-let session = null; // { id, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl } }
+let session = null; // { id, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl }, promos: { Tafel: Anzahl } }
 
 function device() {
   const ua = navigator.userAgent;
@@ -36,7 +37,7 @@ function send(body, beacon = false) {
 }
 
 function update(beacon) {
-  if (session) send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), catches: session.catches, events: session.events }, beacon);
+  if (session) send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), catches: session.catches, events: session.events, promos: session.promos }, beacon);
 }
 
 function count(map, key) {
@@ -52,9 +53,14 @@ export function countEvent(id) {
   if (session) count(session.events, id);
 }
 
+// Tafeln im Tierpark: 'gift' gezeigt, 'giftbabies'/'giftride' gewählt; 'worlds' gezeigt, 'worldsmap' bis zum Ende durchgeblättert
+export function countPromo(id) {
+  if (session) count(session.promos, id);
+}
+
 // neue Runde vom Startbildschirm aus; kind: 'continue', 'new' oder 'test'
 export function startSession(kind) {
-  session = { id: randomId(), played: 0, visibleSince: document.visibilityState === 'visible' ? Date.now() : null, catches: {}, events: {} };
+  session = { id: randomId(), played: 0, visibleSince: document.visibilityState === 'visible' ? Date.now() : null, catches: {}, events: {}, promos: {} };
   send({ type: 'start', id: session.id, kind, lang, device: device() });
 }
 

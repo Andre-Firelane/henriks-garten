@@ -106,10 +106,10 @@ export function isActive(id, now = Date.now()) {
   return eventState(id, now).state === 'active';
 }
 
-// Herzen abziehen und das Event starten
-export function startEvent(id, now = Date.now()) {
+// Herzen abziehen und das Event starten (free: geschenkt, kostet nichts)
+export function startEvent(id, now = Date.now(), free = false) {
   const ev = EVENTS.find((e) => e.id === id);
-  game.hearts -= ev.cost;
+  if (!free) game.hearts -= ev.cost;
   game.events[id] = { startsAt: now, endsAt: now + ev.duration, readyAt: now + ev.duration + ev.cooldown };
 }
 

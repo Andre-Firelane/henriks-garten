@@ -3,8 +3,8 @@
 // Die Tierbilder kommen aus den Spritesheets des Spiels (src/ui/icons.js, Bilder unter /assets).
 //
 // POST { type: 'start', id, kind, lang, device }  neue Runde
-// POST { type: 'update', id, seconds, catches, events }  Spieldauer bisher (kommt mehrmals, die letzte zählt) und
-//                                                  gefangene Tiere bzw. gestartete Events der Runde: { Art: Anzahl }
+// POST { type: 'update', id, seconds, catches, events, promos }  Spieldauer bisher (kommt mehrmals, die letzte zählt) und
+//                                                  gefangene Tiere, gestartete Events bzw. Tafeln im Tierpark der Runde: { Art: Anzahl }
 // GET  ?key=<SESSIONS_KEY>                         Tabelle; &format=csv für Excel
 import { animalIcon } from '../../../src/ui/icons.js';
 
@@ -27,6 +27,14 @@ const EVENTS = {
   fireflies: ['🏮', 'Glühwürmchen-Abend'],
   weather: ['🌦️', 'Wetterwechsel'],
   icecream: ['🍦', 'Eisstand'],
+};
+// Tafeln im Tierpark (Ids wie in src/sessions.js, countPromo)
+const PROMOS = {
+  gift: 'Geschenk gezeigt',
+  giftbabies: 'Geschenk: Tierbabys',
+  giftride: 'Geschenk: Reittier',
+  worlds: 'Welten gezeigt',
+  worldsmap: 'Welten durchgeblättert',
 };
 
 export async function handle(req, store, secret) {
@@ -69,6 +77,7 @@ async function record(req, store) {
     s.seconds = Math.max(s.seconds, Math.min(seconds, MAX_SECONDS));
     s.catches = merge(s.catches, msg.catches);
     s.events = merge(s.events, msg.events);
+    s.promos = merge(s.promos, msg.promos);
     s.last = new Date().toISOString();
     await store.setJSON(msg.id, s);
     return new Response(null, { status: 204 });
@@ -98,6 +107,7 @@ function catchTag(species, n) {
   return `<span class="tag" title="${esc(species)}">${icon}<b>${n}</b></span>`;
 }
 const eventTag = (id, n) => `<span class="tag" title="${esc(EVENTS[id]?.[1] ?? id)}">${EVENTS[id]?.[0] ?? esc(id)}<b>${n}</b></span>`;
+const promoTag = (id, n) => `<span class="tag">${esc(PROMOS[id] ?? id)}<b>${n}</b></span>`;
 const tags = (map, tag) => sorted(map).map(([k, n]) => tag(k, n)).join('') || '<span class="none">–</span>';
 
 async function show(req, store, secret) {
@@ -116,13 +126,14 @@ async function show(req, store, secret) {
     seconds: s.seconds,
     catches: s.catches ?? {},
     events: s.events ?? {},
+    promos: s.promos ?? {},
   }));
 
   if (url.searchParams.get('format') === 'csv') {
     const list = (map) => sorted(map).map(([k, n]) => `${k} ${n}`).join(', ');
     const lines = [
-      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Gefangen;Events',
-      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), list(r.catches), list(r.events)].join(';')),
+      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Gefangen;Events;Tafeln',
+      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), list(r.catches), list(r.events), list(r.promos)].join(';')),
     ];
     return new Response('﻿' + lines.join('\r\n'), {
       headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="spielrunden.csv"' },
@@ -133,6 +144,7 @@ async function show(req, store, secret) {
   const played = real.reduce((n, r) => n + r.seconds, 0);
   const caught = sum(real.map((r) => r.catches));
   const started = sum(real.map((r) => r.events));
+  const shown = sum(real.map((r) => r.promos));
   // <base href="/">: die Tierbilder liegen unter /assets (wie im Spiel), die Seite selbst unter /api/session
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="/">
@@ -160,9 +172,11 @@ async function show(req, store, secret) {
 <div class="box">${tags(caught, catchTag)}</div>
 <h2>Gestartete Events (${total(started)})</h2>
 <div class="box">${tags(started, eventTag)}</div>
+<h2>Tafeln im Tierpark</h2>
+<div class="box">${tags(shown, promoTag)}</div>
 <h2>Runden</h2>
-<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Gefangen</th><th>Events</th></tr>
-${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td></tr>`).join('\n')}
+<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Gefangen</th><th>Events</th><th>Tafeln</th></tr>
+${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td></tr>`).join('\n')}
 </table></div></body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

@@ -20,6 +20,8 @@ export const game = {
   seenSpecies: [], // Tierarten, denen man draußen schon begegnet ist (erst dann steht ihr Fang-Tipp im Tierbuch)
   tipsSeen: [], // Tierarten, zu denen der Fang-Tipp nach Fehlversuchen schon von selbst kam
   quests: { done: [] }, // Starter-Aufgaben (siehe src/world/quests.js)
+  parkReturns: 0, // so oft ist man aus einer Welt zurück in den Tierpark gekommen (für die Tafeln in promos)
+  promos: [], // schon gezeigte Tafeln im Tierpark: 'gift' (geschenktes Event), 'worlds' (die anderen Welten)
   bookNew: [], // Neues im Tierbuch (roter Punkt am Knopf, leuchtet beim Öffnen auf): 'caught:fox', 'seen:fox', 'quest:net'
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
 };
@@ -46,4 +48,6 @@ export function resetGame() {
   game.tipsSeen = [];
   game.quests = { done: [] };
   game.bookNew = [];
+  game.parkReturns = 0;
+  game.promos = [];
 }

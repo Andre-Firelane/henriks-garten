@@ -138,7 +138,9 @@ import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
-import { countCatch, countEvent } from '../sessions.js';
+import { countCatch, countEvent, countPromo } from '../sessions.js';
+import { isShowcaseOpen, openShowcase } from '../ui/featureTour.js';
+import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { QUESTS, completeQuest, nextQuest, questDone } from '../world/quests.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
@@ -418,6 +420,26 @@ const SHEEP_QUEST = 3; // so viele Schafe verlangt die erste Starter-Aufgabe
 const TUT_SHEEP = 2; // im Mini-Tutorial grasen auf der Wiese immer so viele Schafe ...
 const TUT_SHEEP_R = 360; // ... so nah am Auto ...
 const TUT_SHEEP_CHECK = 2; // ... nachgeschaut wird alle paar Sekunden
+const PROMO_DELAY = 1200; // so lange nach der Ankunft im Tierpark, bis eine Tafel aufgeht (maybeShowPromo)
+// Tafel "andere Welten" (maybeShowPromo): Bild unter public/assets, Überschrift, Text
+const WORLD_PAGES = [
+  ['promo/world_savanna', tr('Savanne', 'Savanna'), tr(
+    'Zebras, Giraffen und Löwen – und bei Starkregen oder in der Trockenzeit kommen ganz andere Tiere heraus.',
+    'Zebras, giraffes and lions – and in heavy rain or the dry season completely different animals come out.',
+  )],
+  ['promo/world_asia', tr('Bambuswald', 'Bamboo Forest'), tr(
+    'Locke Pandas mit Grünfutter, entdecke Tiger, Pfauen und Orang-Utans zwischen Kirschbäumen.',
+    'Lure pandas with leafy greens, discover tigers, peacocks and orangutans among the cherry trees.',
+  )],
+  ['promo/world_jungle', tr('Dschungel', 'Jungle'), tr(
+    'Mit dem Kanu den Fluss hinauf: Aras, Jaguare, Gorillas und Ameisenbären warten auf dich.',
+    'Paddle up the river by canoe: macaws, jaguars, gorillas and anteaters are waiting for you.',
+  )],
+  ['promo/world_reef', tr('Riff', 'Reef'), tr(
+    'Tauch mit dem U-Boot zu Schildkröten, Rochen, Kraken und bunten Riff-Fischen.',
+    'Dive in the submarine to turtles, rays, octopuses and colorful reef fish.',
+  )],
+];
 const TUT_EVENT_HEARTS = 30; // so viele Herzen schenkt das Mini-Tutorial für das erste Event (der Eisstand kostet so viel)
 const TUT_TIP_TIME = 25000; // so lange steht der Tutorial-Hinweis unten, wenn man den Schritt nicht macht (Millisekunden)
 let lastBookTab = 'animals'; // zuletzt offener Reiter im Tierbuch
@@ -1070,6 +1092,10 @@ export default class GardenScene extends Phaser.Scene {
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
     if (data.intro) this.time.delayedCall(400, () => this.showIntro()); // neues Spiel: Willkommens-Tafel
+    if (data.fromWorld) {
+      game.parkReturns++;
+      this.time.delayedCall(PROMO_DELAY, () => this.maybeShowPromo());
+    }
     this.startAmbient();
     this.startSteam();
     this.drawBridges();
@@ -2140,31 +2166,36 @@ export default class GardenScene extends Phaser.Scene {
         if (tab === 'pens') return this.upgradePen(id);
         // Event mit Tieren, deren Bilder noch im Hintergrund laden: erst darauf warten, dann die Tafel noch einmal
         if (!allAssetsLoaded() && !FIRST_EVENTS.includes(id)) return this.afterAllLoaded(() => this.openEventsPanel());
-        startEvent(id);
-        countEvent(id);
-        this.updateHud();
-        if (id === 'icecream') this.questDone('icecream');
-        if (id === 'icecream' && game.tutorial === 'computer') this.visitors?.sendToIce(); // gleich kauft jemand ein Eis
-        if (game.tutorial === 'computer') this.finishTutorial();
-        if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
-        if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
-        if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
-        if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
-        if (id === 'fireflies') this.showToast(tr('✨ Glühwürmchen-Abend! Im Bambuswald wird es Abend – in der Hütte liegt ein Glas für die Glühwürmchen.', '✨ Firefly Evening! It is getting dark in the bamboo forest – there is a jar for the fireflies in the hut.'));
-        if (id === 'migration') this.showToast(tr('🦬 Große Wanderung! Unten links in der Savanne zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing through the lower left of the savanna – keep your lasso ready.'));
-        if (id === 'wolves') this.showToast(tr('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.', '🐺 Wolf Night! It is dark in the forest – follow the glowing tracks to the wolves with your lantern.'));
-        if (id === 'jellyfish') this.showToast(tr('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.', '🪼 Jellyfish Swarm! Jellyfish are drifting through the reef – the jellyfish jar is in the bag at the anchor.'));
-        if (id === 'ride') this.showToast(tr('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.', '🐴 Your mount is waiting in the worlds! There you ride for 10 minutes.'));
-        if (id === 'babies') {
-          this.spawnBabies(true);
-          this.visitors?.updateScore();
-          this.showToast(`<span class="heart">♥</span> ${tr('Tierbabys! Die Besucher strömen herbei.', 'Animal babies! Visitors are flocking in.')}`);
-        }
-        this.updateEventBanner();
+        this.beginEvent(id);
       },
       () => this.scene.resume(),
       focus ? { tab: 'pens', only: focus } : {},
     );
+  }
+
+  // Event starten (am Computer oder geschenkt, free: kostet keine Herzen) und Bescheid sagen
+  beginEvent(id, free = false) {
+    startEvent(id, Date.now(), free);
+    countEvent(id);
+    this.updateHud();
+    if (id === 'icecream') this.questDone('icecream');
+    if (id === 'icecream' && game.tutorial === 'computer') this.visitors?.sendToIce(); // gleich kauft jemand ein Eis
+    if (game.tutorial === 'computer') this.finishTutorial();
+    if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
+    if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
+    if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
+    if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
+    if (id === 'fireflies') this.showToast(tr('✨ Glühwürmchen-Abend! Im Bambuswald wird es Abend – in der Hütte liegt ein Glas für die Glühwürmchen.', '✨ Firefly Evening! It is getting dark in the bamboo forest – there is a jar for the fireflies in the hut.'));
+    if (id === 'migration') this.showToast(tr('🦬 Große Wanderung! Unten links in der Savanne zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing through the lower left of the savanna – keep your lasso ready.'));
+    if (id === 'wolves') this.showToast(tr('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.', '🐺 Wolf Night! It is dark in the forest – follow the glowing tracks to the wolves with your lantern.'));
+    if (id === 'jellyfish') this.showToast(tr('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.', '🪼 Jellyfish Swarm! Jellyfish are drifting through the reef – the jellyfish jar is in the bag at the anchor.'));
+    if (id === 'ride') this.showToast(tr('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.', '🐴 Your mount is waiting in the worlds! There you ride for 10 minutes.'));
+    if (id === 'babies') {
+      this.spawnBabies(true);
+      this.visitors?.updateScore();
+      this.showToast(`<span class="heart">♥</span> ${tr('Tierbabys! Die Besucher strömen herbei.', 'Animal babies! Visitors are flocking in.')}`);
+    }
+    this.updateEventBanner();
   }
 
   // Reittier: in den Welten aufsitzen (in Gebäuden steigt Henrik ab), im Tierpark zu Fuß
@@ -4403,7 +4434,9 @@ export default class GardenScene extends Phaser.Scene {
       // andere Gebiete als Tierpark und Wiese brauchen die Bilder, die nach dem Start im Hintergrund laden (siehe BootScene)
       const wait = !FIRST_LEVELS.includes(exit.to) && !allAssetsLoaded();
       showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`), wait ? 0 : null);
-      const go = () => afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }));
+      // aus einer Welt zurück in den Tierpark (nicht aus einem anderen Abschnitt oder Haus): zählt für die Tafeln (maybeShowPromo)
+      const fromWorld = isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID];
+      const go = () => afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned, fromWorld }));
       if (wait) whenAllLoaded(setLoadingProgress).then(go);
       else go();
     });
@@ -4417,6 +4450,55 @@ export default class GardenScene extends Phaser.Scene {
       hideLoading();
       this.scene.resume();
       then();
+    });
+  }
+
+  // Tafeln beim Zurückkommen aus einer Welt (höchstens eine je Ankunft): bei der 2. Rückkehr ein geschenktes Event
+  // (Tierbabys oder Reittier), bei einer späteren die anderen Welten. Jede kommt nur einmal.
+  maybeShowPromo() {
+    if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen() || isShowcaseOpen() || isGiftOpen()) return;
+    if (!game.promos.includes('gift')) {
+      if (this.giftReady()) this.showGift();
+      return; // die Welten erst nach dem Geschenk
+    }
+    if (!game.promos.includes('worlds') && game.parkReturns >= 3) this.showWorlds();
+  }
+
+  // Geschenk erst nach dem Tutorial, im Hauptabschnitt (Schafgehege, Computer), und wenn beide Events gerade startbar sind
+  giftReady() {
+    if (game.parkReturns < 2 || game.tutorial !== false || LEVEL_ID !== 'park') return false;
+    if (eventState('babies').state !== 'ready' || eventState('ride').state !== 'ready') return false;
+    return babyPlan(this.animals.filter((a) => a.state === 'penned')).length > 0 || this.aquariumBabyPair();
+  }
+
+  showGift() {
+    game.promos.push('gift');
+    countPromo('gift');
+    this.scene.pause();
+    openGiftEvent(
+      (id) => {
+        this.scene.resume();
+        countPromo('gift' + id);
+        this.beginEvent(id, true);
+        this.time.delayedCall(4000, () => this.showToast(tr('Alle Events findest du am Computer im Haupthaus.', 'You can find all events at the computer in the main building.')));
+      },
+      () => this.scene.resume(),
+    );
+  }
+
+  showWorlds() {
+    game.promos.push('worlds');
+    countPromo('worlds');
+    this.scene.pause();
+    openShowcase(WORLD_PAGES, {
+      ingame: true,
+      lastLabel: tr('Zur Weltkarte', 'To the world map'),
+      onDone: (finished) => {
+        this.scene.resume();
+        if (!finished) return;
+        countPromo('worldsmap');
+        this.openCarMap();
+      },
     });
   }
 

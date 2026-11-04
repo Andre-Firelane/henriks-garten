@@ -619,6 +619,18 @@
       .tour-dots span { width: 12px; height: 12px; border-radius: 50%; background: #d4b07a; }
       .tour-dots span.on { background: #6b4224; }
       .tour-next { max-width: 360px; font-size: 26px; padding: 14px 10px; }
+      /* im Spiel (openShowcase mit ingame, Geschenk-Tafel): das Spiel bleibt abgedunkelt dahinter sichtbar */
+      #tour.ingame { background: rgba(20, 12, 6, 0.6); }
+      /* Geschenk-Tafel (src/ui/giftEvent.js): zwei Karten nebeneinander, am schmalen Handy untereinander */
+      .gift-box { width: min(900px, 96vw); }
+      .gift-cards { display: flex; gap: 12px; }
+      .gift-card { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .gift-card h3 { margin: 0; font-size: 22px; color: #6b4224; }
+      .gift-card p { margin: 0; font-size: 15px; flex: 1; }
+      .gift-pick { font-size: 20px; padding: 8px 10px; }
+      @media (max-width: 600px) {
+        .gift-cards { flex-direction: column; }
+      }
       /* Handy quer: Bild links, Text rechts */
       @media (max-height: 500px) {
         .tour-box { flex-direction: row; align-items: center; width: min(900px, 96vw); padding: 10px; }
@@ -626,6 +638,12 @@
         .tour-text h2 { font-size: 20px; }
         .tour-text p { font-size: 14px; }
         .tour-next { font-size: 20px; padding: 8px 10px; }
+        .gift-box { flex-direction: column; gap: 6px; }
+        .gift-box .tour-text p { display: none; }
+        .gift-card .tour-img { width: 100%; max-height: 34vh; }
+        .gift-card h3 { font-size: 17px; }
+        .gift-card p { font-size: 12px; }
+        .gift-pick { font-size: 16px; padding: 5px 10px; }
       }
       .lang-btn {
         padding: 5px 14px; border: 2px solid #a8743f; border-radius: 10px; background: #e8c48a; cursor: pointer;

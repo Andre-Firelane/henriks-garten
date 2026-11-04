@@ -1,4 +1,4 @@
-// Startbildschirm: letzten Stand weiterspielen, neues Spiel beginnen oder ein Test-Spiel (speichert nie,
+// Startbildschirm: letzten Stand weiterspielen, neues Spiel beginnen oder (nur mit ?test) ein Test-Spiel (speichert nie,
 // der echte Spielstand bleibt unberührt). Ein neues Spiel löscht den alten Stand erst nach einer Rückfrage.
 // Unten wählt man die Sprache (Deutsch oder Englisch); das lädt die Seite neu. Daneben klappt ein kleiner Link das Impressum auf.
 import { LEVELS } from '../world/levels.js';
@@ -8,6 +8,8 @@ import { lang, locale, setLang, tr } from '../i18n.js';
 import { startSession } from '../sessions.js';
 
 let panel = null;
+// Test-Spiel nur mit ?test in der Adresse (für Spieler wäre es eine verwirrende dritte Wahl)
+const TEST_BUTTON = new URLSearchParams(location.search).has('test');
 
 // Impressum: leere Angaben werden nicht angezeigt
 const IMPRINT = {
@@ -41,7 +43,7 @@ export function openStartScreen(onStart) {
         <button class="start-btn small danger" data-act="new-yes">${tr('Ja, neu anfangen', 'Yes, start over')}</button>
         <button class="start-btn small" data-act="new-no">${tr('Nein', 'No')}</button>
       </div>
-      <button class="start-btn test" data-act="test">${tr('Test-Spiel', 'Test game')}<small>${tr('wird nicht gespeichert', 'will not be saved')}</small></button>
+      ${TEST_BUTTON ? `<button class="start-btn test" data-act="test">${tr('Test-Spiel', 'Test game')}<small>${tr('wird nicht gespeichert', 'will not be saved')}</small></button>` : ''}
       <div class="start-lang">
         <button class="lang-btn${lang === 'de' ? ' on' : ''}" data-lang="de">Deutsch</button>
         <button class="lang-btn${lang === 'en' ? ' on' : ''}" data-lang="en">English</button>
