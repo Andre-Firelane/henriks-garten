@@ -13,10 +13,15 @@ import { isActive } from '../world/events.js';
 // weiterspielt, lädt gleich alles.
 export const FIRST_LEVELS = ['park', 'meadow'];
 const FIRST_SPECIES = ['sheep', 'cat', 'frog', 'mole', 'heron', 'fish', 'butterfly', 'koi'];
-// Events, die ohne den Rest auskommen (alle anderen bringen Tiere oder Bilder aus dem Rest mit)
-export const FIRST_EVENTS = ['icecream', 'babies', 'ride'];
-// Bilder der Tiere in Tierpark und Wiese, Spielfigur in Wiesen-Kleidung, Besucher, Auto, Reittier der Wiese
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly|ride_meadow)(_.+)?|fishbag|koi\d|visitor\d|icecream_seller|car_zoo)$/;
+// Events, die ohne den Rest auskommen (alle anderen bringen Tiere oder Bilder aus dem Rest mit, z. B. das Reittier)
+export const FIRST_EVENTS = ['icecream', 'babies'];
+// Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs und Eichhörnchen nur das Grundbild, das der Tierpark zeigt),
+// Spielfigur in Wiesen-Kleidung, Besucher, Auto
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|icecream_seller|car_zoo)$/;
+// Pixel-Art, die nur in anderen Gebieten vorkommt (Savanne, Bambuswald, Dschungel, Eiswelt, Riff, Aquarium, Reptilienhaus
+// und die anderen Abschnitte des Tierparks): kommt mit dem Rest. Grasbüschel, Busch, Akazie, hohes Gras, Kirschbaum und
+// Steinlaterne stehen auch im Tierpark und bleiben im ersten Schritt
+const REST_ART = /savanna|asia|jungle|reef|aquarium|reptile|terrarium|tank|snow|_ice|^ice_|^[asj]grass|^sdry|^(thicket|aq_)|^(acacia_bare|mud|den_sand|boulder|hotspring|bamboo|hammock|peacock_perch|sun_rock|torii|cliff|mangrove|heliconia|hibiscus|spider_web|anchor_sack|seaweed|coral|shell)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 const REST_DELAY = 2000; // so lange nach dem Spielstart, bis der Rest im Hintergrund lädt (erst einmal das Bild aufbauen)
 
@@ -37,7 +42,7 @@ export function whenAllLoaded(onProgress = () => {}) {
   return new Promise((resolve) => waiting.push({ resolve, onProgress }));
 }
 
-const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : PIXEL_ART.includes(key) || ITEMS.includes(key) || FIRST_SHEETS.test(key));
+const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : (PIXEL_ART.includes(key) && !REST_ART.test(key)) || ITEMS.includes(key) || FIRST_SHEETS.test(key));
 
 // reicht der erste Schritt für diesen Start? (neues Spiel, oder ein Spielstand nur mit Tieren aus Tierpark und Wiese)
 function firstIsEnough(data) {

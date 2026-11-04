@@ -4494,7 +4494,9 @@ export default class GardenScene extends Phaser.Scene {
       (id) => {
         this.scene.resume();
         countPromo('gift' + id);
-        this.beginEvent(id, true);
+        // das Reittier braucht Bilder, die nach dem Start im Hintergrund laden (siehe BootScene)
+        if (!allAssetsLoaded() && !FIRST_EVENTS.includes(id)) this.afterAllLoaded(() => this.beginEvent(id, true));
+        else this.beginEvent(id, true);
         this.time.delayedCall(4000, () => this.showToast(tr('Alle Events findest du am Computer im Haupthaus.', 'You can find all events at the computer in the main building.')));
       },
       () => this.scene.resume(),
