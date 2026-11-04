@@ -159,10 +159,9 @@ export const OBJECTS = {
   // große Blumen (später fliegen Kolibris zu ihnen): Helikonie und Hibiskus
   Ḣ: { key: 'heliconia', originY: 88 / 96, solid: true, hitbox: 6, bigFlower: true },
   ḟ: { key: 'hibiscus', originY: 64 / 72, solid: true, hitbox: 8, bigFlower: true },
-  // Eiswelt: Eisfelsen, Eisblock und Schneewehe (begehbar)
+  // Eiswelt: Eisfelsen und Eisblock
   ê: { key: 'ice_rock', originY: 18 / 24, solid: true, hitbox: 12 },
   Ê: { key: 'ice_block', originY: 46 / 56, solid: true, hitbox: 18 },
-  ẽ: { key: 'snow_drift', originY: 18 / 24, solid: false },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },

@@ -798,12 +798,19 @@ const ANIMATIONS = [
   // Kleine Videos (128/192 Pixel) nie über Maßstab 1. Spielfigur steht:
   { src: 'Animation/Character Dschungel idle vorne.mp4', out: 'hero_jungle_idle.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character Dschungel idle hinten.mp4', out: 'hero_jungle_idle_back.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  // Pinguin (Eiswelt): laufen und stehen (Videos in verschiedenen Auflösungen, daher je eigener Maßstab: überall etwa
+  // 66 hoch wie das Standbild); von vorne schaut er im Video nach links: gespiegelt. Laufen: Fußlinie tiefer, damit er so
+  // tief steht wie beim Stehen; von hinten nur ein Doppelschritt, der nahtlos im Kreis läuft
+  { src: 'Animation/Pinguin läuft vorne.mp4', out: 'penguin_walk.png', mirror: 'all', buttonEyes: true, scale: 0.1875, frameW: 72, frameH: 80, feetY: 80 },
+  { src: 'Animation/Pinguin läuft hinten.mp4', out: 'penguin_walk_back.png', range: [5, 16], scale: 0.407, frameW: 72, frameH: 80, feetY: 79 },
+  { src: 'Animation/Pinguin idle vorne.mp4', out: 'penguin_idle.png', mirror: 'all', scale: 0.338, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Pinguin idle hinten.mp4', out: 'penguin_idle_back.png', scale: 0.418, frameW: 72, frameH: 80, feetY: 76 },
   // Spielfigur in der Eiswelt (Parka): laufen und stehen (Videos), Maßstab wie im Dschungel. Laufen: je ein Doppelschritt,
   // der nahtlos im Kreis läuft (vorne das ganze Video, hinten 22 Bilder); Stehen breiter (die Machete ragt heraus), ohne die Atemwolke.
   // Höher als die anderen Kleidungen (die Kapuze); Fußlinie im selben Verhältnis (140 / 145 = 112 / 116), siehe Player.js
   // Laufen: Fußlinie 5 Pixel tiefer, damit die Sohlen so tief stehen wie beim Stehen (dort reicht der Schatten bis 140)
   { src: 'Animation/Character Eis läuft vorne.mp4', out: 'hero_ice_walk.png', dropShadowGreen: 25, scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
-  { src: 'Animation/Character Eis läuft hinten.mp4', out: 'hero_ice_walk_back.png', range: [10, 31], scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
+  { src: 'Animation/Character Eis läuft hinten.mp4', out: 'hero_ice_walk_back.png', range: [10, 31], dropSteel: true, onlyFigure: true, scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
   { src: 'Animation/Character Eis idle vorne.mp4', out: 'hero_ice_idle.png', dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
   { src: 'Animation/Character Eis idle hinten.mp4', out: 'hero_ice_idle_back.png', dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
   // Ara und Blau-gelber Ara: sitzen (nur vorne) und fliegen (Flügelschlag, breiterer Rahmen)
@@ -956,7 +963,9 @@ const ANIMATIONS = [
 // keyPerFrame: Video wechselt zwischen Hintergrundtönen (Hintergrund je Bild erkennen, siehe readVideo);
 // dropShadowGreen: dunkelgrüne Reste (gemalter Schatten auf dem Greenscreen): Pixel mit so viel mehr Grün als Rot/Blau weg;
 // whiteBreath: Halbdurchsichtiges vor dem Greenscreen (Atemwölkchen) ist grün geworden: grünstichige Pixel weiß und zart;
-// onlyFigure: Grünstichiges weg und je Bild nur das größte zusammenhängende Stück behalten (z. B. ohne die Atemwolke)
+// onlyFigure: Grünstichiges weg und je Bild nur das größte zusammenhängende Stück behalten (z. B. ohne die Atemwolke);
+// dropSteel: neutral graue, helle Pixel weg (eine Messerklinge; Kleidung und Fell sind wärmer getönt), den Umriss danach
+// entfernt onlyFigure
 // in einem Bild (Zelle ox, oy, w x h) nur das größte zusammenhängende sichtbare Stück behalten, alles andere durchsichtig.
 // Zusammenhang wird an der um THIN Pixel geschrumpften Figur geprüft: dünne Linien (z. B. der Umriss einer Atemwolke),
 // die nur über einen schmalen Steg an der Figur hängen, zählen nicht dazu; danach wieder so weit aufgefüllt
@@ -1018,7 +1027,7 @@ function keepLargestPart(data, W, ox, oy, w, h) {
   for (let p = 0; p < w * h; p++) if (!keep[p]) data[((oy + Math.floor(p / w)) * W + ox + (p % w)) * 4 + 3] = 0;
 }
 
-function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false }) {
+function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
   const img = video ? readVideo(src, keyPerFrame) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
@@ -1067,6 +1076,12 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
       // degreen: 'all' (kein Wasser im Bild, z. B. Schuhschnabel): jedes Grün wird grau
       if (degreen === 'all' || Math.max(r, g, b) - Math.min(r, g, b) <= 40) data[k] = data[k + 1] = data[k + 2] = Math.round((r + g + b) / 3);
       else if (b < g * 0.7) data[k + 3] = 0;
+    }
+  }
+  if (dropSteel) {
+    for (let k = 0; k < data.length; k += 4) {
+      const [r, g, b] = [data[k], data[k + 1], data[k + 2]];
+      if (data[k + 3] && Math.max(r, g, b) - Math.min(r, g, b) <= 14 && 0.3 * r + 0.59 * g + 0.11 * b >= 95 && b >= r - 4) data[k + 3] = 0;
     }
   }
   if (onlyFigure) {
@@ -1436,8 +1451,85 @@ function prepareGrid(entry) {
       }
     }
   }
+  // buttonEyes: große Augen (heller Ring um die Pupille) durch kleine schwarze Knopfaugen ersetzen (Pinguin läuft)
+  if (entry.buttonEyes) for (let n = 0; n < total; n++) buttonEyes(sheet, ...at(n), frameW, frameH);
   writeSheet(out, sheet);
   console.log(`${out}: ${total} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
+}
+
+// Knopfaugen statt großer Augen in einem Bild (ox, oy, w x h): helle Flecken in der oberen Hälfte, die rundum von
+// dunklem Gefieder umgeben sind (der Augenring; der weiße Bauch ist viel größer und grenzt an Schnabel und Rand), werden
+// samt Pupille in der Kopffarbe übermalt; in ihre Mitte kommt ein schwarzer Punkt mit weißem Glanzpunkt (kleine Ringe,
+// das Auge auf der abgewandten Seite: nur ein dunkler Punkt)
+function buttonEyes(sheet, ox, oy, w, h) {
+  const W = sheet.width;
+  const px = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? null : ((oy + y) * W + ox + x) * 4);
+  const rgb = (x, y) => {
+    const i = px(x, y);
+    return i === null ? [0, 0, 0, 0] : [...sheet.data.subarray(i, i + 4)];
+  };
+  const lum = ([r, g, b]) => 0.3 * r + 0.59 * g + 0.11 * b;
+  const light = (x, y) => {
+    const c = rgb(x, y);
+    return c[3] > 200 && lum(c) > 115 && Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]) < 45;
+  };
+  const dark = (x, y) => {
+    const c = rgb(x, y);
+    return c[3] > 200 && lum(c) < 115;
+  };
+  const seen = new Set();
+  const parts = [];
+  const set = (x, y, c) => {
+    const i = px(x, y);
+    if (i !== null) for (let k = 0; k < 3; k++) sheet.data[i + k] = c[k];
+  };
+  for (let y0 = 0; y0 < h / 2; y0++) {
+    for (let x0 = 0; x0 < w; x0++) {
+      if (seen.has(x0 + ',' + y0) || !light(x0, y0)) continue;
+      const part = [];
+      const todo = [[x0, y0]];
+      seen.add(x0 + ',' + y0);
+      let enclosed = true;
+      while (todo.length) {
+        const [x, y] = todo.pop();
+        part.push([x, y]);
+        for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+          const k = nx + ',' + ny;
+          if (seen.has(k)) continue;
+          if (light(nx, ny)) {
+            seen.add(k);
+            todo.push([nx, ny]);
+          } else if (!dark(nx, ny)) enclosed = false;
+        }
+      }
+      if (!enclosed || part.length > 30) continue;
+      const xs = part.map(([x]) => x);
+      const ys = part.map(([, y]) => y);
+      const box = [Math.min(...xs) - 1, Math.max(...xs) + 1, Math.min(...ys) - 1, Math.max(...ys) + 1];
+      // Kopffarbe: Mittel der dunklen Pixel rund um das Stück
+      const ring = [];
+      for (let y = box[2] - 2; y <= box[3] + 2; y++) for (let x = box[0] - 2; x <= box[1] + 2; x++) if ((x < box[0] || x > box[1] || y < box[2] || y > box[3]) && dark(x, y)) ring.push(rgb(x, y));
+      if (ring.length) parts.push({ box, head: [0, 1, 2].map((k) => Math.round(ring.reduce((sum, c) => sum + c[k], 0) / ring.length)) });
+    }
+  }
+  // nahe Stücke gehören zu einem Auge (der Ring zerfällt an der Pupille in mehrere)
+  const eyes = [];
+  for (const p of parts) {
+    const e = eyes.find((q) => p.box[0] <= q.box[1] + 3 && p.box[1] >= q.box[0] - 3 && p.box[2] <= q.box[3] + 3 && p.box[3] >= q.box[2] - 3);
+    if (e) e.box = [Math.min(e.box[0], p.box[0]), Math.max(e.box[1], p.box[1]), Math.min(e.box[2], p.box[2]), Math.max(e.box[3], p.box[3])];
+    else eyes.push({ ...p });
+  }
+  const black = [16, 16, 22];
+  for (const { box: [x1, x2, y1, y2], head } of eyes) {
+    for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) if (light(x, y) || dark(x, y)) set(x, y, head);
+    const cx = Math.round((x1 + x2) / 2);
+    const cy = Math.round((y1 + y2) / 2);
+    if (x2 - x1 >= 4) {
+      // Knopfauge: kleiner schwarzer Kreis (Plus-Form aus 2 x 2 und den Nachbarn) mit Glanzpunkt oben links
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [0, -1], [1, -1], [-1, 0], [-1, 1], [2, 0], [2, 1], [0, 2], [1, 2]]) set(cx + dx, cy + dy, black);
+      set(cx, cy, [235, 240, 245]);
+    } else set(cx, cy, black); // Auge auf der abgewandten Seite
+  }
 }
 
 // ONLY=hero_jungle.png,canoe.png: nur diese Bilder neu erzeugen

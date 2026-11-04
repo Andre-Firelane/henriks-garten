@@ -52,7 +52,7 @@ export const HD = [
   // große Glasterrarien, das der Spinnen auf einem Sockel, und der Eckpfosten der Wassertanks (tools/terrarium-glass.py)
   'hutwall_terrarium_raised_x', 'hutwall_terrarium_raised_y', 'post_hutwall_terrarium_raised', 'hutwall_terrarium_raised_back_x', 'hutwall_terrarium_raised_back_y', 'post_hutwall_terrarium_raised_back', 'post_hutwall_tank',
   // Eiswelt (Platzhalter)
-  'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block', 'snow_drift',
+  'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block',
   'hutwall_ice_x', 'hutwall_ice_y', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
   'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
 ];

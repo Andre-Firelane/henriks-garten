@@ -28,6 +28,9 @@ const SOUNDS = [
   ['Sounds/Ara.mp3', 'public/assets/sounds/animal_macaw.wav', 1.08, 0.85, 0.8], // erster Ruf des Aras (beim Losfliegen und Fangen)
   ['Sounds/Gorilla.mp3', 'public/assets/sounds/gorilla_beat.wav', 0.08, 0.35, 0.8], // ein Schlag auf die Brust (Trommel-Duell, siehe DrumTool.js)
   ['Sounds/Tukan.mp3', 'public/assets/sounds/animal_toucan.wav', 0.35, 1.0, 0.8], // die ersten beiden Rufe des Tukans (Starkregen; beim Losfliegen und Fangen)
+  // Eiswelt: ein kräftiger Ruf des Pinguins (beim Fangen und ab und zu aus der Gruppe) und ein Schritt im Schnee
+  ['Sounds/Pinguin.mp3', 'public/assets/sounds/animal_penguin.wav', 6.4, 1.0, 0.8],
+  ['Sounds/Eis Schritte.mp3', 'public/assets/sounds/step_snow.wav', 1.6, 0.32, 0.8],
   // Schritt drinnen (Haupthaus, Hütten, Aquarium): der erste Schritt aus der Aufnahme im Flur
   ['Sounds/Footsteps In Hallway Sound Effect.mp3', 'public/assets/sounds/step_indoor.wav', 0.66, 0.3, 0.8],
   // Tierrufe beim Fangen (der Name hinter "animal_" ist die Tierart)
@@ -186,6 +189,7 @@ const LOOPS = [
   { src: 'Sounds/Wasserfall ambient.mp3', dest: 'public/assets/sounds/ambient_waterfall.mp3', from: 0.2, to: 45.8, fade: 2 },
   // Paddeln im Kanu (Dschungel): läuft, solange Henrik im Kanu paddelt
   { src: 'Sounds/Kanu.mp3', dest: 'public/assets/sounds/canoe_paddle.mp3', from: 0.2, to: 15.0, fade: 1 },
+  { src: 'Sounds/Eis Ambient.mp3', dest: 'public/assets/sounds/ambient_ice.mp3', from: 0.1, to: 13.9, fade: 1.5 }, // Eiswelt: Wind
 ];
 for (const { src, dest, from, to, fade } of LOOPS) {
   if (ONLY && !dest.includes(ONLY)) continue;

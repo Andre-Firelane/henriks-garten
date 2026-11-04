@@ -65,6 +65,7 @@ import Heron from '../animals/Heron.js';
 import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
 import Anteater from '../animals/Anteater.js';
+import Penguin from '../animals/Penguin.js';
 import Meerkat from '../animals/Meerkat.js';
 import Lion from '../animals/Lion.js';
 import Giraffe from '../animals/Giraffe.js';
@@ -155,7 +156,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 // Jeder Pool wird für sich aufgefüllt, so nehmen sich die Tiere der beiden nicht gegenseitig die Plätze weg
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -218,6 +219,7 @@ const CATCH_TIPS = {
   snake: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
   piranha: tr('Nur bei Starkregen im Dschungel: im Fluss wirbeln Piranha-Schwärme als dunkle Schatten. Hol die Angel aus dem Regal, paddle mit dem Kanu hin und wirf aus. Zuckt die Pose und erscheint ein „!“, schnell noch einmal drücken!', 'Only during heavy rain in the jungle: piranha schools swirl as dark shadows in the river. Get the fishing rod from the shelf, paddle there in the canoe and cast. When the float jerks and a “!” appears, press again quickly!'),
   tarantula: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
+  penguin: tr('In der Eiswelt, immer nah am Wasser. Kommst du zu nah, hüpft er ins Wasser und ist weg – wirf das Lasso aus etwas Abstand!', 'In the ice world, always close to the water. If you get too close, it hops into the water and is gone – throw the lasso from a little distance!'),
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
   gibbon: tr('Nur bei Nebel im Dschungel. Wie der Brüllaffe sitzt er unsichtbar oben im Urwaldbaum – merk dir, wohin er springt, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in fog in the jungle. Like the howler monkey it sits unseen high up in a jungle tree – remember where it jumps, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
   howler: tr('Nur bei normalem Wetter. Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in normal weather. It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
@@ -257,6 +259,10 @@ const parkPenFor = (species, origin) => {
   const pens = parkPens().filter((e) => accepts(e, species));
   return pens.find((e) => e.world === origin) ?? pens[0] ?? null;
 };
+// Gibt es im Tierpark (samt Aquarium und Reptilienhaus) gar kein Gehege für diese Art? (z. B. Pinguine, solange es dort
+// keine Eiswelt gibt): dann wird sie beim Ankommen gleich im Naturreservat ausgewildert. Gehege, die erst beim ersten
+// Fang entstehen (Flamingo, Wolf, Geier ...), zählen mit, auch wenn sie noch nicht gebaut sind
+const noParkHome = (species) => !houseOf(species) && !PARK_LEVELS.some((level) => LEVELS[level].enclosures.some((e) => accepts(e, species)));
 
 // Für die Schilder an den Gehegetoren: Name und was man an der Fußspur erkennt (zum Lernen)
 const ANIMAL_INFO = {
@@ -298,6 +304,7 @@ const ANIMAL_INFO = {
   snake: tr(['Schlange', 'Sie riecht mit der Zunge: Beim Züngeln fängt sie Duftteilchen aus der Luft ein.'], ['Snake', 'It smells with its tongue: flicking it catches scent particles from the air.']),
   piranha: tr(['Piranha', 'Mit seinen messerscharfen Zähnen kann er sogar Nüsse knacken – meist frisst er aber Insekten, Fische und Früchte.'], ['Piranha', 'Its razor-sharp teeth can even crack nuts – but mostly it eats insects, fish and fruit.']),
   tarantula: tr(['Vogelspinne', 'Sie hat acht Beine und acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Tarantula', 'It has eight legs and eight eyes – but still doesn’t see very well.']),
+  penguin: tr(['Kaiserpinguin', 'An Land watschelt er gemütlich – im Wasser aber schwimmt er schneller als ein Mensch rennen kann und taucht über 500 Meter tief.'], ['Emperor penguin', 'On land it waddles along slowly – but in the water it swims faster than a person can run and dives more than 500 metres deep.']),
   anteater: tr(['Großer Ameisenbär', 'Seine Zunge ist bis zu 60 Zentimeter lang – damit schleckt er an einem Tag bis zu 30.000 Ameisen und Termiten.'], ['Giant anteater', 'Its tongue is up to 60 centimetres long – with it, it licks up to 30,000 ants and termites in a single day.']),
   gibbon: tr(['Gibbon', 'Mit seinen langen Armen schwingt er sich von Ast zu Ast – bis zu 15 Meter weit mit einem Schwung.'], ['Gibbon', 'With its long arms it swings from branch to branch – up to 15 metres in a single swing.']),
   howler: tr(['Brüllaffe', 'Sein Brüllen hört man kilometerweit – er ist eines der lautesten Tiere der Welt.'], ['Howler monkey', 'Its howl can be heard for miles – it is one of the loudest animals in the world.']),
@@ -363,6 +370,7 @@ const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS
 const LIFETIME = [90, 240]; // Sekunden, die ein wildes Tier bleibt (zufällig)
 const SPAWN_INTERVAL = [5, 12]; // so oft schaut der Spawner, ob Tiere fehlen
 const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
+const PENGUIN_AT_HOLES = 0.75; // Eiswelt bei Nacht: Anteil der Pinguin-Gruppen, die an einem Eisloch erscheinen
 const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines Baums erscheinen
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
@@ -374,12 +382,22 @@ const KOI_FEED_PAUSE = 1500; // Millisekunden bis zum nächsten Streuen
 const KOI_FOOD_FLOAT = 15000; // Millisekunden, die das Futter auf dem Wasser treibt
 const DESPAWN_DIST = 300;
 const ANIMAL_VOLUME = 0.45; // Lautstärke der Tierrufe beim Fangen
-// Tierpark-Atmosphäre: ab und zu ruft ein Tier aus dem Gehege, an dem man gerade steht (leiser als beim Fangen)
+// Atmosphäre: ab und zu ruft ein Tier in der Nähe – im Tierpark aus dem Gehege, an dem man gerade steht, in der Wildnis
+// ein wildes Tier (leiser als beim Fangen)
 const PEN_CALL_EVERY = [4, 8]; // Sekunden zwischen zwei Rufen
 const PEN_CALL_DIST = 190; // so nah muss man am Gehege sein (in Kachel-Proportionen, etwa 6 Kacheln)
 const PEN_CALL_VOLUME = 0.16; // ganz nah; weiter weg leiser
 // welcher Ruf zu welcher Tierart gehört (sonst animal_<Art>, falls es den gibt)
 const PEN_CALLS = { lion: 'lion_roar', deer: null, peacock: null }; // Pfauen rufen im Park nur selten über alles hinweg (siehe updatePeacockCall)
+// In der Wildnis rufen diese nicht von selbst: sie verstecken sich (Großkatzen, Krokodil, Warzenschwein), leben im Wasser,
+// ihr Laut gehört zum Fangen (Gorilla trommelt, Erdmännchen pfeifen, Hyänen kichern, Wölfe heulen), sie sind ruhig
+// (Panda, Orang-Utan) oder rufen schon selbst (Affen und Vögel beim Springen bzw. Losfliegen, Pfau, Nilpferd, Gnu, Pinguin)
+const WILD_SILENT = [
+  'lion', 'tiger', 'jaguar', 'crocodile', 'warthog',
+  'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish',
+  'gorilla', 'meerkat', 'hyena', 'wolf', 'panda', 'orangutan',
+  'howler', 'gibbon', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
+];
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
 const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', gorilla: 'gorilla_beat', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
@@ -479,7 +497,7 @@ const FLAMINGO_EVERY = [6, 12]; // Sekunden zwischen zwei Flamingos (Reiher: 50�
 const FLAMINGO_LAND = 0.6; // so oft landen sie (am Wasser)
 const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_savanna', asia: 'ride_asia', jungle: 'ride_jungle', reef: 'ride_reef' }; // Dschungel: Maultier, Riff: Seabob
 // Die Welten draußen (für das Tierbuch und das Regal: wo es welche Tiere gibt)
-const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef'];
+const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
 // Tiere, die nur während eines Events kommen: Event und Welten
 const EVENT_SPECIES = { flamingo: ['flamingo', FLAMINGO_WORLDS], jellyfish: ['jellyfish', ['reef']], wolf: ['wolves', ['forest']], gnu: ['migration', ['savanna']], redpanda: ['fireflies', ['asia']] };
 const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨' };
@@ -514,7 +532,7 @@ const TOOLS = {
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler', 'gibbon', 'anteater', 'jaguar'],
+    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler', 'gibbon', 'anteater', 'jaguar', 'penguin'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -1603,6 +1621,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Howler(this, x, y, species)
         : species === 'anteater'
           ? new Anteater(this, x, y)
+        : species === 'penguin'
+          ? new Penguin(this, x, y)
         : species === 'iguana'
           ? new Iguana(this, x, y)
         : species === 'jaguar'
@@ -1780,6 +1800,8 @@ export default class GardenScene extends Phaser.Scene {
       // Frösche meistens nah am Wasser, Giraffen meistens nah an Bäumen
       const tile =
         (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileFrom(NEAR_WATER, taken)) ||
+        (species === 'penguin' && LEVEL.iceHoles && Math.random() < PENGUIN_AT_HOLES && this.tileFrom(this.holeTiles(), taken)) || // nachts meist an den Eislöchern
+        (species === 'penguin' && this.tileFrom(NEAR_WATER, taken)) || // Pinguine immer am Wasser
         (species === 'giraffe' && Math.random() < GIRAFFE_NEAR_TREES && this.tileFrom(NEAR_TREES, taken)) ||
         (species === 'panda' && this.tileFrom(NEAR_BAMBOO, taken)) ||
         (species === 'butterfly' && this.tileFrom(flowerTiles(), taken)) || // Schmetterlinge bei den Blumen // Pandas immer beim Bambus
@@ -1960,6 +1982,11 @@ export default class GardenScene extends Phaser.Scene {
     return NEAR_WATER.filter(({ tx, ty }) => Math.hypot(tx - g.tx, ty - g.ty) < 5);
   }
 
+  // Eiswelt bei Nacht: freie Plätze rund um die Eislöcher (LEVEL.iceHoles, je 2 x 2 Kacheln ab der Ecke oben links)
+  holeTiles() {
+    return NEAR_WATER.filter(({ tx, ty }) => LEVEL.iceHoles.some(([hx, hy]) => Math.hypot(tx - hx - 0.5, ty - hy - 0.5) < 3));
+  }
+
   // Punkt außerhalb der Karte in Richtung angle (von der Kartenmitte aus gesehen)
   mapEdgePoint(angle) {
     const c = tileToWorld(MAP_W / 2, MAP_H / 2);
@@ -1981,16 +2008,17 @@ export default class GardenScene extends Phaser.Scene {
     return this.cache.audio.exists(key) ? key : CALL_FALLBACK[a.species] ?? key;
   }
 
-  // Tierpark: ab und zu ein Ruf aus dem nächsten Gehege mit Tieren, die einen Ruf haben
-  updatePenCalls(dt) {
-    if (!isPark(LEVEL_ID)) return;
+  // ab und zu ein Ruf eines Tiers in der Nähe, das einen Ruf hat: im Tierpark aus den Gehegen, in der Wildnis von den
+  // wilden Tieren (außer WILD_SILENT und solchen, die gerade nicht zu sehen sind)
+  updateNearCalls(dt) {
+    const park = isPark(LEVEL_ID);
     this.penCallTimer = (this.penCallTimer ?? Phaser.Math.FloatBetween(2, PEN_CALL_EVERY[0])) - dt;
     if (this.penCallTimer > 0) return;
     this.penCallTimer = Phaser.Math.FloatBetween(...PEN_CALL_EVERY);
     const p = this.player;
     const callers = this.animals
-      .filter((a) => a.state === 'penned')
-      .map((a) => ({ a, key: a.species in PEN_CALLS ? PEN_CALLS[a.species] : this.callOf(a) }))
+      .filter((a) => (park ? a.state === 'penned' : a.state === 'wild' && a.sprite.visible && !WILD_SILENT.includes(a.species)))
+      .map((a) => ({ a, key: park && a.species in PEN_CALLS ? PEN_CALLS[a.species] : this.callOf(a) }))
       .filter(({ key }) => key && this.cache.audio.exists(key))
       .map((c) => ({ ...c, d: Math.hypot(c.a.x - p.x, (c.a.y - p.y) * 2) }))
       .filter(({ d }) => d < PEN_CALL_DIST);
@@ -3423,6 +3451,7 @@ export default class GardenScene extends Phaser.Scene {
   moveFollowersIntoPens() {
     const moved = [];
     this.aquaNowFull = []; // Becken und Terrarien, die durch das Einliefern voll geworden sind (für die Erfolgsmeldung)
+    if (isPark(LEVEL_ID)) this.releaseHomeless();
     const fish = isPark(LEVEL_ID) ? [...Object.keys(HOUSES).map((h) => this.sendToHouse(h)), ...PARK_LEVELS.filter((l) => l !== LEVEL_ID).map((l) => this.sendToSection(l))].join('') : '';
     const fullBefore = new Set(ENCLOSURES.filter((e) => isFull(this.animals, e)));
     for (const a of [...this.followers]) {
@@ -4093,6 +4122,20 @@ export default class GardenScene extends Phaser.Scene {
     return [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
   }
 
+  // Tiere, für die es im Tierpark noch kein Gehege gibt (noParkHome), werden beim Ankommen gleich im Naturreservat
+  // ausgewildert (bringt ein paar Herzen, wie bei vollen Gehegen; siehe die Meldung in moveFollowersIntoPens)
+  releaseHomeless() {
+    this.released ??= [];
+    for (const a of this.followers.filter((f) => noParkHome(f.species))) {
+      const hearts = releaseHearts(a.species, a.skin ?? a.variant);
+      this.addHearts(hearts, a.species);
+      this.released.push({ species: a.species, hearts });
+      this.followers.splice(this.followers.indexOf(a), 1);
+      this.animals.splice(this.animals.indexOf(a), 1);
+      this.tweens.add({ targets: [a.sprite, a.shadow], alpha: 0, duration: 900, onComplete: () => a.destroy() });
+    }
+  }
+
   // Gehege voll: das älteste Tier wird im Naturreservat ausgewildert (bringt ein paar Herzen). Seltene Varianten bleiben; sonst zuerst das
   // Aussehen bzw. die Art, von der es am meisten gibt (Schaf, Kuh, Zebra, Giraffe ...), damit die Mischung ausgewogen bleibt
   releaseExtra(e) {
@@ -4339,6 +4382,7 @@ export default class GardenScene extends Phaser.Scene {
     } // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = !isPark(LEVEL_ID) && this.parkPenFull(animal.species, animal.origin);
+    const homeless = !isPark(LEVEL_ID) && noParkHome(animal.species); // noch kein Gehege: es kommt ins Naturreservat
     animal.catch();
     countCatch(animal.farm ?? animal.species);
     if (!caughtBefore(animal.species)) {
@@ -4366,6 +4410,12 @@ export default class GardenScene extends Phaser.Scene {
           `✨ A rare ${rare.name}! It attracts lots of visitors to your zoo.`,
         ),
       );
+    }
+    if (homeless) {
+      notes.push(tr(
+        `🌳 Für ${animalIcon(animal.species, 3)} gibt es im Tierpark noch kein Gehege – bring es trotzdem hin: Dort wird es im Naturreservat ausgewildert und bringt dir Herzen.`,
+        `🌳 There is no enclosure for ${animalIcon(animal.species, 3)} in your zoo yet – take it there anyway: it will be released into the nature reserve and earn you hearts.`,
+      ));
     }
     if (full) {
       const tag = this.add.text(animal.x, animal.y - 40, '🌳', { fontSize: '18px' }).setOrigin(0.5).setDepth(100000);
@@ -4832,7 +4882,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateJellies(dt);
     if (!this.leaving) for (const h of Object.keys(HOUSES)) if (h !== LEVEL_ID) this.houseIncome(h, dt);
     if (!this.leaving) this.parkIncome(dt); // die anderen Tierpark-Abschnitte
-    this.updatePenCalls(dt);
+    this.updateNearCalls(dt);
     this.updatePeacockCall(dt);
     for (const f of this.tankFish) f.update(dt); // Zierfische im Aquarium und Fischschwärme im Riff
     this.cullStatic();

@@ -186,17 +186,6 @@ export default class Iguana extends Animal {
     return true;
   }
 
-  // Platscher: Ring auf dem Wasser und ein paar Tropfen
-  splash() {
-    const scene = this.scene;
-    const ring = scene.add.ellipse(this.x, this.y + 2, 16, 6).setStrokeStyle(1.5, 0xffffff, 0.9).setDepth(this.y - 1);
-    scene.tweens.add({ targets: ring, scale: 2.4, alpha: 0, duration: 600, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
-    for (let i = 0; i < 6; i++) {
-      const d = scene.add.circle(this.x, this.y, Phaser.Math.FloatBetween(1, 2), 0xd8f2ff, 0.9).setDepth(this.y + 1);
-      scene.tweens.add({ targets: d, x: this.x + Phaser.Math.Between(-12, 12), y: this.y - Phaser.Math.Between(8, 16), alpha: 0, duration: 450, ease: 'Quad.easeOut', onComplete: () => d.destroy() });
-    }
-  }
-
   catch() {
     this.mode = null;
     this.spot = null;

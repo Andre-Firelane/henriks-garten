@@ -26,7 +26,7 @@
 // Riff:   ü  Astkoralle   Ü  Fächerkoralle   ö  Hirnkoralle   ä  Röhrenkoralle   (û Û ô â: dieselben in anderen Farben)   ß  Riesentang   §  Seestern
 //          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Werkzeug-Sack   /  Muschel   ?  Steine
 // Aquarium: Ł  Quallen-Lampe   Ś  Delfin-Statue   Ɓ  Bank
-// Eiswelt: ê  Eisfelsen   Ê  Eisblock   ẽ  Schneewehe (begehbar)   ɨ  zugefrorenes Meer (nachts, siehe freezeSea)
+// Eiswelt: ê  Eisfelsen   Ê  Eisblock   ɨ  zugefrorenes Meer (nachts, siehe freezeSea)
 
 import { tr } from '../i18n.js';
 
@@ -105,56 +105,61 @@ const ICE_ROWS = [
   'ê......ê....~~~~~~~~~~~~~~~~~~~~~~....Ê......ê',
   'Ê.......ê...~~~~~~~~~~~~~~~~~~~~~~...Ê.......Ê',
   'ê...........~~~~~...~~~~~~~~~~~~~~...........Ê',
-  'ê...ẽ.......~~~~~...~~~~~~~~~~~~~~...Ê..Ê....ê',
-  '.ẽ..ê........~~~~~~.ẽ..ẽ....~~~~~~...........ê',
-  'êê..Êê...ê...~~~~~~...ẽẽ...ẽ~~~~~~...........Ê',
+  'ê...........~~~~~...~~~~~~~~~~~~~~...Ê..Ê....ê',
+  '....ê........~~~~~~.........~~~~~~...........ê',
+  'êê..Êê...ê...~~~~~~.........~~~~~~...........Ê',
   'Ê.ê..........~~~~............~~~~~..........Êê',
   'Ê............~~~~...ê........~~~~~...........ê',
-  'ê..ẽ...ẽ.....~~~~#.....ẽẽ.ê.ê~~~~~.ẽ.........ê',
-  'Ê.....ẽê.....~~~~#.........êẽ~~~~~.ẽ..e......Ê',
-  '...Ê...Ê..e..~~~~#...........~~~~~êê.....êẽ.êê',
-  'ê~~Ê....ẽ.~~~~~~~#..........~~~~~~.........~~Ê',
+  'ê............~~~~#........ê.ê~~~~~...........ê',
+  'Ê......ê.....~~~~#.........ê.~~~~~....e......Ê',
+  '...Ê...Ê..e..~~~~#...........~~~~~êê.....ê..êê',
+  'ê~~Ê......~~~~~~~#..........~~~~~~.........~~Ê',
   '~~~~~~~~~~~~~~~~~#........ê.~~~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~~########....~~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~~~~.....#....~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~ẽ....#....~~~~~~~~~~~~~~~~~',
-  '~~~...ẽ...~~.ẽ..~~......#......~~...#...~~~~~~',
-  '~~~.......~~ẽ.ẽ.~~......#......~~...#......~~~',
+  '~~~~~~~~~~~~~~~~~~~.....#....~~~~~~~~~~~~~~~~~',
+  '~~~.......~~....~~......#......~~...#...~~~~~~',
+  '~~~.......~~....~~......#......~~...#......~~~',
   '~~~................MMMMM#...........#......~~~',
-  '~~~....ẽ...ẽ....ẽ..NɃ,,N#...........#......~~~',
-  '~~~........ẽ.......Nɓ,,G##################.~~~',
+  '~~~................NɃ,,N#...........#......~~~',
+  '~~~................Nɓ,,G##################.~~~',
   '~~~................MMMMM#..................~~~',
-  '~~~.ẽ................c..#.ê..ê.............~~~',
-  '~~~.ê.........ê.........#.ẽ...ẽÊ...ẽ.......~~~',
-  '~~~.ẽê........ê..Ê.ẽ..ê.#..................~~~',
-  '~~~..........ẽẽ.........#.................Ê~~~',
+  '~~~..................c..#.ê..ê.............~~~',
+  '~~~.ê.........ê.........#......Ê...........~~~',
+  '~~~..ê........ê..Ê....ê.#..................~~~',
+  '~~~.....................#.................Ê~~~',
   '~~~.....................#.................~~~~',
-  '~~~~~~...####################.~~......ẽ..Ê~~~~',
+  '~~~~~~...####################.~~.........Ê~~~~',
   '~~~~~~~~~~~~~~~~~...........#~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~.....ẽ.....#~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~...........#~~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~~~~.......ê.#~~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~~~~.........#~~~~~~~~~~~~~~~~~',
-  'ê...........~~~~~.ê.......ẽ.#~~~~~~~..Ê.......',
-  'ê.......ê...~~~~~..ẽê.......#~~~~............ê',
+  'ê...........~~~~~.ê.........#~~~~~~~..Ê.......',
+  'ê.......ê...~~~~~...ê.......#~~~~............ê',
   'êÊ...ê.....e~~~~~...........#~~~~...........êÊ',
-  'Ê.ê...ê.....~~~~~...........#~~~~.....êê...ẽ.ê',
-  '..........ê.~~~~~..ẽ.........~~~~............ê',
-  'ê......ê....Ê~~~~..ẽ.....Êêẽ.~~~~..e.........ê',
+  'Ê.ê...ê.....~~~~~...........#~~~~.....êê.....ê',
+  '..........ê.~~~~~............~~~~............ê',
+  'ê......ê....Ê~~~~........Êê..~~~~..e.........ê',
   'ê.Ê..........~~~~~~.........ê~~~~..........ê.Ê',
-  'ê............~~~~~~........ẽ.~~~~~....ê......Ê',
+  'ê............~~~~~~..........~~~~~....ê......Ê',
   'ê......ê....Ê~~~~...........ê~~~~~............',
   '.....ê...Ê.ê.~~~~...~~...~~..~~~~~........Ê..ê',
   '......Ê.ê...~~~~~~~~~~~~~~~~~~~~~~...........Ê',
-  '.ẽ..ê.......~~~~~~~~~~~~~~~~~~~~~~...........Ê',
+  '....ê.......~~~~~~~~~~~~~~~~~~~~~~...........Ê',
   'ÊêêÊ.ê...ê..Ê~~~~~~~~~~~~~~~~~~~~~êÊÊ.ÊÊêêÊêÊê',
 ];
 
 // Nacht in der Eiswelt: das Meer zwischen Festland und Inseln friert zu (man läuft hinüber); nur das offene Meer am
-// Kartenrand (open Kacheln breit) bleibt Wasser
-function freezeSea(rows, open) {
+// Kartenrand (open Kacheln breit) und ein paar kleine Eislöcher (holes: [tx, ty] oben links, je 2 x 2 Kacheln) bleiben
+// Wasser – an denen tummeln sich nachts die Pinguine
+function freezeSea(rows, open, holes) {
   const h = rows.length;
-  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && x >= open && y >= open && x < r.length - open && y < h - open ? 'ɨ' : c)).join(''));
+  const hole = (x, y) => holes.some(([hx, hy]) => x >= hx && x <= hx + 1 && y >= hy && y <= hy + 1);
+  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && x >= open && y >= open && x < r.length - open && y < h - open && !hole(x, y) ? 'ɨ' : c)).join(''));
 }
+// Eislöcher: in jedem Meeresarm eins, abseits der Fähr-Bahnen (dort geht man nachts hinüber); daneben bleiben immer
+// mindestens zwei Kacheln Eis zum Vorbeigehen
+const ICE_HOLES = [[13, 4], [5, 14], [30, 5], [40, 14], [30, 40], [39, 30], [13, 39], [4, 30]];
 
 export const LEVELS = {
   meadow: {
@@ -535,7 +540,6 @@ export const LEVELS = {
   // Am Tag treiben Eisschollen als Fähren über die Meeresarme zu den Inseln (siehe Floes.js), nachts friert das Meer
   // zwischen den Inseln zu und man läuft bequem hinüber – dafür ist es so kalt, dass Henrik nach ein paar Minuten keine
   // Tiere mehr fangen kann, bis er sich in der Forschungsstation aufgewärmt hat (cold). Es schneit immer leicht (siehe Weather.js).
-  // Tiere kommen später.
   ice: {
     name: tr('Eiswelt', 'Ice World'),
     wip: true, // noch nicht fertig: Hinweis beim Ankommen und auf der Weltkarte
@@ -558,10 +562,15 @@ export const LEVELS = {
       { tx: 11, ty: 35, tools: ['net', 'lasso'] },
     ],
     hero: 'hero_ice', // Kleidung in der Eiswelt (Parka mit Fellkapuze)
+    ambient: 'ambient_ice', // pfeifender Wind
+    ambientVolume: 0.4, // lauter aufgenommen: so etwa gleich laut wie der Dschungel
+    stepSound: 'step_snow', // Schritte knirschen im Schnee (drinnen wie überall auf dem Flur)
     background: '#1f4f73',
     toolSpots: [],
     exits: [], // hin und zurück nur mit dem Wasserflugzeug
     snow: true, // es rieselt immer leicht Schnee (siehe Weather.js)
+    // Pinguine watscheln in Gruppen am Wasser (siehe Penguin.js); nachts am offenen Meer am Kartenrand und an den Eislöchern
+    spawn: { population: 4, weights: { penguin: 1 } },
     // Eisschollen (siehe Floes.js), Lage in Kacheln. ferries: tragen Henrik zwischen Festland (from) und Insel (to) hin
     // und her und liegen an beiden Ufern wait Sekunden an (travel: Sekunden für die Fahrt, shift: Versatz im Takt);
     // drift: kleine Schollen zur Zierde, die langsam über das offene Meer am Rand treiben (period: Sekunden hin und zurück)
@@ -586,7 +595,8 @@ export const LEVELS = {
     seasons: {
       day: {},
       night: {
-        rows: freezeSea(ICE_ROWS, 3),
+        rows: freezeSea(ICE_ROWS, 3, ICE_HOLES),
+        iceHoles: ICE_HOLES, // dort erscheinen die Pinguine nachts meistens
         floes: null, // die Schollen sind ins Eis eingefroren
         seaIce: ['sea_ice0', 'sea_ice1', 'sea_ice2'], // helle, glatte Eisfläche (tools/sea-ice.py)
         night: true, // dunkel, Polarlicht am Himmel, warmes Licht an der Station (siehe Weather.js)

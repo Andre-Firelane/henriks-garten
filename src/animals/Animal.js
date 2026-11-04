@@ -542,6 +542,25 @@ export const SPECIES = {
     shadowW: 46,
     catchWith: ['drum'],
   },
+  // Pinguin (Eiswelt): watschelt in kleinen Gruppen am Wasser entlang; kommt man zu nah, springt er ins Wasser und ist
+  // weg (siehe Penguin.js). Aus etwas Abstand fängt man ihn mit dem Lasso
+  penguin: {
+    texture: 'penguin',
+    anims: { walkDown: 'penguin_walk', walkUp: 'penguin_walk_back', idleDown: 'penguin_idle', idleUp: 'penguin_idle_back' }, // Videos
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 14, // gemütliches Watscheln
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 11,
+    hop: 1,
+    footW: 7,
+    shadowW: 26,
+    catchWith: ['lasso'],
+    herd: true,
+    groupSize: [2, 4],
+  },
   // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am
   // Baum, auch durch Berühren (siehe Anteater.js). Läuft durch Dickicht hindurch (thicket)
   anteater: {
@@ -1279,6 +1298,17 @@ export default class Animal {
     if (moved && Math.abs(dx) > len * 0.3) this.faceX = Math.sign(dx);
     if (moved && Math.abs(dy) > len * 0.3) this.faceY = Math.sign(dy);
     return moved;
+  }
+
+  // Platscher: Ring auf dem Wasser und ein paar Tropfen (Leguan und Pinguin springen ins Wasser)
+  splash() {
+    const scene = this.scene;
+    const ring = scene.add.ellipse(this.x, this.y + 2, 16, 6).setStrokeStyle(1.5, 0xffffff, 0.9).setDepth(this.y - 1);
+    scene.tweens.add({ targets: ring, scale: 2.4, alpha: 0, duration: 600, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    for (let i = 0; i < 6; i++) {
+      const d = scene.add.circle(this.x, this.y, Phaser.Math.FloatBetween(1, 2), 0xd8f2ff, 0.9).setDepth(this.y + 1);
+      scene.tweens.add({ targets: d, x: this.x + Phaser.Math.Between(-12, 12), y: this.y - Phaser.Math.Between(8, 16), alpha: 0, duration: 450, ease: 'Quad.easeOut', onComplete: () => d.destroy() });
+    }
   }
 
   catch() {

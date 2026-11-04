@@ -279,7 +279,9 @@ export default class Player {
     if (this.swim || this.boat) return; // unter Wasser und im Kanu keine Schritte
     // drinnen (Haupthaus, Hütten, Aquarium) klingen die Schritte wie auf einem Flur, draußen wie auf Gras
     const { tx, ty } = worldToTile(this.x, this.y);
-    const key = !this.mount && buildingAt(tx, ty) && this.scene.cache.audio.exists('step_indoor') ? 'step_indoor' : 'step';
+    // (in Gebieten mit eigenem Schritt-Geräusch draußen dieses, z. B. Schnee in der Eiswelt)
+    const outdoor = LEVEL.stepSound && this.scene.cache.audio.exists(LEVEL.stepSound) ? LEVEL.stepSound : 'step';
+    const key = !this.mount && buildingAt(tx, ty) && this.scene.cache.audio.exists('step_indoor') ? 'step_indoor' : outdoor;
     if (!this.scene.cache.audio.exists(key)) return;
     this.scene.sound.play(key, {
       volume: STEP_VOLUME * (0.8 + Math.random() * 0.4),

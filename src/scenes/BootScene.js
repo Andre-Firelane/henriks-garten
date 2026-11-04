@@ -45,7 +45,11 @@ const GROUPS = {
     keys: /^(reeffish|seahorse|octopus|turtle|ray|jellyfish|minifish|boat_zoo|hero_swim|ride_reef)/,
     art: /reef|aquarium|tank|^aq_|^(anchor_sack|seaweed|coral|shell)$/,
   },
-  ice: { keys: /^hero_ice/, art: /snow|_ice|^ice_/ },
+  ice: {
+    species: ['penguin'],
+    keys: /^(hero_ice|penguin|step_snow)/,
+    art: /snow|_ice|^ice_/,
+  },
 };
 // in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
 const GROUP_ORDER = ['misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
@@ -166,7 +170,7 @@ const PIXEL_ART = [
   'hutwall_jungle_x', 'hutwall_jungle_y', 'post_hutwall_jungle', 'gate_door_jungle_x', 'gate_door_jungle_y', 'hutroof_jungle',
   'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'hut_bed_savanna', 'hut_bed_jungle', 'hut_bed_savanna_sleep', 'hut_bed_jungle_sleep', 'planks_jungle',
   // Eiswelt (Platzhalter aus tools/ice-placeholders.cjs): Schnee, Polarmeer, zugefrorenes Meer, Eisfelsen, Forschungsstation
-  'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block', 'snow_drift',
+  'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block',
   'hutwall_ice_x', 'hutwall_ice_y', 'post_hutwall_ice', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
   'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
 ];
@@ -299,6 +303,10 @@ const VIDEO_ANIMS = {
   hero_ice_walk_back: [88, 145, 22],
   hero_ice_idle: [104, 145, 80],
   hero_ice_idle_back: [104, 145, 84],
+  penguin_walk: [72, 80, 24], // Pinguin (Eiswelt)
+  penguin_walk_back: [72, 80, 12],
+  penguin_idle: [72, 80, 24],
+  penguin_idle_back: [72, 80, 26],
   // Bauernhof-Event: Kuh, Schwein, Ziege
   farm_cow_walk: [96, 88, 106],
   farm_cow_walk_back: [96, 88, 64],
@@ -466,6 +474,7 @@ const ANIMAL_SOUNDS = {
   gibbon: 'animal_gibbon.wav', // Rufe (beim Springen von Baum zu Baum und beim Fangen)
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
   toucan: 'animal_toucan.wav', // Tukan-Ruf (beim Losfliegen und beim Fangen)
+  penguin: 'animal_penguin.wav', // Ruf (beim Fangen und ab und zu aus der Gruppe)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -630,6 +639,7 @@ export default class BootScene extends Phaser.Scene {
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
     // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
     load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
+    load.spritesheet('penguin', 'assets/penguin.png', { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
     load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
     for (const k of ['iguana', 'iguana2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
     load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
@@ -742,6 +752,7 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
     load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     load.audio('step_indoor', 'assets/sounds/step_indoor.wav'); // ... drinnen (Haupthaus, Hütten, Aquarium)
+    load.audio('step_snow', 'assets/sounds/step_snow.wav'); // ... im Schnee (Eiswelt, stepSound in levels.js)
     load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
     load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu
     load.audio('car', 'assets/sounds/car.wav'); // Auto fährt los (Schnellreise)
@@ -809,7 +820,8 @@ export default class BootScene extends Phaser.Scene {
     for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY && this.textures.exists(key)) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
-    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31 };
+    // Eiswelt: Henrik macht schnellere Schritte, sonst gleitet er vor dem hellen Schnee sichtbar über den Boden
+    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30 };
     for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)
     for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {

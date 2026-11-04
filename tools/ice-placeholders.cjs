@@ -33,30 +33,6 @@ function recolor(p, color, detail) {
 }
 
 const copy = (p) => p;
-// Schneehügel: flacher, weißer Hügel, oben links hell, unten rechts bläulich, mit weichem Rand (Größe wie das Vorbild)
-function mound(src) {
-  const { width: w, height: h } = src;
-  const out = new PNG({ width: w, height: h });
-  const cx = w / 2;
-  const cy = h * 0.62;
-  const rx = w * 0.44;
-  const ry = h * 0.36;
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const dx = (x - cx) / rx;
-      const dy = (y - cy) / ry;
-      const d = dx * dx + dy * dy;
-      if (d >= 1 || y > cy + ry * 0.55) continue; // unten flach abgeschnitten (liegt auf dem Boden)
-      const light = Math.max(0, Math.min(1, 0.75 - dx * 0.25 - dy * 0.45));
-      const i = (y * w + x) * 4;
-      out.data[i] = 205 + 50 * light;
-      out.data[i + 1] = 220 + 35 * light;
-      out.data[i + 2] = 238 + 17 * light;
-      out.data[i + 3] = Math.round(255 * Math.min(1, (1 - d) * 4));
-    }
-  }
-  return out;
-}
 // Ziel: [Vorbild, Umfärbung]
 const IMAGES = {
   // Boden: Schnee (drei Varianten), festgetretener Schneeweg, Polarmeer (das zugefrorene Meer: tools/sea-ice.py)
@@ -66,10 +42,9 @@ const IMAGES = {
   snow_path: ['jungle_path', (p) => recolor(p, '#c9d5e1', 0.3)],
   ice_water0: ['water', (p) => recolor(p, '#2d6290', 0.35)],
   ice_water1: ['water', (p) => recolor(p, '#336d98', 0.45)],
-  // Eisfelsen, Eisblock, Schneewehe
+  // Eisfelsen, Eisblock
   ice_rock: ['rock', (p) => recolor(p, '#a9bccd', 0.6)],
   ice_block: ['boulder', (p) => recolor(p, '#c4e8f8', 0.5)],
-  snow_drift: ['tuft', mound], // weicher Schneehügel in der Größe des Grasbüschels
   // Forschungsstation: vorerst die Wände der Savannen-Hütte, umgefärbt zu Metall (Dach und Regal: tools/research-station.py);
   // Einrichtung wie dort, ohne Pflanze (das Stockbett: tools/beds.py)
   hutwall_ice_x: ['hutwall_savanna_x', (p) => recolor(p, '#a3b1be', 0.55)],
