@@ -138,7 +138,7 @@ import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
-import { countCatch, countEvent, countPromo } from '../sessions.js';
+import { countCatch, countEvent, countPromo, sessionLoaded } from '../sessions.js';
 import { isShowcaseOpen, openShowcase } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { QUESTS, completeQuest, nextQuest, questDone } from '../world/quests.js';
@@ -1091,6 +1091,7 @@ export default class GardenScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.scale.off('resize', this.fitZoom, this));
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
+    sessionLoaded(); // für die Statistik: Ladezeit (nur beim ersten Gebiet der Runde)
     if (data.intro) this.time.delayedCall(400, () => this.showIntro()); // neues Spiel: Willkommens-Tafel
     if (data.fromWorld) {
       game.parkReturns++;

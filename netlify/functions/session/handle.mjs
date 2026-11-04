@@ -3,8 +3,11 @@
 // Die Tierbilder kommen aus den Spritesheets des Spiels (src/ui/icons.js, Bilder unter /assets).
 //
 // POST { type: 'start', id, kind, lang, device }  neue Runde
-// POST { type: 'update', id, seconds, catches, events, promos }  Spieldauer bisher (kommt mehrmals, die letzte zählt) und
-//                                                  gefangene Tiere, gestartete Events bzw. Tafeln im Tierpark der Runde: { Art: Anzahl }
+// POST { type: 'update', id, seconds, load, loaded, step, catches, events, promos }  Spieldauer bisher (ab dem Ende des
+//                                                  Ladens; kommt mehrmals, die größte zählt), Ladezeit in Sekunden (loaded: fertig
+//                                                  geladen, sonst so lange wurde bis zum Aufgeben geladen), Fortschritt (siehe
+//                                                  progress in src/sessions.js) und gefangene Tiere, gestartete Events bzw.
+//                                                  Tafeln im Tierpark der Runde: { Art: Anzahl }
 // GET  ?key=<SESSIONS_KEY>                         Tabelle; &format=csv für Excel
 import { animalIcon } from '../../../src/ui/icons.js';
 
@@ -36,6 +39,11 @@ const PROMOS = {
   worlds: 'Welten gezeigt',
   worldsmap: 'Welten durchgeblättert',
 };
+// Fortschritt (step, siehe progress in src/sessions.js): Tutorial-Schritte, danach Tutorial fertig plus weitere Aufgaben
+const STEPS = ['beim Laden', 'Auto', 'Regal', 'Schafe', 'Schafgehege', 'Herzen', 'Computer', 'Tutorial fertig'];
+const stepName = (n) => (n == null ? '–' : n < STEPS.length ? STEPS[n] : `Tutorial + ${n - 7} Aufg.`);
+// Trichter für neue Spiele: so viele kamen mindestens bis hierher ('Herzen' gibt es nur in alten Spielständen)
+const FUNNEL = [[1, 'geladen'], [2, 'zur Wiese gefahren'], [3, 'Werkzeuge geholt'], [4, 'Schafe heimgebracht'], [6, 'am Computer'], [7, 'Tutorial fertig'], [8, 'weitere Aufgabe']];
 
 export async function handle(req, store, secret) {
   if (req.method === 'POST') return record(req, store);
@@ -75,6 +83,13 @@ async function record(req, store) {
     const seconds = Math.round(Number(msg.seconds));
     if (!s || !Number.isFinite(seconds)) return new Response(null, { status: 404 });
     s.seconds = Math.max(s.seconds, Math.min(seconds, MAX_SECONDS));
+    const load = Math.round(Number(msg.load));
+    if (Number.isFinite(load) && load >= 0 && !s.loaded) {
+      s.load = Math.max(s.load ?? 0, Math.min(load, MAX_SECONDS));
+      s.loaded = msg.loaded === true;
+    }
+    const step = Math.round(Number(msg.step));
+    if (Number.isFinite(step) && step >= 0) s.step = Math.max(s.step ?? 0, Math.min(step, 99));
     s.catches = merge(s.catches, msg.catches);
     s.events = merge(s.events, msg.events);
     s.promos = merge(s.promos, msg.promos);
@@ -127,13 +142,17 @@ async function show(req, store, secret) {
     catches: s.catches ?? {},
     events: s.events ?? {},
     promos: s.promos ?? {},
+    load: s.load ?? null, // ältere Runden haben keine Ladezeit
+    loaded: !!s.loaded,
+    step: s.step ?? null,
   }));
+  const loadText = (r) => (r.load == null ? '–' : r.loaded ? `${r.load} s` : `abgebrochen nach ${r.load} s`);
 
   if (url.searchParams.get('format') === 'csv') {
     const list = (map) => sorted(map).map(([k, n]) => `${k} ${n}`).join(', ');
     const lines = [
-      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Gefangen;Events;Tafeln',
-      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), list(r.catches), list(r.events), list(r.promos)].join(';')),
+      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Laden;Fortschritt;Gefangen;Events;Tafeln',
+      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r.step), list(r.catches), list(r.events), list(r.promos)].join(';')),
     ];
     return new Response('﻿' + lines.join('\r\n'), {
       headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="spielrunden.csv"' },
@@ -145,6 +164,15 @@ async function show(req, store, secret) {
   const caught = sum(real.map((r) => r.catches));
   const started = sum(real.map((r) => r.events));
   const shown = sum(real.map((r) => r.promos));
+  // Laden je Gerät (nur Runden, die schon die Ladezeit melden): Median der Ladezeit, wie viele beim Laden aufgegeben haben
+  const median = (xs) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : null);
+  const loading = Object.values(DEVICES).map((device) => {
+    const rs = real.filter((r) => r.device === device && r.load != null);
+    const done = rs.filter((r) => r.loaded).map((r) => r.load);
+    return rs.length ? `<span class="tag">${device}: Median ${median(done) ?? '–'} s · beim Laden aufgegeben <b>${rs.length - done.length} von ${rs.length}</b></span>` : '';
+  }).join('');
+  const fresh = real.filter((r) => r.kind === KINDS.new && r.step != null);
+  const funnel = FUNNEL.map(([n, label]) => `<span class="tag">${label} <b>${fresh.filter((r) => r.step >= n).length}</b></span>`).join('');
   // <base href="/">: die Tierbilder liegen unter /assets (wie im Spiel), die Seite selbst unter /api/session
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <base href="/">
@@ -168,6 +196,10 @@ async function show(req, store, secret) {
 <h1>Spielrunden · My Little Zoo</h1>
 <p><b>${real.length}</b> Runden (ohne Test-Spiele) · gesamt <b>${minutes(played)}</b> gespielt ·
 <a href="/api/session?key=${encodeURIComponent(secret)}&amp;format=csv">als CSV für Excel</a></p>
+<h2>Laden</h2>
+<div class="box">${loading || '<span class="none">noch keine Daten</span>'}</div>
+<h2>Fortschritt neuer Spiele (${fresh.length} Runden)</h2>
+<div class="box">${fresh.length ? funnel : '<span class="none">noch keine Daten</span>'}</div>
 <h2>Gefangene Tiere (${total(caught)})</h2>
 <div class="box">${tags(caught, catchTag)}</div>
 <h2>Gestartete Events (${total(started)})</h2>
@@ -175,8 +207,8 @@ async function show(req, store, secret) {
 <h2>Tafeln im Tierpark</h2>
 <div class="box">${tags(shown, promoTag)}</div>
 <h2>Runden</h2>
-<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Gefangen</th><th>Events</th><th>Tafeln</th></tr>
-${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td></tr>`).join('\n')}
+<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th></tr>
+${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r.step))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td></tr>`).join('\n')}
 </table></div></body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

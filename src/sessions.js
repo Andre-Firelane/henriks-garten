@@ -2,13 +2,19 @@
 // kurze Meldung an die Netlify Function (netlify/functions/session). Die Kennung der Runde ist zufällig und wird nirgends
 // gespeichert – so lässt sich niemand wiedererkennen. Gezählt wird nur die Zeit, in der das Spiel zu sehen ist.
 // Dazu kommt, welche Tiere in der Runde gefangen und welche Events gestartet wurden (nur die Anzahl je Art), und welche
-// Tafeln im Tierpark gezeigt bzw. was dort gewählt wurde (promos).
+// Tafeln im Tierpark gezeigt bzw. was dort gewählt wurde (promos). Außerdem, wie lange das Laden gedauert hat (bzw. nach
+// wie vielen Sekunden jemand beim Laden aufgegeben hat) und wie weit man im Tutorial und bei den Starter-Aufgaben kam.
+// Die Spieldauer zählt erst ab dem Ende des Ladens.
 import { lang } from './i18n.js';
+import { game } from './state.js';
 
 const API = '/api/session';
 const UPDATE_EVERY = 2 * 60 * 1000; // so oft geht die Spieldauer zwischendurch raus (falls der Browser die Seite einfach wegwirft)
 
-let session = null; // { id, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl }, promos: { Tafel: Anzahl } }
+let session = null; // { id, startedAt, loadedAt, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl }, promos: { Tafel: Anzahl } }
+
+// Mini-Tutorial in seiner Reihenfolge (siehe showTutorial in GardenScene; 'hearts' gibt es nur in älteren Spielständen)
+const TUTORIAL = ['car', 'tools', 'sheep', 'visit', 'hearts', 'computer'];
 
 function device() {
   const ua = navigator.userAgent;
@@ -36,8 +42,18 @@ function send(body, beacon = false) {
   } catch {}
 }
 
+// wie weit: 0 noch beim Laden, 1–6 Tutorial-Schritt, 7 Tutorial fertig, ab 8 je eine weitere Starter-Aufgabe (die ersten
+// beiden, Schafe und Eisstand, gehören zum Tutorial)
+function progress() {
+  if (!session.loadedAt) return 0;
+  if (game.tutorial) return Math.max(1, TUTORIAL.indexOf(game.tutorial) + 1);
+  return TUTORIAL.length + 1 + Math.max(0, game.quests.done.length - 2);
+}
+
 function update(beacon) {
-  if (session) send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), catches: session.catches, events: session.events, promos: session.promos }, beacon);
+  if (!session) return;
+  const load = Math.round(((session.loadedAt ?? Date.now()) - session.startedAt) / 1000);
+  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), catches: session.catches, events: session.events, promos: session.promos }, beacon);
 }
 
 function count(map, key) {
@@ -58,10 +74,18 @@ export function countPromo(id) {
   if (session) count(session.promos, id);
 }
 
-// neue Runde vom Startbildschirm aus; kind: 'continue', 'new' oder 'test'
+// neue Runde vom Startbildschirm aus; kind: 'continue', 'new' oder 'test'. Die Spieldauer läuft erst ab sessionLoaded
 export function startSession(kind) {
-  session = { id: randomId(), played: 0, visibleSince: document.visibilityState === 'visible' ? Date.now() : null, catches: {}, events: {}, promos: {} };
+  session = { id: randomId(), startedAt: Date.now(), loadedAt: null, played: 0, visibleSince: null, catches: {}, events: {}, promos: {} };
   send({ type: 'start', id: session.id, kind, lang, device: device() });
+}
+
+// das Spiel steht (erstes Gebiet aufgebaut): Ladezeit merken und gleich melden; danach läuft die Spieldauer
+export function sessionLoaded() {
+  if (!session || session.loadedAt) return;
+  session.loadedAt = Date.now();
+  if (document.visibilityState === 'visible') session.visibleSince = session.loadedAt;
+  update(false);
 }
 
 export function setupSessions() {
@@ -71,7 +95,7 @@ export function setupSessions() {
       session.played = played();
       session.visibleSince = null;
       update(true);
-    } else session.visibleSince ??= Date.now();
+    } else if (session.loadedAt) session.visibleSince ??= Date.now();
   });
   window.addEventListener('pagehide', () => update(true)); // Seite zu oder neu geladen (z. B. "Zum Startbildschirm")
   setInterval(() => {
