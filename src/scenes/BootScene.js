@@ -4,6 +4,49 @@ import { openFeatureTour, tourSeen } from '../ui/featureTour.js';
 import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
 import { tr } from '../i18n.js';
 import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
+import { game } from '../state.js';
+import { isActive } from '../world/events.js';
+
+// Laden in zwei Schritten, damit das Spiel vor allem am Handy schnell losgeht: erst nur, was Tierpark und Wiese brauchen
+// (FIRST_*), den Rest danach im Hintergrund (loadRest). Fährt man vorher in ein anderes Gebiet oder startet ein Event mit
+// anderen Tieren, wartet das Spiel mit der Ladeanzeige darauf (whenAllLoaded). Wer mit Tieren aus anderen Welten
+// weiterspielt, lädt gleich alles.
+export const FIRST_LEVELS = ['park', 'meadow'];
+const FIRST_SPECIES = ['sheep', 'cat', 'frog', 'mole', 'heron', 'fish', 'butterfly', 'koi'];
+// Events, die ohne den Rest auskommen (alle anderen bringen Tiere oder Bilder aus dem Rest mit)
+export const FIRST_EVENTS = ['icecream', 'babies', 'ride'];
+// Bilder der Tiere in Tierpark und Wiese, Spielfigur in Wiesen-Kleidung, Besucher, Auto, Reittier der Wiese
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly|ride_meadow)(_.+)?|fishbag|koi\d|visitor\d|icecream_seller|car_zoo)$/;
+const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
+const REST_DELAY = 2000; // so lange nach dem Spielstart, bis der Rest im Hintergrund lädt (erst einmal das Bild aufbauen)
+
+let restLoaded = false;
+let restProgress = 0;
+let startRest = null; // startet das Laden des Rests sofort (falls jemand darauf wartet, bevor es von selbst losgeht)
+const waiting = []; // { resolve, onProgress }
+
+export function allAssetsLoaded() {
+  return restLoaded;
+}
+
+// wartet, bis auch der Rest geladen ist; onProgress(0..1) solange
+export function whenAllLoaded(onProgress = () => {}) {
+  if (restLoaded) return Promise.resolve();
+  onProgress(restProgress);
+  startRest?.();
+  return new Promise((resolve) => waiting.push({ resolve, onProgress }));
+}
+
+const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : PIXEL_ART.includes(key) || ITEMS.includes(key) || FIRST_SHEETS.test(key));
+
+// reicht der erste Schritt für diesen Start? (neues Spiel, oder ein Spielstand nur mit Tieren aus Tierpark und Wiese)
+function firstIsEnough(data) {
+  const urlLevel = new URLSearchParams(location.search).get('level');
+  if (!FIRST_LEVELS.includes(data.level ?? urlLevel ?? 'park')) return false;
+  const animals = [...Object.values(game.levels).flatMap((l) => l.animals ?? []), ...game.followers];
+  if (animals.some((a) => !FIRST_SPECIES.includes(a.species) || a.farm)) return false;
+  return !Object.keys(game.events).some((id) => !FIRST_EVENTS.includes(id) && isActive(id));
+}
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -366,6 +409,7 @@ const ANIMAL_SOUNDS = {
 export default class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
+    this.prepared = new Set(); // Bilder, die setupAssets schon vorbereitet hat
   }
 
   // überarbeitete Bilder in hoher Auflösung (siehe world/hd.js); nicht bei einem Test-Bild und nicht ohne WebGL
@@ -377,287 +421,334 @@ export default class BootScene extends Phaser.Scene {
   create() {
     hideLoading();
     const menu = () => openStartScreen((data) => {
+      const firstOnly = firstIsEnough(data);
       showLoading(tr('Das Spiel wird geladen …', 'Loading the game …'), 0);
       this.load.on('progress', setLoadingProgress);
       this.load.once('complete', () => {
+        this.load.off('progress', setLoadingProgress);
         this.setupAssets();
         // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige
         showLoading(tr('Das Spiel startet …', 'Starting the game …'));
-        afterPaint(() => this.scene.start('Garden', data));
+        afterPaint(() => {
+          // die Boot-Szene läuft weiter (ohne Bild), damit sie den Rest im Hintergrund laden kann
+          this.scene.launch('Garden', data);
+          if (!firstOnly) restLoaded = true;
+          else {
+            const timer = this.time.delayedCall(REST_DELAY, () => this.loadRest());
+            startRest = () => {
+              timer.remove();
+              this.loadRest();
+            };
+          }
+        });
       });
-      this.queueAssets();
+      this.queueAssets(firstOnly ? 'first' : 'all');
       this.load.start();
     });
     if (tourSeen()) menu();
     else openFeatureTour(menu); // allererster Start: erst die kleine Vorschau
   }
 
-  queueAssets() {
-    for (const key of [...PIXEL_ART, ...ITEMS]) this.load.image(key, `assets/${TEST_ART[key] ?? (this.useHd(key) ? `${HD_DIR}/${key}` : key)}.png`);
-    this.load.spritesheet('hero', 'assets/hero.png', HERO_FRAME);
+  // Rest im Hintergrund laden (einmal)
+  loadRest() {
+    if (!startRest) return;
+    startRest = null;
+    const onProgress = (p) => {
+      restProgress = p;
+      for (const w of waiting) w.onProgress(p);
+    };
+    this.load.on('progress', onProgress);
+    this.load.once('complete', () => {
+      this.load.off('progress', onProgress);
+      this.setupAssets();
+      restLoaded = true;
+      for (const w of waiting.splice(0)) w.resolve();
+    });
+    this.queueAssets('rest');
+    this.load.start();
+  }
+
+  // part: 'first' (nur was Tierpark und Wiese brauchen), 'rest' (alles andere) oder 'all'
+  queueAssets(part) {
+    const want = (key, sound = false) => part === 'all' || (part === 'first') === isFirstAsset(key, sound);
+    const load = {
+      image: (key, ...args) => want(key) && this.load.image(key, ...args),
+      spritesheet: (key, ...args) => want(key) && this.load.spritesheet(key, ...args),
+      audio: (key, ...args) => want(key, true) && this.load.audio(key, ...args),
+    };
+    for (const key of [...PIXEL_ART, ...ITEMS]) load.image(key, `assets/${TEST_ART[key] ?? (this.useHd(key) ? `${HD_DIR}/${key}` : key)}.png`);
+    load.spritesheet('hero', 'assets/hero.png', HERO_FRAME);
     // Kleidung je Gebiet (siehe hero in levels.js)
-    this.load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
-    this.load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
-    this.load.spritesheet('hero_asia', 'assets/hero_asia.png', HERO_FRAME);
-    this.load.spritesheet('hero_jungle', 'assets/hero_jungle.png', HERO_FRAME);
-    this.load.spritesheet('hero_ice', 'assets/hero_ice.png', HERO_FRAME); // Eiswelt (Parka)
-    this.load.spritesheet('hero_swim', 'assets/hero_swim.png', HERO_FRAME); // Taucheranzug (Riff)
-    this.load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
-    this.load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
-    this.load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
-    this.load.spritesheet('hero_forest_walk', 'assets/hero_forest_walk.png', HERO_WALK_FRAME); // Wald-Kleidung läuft (Test)
-    this.load.spritesheet('hero_forest_walk_back', 'assets/hero_forest_walk_back.png', HERO_WALK_FRAME);
-    this.load.spritesheet('hero_forest_idle', 'assets/hero_forest_idle.png', HERO_WALK_FRAME);
-    this.load.spritesheet('hero_forest_idle_back', 'assets/hero_forest_idle_back.png', HERO_WALK_FRAME);
-    for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) this.load.spritesheet(`hero_savanna_${k}`, `assets/hero_savanna_${k}.png`, HERO_WALK_FRAME); // Safari-Kleidung
-    this.load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
-    this.load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
+    load.spritesheet('hero_forest', 'assets/hero_forest.png', HERO_FRAME);
+    load.spritesheet('hero_savanna', 'assets/hero_savanna.png', HERO_FRAME);
+    load.spritesheet('hero_asia', 'assets/hero_asia.png', HERO_FRAME);
+    load.spritesheet('hero_jungle', 'assets/hero_jungle.png', HERO_FRAME);
+    load.spritesheet('hero_ice', 'assets/hero_ice.png', HERO_FRAME); // Eiswelt (Parka)
+    load.spritesheet('hero_swim', 'assets/hero_swim.png', HERO_FRAME); // Taucheranzug (Riff)
+    load.spritesheet('hero_walk', 'assets/hero_walk.png', HERO_WALK_FRAME); // Laufanimation (Test, nur Wiesen-Kleidung)
+    load.spritesheet('hero_walk_back', 'assets/hero_walk_back.png', HERO_WALK_FRAME); // dasselbe von hinten
+    load.spritesheet('hero_idle', 'assets/hero_idle.png', HERO_WALK_FRAME); // steht, atmet und blinzelt
+    load.spritesheet('hero_forest_walk', 'assets/hero_forest_walk.png', HERO_WALK_FRAME); // Wald-Kleidung läuft (Test)
+    load.spritesheet('hero_forest_walk_back', 'assets/hero_forest_walk_back.png', HERO_WALK_FRAME);
+    load.spritesheet('hero_forest_idle', 'assets/hero_forest_idle.png', HERO_WALK_FRAME);
+    load.spritesheet('hero_forest_idle_back', 'assets/hero_forest_idle_back.png', HERO_WALK_FRAME);
+    for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) load.spritesheet(`hero_savanna_${k}`, `assets/hero_savanna_${k}.png`, HERO_WALK_FRAME); // Safari-Kleidung
+    load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
+    load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
     // Lauf- und Stehanimation (Test), von vorne und hinten
-    for (const key of ['sheep_walk', 'sheep_walk_back', 'sheep_idle', 'sheep_idle_back']) this.load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME);
+    for (const key of ['sheep_walk', 'sheep_walk_back', 'sheep_idle', 'sheep_idle_back']) load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME);
     // Bauernhof-Event: Schafe sehen aus wie Kuh, Schwein oder Ziege (Platzhalter, gleiches Format wie das Schaf)
     for (const k of ['cow', 'pig', 'goat']) {
       const frame = k === 'cow' ? { frameWidth: 96, frameHeight: 88 } : SHEEP_FRAME; // die Kuh ist breiter
-      this.load.spritesheet(`farm_${k}`, `assets/farm_${k}.png`, frame);
-      this.load.spritesheet(`farm_${k}_eat`, `assets/farm_${k}_eat.png`, frame);
+      load.spritesheet(`farm_${k}`, `assets/farm_${k}.png`, frame);
+      load.spritesheet(`farm_${k}_eat`, `assets/farm_${k}_eat.png`, frame);
     }
-    this.load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
+    load.spritesheet('cat', 'assets/cat.png', CAT_FRAME);
     // Lauf- und Stehanimation (Test), von vorne und hinten
-    for (const key of ['cat_walk', 'cat_walk_back', 'cat_idle', 'cat_idle_back']) this.load.spritesheet(key, `assets/${key}.png`, CAT_FRAME);
-    this.load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
-    for (const k of ['koi1', 'koi2', 'koi3']) this.load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
-    this.load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
-    for (let n = 1; n <= 8; n++) this.load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
-    for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) this.load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
+    for (const key of ['cat_walk', 'cat_walk_back', 'cat_idle', 'cat_idle_back']) load.spritesheet(key, `assets/${key}.png`, CAT_FRAME);
+    load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
+    for (const k of ['koi1', 'koi2', 'koi3']) load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
+    load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
+    for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
+    for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     // Esel, Pferd und Elefant laufen und stehen (Test)
     for (const w of ['meadow', 'forest']) {
-      for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) this.load.spritesheet(`ride_${w}_${k}`, `assets/ride_${w}_${k}.png`, { frameWidth: 160, frameHeight: 230 });
+      for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) load.spritesheet(`ride_${w}_${k}`, `assets/ride_${w}_${k}.png`, { frameWidth: 160, frameHeight: 230 });
     }
     // Elefant: die Steh-Bögen sind in zwei Reihen umgebrochen, darum mit Anzahl der Bilder (sonst leere Felder)
     for (const [k, count] of [['walk', 14], ['walk_back', 26], ['idle', 20], ['idle_back', 21]]) {
-      this.load.spritesheet(`ride_savanna_${k}`, `assets/ride_savanna_${k}.png`, { frameWidth: 160, frameHeight: 230, endFrame: count - 1 });
+      load.spritesheet(`ride_savanna_${k}`, `assets/ride_savanna_${k}.png`, { frameWidth: 160, frameHeight: 230, endFrame: count - 1 });
     }
-    this.load.spritesheet('car_zoo', 'assets/car_zoo.png', CAR_FRAME); // Zooauto (Schnellreise, in allen Gebieten)
+    load.spritesheet('car_zoo', 'assets/car_zoo.png', CAR_FRAME); // Zooauto (Schnellreise, in allen Gebieten)
     const bz = this.useHd('boat_zoo') ? hdFactor('boat_zoo') : 1; // Zoo-U-Boot (Schnellreise in der Unterwasserwelt), groß wie der Wasserfall
-    this.load.spritesheet('boat_zoo', `assets/${bz > 1 ? `${HD_DIR}/` : ''}boat_zoo.png`, { frameWidth: 240 * bz, frameHeight: 160 * bz });
-    this.load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
+    load.spritesheet('boat_zoo', `assets/${bz > 1 ? `${HD_DIR}/` : ''}boat_zoo.png`, { frameWidth: 240 * bz, frameHeight: 160 * bz });
+    load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
     // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
-    for (const k of ['canoe', 'canoe_hero']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
+    for (const k of ['canoe', 'canoe_hero']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
     const wf = this.useHd('waterfall') ? hdFactor('waterfall') : 1; // große Fassung: Bilder 4-mal (Handy 2-mal) so groß, danach verkleinert (shrinkTexture)
-    this.load.spritesheet('waterfall', `assets/${wf > 1 ? `${HD_DIR}/` : ''}waterfall.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf }); // Wasserfall im Dschungel (3 Bilder)
-    this.load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
+    load.spritesheet('waterfall', `assets/${wf > 1 ? `${HD_DIR}/` : ''}waterfall.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf }); // Wasserfall im Dschungel (3 Bilder)
+    load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     // Katze 2 (seltener Skin)
-    this.load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
-    for (const key of ['cat2_walk', 'cat2_walk_back', 'cat2_idle', 'cat2_idle_back']) this.load.spritesheet(key, `assets/${key}.png`, CAT_FRAME); // läuft und steht (Test)
-    this.load.spritesheet('cat2_eat', 'assets/cat2_eat.png', CAT_FRAME);
-    this.load.spritesheet('cat2_sleep', 'assets/cat2_sleep.png', { frameWidth: 88, frameHeight: 60 }); // Perserkatze liegt breiter
-    this.load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
-    this.load.spritesheet('deer_eat', 'assets/deer_eat.png', DEER_FRAME);
-    this.load.spritesheet('deer_walk', 'assets/deer_walk.png', DEER_FRAME); // Laufanimation von vorne (Test)
-    this.load.spritesheet('deer_walk_back', 'assets/deer_walk_back.png', DEER_FRAME); // dasselbe von hinten
-    this.load.spritesheet('deer_idle', 'assets/deer_idle.png', DEER_FRAME); // steht (Test)
-    this.load.spritesheet('deer_idle_back', 'assets/deer_idle_back.png', DEER_FRAME);
-    this.load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
-    this.load.spritesheet('stag_idle', 'assets/stag_idle.png', STAG_FRAME); // Hirsch steht (Test)
-    this.load.spritesheet('stag_idle_back', 'assets/stag_idle_back.png', STAG_FRAME);
-    this.load.spritesheet('stag_walk', 'assets/stag_walk.png', STAG_FRAME); // Hirsch läuft
-    this.load.spritesheet('stag_walk_back', 'assets/stag_walk_back.png', STAG_FRAME);
-    this.load.spritesheet('stag_eat', 'assets/stag_eat.png', STAG_FRAME);
-    this.load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
-    this.load.spritesheet('frog_hop', 'assets/frog_hop.png', { frameWidth: 56, frameHeight: 78 }); // Sprung (Test, siehe Frog.js)
-    this.load.spritesheet('frog_hop_back', 'assets/frog_hop_back.png', { frameWidth: 56, frameHeight: 78 }); // dasselbe von hinten
-    this.load.spritesheet('frog_idle', 'assets/frog_idle.png', { frameWidth: 56, frameHeight: 78 }); // sitzt (Test)
-    this.load.spritesheet('frog2_hop', 'assets/frog2_hop.png', { frameWidth: 56, frameHeight: 78 }); // blauer Frosch hüpft (Test)
-    this.load.spritesheet('frog2_hop_back', 'assets/frog2_hop_back.png', { frameWidth: 56, frameHeight: 78 });
-    this.load.spritesheet('frog_idle_back', 'assets/frog_idle_back.png', { frameWidth: 56, frameHeight: 78 });
-    this.load.spritesheet('frog2', 'assets/frog2.png', FROG_FRAME); // seltener blauer Frosch
-    this.load.spritesheet('mole', 'assets/mole.png', MOLE_FRAME);
-    this.load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
-    this.load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
-    this.load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
-    this.load.spritesheet('heron_flap', 'assets/heron_flap.png', { frameWidth: 96, frameHeight: 96 }); // Flügelschlag (Test)
-    this.load.spritesheet('heron_idle', 'assets/heron_idle.png', HERON_FRAME); // steht (Test)
-    this.load.spritesheet('heron_idle_back', 'assets/heron_idle_back.png', HERON_FRAME);
-    this.load.spritesheet('heron_flap_back', 'assets/heron_flap_back.png', { frameWidth: 96, frameHeight: 96 });
-    this.load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
+    load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);
+    for (const key of ['cat2_walk', 'cat2_walk_back', 'cat2_idle', 'cat2_idle_back']) load.spritesheet(key, `assets/${key}.png`, CAT_FRAME); // läuft und steht (Test)
+    load.spritesheet('cat2_eat', 'assets/cat2_eat.png', CAT_FRAME);
+    load.spritesheet('cat2_sleep', 'assets/cat2_sleep.png', { frameWidth: 88, frameHeight: 60 }); // Perserkatze liegt breiter
+    load.spritesheet('deer', 'assets/deer.png', DEER_FRAME);
+    load.spritesheet('deer_eat', 'assets/deer_eat.png', DEER_FRAME);
+    load.spritesheet('deer_walk', 'assets/deer_walk.png', DEER_FRAME); // Laufanimation von vorne (Test)
+    load.spritesheet('deer_walk_back', 'assets/deer_walk_back.png', DEER_FRAME); // dasselbe von hinten
+    load.spritesheet('deer_idle', 'assets/deer_idle.png', DEER_FRAME); // steht (Test)
+    load.spritesheet('deer_idle_back', 'assets/deer_idle_back.png', DEER_FRAME);
+    load.spritesheet('stag', 'assets/stag.png', STAG_FRAME);
+    load.spritesheet('stag_idle', 'assets/stag_idle.png', STAG_FRAME); // Hirsch steht (Test)
+    load.spritesheet('stag_idle_back', 'assets/stag_idle_back.png', STAG_FRAME);
+    load.spritesheet('stag_walk', 'assets/stag_walk.png', STAG_FRAME); // Hirsch läuft
+    load.spritesheet('stag_walk_back', 'assets/stag_walk_back.png', STAG_FRAME);
+    load.spritesheet('stag_eat', 'assets/stag_eat.png', STAG_FRAME);
+    load.spritesheet('frog', 'assets/frog.png', FROG_FRAME);
+    load.spritesheet('frog_hop', 'assets/frog_hop.png', { frameWidth: 56, frameHeight: 78 }); // Sprung (Test, siehe Frog.js)
+    load.spritesheet('frog_hop_back', 'assets/frog_hop_back.png', { frameWidth: 56, frameHeight: 78 }); // dasselbe von hinten
+    load.spritesheet('frog_idle', 'assets/frog_idle.png', { frameWidth: 56, frameHeight: 78 }); // sitzt (Test)
+    load.spritesheet('frog2_hop', 'assets/frog2_hop.png', { frameWidth: 56, frameHeight: 78 }); // blauer Frosch hüpft (Test)
+    load.spritesheet('frog2_hop_back', 'assets/frog2_hop_back.png', { frameWidth: 56, frameHeight: 78 });
+    load.spritesheet('frog_idle_back', 'assets/frog_idle_back.png', { frameWidth: 56, frameHeight: 78 });
+    load.spritesheet('frog2', 'assets/frog2.png', FROG_FRAME); // seltener blauer Frosch
+    load.spritesheet('mole', 'assets/mole.png', MOLE_FRAME);
+    load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
+    load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
+    load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
+    load.spritesheet('heron_flap', 'assets/heron_flap.png', { frameWidth: 96, frameHeight: 96 }); // Flügelschlag (Test)
+    load.spritesheet('heron_idle', 'assets/heron_idle.png', HERON_FRAME); // steht (Test)
+    load.spritesheet('heron_idle_back', 'assets/heron_idle_back.png', HERON_FRAME);
+    load.spritesheet('heron_flap_back', 'assets/heron_flap_back.png', { frameWidth: 96, frameHeight: 96 });
+    load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
     // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
-    this.load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
-    this.load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
-    for (const k of ['iguana', 'iguana2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
-    this.load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
-    this.load.spritesheet('gorilla', 'assets/gorilla.png', { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung)
-    for (const k of ['jaguar', 'panther']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 96 }); // Jaguar und Panther (seltene Variante)
-    for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
+    load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
+    load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
+    for (const k of ['iguana', 'iguana2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
+    load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
+    load.spritesheet('gorilla', 'assets/gorilla.png', { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung)
+    for (const k of ['jaguar', 'panther']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 96 }); // Jaguar und Panther (seltene Variante)
+    for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
     // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
     // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend und fliegend
-    for (const k of ['macaw', 'macaw2', 'toucan']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
-    for (const k of ['macaw_fly', 'macaw2_fly', 'toucan_fly']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
-    for (const k of ['snake', 'snake2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
-    for (const k of ['tarantula', 'tarantula2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
-    this.load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
-    for (const k of ['redpanda', 'redpanda_sit']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
-    this.load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
-    this.load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
-    this.load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
-    this.load.spritesheet('minifish_swim', 'assets/minifish_swim.png', { frameWidth: 20, frameHeight: 16 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
-    this.load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
-    this.load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
+    for (const k of ['macaw', 'macaw2', 'toucan']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
+    for (const k of ['macaw_fly', 'macaw2_fly', 'toucan_fly']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
+    for (const k of ['snake', 'snake2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
+    for (const k of ['tarantula', 'tarantula2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 64 });
+    load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
+    load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
+    for (const k of ['redpanda', 'redpanda_sit']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
+    load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
+    load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
+    load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
+    load.spritesheet('minifish_swim', 'assets/minifish_swim.png', { frameWidth: 20, frameHeight: 16 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
+    load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
+    load.spritesheet('reeffish', 'assets/reeffish.png', { frameWidth: 96, frameHeight: 64 }); // Riff-Fische (22 Arten, siehe tools/reef-fish.cjs)
     // Piranha (Dschungel, Regenzeit): schwimmt wie die Riff-Fische; gefangen in der Transportbox
-    this.load.spritesheet('piranha', 'assets/piranha.png', { frameWidth: 96, frameHeight: 64 });
-    this.load.spritesheet('piranha_swim', 'assets/piranha_swim.png', { frameWidth: 96, frameHeight: 64 });
-    this.load.spritesheet('piranha_box', 'assets/piranha_box.png', { frameWidth: 64, frameHeight: 76 });
-    this.load.spritesheet('reeffish_swim', 'assets/reeffish_swim.png', { frameWidth: 96, frameHeight: 64 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
-    this.load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
-    this.load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
-    for (const k of ['jellyfish', 'jellyfish2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
-    this.load.spritesheet('gnu', 'assets/gnu.png', { frameWidth: 88, frameHeight: 96 }); // Gnu (Große Wanderung)
-    for (const k of ['wolf', 'wolf_howl', 'wolf_eat', 'wolf2', 'wolf2_howl', 'wolf2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf und schwarzer Wolf (Wolfsnacht)
-    for (const k of ['ray', 'ray2']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
-    this.load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)
+    load.spritesheet('piranha', 'assets/piranha.png', { frameWidth: 96, frameHeight: 64 });
+    load.spritesheet('piranha_swim', 'assets/piranha_swim.png', { frameWidth: 96, frameHeight: 64 });
+    load.spritesheet('piranha_box', 'assets/piranha_box.png', { frameWidth: 64, frameHeight: 76 });
+    load.spritesheet('reeffish_swim', 'assets/reeffish_swim.png', { frameWidth: 96, frameHeight: 64 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
+    load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
+    load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
+    for (const k of ['jellyfish', 'jellyfish2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
+    load.spritesheet('gnu', 'assets/gnu.png', { frameWidth: 88, frameHeight: 96 }); // Gnu (Große Wanderung)
+    for (const k of ['wolf', 'wolf_howl', 'wolf_eat', 'wolf2', 'wolf2_howl', 'wolf2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf und schwarzer Wolf (Wolfsnacht)
+    for (const k of ['ray', 'ray2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
+    load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
-    for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
+    for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
     // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante); _eat: sitzt und frisst; _tree: oben in der Baumkrone
-    this.load.spritesheet('orangutan_eat', 'assets/orangutan_eat.png', { frameWidth: 88, frameHeight: 88 });
-    this.load.spritesheet('orangutan2_eat', 'assets/orangutan2_eat.png', { frameWidth: 88, frameHeight: 88 });
+    load.spritesheet('orangutan_eat', 'assets/orangutan_eat.png', { frameWidth: 88, frameHeight: 88 });
+    load.spritesheet('orangutan2_eat', 'assets/orangutan2_eat.png', { frameWidth: 88, frameHeight: 88 });
     for (const k of ['orangutan', 'orangutan2']) {
-      this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
-      this.load.image(`${k}_tree`, `assets/${k}_tree.png`);
+      load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 });
+      load.image(`${k}_tree`, `assets/${k}_tree.png`);
     }
     // Tiger (Asien) und der weiße Tiger (seltene Variante); _peek: neugieriges Gesicht im Bambus
-    for (const k of ['tiger_eat', 'tiger2_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 120, frameHeight: 104 });
+    for (const k of ['tiger_eat', 'tiger2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 120, frameHeight: 104 });
     for (const k of ['tiger', 'tiger2']) {
-      this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 120, frameHeight: 104 });
-      this.load.image(`${k}_peek`, `assets/${k}_peek.png`);
+      load.spritesheet(k, `assets/${k}.png`, { frameWidth: 120, frameHeight: 104 });
+      load.image(`${k}_peek`, `assets/${k}_peek.png`);
     }
-    this.load.spritesheet('flamingo', 'assets/flamingo.png', HERON_FRAME); // Flamingo-Flug (Event)
-    this.load.spritesheet('flamingo_fly', 'assets/flamingo_fly.png', { frameWidth: 104, frameHeight: 100 });
-    this.load.spritesheet('flamingo_baby', 'assets/flamingo_baby.png', HERON_FRAME); // Küken (Tierbabys)
-    this.load.spritesheet('fish', 'assets/fish.png', FISH_FRAME);
-    this.load.spritesheet('fish2', 'assets/fish2.png', FISH_FRAME); // Wels (seltener Skin)
-    this.load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
-    this.load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
-    this.load.spritesheet('squirrel_run', 'assets/squirrel_run.png', { frameWidth: 64, frameHeight: 60 }); // rennt (Test)
-    this.load.spritesheet('squirrel_idle', 'assets/squirrel_idle.png', { frameWidth: 64, frameHeight: 60 }); // sitzt (Test)
-    this.load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
-    this.load.spritesheet('fox_eat', 'assets/fox_eat.png', FOX_FRAME);
-    this.load.spritesheet('fox_walk', 'assets/fox_walk.png', FOX_FRAME); // Laufanimation von vorne (Test)
-    this.load.spritesheet('fox_walk_back', 'assets/fox_walk_back.png', FOX_FRAME); // dasselbe von hinten
-    this.load.spritesheet('fox_idle', 'assets/fox_idle.png', FOX_FRAME); // steht (Test)
-    this.load.spritesheet('fox_idle_back', 'assets/fox_idle_back.png', FOX_FRAME); // dasselbe von hinten
-    this.load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
-    this.load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
-    this.load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
-    this.load.spritesheet('antelope2', 'assets/antelope2.png', ANTELOPE_FRAME); // Oryx (seltener Skin)
-    this.load.spritesheet('antelope2_eat', 'assets/antelope2_eat.png', ANTELOPE_FRAME);
-    this.load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
-    this.load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
+    load.spritesheet('flamingo', 'assets/flamingo.png', HERON_FRAME); // Flamingo-Flug (Event)
+    load.spritesheet('flamingo_fly', 'assets/flamingo_fly.png', { frameWidth: 104, frameHeight: 100 });
+    load.spritesheet('flamingo_baby', 'assets/flamingo_baby.png', HERON_FRAME); // Küken (Tierbabys)
+    load.spritesheet('fish', 'assets/fish.png', FISH_FRAME);
+    load.spritesheet('fish2', 'assets/fish2.png', FISH_FRAME); // Wels (seltener Skin)
+    load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
+    load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
+    load.spritesheet('squirrel_run', 'assets/squirrel_run.png', { frameWidth: 64, frameHeight: 60 }); // rennt (Test)
+    load.spritesheet('squirrel_idle', 'assets/squirrel_idle.png', { frameWidth: 64, frameHeight: 60 }); // sitzt (Test)
+    load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
+    load.spritesheet('fox_eat', 'assets/fox_eat.png', FOX_FRAME);
+    load.spritesheet('fox_walk', 'assets/fox_walk.png', FOX_FRAME); // Laufanimation von vorne (Test)
+    load.spritesheet('fox_walk_back', 'assets/fox_walk_back.png', FOX_FRAME); // dasselbe von hinten
+    load.spritesheet('fox_idle', 'assets/fox_idle.png', FOX_FRAME); // steht (Test)
+    load.spritesheet('fox_idle_back', 'assets/fox_idle_back.png', FOX_FRAME); // dasselbe von hinten
+    load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
+    load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
+    load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
+    load.spritesheet('antelope2', 'assets/antelope2.png', ANTELOPE_FRAME); // Oryx (seltener Skin)
+    load.spritesheet('antelope2_eat', 'assets/antelope2_eat.png', ANTELOPE_FRAME);
+    load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
+    load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
     // Schoko-Zebra (seltener Skin, umgefärbt mit tools/recolor.js)
-    this.load.spritesheet('zebra2', 'assets/zebra2.png', ZEBRA_FRAME);
-    this.load.spritesheet('zebra2_drink', 'assets/zebra2_drink.png', ZEBRA_FRAME);
-    for (const [key, [frameWidth, frameHeight, count]] of Object.entries(SAVANNA_ANIMS)) this.load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
-    for (const [key, [frameWidth, frameHeight, count]] of Object.entries(VIDEO_ANIMS)) this.load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
-    this.load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
-    this.load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
-    this.load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
-    this.load.spritesheet('lion', 'assets/lion.png', LION_FRAME);
-    this.load.spritesheet('lion_eat', 'assets/lion_eat.png', LION_FRAME);
-    this.load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
-    this.load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
+    load.spritesheet('zebra2', 'assets/zebra2.png', ZEBRA_FRAME);
+    load.spritesheet('zebra2_drink', 'assets/zebra2_drink.png', ZEBRA_FRAME);
+    for (const [key, [frameWidth, frameHeight, count]] of Object.entries(SAVANNA_ANIMS)) load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
+    for (const [key, [frameWidth, frameHeight, count]] of Object.entries(VIDEO_ANIMS)) load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
+    load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
+    load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
+    load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
+    load.spritesheet('lion', 'assets/lion.png', LION_FRAME);
+    load.spritesheet('lion_eat', 'assets/lion_eat.png', LION_FRAME);
+    load.image('lion_sleep', 'assets/lion_sleep.png'); // liegend, schläft (Kopf nach rechts)
+    load.image('lion_alert', 'assets/lion_alert.png'); // liegend, schaut auf
     // Schwarzmähnen-Löwe (seltener Skin): dieselben vier Bilder
-    this.load.spritesheet('lion2', 'assets/lion2.png', LION_FRAME);
-    this.load.spritesheet('lion2_eat', 'assets/lion2_eat.png', LION_FRAME);
-    this.load.image('lion2_sleep', 'assets/lion2_sleep.png');
-    this.load.image('lion2_alert', 'assets/lion2_alert.png');
-    this.load.audio('lion_roar', 'assets/sounds/lion_roar.wav');
-    this.load.audio('wolf_howl', 'assets/sounds/wolf_howl.wav'); // Wolfsgeheul (siehe tools/prepare-sounds.js)
-    this.load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);
-    this.load.spritesheet('croc_water', 'assets/croc_water.png', CROC_WATER_FRAME); // nur der Kopf schaut aus dem Wasser
+    load.spritesheet('lion2', 'assets/lion2.png', LION_FRAME);
+    load.spritesheet('lion2_eat', 'assets/lion2_eat.png', LION_FRAME);
+    load.image('lion2_sleep', 'assets/lion2_sleep.png');
+    load.image('lion2_alert', 'assets/lion2_alert.png');
+    load.audio('lion_roar', 'assets/sounds/lion_roar.wav');
+    load.audio('wolf_howl', 'assets/sounds/wolf_howl.wav'); // Wolfsgeheul (siehe tools/prepare-sounds.js)
+    load.spritesheet('croc', 'assets/croc.png', CROC_FRAME);
+    load.spritesheet('croc_water', 'assets/croc_water.png', CROC_WATER_FRAME); // nur der Kopf schaut aus dem Wasser
     // Savanne in den Wetterphasen: Skins (Schuhschnabel, Albino-Krokodil, Lungenfisch) und neue Tiere
-    this.load.spritesheet('shoebill', 'assets/shoebill.png', HERON_FRAME);
-    this.load.spritesheet('shoebill_fly', 'assets/shoebill_fly.png', HERON_FLY_FRAME);
-    this.load.spritesheet('croc_albino', 'assets/croc_albino.png', CROC_FRAME);
-    this.load.spritesheet('croc_albino_water', 'assets/croc_albino_water.png', CROC_WATER_FRAME); // Platzhalter (umgefärbt)
-    this.load.spritesheet('lungfish', 'assets/lungfish.png', FISH_FRAME);
-    this.load.spritesheet('lungfish_mud', 'assets/lungfish_mud.png', FISH_FRAME); // steckt im Schlamm (Trockenzeit, Platzhalter)
-    this.load.spritesheet('hippo', 'assets/hippo.png', { frameWidth: 96, frameHeight: 88 }); // Nilpferd (Starkregen)
-    this.load.spritesheet('hippo_water', 'assets/hippo_water.png', { frameWidth: 64, frameHeight: 44 }); // ... schwimmend: obere Kopfhälfte
-    for (const k of ['hyena', 'hyena_eat']) this.load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Hyäne (Trockenzeit)
-    this.load.spritesheet('warthog', 'assets/warthog.png', { frameWidth: 80, frameHeight: 88 }); // Warzenschwein (Trockenzeit)
-    this.load.image('warthog_hole', 'assets/warthog_hole.png'); // sein Erdloch (Platzhalter)
-    this.load.spritesheet('vulture', 'assets/vulture.png', HERON_FRAME); // Geier (Trockenzeit)
-    this.load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
-    this.load.image('bone_pile', `assets/${this.useHd('bone_pile') ? `${HD_DIR}/` : ''}bone_pile.png`); // gestreute Knochen (lockt die Hyänen an)
-    this.load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
-    this.load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)
-    this.load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
-    this.load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
-    this.load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
-    this.load.audio('step_indoor', 'assets/sounds/step_indoor.wav'); // ... drinnen (Haupthaus, Hütten, Aquarium)
-    this.load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
-    this.load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu
-    this.load.audio('car', 'assets/sounds/car.wav'); // Auto fährt los (Schnellreise)
+    load.spritesheet('shoebill', 'assets/shoebill.png', HERON_FRAME);
+    load.spritesheet('shoebill_fly', 'assets/shoebill_fly.png', HERON_FLY_FRAME);
+    load.spritesheet('croc_albino', 'assets/croc_albino.png', CROC_FRAME);
+    load.spritesheet('croc_albino_water', 'assets/croc_albino_water.png', CROC_WATER_FRAME); // Platzhalter (umgefärbt)
+    load.spritesheet('lungfish', 'assets/lungfish.png', FISH_FRAME);
+    load.spritesheet('lungfish_mud', 'assets/lungfish_mud.png', FISH_FRAME); // steckt im Schlamm (Trockenzeit, Platzhalter)
+    load.spritesheet('hippo', 'assets/hippo.png', { frameWidth: 96, frameHeight: 88 }); // Nilpferd (Starkregen)
+    load.spritesheet('hippo_water', 'assets/hippo_water.png', { frameWidth: 64, frameHeight: 44 }); // ... schwimmend: obere Kopfhälfte
+    for (const k of ['hyena', 'hyena_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Hyäne (Trockenzeit)
+    load.spritesheet('warthog', 'assets/warthog.png', { frameWidth: 80, frameHeight: 88 }); // Warzenschwein (Trockenzeit)
+    load.image('warthog_hole', 'assets/warthog_hole.png'); // sein Erdloch (Platzhalter)
+    load.spritesheet('vulture', 'assets/vulture.png', HERON_FRAME); // Geier (Trockenzeit)
+    load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
+    load.image('bone_pile', `assets/${this.useHd('bone_pile') ? `${HD_DIR}/` : ''}bone_pile.png`); // gestreute Knochen (lockt die Hyänen an)
+    load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
+    load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)
+    load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
+    load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
+    load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
+    load.audio('step_indoor', 'assets/sounds/step_indoor.wav'); // ... drinnen (Haupthaus, Hütten, Aquarium)
+    load.audio('whoosh', 'assets/sounds/whoosh.wav'); // beim Einsetzen eines Werkzeugs
+    load.audio('trap', 'assets/sounds/trap.wav'); // Falle schnappt zu
+    load.audio('car', 'assets/sounds/car.wav'); // Auto fährt los (Schnellreise)
     // Tierrufe beim Fangen; Tierarten ohne Eintrag bleiben still
-    for (const [species, file] of Object.entries(ANIMAL_SOUNDS)) this.load.audio(`animal_${species}`, `assets/sounds/${file}`);
+    for (const [species, file] of Object.entries(ANIMAL_SOUNDS)) load.audio(`animal_${species}`, `assets/sounds/${file}`);
   }
 
-  // nach dem Laden: Bilder vorbereiten, Animationen anlegen
+  // nach dem Laden: Bilder vorbereiten, Animationen anlegen. Läuft nach jedem Ladeschritt (siehe loadRest): nur für die
+  // Bilder, die schon da sind, und jedes nur einmal
   setupAssets() {
+    const fresh = (key) => this.textures.exists(key) && !this.prepared.has(key);
     // Pixel-Art scharf vergrößern; Figuren und gedrehte Gegenstände bleiben weich
-    for (const key of PIXEL_ART) if (!this.useHd(key)) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
-    for (const key of HD) if (this.useHd(key)) shrinkTexture(this.textures.get(key), hdFactor(key)); // große Bilder in alter Größe anzeigen
+    for (const key of PIXEL_ART) if (!this.useHd(key) && fresh(key)) this.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    for (const key of HD) if (this.useHd(key) && fresh(key)) shrinkTexture(this.textures.get(key), hdFactor(key)); // große Bilder in alter Größe anzeigen
+    for (const key of this.textures.getTextureKeys()) this.prepared.add(key);
+    // Animationen nur für geladene Bilder und nur einmal
+    const anims = {
+      generateFrameNumbers: (key, config) => (this.textures.exists(key) ? this.anims.generateFrameNumbers(key, config) : null),
+      create: (config) => config.frames && !this.anims.exists(config.key) && this.anims.create(config),
+    };
     // Bilder pro Sekunde so, dass ein Doppelschritt etwa 0,7 Sekunden dauert (vorne 10 Bilder, hinten 13)
-    this.anims.create({ key: 'hero_walk', frames: this.anims.generateFrameNumbers('hero_walk'), frameRate: 14, repeat: -1 });
-    this.anims.create({ key: 'hero_walk_back', frames: this.anims.generateFrameNumbers('hero_walk_back'), frameRate: 14, repeat: -1 });
-    this.anims.create({ key: 'hero_idle', frames: this.anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
-    this.anims.create({ key: 'hero_forest_walk', frames: this.anims.generateFrameNumbers('hero_forest_walk'), frameRate: 14, repeat: -1 });
+    anims.create({ key: 'hero_walk', frames: anims.generateFrameNumbers('hero_walk'), frameRate: 14, repeat: -1 });
+    anims.create({ key: 'hero_walk_back', frames: anims.generateFrameNumbers('hero_walk_back'), frameRate: 14, repeat: -1 });
+    anims.create({ key: 'hero_idle', frames: anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
+    anims.create({ key: 'hero_forest_walk', frames: anims.generateFrameNumbers('hero_forest_walk'), frameRate: 14, repeat: -1 });
     // von hinten mehr Bilder pro Doppelschritt (etwa 16), daher schneller abspielen
-    this.anims.create({ key: 'hero_forest_walk_back', frames: this.anims.generateFrameNumbers('hero_forest_walk_back'), frameRate: 20, repeat: -1 });
-    this.anims.create({ key: 'hero_forest_idle', frames: this.anims.generateFrameNumbers('hero_forest_idle'), frameRate: 10, repeat: -1 });
-    this.anims.create({ key: 'hero_forest_idle_back', frames: this.anims.generateFrameNumbers('hero_forest_idle_back'), frameRate: 12, repeat: -1 });
+    anims.create({ key: 'hero_forest_walk_back', frames: anims.generateFrameNumbers('hero_forest_walk_back'), frameRate: 20, repeat: -1 });
+    anims.create({ key: 'hero_forest_idle', frames: anims.generateFrameNumbers('hero_forest_idle'), frameRate: 10, repeat: -1 });
+    anims.create({ key: 'hero_forest_idle_back', frames: anims.generateFrameNumbers('hero_forest_idle_back'), frameRate: 12, repeat: -1 });
     // Safari-Kleidung: etwas langsamere Schritte als die Wald-Kleidung (ihre Vorlagen haben mehr Bilder pro Schritt)
     for (const [key, frameRate] of [['hero_savanna_walk', 11], ['hero_savanna_walk_back', 12], ['hero_savanna_idle', 10], ['hero_savanna_idle_back', 12]]) {
-      this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate, repeat: -1 });
+      anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate, repeat: -1 });
     }
-    for (const key of ['deer_walk', 'deer_walk_back', 'stag_walk', 'stag_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
-    this.anims.create({ key: 'squirrel_run', frames: this.anims.generateFrameNumbers('squirrel_run'), frameRate: 16, repeat: -1 });
-    this.anims.create({ key: 'fox_walk', frames: this.anims.generateFrameNumbers('fox_walk'), frameRate: 12, repeat: -1 });
-    this.anims.create({ key: 'fox_walk_back', frames: this.anims.generateFrameNumbers('fox_walk_back'), frameRate: 16, repeat: -1 }); // mehr Bilder pro Schritt
-    for (const key of ['fox_idle', 'fox_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['deer_walk', 'deer_walk_back', 'stag_walk', 'stag_walk_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    anims.create({ key: 'squirrel_run', frames: anims.generateFrameNumbers('squirrel_run'), frameRate: 16, repeat: -1 });
+    anims.create({ key: 'fox_walk', frames: anims.generateFrameNumbers('fox_walk'), frameRate: 12, repeat: -1 });
+    anims.create({ key: 'fox_walk_back', frames: anims.generateFrameNumbers('fox_walk_back'), frameRate: 16, repeat: -1 }); // mehr Bilder pro Schritt
+    for (const key of ['fox_idle', 'fox_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
     // Frosch im Gehege und beim Folgen: Sprung an Sprung (ducken, Flug, landen); in der Wildnis steuert Frog.js die Bilder
-    this.anims.create({ key: 'frog_hop', frames: this.anims.generateFrameNumbers('frog_hop', { start: 3, end: 18 }), frameRate: 22, repeat: -1 });
-    this.anims.create({ key: 'frog2_hop', frames: this.anims.generateFrameNumbers('frog2_hop', { start: 5, end: 17 }), frameRate: 18, repeat: -1 });
-    this.anims.create({ key: 'frog2_hop_back', frames: this.anims.generateFrameNumbers('frog2_hop_back', { start: 10, end: 28 }), frameRate: 26, repeat: -1 });
-    for (const key of ['frog_idle', 'frog_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
-    this.anims.create({ key: 'frog_hop_back', frames: this.anims.generateFrameNumbers('frog_hop_back', { start: 3, end: 17 }), frameRate: 21, repeat: -1 });
-    this.anims.create({ key: 'squirrel_idle', frames: this.anims.generateFrameNumbers('squirrel_idle'), frameRate: 10, repeat: -1 });
-    for (const key of ['ride_meadow_walk', 'ride_meadow_walk_back', 'ride_forest_walk']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    anims.create({ key: 'frog_hop', frames: anims.generateFrameNumbers('frog_hop', { start: 3, end: 18 }), frameRate: 22, repeat: -1 });
+    anims.create({ key: 'frog2_hop', frames: anims.generateFrameNumbers('frog2_hop', { start: 5, end: 17 }), frameRate: 18, repeat: -1 });
+    anims.create({ key: 'frog2_hop_back', frames: anims.generateFrameNumbers('frog2_hop_back', { start: 10, end: 28 }), frameRate: 26, repeat: -1 });
+    for (const key of ['frog_idle', 'frog_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    anims.create({ key: 'frog_hop_back', frames: anims.generateFrameNumbers('frog_hop_back', { start: 3, end: 17 }), frameRate: 21, repeat: -1 });
+    anims.create({ key: 'squirrel_idle', frames: anims.generateFrameNumbers('squirrel_idle'), frameRate: 10, repeat: -1 });
+    for (const key of ['ride_meadow_walk', 'ride_meadow_walk_back', 'ride_forest_walk']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
     // Pferd von hinten: mehrere Schritte in 31 Bildern, etwas schneller, damit es nicht langsamer trabt als von vorne
-    this.anims.create({ key: 'ride_forest_walk_back', frames: this.anims.generateFrameNumbers('ride_forest_walk_back'), frameRate: 14, repeat: -1 });
-    for (const key of ['ride_savanna_walk', 'ride_savanna_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 16, repeat: -1 });
-    for (const key of ['ride_meadow_idle', 'ride_meadow_idle_back', 'ride_forest_idle', 'ride_forest_idle_back', 'ride_savanna_idle', 'ride_savanna_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
-    for (const key of ['cat2_walk', 'cat2_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
-    for (const key of ['cat_walk', 'cat_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
-    for (const key of ['cat_idle', 'cat_idle_back', 'cat2_idle', 'cat2_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
-    for (const key of ['sheep_walk', 'sheep_walk_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
-    for (const key of ['sheep_idle', 'sheep_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
-    for (const key of ['heron_idle', 'heron_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
-    for (const key of ['heron_flap', 'heron_flap_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
-    for (const key of ['stag_idle', 'stag_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
-    for (const key of ['deer_idle', 'deer_idle_back']) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    anims.create({ key: 'ride_forest_walk_back', frames: anims.generateFrameNumbers('ride_forest_walk_back'), frameRate: 14, repeat: -1 });
+    for (const key of ['ride_savanna_walk', 'ride_savanna_walk_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 16, repeat: -1 });
+    for (const key of ['ride_meadow_idle', 'ride_meadow_idle_back', 'ride_forest_idle', 'ride_forest_idle_back', 'ride_savanna_idle', 'ride_savanna_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['cat2_walk', 'cat2_walk_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['cat_walk', 'cat_walk_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['cat_idle', 'cat_idle_back', 'cat2_idle', 'cat2_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['sheep_walk', 'sheep_walk_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['sheep_idle', 'sheep_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['heron_idle', 'heron_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['heron_flap', 'heron_flap_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 12, repeat: -1 });
+    for (const key of ['stag_idle', 'stag_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
+    for (const key of ['deer_idle', 'deer_idle_back']) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 10, repeat: -1 });
     // Savannentiere: Laufen und Fliegen 12 Bilder pro Sekunde (das Lauftempo passt Animal.render an), sonst 10
     // Giraffe: lange Beine, gemächliches Tempo – langsamere Schritte, sonst trippelt sie. Geier: ein Flügelschlag hat nur
     // 5 Bilder, schnell abgespielt flackert er
     // Gnu: rennt mit der Herde fast doppelt so schnell wie sein Gehtempo (die Animation wird dafür schneller), daher langsamer angesetzt
     const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7, gnu_walk: 7, gnu_walk_back: 7 };
-    for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY) this.textures.get(key).customData.feetY = feetY;
-    for (const key of Object.keys(SAVANNA_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
+    for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY && this.textures.exists(key)) this.textures.get(key).customData.feetY = feetY;
+    for (const key of Object.keys(SAVANNA_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
     const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31 };
-    for (const key of Object.keys(VIDEO_ANIMS)) this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') });
+    for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)
     for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {
-      this.anims.create({ key, frames: this.anims.generateFrameNumbers('gorilla_drum', { start, end }), frameRate: 24, repeat });
+      anims.create({ key, frames: anims.generateFrameNumbers('gorilla_drum', { start, end }), frameRate: 24, repeat });
     }
   }
 }

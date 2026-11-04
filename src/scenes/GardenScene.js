@@ -79,7 +79,8 @@ import Cat from '../animals/Cat.js';
 import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
-import { afterPaint, hideLoading, setLoadingBackground, showLoading } from '../ui/loading.js';
+import { afterPaint, hideLoading, setLoadingBackground, setLoadingProgress, showLoading } from '../ui/loading.js';
+import { FIRST_EVENTS, FIRST_LEVELS, allAssetsLoaded, whenAllLoaded } from './BootScene.js';
 import ReefFish from '../animals/ReefFish.js';
 import Piranha from '../animals/Piranha.js';
 import Iguana from '../animals/Iguana.js';
@@ -2137,6 +2138,8 @@ export default class GardenScene extends Phaser.Scene {
       (tab, id) => {
         this.scene.resume();
         if (tab === 'pens') return this.upgradePen(id);
+        // Event mit Tieren, deren Bilder noch im Hintergrund laden: erst darauf warten, dann die Tafel noch einmal
+        if (!allAssetsLoaded() && !FIRST_EVENTS.includes(id)) return this.afterAllLoaded(() => this.openEventsPanel());
         startEvent(id);
         countEvent(id);
         this.updateHud();
@@ -4397,8 +4400,23 @@ export default class GardenScene extends Phaser.Scene {
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       setLoadingBackground(exit.to);
-      showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`));
-      afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }));
+      // andere Gebiete als Tierpark und Wiese brauchen die Bilder, die nach dem Start im Hintergrund laden (siehe BootScene)
+      const wait = !FIRST_LEVELS.includes(exit.to) && !allAssetsLoaded();
+      showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`), wait ? 0 : null);
+      const go = () => afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned }));
+      if (wait) whenAllLoaded(setLoadingProgress).then(go);
+      else go();
+    });
+  }
+
+  // wartet mit der Ladeanzeige, bis auch die restlichen Bilder geladen sind (siehe BootScene), und macht dann weiter
+  afterAllLoaded(then) {
+    this.scene.pause();
+    showLoading(tr('Weitere Tiere werden geladen …', 'Loading more animals …'), 0);
+    whenAllLoaded(setLoadingProgress).then(() => {
+      hideLoading();
+      this.scene.resume();
+      then();
     });
   }
 
