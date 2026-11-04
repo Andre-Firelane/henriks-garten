@@ -80,7 +80,7 @@ import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
 import { afterPaint, hideLoading, setLoadingBackground, setLoadingProgress, showLoading } from '../ui/loading.js';
-import { FIRST_EVENTS, FIRST_LEVELS, allAssetsLoaded, whenAllLoaded } from './BootScene.js';
+import { EVENT_GROUPS, groupsLoaded, levelGroups, whenGroupsLoaded } from './BootScene.js';
 import ReefFish from '../animals/ReefFish.js';
 import Piranha from '../animals/Piranha.js';
 import Iguana from '../animals/Iguana.js';
@@ -2180,7 +2180,7 @@ export default class GardenScene extends Phaser.Scene {
         this.scene.resume();
         if (tab === 'pens') return this.upgradePen(id);
         // Event mit Tieren, deren Bilder noch im Hintergrund laden: erst darauf warten, dann die Tafel noch einmal
-        if (!allAssetsLoaded() && !FIRST_EVENTS.includes(id)) return this.afterAllLoaded(() => this.openEventsPanel());
+        if (!groupsLoaded(EVENT_GROUPS[id] ?? [])) return this.afterGroupsLoaded(EVENT_GROUPS[id], () => this.openEventsPanel());
         this.beginEvent(id);
       },
       () => this.scene.resume(),
@@ -4446,22 +4446,23 @@ export default class GardenScene extends Phaser.Scene {
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       setLoadingBackground(exit.to);
-      // andere Gebiete als Tierpark und Wiese brauchen die Bilder, die nach dem Start im Hintergrund laden (siehe BootScene)
-      const wait = !FIRST_LEVELS.includes(exit.to) && !allAssetsLoaded();
+      // andere Gebiete brauchen Pakete, die nach dem Start im Hintergrund laden (siehe BootScene): darauf warten
+      const groups = levelGroups(exit.to);
+      const wait = !groupsLoaded(groups);
       showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`), wait ? 0 : null);
       // aus einer Welt zurück in den Tierpark (nicht aus einem anderen Abschnitt oder Haus): zählt für die Tafeln (maybeShowPromo)
       const fromWorld = isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID];
       const go = () => afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned, fromWorld }));
-      if (wait) whenAllLoaded(setLoadingProgress).then(go);
+      if (wait) whenGroupsLoaded(groups, setLoadingProgress).then(go);
       else go();
     });
   }
 
-  // wartet mit der Ladeanzeige, bis auch die restlichen Bilder geladen sind (siehe BootScene), und macht dann weiter
-  afterAllLoaded(then) {
+  // wartet mit der Ladeanzeige, bis diese Pakete geladen sind (siehe BootScene), und macht dann weiter
+  afterGroupsLoaded(groups, then) {
     this.scene.pause();
     showLoading(tr('Weitere Tiere werden geladen …', 'Loading more animals …'), 0);
-    whenAllLoaded(setLoadingProgress).then(() => {
+    whenGroupsLoaded(groups, setLoadingProgress).then(() => {
       hideLoading();
       this.scene.resume();
       then();
@@ -4495,7 +4496,7 @@ export default class GardenScene extends Phaser.Scene {
         this.scene.resume();
         countPromo('gift' + id);
         // das Reittier braucht Bilder, die nach dem Start im Hintergrund laden (siehe BootScene)
-        if (!allAssetsLoaded() && !FIRST_EVENTS.includes(id)) this.afterAllLoaded(() => this.beginEvent(id, true));
+        if (!groupsLoaded(EVENT_GROUPS[id] ?? [])) this.afterGroupsLoaded(EVENT_GROUPS[id], () => this.beginEvent(id, true));
         else this.beginEvent(id, true);
         this.time.delayedCall(4000, () => this.showToast(tr('Alle Events findest du am Computer im Haupthaus.', 'You can find all events at the computer in the main building.')));
       },
@@ -4506,7 +4507,7 @@ export default class GardenScene extends Phaser.Scene {
   // Überraschung: ab und zu fliegen in Wiese, Wald und Savanne gratis Flamingos ein (das Event Flamingo-Flug), damit
   // man Events nebenbei entdeckt. Erst nach dem Tutorial, nur wenn der Flamingo-Flug gerade startbar ist
   maybeSurprise() {
-    if (this.leaving || game.tutorial !== false || !allAssetsLoaded() || eventState('flamingo').state !== 'ready') return;
+    if (this.leaving || game.tutorial !== false || !groupsLoaded(EVENT_GROUPS.flamingo) || eventState('flamingo').state !== 'ready') return;
     if (Date.now() - (game.surpriseAt ?? 0) < SURPRISE_EVERY) return;
     game.surpriseAt = Date.now();
     startEvent('flamingo', Date.now(), true);

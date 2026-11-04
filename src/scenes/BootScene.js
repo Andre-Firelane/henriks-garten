@@ -7,51 +7,108 @@ import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
 import { game } from '../state.js';
 import { isActive } from '../world/events.js';
 
-// Laden in zwei Schritten, damit das Spiel vor allem am Handy schnell losgeht: erst nur, was Tierpark und Wiese brauchen
-// (FIRST_*), den Rest danach im Hintergrund (loadRest). Fährt man vorher in ein anderes Gebiet oder startet ein Event mit
-// anderen Tieren, wartet das Spiel mit der Ladeanzeige darauf (whenAllLoaded). Wer mit Tieren aus anderen Welten
-// weiterspielt, lädt gleich alles.
-export const FIRST_LEVELS = ['park', 'meadow'];
-const FIRST_SPECIES = ['sheep', 'cat', 'frog', 'mole', 'heron', 'fish', 'butterfly', 'koi'];
-// Events, die ohne den Rest auskommen (alle anderen bringen Tiere oder Bilder aus dem Rest mit, z. B. das Reittier)
-export const FIRST_EVENTS = ['icecream', 'babies'];
+// Handy und Tablet (Touch): WebP-Fassung statt PNG (etwa ein Viertel so groß, siehe tools/make-webp.py); der PC lädt PNG
+const USE_WEBP = matchMedia('(pointer: coarse)').matches;
+const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) ? url.replace(/^assets\//, 'assets/webp/').replace(/\.png$/, '.webp') : url);
+
+// Laden in Paketen, damit das Spiel vor allem am Handy schnell losgeht: erst nur, was Tierpark und Wiese brauchen
+// (FIRST_*), dazu die Pakete des Startgebiets; danach lädt im Hintergrund Welt für Welt der Rest (GROUP_ORDER). Fährt man
+// in ein Gebiet, dessen Pakete noch fehlen, rücken sie nach vorn und das Spiel wartet mit der Ladeanzeige nur auf sie
+// (levelGroups, whenGroupsLoaded). Events mit Tieren aus einem Paket warten ebenso (EVENT_GROUPS).
 // Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs und Eichhörnchen nur das Grundbild, das der Tierpark zeigt),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
 const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|icecream_seller|car_zoo)$/;
-// Pixel-Art, die nur in anderen Gebieten vorkommt (Savanne, Bambuswald, Dschungel, Eiswelt, Riff, Aquarium, Reptilienhaus
-// und die anderen Abschnitte des Tierparks): kommt mit dem Rest. Grasbüschel, Busch, Akazie, hohes Gras, Kirschbaum und
-// Steinlaterne stehen auch im Tierpark und bleiben im ersten Schritt
-const REST_ART = /savanna|asia|jungle|reef|aquarium|reptile|terrarium|tank|snow|_ice|^ice_|^[asj]grass|^sdry|^(thicket|aq_)|^(acacia_bare|mud|den_sand|boulder|hotspring|bamboo|hammock|peacock_perch|sun_rock|torii|cliff|mangrove|heliconia|hibiscus|spider_web|anchor_sack|seaweed|coral|shell)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
-const REST_DELAY = 2000; // so lange nach dem Spielstart, bis der Rest im Hintergrund lädt (erst einmal das Bild aufbauen)
+// Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
+// der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
+// mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket (Bauernhof,
+// Reittier der Wiese ...) kommt ins Paket misc
+const GROUPS = {
+  forest: { species: ['deer', 'fox', 'squirrel', 'wolf'], keys: /^(deer|stag|fox|squirrel|wolf|hero_forest|ride_forest)/ },
+  savanna: {
+    species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
+    keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
+    art: /savanna|^sgrass|^sdry|^(acacia_bare|mud|den_sand|boulder)$/,
+  },
+  asia: {
+    species: ['panda', 'redpanda', 'macaque', 'tiger', 'orangutan', 'peacock'],
+    keys: /^(panda|redpanda|macaque|tiger|orangutan|peacock|hero_asia|ride_asia)/,
+    art: /asia|^agrass|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii)$/,
+  },
+  jungle: {
+    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'gibbon', 'anteater', 'snake', 'tarantula', 'piranha'],
+    keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|snake|tarantula|piranha|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
+    art: /jungle|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web)$/,
+  },
+  reef: {
+    species: ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'],
+    keys: /^(reeffish|seahorse|octopus|turtle|ray|jellyfish|minifish|boat_zoo|hero_swim|ride_reef)/,
+    art: /reef|aquarium|tank|^aq_|^(anchor_sack|seaweed|coral|shell)$/,
+  },
+  ice: { keys: /^hero_ice/, art: /snow|_ice|^ice_/ },
+};
+// in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
+const GROUP_ORDER = ['misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
+// Pakete je Gebiet (dazu kommen die der Tiere, die dort stehen oder einem folgen, siehe levelGroups)
+const LEVEL_GROUPS = { park: [], meadow: [], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], reptiles: ['jungle'], aquarium: ['reef'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle'] };
+// Events mit Bildern aus einem Paket (Flamingos fliegen auch über Wiese und Wald; Bauernhof und Reittier auf der Wiese)
+export const EVENT_GROUPS = { flamingo: ['savanna'], farm: ['misc'], ride: ['misc'] };
+const SPECIES_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, { species = [] }]) => species.map((s) => [s, group])));
+const REST_DELAY = 2000; // so lange nach dem Spielstart, bis der Hintergrund lädt (erst einmal das Bild aufbauen)
 
-let restLoaded = false;
-let restProgress = 0;
-let startRest = null; // startet das Laden des Rests sofort (falls jemand darauf wartet, bevor es von selbst losgeht)
-const waiting = []; // { resolve, onProgress }
+const loaded = new Set(); // fertig geladene Pakete
+let queue = []; // Pakete, die noch laden, in dieser Reihenfolge
+let current = null; // Paket, das gerade lädt
+let currentProgress = 0;
+let startBackground = null; // startet den Hintergrund sofort (falls jemand wartet, bevor er von selbst losgeht)
+const waiting = []; // { groups, resolve, onProgress }
 
-export function allAssetsLoaded() {
-  return restLoaded;
+export const groupsLoaded = (groups) => groups.every((g) => loaded.has(g));
+
+// Pakete, die ein Gebiet braucht: seine eigenen und die der Tiere, die dort stehen bzw. einem folgen (Gehege im Tierpark)
+export function levelGroups(level) {
+  const groups = new Set(LEVEL_GROUPS[level] ?? GROUP_ORDER);
+  for (const a of [...(game.levels[level]?.animals ?? []), ...game.followers]) {
+    const group = a.farm ? 'misc' : SPECIES_GROUP[a.species];
+    if (group) groups.add(group);
+  }
+  for (const [id, gs] of Object.entries(EVENT_GROUPS)) if (isActive(id)) gs.forEach((g) => groups.add(g));
+  return [...groups];
 }
 
-// wartet, bis auch der Rest geladen ist; onProgress(0..1) solange
-export function whenAllLoaded(onProgress = () => {}) {
-  if (restLoaded) return Promise.resolve();
-  onProgress(restProgress);
-  startRest?.();
-  return new Promise((resolve) => waiting.push({ resolve, onProgress }));
+function progressOf(groups) {
+  const open = groups.filter((g) => !loaded.has(g));
+  return (groups.length - open.length + (open.includes(current) ? currentProgress : 0)) / groups.length;
 }
 
-const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : (PIXEL_ART.includes(key) && !REST_ART.test(key)) || ITEMS.includes(key) || FIRST_SHEETS.test(key));
-
-// reicht der erste Schritt für diesen Start? (neues Spiel, oder ein Spielstand nur mit Tieren aus Tierpark und Wiese)
-function firstIsEnough(data) {
-  const urlLevel = new URLSearchParams(location.search).get('level');
-  if (!FIRST_LEVELS.includes(data.level ?? urlLevel ?? 'park')) return false;
-  const animals = [...Object.values(game.levels).flatMap((l) => l.animals ?? []), ...game.followers];
-  if (animals.some((a) => !FIRST_SPECIES.includes(a.species) || a.farm)) return false;
-  return !Object.keys(game.events).some((id) => !FIRST_EVENTS.includes(id) && isActive(id));
+function notify() {
+  for (const w of [...waiting]) {
+    if (!groupsLoaded(w.groups)) w.onProgress(progressOf(w.groups));
+    else {
+      waiting.splice(waiting.indexOf(w), 1);
+      w.resolve();
+    }
+  }
 }
+
+// wartet, bis diese Pakete geladen sind (sie rücken dafür nach vorn); onProgress(0..1) solange
+export function whenGroupsLoaded(groups, onProgress = () => {}) {
+  if (groupsLoaded(groups)) return Promise.resolve();
+  queue = [...queue.filter((g) => groups.includes(g)), ...queue.filter((g) => !groups.includes(g))];
+  onProgress(progressOf(groups));
+  startBackground?.();
+  return new Promise((resolve) => waiting.push({ groups, resolve, onProgress }));
+}
+
+// Paket eines Bilds bzw. Tons (sound); misc, wenn es in keinem steht
+function groupOf(key, sound = false) {
+  const name = sound && key.startsWith('animal_') ? key.slice(7) : key;
+  const art = PIXEL_ART.includes(name);
+  for (const [group, def] of Object.entries(GROUPS)) if ((art ? def.art : def.keys)?.test(name)) return group;
+  return 'misc';
+}
+
+const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : ITEMS.includes(key) || FIRST_SHEETS.test(key) || (PIXEL_ART.includes(key) && groupOf(key) === 'misc'));
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
@@ -426,7 +483,8 @@ export default class BootScene extends Phaser.Scene {
   create() {
     hideLoading();
     const menu = () => openStartScreen((data) => {
-      const firstOnly = firstIsEnough(data);
+      // Startgebiet: gespeichert, zum Ausprobieren über die Adresse (?level=forest) oder der Tierpark
+      const startGroups = levelGroups(data.level ?? new URLSearchParams(location.search).get('level') ?? 'park');
       showLoading(tr('Das Spiel wird geladen …', 'Loading the game …'), 0);
       this.load.on('progress', setLoadingProgress);
       this.load.once('complete', () => {
@@ -437,48 +495,50 @@ export default class BootScene extends Phaser.Scene {
         afterPaint(() => {
           // die Boot-Szene läuft weiter (ohne Bild), damit sie den Rest im Hintergrund laden kann
           this.scene.launch('Garden', data);
-          if (!firstOnly) restLoaded = true;
-          else {
-            const timer = this.time.delayedCall(REST_DELAY, () => this.loadRest());
-            startRest = () => {
-              timer.remove();
-              this.loadRest();
-            };
-          }
+          startGroups.forEach((g) => loaded.add(g));
+          queue = GROUP_ORDER.filter((g) => !loaded.has(g));
+          const timer = this.time.delayedCall(REST_DELAY, () => this.loadNext());
+          startBackground = () => {
+            timer.remove();
+            this.loadNext();
+          };
         });
       });
-      this.queueAssets(firstOnly ? 'first' : 'all');
+      this.queueAssets((key, sound) => isFirstAsset(key, sound) || startGroups.includes(groupOf(key, sound)));
       this.load.start();
     });
     if (tourSeen()) menu();
     else openFeatureTour(menu); // allererster Start: erst die kleine Vorschau
   }
 
-  // Rest im Hintergrund laden (einmal)
-  loadRest() {
-    if (!startRest) return;
-    startRest = null;
+  // nächstes Paket im Hintergrund laden, danach das übernächste usw.
+  loadNext() {
+    startBackground = null;
+    if (current || !queue.length) return;
+    current = queue.shift();
+    currentProgress = 0;
     const onProgress = (p) => {
-      restProgress = p;
-      for (const w of waiting) w.onProgress(p);
+      currentProgress = p;
+      notify();
     };
     this.load.on('progress', onProgress);
     this.load.once('complete', () => {
       this.load.off('progress', onProgress);
       this.setupAssets();
-      restLoaded = true;
-      for (const w of waiting.splice(0)) w.resolve();
+      loaded.add(current);
+      current = null;
+      notify();
+      this.loadNext();
     });
-    this.queueAssets('rest');
+    this.queueAssets((key, sound) => !isFirstAsset(key, sound) && groupOf(key, sound) === current);
     this.load.start();
   }
 
-  // part: 'first' (nur was Tierpark und Wiese brauchen), 'rest' (alles andere) oder 'all'
-  queueAssets(part) {
-    const want = (key, sound = false) => part === 'all' || (part === 'first') === isFirstAsset(key, sound);
+  // alle Bilder und Töne in die Warteschlange des Laders, für die want(key, sound) zutrifft
+  queueAssets(want) {
     const load = {
-      image: (key, ...args) => want(key) && this.load.image(key, ...args),
-      spritesheet: (key, ...args) => want(key) && this.load.spritesheet(key, ...args),
+      image: (key, url, ...args) => want(key) && this.load.image(key, webpUrl(url), ...args),
+      spritesheet: (key, url, ...args) => want(key) && this.load.spritesheet(key, webpUrl(url), ...args),
       audio: (key, ...args) => want(key, true) && this.load.audio(key, ...args),
     };
     for (const key of [...PIXEL_ART, ...ITEMS]) load.image(key, `assets/${TEST_ART[key] ?? (this.useHd(key) ? `${HD_DIR}/${key}` : key)}.png`);
