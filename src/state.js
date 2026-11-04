@@ -22,6 +22,7 @@ export const game = {
   quests: { done: [] }, // Starter-Aufgaben (siehe src/world/quests.js)
   parkReturns: 0, // so oft ist man aus einer Welt zurück in den Tierpark gekommen (für die Tafeln in promos)
   promos: [], // schon gezeigte Tafeln im Tierpark: 'gift' (geschenktes Event), 'worlds' (die anderen Welten)
+  surpriseAt: 0, // wann zuletzt ein Überraschungs-Flamingo-Flug kam (siehe maybeSurprise in GardenScene)
   bookNew: [], // Neues im Tierbuch (roter Punkt am Knopf, leuchtet beim Öffnen auf): 'caught:fox', 'seen:fox', 'quest:net'
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
 };
@@ -50,4 +51,5 @@ export function resetGame() {
   game.bookNew = [];
   game.parkReturns = 0;
   game.promos = [];
+  game.surpriseAt = 0;
 }

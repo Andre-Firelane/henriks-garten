@@ -421,6 +421,10 @@ const TUT_SHEEP = 2; // im Mini-Tutorial grasen auf der Wiese immer so viele Sch
 const TUT_SHEEP_R = 360; // ... so nah am Auto ...
 const TUT_SHEEP_CHECK = 2; // ... nachgeschaut wird alle paar Sekunden
 const PROMO_DELAY = 1200; // so lange nach der Ankunft im Tierpark, bis eine Tafel aufgeht (maybeShowPromo)
+// Überraschung (maybeSurprise): so lange nach der Ankunft in Wiese, Wald oder Savanne fliegen gratis Flamingos ein,
+// höchstens so oft
+const SURPRISE_DELAY = 60 * 1000;
+const SURPRISE_EVERY = 30 * 60 * 1000;
 // Tafel "andere Welten" (maybeShowPromo): Bild unter public/assets, Überschrift, Text
 const WORLD_PAGES = [
   ['promo/world_savanna', tr('Savanne', 'Savanna'), tr(
@@ -1093,6 +1097,7 @@ export default class GardenScene extends Phaser.Scene {
     hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
     sessionLoaded(); // für die Statistik: Ladezeit (nur beim ersten Gebiet der Runde)
     if (data.intro) this.time.delayedCall(400, () => this.showIntro()); // neues Spiel: Willkommens-Tafel
+    if (FLAMINGO_WORLDS.includes(LEVEL_ID)) this.time.delayedCall(SURPRISE_DELAY, () => this.maybeSurprise());
     if (data.fromWorld) {
       game.parkReturns++;
       this.time.delayedCall(PROMO_DELAY, () => this.maybeShowPromo());
@@ -1187,10 +1192,10 @@ export default class GardenScene extends Phaser.Scene {
       (MAP_W + MAP_H) * (TILE_H / 2) + TILE_H * 4,
     );
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
-    // Unterwasserwelt und Eiswelt: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel pro Bild
-    // je Achse); Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie Stottern
-    // aus (in der Eiswelt vor dem gleichmäßigen Schnee besonders beim Laufen nach links und rechts zu sehen)
-    cam.roundPixels = !LEVEL.sea && !LEVEL.snow;
+    // Unterwasserwelt, Eiswelt und Savanne: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel
+    // pro Bild je Achse); Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie
+    // Stottern aus (vor dem gleichmäßigen Schnee bzw. Sand besonders beim Laufen nach links und rechts zu sehen)
+    cam.roundPixels = !LEVEL.sea && !LEVEL.snow && LEVEL_ID !== 'savanna';
   }
 
   // Bogenbrücken: Bohlen als geschwungenes Band über dem Wasser, rote Geländer an beiden Seiten.
@@ -2091,6 +2096,7 @@ export default class GardenScene extends Phaser.Scene {
   updateHud() {
     const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
     this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
+    if (nextQuest()?.id === 'eventAnimal') this.updateQuestCard(); // dort steht, wie viele Herzen noch fehlen
     this.layoutHudStack();
   }
 
@@ -2139,10 +2145,18 @@ export default class GardenScene extends Phaser.Scene {
     this.questCard.classList.toggle('show', !!q);
     if (q) {
       const n = QUESTS.indexOf(q) + 1;
-      const progress = q.id === 'sheep' ? ` (${Math.min(SHEEP_QUEST, this.sheepAtHome())} / ${SHEEP_QUEST})` : '';
+      const progress = q.id === 'sheep' ? ` (${Math.min(SHEEP_QUEST, this.sheepAtHome())} / ${SHEEP_QUEST})` : q.id === 'eventAnimal' ? this.eventAnimalProgress() : '';
       this.questCard.innerHTML = `<b>${tr('Aufgabe', 'Task')} ${n} / ${QUESTS.length}</b><span>${q.text}${progress}</span><span class="quest-reward"><span class="heart">♥</span> ${q.reward}</span>`;
     }
     this.layoutHudStack();
+  }
+
+  // Aufgabe "Event mit neuen Tieren": so viele Herzen hat man vom günstigsten solchen Event (leer, wenn es reicht oder schon eins läuft)
+  eventAnimalProgress() {
+    const ids = Object.values(EVENT_SPECIES).map(([id]) => id);
+    if (ids.some((id) => isActive(id))) return '';
+    const cost = Math.min(...EVENTS.filter((e) => ids.includes(e.id)).map((e) => e.cost));
+    return game.hearts < cost ? ` (<span class="heart">♥</span> ${game.hearts} / ${cost})` : '';
   }
 
   // Schafe im Schafgehege (für die erste Aufgabe), auch von unterwegs aus dem gespeicherten Stand des Tierparks
@@ -4485,6 +4499,18 @@ export default class GardenScene extends Phaser.Scene {
       },
       () => this.scene.resume(),
     );
+  }
+
+  // Überraschung: ab und zu fliegen in Wiese, Wald und Savanne gratis Flamingos ein (das Event Flamingo-Flug), damit
+  // man Events nebenbei entdeckt. Erst nach dem Tutorial, nur wenn der Flamingo-Flug gerade startbar ist
+  maybeSurprise() {
+    if (this.leaving || game.tutorial !== false || !allAssetsLoaded() || eventState('flamingo').state !== 'ready') return;
+    if (Date.now() - (game.surpriseAt ?? 0) < SURPRISE_EVERY) return;
+    game.surpriseAt = Date.now();
+    startEvent('flamingo', Date.now(), true);
+    countPromo('surprise');
+    this.updateEventBanner();
+    this.showToast(tr('🦩 Überraschung! Ein Flamingo-Schwarm zieht 5 Minuten lang vorbei – fang einen für deinen Tierpark! Weitere Events startest du am Computer im Haupthaus.', '🦩 Surprise! A flock of flamingos is passing by for 5 minutes – catch one for your zoo! You can start more events at the computer in the main building.'));
   }
 
   showWorlds() {

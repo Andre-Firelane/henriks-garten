@@ -551,8 +551,8 @@ const ANIMATIONS = [
   { src: 'Animation/Character_Wald_idle_vorne.png', out: 'hero_forest_idle.png', cols: 5, rows: 3, count: 13, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
   { src: 'Animation/Character_Wald_idle_hinten.png', out: 'hero_forest_idle_back.png', cols: 5, rows: 8, count: 36, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
   // Safari-Kleidung (Savanne): läuft und steht, von vorne und hinten, wie die Wald-Kleidung
-  { src: 'Animation/Character_Savanne_läuft_vorne.png', out: 'hero_savanna_walk.png', cols: 5, rows: 8, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
-  { src: 'Animation/Character_Savanne_läuft_hinten.png', out: 'hero_savanna_walk_back.png', cols: 5, rows: 4, count: 18, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
+  { src: 'Animation/Character_Savanne_läuft_vorne.png', out: 'hero_savanna_walk.png', cols: 5, rows: 8, skip: [0], dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 112 }, // ohne das erste Bild (steht noch, größer als die übrigen); figureH: im Laufen so groß wie im Stehen
+  { src: 'Animation/Character_Savanne_läuft_hinten.png', out: 'hero_savanna_walk_back.png', cols: 5, rows: 4, count: 18, dropGreen: true, frameW: 88, frameH: 116, feetY: 112, figureH: 112 }, // figureH: im Laufen so groß wie im Stehen
   { src: 'Animation/Character_Savanne_idle_vorne.png', out: 'hero_savanna_idle.png', cols: 5, rows: 4, count: 16, dropGreen: true, steady: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
   { src: 'Animation/Character_Savanne_idle_hinten.png', out: 'hero_savanna_idle_back.png', cols: 5, rows: 8, dropGreen: true, steady: true, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },
   // Hauptfigur steht (Blick nach unten-rechts, atmet und blinzelt)

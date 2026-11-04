@@ -38,6 +38,7 @@ const PROMOS = {
   giftride: 'Geschenk: Reittier',
   worlds: 'Welten gezeigt',
   worldsmap: 'Welten durchgeblättert',
+  surprise: 'Überraschungs-Flamingos',
 };
 // Fortschritt (step, siehe progress in src/sessions.js): Tutorial-Schritte, danach Tutorial fertig plus weitere Aufgaben
 const STEPS = ['beim Laden', 'Auto', 'Regal', 'Schafe', 'Schafgehege', 'Herzen', 'Computer', 'Tutorial fertig'];
@@ -204,7 +205,7 @@ async function show(req, store, secret) {
 <div class="box">${tags(caught, catchTag)}</div>
 <h2>Gestartete Events (${total(started)})</h2>
 <div class="box">${tags(started, eventTag)}</div>
-<h2>Tafeln im Tierpark</h2>
+<h2>Tafeln im Tierpark und Überraschungen</h2>
 <div class="box">${tags(shown, promoTag)}</div>
 <h2>Runden</h2>
 <div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th></tr>
