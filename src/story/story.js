@@ -7,7 +7,20 @@ import { STEPS, seaCatches } from './steps.js';
 const LOCKABLE = ['meadow', 'forest', 'savanna', 'reef', 'asia', 'jungle', 'ice', 'park2', 'park3', 'reptiles'];
 
 export function newStory(locks = true) {
-  return { step: 0, done: [], unlocked: [], heard: false, readyShown: false, locks, flags: {} };
+  return { step: 0, id: STEPS[0].id, done: [], unlocked: [], heard: false, readyShown: false, locks, flags: {} };
+}
+
+// beim Laden: die aktive Aufgabe steht auch mit Namen im Spielstand (id) – kommen Aufgaben dazu oder fallen weg, stimmt so
+// die Nummer wieder (eine weggefallene: die erste danach, die noch nicht erledigt ist)
+export function syncStory() {
+  const s = game.story;
+  if (s.id === undefined) return (s.id = STEPS[s.step]?.id ?? null);
+  if (s.id === null) return (s.step = STEPS.length); // alles geschafft
+  let i = STEPS.findIndex((t) => t.id === s.id);
+  if (i < 0) i = STEPS.findIndex((t) => !s.done.includes(t.id));
+  if (i < 0) i = STEPS.length;
+  s.step = i;
+  s.id = STEPS[i]?.id ?? null;
 }
 
 export function activeStep() {
@@ -42,14 +55,20 @@ export function completeStep() {
   game.story.done.push(s.id);
   for (const id of s.unlocks ?? []) if (!game.story.unlocked.includes(id)) game.story.unlocked.push(id);
   game.story.step++;
+  game.story.id = STEPS[game.story.step]?.id ?? null;
   game.story.heard = false;
   game.story.readyShown = false;
   return s;
 }
 
 // Fang zählen (für die Aufgaben; zählt auch Fänge, bevor die Aufgabe dran ist)
-export function countStoryCatch(species) {
+// origin: Welt, in der es gefangen wurde (für "verschiedene Tierarten in der Savanne" usw.)
+export function countStoryCatch(species, origin) {
   game.catches[species] = (game.catches[species] ?? 0) + 1;
+  if (!origin) return;
+  game.caughtIn ??= {};
+  const list = (game.caughtIn[origin] ??= []);
+  if (!list.includes(species)) list.push(species);
 }
 
 // Spielstände von vor Mavi: nichts ist gesperrt, die Fänge werden aus Tierbuch und Gehegen geschätzt, und die
@@ -63,7 +82,7 @@ export function migrateStory() {
   for (const [s, n] of Object.entries(home)) catches[s] = Math.max(catches[s] ?? 0, n);
   game.catches = catches;
   if (seaCatches(game) > 0) game.story.flags.aquarium = true; // das Aquarium kennt man dann schon
-  while (game.story.step < STEPS.length - 1) {
+  while (game.story.step < STEPS.length) {
     const s = activeStep();
     if (s.done && !stepDone(s)) break;
     completeStep();

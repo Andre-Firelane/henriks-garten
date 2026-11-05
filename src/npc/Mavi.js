@@ -8,7 +8,7 @@ import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES, LEVEL, LEVEL_ID, START, exitAt, isBlocked, nearEnclosure } from '../world/map.js';
 import { LEVELS, isPark } from '../world/levels.js';
-import { seaCatches } from '../story/steps.js';
+import { seaReady } from '../story/steps.js';
 import { activeStep, completeStep, stepDone } from '../story/story.js';
 import { closeSpeech, isSpeaking, placeSpeech, say, sayToast } from '../ui/speech.js';
 import { saveNow } from '../save.js';
@@ -40,7 +40,7 @@ export default class Mavi {
     this.talkFrom = scene.time.now + SETTLE;
     this.anchored = false; // die offene Blase gehört zu ihr (hängt über ihrem Kopf)
     // im Aquarium angekommen, nachdem man im Riff Meerestiere gefangen hat: Mavi zeigt es einem
-    if (LEVEL_ID === 'aquarium' && activeStep()?.id === 'reef' && seaCatches(game) > 0) {
+    if (LEVEL_ID === 'aquarium' && activeStep()?.id === 'reef' && seaReady(game)) {
       game.story.flags.aquarium = true;
       game.story.heard = true; // drinnen nur noch der Abschluss (auch wenn man draußen an ihr vorbeigelaufen ist)
     }
@@ -60,6 +60,8 @@ export default class Mavi {
     if (!at || at.level !== LEVEL_ID) return null;
     let t = null;
     if (at.spot === 'start') t = { tx: START.tx + 1, ty: START.ty + 1 };
+    else if (at.spot === 'feeder' && LEVEL.feeders?.length) return this.freeTile(LEVEL.feeders[0], true); // mitten zwischen den Gehegen, auf dem Weg
+    else if (at.spot === 'car' && LEVEL.car) return this.freeTile({ tx: Math.round(LEVEL.car.tx) - 2, ty: Math.round(LEVEL.car.ty) + 1 }, true); // neben dem Auto (dort kommt man an)
     else if (at.spot === 'hut' && LEVEL.hut) t = { tx: LEVEL.hut.tx1 + 1, ty: LEVEL.hut.ty1 + 1 };
     else if (at.spot === 'computer' && LEVEL.computers?.length) t = { tx: LEVEL.computers[0].tx + 1, ty: LEVEL.computers[0].ty + 1 };
     else if (at.spot === 'sign') {
@@ -106,7 +108,7 @@ export default class Mavi {
       this.sprite.play('mavi_idle');
       this.sprite.on('animationcomplete-mavi_wave', () => this.sprite.play('mavi_idle'));
     }
-    this.sprite.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.distance() < TAP_DIST ? this.talk(true) : this.scene.tooFar()));
+    this.sprite.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.distance() < TAP_DIST && this.talk(true));
     if (fade) {
       for (const o of [this.sprite, this.shadow]) {
         const a = o.alpha;
@@ -211,9 +213,11 @@ export default class Mavi {
   // Spielstand ansehen: erledigte Aufgaben abhaken (Gesprächs-Aufgaben nur ankündigen, abgehakt wird bei ihr)
   check() {
     const step = activeStep();
-    if (!step || this.pending || isSpeaking() || this.scene.leaving || this.scene.time.now < this.talkFrom || !stepDone(step)) return;
-    if (!step.talk) return this.complete();
-    if (game.story.readyShown || !game.story.heard) return;
+    if (!step || this.pending || isSpeaking() || this.scene.leaving || this.scene.time.now < this.talkFrom) return;
+    if (!step.talk && stepDone(step)) return this.complete();
+    // Gesprächs-Aufgabe geschafft (bzw. readyWhen erfüllt, z. B. genug Meerestiere): einmal Bescheid sagen
+    const ready = step.readyWhen ? step.readyWhen(game) : step.talk && stepDone(step) && game.story.heard;
+    if (!ready || game.story.readyShown) return;
     game.story.readyShown = true;
     if (!(this.sprite && this.distance() < TALK_DIST) && step.ready) sayToast(step.ready);
     this.scene.updateQuestCard();
@@ -234,9 +238,9 @@ export default class Mavi {
     this.scene.updateQuestCard();
     saveNow();
     this.pending = [...(heard || s.talk ? [] : s.already ?? []), ...(s.outro ?? [])];
-    // steht sie hier im Gebiet, aber nicht gleich neben einem (z. B. nach dem Neuaufbau beim Gehege-Ausbau): ihr Satz wartet,
-    // bis man bei ihr ist (sie winkt so lange); sonst sagt sie ihn gleich bzw. am Rand
-    if (this.sprite && this.pending.length && !(this.onScreen() && this.distance() < TALK_DIST * 2)) return this.updateArrow();
+    // ist sie zu sehen, aber nicht gleich neben einem (z. B. nach dem Neuaufbau beim Gehege-Ausbau): ihr Satz wartet, bis man
+    // bei ihr ist (sie winkt so lange); sonst sagt sie ihn gleich (ist sie nicht zu sehen: am Rand)
+    if (this.sprite && this.pending.length && this.onScreen() && this.distance() >= TALK_DIST * 2) return this.updateArrow();
     this.sayOutro();
   }
 
@@ -256,7 +260,7 @@ export default class Mavi {
   taskLevel(step) {
     const meet = (!game.story.heard && (!step.introWhen || step.introWhen(game))) || (step.talk && (!step.done || stepDone(step)));
     if (meet) return step.also?.level === LEVEL_ID ? LEVEL_ID : step.at.level;
-    if (step.id === 'reef') return seaCatches(game) > 0 ? 'park2' : 'reef';
+    if (step.id === 'reef') return seaReady(game) ? 'park2' : 'reef';
     if (PARK_TASKS.includes(step.id)) return isPark(LEVEL_ID) ? LEVEL_ID : 'park';
     return step.at.level;
   }

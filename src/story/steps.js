@@ -17,21 +17,33 @@
 import { tr } from '../i18n.js';
 import { LEVELS } from '../world/levels.js';
 
-// Tierarten einer Welt (alle Wetterphasen), ohne die überall häufigen Fische
+// Tierarten einer Welt (alle Wetterphasen), ohne die überall häufigen Fische – wie im Tierbuch (livesIn in GardenScene):
+// Spawn und Wetter-Spawn, dazu die Tiere mit eigenem Auftritt (Reiher, Geier, Hyänen, Leguane am Wasserfall, Gorillas,
+// Schlangen und Vogelspinnen im Dickicht des Dschungels)
 function worldSpecies(id) {
-  const l = LEVELS[id];
-  const all = [l.spawn, ...Object.values(l.seasons ?? {}).map((s) => s.spawn)].flatMap((s) => Object.keys(s?.weights ?? {}));
+  const all = [];
+  for (const l of [LEVELS[id], ...Object.values(LEVELS[id].seasons ?? {})]) {
+    for (const pool of [l.spawn, l.weatherSpawn]) all.push(...Object.keys(pool?.weights ?? {}));
+    if (l.herons) all.push('heron');
+    if (l.vultures) all.push('vulture');
+    if (l.hyenas) all.push('hyena');
+    if (l.waterfallSun) all.push('iguana');
+    if (l.gorillas) all.push('gorilla');
+  }
+  if (id === 'jungle') all.push('snake', 'tarantula');
   return [...new Set(all)].filter((s) => s !== 'fish');
 }
 
 const caught = (game, s) => game.catches?.[s] ?? 0;
-// so viele verschiedene Arten dieser Welt schon gefangen
-const kinds = (game, world) => worldSpecies(world).filter((s) => caught(game, s) > 0).length;
+// so viele verschiedene Arten dieser Welt schon gefangen (dazu alles, was dort gefangen wurde, siehe countStoryCatch)
+const kinds = (game, world) => new Set([...worldSpecies(world).filter((s) => caught(game, s) > 0), ...(game.caughtIn?.[world] ?? [])].filter((s) => s !== 'fish')).size;
 // Herzen der Besucher (ohne Eisstand)
 const visitorHearts = (game) => Object.entries(game.heartsBy).reduce((n, [k, v]) => n + (k === 'icecream' ? 0 : v), 0);
 const count = (n, of) => ` (${Math.min(n, of)} / ${of})`;
 // schon Tiere aus dem Riff gefangen (ab dann zeigt Mavi das Aquarium)
 export const seaCatches = (game) => worldSpecies('reef').reduce((n, s) => n + caught(game, s), 0);
+const REEF_CATCHES = 10; // so viele Meerestiere verlangt die Riff-Aufgabe
+export const seaReady = (game) => seaCatches(game) >= REEF_CATCHES;
 
 const SHEEP = 3;
 const MEADOW = { cat: 3, frog: 3, butterfly: 3 };
@@ -164,8 +176,8 @@ export const STEPS = [
     ],
     already: [tr('Du hast ja schon ein Gehege ausgebaut. Sieht toll aus!', 'You’ve already upgraded an enclosure. It looks great!')],
     outro: [
-      tr('Gut gemacht! Die Tiere freuen sich über den vielen Platz.', 'Well done! The animals love all the space.'),
-      tr('Und jetzt geht die große Reise los: Fahr mit dem Auto in die Savanne. Ich warte dort an der Hütte auf dich!', 'And now the big journey begins: drive to the savanna by car. I’ll wait for you at the hut there!'),
+      tr('Gut gemacht! Das Gehege ist jetzt größer – es passen mehr Tiere hinein.', 'Well done! The enclosure is bigger now – more animals fit inside.'),
+      tr('Jetzt geht’s in die Savanne! Fahr mit dem Auto los, ich warte dort an der Hütte auf dich.', 'Now it’s off to the savanna! Drive there by car, I’ll wait for you at the hut.'),
     ],
     reward: 20,
   },
@@ -181,10 +193,24 @@ export const STEPS = [
     ],
     already: [tr('Du warst ja schon fleißig in der Savanne!', 'You’ve already been busy in the savanna!')],
     outro: [
-      tr('Fantastisch! Jetzt wird es nass: Das Riff ist offen!', 'Fantastic! Now it gets wet: the reef is open!'),
-      tr('Fang dort Meerestiere und bring sie mit. Ich zeige dir dann unser Aquarium!', 'Catch sea animals there and bring them back. Then I’ll show you our aquarium!'),
+      tr('Fantastisch! Bring deine Savannentiere jetzt nach Hause in den Tierpark.', 'Fantastic! Now take your savanna animals home to the zoo.'),
+      tr('Ich warte dort im Savannenbereich auf dich!', 'I’ll wait for you there in the savanna area!'),
     ],
     reward: 30,
+  },
+  {
+    // erst die Savannentiere abgeben (sie ziehen beim Ankommen im Tierpark ein), dann geht es ins Riff – sonst nähme man
+    // sie mit unter Wasser
+    id: 'savannaHome',
+    at: { level: 'park2', spot: 'feeder' },
+    talk: true,
+    goal: tr('Bring die Savannentiere zu Mavi in den Savannenbereich des Tierparks', 'Bring the savanna animals to Mavi in the savanna area of the zoo'),
+    intro: [
+      tr('Da seid ihr ja! Schau, deine Savannentiere sind schon in ihre Gehege gezogen.', 'There you are! Look, your savanna animals have already moved into their enclosures.'),
+      tr('Jetzt wird es nass: Das Riff ist offen! Fahr mit dem U-Boot hin und fang Meerestiere.', 'Now it gets wet: the reef is open! Take the submarine there and catch sea animals.'),
+      tr('Bring sie dann mit – ich zeige dir unser Aquarium!', 'Then bring them back – I’ll show you our aquarium!'),
+    ],
+    reward: 10,
     unlocks: ['reef'],
   },
   {
@@ -192,14 +218,17 @@ export const STEPS = [
     at: { level: 'park2', spot: 'aquarium' },
     also: { level: 'aquarium', spot: 'entry' }, // drinnen sagt sie noch etwas
     talk: true, // abgehakt im Gespräch drinnen
-    goal: tr('Fang Meerestiere im Riff und bring sie ins Aquarium', 'Catch sea animals at the reef and bring them to the aquarium'),
+    goal: tr(`Fang ${REEF_CATCHES} Meerestiere im Riff und bring sie ins Aquarium`, `Catch ${REEF_CATCHES} sea animals at the reef and bring them to the aquarium`),
+    progress: (game) => count(seaCatches(game), REEF_CATCHES),
     done: (game) => !!game.story.flags.aquarium,
-    introWhen: (game) => seaCatches(game) > 0, // vorher sagt sie nur waiting
+    introWhen: seaReady, // vorher sagt sie nur waiting
+    readyWhen: seaReady, // dann einmal ready am Rand (noch im Riff)
     intro: [
       tr('Willkommen am Aquarium! Deine Meerestiere ziehen hier ein.', 'Welcome to the aquarium! Your sea animals are moving in here.'),
       tr('Komm, schau es dir an – geh einfach durch die Tür!', 'Come and have a look – just walk through the door!'),
     ],
-    waiting: tr('Fang im Riff ein paar Meerestiere – dann zeige ich dir das Aquarium!', 'Catch a few sea animals at the reef – then I’ll show you the aquarium!'),
+    waiting: tr(`Fang im Riff ${REEF_CATCHES} Meerestiere – dann zeige ich dir das Aquarium!`, `Catch ${REEF_CATCHES} sea animals at the reef – then I’ll show you the aquarium!`),
+    ready: tr(`Super, ${REEF_CATCHES} Meerestiere! Fahr mit ihnen zurück in den Tierpark – ich warte am Aquarium.`, `Great, ${REEF_CATCHES} sea animals! Take them back to the zoo – I’ll wait at the aquarium.`),
     outro: [
       tr('Ist das nicht schön? Jedes Becken hat seine eigenen Tiere.', 'Isn’t it beautiful? Every tank has its own animals.'),
       tr('Im Tierpark ist jetzt auch der Bereich Bambuswald & Dschungel fertig – und der Bambuswald wartet auf dich!', 'In the zoo, the Bamboo Forest & Jungle area is ready now too – and the bamboo forest is waiting for you!'),
@@ -231,8 +260,23 @@ export const STEPS = [
       tr('Fang drei verschiedene Tierarten!', 'Catch three different kinds of animals!'),
     ],
     already: [tr('Im Bambuswald hast du ja schon ordentlich gefangen!', 'You’ve already caught plenty in the bamboo forest!')],
-    outro: [tr('Großartig! Jetzt kommt der Dschungel – mit dem Wasserflugzeug. Und das Reptilienhaus ist offen!', 'Great! Next up is the jungle – by seaplane. And the reptile house is open!')],
+    outro: [
+      tr('Großartig! Bring deine Tiere jetzt nach Hause in den Tierpark.', 'Great! Now take your animals home to the zoo.'),
+      tr('Ich warte dort im Bereich Bambuswald & Dschungel auf dich!', 'I’ll wait for you there in the Bamboo Forest & Jungle area!'),
+    ],
     reward: 30,
+  },
+  {
+    // erst die Tiere aus dem Bambuswald abgeben, dann geht es in den Dschungel (wie nach der Savanne)
+    id: 'asiaHome',
+    at: { level: 'park3', spot: 'car' },
+    talk: true,
+    goal: tr('Bring die Bambuswald-Tiere zu Mavi in den Tierpark (Bambuswald & Dschungel)', 'Bring the bamboo forest animals to Mavi in the zoo (Bamboo Forest & Jungle)'),
+    intro: [
+      tr('Da seid ihr ja! Deine Tiere aus dem Bambuswald sind schon in ihre Gehege gezogen.', 'There you are! Your animals from the bamboo forest have already moved into their enclosures.'),
+      tr('Jetzt kommt der Dschungel – mit dem Wasserflugzeug! Und das Reptilienhaus hier im Park ist auch offen.', 'Next up is the jungle – by seaplane! And the reptile house here in the zoo is open too.'),
+    ],
+    reward: 10,
     unlocks: ['jungle', 'reptiles'],
   },
   {
@@ -246,22 +290,18 @@ export const STEPS = [
       tr('Fang zwei verschiedene Tierarten!', 'Catch two different kinds of animals!'),
     ],
     already: [tr('Du kennst dich im Dschungel ja schon aus!', 'You already know your way around the jungle!')],
-    outro: [tr('Unglaublich! Eine Welt fehlt noch: die Eiswelt. Komm danach zu mir in den Park!', 'Incredible! One world is left: the Ice World. Come and see me in the zoo afterwards!')],
-    reward: 30,
-    unlocks: ['ice'],
-  },
-  {
-    id: 'finale',
-    at: { level: 'park', spot: 'start' },
-    talk: true,
-    goal: tr('Sprich mit Mavi im Tierpark', 'Talk to Mavi in the zoo'),
-    intro: [
-      tr('Schau dich um: Unser Park ist voller Tiere – und voller Besucher!', 'Look around: our zoo is full of animals – and full of visitors!'),
-      tr('Das hast du geschafft. Ab jetzt bist du richtiger Tierparkdirektor!', 'You did this. From now on you’re a real zoo director!'),
-      tr('Es gibt noch viele seltene Tiere zu entdecken. Ich kümmere mich hier um alles. Viel Spaß!', 'There are still lots of rare animals to discover. I’ll take care of everything here. Have fun!'),
+    outro: [
+      tr('Unglaublich, du hast es geschafft!', 'Incredible, you did it!'),
+      tr('Ein Tipp noch: Im Dschungel wechselt das Wetter – bei Regen oder Nebel zeigen sich ganz andere Tiere.', 'One more tip: the weather changes in the jungle – in rain or fog completely different animals appear.'),
+      tr('Willst du nicht warten, leg dich in der Hütte ins Bett. Nach einem Nickerchen ist das Wetter weiter.', 'If you don’t want to wait, lie down in the bed in the hut. After a nap the weather has moved on.'),
+      tr('Der Trick klappt übrigens auch in der Savanne – dort gibt es Starkregen und Trockenzeit.', 'By the way, the trick works in the savanna too – there it’s heavy rain and the dry season.'),
+      tr('Jetzt kennst du alles Wichtige – ab heute bist du ein richtiger Tierparkdirektor!', 'Now you know everything important – from today you’re a real zoo director!'),
+      tr('Es gibt noch mehr Welten zu entdecken, zum Beispiel die Eiswelt. Viel Spaß!', 'There are more worlds to discover, like the Ice World. Have fun!'),
     ],
     reward: 50,
+    unlocks: ['ice'],
   },
+  // die letzte Aufgabe: danach steht Mavi vor dem Haupthaus und hat nur noch einen Gruß (siehe talk in src/npc/Mavi.js)
 ];
 
 export const STEP_IDS = STEPS.map((s) => s.id);

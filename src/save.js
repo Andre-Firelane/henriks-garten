@@ -3,7 +3,7 @@
 // laufen beim Laden dort weiter, wo gespeichert wurde. Das Test-Spiel speichert nie.
 import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
-import { migrateStory } from './story/story.js';
+import { migrateStory, syncStory } from './story/story.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -87,6 +87,7 @@ export function loadSave() {
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
   if (!s.game.story) migrateStory(); // Spielstand von vor Mavi: alles bleibt offen
+  syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
   save.lastSaved = s.savedAt;

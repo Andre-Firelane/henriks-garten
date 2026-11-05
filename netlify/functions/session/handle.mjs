@@ -3,10 +3,10 @@
 // Die Tierbilder kommen aus den Spritesheets des Spiels (src/ui/icons.js, Bilder unter /assets).
 //
 // POST { type: 'start', id, kind, lang, device }  neue Runde
-// POST { type: 'update', id, seconds, load, loaded, step, catches, events, promos }  Spieldauer bisher (ab dem Ende des
+// POST { type: 'update', id, seconds, load, loaded, step, tut, catches, events, promos }  Spieldauer bisher (ab dem Ende des
 //                                                  Ladens; kommt mehrmals, die größte zählt), Ladezeit in Sekunden (loaded: fertig
 //                                                  geladen, sonst so lange wurde bis zum Aufgeben geladen), Fortschritt (siehe
-//                                                  progress in src/sessions.js) und gefangene Tiere, gestartete Events bzw.
+//                                                  progress in src/sessions.js; tut: Fassung des Tutorials) und gefangene Tiere, gestartete Events bzw.
 //                                                  Tafeln im Tierpark der Runde: { Art: Anzahl }
 // GET  ?key=<SESSIONS_KEY>                         Tabelle; &format=csv für Excel
 import { animalIcon } from '../../../src/ui/icons.js';
@@ -40,12 +40,22 @@ const PROMOS = {
   worldsmap: 'Welten durchgeblättert',
   surprise: 'Überraschungs-Flamingos',
 };
-// Fortschritt (step, siehe progress in src/sessions.js): die Aufgabe in Mavis Geschichte (src/story/steps.js), danach fertig
-// (Runden von vor Mavi zählten noch das alte Mini-Tutorial – ihre Zahlen passen nicht zu diesen Namen)
-const STEPS = ['beim Laden', 'Begrüßung', 'Schafe', 'Wiesentiere', 'Besucher', 'Eiswagen', 'Wald', 'Ausbau', 'Savanne', 'Aquarium', 'Event', 'Bambuswald', 'Dschungel', 'Abschied', 'Geschichte fertig'];
-const stepName = (n) => (n == null ? '–' : STEPS[Math.min(n, STEPS.length - 1)]);
+// Fortschritt (step, siehe progress in src/sessions.js): die Aufgabe in Mavis Geschichte (src/story/steps.js), danach fertig.
+// tut: Fassung des Tutorials (TUTORIAL_VERSION in sessions.js). Runden ohne tut stammen noch vom alten Mini-Tutorial mit den
+// Starter-Aufgaben, die der Fassung 2 (erste Geschichte mit Mavi, kurz online) zählen nur mit Nummer
+const TUTORIAL_VERSION = 3;
+const STEPS = ['beim Laden', 'Begrüßung', 'Schafe', 'Wiesentiere', 'Besucher', 'Eiswagen', 'Wald', 'Ausbau', 'Savanne', 'Savannentiere abgeben', 'Aquarium', 'Event', 'Bambuswald', 'Bambus-Tiere abgeben', 'Dschungel', 'Tutorial fertig'];
+const OLD_STEPS = ['beim Laden', 'Auto', 'Regal', 'Schafe', 'Schafgehege', 'Herzen', 'Computer', 'Tutorial fertig'];
+const stepName = (r) => {
+  const n = r.step;
+  if (n == null) return '–';
+  if (r.tut === TUTORIAL_VERSION) return STEPS[Math.min(n, STEPS.length - 1)];
+  if (r.tut) return `Aufgabe ${n} (ältere Fassung)`;
+  return n < OLD_STEPS.length ? `${OLD_STEPS[n]} (altes Tutorial)` : `altes Tutorial + ${n - 7} Aufg.`;
+};
 // Trichter für neue Spiele: so viele kamen mindestens bis hierher
-const FUNNEL = [[1, 'geladen'], [2, 'Mavi begrüßt'], [3, 'Schafe gefangen'], [5, 'Besucher-Herzen'], [6, 'Eiswagen steht'], [7, 'Wald geschafft'], [9, 'Savanne geschafft'], [10, 'Aquarium gesehen'], [14, 'Geschichte fertig']];
+// Trichter (nur neue Spiele mit dem aktuellen Tutorial): so viele kamen mindestens bis hierher – je eine Marke pro Aufgabe
+const FUNNEL = [[1, 'geladen'], [2, 'Mavi begrüßt'], [3, 'Schafe gefangen'], [4, 'Wiesentiere gefangen'], [5, 'Besucher-Herzen'], [6, 'Eiswagen steht'], [7, 'Wald geschafft'], [8, 'Gehege ausgebaut'], [9, 'Savanne geschafft'], [10, 'Savannentiere abgegeben'], [11, 'Aquarium gesehen'], [12, 'Event gestartet'], [13, 'Bambuswald geschafft'], [14, 'Bambus-Tiere abgegeben'], [15, 'Tutorial fertig']];
 
 export async function handle(req, store, secret) {
   if (req.method === 'POST') return record(req, store);
@@ -92,6 +102,8 @@ async function record(req, store) {
     }
     const step = Math.round(Number(msg.step));
     if (Number.isFinite(step) && step >= 0) s.step = Math.max(s.step ?? 0, Math.min(step, 99));
+    const tut = Math.round(Number(msg.tut));
+    if (Number.isFinite(tut) && tut > 0 && tut < 100) s.tut = tut;
     s.catches = merge(s.catches, msg.catches);
     s.events = merge(s.events, msg.events);
     s.promos = merge(s.promos, msg.promos);
@@ -147,6 +159,7 @@ async function show(req, store, secret) {
     load: s.load ?? null, // ältere Runden haben keine Ladezeit
     loaded: !!s.loaded,
     step: s.step ?? null,
+    tut: s.tut ?? null,
   }));
   const loadText = (r) => (r.load == null ? '–' : r.loaded ? `${r.load} s` : `abgebrochen nach ${r.load} s`);
 
@@ -154,7 +167,7 @@ async function show(req, store, secret) {
     const list = (map) => sorted(map).map(([k, n]) => `${k} ${n}`).join(', ');
     const lines = [
       'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Laden;Fortschritt;Gefangen;Events;Tafeln',
-      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r.step), list(r.catches), list(r.events), list(r.promos)].join(';')),
+      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r), list(r.catches), list(r.events), list(r.promos)].join(';')),
     ];
     return new Response('﻿' + lines.join('\r\n'), {
       headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="spielrunden.csv"' },
@@ -173,7 +186,7 @@ async function show(req, store, secret) {
     const done = rs.filter((r) => r.loaded).map((r) => r.load);
     return rs.length ? `<span class="tag">${device}: Median ${median(done) ?? '–'} s · beim Laden aufgegeben <b>${rs.length - done.length} von ${rs.length}</b></span>` : '';
   }).join('');
-  const fresh = real.filter((r) => r.kind === KINDS.new && r.step != null);
+  const fresh = real.filter((r) => r.kind === KINDS.new && r.step != null && r.tut === TUTORIAL_VERSION);
   const funnel = FUNNEL.map(([n, label]) => `<span class="tag">${label} <b>${fresh.filter((r) => r.step >= n).length}</b></span>`).join('');
   // <base href="/">: die Tierbilder liegen unter /assets (wie im Spiel), die Seite selbst unter /api/session
   const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -200,7 +213,7 @@ async function show(req, store, secret) {
 <a href="/api/session?key=${encodeURIComponent(secret)}&amp;format=csv">als CSV für Excel</a></p>
 <h2>Laden</h2>
 <div class="box">${loading || '<span class="none">noch keine Daten</span>'}</div>
-<h2>Fortschritt neuer Spiele (${fresh.length} Runden)</h2>
+<h2>Fortschritt neuer Spiele im Tutorial mit Mavi (${fresh.length} Runden)</h2>
 <div class="box">${fresh.length ? funnel : '<span class="none">noch keine Daten</span>'}</div>
 <h2>Gefangene Tiere (${total(caught)})</h2>
 <div class="box">${tags(caught, catchTag)}</div>
@@ -210,7 +223,7 @@ async function show(req, store, secret) {
 <div class="box">${tags(shown, promoTag)}</div>
 <h2>Runden</h2>
 <div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th></tr>
-${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r.step))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td></tr>`).join('\n')}
+${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td></tr>`).join('\n')}
 </table></div></body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

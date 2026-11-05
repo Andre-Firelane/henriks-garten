@@ -16,6 +16,7 @@ export const game = {
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
   story: newStory(), // Geschichte mit Mavi: aktive Aufgabe, freigeschaltete Gebiete (siehe src/story/story.js)
   catches: {}, // so oft wurde jede Tierart schon gefangen (für Mavis Aufgaben)
+  caughtIn: {}, // ... und welche Arten in welcher Welt: { jungle: ['tarantula', ...] }
   seasonAnchor: null, // Wetterphasen der Savanne: ab hier beginnt die Runde mit Normal (siehe src/world/season.js)
   seasonAnchors: {}, // ... und die der anderen Gebiete mit Wetter (Dschungel): { jungle: Zeitpunkt }
   boat: null, // Kanu im Dschungel: { x, y, riding } (wo es liegt bzw. ob Henrik darin sitzt)
@@ -44,6 +45,7 @@ export function resetGame() {
   game.upgrades = 0;
   game.story = newStory();
   game.catches = {};
+  game.caughtIn = {};
   game.seasonAnchor = Date.now(); // ein neues Spiel beginnt in der Savanne mit der normalen Phase
   game.seasonAnchors = {};
   game.boat = null;

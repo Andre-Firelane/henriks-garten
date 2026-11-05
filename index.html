@@ -73,7 +73,7 @@
       #quest-card.show { display: block; }
       #quest-card b { display: block; font-size: 13px; color: #8a5a30; }
       #quest-card .quest-reward { margin-left: 6px; font-weight: bold; white-space: nowrap; }
-      @media (max-width: 900px), (max-height: 500px) { #quest-card { font-size: 12px; padding: 4px 8px; } #quest-card b { font-size: 11px; } }
+      @media (max-width: 900px), (max-height: 500px) { #quest-card { font-size: 12px; padding: 4px 8px; max-width: min(210px, 34vw); } #quest-card b { font-size: 11px; } }
       /* Aufgaben-Karte einklappen: der Pfeil rechts schiebt sie nach links weg, übrig bleibt ein kleiner Knopf am Rand */
       #quest-card { padding-right: 34px; transition: transform 0.25s ease; }
       #quest-card .quest-fold {
@@ -342,6 +342,11 @@
       .travel-map .place-group > .place.main { height: 6.6em; }
       .travel-map .place-group > .place.main > .animal-box { font-size: 1.2em; }
       .travel-map .place-group > .place.main > span { font-size: 0.95em; }
+      /* Handy: die beiden kleineren Felder (Savanne & Aquarium, Bambuswald & Dschungel) größer, damit man sie gut trifft */
+      .travel-box.phone .travel-map .place-group { width: 8.6em; }
+      .travel-box.phone .travel-map .place-group > .place:not(.main) { height: 5em; }
+      .travel-box.phone .travel-map .place-group > .place:not(.main) > .animal-box { font-size: 0.85em; }
+      .travel-box.phone .travel-map .place-group > .place:not(.main) > span { font-size: 0.9em; }
       .travel-hint { margin: 6px 0 0; color: #fff8e6; font-size: 16px; text-shadow: 0 1px 2px #000; }
       /* Übersicht (Taste I) */
       #journal {

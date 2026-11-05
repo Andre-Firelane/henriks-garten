@@ -41,6 +41,10 @@ function send(body, beacon = false) {
 
 // wie weit: 0 noch beim Laden, danach die Aufgabe in Mavis Geschichte (1 = Begrüßung, siehe src/story/steps.js;
 // eins mehr als die letzte: alle geschafft)
+// Fassung des Tutorials, zu der die Zahl in step gehört (die Liste der Spielrunden beschriftet ältere anders); bei jeder
+// Änderung an der Reihenfolge oder Zahl der Aufgaben in src/story/steps.js eins hochzählen, ebenso in handle.mjs
+const TUTORIAL_VERSION = 3;
+
 function progress() {
   if (!session.loadedAt) return 0;
   return game.story.step + 1;
@@ -49,7 +53,7 @@ function progress() {
 function update(beacon) {
   if (!session) return;
   const load = Math.round(((session.loadedAt ?? Date.now()) - session.startedAt) / 1000);
-  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), catches: session.catches, events: session.events, promos: session.promos }, beacon);
+  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), tut: TUTORIAL_VERSION, catches: session.catches, events: session.events, promos: session.promos }, beacon);
 }
 
 function count(map, key) {

@@ -144,7 +144,7 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 import { countCatch, countEvent, countPromo, sessionLoaded } from '../sessions.js';
 import { isShowcaseOpen, openShowcase } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
-import { STEPS } from '../story/steps.js';
+import { STEPS, seaReady } from '../story/steps.js';
 import { activeId, activeStep, countStoryCatch, isUnlocked, storyAt } from '../story/story.js';
 import Mavi from '../npc/Mavi.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
@@ -783,17 +783,17 @@ export default class GardenScene extends Phaser.Scene {
             const dv = wall(0, 1) ? 1 : wall(0, -1) ? -1 : 0;
             img.setPosition(x + (du - dv) * 32 * 0.35, y + (du + dv) * 16 * 0.35);
           }
-          // Antippen geht nur, wenn man direkt daneben steht (wie mit der Aktionstaste)
+          // Antippen geht nur, wenn man direkt daneben steht (wie mit der Aktionstaste); aus der Ferne passiert nichts (auf dem
+          // Handy streift der Finger beim Laufen sonst ständig Dinge)
           if (obj.chest) {
             this.chestSprites.set(`${tx},${ty}`, img);
             img.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
               const chest = this.chestAt(tx, ty);
               if (chest && this.nearChest === chest) this.openChest(chest);
-              else this.tooFar();
             });
           }
           if (obj.computer) this.computerSprite = img; // für Mavis Pfeil
-          if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearComputer ? this.openEventsPanel() : this.tooFar()));
+          if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearComputer && this.openEventsPanel());
         }
       }
     }
@@ -899,7 +899,7 @@ export default class GardenScene extends Phaser.Scene {
       }
       const board = this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
       // im Tierpark: Schild antippen öffnet den Ausbau dieses Geheges (nur wenn man davorsteht)
-      if (hasSlots(e) && isPark(LEVEL_ID)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.penAtSign() === e ? this.openEventsPanel(e.id) : this.tooFar()));
+      if (hasSlots(e) && isPark(LEVEL_ID)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.penAtSign() === e && this.openEventsPanel(e.id));
       // Tierbilder nebeneinander auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
       const list = e.species ?? [];
       const step = SIGN_INNER_W / list.length;
@@ -942,7 +942,7 @@ export default class GardenScene extends Phaser.Scene {
       // das Boot (float) schwimmt oben auf dem Wasser: über der blauen Tönung und den Lichtstrahlen der Unterwasserwelt
       const img = this.add.sprite(x, y + 4 - (car.float ?? 0), car.texture, car.frame).setOrigin(0.5, 136 / 140).setScale(0.5 * k).setDepth(car.float ? SEA_TINT_DEPTH + 2 : y);
       if (car.texture.startsWith('car_')) this.add.image(img.x, img.y, this.carShadow(car.texture, car.frame)).setOrigin(0.5, 136 / (140 + SHADOW_PAD)).setScale(0.5 * k).setDepth(y - 1).setAlpha(0.43);
-      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearCar ? this.openCarMap() : this.tooFar()));
+      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearCar && this.openCarMap());
       const label = this.add
         .text(x, y - 76 * k, tr('Schnellreise ▸', 'Fast travel ▸'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
         .setOrigin(0.5)
@@ -2088,11 +2088,6 @@ export default class GardenScene extends Phaser.Scene {
     this.sound.play(key, { volume: PEN_CALL_VOLUME * (0.35 + 0.65 * near), detune: Phaser.Math.Between(-120, 120) });
   }
 
-  // Antippen aus der Ferne: erst hingehen
-  tooFar() {
-    if (!this.leaving) this.showToast(tr('Geh erst direkt daneben.', 'Walk right up to it first.'));
-  }
-
   // Übergang in einen Tierpark-Abschnitt (oder ein Haus), den Mavi noch nicht freigeschaltet hat: stehen bleiben
   blockedExit(exit, prev) {
     this.player.x = prev.x;
@@ -2386,6 +2381,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.saveLevelState();
     const arrive = worldToTile(this.player.x, this.player.y);
+    this.leaving = true; // bis zum Neuaufbau steht alles (sonst hakt Mavi die Ausbau-Aufgabe ab, und ihr Satz geht verloren)
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       showLoading(tr(`${e.name} wird ausgebaut …`, `Upgrading ${e.name} …`));
@@ -3296,7 +3292,8 @@ export default class GardenScene extends Phaser.Scene {
         if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will
         if (a.fleeing && !a.wasFleeing) this.countFlee(a.species);
         a.wasFleeing = a.fleeing;
-        if (!a.sprite?.visible || a.sprite.alpha < 0.4) continue;
+        // getarnte Krake: erst, wenn sie sich zeigt; Gorilla im Trommel-Duell (und auf dem Weg dorthin): die Blase läge über der Trommelanzeige
+        if (!a.sprite?.visible || a.sprite.alpha < 0.4 || a.mode === 'camo' || a.mode === 'come' || a.mode === 'duel') continue;
         const d = Math.hypot(a.x - p.x, (a.y - p.y) * 2);
         if (d < bestD) {
           best = a;
@@ -4335,7 +4332,7 @@ export default class GardenScene extends Phaser.Scene {
       this.markNew(`caught:${animal.species}`);
     }
     this.hideEncounterBubble();
-    countStoryCatch(animal.species); // für Mavis Aufgaben
+    countStoryCatch(animal.species, animal.origin); // für Mavis Aufgaben
     this.followers.push(animal);
     this.updateQuestCard();
     this.mavi.check();
@@ -4420,7 +4417,7 @@ export default class GardenScene extends Phaser.Scene {
   leaveLevel(exit) {
     this.leaving = true;
     // zum ersten Mal mit Meerestieren zurück: Ankunft mit Mavi direkt vor dem Aquarium
-    if (isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID] && activeId() === 'reef' && this.followers.some((a) => a.origin === 'reef')) {
+    if (isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID] && activeId() === 'reef' && seaReady(game) && this.followers.some((a) => a.origin === 'reef')) {
       exit = { ...exit, to: 'park2', arrive: AQUARIUM_TOUR };
     }
     let returned = null;
