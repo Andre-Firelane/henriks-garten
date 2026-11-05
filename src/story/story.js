@@ -82,6 +82,7 @@ export function migrateStory() {
   for (const [s, n] of Object.entries(home)) catches[s] = Math.max(catches[s] ?? 0, n);
   game.catches = catches;
   if (seaCatches(game) > 0) game.story.flags.aquarium = true; // das Aquarium kennt man dann schon
+  if (Object.keys(game.events).some((id) => id !== 'icecream')) game.story.flags.event = true;
   while (game.story.step < STEPS.length) {
     const s = activeStep();
     if (s.done && !stepDone(s)) break;

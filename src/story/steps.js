@@ -159,11 +159,11 @@ export const STEPS = [
     ],
     already: [tr('Rehe und Eichhörnchen hast du ja schon – du bist richtig gut!', 'You already have deer and squirrels – you’re really good at this!')],
     outro: [
-      tr('Klasse! Jetzt geht die Reise richtig los: Die Savanne ist offen!', 'Brilliant! Now the journey really begins: the savanna is open!'),
-      tr('Und im Tierpark ist der Bereich Savanne & Aquarium fertig.', 'And in the zoo, the Savanna & Aquarium area is ready.'),
+      tr('Klasse! Fahr mit deinen Tieren zurück in den Tierpark.', 'Brilliant! Drive back to the zoo with your animals.'),
+      tr('Ich warte dort am Schafgehege auf dich – ich habe noch etwas vor!', 'I’ll wait for you at the sheep enclosure – I’ve got something planned!'),
     ],
     reward: 20,
-    unlocks: ['savanna', 'park2'],
+    unlocks: ['park2'], // die Savanne erst nach dem Gehege-Ausbau (sonst fährt man zu früh hin)
   },
   {
     id: 'upgrade',
@@ -177,9 +177,10 @@ export const STEPS = [
     already: [tr('Du hast ja schon ein Gehege ausgebaut. Sieht toll aus!', 'You’ve already upgraded an enclosure. It looks great!')],
     outro: [
       tr('Gut gemacht! Das Gehege ist jetzt größer – es passen mehr Tiere hinein.', 'Well done! The enclosure is bigger now – more animals fit inside.'),
-      tr('Jetzt geht’s in die Savanne! Fahr mit dem Auto los, ich warte dort an der Hütte auf dich.', 'Now it’s off to the savanna! Drive there by car, I’ll wait for you at the hut.'),
+      tr('Jetzt geht die Reise richtig los: Die Savanne ist offen! Fahr mit dem Auto hin, ich warte dort an der Hütte auf dich.', 'Now the journey really begins: the savanna is open! Drive there by car, I’ll wait for you at the hut.'),
     ],
     reward: 20,
+    unlocks: ['savanna'],
   },
   {
     id: 'savanna',
@@ -240,7 +241,7 @@ export const STEPS = [
     id: 'event',
     at: { level: 'park', spot: 'computer' },
     goal: tr('Starte am Computer ein Event (nicht den Eiswagen)', 'Start an event at the computer (not the ice cream truck)'),
-    done: (game) => Object.keys(game.events).some((id) => id !== 'icecream'),
+    done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk oder Überraschungs-Flamingos)
     intro: [
       tr('Am Computer gibt es noch viel mehr Events: Tierbabys, Reittiere, Flamingos …', 'There are many more events at the computer: baby animals, mounts, flamingos …'),
       tr('Manche bringen sogar ganz neue Tiere. Such dir eins aus!', 'Some even bring brand-new animals. Pick one!'),
@@ -282,20 +283,21 @@ export const STEPS = [
   {
     id: 'jungle',
     at: { level: 'jungle', spot: 'hut' },
-    goal: tr('Fang 2 verschiedene Tierarten im Dschungel', 'Catch 2 different kinds of animals in the jungle'),
+    talk: true, // der Abschluss des Tutorials kommt bei ihr an der Hütte
+    goal: tr('Fang 2 verschiedene Tierarten im Dschungel und triff Mavi an der Hütte', 'Catch 2 different kinds of animals in the jungle and meet Mavi at the hut'),
     progress: (game) => count(kinds(game, 'jungle'), JUNGLE_KINDS),
     done: (game) => kinds(game, 'jungle') >= JUNGLE_KINDS,
     intro: [
       tr('Willkommen im Dschungel! Hier ist es wild – Affen, Aras, Jaguare …', 'Welcome to the jungle! It’s wild here – monkeys, macaws, jaguars …'),
-      tr('Fang zwei verschiedene Tierarten!', 'Catch two different kinds of animals!'),
+      tr('Fang zwei verschiedene Tierarten und komm dann zu mir!', 'Catch two different kinds of animals and then come back to me!'),
     ],
-    already: [tr('Du kennst dich im Dschungel ja schon aus!', 'You already know your way around the jungle!')],
+    waiting: tr('Fang zwei verschiedene Tierarten im Dschungel!', 'Catch two different kinds of animals in the jungle!'),
+    ready: tr('Super, zwei Tierarten! Komm zu mir an die Hütte.', 'Great, two kinds! Come to me at the hut.'),
     outro: [
-      tr('Unglaublich, du hast es geschafft!', 'Incredible, you did it!'),
-      tr('Ein Tipp noch: Im Dschungel wechselt das Wetter – bei Regen oder Nebel zeigen sich ganz andere Tiere.', 'One more tip: the weather changes in the jungle – in rain or fog completely different animals appear.'),
-      tr('Willst du nicht warten, leg dich in der Hütte ins Bett. Nach einem Nickerchen ist das Wetter weiter.', 'If you don’t want to wait, lie down in the bed in the hut. After a nap the weather has moved on.'),
-      tr('Der Trick klappt übrigens auch in der Savanne – dort gibt es Starkregen und Trockenzeit.', 'By the way, the trick works in the savanna too – there it’s heavy rain and the dry season.'),
-      tr('Jetzt kennst du alles Wichtige – ab heute bist du ein richtiger Tierparkdirektor!', 'Now you know everything important – from today you’re a real zoo director!'),
+      tr('Super, zwei Dschungeltiere – du hast es geschafft!', 'Great, two jungle animals – you did it!'),
+      tr('Ein Tipp noch: Hier wechselt das Wetter. Bei Regen oder Nebel zeigen sich ganz andere Tiere.', 'One more tip: the weather changes here. In rain or fog completely different animals appear.'),
+      tr('Leg dich in der Hütte ins Bett, dann ist das Wetter nach einem Nickerchen weiter. Das klappt auch in der Savanne.', 'Lie down in the bed in the hut and the weather moves on after a nap. That works in the savanna too.'),
+      tr('Jetzt kennst du alles Wichtige – du bist ein richtiger Tierparkdirektor!', 'Now you know everything important – you’re a real zoo director!'),
       tr('Es gibt noch mehr Welten zu entdecken, zum Beispiel die Eiswelt. Viel Spaß!', 'There are more worlds to discover, like the Ice World. Have fun!'),
     ],
     reward: 50,

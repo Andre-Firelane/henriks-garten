@@ -142,7 +142,7 @@ import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 import { countCatch, countEvent, countPromo, sessionLoaded } from '../sessions.js';
-import { isShowcaseOpen, openShowcase } from '../ui/featureTour.js';
+import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
 import { activeId, activeStep, countStoryCatch, isUnlocked, storyAt } from '../story/story.js';
@@ -456,25 +456,6 @@ const PROMO_DELAY = 1200; // so lange nach der Ankunft im Tierpark, bis eine Taf
 // höchstens so oft
 const SURPRISE_DELAY = 60 * 1000;
 const SURPRISE_EVERY = 30 * 60 * 1000;
-// Tafel "andere Welten" (maybeShowPromo): Bild unter public/assets, Überschrift, Text
-const WORLD_PAGES = [
-  ['promo/world_savanna', tr('Savanne', 'Savanna'), tr(
-    'Zebras, Giraffen und Löwen – und bei Starkregen oder in der Trockenzeit kommen ganz andere Tiere heraus.',
-    'Zebras, giraffes and lions – and in heavy rain or the dry season completely different animals come out.',
-  )],
-  ['promo/world_asia', tr('Bambuswald', 'Bamboo Forest'), tr(
-    'Locke Pandas mit Grünfutter, entdecke Tiger, Pfauen und Orang-Utans zwischen Kirschbäumen.',
-    'Lure pandas with leafy greens, discover tigers, peacocks and orangutans among the cherry trees.',
-  )],
-  ['promo/world_jungle', tr('Dschungel', 'Jungle'), tr(
-    'Mit dem Kanu den Fluss hinauf: Aras, Jaguare, Gorillas und Ameisenbären warten auf dich.',
-    'Paddle up the river by canoe: macaws, jaguars, gorillas and anteaters are waiting for you.',
-  )],
-  ['promo/world_reef', tr('Riff', 'Reef'), tr(
-    'Tauch mit dem U-Boot zu Schildkröten, Rochen, Kraken und bunten Riff-Fischen.',
-    'Dive in the submarine to turtles, rays, octopuses and colorful reef fish.',
-  )],
-];
 let lastBookTab = 'animals'; // zuletzt offener Reiter im Tierbuch
 const QUEST_FOLD_KEY = 'my-little-zoo-quest-folded'; // Aufgaben-Karte eingeklappt (nur in diesem Browser)
 const AQUARIUM_TOUR = { tx: 3, ty: 16 }; // Ankunft vor der Aquariumtür (park2), wenn Mavi das Aquarium zeigt
@@ -2305,6 +2286,7 @@ export default class GardenScene extends Phaser.Scene {
     countEvent(id);
     this.updateHud();
     if (id === 'icecream' && activeId() === 'icecream') this.visitors?.sendToIce(); // gleich kauft jemand ein Eis
+    if (!free && id !== 'icecream') game.story.flags.event = true; // für Mavis Event-Aufgabe
     this.mavi?.check();
     if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
     if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
@@ -3289,7 +3271,7 @@ export default class GardenScene extends Phaser.Scene {
       let best = null;
       let bestD = ENCOUNTER_DIST;
       for (const a of this.animals) {
-        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will
+        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || a.species === 'ray' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will; über Rochen keine Blase
         if (a.fleeing && !a.wasFleeing) this.countFlee(a.species);
         a.wasFleeing = a.fleeing;
         // getarnte Krake: erst, wenn sie sich zeigt; Gorilla im Trommel-Duell (und auf dem Weg dorthin): die Blase läge über der Trommelanzeige
@@ -4459,15 +4441,11 @@ export default class GardenScene extends Phaser.Scene {
     });
   }
 
-  // Tafeln beim Zurückkommen aus einer Welt (höchstens eine je Ankunft): bei der 2. Rückkehr ein geschenktes Event
-  // (Tierbabys oder Reittier), bei einer späteren die anderen Welten. Jede kommt nur einmal.
+  // Tafel beim Zurückkommen aus einer Welt: ab der 2. Rückkehr einmal ein geschenktes Event (Tierbabys oder Reittier). Die
+  // anderen Welten zeigt Mavi (Tutorial), dafür gibt es keine Tafel mehr
   maybeShowPromo() {
     if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen() || isShowcaseOpen() || isGiftOpen()) return;
-    if (!game.promos.includes('gift')) {
-      if (this.giftReady()) this.showGift();
-      return; // die Welten erst nach dem Geschenk
-    }
-    if (!game.promos.includes('worlds') && game.parkReturns >= 3) this.showWorlds();
+    if (!game.promos.includes('gift') && this.giftReady()) this.showGift();
   }
 
   // Geschenk erst nach dem Tutorial, im Hauptabschnitt (Schafgehege, Computer), und wenn beide Events gerade startbar sind
@@ -4504,22 +4482,6 @@ export default class GardenScene extends Phaser.Scene {
     countPromo('surprise');
     this.updateEventBanner();
     this.showToast(tr('🦩 Überraschung! Ein Flamingo-Schwarm zieht 5 Minuten lang vorbei – fang einen für deinen Tierpark! Weitere Events startest du am Computer im Haupthaus.', '🦩 Surprise! A flock of flamingos is passing by for 5 minutes – catch one for your zoo! You can start more events at the computer in the main building.'));
-  }
-
-  showWorlds() {
-    game.promos.push('worlds');
-    countPromo('worlds');
-    this.scene.pause();
-    openShowcase(WORLD_PAGES, {
-      ingame: true,
-      lastLabel: tr('Zur Weltkarte', 'To the world map'),
-      onDone: (finished) => {
-        this.scene.resume();
-        if (!finished) return;
-        countPromo('worldsmap');
-        this.openCarMap();
-      },
-    });
   }
 
   // Spielstand speichern (Autosave, Menü). Während eines Levelwechsels nicht: der ist dann schon gespeichert.

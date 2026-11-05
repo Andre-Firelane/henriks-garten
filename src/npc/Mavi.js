@@ -132,7 +132,7 @@ export default class Mavi {
     if (this.pending && this.sprite) return true; // Abschluss-Satz wartet auf einen
     const step = activeStep();
     if (!step || !this.sprite) return false;
-    if (!game.story.heard) return !step.introWhen || step.introWhen(game) || !game.story.waitingSaid;
+    if (!game.story.heard) return !step.introWhen || step.introWhen(game); // (bis dahin nur waiting, wenn man sie antippt)
     return !!step.talk && stepDone(step);
   }
 
