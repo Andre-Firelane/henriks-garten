@@ -61,6 +61,18 @@ export function completeStep() {
   return s;
 }
 
+// Tutorial überspringen (Menü): alle Aufgaben gelten als erledigt (ohne Belohnung), alle Gebiete sind offen
+export function skipStory() {
+  const s = game.story;
+  for (const t of STEPS) if (!s.done.includes(t.id)) s.done.push(t.id);
+  s.unlocked = [...new Set([...s.unlocked, ...LOCKABLE])];
+  s.locks = false;
+  s.step = STEPS.length;
+  s.id = null;
+  s.heard = false;
+  s.readyShown = false;
+}
+
 // Fang zählen (für die Aufgaben; zählt auch Fänge, bevor die Aufgabe dran ist)
 // origin: Welt, in der es gefangen wurde (für "verschiedene Tierarten in der Savanne" usw.)
 export function countStoryCatch(species, origin) {

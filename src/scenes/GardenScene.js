@@ -145,7 +145,7 @@ import { countCatch, countEvent, countPromo, sessionLoaded } from '../sessions.j
 import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
-import { activeId, activeStep, countStoryCatch, isUnlocked, storyAt } from '../story/story.js';
+import { activeId, activeStep, countStoryCatch, isUnlocked, skipStory, storyAt } from '../story/story.js';
 import Mavi from '../npc/Mavi.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
 
@@ -4503,7 +4503,23 @@ export default class GardenScene extends Phaser.Scene {
       },
       () => this.scene.resume(),
       () => this.showControls(),
+      activeStep() ? () => this.skipTutorial() : null,
     );
+  }
+
+  // Tutorial überspringen (Menü): alles frei, keine Aufgaben mehr; das Gebiet baut sich neu auf (ohne Absperrungen, Pfeil,
+  // Mavi an ihrem Platz der Aufgabe)
+  skipTutorial() {
+    skipStory();
+    this.saveLevelState();
+    const arrive = worldToTile(this.player.x, this.player.y);
+    this.leaving = true;
+    this.mavi.destroy();
+    this.cameras.main.fadeOut(250);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      writeSave(LEVEL_ID);
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, seasonNote: tr('Tutorial übersprungen – alle Welten sind offen. Viel Spaß!', 'Tutorial skipped – all worlds are open. Have fun!') }));
+    });
   }
 
   // Tiere, liegende Werkzeuge und Begleiter dieses Levels merken (beim Verlassen bzw. Neuaufbau)

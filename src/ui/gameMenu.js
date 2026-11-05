@@ -1,4 +1,5 @@
-// Menü (Knopf oben rechts oder Esc): weiterspielen, Steuerung ansehen, von Hand speichern, zurück zum Startbildschirm.
+// Menü (Knopf oben rechts oder Esc): weiterspielen, Steuerung ansehen, von Hand speichern, zurück zum Startbildschirm,
+// solange es läuft auch das Tutorial überspringen (mit Rückfrage).
 // Das Spiel pausiert so lange. Esc schließt das Menü wieder.
 import { save } from '../save.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
@@ -28,15 +29,19 @@ function render() {
       <button class="start-btn" data-act="controls">${tr('Steuerung', 'Controls')}</button>
       <button class="start-btn" data-act="save"${save.testMode ? ' disabled' : ''}>${tr('Speichern', 'Save')}</button>
       <button class="start-btn" data-act="title">${tr('Zum Startbildschirm', 'Title screen')}</button>
+      ${!state.onSkip ? '' : state.asking
+        ? `<p class="menu-ask">${tr('Tutorial wirklich überspringen? Alle Welten sind dann offen, Mavis Aufgaben fallen weg.', 'Really skip the tutorial? All worlds will be open and Mavi’s tasks are gone.')}</p>
+      <div class="menu-ask-btns"><button class="start-btn small danger" data-act="skip-yes">${tr('Ja, überspringen', 'Yes, skip')}</button><button class="start-btn small" data-act="skip-no">${tr('Nein', 'No')}</button></div>`
+        : `<button class="start-btn small" data-act="skip">${tr('Tutorial überspringen', 'Skip tutorial')}</button>`}
       <p class="menu-saved">${savedLine()}</p>
     </div>`;
 }
 
 // onSave(): speichert, gibt true zurück, wenn es geklappt hat; onTitle(): zurück zum Startbildschirm; onClose(): Menü zu;
-// onControls(): Steuerung zeigen (nach dem Schließen des Menüs)
-export function openMenu(onSave, onTitle, onClose, onControls) {
+// onControls(): Steuerung zeigen (nach dem Schließen des Menüs); onSkip(): Tutorial überspringen (null: läuft keins mehr)
+export function openMenu(onSave, onTitle, onClose, onControls, onSkip = null) {
   panel = document.getElementById('menu');
-  state = { onSave, onTitle, onClose, onControls };
+  state = { onSave, onTitle, onClose, onControls, onSkip, asking: false };
   render();
   panel.classList.add('show');
   openedAt = performance.now();
@@ -69,6 +74,13 @@ function onClick(e) {
     const ok = state.onSave();
     render();
     panel.querySelector('.menu-saved').textContent = ok ? tr('Gespeichert ✓', 'Saved ✓') : tr('Speichern hat nicht geklappt', 'Saving did not work');
+  } else if (act === 'skip' || act === 'skip-no') {
+    state.asking = act === 'skip';
+    render();
+  } else if (act === 'skip-yes') {
+    const cb = state.onSkip;
+    close();
+    cb();
   } else if (act === 'title') {
     const cb = state.onTitle;
     close();
