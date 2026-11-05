@@ -561,6 +561,23 @@ export const SPECIES = {
     herd: true,
     groupSize: [2, 4],
   },
+  // Robbe (Eiswelt): schwimmt am Ufer, taucht auf und wünscht sich einen Fisch oder einen Ball – wer ihr genau das
+  // zuwirft, fängt sie (siehe Seal.js und TreatTool.js)
+  seal: {
+    texture: 'seal_lie', // an Land (gefangen, im Gehege); im Wasser zeichnet Seal.js das Bild "seal"
+    anims: { walkDown: 'seal_walk', walkUp: 'seal_walk_back' }, // Videos; im Stehen liegt sie (Standbild)
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 16,
+    restChance: 0.3,
+    restTime: [1, 3],
+    walkTime: [1, 2],
+    stepRate: 6,
+    hop: 1,
+    footW: 8,
+    shadowW: 30,
+    catchWith: ['herring', 'sealball'],
+  },
   // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am
   // Baum, auch durch Berühren (siehe Anteater.js). Läuft durch Dickicht hindurch (thicket)
   anteater: {

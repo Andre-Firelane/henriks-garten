@@ -74,6 +74,59 @@
       #quest-card b { display: block; font-size: 13px; color: #8a5a30; }
       #quest-card .quest-reward { margin-left: 6px; font-weight: bold; white-space: nowrap; }
       @media (max-width: 900px), (max-height: 500px) { #quest-card { font-size: 12px; padding: 4px 8px; } #quest-card b { font-size: 11px; } }
+      /* Aufgaben-Karte einklappen: der Pfeil rechts schiebt sie nach links weg, übrig bleibt ein kleiner Knopf am Rand */
+      #quest-card { padding-right: 34px; transition: transform 0.25s ease; }
+      #quest-card .quest-fold {
+        position: absolute; top: 50%; right: 4px; width: 26px; height: 26px; margin-top: -13px; padding: 0; cursor: pointer;
+        font: bold 14px/1 Arial, sans-serif; color: #8a5a30; background: #ffe7a0; border: 2px solid #e8a830; border-radius: 8px;
+      }
+      #quest-card.folded { transform: translateX(calc(-100% - 20px)); }
+      #quest-tab {
+        position: fixed; left: 0; z-index: 5; display: none; align-items: center; gap: 8px; box-sizing: border-box; padding: 0 6px 0 10px; cursor: pointer;
+        font: bold 13px/1 "Trebuchet MS", Arial, sans-serif; color: #3a2414;
+        background: #fff3c4; border: 2px solid #e8a830; border-left: 0; border-radius: 0 10px 10px 0; box-shadow: 0 3px 0 rgba(43, 29, 20, 0.45);
+      }
+      #quest-tab.show { display: flex; animation: enc-in 0.3s ease-out; }
+      #quest-tab .quest-fold {
+        display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; box-sizing: border-box;
+        font: bold 14px/1 Arial, sans-serif; color: #8a5a30; background: #ffe7a0; border: 2px solid #e8a830; border-radius: 8px;
+      }
+      #quest-tab.new::after {
+        content: ""; position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border-radius: 50%;
+        background: #e8483f; border: 2px solid #fff; animation: book-new 1.2s ease-in-out infinite;
+      }
+      /* Mavi spricht: Blase über ihrem Kopf (Antippen irgendwo blättert weiter) bzw. klein am Rand, wenn sie nicht zu sehen ist */
+      #speech-catch { position: fixed; inset: 0; z-index: 12; display: none; }
+      #speech-catch.show { display: block; }
+      #speech {
+        position: fixed; z-index: 13; display: none; width: min(360px, 78vw); box-sizing: border-box; padding: 10px 14px 24px; cursor: pointer;
+        transform: translate(-50%, calc(-100% - 14px)); font: 16px/1.35 "Trebuchet MS", Arial, sans-serif; color: #3a2414;
+        background: #fffaf0; border: 3px solid #6b4224; border-radius: 16px; box-shadow: 0 4px 0 rgba(43, 29, 20, 0.45);
+      }
+      #speech::after {
+        content: ""; position: absolute; left: calc(50% + var(--tail, 0px)); bottom: -12px; margin-left: -10px;
+        border: 10px solid transparent; border-top-color: #6b4224; border-bottom: 0;
+      }
+      #speech.show { display: block; animation: enc-in 0.2s ease-out; }
+      #speech .speech-name, #speech-toast .speech-name { display: block; font-size: 13px; color: #b5562a; }
+      #speech .speech-more { position: absolute; right: 12px; bottom: 6px; font: 12px/1 "Trebuchet MS", Arial, sans-serif; color: #8a5a30; opacity: 0; }
+      #speech.done .speech-more { opacity: 1; animation: speech-hint 1.4s ease-in-out infinite; }
+      @keyframes speech-hint { 50% { opacity: 0.45; } }
+      #speech-toast {
+        position: fixed; top: 12px; left: 50%; z-index: 11; display: none; align-items: center; gap: 8px; max-width: min(420px, 70vw);
+        padding: 6px 12px 6px 6px; transform: translateX(-50%); cursor: pointer; font: 14px/1.3 "Trebuchet MS", Arial, sans-serif; color: #3a2414;
+        background: #fffaf0; border: 3px solid #6b4224; border-radius: 14px; box-shadow: 0 3px 0 rgba(43, 29, 20, 0.45);
+      }
+      #speech-toast.show { display: flex; animation: enc-in 0.3s ease-out; }
+      #speech-toast .speech-face {
+        flex: none; width: 44px; height: 44px; border-radius: 50%; background: #f4dcae url(assets/mavi.png) -41px -37px / 403px 162px no-repeat; /* Gesicht mittig (1,4-fach) */
+        border: 2px solid #6b4224;
+      }
+      @media (max-width: 900px), (max-height: 500px) { #speech { font-size: 14px; padding: 8px 12px 20px; } #speech-toast { font-size: 12px; top: 64px; } }
+      /* gesperrte Gebiete auf der Weltkarte */
+      .travel-map .place.locked { filter: grayscale(1); opacity: 0.55; cursor: not-allowed; }
+      .travel-map .place.locked:hover { transform: translate(-50%, -50%); border-color: #6b4224; box-shadow: none; }
+      .travel-map .place-group > .place.locked:hover { transform: none; border-color: #6b4224; box-shadow: none; }
       #tools { position: fixed; right: 16px; bottom: 16px; display: flex; gap: 10px; pointer-events: none; }
       .tool {
         display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 6px;
@@ -681,6 +734,7 @@
     <div id="events"></div>
     <div id="event-banner"></div>
     <div id="quest-card"></div>
+    <button id="quest-tab"></button>
     <div id="encounter"></div>
     <div id="tip"></div>
     <div id="success"></div>

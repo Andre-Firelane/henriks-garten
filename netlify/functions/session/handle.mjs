@@ -40,11 +40,12 @@ const PROMOS = {
   worldsmap: 'Welten durchgeblättert',
   surprise: 'Überraschungs-Flamingos',
 };
-// Fortschritt (step, siehe progress in src/sessions.js): Tutorial-Schritte, danach Tutorial fertig plus weitere Aufgaben
-const STEPS = ['beim Laden', 'Auto', 'Regal', 'Schafe', 'Schafgehege', 'Herzen', 'Computer', 'Tutorial fertig'];
-const stepName = (n) => (n == null ? '–' : n < STEPS.length ? STEPS[n] : `Tutorial + ${n - 7} Aufg.`);
-// Trichter für neue Spiele: so viele kamen mindestens bis hierher ('Herzen' gibt es nur in alten Spielständen)
-const FUNNEL = [[1, 'geladen'], [2, 'zur Wiese gefahren'], [3, 'Werkzeuge geholt'], [4, 'Schafe heimgebracht'], [6, 'am Computer'], [7, 'Tutorial fertig'], [8, 'weitere Aufgabe']];
+// Fortschritt (step, siehe progress in src/sessions.js): die Aufgabe in Mavis Geschichte (src/story/steps.js), danach fertig
+// (Runden von vor Mavi zählten noch das alte Mini-Tutorial – ihre Zahlen passen nicht zu diesen Namen)
+const STEPS = ['beim Laden', 'Begrüßung', 'Schafe', 'Wiesentiere', 'Besucher', 'Eiswagen', 'Wald', 'Ausbau', 'Savanne', 'Aquarium', 'Event', 'Bambuswald', 'Dschungel', 'Abschied', 'Geschichte fertig'];
+const stepName = (n) => (n == null ? '–' : STEPS[Math.min(n, STEPS.length - 1)]);
+// Trichter für neue Spiele: so viele kamen mindestens bis hierher
+const FUNNEL = [[1, 'geladen'], [2, 'Mavi begrüßt'], [3, 'Schafe gefangen'], [5, 'Besucher-Herzen'], [6, 'Eiswagen steht'], [7, 'Wald geschafft'], [9, 'Savanne geschafft'], [10, 'Aquarium gesehen'], [14, 'Geschichte fertig']];
 
 export async function handle(req, store, secret) {
   if (req.method === 'POST') return record(req, store);

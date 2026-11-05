@@ -31,6 +31,7 @@ export const APPEAL = {
   gibbon: 5,
   anteater: 5,
   penguin: 6, // watschelt so lustig
+  seal: 6,
   iguana: 5,
   jaguar: 6,
   gorilla: 7,

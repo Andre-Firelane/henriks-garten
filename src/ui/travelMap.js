@@ -23,12 +23,13 @@ export function isTravelMapOpen() {
 // parts: [{ id, name, icon }] – das Gebiet hat mehrere Ziele, z. B. der Tierpark mit Zentrum und Reptilienhaus: dann ein
 // größeres Schild mit einem Feld je Ziel, übereinander; main: das Hauptziel, sein Feld ist größer); current: Ziel, an dem man gerade ist;
 // onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise.
-// opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mini-Tutorial: hüpfender Pfeil neben diesem Gebiet und
+// locked: noch gesperrt (grau, nicht anklickbar; Antippen zeigt lockedHint, siehe Mavis Geschichte in src/story)
+// opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mavi: hüpfender Pfeil neben diesem Gebiet und
 // der Hinweis statt der Anleitung
 export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   panel = document.getElementById('travel');
-  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}${p.main ? ' main' : ''}" data-id="${p.id}"${style}>
-        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.wip ? `<small>🚧 ${tr('in Arbeit', 'in progress')}</small>` : ''}</span>
+  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}${p.main ? ' main' : ''}${p.locked ? ' locked' : ''}" data-id="${p.id}"${style}>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.locked ? `<small>${tr('gesperrt', 'locked')}</small>` : p.wip ? `<small>🚧 ${tr('in Arbeit', 'in progress')}</small>` : ''}</span>
         ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
       </button>`;
@@ -64,10 +65,10 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   }
   // Ziele zum Auswählen mit WASD: die Felder eines größeren Schilds übereinander (für die Richtung etwas versetzt)
   const flat = places.flatMap((p) => (p.parts ? p.parts.map((q, i) => ({ ...q, x: p.x, y: p.y + (i - (p.parts.length - 1) / 2) * 9 })) : [p]));
-  const targets = flat.filter((p) => p.id !== current);
+  const targets = flat.filter((p) => p.id !== current && !p.locked);
   // keys: die Auswahl ist zu sehen (am PC gleich, auf Tablet und Handy erst nach einem Tastendruck – dort tippt man direkt)
   // im Mini-Tutorial ist das Ziel des Pfeils vorausgewählt
-  state = { places: targets, selected: Math.max(0, targets.findIndex((p) => p.id === opts.point)), keys: !isTouch(), onTravel, onClose };
+  state = { places: targets, selected: Math.max(0, targets.findIndex((p) => p.id === opts.point)), keys: !isTouch(), onTravel, onClose, lockedHint: opts.lockedHint };
   highlight();
   // erst nach diesem Tastendruck reagieren, sonst fährt die Taste E gleich los
   setTimeout(() => {
@@ -121,8 +122,17 @@ function onClick(e) {
   if (performance.now() - openedAt < OPEN_GRACE) return;
   if (isCloseClick(e)) return close(true);
   const place = e.target.closest('.place');
+  if (place?.classList.contains('locked')) return showLockedHint();
   if (place && !place.classList.contains('here')) travel(place.dataset.id);
   else if (!place) close(true);
+}
+
+// gesperrtes Gebiet angetippt: der Hinweis unten sagt, dass Mavi es bald zeigt
+function showLockedHint() {
+  const hint = panel.querySelector('.travel-hint');
+  if (!hint || !state.lockedHint) return;
+  hint.classList.add('tut');
+  hint.innerHTML = `<span class="tut-hint">${state.lockedHint}</span>`;
 }
 
 function travel(id) {

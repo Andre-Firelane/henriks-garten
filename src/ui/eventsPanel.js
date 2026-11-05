@@ -99,7 +99,9 @@ function thumb(item) {
 // opts: { tab: 'pens', only: Gehege-Id } zeigt nur den Ausbau dieses einen Geheges, ohne Reiter (am Gehegeschild)
 export function openEvents(getInfo, onPick, onClose, opts = {}) {
   panel = document.getElementById('events');
-  state = { getInfo, onPick, onClose, tab: opts.tab ?? 'events', only: opts.only ?? null, selected: 0 };
+  state = { getInfo, onPick, onClose, tab: opts.tab ?? 'events', only: opts.only ?? null, selected: 0, point: opts.point ?? null, tut: opts.hint ?? null };
+  // Mavis Aufgabe: dieses Event ist vorausgewählt, ein Pfeil zeigt darauf, darunter ihr Hinweis
+  if (state.point) state.selected = Math.max(0, items().list.findIndex((it) => it.id === state.point));
   render();
   panel.classList.add('show');
   openedAt = performance.now();
@@ -147,11 +149,12 @@ function render() {
       <div class="chest-items">${list
         .map(
           (it, i) => `<button class="chest-item ev-item" data-i="${i}">
-            ${thumb(it)}<span class="ev-name">${it.name}</span><small>${it.text}</small>
+            ${state.tab === 'events' && it.id === state.point ? '<span class="chest-pointer">▼</span>' : ''}${thumb(it)}<span class="ev-name">${it.name}</span><small>${it.text}</small>
             ${it.done ? '' : `<span class="ev-cost"><span class="heart">♥</span> ${it.cost}</span>`}<span class="ev-state"></span>
           </button>`,
         )
         .join('')}</div>
+      ${state.tut && state.tab === 'events' ? `<p class="chest-tut">${state.tut}</p>` : ''}
       <p class="chest-hint">${hint}${state.only ? tr(' <b>Esc</b> schließt.', ' <b>Esc</b> closes.') : tr(' <b>Q</b> wechselt zwischen Events und Gehegen.', ' <b>Q</b> switches between events and enclosures.')}</p>
     </div>`;
   tick();

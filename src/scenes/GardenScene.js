@@ -66,6 +66,7 @@ import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
 import Anteater from '../animals/Anteater.js';
 import Penguin from '../animals/Penguin.js';
+import Seal from '../animals/Seal.js';
 import Meerkat from '../animals/Meerkat.js';
 import Lion from '../animals/Lion.js';
 import Giraffe from '../animals/Giraffe.js';
@@ -132,9 +133,10 @@ import FoodTool from '../tools/FoodTool.js';
 import BoneTool from '../tools/BoneTool.js';
 import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
 import BallTool from '../tools/BallTool.js';
+import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIconSquare, animalIcons } from '../ui/icons.js';
-import { touchHandlers, setTouchTool, isTouch, IS_PHONE } from '../ui/touch.js';
+import { touchHandlers, setTouchTool, IS_PHONE } from '../ui/touch.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
@@ -142,7 +144,10 @@ import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
 import { countCatch, countEvent, countPromo, sessionLoaded } from '../sessions.js';
 import { isShowcaseOpen, openShowcase } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
-import { QUESTS, completeQuest, nextQuest, questDone } from '../world/quests.js';
+import { STEPS } from '../story/steps.js';
+import { activeId, activeStep, countStoryCatch, isUnlocked, storyAt } from '../story/story.js';
+import Mavi from '../npc/Mavi.js';
+import { isSpeaking, speechNext } from '../ui/speech.js';
 
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
@@ -156,7 +161,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 // Jeder Pool wird für sich aufgefüllt, so nehmen sich die Tiere der beiden nicht gegenseitig die Plätze weg
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -176,6 +181,8 @@ const CATCH_TOOLS = {
   jar: ['jar', tr('Quallenglas', 'Jellyfish jar')],
   swim: ['hand', tr('Mitschwimmen', 'Swim along')],
   rod: ['rod', tr('Angel', 'Fishing rod')],
+  herring: ['herring', tr('Fisch', 'Fish')],
+  sealball: ['ball', 'Ball'],
   drum: ['drum', tr('Trommel-Duell', 'Drum duel')],
 };
 const CATCH_TIPS = {
@@ -219,6 +226,7 @@ const CATCH_TIPS = {
   snake: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
   piranha: tr('Nur bei Starkregen im Dschungel: im Fluss wirbeln Piranha-Schwärme als dunkle Schatten. Hol die Angel aus dem Regal, paddle mit dem Kanu hin und wirf aus. Zuckt die Pose und erscheint ein „!“, schnell noch einmal drücken!', 'Only during heavy rain in the jungle: piranha schools swirl as dark shadows in the river. Get the fishing rod from the shelf, paddle there in the canoe and cast. When the float jerks and a “!” appears, press again quickly!'),
   tarantula: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
+  seal: tr('Schwimmt in der Eiswelt am Ufer (nachts auch in den Eislöchern). Kommst du näher, taucht sie auf und wünscht sich einen Fisch oder einen Ball – hol das Richtige aus dem Regal und wirf es ihr zu, wie das Lasso. Daneben? Nach 2 Sekunden kannst du noch einmal werfen. Zu nah, und sie taucht ab!', 'Swims along the shore in the ice world (at night also in the ice holes). If you get closer, it pops up and wishes for a fish or a ball – get the right one from the shelf and throw it, like the lasso. Missed? After 2 seconds you can throw again. Too close, and it dives away!'),
   penguin: tr('In der Eiswelt, immer nah am Wasser. Kommst du zu nah, hüpft er ins Wasser und ist weg – wirf das Lasso aus etwas Abstand!', 'In the ice world, always close to the water. If you get too close, it hops into the water and is gone – throw the lasso from a little distance!'),
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
   gibbon: tr('Nur bei Nebel im Dschungel. Wie der Brüllaffe sitzt er unsichtbar oben im Urwaldbaum – merk dir, wohin er springt, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in fog in the jungle. Like the howler monkey it sits unseen high up in a jungle tree – remember where it jumps, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
@@ -304,6 +312,7 @@ const ANIMAL_INFO = {
   snake: tr(['Schlange', 'Sie riecht mit der Zunge: Beim Züngeln fängt sie Duftteilchen aus der Luft ein.'], ['Snake', 'It smells with its tongue: flicking it catches scent particles from the air.']),
   piranha: tr(['Piranha', 'Mit seinen messerscharfen Zähnen kann er sogar Nüsse knacken – meist frisst er aber Insekten, Fische und Früchte.'], ['Piranha', 'Its razor-sharp teeth can even crack nuts – but mostly it eats insects, fish and fruit.']),
   tarantula: tr(['Vogelspinne', 'Sie hat acht Beine und acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Tarantula', 'It has eight legs and eight eyes – but still doesn’t see very well.']),
+  seal: tr(['Seehund', 'Er kann bis zu 30 Minuten tauchen – und schläft sogar im Wasser, nur die Nase schaut zum Atmen heraus.'], ['Harbour seal', 'It can dive for up to 30 minutes – and even sleeps in the water with just its nose poking out to breathe.']),
   penguin: tr(['Kaiserpinguin', 'An Land watschelt er gemütlich – im Wasser aber schwimmt er schneller als ein Mensch rennen kann und taucht über 500 Meter tief.'], ['Emperor penguin', 'On land it waddles along slowly – but in the water it swims faster than a person can run and dives more than 500 metres deep.']),
   anteater: tr(['Großer Ameisenbär', 'Seine Zunge ist bis zu 60 Zentimeter lang – damit schleckt er an einem Tag bis zu 30.000 Ameisen und Termiten.'], ['Giant anteater', 'Its tongue is up to 60 centimetres long – with it, it licks up to 30,000 ants and termites in a single day.']),
   gibbon: tr(['Gibbon', 'Mit seinen langen Armen schwingt er sich von Ast zu Ast – bis zu 15 Meter weit mit einem Schwung.'], ['Gibbon', 'With its long arms it swings from branch to branch – up to 15 metres in a single swing.']),
@@ -335,6 +344,10 @@ const SLEEP_FADE = 3000; // so lange wird es beim Einschlafen dunkel (Millisekun
 const COLD_WARN = 0.75; // Kälte (Eiswelt bei Nacht): ab hier die Warnung, bei 1 ist Henrik zu kalt zum Fangen
 const COLD_TINT = 0x9fd0ff; // so bläulich wird er dabei
 const COLD_HINT_GAP = 4; // so viele Sekunden mindestens zwischen zwei Hinweisen, wenn er es trotzdem versucht
+const BREATH_EVERY = 2.2; // nachts atmet Henrik alle so viele Sekunden eine Wolke aus (durchgefroren öfter) ...
+const BREATH_SIZE = 0.85; // ... so groß wird sie (Maßstab des weichen Lichtpunkts, 64 Pixel) ...
+const BREATH_DEPTH = 99935; // über dem Nachtschleier (siehe Weather.js), sonst ist sie im Dunkeln kaum zu sehen
+const BREATH_UP = 40; // ... und so hoch über den Füßen ist sein Mund
 const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen (auch am Futterautomaten)
 const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Futter hineinzuwerfen
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
@@ -433,9 +446,9 @@ const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfau
 const PEACOCK_CALL_EVERY_PARK = [60, 120]; // ... im Tierpark seltener (dort laufen viele Pfauen frei herum)
 const ENCOUNTER_DIST = 200; // so nah muss ein Tier einer noch nie gefangenen Art sein, dann zeigt eine Blase das Werkzeug dafür
 const ENCOUNTER_FLEES = 2; // so oft darf es fliehen, dann kommt der Fang-Tipp einmal von selbst
-const OFFICE_DOOR_H = 62; // so hoch über der Türkachel steht der Tutorial-Pfeil am Haupthaus (oberer Rand der Glastür)
-const SHEEP_QUEST = 3; // so viele Schafe verlangt die erste Starter-Aufgabe
-const TUT_SHEEP = 2; // im Mini-Tutorial grasen auf der Wiese immer so viele Schafe ...
+const OFFICE_DOOR_H = 62; // so hoch über der Türkachel steht Mavis Pfeil am Haupthaus (oberer Rand der Glastür)
+const SHEEP_QUEST = 3; // so viele Schafe verlangt Mavis erste Aufgabe
+const TUT_SHEEP = 2; // bei Mavis Schaf-Aufgabe grasen auf der Wiese immer so viele Schafe ...
 const TUT_SHEEP_R = 360; // ... so nah am Auto ...
 const TUT_SHEEP_CHECK = 2; // ... nachgeschaut wird alle paar Sekunden
 const PROMO_DELAY = 1200; // so lange nach der Ankunft im Tierpark, bis eine Tafel aufgeht (maybeShowPromo)
@@ -462,11 +475,9 @@ const WORLD_PAGES = [
     'Dive in the submarine to turtles, rays, octopuses and colorful reef fish.',
   )],
 ];
-const TUT_EVENT_HEARTS = 30; // so viele Herzen schenkt das Mini-Tutorial für das erste Event (der Eisstand kostet so viel)
-const TUT_TIP_TIME = 25000; // so lange steht der Tutorial-Hinweis unten, wenn man den Schritt nicht macht (Millisekunden)
 let lastBookTab = 'animals'; // zuletzt offener Reiter im Tierbuch
-let tutTipHidden = null; // Tutorial-Schritt, dessen Hinweis schon ausgeblendet wurde
-let tutTipTimer = null;
+const QUEST_FOLD_KEY = 'my-little-zoo-quest-folded'; // Aufgaben-Karte eingeklappt (nur in diesem Browser)
+const AQUARIUM_TOUR = { tx: 3, ty: 16 }; // Ankunft vor der Aquariumtür (park2), wenn Mavi das Aquarium zeigt
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const BABY_LEVELS = [...PARK_LEVELS, 'aquarium'];// dort gibt es beim Tierbaby-Event Nachwuchs
@@ -574,6 +585,17 @@ const TOOLS = {
     name: tr('Fischfutter', 'Fish food'),
     hint: tr(`Streu es am Ufer ins Wasser – dann kommen die ${animalIcon('koi')} hoch`, `Scatter it into the water from the shore – the ${animalIcon('koi')} will come up`),
   },
+  herring: {
+    create: (scene, player) => new TreatTool(scene, player, 'herring'),
+    name: tr('Fisch', 'Fish'),
+    hint: tr(`Wirf ihn einer ${animalIcon('seal')} zu, die sich einen Fisch wünscht`, `Throw it to a ${animalIcon('seal')} that wishes for a fish`),
+  },
+  sealball: {
+    create: (scene, player) => new TreatTool(scene, player, 'sealball'),
+    name: 'Ball',
+    image: 'ball',
+    hint: tr(`Wirf ihn einer ${animalIcon('seal')} zu, die sich einen Ball wünscht – sie balanciert ihn auf der Nase`, `Throw it to a ${animalIcon('seal')} that wishes for a ball – it balances it on its nose`),
+  },
   ball: {
     create: (scene, player) => new BallTool(scene, player),
     name: 'Ball',
@@ -665,7 +687,7 @@ export default class GardenScene extends Phaser.Scene {
     this.leaving = false;
     this.beds = []; // Betten in den Hütten (Kacheln): dort kann man sich ausruhen
     this.resting = false;
-    this.chestSprites = new Map(); // Bilder der Regale und Kisten je Kachel ("tx,ty"), für den Pfeil im Mini-Tutorial
+    this.chestSprites = new Map(); // Bilder der Regale und Kisten je Kachel ("tx,ty")
     this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
 
     const ground = []; // Bodenkacheln [x, y, Bild]: werden unten in wenige große Flächen gemalt (schneller auf dem Tablet)
@@ -770,7 +792,7 @@ export default class GardenScene extends Phaser.Scene {
               else this.tooFar();
             });
           }
-          if (obj.computer) this.computerSprite = img; // für den Pfeil im Mini-Tutorial
+          if (obj.computer) this.computerSprite = img; // für Mavis Pfeil
           if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => (this.nearComputer ? this.openEventsPanel() : this.tooFar()));
         }
       }
@@ -834,7 +856,7 @@ export default class GardenScene extends Phaser.Scene {
       };
       this.gateGroups.push(group);
       front.push(...group.sprites);
-      // Eingang des Haupthauses: dorthin zeigt der Pfeil im Mini-Tutorial, bevor man drin ist (dann zum Computer)
+      // Eingang des Haupthauses: dorthin zeigt Mavis Pfeil, bevor man drin ist (dann zum Computer)
       const door = group.sprites[0];
       if (h.style === 'office' && door) this.officeDoor = { x: door.x, y: door.y - OFFICE_DOOR_H };
       // obere Ecke der Grundfläche liegt im Dachbild bei ROOF_ANCHOR (Hütten: 184, 100)
@@ -912,7 +934,6 @@ export default class GardenScene extends Phaser.Scene {
     this.weather = SEASON_LEVELS.includes(LEVEL_ID) ? new Weather(this, LEVEL.season) : null; // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel
     this.waterfallSun = LEVEL.waterfallSun && this.waterfalls.length ? new WaterfallSun(this, this.waterfalls[0]) : null; // Dschungel: ab und zu Sonne am Wasserfall (Leguane)
     this.seasonTimer = 1;
-    if (data.intro) game.tutorial = 'car'; // neues Spiel: Mini-Tutorial (siehe showTutorial)
     // weitere Autos (extraCars): öffnen dieselbe Weltkarte
     this.cars = [];
     for (const [i, car] of (LEVEL.car ? [LEVEL.car, ...(LEVEL.extraCars ?? [])] : []).entries()) {
@@ -933,15 +954,16 @@ export default class GardenScene extends Phaser.Scene {
     this.car = this.cars[0] ?? null;
     if (LEVEL.car?.float) this.floatBoat(); // U-Boot (Unterwasserwelt): schaukelt über dem Boden
     this.nearCar = false;
-    this.showTutorial();
 
     // Beschriftung über den Übergängen in andere Level
     for (const exit of EXITS) {
       // breite Türen (mehrere Übergangs-Kacheln nebeneinander) nur einmal beschriften
       if (EXITS.some((o) => o !== exit && o.to === exit.to && Math.abs(o.tx - exit.tx) + Math.abs(o.ty - exit.ty) === 1 && (o.tx < exit.tx || o.ty < exit.ty))) continue;
       const { x, y } = tileToWorld(exit.tx, exit.ty);
+      const locked = !isUnlocked(exit.to);
+      if (locked) this.drawBarrier(exit);
       this.add
-        .text(x, y - 34, `${exit.label} ▸`, {
+        .text(x, y - 34, locked ? `${exit.label} · ${tr('noch im Bau', 'under construction')}` : `${exit.label} ▸`, {
           fontFamily: 'Trebuchet MS, Arial',
           fontSize: '11px',
           fontStyle: 'bold',
@@ -1010,7 +1032,8 @@ export default class GardenScene extends Phaser.Scene {
       this.spawnAnimals(arrive);
     }
     this.tutSheepTimer = TUT_SHEEP_CHECK;
-    this.ensureTutorialSheep(false);
+    this.ensureStorySheep(false);
+    this.ensureStoryAnimals(false);
     this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
     this.heronTimer = LEVEL.herons ? Phaser.Math.FloatBetween(5, LEVEL.herons.every[0]) : Infinity;
     this.flamingoTimer = Phaser.Math.FloatBetween(2, FLAMINGO_EVERY[0]);
@@ -1069,6 +1092,7 @@ export default class GardenScene extends Phaser.Scene {
 
     this.hud = document.getElementById('hud');
     this.questCard = document.getElementById('quest-card');
+    this.questTab = document.getElementById('quest-tab');
     this.encounterEl = document.getElementById('encounter');
     this.encounterEl.classList.remove('show');
     this.encounterAnimal = null;
@@ -1077,14 +1101,21 @@ export default class GardenScene extends Phaser.Scene {
     const book = document.getElementById('btn-book');
     book.querySelector('.book-label').textContent = tr('Tierbuch', 'Book');
     book.setAttribute('aria-label', tr('Tierbuch', 'Animal Book'));
-    this.questCard.onclick = () => {
+    this.questCard.onclick = (e) => {
+      if (e.target.closest('.quest-fold')) return this.foldQuestCard(true);
       lastBookTab = 'quests';
       this.showJournal();
+    };
+    this.questTab.onclick = (e) => {
+      e.stopPropagation();
+      this.foldQuestCard(false);
     };
     document.getElementById('btn-book').onclick = (e) => {
       e.stopPropagation();
       this.showJournal();
     };
+    this.mavi = new Mavi(this); // führt durch die Geschichte (siehe src/npc/Mavi.js)
+    this.events.once('shutdown', () => this.mavi.destroy());
     this.updateBookButton();
     this.updateQuestCard();
     this.updateEventBanner();
@@ -1130,6 +1161,10 @@ export default class GardenScene extends Phaser.Scene {
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
     const useTool = (event) => {
       if (event?.repeat) return; // gedrückt gehalten: nur der erste Druck zählt (z. B. beim Trommeln)
+      if (isSpeaking()) {
+        speechNext(); // Mavi spricht: nächste Seite
+        return;
+      }
       if (this.nearBoat && !this.leaving) {
         this.useBoat(); // am Steg: ins Kanu steigen bzw. aussteigen
         return;
@@ -1623,6 +1658,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Anteater(this, x, y)
         : species === 'penguin'
           ? new Penguin(this, x, y)
+        : species === 'seal'
+          ? new Seal(this, x, y)
         : species === 'iguana'
           ? new Iguana(this, x, y)
         : species === 'jaguar'
@@ -1802,6 +1839,7 @@ export default class GardenScene extends Phaser.Scene {
         (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileFrom(NEAR_WATER, taken)) ||
         (species === 'penguin' && LEVEL.iceHoles && Math.random() < PENGUIN_AT_HOLES && this.tileFrom(this.holeTiles(), taken)) || // nachts meist an den Eislöchern
         (species === 'penguin' && this.tileFrom(NEAR_WATER, taken)) || // Pinguine immer am Wasser
+        (species === 'seal' && this.tileFrom(Seal.shoreTiles(), taken)) || // Robben im Wasser am Ufer
         (species === 'giraffe' && Math.random() < GIRAFFE_NEAR_TREES && this.tileFrom(NEAR_TREES, taken)) ||
         (species === 'panda' && this.tileFrom(NEAR_BAMBOO, taken)) ||
         (species === 'butterfly' && this.tileFrom(flowerTiles(), taken)) || // Schmetterlinge bei den Blumen // Pandas immer beim Bambus
@@ -1828,6 +1866,11 @@ export default class GardenScene extends Phaser.Scene {
     const life = Phaser.Math.FloatBetween(...LIFETIME);
     group[0]?.rollSkin('wild'); // selten z. B. Katze 2; eine Herde sieht ganz gleich aus (Oryx)
     const g = LEVEL.gatherAt && ['zebra', 'antelope'].includes(group[0]?.species) && tileToWorld(LEVEL.gatherAt.tx, LEVEL.gatherAt.ty);
+    // eine Pinguin-Gruppe ist eine Herde: zählt als ein Platz (wildUnits) und springt zusammen ab (siehe Penguin.js)
+    if (group[0]?.species === 'penguin') {
+      const herd = {};
+      for (const a of group) a.herd = herd;
+    }
     for (const a of group) {
       if (g) a.leash = { x: g.x, y: g.y, r: LEVEL.gatherAt.r }; // drängen sich am letzten Wasserloch
       a.life = life;
@@ -1886,7 +1929,8 @@ export default class GardenScene extends Phaser.Scene {
     this.tutSheepTimer -= dt;
     if (this.tutSheepTimer <= 0) {
       this.tutSheepTimer = TUT_SHEEP_CHECK;
-      this.ensureTutorialSheep(true);
+      this.ensureStorySheep(true);
+      this.ensureStoryAnimals(true);
     }
 
     this.spawnTimer -= dt;
@@ -1898,20 +1942,34 @@ export default class GardenScene extends Phaser.Scene {
     this.spawnGorillas();
   }
 
-  // Mini-Tutorial auf der Wiese: rund um Auto und Hütte grasen immer ein paar wilde Schafe (TUT_SHEEP, höchstens so viele,
-  // wie für die erste Aufgabe noch fehlen – samt denen, die schon folgen oder zuhause sind). Die übrigen kommen wie sonst
-  // auch von selbst. fadeIn: neue blenden sanft ein
-  ensureTutorialSheep(fadeIn) {
-    if (LEVEL_ID !== 'meadow' || (game.tutorial !== 'tools' && game.tutorial !== 'sheep')) return;
+  // Mavis Schaf-Aufgabe auf der Wiese: rund um Auto und Hütte grasen immer ein paar wilde Schafe (TUT_SHEEP, höchstens so
+  // viele, wie für die Aufgabe noch fehlen). Die übrigen kommen wie sonst auch von selbst. fadeIn: neue blenden sanft ein
+  ensureStorySheep(fadeIn) {
+    if (LEVEL_ID !== 'meadow' || activeId() !== 'sheep') return;
     const at = this.car ?? this.player;
     const near = (a) => Math.hypot(a.x - at.x, (a.y - at.y) * 2) < TUT_SHEEP_R;
     const sheep = this.animals.filter((a) => a.species === 'sheep');
-    const missing = SHEEP_QUEST - sheep.filter((a) => a.state === 'following').length - this.sheepAtHome();
+    const missing = SHEEP_QUEST - (game.catches.sheep ?? 0);
     const want = Math.min(TUT_SHEEP, missing);
     for (let i = sheep.filter((a) => a.state === 'wild' && near(a)).length; i < want; i++) {
       const spot = this.freeSpotNear(at.x, at.y, TUT_SHEEP_R * 0.6); // (Quadrat um den Punkt: so liegt es sicher im Umkreis)
       if (!spot) break;
       this.finishSpawn([this.createAnimal('sheep', spot.x, spot.y)], fadeIn);
+    }
+  }
+
+  // Mavis Fang-Aufgaben (wild in steps.js): von jeder Art, die noch fehlt, sind im Gebiet der Aufgabe immer mindestens so
+  // viele wilde Tiere unterwegs, wie noch gebraucht werden – sonst sucht ein neuer Spieler vergeblich. Sie kommen an
+  // ihre üblichen Plätze (Frösche meist am Wasser, Schmetterlinge bei den Blumen). fadeIn: neue blenden sanft ein
+  ensureStoryAnimals(fadeIn) {
+    const step = activeStep();
+    if (!step?.wild || step.at.level !== LEVEL_ID) return;
+    const taken = [worldToTile(this.player.x, this.player.y)];
+    for (const [species, n] of Object.entries(step.wild)) {
+      const missing = n - (game.catches[species] ?? 0);
+      for (let i = this.animals.filter((a) => a.species === species && a.state === 'wild').length; i < missing; i++) {
+        if (!this.spawnOne(taken, fadeIn, { weights: { [species]: 1 } }).length) break;
+      }
     }
   }
 
@@ -2035,6 +2093,30 @@ export default class GardenScene extends Phaser.Scene {
     if (!this.leaving) this.showToast(tr('Geh erst direkt daneben.', 'Walk right up to it first.'));
   }
 
+  // Übergang in einen Tierpark-Abschnitt (oder ein Haus), den Mavi noch nicht freigeschaltet hat: stehen bleiben
+  blockedExit(exit, prev) {
+    this.player.x = prev.x;
+    this.player.y = prev.y;
+    if (this.time.now < (this.blockedHintAt ?? 0)) return;
+    this.blockedHintAt = this.time.now + 4000;
+    this.showToast(tr(`🚧 ${exit.label}: Hier wird noch gebaut – Mavi sagt dir, wenn es fertig ist.`, `🚧 ${exit.label}: Still under construction – Mavi will tell you when it’s ready.`));
+  }
+
+  // Baustellen-Absperrung (rot-weiß gestreifte Latte auf zwei Böcken) an einem gesperrten Übergang
+  drawBarrier(exit) {
+    const { x, y } = tileToWorld(exit.tx, exit.ty);
+    const g = this.add.graphics().setDepth(y + 8);
+    const w = 44;
+    g.fillStyle(0x6b4224, 1);
+    g.fillRect(x - w / 2, y - 14, 3, 16);
+    g.fillRect(x + w / 2 - 3, y - 14, 3, 16);
+    for (let i = 0; i < 6; i++) {
+      g.fillStyle(i % 2 ? 0xffffff : 0xe8483f, 1);
+      g.fillRect(x - w / 2 + (i * w) / 6, y - 16, w / 6, 6);
+    }
+    g.lineStyle(1, 0x6b4224, 1).strokeRect(x - w / 2, y - 16, w, 6);
+  }
+
   // Boden einmal in große Flächen (je 1024 x 1024 Pixel) malen statt tausender einzelner Kacheln, die sonst in jedem Bild
   // neu gezeichnet würden
   bakeGround(list) {
@@ -2124,7 +2206,7 @@ export default class GardenScene extends Phaser.Scene {
   updateHud() {
     const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
     this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
-    if (nextQuest()?.id === 'eventAnimal') this.updateQuestCard(); // dort steht, wie viele Herzen noch fehlen
+    this.updateQuestCard(); // (Fortschritt der Besucher-Aufgabe)
     this.layoutHudStack();
   }
 
@@ -2135,6 +2217,7 @@ export default class GardenScene extends Phaser.Scene {
     this.eventBanner.style.top = `${Math.round(y)}px`;
     if (this.eventBanner.classList.contains('show')) y = this.eventBanner.getBoundingClientRect().bottom + 6;
     this.questCard.style.top = `${Math.round(y)}px`;
+    this.questTab.style.top = `${Math.round(y)}px`;
   }
 
   // Neues fürs Tierbuch merken: 'caught:<Art>' (neu gefangen), 'seen:<Art>' (Fang-Tipp freigeschaltet), 'quest:<Id>'
@@ -2148,49 +2231,50 @@ export default class GardenScene extends Phaser.Scene {
     document.getElementById('btn-book').classList.toggle('new', game.bookNew.length > 0);
   }
 
-  // Starter-Aufgabe erledigt: Herzen dazu und eine kleine Feier
-  questDone(id) {
-    const q = completeQuest(id);
-    if (!q) return;
-    this.addHearts(q.reward);
-    this.markNew(`quest:${id}`);
-    this.updateQuestCard();
-    this.time.delayedCall(1600, () => {
+  // Aufgabe aus Mavis Geschichte geschafft (die Herzen gibt Mavi): eine kleine Feier mit der nächsten Aufgabe
+  storySuccess(step) {
+    this.time.delayedCall(400, () => {
       const box = document.getElementById('success');
-      const next = nextQuest();
-      box.innerHTML = `${tr(`<b>Aufgabe geschafft!</b>`, `<b>Task done!</b>`)}<span>${q.text}</span><span><span class="heart">♥</span> +${q.reward}</span>${next ? `<small>${tr('Nächste Aufgabe', 'Next task')}: ${next.text}</small>` : `<small>${tr('Alle Starter-Aufgaben geschafft – super!', 'All starter tasks done – great!')}</small>`}`;
+      const next = activeStep();
+      box.innerHTML = `${tr(`<b>Aufgabe geschafft!</b>`, `<b>Task done!</b>`)}<span>${step.goal}</span>${step.reward ? `<span><span class="heart">♥</span> +${step.reward}</span>` : ''}${next ? `<small>${tr('Nächste Aufgabe', 'Next task')}: ${next.goal}</small>` : ''}`;
       box.classList.remove('show');
       void box.offsetWidth; // Animation neu starten
       box.classList.add('show');
     });
   }
 
-  // nächste offene Starter-Aufgabe unter dem Zähler (im Mini-Tutorial ab dem Schaf-Schritt: die Schafe sind die erste
-  // Aufgabe); antippen öffnet das Tierbuch dort
+  // aktive Aufgabe aus Mavis Geschichte unter dem Zähler; antippen öffnet das Tierbuch dort. Der Pfeil rechts klappt sie
+  // nach links weg (dann bleibt ein kleiner Knopf am Rand, der sie wieder ausklappt)
   updateQuestCard() {
     if (!this.questCard) return; // beim allerersten Aufbau (Tiere ziehen ein, bevor die Anzeige steht)
-    const q = game.tutorial !== 'car' && game.tutorial !== 'tools' && nextQuest();
+    const q = activeStep();
+    let folded = false;
+    try {
+      folded = localStorage.getItem(QUEST_FOLD_KEY) === '1';
+    } catch {}
     this.questCard.classList.toggle('show', !!q);
+    this.questCard.classList.toggle('folded', folded);
+    this.questTab.classList.toggle('show', !!q && folded);
     if (q) {
-      const n = QUESTS.indexOf(q) + 1;
-      const progress = q.id === 'sheep' ? ` (${Math.min(SHEEP_QUEST, this.sheepAtHome())} / ${SHEEP_QUEST})` : q.id === 'eventAnimal' ? this.eventAnimalProgress() : '';
-      this.questCard.innerHTML = `<b>${tr('Aufgabe', 'Task')} ${n} / ${QUESTS.length}</b><span>${q.text}${progress}</span><span class="quest-reward"><span class="heart">♥</span> ${q.reward}</span>`;
+      const n = STEPS.indexOf(q) + 1;
+      const html = `<b>${tr('Mavis Aufgabe', 'Mavi’s task')} ${n} / ${STEPS.length}</b><span>${q.goal}${q.progress?.(game) ?? ''}</span>${q.reward ? `<span class="quest-reward"><span class="heart">♥</span> ${q.reward}</span>` : ''}<button class="quest-fold" aria-label="${tr('Einklappen', 'Collapse')}">◀</button>`;
+      // neue Aufgabe, während die Karte eingeklappt ist: roter Punkt am Knopf
+      if (folded && this.questCardStep && this.questCardStep !== q.id) this.questTab.classList.add('new');
+      this.questCardStep = q.id;
+      if (this.questCard.innerHTML !== html) this.questCard.innerHTML = html;
+      this.questTab.innerHTML = `${tr('Aufgabe', 'Task')}<span class="quest-fold">▶</span>`;
     }
     this.layoutHudStack();
+    // eingeklappt: der Knopf ist so hoch wie die Karte (sie bleibt dafür unsichtbar daneben im Layout)
+    if (q) this.questTab.style.height = `${this.questCard.offsetHeight}px`;
   }
 
-  // Aufgabe "Event mit neuen Tieren": so viele Herzen hat man vom günstigsten solchen Event (leer, wenn es reicht oder schon eins läuft)
-  eventAnimalProgress() {
-    const ids = Object.values(EVENT_SPECIES).map(([id]) => id);
-    if (ids.some((id) => isActive(id))) return '';
-    const cost = Math.min(...EVENTS.filter((e) => ids.includes(e.id)).map((e) => e.cost));
-    return game.hearts < cost ? ` (<span class="heart">♥</span> ${game.hearts} / ${cost})` : '';
-  }
-
-  // Schafe im Schafgehege (für die erste Aufgabe), auch von unterwegs aus dem gespeicherten Stand des Tierparks
-  sheepAtHome() {
-    const list = LEVEL_ID === 'park' ? this.animals ?? [] : game.levels.park?.animals ?? [];
-    return list.filter((a) => a.species === 'sheep' && a.state === 'penned' && !a.baby).length;
+  foldQuestCard(fold) {
+    try {
+      localStorage.setItem(QUEST_FOLD_KEY, fold ? '1' : '0');
+    } catch {}
+    this.questTab.classList.remove('new');
+    this.updateQuestCard();
   }
 
   // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
@@ -2212,7 +2296,11 @@ export default class GardenScene extends Phaser.Scene {
         this.beginEvent(id);
       },
       () => this.scene.resume(),
-      focus ? { tab: 'pens', only: focus } : {},
+      focus
+        ? { tab: 'pens', only: focus }
+        : activeId() === 'icecream' // Mavis Aufgabe: Pfeil auf den Eiswagen
+          ? { point: 'icecream', hint: tr('Starte den Eiswagen – jedes Eis bringt dir Herzen!', 'Start the ice cream truck – every ice cream brings you hearts!') }
+          : {},
     );
   }
 
@@ -2221,9 +2309,8 @@ export default class GardenScene extends Phaser.Scene {
     startEvent(id, Date.now(), free);
     countEvent(id);
     this.updateHud();
-    if (id === 'icecream') this.questDone('icecream');
-    if (id === 'icecream' && game.tutorial === 'computer') this.visitors?.sendToIce(); // gleich kauft jemand ein Eis
-    if (game.tutorial === 'computer') this.finishTutorial();
+    if (id === 'icecream' && activeId() === 'icecream') this.visitors?.sendToIce(); // gleich kauft jemand ein Eis
+    this.mavi?.check();
     if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
     if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
     if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
@@ -2292,6 +2379,7 @@ export default class GardenScene extends Phaser.Scene {
     game.penLevel[id] = 1;
     if (e.level !== LEVEL_ID) {
       this.updateHud();
+      this.mavi?.check();
       this.saveGame();
       this.showToast(tr(`🔨 ${e.name} wird ausgebaut! Du findest es im Tierpark-Bereich „${LEVELS[e.level].part.name}“.`, `🔨 ${e.name} is being upgraded! You'll find it in the zoo area “${LEVELS[e.level].part.name}”.`));
       return;
@@ -2479,24 +2567,11 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Willkommens-Tafel zu Beginn eines neuen Spiels: kurz, worum es geht, und die Steuerung
+  // Willkommens-Tafel zu Beginn eines neuen Spiels: nur die Steuerung – worum es geht, erzählt danach Mavi
   showIntro() {
     if (isJournalOpen() || this.leaving) return;
-    const goals = [
-      ['🐾', tr('Fang Tiere in den Welten rund um deinen Tierpark. Sie laufen dir hinterher – bring sie nach Hause in deine Gehege.', 'Catch animals in the worlds around your zoo. They follow you – bring them home to your enclosures.')],
-      ['🧰', tr('Werkzeuge wie Kescher, Lasso und Falle liegen im Regal in der Hütte.', 'Tools like the net, lasso and trap are on the shelf in the hut.')],
-      ['🦊', tr(
-        'Schafe laufen dir einfach hinterher – andere Tiere sind kniffliger: Manche musst du anschleichen, mit Futter locken, mit Lasso oder Falle fangen oder geschickt austricksen. Tipps zu jedem Tier stehen im Tierbuch.',
-        'Sheep simply follow you – other animals are trickier: some you have to sneak up on, lure with food, catch with the lasso or a trap, or cleverly outsmart. Tips for every animal are in the Animal Book.',
-      )],
-      ['♥', tr('Besucher lieben deine Tiere und schenken dir Herzen.', 'Visitors love your animals and give you hearts.')],
-      ['🎉', tr('Mit den Herzen startest du am Computer im Haupthaus Events oder baust Gehege aus. Manche Events bringen ganz neue Tiere!', 'Use the hearts at the computer in the main building to start events or upgrade enclosures. Some events bring brand-new animals!')],
-      ['✨', tr('Viele Tiere gibt es ab und zu in einer seltenen Variante – halt die Augen offen!', 'Many animals now and then come in a rare variant – keep your eyes open!')],
-      ['📖', tr('Alles Weitere steht im Tierbuch – der Knopf oben links.', 'You can find everything else in the Animal Book – the button at the top left.')],
-    ];
     const html = `<div class="journal-box intro-box">
       <h2>${tr('Willkommen bei My Little Zoo!', 'Welcome to My Little Zoo!')}</h2>
-      <ul class="intro-goals">${goals.map(([icon, text]) => `<li><span class="intro-icon">${icon}</span>${text}</li>`).join('')}</ul>
       ${CONTROLS}
       <p class="close-hint">${tr('Beliebige Taste oder Tippen – los geht’s!', 'Press any key or tap – let’s go!')}</p>
     </div>`;
@@ -2585,12 +2660,17 @@ export default class GardenScene extends Phaser.Scene {
 
   // Reiter "Aufgaben": alle Starter-Aufgaben mit Häkchen und Belohnung
   bookQuests() {
-    const done = QUESTS.filter((q) => questDone(q.id)).length;
-    const rows = QUESTS.map((q) => `<div class="quest-row${questDone(q.id) ? ' done' : ''}${this.bookFresh.has(`quest:${q.id}`) ? ' new' : ''}"><span class="quest-check">${questDone(q.id) ? '✅' : '⬜'}</span><span>${q.text}</span><span class="quest-reward"><span class="heart">♥</span> ${q.reward}</span></div>`);
-    return `<h2>${tr(`Starter-Aufgaben · ${done} / ${QUESTS.length}`, `Starter tasks · ${done} / ${QUESTS.length}`)}</h2>
-      <p class="book-note">${tr('Jede Aufgabe bringt dir einmal Herzen. Mit den Herzen startest du am Computer im Haupthaus Events – und manche Events bringen neue Tiere.', 'Every task gives you hearts once. Use the hearts at the computer in the main building to start events – and some events bring new animals.')}</p>
+    const at = game.story.step;
+    const rows = STEPS.slice(0, at + 1).map((q, i) => {
+      const done = i < at;
+      return `<div class="quest-row${done ? ' done' : ''}${this.bookFresh.has(`quest:${q.id}`) ? ' new' : ''}"><span class="quest-check">${done ? '✅' : '⬜'}</span><span>${q.goal}</span>${q.reward ? `<span class="quest-reward"><span class="heart">♥</span> ${q.reward}</span>` : ''}</div>`;
+    });
+    const later = STEPS.length - at - 1;
+    if (later > 0) rows.push(`<div class="quest-row"><span class="quest-check">⬜</span><span>${tr(`… und noch ${later} weitere – Mavi verrät sie nach und nach`, `… and ${later} more – Mavi will reveal them one by one`)}</span></div>`);
+    return `<h2>${tr(`Mavis Aufgaben · ${Math.min(at, STEPS.length)} / ${STEPS.length}`, `Mavi’s tasks · ${Math.min(at, STEPS.length)} / ${STEPS.length}`)}</h2>
       <div class="quest-list">${rows.join('')}</div>`;
   }
+
 
   // Reiter "Statistik": Herzen je Tierart (und vom Eisstand), die meisten zuerst
   bookStats() {
@@ -3163,11 +3243,6 @@ export default class GardenScene extends Phaser.Scene {
       image: id ? TOOLS[id].image ?? id : 'hand',
       animals: toolAnimalsHtml(id),
     }));
-    // Mini-Tutorial: das Regal ist gefunden, weiter zu den Schafen
-    if (game.tutorial === 'tools') {
-      game.tutorial = 'sheep';
-      this.showTutorial();
-    }
     this.scene.pause();
     openToolChest(
       items,
@@ -3181,104 +3256,16 @@ export default class GardenScene extends Phaser.Scene {
         } else if (this.tool) this.dropTool();
       },
       () => this.scene.resume(),
-      // Mini-Tutorial: Schafe fängt man mit leeren Händen
-      game.tutorial === 'sheep'
+      // Mavis Schaf-Aufgabe: Schafe fängt man mit leeren Händen; bei der Wiesen-Aufgabe zeigt der Pfeil auf den Kescher
+      activeId() === 'sheep'
         ? { id: null, hint: tr('Für Schafe brauchst du kein Werkzeug: Nimm „Hände frei“ und lauf einfach zu ihnen hin!', 'You don’t need a tool for sheep: choose “Empty hands” and simply walk up to them!') }
-        : null,
+        : this.mavi.needsNet() && chest.tools.includes('net')
+          ? { id: 'net', hint: tr('Nimm den Kescher – damit fängst du Schmetterlinge, wenn sie auf einer Blüte sitzen!', 'Take the net – use it to catch butterflies while they sit on a blossom!') }
+          : null,
     );
   }
 
-  // Mini-Tutorial beim ersten Spiel (game.tutorial), unten ein Hinweis und ein hüpfender roter Pfeil:
-  // 'car'   im Tierpark zum Auto; auf der Weltkarte zeigt der Pfeil zur Wiese (weiter beim Verlassen des Tierparks, siehe leaveLevel)
-  // 'tools' in der Welt zum Regal der Hütte, dort liegen die Werkzeuge (weiter, sobald man es öffnet, siehe openChest)
-  // 'sheep' ein paar Schafe fangen und mit ihnen zurück in den Tierpark (Weltkarte: Pfeil zum Tierpark); weiter, sobald
-  //         Schafe einziehen (siehe moveFollowersIntoPens)
-  // 'visit' am Schafgehege vorbeischauen (Pfeil über dem Schild); weiter, wenn man dort steht (siehe checkTutorial)
-  // 'hearts' (nur noch in älteren Spielständen) Herzen sammeln, bis es für das erste Event reicht; weiter von selbst
-  //         (neue Spiele bekommen die Herzen nach 'visit' geschenkt und gehen direkt zu 'computer')
-  // 'computer' am Computer im Haupthaus ein Event starten (Pfeil über dem Computer); fertig, sobald eins läuft
-  showTutorial() {
-    if (game.tutorial === true) game.tutorial = 'car'; // Spielstand aus der ersten Fassung des Tutorials
-    this.updateQuestCard(); // ab dem Schaf-Schritt führt die Aufgaben-Karte mit
-    this.tutArrow?.destroy();
-    this.tutArrow = null;
-    const step = game.tutorial;
-    // wohin der Pfeil zeigt (seine Spitze): Auto, Regal der Hütte oder Schild am Schafgehege
-    const sign = step === 'visit' && LEVEL_ID === 'park' ? this.sheepSign() : null;
-    // Computer-Schritt: erst zur Eingangstür des Haupthauses, drinnen dann zum Computer (von außen verdeckt ihn das Dach)
-    const office = this.houses?.find((house) => house.h.style === 'office');
-    const pc = step === 'computer' && LEVEL_ID === 'park' ? this.computerSprite : null;
-    const pcTarget = pc && (office?.inside || !this.officeDoor ? { x: pc.x, y: pc.y - pc.displayHeight * pc.originY + 4 } : this.officeDoor);
-    // Schaf-Schritt: sind genug Schafe beisammen, zeigt der Pfeil aufs Auto (zurück in den Tierpark)
-    const sheepReady = step === 'sheep' && !isPark(LEVEL_ID) && this.tutSheepReady();
-    const target = (step === 'car' && LEVEL_ID === 'park') || sheepReady
-      ? this.car && { x: this.car.img.x, y: this.car.img.getBounds().top + 4 } // oberer Rand des Autobilds
-      : step === 'tools'
-        ? this.chestPoint()
-        : pcTarget || (sign && { x: sign.x, y: sign.y - 52 });
-    const tip = document.getElementById('tip');
-    const on = !!target || step === 'sheep' || step === 'tools' || step === 'hearts' || step === 'computer';
-    // der Hinweis unten verschwindet nach einer Weile, wenn man den Schritt nicht macht (der Pfeil bleibt)
-    clearTimeout(tutTipTimer);
-    tip.classList.toggle('show', on && tutTipHidden !== step);
-    if (on && tutTipHidden !== step) {
-      tutTipTimer = setTimeout(() => {
-        tutTipHidden = step;
-        tip.classList.remove('show');
-      }, TUT_TIP_TIME);
-    }
-    if (!on) return;
-    if (step === 'car') {
-      tip.innerHTML = isTouch()
-        ? tr('Steig ins Auto und fahr los! Geh zum Auto beim roten Pfeil und tippe auf den Knopf unten rechts.', 'Get in the car and drive off! Walk to the car with the red arrow and tap the button at the bottom right.')
-        : tr('Steig ins Auto und fahr los! Geh zum Auto beim roten Pfeil und drück <b>E</b>.', 'Get in the car and drive off! Walk to the car with the red arrow and press <b>E</b>.');
-    } else if (step === 'tools') {
-      tip.innerHTML = isTouch()
-        ? tr('In der Hütte liegen Werkzeuge wie Kescher und Lasso. Geh zum Regal beim roten Pfeil und tippe auf den Knopf unten rechts!', 'Tools like the net and lasso are in the hut. Walk to the shelf with the red arrow and tap the button at the bottom right!')
-        : tr('In der Hütte liegen Werkzeuge wie Kescher und Lasso. Geh zum Regal beim roten Pfeil und drück <b>E</b>!', 'Tools like the net and lasso are in the hut. Walk to the shelf with the red arrow and press <b>E</b>!');
-    } else if (sheepReady) {
-      tip.innerHTML = tr('Super, genug Schafe! Geh zum Auto beim roten Pfeil und fahr mit ihnen zurück in den Tierpark.', 'Great, enough sheep! Walk to the car at the red arrow and drive them back to your zoo.');
-    } else if (step === 'sheep') {
-      tip.innerHTML = tr(
-        'Schafe sind leicht: Lauf einfach hin, dann laufen sie dir hinterher. Bring ein paar mit dem Auto zurück in den Tierpark! Andere Tiere sind kniffliger – Tipps stehen im Tierbuch oben links.',
-        'Sheep are easy: just walk up to them and they will follow you. Take a few back to your zoo by car! Other animals are trickier – tips are in the Animal Book at the top left.',
-      );
-    } else if (step === 'hearts') {
-      tip.innerHTML = tr(
-        `<span class="heart">♥</span> Die Besucher schenken dir Herzen für deine Tiere. Sammle ${TUT_EVENT_HEARTS} Herzen – dann startest du am Computer dein erstes Event! Fang solange weitere Tiere.`,
-        `<span class="heart">♥</span> Visitors give you hearts for your animals. Collect ${TUT_EVENT_HEARTS} hearts – then you can start your first event at the computer! Keep catching animals until then.`,
-      );
-    } else if (step === 'computer') {
-      tip.innerHTML = LEVEL_ID === 'park'
-        ? tr(`Du hast genug Herzen! Geh beim roten Pfeil ins Haupthaus zum Computer und starte ein Event – der Eisstand ist am günstigsten.`, `You have enough hearts! Follow the red arrow into the main building to the computer and start an event – the ice cream stand is the cheapest.`)
-        : tr(`Du hast genug Herzen! Fahr zurück in den Tierpark und starte am Computer im Haupthaus dein erstes Event.`, `You have enough hearts! Drive back to your zoo and start your first event at the computer in the main building.`);
-    } else {
-      tip.innerHTML = tr('Schau im Schafgehege beim roten Pfeil vorbei und sieh zu, wie die Besucher deine Schafe mögen!', 'Visit the sheep enclosure at the red arrow and watch how much the visitors like your sheep!');
-    }
-    // kleines X zum Wegdrücken: blendet den Hinweis dieses Schritts aus (wie nach Ablauf der Zeit); der Pfeil bleibt
-    tip.insertAdjacentHTML('beforeend', `<button class="tip-close" aria-label="${tr('Hinweis ausblenden', 'Hide hint')}">✕</button>`);
-    tip.onclick = (e) => {
-      if (!e.target.closest('.tip-close')) return;
-      e.stopPropagation();
-      clearTimeout(tutTipTimer);
-      tutTipHidden = step;
-      tip.classList.remove('show');
-    };
-    if (!target) return;
-    this.tutArrow = this.add
-      .text(target.x, target.y, '▼', { fontFamily: 'Arial', fontSize: '22px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 4, resolution: 4 })
-      .setOrigin(0.5, 1)
-      .setDepth(100001);
-    this.tweens.add({ targets: this.tutArrow, y: this.tutArrow.y - 8, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-  }
-
-  // Schaf-Schritt: folgen (samt denen zuhause) genug Schafe für die erste Aufgabe?
-  tutSheepReady() {
-    return this.followers.filter((a) => a.species === 'sheep').length + this.sheepAtHome() >= SHEEP_QUEST;
-  }
-
-  // Regal (oder Kiste, Sack) dieser Welt: oberer Rand des Bilds (bzw. die obere Mitte des Schranks, peak), für den
-  // Pfeil im Mini-Tutorial
+  // Regal (oder Kiste, Sack) dieser Welt: oberer Rand des Bilds (bzw. die obere Mitte des Schranks, peak)
   chestPoint() {
     for (const c of LEVEL.chests ?? []) {
       const img = this.chestSprites?.get(`${c.tx},${c.ty}`);
@@ -3294,31 +3281,6 @@ export default class GardenScene extends Phaser.Scene {
     return (this.enclosureSigns ?? []).find((s) => s.enclosure.species?.includes('sheep')) ?? null;
   }
 
-  // Tutorial-Schritte, die von selbst weitergehen: 'visit' (steht man am Schafgehege) und 'hearts' (genug Herzen)
-  checkTutorial() {
-    if (this.leaving) return;
-    if (game.tutorial === 'hearts' && game.hearts >= TUT_EVENT_HEARTS) {
-      game.tutorial = 'computer';
-      tutTipHidden = null;
-      this.showTutorial();
-      return;
-    }
-    if (game.tutorial !== 'visit' || LEVEL_ID !== 'park') return;
-    const s = this.sheepSign();
-    if (s) this.visitors?.ensureAt(s.enclosure); // am Schafgehege steht immer ein Besucher
-    if (!s || Math.hypot(this.player.x - s.x, (this.player.y - s.y) * 2) > 110) return;
-    // gleich weiter zum ersten Event: die Herzen dafür gibt es geschenkt
-    this.addHearts(TUT_EVENT_HEARTS);
-    game.tutorial = 'computer';
-    this.showTutorial();
-    this.showToast(
-      tr(
-        `<span class="heart">♥</span> Die Besucher lieben deine Schafe und schenken dir Herzen! Als Start-Geschenk bekommst du ${TUT_EVENT_HEARTS} <span class="heart">♥</span> – damit startest du jetzt dein erstes Event.`,
-        `<span class="heart">♥</span> The visitors love your sheep and give you hearts! As a welcome gift you get ${TUT_EVENT_HEARTS} <span class="heart">♥</span> – use them to start your first event now.`,
-      ),
-    );
-  }
-
   // Erste Begegnung, ganz dezent: über dem nächsten wilden Tier einer Art, die man noch nie gefangen hat, schwebt eine kleine
   // Blase mit dem Werkzeug dafür – ohne Text und Ton. Antippen zeigt den Fang-Tipp. Flieht so ein Tier mehrmals vor einem,
   // kommt der Tipp einmal von selbst (game.tipsSeen)
@@ -3331,7 +3293,7 @@ export default class GardenScene extends Phaser.Scene {
       let best = null;
       let bestD = ENCOUNTER_DIST;
       for (const a of this.animals) {
-        if (a.state !== 'wild' || a.species === 'sheep' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue;
+        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will
         if (a.fleeing && !a.wasFleeing) this.countFlee(a.species);
         a.wasFleeing = a.fleeing;
         if (!a.sprite?.visible || a.sprite.alpha < 0.4) continue;
@@ -3387,21 +3349,6 @@ export default class GardenScene extends Phaser.Scene {
     this.showToast(`${animalIcon(species, 3.2)} ${CATCH_TIPS[species]}`);
   }
 
-  // Tutorial-Schritt 'computer': das erste Event läuft – das Tutorial ist geschafft, ab jetzt führen die Starter-Aufgaben
-  finishTutorial() {
-    game.tutorial = false;
-    this.showTutorial();
-    this.updateQuestCard();
-    this.time.delayedCall(2500, () =>
-      this.showToast(
-        tr(
-          'Dein erstes Event! Mit mehr Herzen startest du Events, die neue Tiere bringen – z. B. den Flamingo-Flug oder die Wolfsnacht. Deine nächsten Aufgaben stehen oben links.',
-          'Your first event! With more hearts you can start events that bring new animals – like the Flamingo Flight or the Wolf Night. Your next tasks are at the top left.',
-        ),
-      ),
-    );
-  }
-
   // Weltkarte öffnen (am Auto): das Spiel pausiert, bis man losfährt oder die Karte schließt
   openCarMap() {
     if (this.leaving || isTravelMapOpen() || isJournalOpen()) return;
@@ -3416,7 +3363,8 @@ export default class GardenScene extends Phaser.Scene {
         y: l.map.y,
         status: l.seasons ? this.seasonStatus(id) : null,
         wip: !!l.wip, // noch in Arbeit (Hinweis auf dem Schild)
-        parts: isPark(id) ? PARK_LEVELS.map((p) => ({ id: p, name: LEVELS[p].part.name, icon: LEVELS[p].part.icon, main: p === id })) : null,
+        locked: !isUnlocked(id), // noch nicht freigeschaltet (Mavis Geschichte)
+        parts: isPark(id) ? PARK_LEVELS.map((p) => ({ id: p, name: LEVELS[p].part.name, icon: LEVELS[p].part.icon, main: p === id, locked: !isUnlocked(p) })) : null,
       }));
     const at = LEVEL_ID;
     this.scene.pause();
@@ -3428,14 +3376,7 @@ export default class GardenScene extends Phaser.Scene {
         this.travelTo(id);
       },
       () => this.scene.resume(),
-      // Mini-Tutorial: erst ein Pfeil zur Wiese (dort fängt man als neuer Spieler am besten an), mit Schafen dann zum Tierpark
-      game.tutorial === 'car'
-        ? { point: 'meadow', hint: tr('Als neuer Spieler startest du am besten auf der <b>Wiese</b> – wähle die Wiese!', 'As a new player, the <b>meadow</b> is the best place to start – choose the meadow!') }
-        : game.tutorial === 'sheep' && LEVEL_ID !== 'park' && this.followers.some((a) => a.species === 'sheep')
-          ? { point: 'park', side: 'left', hint: tr('Bring die Schafe nach Hause – fahr zurück in den <b>Tierpark</b>!', 'Take the sheep home – drive back to your <b>zoo</b>!') }
-          : game.tutorial === 'computer' && LEVEL_ID !== 'park'
-            ? { point: 'park', side: 'left', hint: tr('Fahr zurück in den <b>Tierpark</b> und starte am Computer dein erstes Event!', 'Drive back to your <b>zoo</b> and start your first event at the computer!') }
-            : {},
+      this.mavi.mapHint(), // Mavi: Pfeil dorthin, wo es weitergeht
     );
   }
 
@@ -3462,14 +3403,6 @@ export default class GardenScene extends Phaser.Scene {
       this.followers.splice(this.followers.indexOf(a), 1);
       moved.push(a.species);
       this.releaseExtra(e);
-    }
-    // Mini-Tutorial: die ersten Schafe sind im Tierpark – jetzt am Schafgehege vorbeischauen
-    // (auch, wenn sie schon aus einem anderen Abschnitt hergeschickt wurden und jetzt auf der Weide stehen)
-    if (LEVEL_ID === 'park' && this.sheepAtHome() >= SHEEP_QUEST) this.questDone('sheep');
-    this.updateQuestCard(); // Fortschritt der Schaf-Aufgabe
-    if (game.tutorial === 'sheep' && LEVEL_ID === 'park' && (moved.includes('sheep') || this.animals.some((a) => a.species === 'sheep' && a.state === 'penned'))) {
-      game.tutorial = 'visit';
-      this.showTutorial();
     }
     const nowFull = [...(this.aquaNowFull ?? []), ...ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e))]; // auch volle Becken im Aquarium
     this.aquaNowFull = [];
@@ -3830,7 +3763,8 @@ export default class GardenScene extends Phaser.Scene {
 
   // Kälte in der Eiswelt (nachts, LEVEL.cold): draußen kühlt Henrik langsam aus (game.cold von 0 bis 1 in cold.minutes
   // Minuten), ist ihm zu kalt, fängt er keine Tiere mehr (tooCold). In der Station und direkt davor wird er schnell wieder warm.
-  // Er wird dabei immer bläulicher, und wenn er durchgefroren ist, zittert er und sein Atem dampft. Am Tag ist er warm.
+  // Er wird dabei immer bläulicher, sein Atem dampft (je kälter, desto stärker), und durchgefroren zittert er. Am Tag
+  // ist er warm.
   updateCold(dt) {
     const c = LEVEL.cold;
     const p = this.player;
@@ -3858,16 +3792,28 @@ export default class GardenScene extends Phaser.Scene {
       const tint = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(0xffffff), Phaser.Display.Color.ValueToColor(COLD_TINT), 1, k);
       p.sprite.setTint(Phaser.Display.Color.GetColor(tint.r, tint.g, tint.b));
     } else if (before > 0.5) p.sprite.clearTint();
-    if (cold >= 1) {
-      p.sprite.x += Math.sin(this.time.now / 22) * 0.9;
-      this.breathIn = (this.breathIn ?? 0) - dt;
-      if (this.breathIn <= 0) {
-        this.breathIn = 1.6;
-        const puff = this.add.ellipse(p.x + p.faceX * 7, p.y - 46, 6, 4, 0xffffff, 0.7).setDepth(p.y + 1);
-        this.tweens.add({ targets: puff, x: puff.x + p.faceX * 10, y: puff.y - 8, scale: 2.2, alpha: 0, duration: 1100, onComplete: () => puff.destroy() });
-      }
+    if (cold >= 1) p.sprite.x += Math.sin(this.time.now / 22) * 0.9; // durchgefroren: zittert
+    // Eisatem: nachts dampft bei jedem Ausatmen eine Wolke aus dem Mund, je kälter, desto öfter und größer (nicht in der
+    // warmen Station)
+    this.breathIn = (this.breathIn ?? Phaser.Math.FloatBetween(0.5, 1.5)) - dt;
+    if (this.breathIn <= 0 && !warm) {
+      this.breathIn = BREATH_EVERY - cold * 0.8;
+      this.breathe(1 + cold * 0.7);
     }
     this.coldHintIn -= dt;
+  }
+
+  // eine Atemwolke vor Henriks Mund: weicher, heller Dunst, der in Blickrichtung schwebt, größer wird und verblasst
+  // (von hinten gesehen hinter dem Kopf); size: 1 normal, größer, wenn ihm kälter ist
+  breathe(size) {
+    const p = this.player;
+    const back = p.faceY < 0;
+    const x = p.x + p.faceX * 7;
+    const y = p.sprite.y - BREATH_UP - p.handLift;
+    for (const [k, delay] of [[1, 0], [0.6, 120]]) {
+      const puff = this.add.image(x, y, glowTexture(this)).setTint(0xf4faff).setAlpha(0).setScale(0.2 * k).setDepth(BREATH_DEPTH + (back ? -1 : 1));
+      this.tweens.add({ targets: puff, alpha: { from: 1, to: 0 }, x: x + p.faceX * 18 * size * k, y: y - 6 - 4 * size, scale: BREATH_SIZE * size * k, delay, duration: 1300, ease: 'Sine.easeOut', onComplete: () => puff.destroy() });
+    }
   }
 
   // zu kalt zum Fangen? (dann ein Hinweis, aber nicht bei jedem Versuch)
@@ -4342,8 +4288,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Ein wildes Tier fangen: es stellt sich hinten in die Reihe
-  // how: womit gefangen (Werkzeug, 'touch', 'food' oder 'trap'; sonst das getragene Werkzeug), für die Starter-Aufgaben
-  catchAnimal(animal, how = this.toolId) {
+  catchAnimal(animal) {
     // schon weg oder schon gefangen (z. B. Erdmännchen: nach dem ersten Fang verschwindet der Rest der Kolonie, auch die,
     // die im selben Kescherschwung mit erwischt wurden) – so fängt man wirklich nur eins
     // (Tiere aus der Falle sind 'trapped' und dürfen natürlich mit)
@@ -4390,15 +4335,10 @@ export default class GardenScene extends Phaser.Scene {
       this.markNew(`caught:${animal.species}`);
     }
     this.hideEncounterBubble();
-    if (how === 'net' || how === 'lasso' || how === 'trap' || how === 'food') this.questDone(how);
-    if (EVENT_SPECIES[animal.species]) this.questDone('eventAnimal');
-    if (animal.isRare?.()) this.questDone('rare');
+    countStoryCatch(animal.species); // für Mavis Aufgaben
     this.followers.push(animal);
-    // Mini-Tutorial: mit genug Schafen zeigt der Pfeil aufs Auto (der Hinweis dazu kommt neu, auch wenn der alte weg war)
-    if (game.tutorial === 'sheep' && animal.species === 'sheep' && this.tutSheepReady()) {
-      tutTipHidden = null;
-      this.showTutorial();
-    }
+    this.updateQuestCard();
+    this.mavi.check();
     if (animal.species === 'tiger') this.expireBall(animal); // der Ball bleibt noch eine Weile liegen
     // Hinweise beim Fangen in einer Meldung, je eine Zeile (sonst überschreibt einer den anderen, z. B. seltener Wolf + Rudel rennt weg)
     const notes = [];
@@ -4479,7 +4419,10 @@ export default class GardenScene extends Phaser.Scene {
   // ein getragenes kommt nicht mit, sondern zurück an seinen Platz an der Hütte (sonst gäbe es es doppelt).
   leaveLevel(exit) {
     this.leaving = true;
-    if (LEVEL_ID === 'park' && (game.tutorial === 'car' || game.tutorial === true)) game.tutorial = 'tools'; // Mini-Tutorial: weiter zum Regal der Hütte
+    // zum ersten Mal mit Meerestieren zurück: Ankunft mit Mavi direkt vor dem Aquarium
+    if (isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID] && activeId() === 'reef' && this.followers.some((a) => a.origin === 'reef')) {
+      exit = { ...exit, to: 'park2', arrive: AQUARIUM_TOUR };
+    }
     let returned = null;
     if (this.toolId) {
       returned = TOOLS[this.toolId].name;
@@ -4532,7 +4475,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Geschenk erst nach dem Tutorial, im Hauptabschnitt (Schafgehege, Computer), und wenn beide Events gerade startbar sind
   giftReady() {
-    if (game.parkReturns < 2 || game.tutorial !== false || LEVEL_ID !== 'park') return false;
+    if (game.parkReturns < 2 || !storyAt('upgrade') || LEVEL_ID !== 'park') return false;
     if (eventState('babies').state !== 'ready' || eventState('ride').state !== 'ready') return false;
     return babyPlan(this.animals.filter((a) => a.state === 'penned')).length > 0 || this.aquariumBabyPair();
   }
@@ -4557,7 +4500,7 @@ export default class GardenScene extends Phaser.Scene {
   // Überraschung: ab und zu fliegen in Wiese, Wald und Savanne gratis Flamingos ein (das Event Flamingo-Flug), damit
   // man Events nebenbei entdeckt. Erst nach dem Tutorial, nur wenn der Flamingo-Flug gerade startbar ist
   maybeSurprise() {
-    if (this.leaving || game.tutorial !== false || !groupsLoaded(EVENT_GROUPS.flamingo) || eventState('flamingo').state !== 'ready') return;
+    if (this.leaving || !storyAt('upgrade') || !groupsLoaded(EVENT_GROUPS.flamingo) || eventState('flamingo').state !== 'ready') return;
     if (Date.now() - (game.surpriseAt ?? 0) < SURPRISE_EVERY) return;
     game.surpriseAt = Date.now();
     startEvent('flamingo', Date.now(), true);
@@ -4740,13 +4683,15 @@ export default class GardenScene extends Phaser.Scene {
     if (this.leaving) return;
     // Begrenzen, damit nach einem Tab-Wechsel kein Riesensprung passiert
     const dt = Math.min(delta, 50) / 1000;
+    const prev = { x: this.player.x, y: this.player.y };
     this.player.update(dt);
     this.floes?.update(dt); // auf einer fahrenden Scholle fährt Henrik mit
 
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
     const exit = exitAt(tx, ty);
-    if (exit) {
+    if (exit && !isUnlocked(exit.to)) this.blockedExit(exit, prev);
+    else if (exit) {
       this.leaveLevel(exit);
       return;
     }
@@ -4801,7 +4746,7 @@ export default class GardenScene extends Phaser.Scene {
       const inside = px >= h.tx0 && px <= h.tx1 && py >= h.ty0 && py <= h.ty1 && !(px === h.tx0 || py === h.ty0); // samt Tür
       if (inside !== house.inside) {
         house.inside = inside;
-        if (h.style === 'office' && game.tutorial === 'computer') this.time.delayedCall(0, () => this.showTutorial()); // Pfeil: Tür ↔ Computer
+        if (h.style === 'office') this.time.delayedCall(0, () => this.mavi.updateArrow()); // Pfeil: Tür ↔ Computer
         if (house.roof) this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
         this.tweens.add({ targets: house.front, alpha: inside ? Math.min(HUT_FRONT_ALPHA, FRONT_ALPHA[h.style] ?? 1) : (FRONT_ALPHA[h.style] ?? 1), duration: 250 });
       }
@@ -4905,7 +4850,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!this.wolfNight) this.updateHerons(dt);
     this.updateGate(dt);
     this.updateSign();
-    this.checkTutorial();
+    this.mavi.update(dt);
     this.updateEncounter(dt);
     this.checkWrongHome(dt);
 

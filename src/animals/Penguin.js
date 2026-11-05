@@ -40,12 +40,14 @@ export default class Penguin extends Animal {
     this.scaredIn = null; // Sekunden, bis er vor Schreck ins Wasser springt (ein Pinguin der Gruppe wurde gefangen)
   }
 
-  // gefangen: die anderen aus der Gruppe springen erschrocken ins Wasser
+  // gefangen: die anderen aus der Gruppe springen erschrocken ins Wasser (die eigene Herde, siehe finishSpawn; nach dem
+  // Laden ist die nicht mehr bekannt: dann alle in der Nähe)
   catch() {
+    const herd = this.herd;
     super.catch();
     for (const a of this.scene.animals) {
       if (a === this || a.species !== 'penguin' || a.state !== 'wild' || a.jump || a.scaredIn !== null) continue;
-      if (Math.hypot(a.x - this.x, (a.y - this.y) * 2) < GROUP) a.scaredIn = Phaser.Math.FloatBetween(...SCARED);
+      if (herd ? a.herd === herd : Math.hypot(a.x - this.x, (a.y - this.y) * 2) < GROUP) a.scaredIn = Phaser.Math.FloatBetween(...SCARED);
     }
   }
 

@@ -57,6 +57,7 @@ const SHEETS = {
   warthog: [80, 88, 4, 0],
   vulture: [88, 108, 4, 0],
   penguin: [72, 80, 4, 0], // Eiswelt (auf der Weltkarte)
+  seal: [72, 88, 4, 1],
   butterfly: [64, 64, 3, 0, 'butterfly', 12], // Schmetterlinge: der orange steht für alle (Raster: 3 Bilder je Zeile, 12 Zeilen)
 };
 

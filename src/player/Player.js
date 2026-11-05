@@ -144,6 +144,8 @@ export default class Player {
       vx = touch.x;
       vy = touch.y;
     }
+    // Mavi spricht gerade (siehe src/npc/Mavi.js): stehen bleiben
+    if (this.frozen) vx = vy = 0;
 
     const moving = vx !== 0 || vy !== 0;
     this.moving = moving; // (Wolfsnacht: wer sich beim Umschauen der Wölfe bewegt, wird gesehen)

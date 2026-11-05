@@ -3,7 +3,7 @@
 // gespeichert – so lässt sich niemand wiedererkennen. Gezählt wird nur die Zeit, in der das Spiel zu sehen ist.
 // Dazu kommt, welche Tiere in der Runde gefangen und welche Events gestartet wurden (nur die Anzahl je Art), und welche
 // Tafeln im Tierpark gezeigt bzw. was dort gewählt wurde (promos). Außerdem, wie lange das Laden gedauert hat (bzw. nach
-// wie vielen Sekunden jemand beim Laden aufgegeben hat) und wie weit man im Tutorial und bei den Starter-Aufgaben kam.
+// wie vielen Sekunden jemand beim Laden aufgegeben hat) und wie weit man in Mavis Geschichte kam.
 // Die Spieldauer zählt erst ab dem Ende des Ladens.
 import { lang } from './i18n.js';
 import { game } from './state.js';
@@ -12,9 +12,6 @@ const API = '/api/session';
 const UPDATE_EVERY = 2 * 60 * 1000; // so oft geht die Spieldauer zwischendurch raus (falls der Browser die Seite einfach wegwirft)
 
 let session = null; // { id, startedAt, loadedAt, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl }, promos: { Tafel: Anzahl } }
-
-// Mini-Tutorial in seiner Reihenfolge (siehe showTutorial in GardenScene; 'hearts' gibt es nur in älteren Spielständen)
-const TUTORIAL = ['car', 'tools', 'sheep', 'visit', 'hearts', 'computer'];
 
 function device() {
   const ua = navigator.userAgent;
@@ -42,12 +39,11 @@ function send(body, beacon = false) {
   } catch {}
 }
 
-// wie weit: 0 noch beim Laden, 1–6 Tutorial-Schritt, 7 Tutorial fertig, ab 8 je eine weitere Starter-Aufgabe (die ersten
-// beiden, Schafe und Eisstand, gehören zum Tutorial)
+// wie weit: 0 noch beim Laden, danach die Aufgabe in Mavis Geschichte (1 = Begrüßung, siehe src/story/steps.js;
+// eins mehr als die letzte: alle geschafft)
 function progress() {
   if (!session.loadedAt) return 0;
-  if (game.tutorial) return Math.max(1, TUTORIAL.indexOf(game.tutorial) + 1);
-  return TUTORIAL.length + 1 + Math.max(0, game.quests.done.length - 2);
+  return game.story.step + 1;
 }
 
 function update(beacon) {

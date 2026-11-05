@@ -199,6 +199,8 @@ const CHARACTERS = [
   { src: 'Sprites/Ziege.png', out: 'farm_goat_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 58, copyMirror: { 3: 2 } },
   // Eisverkäuferin am Eiswagen (Eisstand-Event), Format wie die Besucher. Freigestellt mit npm run cutout
   { src: 'Sprites/Eisverkäuferin.png', out: 'icecream_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  // Mavi die Tierpflegerin (führt durch die Geschichte), Format wie die Besucher. Freigestellt mit npm run cutout
+  { src: 'Sprites/Mavi.png', out: 'mavi.png', frameW: 72, frameH: 116, feetY: 112, figureH: 102 },
   // Panda (Asien): laufend und sitzend mit Bambus, gleicher Maßstab; beide Rückansichten schauen nach rechts,
   // daher oben-links = oben-rechts gespiegelt. Freigestellt mit npm run cutout
   { src: 'Sprites/Panda.png', out: 'panda.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE * 1.2, copyMirror: { 3: 2 } }, // laufend etwas größer
@@ -259,6 +261,12 @@ const CHARACTERS = [
   // Pinguin (Eiswelt): gemalt sind nur zwei Ansichten (vorne nach links unten, hinten nach rechts oben); die anderen beiden
   // gespiegelt, zusammengesetzt in „Pinguin 4 Ansichten.png“ (unten-rechts, unten-links, oben-rechts, oben-links)
   { src: 'Sprites/Pinguin 4 Ansichten.png', out: 'penguin.png', frameW: 72, frameH: 80, feetY: 76, figureH: 66 },
+  // Robbe (Eiswelt): ebenso nur zwei Ansichten gemalt (vorne nach links unten, hinten nach rechts oben), die anderen
+  // gespiegelt; samt Wasserring unten (die Wasserlinie liegt bei SEAL_WATER_Y in Seal.js)
+  { src: 'Sprites/Robbe 4 Ansichten.png', out: 'seal.png', frameW: 72, frameH: 88, feetY: 84, figureH: 80 },
+  // Robbe an Land (liegt; gefangen oder im Gehege): zwei Ansichten gemalt, die anderen gespiegelt, zusammengesetzt aus
+  // Sprites/Robbe liegt.png; gleicher Maßstab wie die aufrechte Robbe (so lang, wie sie aufrecht hoch ist)
+  { src: 'Sprites/Robbe liegt 4 Ansichten.png', out: 'seal_lie.png', frameW: 96, frameH: 72, feetY: 68, scale: 0.152 },
   // Brüllaffe: im Bild nach links, nach rechts, Rückansicht nach links oben, nach rechts oben – im Sheet wie üblich
   // unten-rechts, unten-links, oben-rechts, oben-links. Fressend: von vorne sitzend, seitlich sitzend (nach rechts),
   // zweimal stehend nach rechts (oben-links ist davon das Spiegelbild)
@@ -762,6 +770,11 @@ const ANIMATIONS = [
   // von hinten (neue Fassung): ein ganzer Doppelschritt, nur vom letzten Bild zurück zum ersten fehlt eins: ein Zwischenbild
   { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', loopBlend: 1, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  // Mavi die Tierpflegerin (Blick nach unten-links, nach rechts wird im Spiel gespiegelt): steht bzw. winkt, wenn man als
+  // Nächstes mit ihr sprechen soll. So groß wie mavi.png (Höhe 102). Vom Stehen nur die Bilder mit offenen Augen (bis
+  // Bild 56 hat sie sie im Video zu); das Spiel spielt sie vor und zurück
+  { src: 'Animation/Mavi idle.mp4', out: 'mavi_idle.png', range: [57, 92], figureH: 102, frameW: 88, frameH: 116, feetY: 112, dropShadowGreen: 30 },
+  { src: 'Animation/Mavi winkt.webm', out: 'mavi_wave.png', figureH: 102, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   // Wolf und schwarzer Wolf (Wolfsnacht): laufen und stehen (Videos), so groß wie wolf.png (Höhe 69). Heulen und Fressen
   // bleiben Standbilder (siehe Wolf.js). Laufen läuft nicht sauber im Kreis: Zwischenbilder
@@ -805,6 +818,12 @@ const ANIMATIONS = [
   { src: 'Animation/Pinguin läuft hinten.mp4', out: 'penguin_walk_back.png', range: [5, 16], scale: 0.407, frameW: 72, frameH: 80, feetY: 79 },
   { src: 'Animation/Pinguin idle vorne.mp4', out: 'penguin_idle.png', mirror: 'all', scale: 0.338, frameW: 72, frameH: 80, feetY: 76 },
   { src: 'Animation/Pinguin idle hinten.mp4', out: 'penguin_idle_back.png', scale: 0.418, frameW: 72, frameH: 80, feetY: 76 },
+  // Robbe (Eiswelt): an Land robbt sie (Videos, Maßstab passend zur liegenden Robbe), aufgetaucht im Wasser wippt sie
+  // erwartungsvoll (vor und zurück abgespielt, Maßstab passend zur aufrechten Robbe samt Wasserring); vorne schaut sie im
+  // Video nach links: gespiegelt. Robben: je ein Ausschnitt, der nahtlos im Kreis läuft, Fußlinie so tief wie im Liegen
+  { src: 'Animation/Robbe läuft vorne.mp4', out: 'seal_walk.png', range: [6, 25], mirror: 'all', scale: 0.25, frameW: 96, frameH: 80, feetY: 80 },
+  { src: 'Animation/Robbe  läuft hinten.mp4', out: 'seal_walk_back.png', range: [4, 47], scale: 0.25, frameW: 96, frameH: 72, feetY: 69 },
+  { src: 'Animation/Robbe schwimmt vorne.mp4', out: 'seal_swim_idle.png', mirror: 'all', scale: 0.51, frameW: 72, frameH: 88, feetY: 84 },
   // Spielfigur in der Eiswelt (Parka): laufen und stehen (Videos), Maßstab wie im Dschungel. Laufen: je ein Doppelschritt,
   // der nahtlos im Kreis läuft (vorne das ganze Video, hinten 22 Bilder); Stehen breiter (die Machete ragt heraus), ohne die Atemwolke.
   // Höher als die anderen Kleidungen (die Kapuze); Fußlinie im selben Verhältnis (140 / 145 = 112 / 116), siehe Player.js

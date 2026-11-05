@@ -17,7 +17,7 @@ const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) 
 // (levelGroups, whenGroupsLoaded). Events mit Tieren aus einem Paket warten ebenso (EVENT_GROUPS).
 // Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs und Eichhörnchen nur das Grundbild, das der Tierpark zeigt),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|icecream_seller|car_zoo)$/;
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|icecream_seller|mavi|mavi_idle|mavi_wave|car_zoo)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 // Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
 // der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
@@ -46,8 +46,8 @@ const GROUPS = {
     art: /reef|aquarium|tank|^aq_|^(anchor_sack|seaweed|coral|shell)$/,
   },
   ice: {
-    species: ['penguin'],
-    keys: /^(hero_ice|penguin|step_snow)/,
+    species: ['penguin', 'seal'],
+    keys: /^(hero_ice|penguin|seal|step_snow)/,
     art: /snow|_ice|^ice_/,
   },
 };
@@ -180,7 +180,7 @@ const PIXEL_ART = [
 const TEST_ART = {};
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -285,6 +285,9 @@ const SAVANNA_ANIMS = {
 // dauert 1 Sekunde, so lange wie die Pause vor seinem ersten Schlag (siehe DrumTool.js)
 const GORILLA_DRUM = { gorilla_drum_in: [0, 23, 0], gorilla_drum_loop: [24, 92, -1], gorilla_drum_out: [93, 101, 0] };
 const VIDEO_ANIMS = {
+  // Mavi die Tierpflegerin: steht (blinzelt) bzw. winkt
+  mavi_idle: [88, 116, 36],
+  mavi_wave: [88, 116, 107],
   antelope_walk: [72, 100, 24],
   // Wolf und schwarzer Wolf (Wolfsnacht); Dschungel-Kleidung der Spielfigur
   wolf_walk: [80, 80, 26],
@@ -307,6 +310,9 @@ const VIDEO_ANIMS = {
   penguin_walk_back: [72, 80, 12],
   penguin_idle: [72, 80, 24],
   penguin_idle_back: [72, 80, 26],
+  seal_walk: [96, 80, 20], // Robbe robbt an Land (Eiswelt)
+  seal_walk_back: [96, 72, 44],
+  seal_swim_idle: [72, 88, 25], // ... und wippt aufgetaucht im Wasser, während sie Henrik anschaut
   // Bauernhof-Event: Kuh, Schwein, Ziege
   farm_cow_walk: [96, 88, 106],
   farm_cow_walk_back: [96, 88, 64],
@@ -583,6 +589,7 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
     for (const k of ['koi1', 'koi2', 'koi3']) load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
     load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
+    load.spritesheet('mavi', 'assets/mavi.png', HERO_FRAME); // Mavi die Tierpflegerin (führt durch die Geschichte)
     for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     // Esel, Pferd und Elefant laufen und stehen (Test)
@@ -640,6 +647,8 @@ export default class BootScene extends Phaser.Scene {
     // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
     load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
     load.spritesheet('penguin', 'assets/penguin.png', { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
+    load.spritesheet('seal', 'assets/seal.png', { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
+    load.spritesheet('seal_lie', 'assets/seal_lie.png', { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
     for (const k of ['iguana', 'iguana2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
     load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
@@ -777,6 +786,8 @@ export default class BootScene extends Phaser.Scene {
     anims.create({ key: 'hero_walk', frames: anims.generateFrameNumbers('hero_walk'), frameRate: 14, repeat: -1 });
     anims.create({ key: 'hero_walk_back', frames: anims.generateFrameNumbers('hero_walk_back'), frameRate: 14, repeat: -1 });
     anims.create({ key: 'hero_idle', frames: anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
+    anims.create({ key: 'mavi_idle', frames: anims.generateFrameNumbers('mavi_idle'), frameRate: 16, repeat: -1, yoyo: true }); // vor und zurück (nur Bilder mit offenen Augen)
+    anims.create({ key: 'mavi_wave', frames: anims.generateFrameNumbers('mavi_wave'), frameRate: 24 }); // einmal winken
     anims.create({ key: 'hero_forest_walk', frames: anims.generateFrameNumbers('hero_forest_walk'), frameRate: 14, repeat: -1 });
     // von hinten mehr Bilder pro Doppelschritt (etwa 16), daher schneller abspielen
     anims.create({ key: 'hero_forest_walk_back', frames: anims.generateFrameNumbers('hero_forest_walk_back'), frameRate: 20, repeat: -1 });

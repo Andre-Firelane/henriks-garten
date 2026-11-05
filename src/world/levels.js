@@ -555,11 +555,11 @@ export const LEVELS = {
     enclosures: [], // die Gehege sind im Tierpark
     hut: { tx0: 19, ty0: 19, tx1: 23, ty1: 22, style: 'ice' }, // Forschungsstation (Metall, flaches Dach mit Teleskop; mit Bett)
     chests: [
-      { tx: 21, ty: 23, tools: ['net', 'lasso'] }, // Regal vor der Station
-      { tx: 10, ty: 11, tools: ['net', 'lasso'] }, // Kisten auf den vier Inseln
-      { tx: 38, ty: 10, tools: ['net', 'lasso'] },
-      { tx: 35, ty: 38, tools: ['net', 'lasso'] },
-      { tx: 11, ty: 35, tools: ['net', 'lasso'] },
+      { tx: 21, ty: 23, tools: ['net', 'lasso', 'herring', 'sealball'] }, // Regal vor der Station
+      { tx: 10, ty: 11, tools: ['net', 'lasso', 'herring', 'sealball'] }, // Kisten auf den vier Inseln
+      { tx: 38, ty: 10, tools: ['net', 'lasso', 'herring', 'sealball'] },
+      { tx: 35, ty: 38, tools: ['net', 'lasso', 'herring', 'sealball'] },
+      { tx: 11, ty: 35, tools: ['net', 'lasso', 'herring', 'sealball'] },
     ],
     hero: 'hero_ice', // Kleidung in der Eiswelt (Parka mit Fellkapuze)
     ambient: 'ambient_ice', // pfeifender Wind
@@ -569,8 +569,8 @@ export const LEVELS = {
     toolSpots: [],
     exits: [], // hin und zurück nur mit dem Wasserflugzeug
     snow: true, // es rieselt immer leicht Schnee (siehe Weather.js)
-    // Pinguine watscheln in Gruppen am Wasser (siehe Penguin.js); nachts am offenen Meer am Kartenrand und an den Eislöchern
-    spawn: { population: 4, weights: { penguin: 1 } },
+    // Pinguine watscheln in Gruppen am Wasser (siehe Penguin.js); nachts am offenen Meer am Kartenrand und an den Eislöchern.
+    spawn: { population: 6, weights: { penguin: 1, seal: 0.6 } }, // Robben schwimmen am Ufer (siehe Seal.js)
     // Eisschollen (siehe Floes.js), Lage in Kacheln. ferries: tragen Henrik zwischen Festland (from) und Insel (to) hin
     // und her und liegen an beiden Ufern wait Sekunden an (travel: Sekunden für die Fahrt, shift: Versatz im Takt);
     // drift: kleine Schollen zur Zierde, die langsam über das offene Meer am Rand treiben (period: Sekunden hin und zurück)

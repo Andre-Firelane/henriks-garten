@@ -411,8 +411,8 @@ export class VisitorCrowd {
 
   // Mini-Tutorial: an diesem Gehege soll immer jemand stehen (sonst wirkt der Hinweis "sieh zu, wie die Besucher deine
   // Schafe mögen" seltsam, solange der Park noch fast leer ist). Fehlt einer, taucht er sanft an einem freien Platz auf
-  ensureAt(e) {
-    if (this.visitors.some((v) => v.pen === e && v.phase !== 'leave')) return;
+  ensureAt(e, n = 1) {
+    if (this.visitors.filter((v) => v.pen === e && v.phase !== 'leave').length >= n) return;
     const spots = (this.grid.spots.get(e) ?? []).filter((s) => !s.taken);
     if (!spots.length) return;
     const v = this.placeAtPen({ e, spots }, false);

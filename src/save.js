@@ -3,7 +3,7 @@
 // laufen beim Laden dort weiter, wo gespeichert wurde. Das Test-Spiel speichert nie.
 import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
-import { QUEST_IDS } from './world/quests.js';
+import { migrateStory } from './story/story.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -83,10 +83,12 @@ export function loadSave() {
   for (const k of Object.keys(game.seasonAnchors ?? {})) game.seasonAnchors[k] += shift;
   migrateStag();
   if (!s.game.parkSplit) splitPark();
-  if (!s.game.caughtSpecies) migrateCaught(!s.game.quests);
+  if (!s.game.caughtSpecies) migrateCaught();
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
-  syncQuests();
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
+  if (!s.game.story) migrateStory(); // Spielstand von vor Mavi: alles bleibt offen
+  delete game.tutorial; // (aus älteren Spielständen)
+  delete game.quests;
   save.lastSaved = s.savedAt;
   return s.level;
 }
@@ -114,22 +116,12 @@ function splitPark() {
 }
 
 // Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik
-// ablesen. Wer schon ein Event gestartet hat, kennt das Spiel – für ihn sind die Starter-Aufgaben erledigt.
-function migrateCaught(oldQuests) {
+// ablesen
+function migrateCaught() {
   const species = new Set(Object.keys(game.heartsBy).filter((s) => s !== 'icecream'));
   for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.state === 'penned') species.add(a.species);
   for (const a of game.followers) species.add(a.species);
   game.caughtSpecies = [...species];
-  if (oldQuests && Object.keys(game.events).length) game.quests = { done: [...QUEST_IDS] };
-}
-
-// Starter-Aufgaben, die laut Spielstand schon geschafft sind, aber in einer älteren Fassung noch nicht abgehakt wurden
-// (z. B. gab es die Eisstand-Aufgabe noch nicht): still abhaken, damit Aufgaben und Tutorial zusammenpassen
-function syncQuests() {
-  const done = game.quests.done;
-  const add = (id) => done.includes(id) || done.push(id);
-  if (game.events.icecream) add('icecream'); // der Eisstand lief schon einmal
-  if ((game.levels.park?.animals ?? []).filter((a) => a.species === 'sheep' && a.state === 'penned').length >= 3) add('sheep');
 }
 
 // Früher war der Hirsch eine eigene Tierart, jetzt ist er ein seltenes Aussehen (Skin) des Rehs
