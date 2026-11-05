@@ -118,6 +118,10 @@ const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : ITEMS
 const PIXEL_ART = [
   'grass0', 'grass1', 'grass2', 'path', 'soil', 'water',
   'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'fence_x', 'fence_y', 'gate_x', 'sign_fish', 'fishpond0', 'fishpond1',
+  // Wiese (Platzhalter aus tools/meadow-placeholders.py): Weide, Felder, Blumen, Hof, Windmühle, Steg, Seerosen, Enten, Bienen
+  'willow', 'sunflowers', 'corn', 'pumpkins', 'cabbages', 'scarecrow', 'flowers_blue', 'flowers_purple', 'flowers_white',
+  'dandelion', 'dandelion_blown', 'beehive', 'birdhouse', 'meadow_well', 'meadow_bench', 'woodpile', 'mailbox', 'clothesline',
+  'hay_bale', 'windmill', 'windmill_sails', 'meadow_dock', 'lily_pads', 'duck', 'duck_fly0', 'duck_fly1', 'bee',
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',
   'planks', 'cat_tree', 'mesh_x', 'mesh_y', 'gate_y', 'net_x', 'net_y',

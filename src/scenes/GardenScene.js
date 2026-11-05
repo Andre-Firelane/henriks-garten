@@ -111,6 +111,8 @@ import { SEASON_INFO, SEASON_LEVELS, firstSeason, seasonState, skipSeason } from
 import Thicket from '../world/Thicket.js';
 import Boat from '../world/Boat.js';
 import Floes from '../world/Floes.js';
+import Sway from '../world/Sway.js';
+import MeadowLife from '../world/MeadowLife.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import RodTool from '../tools/RodTool.js';
@@ -673,6 +675,7 @@ export default class GardenScene extends Phaser.Scene {
 
     const ground = []; // Bodenkacheln [x, y, Bild]: werden unten in wenige große Flächen gemalt (schneller auf dem Tablet)
     const thicketImages = new Map();
+    const swayPlants = new Map(); // Pflanzen, die sich wiegen, wenn man hindurchläuft (siehe Sway.js)
     this.crownImages = new Map();
     this.waterfalls = [];
     // fließender Fluss (LEVEL.flow): seine Wasserkacheln sind eigene Bilder, deren Bild reihum wechselt (siehe animateFlow)
@@ -737,6 +740,7 @@ export default class GardenScene extends Phaser.Scene {
           const shift = obj.depthAlways ?? (buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0);
           const img = this.add.image(x, y - raiseAt(tx, ty), key).setOrigin(obj.originX ?? 0.5, obj.originY).setDepth(obj.depthFixed ?? (obj.floor ? -99990 : y + shift));
           if (obj.thicket) thicketImages.set(`${tx},${ty}`, img);
+          if (obj.sway) swayPlants.set(`${tx},${ty}`, { img, deg: obj.sway, obj });
           if (charAt(tx, ty) === 'J') this.crownImages.set(`${tx},${ty}`, img); // Urwaldbäume: die Krone raschelt (Brüllaffen) // Dickicht: das Bild wechselt, wenn es geschlagen wird und nachwächst
           if (obj.waterfall) {
             this.waterfalls.push({ x, y, img });
@@ -966,6 +970,8 @@ export default class GardenScene extends Phaser.Scene {
     if (LEVEL.boat && !data.seasonNote && game.boat) game.boat = null;
     this.boat = LEVEL.boat ? new Boat(this) : null;
     this.floes = LEVEL.floes ? new Floes(this) : null; // Eisschollen (Eiswelt am Tag)
+    this.sway = new Sway(this, swayPlants);
+    this.meadowLife = new MeadowLife(this, this.sway); // Enten, Bienen, Windmühle, Pusteblumen (Wiese)
     this.coldHintIn = 0;
     this.nearBoat = null;
     if (!this.boat?.riding) this.unstickPlayer();
@@ -1236,6 +1242,11 @@ export default class GardenScene extends Phaser.Scene {
   // Das hintere Geländer liegt hinter, das vordere vor allem, was auf der Brücke steht.
   drawBridges() {
     const STEP = 0.125; // in Kacheln
+    // Farben: rote Bogenbrücke (Asien) oder Holzbrücke (bridgeStyle 'wood', Wiese)
+    const wood = LEVEL.bridgeStyle === 'wood';
+    const C = wood
+      ? { plank: [0xb58553, 0xa0703f], edge: 0x5e3d22, post: 0x8a5a32, cap: 0xb58553, rail: 0xa8763f, slat: 0x9a6a38 }
+      : { plank: [0x9c5a38, 0xb06640], edge: 0x6e3a22, post: 0x9c2e20, cap: 0xe8b84a, rail: 0xd64a32, slat: 0xc8402c };
     for (const br of BRIDGES) {
       const arch = bridgeArch(br);
       const len = br.to + 1 - br.from;
@@ -1250,15 +1261,15 @@ export default class GardenScene extends Phaser.Scene {
       const deck = this.add.graphics().setDepth(-99998);
       for (let u = 0, i = 0; u < len - 1e-6; u += STEP, i++) {
         const quad = [pt(u, 0), pt(u + STEP, 0), pt(u + STEP, 1), pt(u, 1)];
-        deck.fillStyle(i % 2 ? 0x9c5a38 : 0xb06640, 1);
+        deck.fillStyle(C.plank[i % 2], 1);
         deck.fillPoints(quad, true);
-        deck.lineStyle(1, 0x6e3a22, 1);
+        deck.lineStyle(1, C.edge, 1);
         deck.lineBetween(quad[0].x, quad[0].y, quad[3].x, quad[3].y);
       }
       // Seitenkante des Decks (vorne), damit der Bogen Dicke bekommt
       for (let u = 0; u < len - 1e-6; u += STEP) {
         const a = pt(u, 1), b = pt(u + STEP, 1);
-        deck.fillStyle(0x6e3a22, 1);
+        deck.fillStyle(C.edge, 1);
         deck.fillPoints([a, b, { x: b.x, y: b.y + 3 }, { x: a.x, y: a.y + 3 }], true);
       }
       // Geländer stückweise (je eine halbe Kachel), jedes Stück mit der Tiefe seiner Stelle am Boden: so steht man vor
@@ -1288,13 +1299,13 @@ export default class GardenScene extends Phaser.Scene {
           for (const u of u1 >= len - 1e-6 ? [u0, len] : [u0]) {
             const a = pt(u, v, 0), b = pt(u, v, 13);
             g.lineStyle(4, 0x2b1d14, 1).lineBetween(a.x, a.y, b.x, b.y - 1);
-            g.lineStyle(2, 0x9c2e20, 1).lineBetween(a.x, a.y, b.x, b.y);
-            g.fillStyle(0xe8b84a, 1).fillRect(b.x - 1, b.y - 1, 3, 2);
+            g.lineStyle(2, C.post, 1).lineBetween(a.x, a.y, b.x, b.y);
+            g.fillStyle(C.cap, 1).fillRect(b.x - 1, b.y - 1, 3, 2);
           }
           line(12, 4, 0x2b1d14); // Handlauf mit dunkler Kontur
-          line(12, 2, 0xd64a32);
+          line(12, 2, C.rail);
           line(6, 3, 0x2b1d14); // Mittellatte
-          line(6, 1.5, 0xc8402c);
+          line(6, 1.5, C.slat);
         }
       };
       rail(0, -4); // hinten: hinter allem, was auf der Brücke steht
@@ -4661,6 +4672,8 @@ export default class GardenScene extends Phaser.Scene {
     const prev = { x: this.player.x, y: this.player.y };
     this.player.update(dt);
     this.floes?.update(dt); // auf einer fahrenden Scholle fährt Henrik mit
+    this.sway.update(dt);
+    this.meadowLife.update(dt);
 
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);

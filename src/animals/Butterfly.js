@@ -26,7 +26,7 @@ const FLAP_RATE = 14; // Flügelschläge im Flug (Bilder pro Sekunde)
 const SIT_FLAP = [0, 0, 0, 1, 2, 2, 2, 1]; // auf der Blüte: langsam auf und zu
 const FLY_FLAP = [0, 1, 2, 1];
 
-const FLOWERS = 'fg';
+const FLOWERS = 'fgḇṕẃŝ'; // rote, gelbe, blaue, lila, weiße Blumen und Sonnenblumen
 let flowerCache = { level: null, tiles: [] };
 
 // Blumen dieses Gebiets (im Tierpark nur nahe den Wegen und nicht in Gehegen, damit die Besucher sie sehen)

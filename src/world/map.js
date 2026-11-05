@@ -10,7 +10,8 @@ import { currentSeason, firstSeason } from './season.js';
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
 // ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar)
-const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice' }; // 0: Springbrunnen im See
+// ŝ ĉ ṗ ķ ẋ: Sonnenblumen, Mais, Kürbisse, Kohl und Vogelscheuche auf dem Acker (Wiese)
+const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -21,8 +22,9 @@ export const OBJECTS = {
   T: { key: 'tree', originY: 82 / 96, solid: true, hitbox: 12 },
   b: { key: 'bush', originY: 33 / 40, solid: true, hitbox: 4 }, // Büsche und Sträucher: nur ein kleiner Kern ist fest, sonst bleibt man hängen
   r: { key: 'rock', originY: 18 / 24, solid: true, hitbox: 12 },
-  f: { key: 'flowers_red', originY: 22 / 32, solid: false },
-  g: { key: 'flowers_yellow', originY: 22 / 32, solid: false },
+  // sway: wiegt sich, wenn man hindurchläuft (siehe Sway.js)
+  f: { key: 'flowers_red', originY: 22 / 32, solid: false, sway: 4 },
+  g: { key: 'flowers_yellow', originY: 22 / 32, solid: false, sway: 4 },
   P: { key: 'pine', originY: 100 / 112, solid: true, hitbox: 12 },
   D: { key: 'dark_tree', originY: 90 / 104, solid: true, hitbox: 12 },
   k: { key: 'dark_bush', originY: 36 / 44, solid: true, hitbox: 4 },
@@ -94,7 +96,7 @@ export const OBJECTS = {
   // Ausstattung ausgebauter Gehege: Unterstand mit Heu, Futterkrippe, Schilf (begehbar), Springbrunnen, Nistkasten
   '@': { key: 'hay_shelter', originY: 96 / 112, solid: true, hitbox: 14 },
   '&': { key: 'hay_rack', originY: 52 / 64, solid: true, hitbox: 10 },
-  '%': { key: 'reeds', originY: 52 / 64, solid: false },
+  '%': { key: 'reeds', originY: 52 / 64, solid: false, sway: 6 },
   0: { key: 'fountain', originY: 64 / 80, solid: true, hitbox: 12 },
   // Baustelle vor dem Ausbau: Pflöcke mit Absperrband, Bretterstapel (begehbar, nur ein Hinweis)
   ':': { key: 'build_stakes', originY: 52 / 64, solid: false },
@@ -162,6 +164,28 @@ export const OBJECTS = {
   // Eiswelt: Eisfelsen und Eisblock
   ê: { key: 'ice_rock', originY: 18 / 24, solid: true, hitbox: 12 },
   Ê: { key: 'ice_block', originY: 46 / 56, solid: true, hitbox: 18 },
+  // Wiese: Trauerweide, Feldpflanzen, bunte Blumen, Pusteblumen (pusten beim Durchlaufen, siehe MeadowLife.js),
+  // Bienenkorb, Vogelhäuschen, Dorfbrunnen, Bank, Holzstapel, Briefkasten, Wäscheleine, Heuballen, Windmühle (ihre
+  // Flügel zeichnet MeadowLife.js; die Kacheln ringsum sind V)
+  Ẇ: { key: 'willow', originY: 100 / 112, solid: true, hitbox: 10 },
+  ŝ: { key: 'sunflowers', originY: 72 / 84, solid: false, sway: 7 },
+  ĉ: { key: 'corn', originY: 72 / 84, solid: false, sway: 6 },
+  ṗ: { key: 'pumpkins', originY: 24 / 32, solid: false },
+  ķ: { key: 'cabbages', originY: 24 / 32, solid: false },
+  ẋ: { key: 'scarecrow', originY: 80 / 88, solid: true, hitbox: 6 },
+  ḇ: { key: 'flowers_blue', originY: 22 / 32, solid: false, sway: 4 },
+  ṕ: { key: 'flowers_purple', originY: 22 / 32, solid: false, sway: 4 },
+  ẃ: { key: 'flowers_white', originY: 22 / 32, solid: false, sway: 4 },
+  ḋ: { key: 'dandelion', originY: 24 / 32, solid: false, sway: 5, dandelion: true },
+  ƅ: { key: 'beehive', originY: 42 / 48, solid: true, hitbox: 8 },
+  ḅ: { key: 'birdhouse', originY: 58 / 64, solid: true, hitbox: 5 },
+  ẘ: { key: 'meadow_well', originY: 72 / 88, solid: true, hitbox: 16 },
+  ƃ: { key: 'meadow_bench', originY: 38 / 48, solid: true, hitbox: 10 },
+  ŧ: { key: 'woodpile', originY: 40 / 48, solid: true, hitbox: 14 },
+  ṁ: { key: 'mailbox', originY: 44 / 48, solid: true, hitbox: 5 },
+  ŵ: { key: 'clothesline', originY: 58 / 80, solid: true, hitbox: 6 },
+  ĥ: { key: 'hay_bale', originY: 34 / 40, solid: true, hitbox: 14 },
+  Ẁ: { key: 'windmill', originY: 184 / 200, solid: true, windmill: true },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },

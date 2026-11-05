@@ -27,6 +27,10 @@
 //          °  Anemone mit Clownfisch   Ö  Riff-Felsen (Rand)   Ä  Werkzeug-Sack   /  Muschel   ?  Steine
 // Aquarium: Ł  Quallen-Lampe   Ś  Delfin-Statue   Ɓ  Bank
 // Eiswelt: ê  Eisfelsen   Ê  Eisblock   ɨ  zugefrorenes Meer (nachts, siehe freezeSea)
+// Wiese:  Ẇ  Trauerweide   ŝ  Sonnenblumen   ĉ  Mais   ṗ  Kürbisse   ķ  Kohl   ẋ  Vogelscheuche (alle fünf auf dem Acker)
+//          ḇ  blaue Blumen   ṕ  lila Blumen   ẃ  weiße Blumen   ḋ  Pusteblumen   ƅ  Bienenkorb   ḅ  Vogelhäuschen
+//          ẘ  Dorfbrunnen   ƃ  Bank   ŧ  Holzstapel   ṁ  Briefkasten   ŵ  Wäscheleine   ĥ  Heuballen   Ẁ  Windmühle (V ringsum)
+//          Ŝ  Steg (wie im Dschungel, Bild über objectKeys)
 
 import { tr } from '../i18n.js';
 
@@ -168,45 +172,45 @@ export const LEVELS = {
     car: { tx: 12.16, ty: 26.48, texture: 'car_zoo', frame: 0, scale: 1.26 },
     map: { x: 51.5, y: 34, icon: 'sheep' },
     rows: [
-      'TTbbTTTTbbTTTTTTbTTTTTTTTbTTTTTbTTTTTbTT',
-      'T..f................#..................T',
-      'b...................#..g.........T.....T',
-      'b............f..Tf..#..gg..............T',
-      'b..b.....T......f.f.#.g.....f.....b....T',
-      'T...........b.......#......f...f.......T',
-      'T...................#.......fb.fg....f.T',
-      'b...................#......f...f.......T',
-      'T...................#.....f.....f......b',
-      'T....~~~~~~.........#..........g.g..f..b',
-      'T.f.~~~~~~~~~.......#..g........g.g..b.b',
-      'T.f.~~~~~~~~~....f..#.g..T.....g.g.fg..T',
-      'T....~~~~~~.....g...#..................T',
-      'T.............gf.fg.#........g....T....T',
-      'T...........f..bf...#..f..ggg..........T',
-      'T...g...~~~~~~~.....#..................T',
-      'b......~~~~~~~~~....#........b...f.....T',
-      'T......f~~~~~~~~T...#.............gf...T',
-      'T...................#..................b',
-      'T######################################T',
-      'T.......g..#........#..................T',
-      'T...fffgfff#.MMMMM..#..................T',
-      'b...fggfggf#.Nap,N..#......g......~~~..T',
-      'T...fffgfff#.N,j,G###............~~~~~.T',
-      'T..........##MMMMM..#...T...ggg..~~~~~.T',
-      'T...b......###.c....#............~~~~~.T',
-      'T..........##.......#.....gg.....~~~~~.T',
-      'T..........##.......#......gf.....~~~..T',
-      'T..........#........#..................b',
-      'b....======.....T...#.........r........T',
-      'T....======.........#...............g..T',
-      'T....======....g....#.....b.....g......T',
-      'T....======.........#..........g.......T',
-      'T.f.............f...#.........g..T.....T',
-      'T...................#..................T',
-      'b.g.....T...........#..f...............T',
-      'b......f...g........#................T.T',
-      'T...g.ggg.ggg.......#......fg.b........T',
-      'T..........f........#..................b',
+      'TTbbTTTTbbTTTTTTbTTTTTTTTbT~~TTbTTTTTbTT',
+      'T..f................#......~~...|ŝŝŝŝŝŝT',
+      'b.ḇḇ...........ẃ....#.ḇḇ..%~~...|ŝŝŝŝŝŝT',
+      'b.......m.m..f..Tf..#.ṕ.g.%~~..ḋ|ŝŝŝŝŝŝT',
+      'b..b.ṕ...T.m....ḇ.f.#ḅ.ẃ.ƅ.~~%..|ŝŝŝŝŝŝT',
+      'T.....ṕ.m.m.b.......#...ƅḇ..~~...ŝŝŝŝŝŝT',
+      'T..ḅ.....m....ḋ.....#.ṕṕ..r.~~%.|ŝŝŝŝŝŝT',
+      'b...................#...ẃ..%~~..|ŝŝŝŝŝŝT',
+      'T.ḋ..........Ẇ......#.......~~..|ŝŝŝŝŝŝb',
+      'T...%~~~~~~.....ṕ...#fg..ṕ.~~.r........b',
+      'T.f.~~~~~~~~~.......#..ḇ..%~~.ḋ.....VVVb',
+      'T.fr~~~~~~~~~%...f..#.ḋ....~~%......VẀVT',
+      'T....~~~~~~..r..gẃ..#...ẃ..~~..T....VVVT',
+      'T..Ẇ...%~~%...gf.fg.#.ḇḇ....~~%........T',
+      'T.....%.~~%.f..bf...#....ṕ.%~~..|ĉĉĉĉĉĉT',
+      'T...g...~~~~~~~.r...#.......~r.ḋ|ĉĉĉĉĉĉT',
+      'b...ḋ..~~~~~Ŝ~~~%...#.fg....%~~.|ĉĉĉĉĉĉT',
+      'T......f~~~~Ŝ~~~T..###..ẃḋ...~~%|ĉĉĉĉĉĉT',
+      'T......%..ƃ...ƃ...##ẘ##.....%~~........b',
+      'T############################EE########T',
+      'T...-------#......#####.......~~%......T',
+      'T...|ķķķķķ|#ŧMMMMM.###.........~~%...%.T',
+      'b...|=====|#.Nap,N.ṁ#.....ṕg..%.~~~~~..T',
+      'T...|ṗṗṗṗṗ|#.N,j,G###............~~~~~.T',
+      'T...---.---##MMMMM..#...T..ḇggg.%~~~~~.T',
+      'T...b......###.c....#..........ƃ.~~~~~.T',
+      'T..........##.......#.....gg....%~~~~~.T',
+      'T..........##...ŵ...#......gf.r...~~~..T',
+      'T.---------#-------.#............%....%b',
+      'b.|ṗṗṗṗṗṗṗ.#.ķķķķķ|.#.........r........T',
+      'Tg|=======.#.=====|.#...ḇḇ..........g..T',
+      'T.|ṗṗṗẋṗṗṗ.#.ķķẋķķ|.#....ṕb.....g......T',
+      'T.|=======.#.=====|.#..........g.......T',
+      'T.|ṗṗṗṗṗṗṗ.#.ķķķķķ|.#.........g..T.ḋ...T',
+      'T.---------#-------.#.......ẃẃ.........T',
+      'b..................b#..f...............T',
+      'b..ĥ....T..ẃ....ĥḋ..#..ḋ............ḅT.T',
+      'T....ĥ...ḇḇ.ṕ.T.....#......fg.b........T',
+      'T...ĥ...............#..................b',
       'TTbbTTTTTTbTTTTTbTTTTTbbbTTTTTbTTTbbbTTT',
     ],
     grass: ['grass0', 'grass1', 'grass2'],
@@ -226,6 +230,12 @@ export const LEVELS = {
     spawn: { population: 17, weights: { sheep: 6, cat: 2, fish: 2, frog: 1.6, mole: 0.6, butterfly: 3 } },
     // Fischreiher fliegen unabhängig vom Spawner über die Karte: alle every Sekunden einer, landChance landet
     herons: { every: [50, 110], landChance: 0.5 },
+    objectKeys: { Ŝ: 'meadow_dock' }, // Holzsteg am See statt des Dschungelstegs
+    bridgeStyle: 'wood', // Holzbrücke über den Bach (sonst rote Bogenbrücke wie in Asien)
+    // Leben auf der Wiese (siehe MeadowLife.js): Seerosen auf den Seen, Enten (je See: Mitte, Radius in Kacheln, Anzahl);
+    // Bienen fliegen um die Bienenkörbe, die Flügel der Windmühle drehen sich
+    lilies: [[6, 10], [9, 11], [11, 10], [10, 16], [14, 16], [35, 24], [36, 26], [34, 23]],
+    ducks: [{ tx: 8, ty: 10, r: 4, n: 3 }, { tx: 35, ty: 24, r: 3, n: 2 }],
   },
 
   forest: {

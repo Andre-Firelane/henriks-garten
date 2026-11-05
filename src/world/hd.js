@@ -14,6 +14,9 @@ export const HD = [
   'grass0', 'grass1', 'grass2', 'path', 'soil', 'water', 'planks', 'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'signpost_post',
   'hutwall_meadow_x', 'hutwall_meadow_y', 'post_hutwall_meadow', 'gate_door_meadow_x', 'gate_door_meadow_y', 'hutroof_meadow',
   'hut_desk_meadow', 'hut_chair_meadow', 'hut_plant_meadow', 'hut_shelf_meadow',
+  'willow', 'sunflowers', 'corn', 'pumpkins', 'cabbages', 'scarecrow', 'flowers_blue', 'flowers_purple', 'flowers_white',
+  'dandelion', 'dandelion_blown', 'beehive', 'birdhouse', 'meadow_well', 'meadow_bench', 'woodpile', 'mailbox', 'clothesline',
+  'hay_bale', 'windmill', 'windmill_sails', 'meadow_dock', 'lily_pads', 'duck', 'duck_fly0', 'duck_fly1', 'bee',
   // Tierpark (auch in Asien, Savanne und Dschungel)
   'acacia', 'acacia_bare', 'agrass0', 'agrass1', 'agrass2', 'aquarium_facade', 'asia_water0', 'asia_water1', 'asia_water2', 'bamboo',
   'boulder', 'build_planks', 'build_stakes', 'cat_tree', 'chain_x', 'chain_y', 'cherry_tree', 'climb_tree', 'den', 'den_sand', 'dry_bush',
