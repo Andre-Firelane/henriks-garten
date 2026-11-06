@@ -31,6 +31,10 @@
 //          ḇ  blaue Blumen   ṕ  lila Blumen   ẃ  weiße Blumen   ḋ  Pusteblumen   ƅ  Bienenkorb   ḅ  Vogelhäuschen
 //          ẘ  Dorfbrunnen   ƃ  Bank   ŧ  Holzstapel   ṁ  Briefkasten   ŵ  Wäscheleine   ĥ  Heuballen   Ẁ  Windmühle (V ringsum)
 //          Ŝ  Steg (wie im Dschungel, Bild über objectKeys)
+// Wald:   Ɍ  bemooster Felsbrocken   Ț  Baumstumpf   Ŀ  bemooster Stamm   ḩ  Holunder   ḫ  Haselstrauch
+//          ḃ  Glockenblumen   ƒ  Fingerhut   ȁ  Buschwindröschen   ṽ  Veilchen   Ĉ  Höhle (V ringsum)   Ħ  Hochstand
+//          Ŕ Ŵ  Felskante und Wasserfall wie im Dschungel (Bilder über objectKeys)
+//          Ƭ ƫ  umgestürzter Baumstamm als Brücke über den Fluss (entlang ty bzw. tx)   ř  Felsen im Fluss (Schaum drumherum)
 
 import { tr } from '../i18n.js';
 
@@ -245,45 +249,45 @@ export const LEVELS = {
     map: { x: 53, y: 16, icon: 'stag' },
     rows: [
       'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
-      'P...P.....n..........m#.....P....n.....P',
-      'Pk.......D.....k.D....#nm.........D...kP',
-      'PP....P........P.D....#mn...n..n....k.kP',
-      'P...P.......D....D....#.n......P...n..kP',
-      'Pk...............nnnn.#.n.............kP',
-      'P...................D.#.n...P..m......kP',
-      'PD..P....~~~~~...D....#D..........D...kP',
-      'PP......~~~~~~~.n.PPPP#P..............DP',
-      'P.......~~~~~~~...PPP.#................P',
-      'Pk...P..~~~~~~~..PPPP.#.........mm....kP',
-      'Pkkk....~~~~~~~.nL....#.PMMMMM........PP',
-      'PP..n....~~~~~.########LDNap,N.#......PP',
-      'Pk.......n.....L.Dk...#.PN,j,G##......PP',
-      'PD..P...k..n...P.Pk...#.#MMMMM.#......PP',
-      'PP.....kk.PD..PPDP...n####.c...#..P...kP',
-      'PP......k......P.P..D.###......#.......P',
-      'PPPPD.Dnkmn...D.......###......#......DP',
-      'PD......###############################P',
-      'Pkn.......DnnnnD.#......#..............P',
-      'PD..P....PkD.....#m..P..#.D.........P..P',
-      'PP..D.....Pm.....#......#......m......kP',
-      'PDn............D.#......#..P........n..P',
-      'PD.....D.......D.#.P..D.#.k...m........P',
-      'PD.............D.#......#.......n......P',
-      'PD...D....~....D.#P....................P',
-      'PPnnnnn..~~~~~..m#n...~~~.n....D....m.DP',
-      'PP..n...~~~~~~~###...~~~~.........k....P',
-      'PDPPPPP..~~~~~..D....~~~~..P...........P',
-      'P........~~~~~.......~~~~..............P',
-      'P........~~~~~.......~~~~....P........kP',
-      'PPkkkkkn..~......D...~~~~.D............P',
-      'Pkkk....D.....n.......~~~..........n...P',
-      'PD..P........Pn........................P',
-      'PD............n.P..P.......k...k......PP',
-      'PD............n..............D..n...k..P',
-      'PD....Pn......n...m......n..LLP.PPPPDkDP',
-      'PD..D...PDn....L.....PD.PD.n.P..PkkkkkDP',
-      'PPkkkkkDPDDkkkkDkDDDDDkPPD.PkDPDDDDDkkPP',
-      'PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP',
+      'PŔŔŔŔŔŔŔŔŔn..........m#.....P....nVVV..P',
+      'PŔŔ.Ŵ.r..D.....k.D....#nm.......Ț.VĈV.kP',
+      'PŔr~~~~..ƒ.....P.Dȁ...#mn..ṽn..n.r...ɌkP',
+      'PŔɌ~ř~~.Ɍ...D..ĿȁD....#.Ɍ.ṽṽ...P...n...P',
+      'PŔ..~~~..........nnnn.#.n.............kP',
+      'PŔ...~~~...........ȚD.#.n.ḫ.P..mƒ..ȁȁ.kP',
+      'PD..P.~~~........D....#D......ƒƒ..Dȁ..kP',
+      'PP.ḩ...~~~......n.PPPP#P....Ŀ.........DP',
+      'P.......~~~...Ɍ.ḫ.PPP.#.ḃḃ.......Ț.....P',
+      'Pk.Ț.P..~ř~~.....PPPP.#ḃḃ.......mm..ḩ.kP',
+      'Pkkk.ḃḃ..~~~....nL....#.PMMMMM........PP',
+      'PP..nḃ...~~~###########LDNap,N.#......PP',
+      'Pk......k.~~~..L.Dk...#.PN,j,G##......PP',
+      'PD.ṽP.Ɍ...~~~..P.Pkḩ..#.#MMMMM.#....Ɍ.PP',
+      'PPṽṽ..kk..~ř~.PPDP...n####.c...#..P...kP',
+      'PP......k.~~~ƒƒP.P..Dȁ###......#.......P',
+      'PPPPḫkDn..~~~.D....ȁȁ.###......#......DP',
+      'PD......##EEE##########################P',
+      'Pkn.......~~~.nD.#......#..........ḩ...P',
+      'PD..P....~~~..ḩ..#m..P..#.DȚ........P..P',
+      'PP..DɌ..~~~......#...ḫ..#......m...Ŀ..kP',
+      'PDn.....~ř~...ɌD.#......#.ḃP.Ɍ...ṽṽ.n..P',
+      'PD..ȁȁ..~~~......#.PĿ.D.#ḃk...m.ṽṽ.....P',
+      'PD.ȁȁ....~~~.D..D#......#..............P',
+      'PD...D...~~~~....#Pḃ..........ṽṽ.......P',
+      'PPnnnnȚ...~ř~.D.m#n.......n..ṽṽ..Ħ....DP',
+      'PP..n.....~~~#####.....................P',
+      'PDPPPPP....~~~..Ɍ..........P...........P',
+      'P....ḩ......ř~~~............ḩ..........P',
+      'P......Ŀ.....~~~~~Ƭ~~ř~~.......ȁȁ....ȚkP',
+      'PPkkkkkn......~~ř~Ƭ~~~~~~.D...ȁȁ.......P',
+      'Pkkk.ƒƒ.D.............~~~...........ƒƒ.P',
+      'PD..Pƒ.......Pnḃ.ḫ.Ɍ...~ř~.........ƒƒ..P',
+      'PD..Ț.....ṽṽ.ḃn.P..P...~~~.k...Ŀ......PP',
+      'PD.......ṽṽ...n.Ț..ȁȁ...~~~ḃ.D..n...kḫ.P',
+      'PD....Pn....ḩ.n...mȁ.....~ř~.LɌ.PPPPDkDP',
+      'PD..D...PDn....L....ḫPD.P.~~~...PkkkkkDP',
+      'PPkkkkkDPDDkkkkDkDDDDDkPPD.~~~.DDDDDkkPP',
+      'PPPPPPPPPPPPPPPPPPPPPPPPPPPP~~PPPPPPPPPP',
     ],
     grass: ['fgrass0', 'fgrass1', 'fgrass2'],
     path: 'forest_path',
@@ -295,10 +299,20 @@ export const LEVELS = {
       { tx: 27, ty: 15, tools: ['net', 'lasso', 'trap'] },
     ],
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
-    ambient: 'ambient_forest', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
+    ambient: 'ambient_forest_river', // Waldgeräusche mit leisem Flussrauschen darunter (tools/prepare-sounds.js)
     toolSpots: [],
     exits: [], // nur mit dem Auto
     spawn: { population: 12, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, frog: 1.6, fox: 1 } }, // jedes zehnte Reh ist ein Hirsch (Skin)
+    // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
+    flow: { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40 },
+    roundShore: true,
+    bridgeStyle: 'wood', // Holzbrücke über den Fluss
+    bridgeArt: { back: 'forest_bridge', front: 'forest_bridge_front', len: 3, ox: 42, oy: 34 }, // ... als Bild (tools/forest-art.py)
+    objectKeys: { Ŵ: 'forest_waterfall', Ŕ: 'forest_cliff' }, // Wasserfall und Felskante mit eigenen Bildern (Wald-Paket)
+    moss: 0.14, // Anteil der Graskacheln mit einem Moospolster (siehe ForestLife.js)
+    bats: { tx: 35, ty: 2 }, // Fledermäuse aus der Höhle (Wolfsnacht, siehe ForestLife.js)
+    bees: 5, // einzelne Bienen fliegen von Blume zu Blume
+    birds: 4, // kleine Vögel fliegen von Baum zu Baum
     herons: { every: [50, 110], landChance: 0.5 },
   },
 

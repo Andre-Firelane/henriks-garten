@@ -24,7 +24,7 @@ const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sh
 // mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket (Bauernhof,
 // Reittier der Wiese ...) kommt ins Paket misc
 const GROUPS = {
-  forest: { species: ['deer', 'fox', 'squirrel', 'wolf'], keys: /^(deer|stag|fox|squirrel|wolf|hero_forest|ride_forest)/ },
+  forest: { species: ['deer', 'fox', 'squirrel', 'wolf'], keys: /^(deer|stag|fox|squirrel|wolf|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$)/ },
   savanna: {
     species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
     keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
@@ -123,6 +123,12 @@ const PIXEL_ART = [
   'dandelion', 'dandelion_blown', 'beehive', 'birdhouse', 'meadow_well', 'meadow_bench', 'woodpile', 'mailbox', 'clothesline',
   'hay_bale', 'windmill', 'windmill_sails', 'meadow_dock', 'lily_pads', 'duck', 'duck_fly0', 'duck_fly1', 'bee',
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
+  // Wald (Platzhalter aus tools/forest-placeholders.py): Felsen, Sträucher, Blumen, Höhle, Hochstand, Fledermaus, Vögel, Moos,
+  // Felskante, fließendes Waldwasser (Wasserfall: Bildstreifen, siehe unten)
+  'forest_boulder', 'forest_stump', 'forest_mossy_log', 'forest_elder', 'forest_hazel', 'forest_bluebells', 'forest_foxglove',
+  'forest_anemones', 'forest_violets', 'forest_cave', 'forest_stand', 'forest_bat0', 'forest_bat1', 'forest_bird', 'forest_bird_fly0', 'forest_bird_fly1', 'forest_log_bridge', 'forest_river_rock', 'forest_foam0', 'forest_foam1', 'forest_bridge', 'forest_bridge_front', 'forest_moss0', 'forest_moss1',
+  'forest_cliff',
+  'forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',
   'planks', 'cat_tree', 'mesh_x', 'mesh_y', 'gate_y', 'net_x', 'net_y',
   'chain_x', 'chain_y', 'post_wood', 'post_mesh', 'post_net', 'post_chain',
@@ -611,7 +617,8 @@ export default class BootScene extends Phaser.Scene {
     // Kanu (Dschungel): leer und mit Henrik darin, je 4 Ansichten
     for (const k of ['canoe', 'canoe_hero']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 144, frameHeight: 152 });
     const wf = this.useHd('waterfall') ? hdFactor('waterfall') : 1; // große Fassung: Bilder 4-mal (Handy 2-mal) so groß, danach verkleinert (shrinkTexture)
-    load.spritesheet('waterfall', `assets/${wf > 1 ? `${HD_DIR}/` : ''}waterfall.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf }); // Wasserfall im Dschungel (3 Bilder)
+    // Wasserfall im Dschungel und derselbe im Wald (eigener Name fürs Wald-Paket)
+    for (const key of ['waterfall', 'forest_waterfall']) load.spritesheet(key, `assets/${wf > 1 ? `${HD_DIR}/` : ''}${key}.png`, { frameWidth: 128 * wf, frameHeight: 160 * wf });
     load.spritesheet('cat_sleep', 'assets/cat_sleep.png', CAT_SLEEP_FRAME); // eingerollt auf dem Kratzbaum
     // Katze 2 (seltener Skin)
     load.spritesheet('cat2', 'assets/cat2.png', CAT_FRAME);

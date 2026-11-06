@@ -4,3 +4,4 @@ dist/
 # Export-Ordner zum Nachbearbeiten der Sprites (nur lokal)
 *-Sprites/
 Tiersprites Test/
+__pycache__/

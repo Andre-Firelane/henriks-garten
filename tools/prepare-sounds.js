@@ -174,6 +174,25 @@ if (!ONLY || ASIA_MIX.dest.includes(ONLY)) {
   console.log(`${dest}: ${len.toFixed(2)} s, Asien über Wiese gemischt`);
 }
 
+// Wald: der Fluss leise unter den Waldgeräuschen (die sollen vorne bleiben). Die kurze Flussaufnahme wird zur nahtlosen
+// Schleife (Ende in den Anfang übergeblendet), so lang, dass sie genau times-mal in die Waldaufnahme passt – so liegen
+// auch an deren Schleifenstelle beide Übergänge übereinander
+const FOREST_MIX = { src: 'Sounds/Wald FLuss Ambient.mp3', base: 'public/assets/sounds/ambient_forest.mp3', dest: 'public/assets/sounds/ambient_forest_river.mp3', fade: 1.5, gainDb: -12 };
+if (!ONLY || FOREST_MIX.dest.includes(ONLY)) {
+  const { src, base, dest, gainDb } = FOREST_MIX;
+  const duration = (f) => Number(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).toString().trim());
+  const baseLen = duration(base);
+  const srcLen = duration(src);
+  const times = Math.round(baseLen / (srcLen - FOREST_MIX.fade));
+  const fade = srcLen - baseLen / times; // Schleifenlänge = baseLen / times
+  const filter =
+    `[0:a]asplit[a1][a2];[a1]atrim=${fade},asetpts=PTS-STARTPTS[tail];[a2]atrim=0:${fade},asetpts=PTS-STARTPTS[head];` +
+    `[tail][head]acrossfade=d=${fade}:c1=tri:c2=tri,volume=${gainDb}dB,aloop=loop=-1:size=2e9,atrim=0:${baseLen}[river];` +
+    '[river][1:a]amix=inputs=2:normalize=0:duration=shortest[out]';
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', src, '-i', base, '-filter_complex', filter, '-map', '[out]', '-c:a', 'libmp3lame', '-b:a', '128k', dest]);
+  console.log(`${dest}: ${baseLen.toFixed(2)} s, Fluss (${times}× ${(baseLen / times).toFixed(2)} s) leise unter den Wald gemischt`);
+}
+
 // Schleifen aus einem Stück der Aufnahme: from bis to ausschneiden, das Ende geht weich in den Anfang über (wie beim
 // Asien-Ambient). Riff: am Anfang und Ende ein- bzw. ausgeblendet – das fällt weg. Wald bei Nacht (Wolfsnacht): die
 // Aufnahme ist eine Stunde lang, davon reichen 45 Sekunden aus der Mitte

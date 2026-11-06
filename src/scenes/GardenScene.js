@@ -113,6 +113,7 @@ import Boat from '../world/Boat.js';
 import Floes from '../world/Floes.js';
 import Sway from '../world/Sway.js';
 import MeadowLife from '../world/MeadowLife.js';
+import ForestLife from '../world/ForestLife.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import RodTool from '../tools/RodTool.js';
@@ -351,6 +352,9 @@ const BREATH_SIZE = 0.85; // ... so groß wird sie (Maßstab des weichen Lichtpu
 const BREATH_DEPTH = 99935; // über dem Nachtschleier (siehe Weather.js), sonst ist sie im Dunkeln kaum zu sehen
 const BREATH_UP = 40; // ... und so hoch über den Füßen ist sein Mund
 const CHEST_DIST = 40; // so nah muss man an der Werkzeug-Kiste stehen (auch am Futterautomaten)
+const STAND_UP = 64; // Hochstand (Wald): so hoch steht Henrik auf der Plattform über dem Fuß des Hochstands
+const STAND_ZOOM_MS = 900; // so lange zoomt die Kamera beim Hinauf- und Hinuntersteigen
+const STAND_LOCK = 0.5; // so lange nach dem Hinaufsteigen bringt Laufen einen noch nicht wieder herunter
 const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Futter hineinzuwerfen
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
@@ -669,6 +673,8 @@ export default class GardenScene extends Phaser.Scene {
     setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'park'));
     this.leaving = false;
     this.beds = []; // Betten in den Hütten (Kacheln): dort kann man sich ausruhen
+    this.stands = []; // Hochstände (Wald): mit der Aktionstaste hinauf, von oben sieht man weit
+    this.onStand = null;
     this.resting = false;
     this.chestSprites = new Map(); // Bilder der Regale und Kisten je Kachel ("tx,ty")
     this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
@@ -715,6 +721,7 @@ export default class GardenScene extends Phaser.Scene {
         const obj = objectAt(tx, ty);
         if (obj?.bridge) continue; // Brücken werden unten am Stück gezeichnet
         if (obj?.bed) this.beds.push({ tx, ty });
+        if (obj?.stand) this.stands.push({ tx, ty, x, y });
         if (obj?.fence) {
           const imgs = this.addFence(tx, ty, obj);
           // vordere Hüttenwände (zur Kamera hin) werden durchsichtig, wenn man drin ist
@@ -972,6 +979,7 @@ export default class GardenScene extends Phaser.Scene {
     this.floes = LEVEL.floes ? new Floes(this) : null; // Eisschollen (Eiswelt am Tag)
     this.sway = new Sway(this, swayPlants);
     this.meadowLife = new MeadowLife(this, this.sway); // Enten, Bienen, Windmühle, Pusteblumen (Wiese)
+    this.forestLife = LEVEL.bats || LEVEL.bees || LEVEL.birds || LEVEL.moss ? new ForestLife(this) : null; // Schaum, Moos, Bienen, Vögel, Fledermäuse (Wald)
     this.coldHintIn = 0;
     this.nearBoat = null;
     if (!this.boat?.riding) this.unstickPlayer();
@@ -1156,6 +1164,14 @@ export default class GardenScene extends Phaser.Scene {
         this.useBoat(); // am Steg: ins Kanu steigen bzw. aussteigen
         return;
       }
+      if (this.onStand) {
+        this.climbDown(); // oben auf dem Hochstand: wieder herunter
+        return;
+      }
+      if (this.nearStand && !this.leaving) {
+        this.climbUp(this.nearStand); // an der Leiter: hinauf
+        return;
+      }
       if (this.thicket?.target.size && !this.leaving) {
         this.thicket.strike(); // vor dem Dickicht: mit der Machete zuschlagen
         return;
@@ -1248,6 +1264,15 @@ export default class GardenScene extends Phaser.Scene {
       ? { plank: [0xb58553, 0xa0703f], edge: 0x5e3d22, post: 0x8a5a32, cap: 0xb58553, rail: 0xa8763f, slat: 0x9a6a38 }
       : { plank: [0x9c5a38, 0xb06640], edge: 0x6e3a22, post: 0x9c2e20, cap: 0xe8b84a, rail: 0xd64a32, slat: 0xc8402c };
     for (const br of BRIDGES) {
+      if (br.log) {
+        this.drawLogBridge(br);
+        continue;
+      }
+      const art = LEVEL.bridgeArt;
+      if (art && br.axis === 'x' && br.to + 1 - br.from === art.len) {
+        this.drawArtBridge(br, art);
+        continue;
+      }
       const arch = bridgeArch(br);
       const len = br.to + 1 - br.from;
       // Punkt auf der Brücke: u entlang (in Kacheln ab Brückenanfang), v quer (0 = hinten, 1 = vorne), h über dem Deck
@@ -1311,6 +1336,65 @@ export default class GardenScene extends Phaser.Scene {
       rail(0, -4); // hinten: hinter allem, was auf der Brücke steht
       rail(1, 2); // vorne: vor allem auf der Brücke, hinter allem davor
     }
+  }
+
+  // Auf den Hochstand: Henrik steht oben auf der Plattform, die Kamera zoomt weit heraus (man sieht den ganzen Wald)
+  climbUp(stand) {
+    const p = this.player;
+    this.onStand = stand;
+    this.standLock = STAND_LOCK;
+    this.standFrom = { x: p.x, y: p.y };
+    p.x = stand.x;
+    p.y = stand.y + 1; // knapp vor dem Hochstand (Tiefe); er läuft hier nicht, die Kachel ist sonst fest
+    p.perch = { x: stand.x, y: stand.y - STAND_UP, depth: stand.y + 2 };
+    const cam = this.cameras.main;
+    this.standZoom = cam.zoom;
+    const fit = Math.min(cam.width / ((MAP_W + MAP_H) * (TILE_W / 2)), cam.height / ((MAP_W + MAP_H) * (TILE_H / 2))) * 1.25;
+    this.tweens.add({ targets: cam, zoom: Math.min(cam.zoom, fit), duration: STAND_ZOOM_MS, ease: 'Sine.easeInOut' });
+    this.updateToolbar();
+  }
+
+  // vom Hochstand herunter: zurück an die Leiter, Kamera wie vorher
+  climbDown() {
+    const p = this.player;
+    if (!this.onStand) return;
+    this.onStand = null;
+    p.perch = null;
+    Object.assign(p, this.standFrom);
+    this.tweens.add({ targets: this.cameras.main, zoom: this.standZoom, duration: STAND_ZOOM_MS, ease: 'Sine.easeInOut' });
+    this.updateToolbar();
+  }
+
+  // Brücke als Bild (bridgeArt in levels.js, aus tools/forest-art.py): Deck mit hinterem Geländer ganz unten, das vordere
+  // Geländer in Stücken je halbe Kachel, jedes mit der Tiefe seiner Stelle am Boden (wie bei der gezeichneten Brücke).
+  // ox/oy: wo im Bild der Brückenanfang hinten liegt
+  drawArtBridge(br, art) {
+    const x = (br.from - br.at) * (TILE_W / 2);
+    const y = (br.from + br.at) * (TILE_H / 2);
+    const back = this.add.image(x, y, art.back).setDepth(-99998);
+    back.setOrigin(art.ox / back.width, art.oy / back.height);
+    const len = br.to + 1 - br.from;
+    for (let i = 0; i < len * 2; i++) {
+      const u0 = i / 2, u1 = (i + 1) / 2;
+      const xa = i === 0 ? 0 : art.ox + (u0 - 1) * (TILE_W / 2);
+      const xb = i === len * 2 - 1 ? back.width : art.ox + (u1 - 1) * (TILE_W / 2);
+      const ground = (br.from + (u0 + u1) / 2 + br.at + 1) * (TILE_H / 2);
+      const piece = this.add.image(x, y, art.front).setOrigin(back.originX, back.originY).setCrop(xa, 0, xb - xa, back.height);
+      piece.setDepth(ground + 2);
+    }
+  }
+
+  // umgestürzter Baumstamm über dem Wasser (Wald): Bild forest_log_bridge (für zwei Kacheln entlang ty gemalt, entlang tx
+  // gespiegelt, längere Brücken gestreckt), Bildmitte über der Mitte der Brücke. Flach unter allem, was darauf läuft
+  // (die Höhe beim Darüberlaufen: bridgeLift)
+  drawLogBridge(br) {
+    const len = br.to + 1 - br.from;
+    const along = br.from + len / 2;
+    const cross = br.at + 0.5;
+    const [txf, tyf] = br.axis === 'y' ? [cross, along] : [along, cross];
+    const x = (txf - tyf) * (TILE_W / 2);
+    const y = (txf + tyf) * (TILE_H / 2) - bridgeArch(br) / 2;
+    this.add.image(x, y, 'forest_log_bridge').setFlipX(br.axis === 'x').setScale(len / 2).setDepth(-99998);
   }
 
   // Dampf über heißen Quellen: kleine Wölkchen steigen auf und verblassen
@@ -2720,6 +2804,12 @@ export default class GardenScene extends Phaser.Scene {
       const img = `assets/${HD.includes(key) ? `${HD_DIR}/` : ''}${key}.png`; // große Fassung, falls es eine gibt (das kleine Bild ist teils noch das alte)
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr(`${own?.chestName ?? (house ? 'Regal' : 'Kiste')} öffnen`, `Open ${own?.chestName ?? (house ? 'shelf' : 'chest')}`)}</span></div>`;
+      return;
+    }
+    if (this.onStand || this.nearStand) {
+      const img = `assets/${HD_DIR}/forest_stand.png`;
+      setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${this.onStand ? tr('Herunterklettern', 'Climb down') : tr('Auf den Hochstand', 'Climb the hide')}</span></div>`;
       return;
     }
     if (this.nearBed) {
@@ -4674,6 +4764,7 @@ export default class GardenScene extends Phaser.Scene {
     this.floes?.update(dt); // auf einer fahrenden Scholle fährt Henrik mit
     this.sway.update(dt);
     this.meadowLife.update(dt);
+    this.forestLife?.update(dt);
 
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
@@ -4726,6 +4817,16 @@ export default class GardenScene extends Phaser.Scene {
     if (bed !== this.nearBed) {
       this.nearBed = bed;
       this.updateToolbar();
+    }
+    // an der Leiter des Hochstands: die Aktionstaste bringt Henrik hinauf; oben bringt ihn Laufen wieder herunter
+    const stand = this.onStand ? null : this.stands.find((s) => Math.hypot(this.player.x - s.x, (this.player.y - s.y) * 2) < CHEST_DIST * 1.6) ?? null;
+    if (stand !== this.nearStand) {
+      this.nearStand = stand;
+      this.updateToolbar();
+    }
+    if (this.onStand) {
+      this.standLock -= dt;
+      if (this.player.pushing && this.standLock <= 0) this.climbDown();
     }
     // in einem Gebäude: Dach und vordere Wände durchsichtig, damit man das Innere sieht
     const { tx: px, ty: py } = worldToTile(this.player.x, this.player.y);
@@ -4887,7 +4988,7 @@ function pathFishTexture(scene, dir) {
 // Kacheln des Flusses (LEVEL.flow): zusammenhängendes Wasser samt Stegen, das groß genug ist (kleine Becken wie das am
 // Wasserfall fließen nicht). Set "tx,ty"
 function riverTiles() {
-  const water = (tx, ty) => '~Ŝ'.includes(charAt(tx, ty)) && tx >= 0 && ty >= 0 && tx < MAP_W && ty < MAP_H;
+  const water = (tx, ty) => '~ŜBEƬƫř'.includes(charAt(tx, ty)) && tx >= 0 && ty >= 0 && tx < MAP_W && ty < MAP_H; // unter Brücken fließt er weiter
   const seen = new Set();
   const river = new Set();
   for (let ty = 0; ty < MAP_H; ty++) {

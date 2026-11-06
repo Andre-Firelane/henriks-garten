@@ -144,8 +144,10 @@ export default class Player {
       vx = touch.x;
       vy = touch.y;
     }
-    // Mavi spricht gerade (siehe src/npc/Mavi.js): stehen bleiben
-    if (this.frozen) vx = vy = 0;
+    // Mavi spricht gerade (siehe src/npc/Mavi.js): stehen bleiben; auf dem Hochstand (perch) ebenso – wer dort laufen
+    // will, steigt herunter (pushing, siehe GardenScene)
+    this.pushing = vx !== 0 || vy !== 0;
+    if (this.frozen || this.perch) vx = vy = 0;
 
     const moving = vx !== 0 || vy !== 0;
     this.moving = moving; // (Wolfsnacht: wer sich beim Umschauen der Wölfe bewegt, wird gesehen)
@@ -266,6 +268,11 @@ export default class Player {
     // Wer weiter unten steht, wird weiter vorne gezeichnet
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
+    // oben auf dem Hochstand: { x, y, depth } – dort steht die Figur, ohne Schatten am Boden
+    if (this.perch) {
+      this.sprite.setPosition(this.perch.x, this.perch.y).setDepth(this.perch.depth).setAngle(0);
+      this.shadow.setVisible(false);
+    }
   }
 
   // eine Qualle berührt: kurz langsamer und rot aufblitzen; gibt zurück, ob es neu brennt (nicht schon gerade)

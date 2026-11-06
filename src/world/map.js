@@ -11,7 +11,7 @@ import { currentSeason, firstSeason } from './season.js';
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
 // ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar)
 // ŝ ĉ ṗ ķ ẋ: Sonnenblumen, Mais, Kürbisse, Kohl und Vogelscheuche auf dem Acker (Wiese)
-const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
+const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -29,7 +29,7 @@ export const OBJECTS = {
   D: { key: 'dark_tree', originY: 90 / 104, solid: true, hitbox: 12 },
   k: { key: 'dark_bush', originY: 36 / 44, solid: true, hitbox: 4 },
   L: { key: 'log', originY: 44 / 64, solid: true },
-  n: { key: 'fern', originY: 24 / 32, solid: false },
+  n: { key: 'fern', originY: 24 / 32, solid: false, sway: 5 },
   m: { key: 'mushroom', originY: 18 / 24, solid: false },
   // Zäune: fence = Zaunart und Richtung (x = entlang tx, y = entlang ty), siehe addFence in GardenScene
   '-': { key: 'fence_x', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'x' } },
@@ -149,6 +149,10 @@ export const OBJECTS = {
   // Bogenbrücken: B entlang ty, E entlang tx; gezeichnet werden sie am Stück (siehe drawBridges in GardenScene)
   B: { solid: false, bridge: 'y' },
   E: { solid: false, bridge: 'x' },
+  // umgestürzter Baumstamm als Brücke (Wald): Ƭ entlang ty, ƫ entlang tx; flach, ohne Geländer
+  Ƭ: { solid: false, bridge: 'y', log: true },
+  ƫ: { solid: false, bridge: 'x', log: true },
+  ř: { key: 'forest_river_rock', originY: 40 / 52, solid: true }, // Felsen im Fluss (darunter fließt Wasser, Schaum: ForestLife.js)
   // Dschungel: Bootssteg (liegt flach über dem Wasser, begehbar), Dickicht (fest, bis man es mit der Machete wegschlägt;
   // es wächst wieder nach, siehe Thicket.js und thicketBlock), Felsklippe und Wasserfall (oben links in der Ecke)
   Ŝ: { key: 'jungle_dock', originY: 0.5, solid: false, floor: true },
@@ -186,6 +190,19 @@ export const OBJECTS = {
   ŵ: { key: 'clothesline', originY: 58 / 80, solid: true, hitbox: 6 },
   ĥ: { key: 'hay_bale', originY: 34 / 40, solid: true, hitbox: 14 },
   Ẁ: { key: 'windmill', originY: 184 / 200, solid: true, windmill: true },
+  // Wald: bemooste Felsen, Stümpfe und Stämme, mittelgroße Sträucher, Waldblumen, Höhle (die Kacheln ringsum sind V),
+  // Hochstand (stand: man steigt mit der Aktionstaste hinauf, siehe GardenScene)
+  Ɍ: { key: 'forest_boulder', originY: 47 / 56, solid: true, hitbox: 18 },
+  Ț: { key: 'forest_stump', originY: 34 / 40, solid: true, hitbox: 11 },
+  Ŀ: { key: 'forest_mossy_log', originY: 38 / 48, solid: true, hitbox: 14 },
+  ḩ: { key: 'forest_elder', originY: 56 / 64, solid: true, hitbox: 6, sway: 2 },
+  ḫ: { key: 'forest_hazel', originY: 56 / 64, solid: true, hitbox: 6, sway: 2 },
+  ḃ: { key: 'forest_bluebells', originY: 25 / 32, solid: false, sway: 5 },
+  ƒ: { key: 'forest_foxglove', originY: 41 / 48, solid: false, sway: 6 },
+  ȁ: { key: 'forest_anemones', originY: 25 / 32, solid: false, sway: 4 },
+  ṽ: { key: 'forest_violets', originY: 25 / 32, solid: false, sway: 4 },
+  Ĉ: { key: 'forest_cave', originY: 140 / 160, solid: true },
+  Ħ: { key: 'forest_stand', originY: 158 / 176, solid: true, stand: true },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
@@ -383,15 +400,17 @@ export function setLevel(id) {
   for (let ty = 0; ty < MAP_H; ty++) {
     for (let tx = 0; tx < MAP_W; tx++) {
       const c = charAt(tx, ty);
-      if (c === 'B' && charAt(tx, ty - 1) !== 'B') {
+      const axis = OBJECTS[c]?.bridge;
+      const log = !!OBJECTS[c]?.log;
+      if (axis === 'y' && charAt(tx, ty - 1) !== c) {
         let end = ty;
-        while (charAt(tx, end + 1) === 'B') end++;
-        BRIDGES.push({ axis: 'y', at: tx, from: ty, to: end });
+        while (charAt(tx, end + 1) === c) end++;
+        BRIDGES.push({ axis: 'y', at: tx, from: ty, to: end, log });
       }
-      if (c === 'E' && charAt(tx - 1, ty) !== 'E') {
+      if (axis === 'x' && charAt(tx - 1, ty) !== c) {
         let end = tx;
-        while (charAt(end + 1, ty) === 'E') end++;
-        BRIDGES.push({ axis: 'x', at: ty, from: tx, to: end });
+        while (charAt(end + 1, ty) === c) end++;
+        BRIDGES.push({ axis: 'x', at: ty, from: tx, to: end, log });
       }
     }
   }
@@ -652,7 +671,7 @@ export function outerWaterCorners(tx, ty) {
   // Wasser rundet auch zum Schlamm hin ab (darunter liegt dann Schlamm, siehe cornerGroundAt), Schlamm nicht zum Wasser hin.
   // Zugefrorenes Meer (Eiswelt bei Nacht) rundet zum Schnee hin ab; zum offenen Wasser hin rundet das Eis selbst ab wie
   // ein Ufer (siehe outerLandCorners)
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜ'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~') && !(c === 'ɨ' && charAt(x, y) === '~');
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜƬƫř'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~') && !(c === 'ɨ' && charAt(x, y) === '~');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
@@ -664,7 +683,7 @@ export function outerWaterCorners(tx, ty) {
 export function outerLandCorners(tx, ty) {
   if (!LEVEL.roundShore) return 0;
   const c = charAt(tx, ty);
-  if (c === ' ' || '~owh≈BEŜ'.includes(c)) return 0;
+  if (c === ' ' || '~owh≈BEŜƬƫř'.includes(c)) return 0;
   const water = (x, y) => isShoreWater(c, charAt(x, y));
   const ul = water(tx - 1, ty), ur = water(tx, ty - 1), dr = water(tx + 1, ty), dl = water(tx, ty + 1);
   return (ul && ur && water(tx - 1, ty - 1) ? CORNER.top : 0) | (ur && dr && water(tx + 1, ty - 1) ? CORNER.right : 0)
@@ -673,7 +692,7 @@ export function outerLandCorners(tx, ty) {
 
 // Liegt neben einer Landkachel (c) hier Wasser, zu dem hin sie abgerundet wird? (Eis nur zum offenen Wasser hin)
 export function isShoreWater(c, n) {
-  return n === '~' || (n === 'ɨ' && c !== 'ɨ');
+  return n === '~' || n === 'ř' || (n === 'ɨ' && c !== 'ɨ'); // ř: Felsen im Fluss (darunter Wasser)
 }
 
 // Boden unter den abgerundeten Ecken einer Wasserkachel: Schlamm, wenn das Wasser im Schlammloch liegt (Trockenzeit),
@@ -709,6 +728,7 @@ export function underBridge(x, y) {
 
 // Höhe des Brückenbogens (Höchststand) je nach Länge der Brücke
 export function bridgeArch(b) {
+  if (b.log) return 6; // Baumstamm: man steigt nur kurz auf den Stamm
   return Math.min(14, 3 + (b.to - b.from + 1) * 2.5);
 }
 
