@@ -22,6 +22,8 @@ import { raiseAt,
   groundAt,
   grassAt,
   outerWaterCorners,
+  pathOuterCorners,
+  grassPathCorners,
   outerLandCorners,
   isShoreWater,
   cornerGroundAt,
@@ -89,6 +91,7 @@ import Iguana from '../animals/Iguana.js';
 import Jaguar from '../animals/Jaguar.js';
 import Gorilla from '../animals/Gorilla.js';
 import WaterfallSun from '../world/WaterfallSun.js';
+import { shoreTexture, removeShoreTextures } from '../world/shore.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
 import Turtle, { CUTS_NEEDED, CUT_DIST } from '../animals/Turtle.js';
@@ -114,6 +117,7 @@ import Floes from '../world/Floes.js';
 import Sway from '../world/Sway.js';
 import MeadowLife from '../world/MeadowLife.js';
 import ForestLife from '../world/ForestLife.js';
+import SavannaLife from '../world/SavannaLife.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import RodTool from '../tools/RodTool.js';
@@ -195,7 +199,7 @@ const CATCH_TIPS = {
   seahorse: tr('Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!', 'Hides in the corals. When bubbles rise, it peeks out – then net it quickly!'),
   butterfly: tr('Auf der Wiese bei den Blumen. Im Flug sind sie scheu – sitzt einer auf einer Blüte, schleich dich an und nimm den Kescher! Im Tierpark flattern sie frei herum.', 'On the meadow near the flowers. In flight they are shy – when one sits on a blossom, sneak up and use the net! In your zoo they flutter around freely.'),
   hippo: tr('Nur bei Starkregen in der Savanne. Im Wasser siehst du nur Augen und Ohren – warte, bis es zum Grasen ans Ufer kommt, und fang es mit dem Lasso, bevor es zurück ins Wasser trottet.', 'Only during heavy rain in the savanna. In the water you only see eyes and ears – wait until it comes ashore to graze and catch it with the lasso before it trots back into the water.'),
-  hyena: tr('Nur in der Trockenzeit in der Savanne. Hörst du sie kichern, streu Knochen aus der Hütte – dann kommen sie. Solange sie fressen, fängst du sie mit dem Lasso.', 'Only in the dry season in the savanna. When you hear them giggle, scatter bones from the hut – then they come. While they eat, catch them with the lasso.'),
+  hyena: tr('Nur in der Trockenzeit in der Savanne, am Elefantenfriedhof oben rechts. Hörst du sie dort kichern, streu Knochen aus der Hütte – dann kommen sie. Solange sie fressen, fängst du sie mit dem Lasso.', 'Only in the dry season in the savanna, at the elephant graveyard in the top right. When you hear them giggle there, scatter bones from the hut – then they come. While they eat, catch them with the lasso.'),
   warthog: tr('Nur in der Trockenzeit in der Savanne. Kommst du näher, flitzt es in sein Erdloch. Warte mit dem Lasso in etwas Abstand davor – irgendwann schaut es kurz heraus.', 'Only in the dry season in the savanna. If you get closer, it dashes into its burrow. Wait with the lasso a little way off – sooner or later it pops out for a moment.'),
   vulture: tr('Nur in der Trockenzeit in der Savanne. Sein Schatten kreist über einer kahlen Akazie, dann landet er oben im Baum – dort erwischst du ihn mit dem Kescher.', 'Only in the dry season in the savanna. Its shadow circles over a bare acacia, then it lands up in the tree – there you can get it with the net.'),
   redpanda: tr('Nur beim Glühwürmchen-Abend im Bambuswald. Er sitzt oben im Kirschbaum: fang 3 Glühwürmchen mit dem Glas, stell das leuchtende Glas vor den Baum – dann kommt er herunter und du kannst ihn berühren.', 'Only during the Firefly Evening in the bamboo forest. It sits up in a cherry tree: catch 3 fireflies with the jar, put the glowing jar in front of the tree – then it comes down and you can touch it.'),
@@ -687,6 +691,15 @@ export default class GardenScene extends Phaser.Scene {
     // fließender Fluss (LEVEL.flow): seine Wasserkacheln sind eigene Bilder, deren Bild reihum wechselt (siehe animateFlow)
     const river = LEVEL.flow ? riverTiles() : null;
     this.flowTiles = [];
+    // Uferstreifen (Sand, Kies, heller Schlamm) zwischen Gras und Wasser, siehe shore.js: wird mit dem Boden gemalt
+    const shoreKeys = [];
+    const shore = (x, y, tx, ty, key) => {
+      const k = shoreTexture(this, tx, ty, key);
+      if (k) {
+        ground.push([x, y, k]);
+        shoreKeys.push(k);
+      }
+    };
     const firstStatic = this.children.list.length; // ab hier: feste Dinge der Karte (werden außerhalb des Bildes ausgeblendet)
     for (let ty = 0; ty < MAP_H; ty++) {
       for (let tx = 0; tx < MAP_W; tx++) {
@@ -696,11 +709,13 @@ export default class GardenScene extends Phaser.Scene {
         const corners = outerWaterCorners(tx, ty);
         if (river?.has(tx + ',' + ty)) {
           if (corners) ground.push([x, y, cornerGroundAt(tx, ty)]);
+          if (corners) shore(x, y, tx, ty, cornerGroundAt(tx, ty));
           const key = LEVEL.flow.frames[0];
           const img = this.add.image(x, y, corners ? roundedTexture(this, key, corners) : key).setDepth(-99998);
           this.flowTiles.push({ img, corners });
         } else if (corners) {
           ground.push([x, y, cornerGroundAt(tx, ty)]); // Gras, im Schlammloch Schlamm
+          shore(x, y, tx, ty, cornerGroundAt(tx, ty)); // Ufer unter der Rundung
           ground.push([x, y, roundedTexture(this, groundAt(tx, ty), corners)]);
         } else if (outerLandCorners(tx, ty)) {
           // Rasenecke, die ins Wasser ragt: abgerundet, darunter das Wasser des Nachbarn (am Fluss fließend)
@@ -710,12 +725,30 @@ export default class GardenScene extends Phaser.Scene {
           if (river?.has(wx + ',' + wy)) {
             this.flowTiles.push({ img: this.add.image(x, y, LEVEL.flow.frames[0]).setDepth(-99998), corners: 0 });
             this.add.image(x, y, round).setDepth(-99997.9);
+            const sh = shoreTexture(this, tx, ty, groundAt(tx, ty));
+            if (sh) {
+              this.add.image(x, y, sh).setDepth(-99997.85); // Ufer über dem fließenden Wasser
+              this.events.once('shutdown', () => removeShoreTextures(this, [sh]));
+            }
           } else {
             ground.push([x, y, groundAt(wx, wy)]);
             ground.push([x, y, round]);
+            shore(x, y, tx, ty, groundAt(tx, ty));
           }
         } else {
-          ground.push([x, y - raiseAt(tx, ty), groundAt(tx, ty)]); // Terrarium auf einem Sockel: der Boden liegt höher
+          // unbefestigte Wege: Ecken zum Gras hin abgerundet (darunter Gras), Grasecken im Weg ebenso (darunter Weg)
+          const pathRound = raiseAt(tx, ty) ? 0 : pathOuterCorners(tx, ty);
+          const grassRound = raiseAt(tx, ty) || pathRound ? null : grassPathCorners(tx, ty);
+          if (pathRound) {
+            ground.push([x, y, grassAt(tx, ty)]);
+            ground.push([x, y, roundedTexture(this, groundAt(tx, ty), pathRound)]);
+          } else if (grassRound) {
+            ground.push([x, y, grassRound.under]);
+            ground.push([x, y, roundedTexture(this, groundAt(tx, ty), grassRound.mask)]);
+          } else {
+            ground.push([x, y - raiseAt(tx, ty), groundAt(tx, ty)]); // Terrarium auf einem Sockel: der Boden liegt höher
+          }
+          if (!raiseAt(tx, ty)) shore(x, y, tx, ty, groundAt(tx, ty));
         }
 
         const obj = objectAt(tx, ty);
@@ -742,7 +775,9 @@ export default class GardenScene extends Phaser.Scene {
         } else if (obj?.invisible) {
           // nur fest, ohne Bild (z. B. die zweite Kachel unter einem Bett)
         } else if (obj) {
-          const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : LEVEL.objectKeys?.[charAt(tx, ty)] ?? obj.key; // Einrichtung passend zur Hütte (auch außen an der Wand)
+          // Einrichtung passend zur Hütte (auch außen an der Wand); variants: eines von mehreren Bildern, fest pro Kachel
+          const variant = obj.variants && obj.variants[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % obj.variants.length];
+          const key = obj.styled ? `${obj.key}_${buildingAt(tx, ty, 1)?.style}` : LEVEL.objectKeys?.[charAt(tx, ty)] ?? variant ?? obj.key;
           // depthShift nur in Hütten (z. B. die Kiste vor der Rückwand); draußen gilt die normale Tiefe, sonst steht sie vor der Spielfigur
           const shift = obj.depthAlways ?? (buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0);
           const img = this.add.image(x, y - raiseAt(tx, ty), key).setOrigin(obj.originX ?? 0.5, obj.originY).setDepth(obj.depthFixed ?? (obj.floor ? -99990 : y + shift));
@@ -816,6 +851,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.cullView = null;
     this.bakeGround(ground);
+    removeShoreTextures(this, shoreKeys); // sind jetzt im Boden gemalt
 
     // Tore der Gehege: jedes verschwindet kurz, solange jemand hindurchgeht
     this.gateGroups = ENCLOSURES.filter((e) => e.gates.length).map((e) => ({
@@ -980,6 +1016,7 @@ export default class GardenScene extends Phaser.Scene {
     this.sway = new Sway(this, swayPlants);
     this.meadowLife = new MeadowLife(this, this.sway); // Enten, Bienen, Windmühle, Pusteblumen (Wiese)
     this.forestLife = LEVEL.bats || LEVEL.bees || LEVEL.birds || LEVEL.moss ? new ForestLife(this) : null; // Schaum, Moos, Bienen, Vögel, Fledermäuse (Wald)
+    this.savannaLife = LEVEL.flies || LEVEL.gravePatch ? new SavannaLife(this) : null; // Friedhofsboden, Fliegen- und Mückenschwärme (Savanne)
     this.coldHintIn = 0;
     this.nearBoat = null;
     if (!this.boat?.riding) this.unstickPlayer();
@@ -3826,7 +3863,7 @@ export default class GardenScene extends Phaser.Scene {
       normal: tr('🌿 Im Dschungel ist wieder normales Wetter.', '🌿 The jungle is back to normal weather.'),
     }[now.id] : {
       rain: tr('🌧️ Starkregen! Die Wasserlöcher laufen voll – jetzt kommen Nilpferde, Lungenfische und Schuhschnäbel.', '🌧️ Heavy rain! The waterholes are filling up – now hippos, lungfish and shoebills are coming.'),
-      dry: tr('☀️ Trockenzeit! Die Wasserlöcher trocknen aus – Geier kreisen, Warzenschweine graben, und irgendwo kichern Hyänen.', '☀️ Dry season! The waterholes are drying up – vultures circle, warthogs dig, and somewhere hyenas are giggling.'),
+      dry: tr('☀️ Trockenzeit! Die Wasserlöcher trocknen aus – Geier kreisen, Warzenschweine graben, und am Elefantenfriedhof kichern Hyänen.', '☀️ Dry season! The waterholes are drying up – vultures circle, warthogs dig, and hyenas are giggling at the elephant graveyard.'),
       normal: tr('🌿 In der Savanne ist wieder normales Wetter.', '🌿 The savanna is back to normal weather.'),
     }[now.id];
     writeSave(LEVEL_ID);
@@ -4765,6 +4802,7 @@ export default class GardenScene extends Phaser.Scene {
     this.sway.update(dt);
     this.meadowLife.update(dt);
     this.forestLife?.update(dt);
+    this.savannaLife?.update(dt);
 
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);

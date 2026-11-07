@@ -8,7 +8,7 @@ export const HD_SCALE = 4;
 export const HD = [
   // Wald
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'planks_forest', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
-  'forest_boulder', 'forest_stump', 'forest_mossy_log', 'forest_elder', 'forest_hazel', 'forest_bluebells', 'forest_foxglove',
+  'forest_boulder', 'forest_boulder2', 'forest_stump', 'forest_mossy_log', 'forest_elder', 'forest_hazel', 'forest_bluebells', 'forest_foxglove',
   'forest_anemones', 'forest_violets', 'forest_cave', 'forest_stand', 'forest_bat0', 'forest_bat1', 'forest_bird', 'forest_bird_fly0', 'forest_bird_fly1', 'forest_log_bridge', 'forest_river_rock', 'forest_foam0', 'forest_foam1', 'forest_bridge', 'forest_bridge_front', 'forest_moss0', 'forest_moss1',
   'forest_cliff', 'forest_waterfall',
   'hutwall_forest_x', 'hutwall_forest_y', 'post_hutwall_forest', 'gate_door_forest_x', 'gate_door_forest_y', 'hutroof_forest',
@@ -33,6 +33,10 @@ export const HD = [
   'peacock_perch', 'reeds', 'reptile_facade', 'sgrass0', 'sgrass1', 'sgrass2', 'stone_lantern', 'sun_rock', 'tall_grass', 'tall_x',
   'tall_y', 'tire_swing', 'torii', 'toy_ball', 'tuft',
   // Savanne
+  'savanna_tallgrass', 'savanna_tallgrass_rain', 'savanna_tallgrass_dry', 'savanna_bush', 'savanna_bush_rain', 'savanna_shrub_rain',
+  'savanna_kopje', 'savanna_termite', 'savanna_skull', 'savanna_ribs', 'savanna_pelvis', 'savanna_bones',
+  'savanna_rock0', 'savanna_rock1', 'savanna_rock2', 'savanna_rock3', 'savanna_rock4',
+  'savanna_grave_patch',
   'bone', 'bone_pile', 'food', 'gate_door_savanna_x', 'gate_door_savanna_y', 'hut_chair_savanna', 'hut_desk_savanna', 'hut_plant_savanna',
   'hut_shelf_savanna', 'hutroof_savanna', 'hutwall_savanna_x', 'hutwall_savanna_y', 'mud', 'planks_savanna', 'savanna_path',
   'sdry0', 'sdry1', 'sdry2', 'sgrass_rain0', 'sgrass_rain1', 'sgrass_rain2',
@@ -64,7 +68,7 @@ export const HD = [
 ];
 
 // sehr große Bilder (Dächer, Gebäude) sind nur 2- bzw. 1-mal so groß, sonst zu viel Speicher
-const SCALE = { hutroof_cathouse: 2, hutroof_office: 2, hutroof_savanna: 2, hutroof_asia: 2, hutroof_jungle: 2, hutroof_ice: 2, aquarium_facade: 1, reptile_facade: 1 };
+const SCALE = { hutroof_cathouse: 2, hutroof_office: 2, hutroof_savanna: 2, hutroof_asia: 2, hutroof_jungle: 2, hutroof_ice: 2, aquarium_facade: 1, reptile_facade: 1, savanna_grave_patch: 2 };
 // auf dem Handy die halb so großen Bilder aus hd2/ (tools/hd-phone.py): ein Viertel des Speichers
 export const HD_DIR = IS_PHONE ? 'hd2' : 'hd';
 export const hdFactor = (key) => (IS_PHONE ? Math.max(1, (SCALE[key] ?? HD_SCALE) / 2) : (SCALE[key] ?? HD_SCALE));

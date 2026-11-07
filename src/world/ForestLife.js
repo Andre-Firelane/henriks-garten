@@ -11,7 +11,7 @@ import { NIGHT_DEPTH } from '../animals/Wolf.js';
 
 const EVERY = [4, 10]; // Sekunden bis zum nächsten Schwarm
 const SWARM = [1, 3]; // so viele auf einmal
-const CAVE_UP = 30; // Eingang der Höhle über ihrem Fuß
+const CAVE_UP = 20; // Eingang der Höhle über ihrem Fuß
 const FLIGHT = [3.5, 5.5]; // so lange fliegt eine, bis sie verschwunden ist
 const FLAP = 0.09; // Sekunden je Flügelbild
 const FLOWERS = 'fgḃƒȁṽ'; // hier landen die Bienen

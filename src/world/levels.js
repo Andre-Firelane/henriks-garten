@@ -35,49 +35,52 @@
 //          ḃ  Glockenblumen   ƒ  Fingerhut   ȁ  Buschwindröschen   ṽ  Veilchen   Ĉ  Höhle (V ringsum)   Ħ  Hochstand
 //          Ŕ Ŵ  Felskante und Wasserfall wie im Dschungel (Bilder über objectKeys)
 //          Ƭ ƫ  umgestürzter Baumstamm als Brücke über den Fluss (entlang ty bzw. tx)   ř  Felsen im Fluss (Schaum drumherum)
+// Savanne: ƚ  hohes Gras   Ƙ  Busch   Ʀ  Felsgruppe   Ţ  Termitenhügel   Ʋ  Fels
+//          Ș ƭ Ʈ Ʊ  Elefantenfriedhof (Schädel, Becken, Rippen, Beinknochen; dazu kahle Bäume Ǎ, dunkler Boden: gravePatch)
+//          (hohes Gras, Busch und trockener Strauch sehen je Wetterphase anders aus, siehe objectKeys in savanna.seasons)
 
 import { tr } from '../i18n.js';
 
 // Savanne in der normalen Phase; Starkregen und Trockenzeit leiten ihre Karten daraus ab (siehe savanna.seasons)
 const SAVANNA_ROWS = [
-  'AvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvv',
-  'R...................#..................v',
-  'v.y.....v..y.....y..#...........yv...v.v',
-  'v.....v.......y..y..#..................v',
-  'v.........y..v......#....y..v......y..yv',
-  'v...............y.v.#............v.....v',
-  'v.v..........v......#.y............y...A',
-  'v.....~~.~~........y#..................R',
-  'v....~~~~~~....y....#..................v',
-  'A.....~~~~~~y.......#.....v............v',
-  'R..v.~~~~~~..y......#y.v...............v',
-  'v.......~~......Ry.y#......v..v..A...y.v',
-  'v......y.....vy...y.#..................v',
-  'v....y.....y........#..................v',
-  'v.v.......v.........#..................v',
-  'v................R..#................y.A',
-  'v.................y.#.y................R',
-  'v.yv....A..R........#...A........y.....v',
-  'A...................#.............y.yA.v',
+  'AvvvvvvRvAvvvvvvRvAvvvvvvRƲǍƲƲƲƲƲƲRƲǍƲƲƲ',
+  'R...................#..................Ʋ',
+  'v.y.....v..y.....y..#....Ʋ......Ǎ....Ʋ.Ʋ',
+  'v.....vŢ......y..y..#.........Ʊ........Ʋ',
+  'v.........y..v..ƚƚ..#...ƚƚ..v....Ș..Ʊ..Ʋ',
+  'v..............ƚƚƚv.#..ƚƚƚƚ............Ʋ',
+  'v.v..........v......#.y........Ʈ...ƭ...Ǎ',
+  'v.....~~.~~........y#........Ʋ.......Ǎ.R',
+  'v....~~~~~~....y....#.............Ʋ....Ʋ',
+  'A.....~~~~~~y.......#.Ƙ...v............Ʋ',
+  'R..v.~~~~~~..y......#y.v.........Ƙ.....Ʋ',
+  'v.......~~......Ry.y#......v..v..A...y.Ʋ',
+  'v......y.....vy...y.#..Ʋ.....Ƙ.......Ţ.v',
+  'v....y.....y........#..........Ʋ.......v',
+  'v.v.......v..Ţ......#..................v',
+  'v.v.......ƚƚ.....R..#............ƚƚ..y.A',
+  'v.....Ʀ..ƚƚƚƚ....Ƙy.#.y.....Ţ...ƚƚƚƚ...R',
+  'v.yv....AƲ.R........#...A........y.....v',
+  'A...................#.............v.yA.v',
   'v##############################........v',
   'v..........#.MMMMM..#..................v',
-  'v..........#.NɃ,aN..#...v.....R........v',
-  'v...y.y....#.Nɓ,,G###.....A......y.....v',
+  'v..........#.NɃ,aN..#...v..Ƙ..R....Ʀ...v',
+  'v...y.y....#.Nɓ,,G###.....A...Ʋ..y.....v',
   'v...R......##MMMMM..#...............R..v',
-  'v.......v..###.c....#...v..A...y.......A',
+  'v.......v..###.c....#...vv.A...y.......A',
   'v..........##....yy.#..................R',
-  'v..y.......##.......#..................v',
-  'A....A.....~~....v..#..R...........y...v',
+  'v..y.......##.......#...............ƚƚ.v',
+  'A....A.....~~....v..#..R...........yƚƚƚv',
   'R.........~~~~~.....#........~~~~~.A...v',
   'v.........~~~~~.....#.......~~~~~~..y..v',
   'v.........~~~~~.....#..v...~~~~~~~~.y..v',
   'v...R.....~~~~~.yRA.#........~~~~~.....v',
   'v..........~~~......#..A..y....~~......v',
-  'v..........~~...y...#...............v..A',
-  'v....A..............#....v...........y.R',
-  'v........v...v....A........v...........v',
-  'A.......y...........y..y....y....v.....v',
-  'R.v.v...v......v.v......v....v.........v',
+  'v..........~~...y...#.Ƙ.............v..A',
+  'v....A...........Ʋ..#....v...........Ʋ.R',
+  'v........v...v....A......Ţ.v...........v',
+  'A.......y...........y..y....y..ƚƚv.....v',
+  'R.v.v...v......v.v......v....vƚƚƚƚ.....v',
   'v......................................v',
   'vvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvv',
 ];
@@ -335,6 +338,10 @@ export const LEVELS = {
     background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
     ambient: 'ambient_savanna', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     ambientVolume: 0.35, // etwas leiser als in den anderen Gebieten (0.55)
+    flies: true, // Fliegen am Elefantenfriedhof bzw. Mücken am Wasser, je nach Wetter (siehe SavannaLife.js)
+    // Elefantenfriedhof oben rechts: dunkler, trostloser Boden mit weichem Rand, flach über dem Boden (in allen Wetterphasen;
+    // Bild aus tools/savanna-placeholders.py, Mitte über dieser Kachel)
+    gravePatch: { key: 'savanna_grave_patch', tx: 33, ty: 4.5 },
     toolSpots: [],
     exits: [], // nur mit dem Auto
     // Hier leben Antilopen (Gazellen) und Zebras in Gruppen zu 2 bis 4, etwa gleich häufig, und Giraffen;
@@ -353,6 +360,7 @@ export const LEVELS = {
         rows: growWater(SAVANNA_ROWS, 2, (x, y) => (x >= 9 && x <= 20 && y >= 18 && y <= 27) || (x <= 4 && y >= 17 && y <= 21) || y - x >= 20),
         grass: ['sgrass_rain0', 'sgrass_rain1', 'sgrass_rain2'],
         ambient: 'ambient_savanna_rain', // Regen und Donner
+        objectKeys: { ƚ: 'savanna_tallgrass_rain', Ƙ: 'savanna_bush_rain', v: 'savanna_shrub_rain' }, // alles grünt und blüht
         ambientVolume: 0.5,
         spawn: { population: 10, weights: { antelope: 0.3, zebra: 0.3, giraffe: 0.2, meerkat: 0.15, lion: 0.12, crocodile: 0.35, fish: 0.7, hippo: 0.45 } },
         herons: { every: [35, 70], landChance: 0.7 },
@@ -363,12 +371,12 @@ export const LEVELS = {
         rows: dryUp(SAVANNA_ROWS, { tx: 31, ty: 30, r: 1.6 }),
         fishIn: '≈',
         grass: ['sdry0', 'sdry1', 'sdry2'],
-        objectKeys: { A: 'acacia_bare' },
+        objectKeys: { A: 'acacia_bare', ƚ: 'savanna_tallgrass_dry', Ƙ: 'dry_bush' }, // kahl und strohgelb
         chests: [{ tx: 15, ty: 24, tools: ['net', 'lasso', 'food', 'bone'] }],
         spawn: { population: 9, weights: { antelope: 0.35, zebra: 0.35, giraffe: 0.15, meerkat: 0.3, lion: 0.12, fish: 0.5, warthog: 0.5 } },
         gatherAt: { tx: 31, ty: 30, r: 90 }, // dort drängen sich Zebras und Antilopen (Leine, siehe Animal.pickWander)
         vultures: { every: [30, 60] }, // so oft kreist ein Geier heran (Sekunden)
-        hyenas: { every: [40, 80] }, // so oft kichert das Hyänenrudel
+        hyenas: { every: [40, 80], near: { tx: 33, ty: 5, r: 10 } }, // so oft kichert das Hyänenrudel – nur, wenn man in der Nähe des Elefantenfriedhofs ist
       },
     },
   },

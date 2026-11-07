@@ -1,10 +1,11 @@
-// Hyänen (Savanne in der Trockenzeit): ein Rudel versteckt sich irgendwo; man sieht es nicht, aber ab und zu hört man es
-// kichern (dazu eine kurze Meldung, falls man ohne Ton spielt). Streut man dann Knochen aus (Werkzeug aus der Hütte),
+// Hyänen (Savanne in der Trockenzeit): ein Rudel versteckt sich am Elefantenfriedhof (hyenas.near in levels.js); man sieht
+// es nicht, aber ist man dort in der Nähe, hört man es ab und zu kichern (dazu eine kurze Meldung, falls man ohne Ton spielt). Streut man dann Knochen aus (Werkzeug aus der Hütte),
 // kommen 2 bis 3 Hyänen vom Kartenrand angelaufen und fressen. Solange sie fressen, fängt man sie mit dem Lasso; danach
 // laufen sie wieder weg. Liegen die Knochen schon, wenn das Rudel kichert, kommt es gleich.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tr } from '../i18n.js';
+import { worldToTile } from '../world/iso.js';
 
 const RUN_SPEED = 70; // so schnell kommen sie angelaufen und laufen wieder weg
 const SCARED_SPEED = 115; // so schnell rennen sie davon, wenn eine aus dem Rudel gefangen wird (schneller als der Spieler)
@@ -14,6 +15,7 @@ const COME_DELAY = 2500; // so lange nach dem Streuen, bis sie auftauchen (ms)
 const PACK = [2, 3];
 const COME_FROM = 420; // so weit von den Knochen tauchen sie auf
 const LAUGH_VOLUME = 0.6;
+const RECHECK = 2; // ist man nicht in der Nähe des Friedhofs: so oft (Sekunden) wieder nachsehen
 
 export default class Hyena extends Animal {
   constructor(scene, x, y) {
@@ -97,6 +99,7 @@ export class HyenaPack {
   constructor(scene, cfg) {
     this.scene = scene;
     this.every = cfg.every;
+    this.near = cfg.near ?? null; // { tx, ty, r }: nur in diesem Umkreis (Kacheln) hört man sie kichern
     this.laughIn = Phaser.Math.FloatBetween(8, cfg.every[0]);
     this.heardUntil = 0;
     this.bones = null; // { x, y, img }
@@ -110,8 +113,20 @@ export class HyenaPack {
     if (this.called && !this.pack.length && this.scene.time.now > this.calledAt + COME_DELAY + 1000) this.called = false;
     this.laughIn -= dt;
     if (this.laughIn > 0 || this.called) return;
+    if (!this.inEarshot()) {
+      this.laughIn = RECHECK;
+      return;
+    }
     this.laughIn = Phaser.Math.FloatBetween(...this.every);
     this.laugh();
+  }
+
+  // ist Henrik nah genug am Versteck des Rudels, um es kichern zu hören?
+  inEarshot() {
+    if (!this.near) return true;
+    const p = this.scene.player;
+    const { tx, ty } = worldToTile(p.x, p.y);
+    return Math.hypot(tx - this.near.tx, ty - this.near.ty) <= this.near.r;
   }
 
   laugh() {
@@ -122,7 +137,7 @@ export class HyenaPack {
       scene.showToast(tr('🦴 Die Hyänen kichern – sie haben die Knochen gerochen und kommen!', '🦴 The hyenas are giggling – they smelled the bones and are coming!'));
       this.call();
     } else {
-      scene.showToast(tr('🦴 Hyänen kichern ganz in der Nähe! Streu schnell Knochen aus der Hütte – dann kommen sie.', '🦴 Hyenas are giggling nearby! Quickly scatter bones from the hut – then they will come.'));
+      scene.showToast(tr('🦴 Am Elefantenfriedhof kichern Hyänen! Streu schnell Knochen aus der Hütte – dann kommen sie.', '🦴 Hyenas are giggling at the elephant graveyard! Quickly scatter bones from the hut – then they will come.'));
     }
   }
 

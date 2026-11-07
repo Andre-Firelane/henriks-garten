@@ -13,10 +13,11 @@ REF = 'Wald-Sprites/Neu'  # Platzhalter aus tools/forest-placeholders.py
 
 src = lambda n: n if isinstance(n, str) else f'{SRC}/Wald_neu{"" if n == 0 else f"-{n}"}.png'
 ART = {
-    'forest_bat0': 0, 'forest_bat1': 2, 'forest_bird': 3, 'forest_bird_fly0': 4, 'forest_bird_fly1': 5, 'forest_boulder': 6,
-    'forest_cave': 7, 'forest_elder': 8, 'forest_foxglove': 9, 'forest_hazel': 10, 'forest_log_bridge': 11, 'forest_moss0': 12,
+    'forest_bat0': 0, 'forest_bat1': 2, 'forest_bird': 3, 'forest_bird_fly0': 4, 'forest_bird_fly1': 5,
+    'forest_cave': 'Sprites/Höhle.jpg', 'forest_elder': 8, 'forest_foxglove': 9, 'forest_hazel': 10, 'forest_log_bridge': 11, 'forest_moss0': 12,
     'forest_moss1': 13, 'forest_mossy_log': 14, 'forest_river_rock': 15, 'forest_stand': 16, 'forest_stump': 17,
 }
+REFS = {}
 
 SHRINK = {'forest_cave': 0.75}  # die Höhle etwas kleiner als der Platzhalter
 CUT = (0.796, 0.248)  # Stamm: hier (Anteil von Breite und Höhe) quer zur Stammachse abschneiden, dahinter liegt der Wurzelteller
@@ -36,7 +37,10 @@ def prepare(key, im):
     return Image.fromarray(a)
 
 
-install(ART, REF, src, prepare=prepare, shrink=SHRINK)
+install(ART, REF, src, prepare=prepare, shrink=SHRINK, refs=REFS)
+# Felsen: Andres Fassungen der Zeichnungen aus tools/redrawn-sprites.py (Vorlagen in Neue-Sprites)
+SRC2 = 'Sprites/scenario-assets-savanne-und-felsen'
+install({'forest_boulder': 0, 'forest_boulder2': 2}, 'Neue-Sprites', lambda n: f'{SRC2}/Wald_neu{"" if n == 0 else f"-{n}"}.png')
 
 
 # Holzbrücke (drei Kacheln entlang tx): so breit eingepasst, dass die Enden genau auf der gezeichneten Brücke

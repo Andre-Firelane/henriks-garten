@@ -192,7 +192,7 @@ export const OBJECTS = {
   Ẁ: { key: 'windmill', originY: 184 / 200, solid: true, windmill: true },
   // Wald: bemooste Felsen, Stümpfe und Stämme, mittelgroße Sträucher, Waldblumen, Höhle (die Kacheln ringsum sind V),
   // Hochstand (stand: man steigt mit der Aktionstaste hinauf, siehe GardenScene)
-  Ɍ: { key: 'forest_boulder', originY: 47 / 56, solid: true, hitbox: 18 },
+  Ɍ: { key: 'forest_boulder', variants: ['forest_boulder', 'forest_boulder2'], originY: 47 / 56, solid: true, hitbox: 18 },
   Ț: { key: 'forest_stump', originY: 34 / 40, solid: true, hitbox: 11 },
   Ŀ: { key: 'forest_mossy_log', originY: 38 / 48, solid: true, hitbox: 14 },
   ḩ: { key: 'forest_elder', originY: 56 / 64, solid: true, hitbox: 6, sway: 2 },
@@ -203,6 +203,16 @@ export const OBJECTS = {
   ṽ: { key: 'forest_violets', originY: 25 / 32, solid: false, sway: 4 },
   Ĉ: { key: 'forest_cave', originY: 140 / 160, solid: true },
   Ħ: { key: 'forest_stand', originY: 158 / 176, solid: true, stand: true },
+  // Savanne: hohes Gras, Busch, Felsgruppe, Termitenhügel, Elefantenfriedhof (Bilder je Wetterphase: objectKeys in levels.js)
+  ƚ: { key: 'savanna_tallgrass', originY: 48 / 56, solid: false, sway: 6 },
+  Ƙ: { key: 'savanna_bush', originY: 40 / 48, solid: true, hitbox: 5, sway: 2 },
+  Ʀ: { key: 'savanna_kopje', originY: 82 / 96, solid: true, hitbox: 24 },
+  Ţ: { key: 'savanna_termite', originY: 64 / 72, solid: true, hitbox: 9 },
+  Ș: { key: 'savanna_skull', originY: 57 / 64, solid: true, hitbox: 14 },
+  ƭ: { key: 'savanna_pelvis', originY: 46 / 52, solid: true, hitbox: 10 },
+  Ʊ: { key: 'savanna_bones', originY: 35 / 40, solid: false },
+  Ʋ: { key: 'savanna_rock0', variants: ['savanna_rock0', 'savanna_rock1', 'savanna_rock2', 'savanna_rock3', 'savanna_rock4'], originY: 49 / 56, solid: true, hitbox: 14 }, // Felsen in mehreren Formen
+  Ʈ: { key: 'savanna_ribs', originY: 57 / 64, solid: true, hitbox: 14 },
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
@@ -688,6 +698,38 @@ export function outerLandCorners(tx, ty) {
   const ul = water(tx - 1, ty), ur = water(tx, ty - 1), dr = water(tx + 1, ty), dl = water(tx, ty + 1);
   return (ul && ur && water(tx - 1, ty - 1) ? CORNER.top : 0) | (ur && dr && water(tx + 1, ty - 1) ? CORNER.right : 0)
     | (dr && dl && water(tx + 1, ty + 1) ? CORNER.bottom : 0) | (dl && ul && water(tx - 1, ty + 1) ? CORNER.left : 0);
+}
+
+// Unbefestigte Wege (Erde, Sand, Schnee): ihre Ecken werden zum Gras hin abgerundet, ebenso Grasecken, die in den Weg ragen.
+// Gepflasterte Wege (Tierpark, Aquarium, Trittsteine im Bambuswald) bleiben eckig
+const SOFT_PATHS = ['path', 'forest_path', 'savanna_path', 'jungle_path', 'snow_path', 'reef_path'];
+const isSoftPath = (tx, ty) => charAt(tx, ty) !== ' ' && !buildingAt(tx, ty) && SOFT_PATHS.includes(groundAt(tx, ty));
+// einfacher Boden (Gras, Schnee, Sand ...), kein Wasser, keine Hütte, kein Weg
+const isPlainGround = (tx, ty) => {
+  const c = charAt(tx, ty);
+  return c !== undefined && c !== ' ' && !buildingAt(tx, ty) && !GROUND[c] && !PATH_CHARS.includes(c) && groundAt(tx, ty) === grassAt(tx, ty);
+};
+const EDGE = [[CORNER.top, [-1, 0], [0, -1], [-1, -1]], [CORNER.right, [0, -1], [1, 0], [1, -1]], [CORNER.bottom, [1, 0], [0, 1], [1, 1]], [CORNER.left, [0, 1], [-1, 0], [-1, 1]]];
+
+// Ecken einer Wegkachel, die ins Gras ragen (beide Nachbarn an der Ecke sind einfacher Boden); darunter liegt Gras
+export function pathOuterCorners(tx, ty) {
+  if (!isSoftPath(tx, ty)) return 0;
+  let mask = 0;
+  for (const [bit, [ax, ay], [bx, by]] of EDGE) if (isPlainGround(tx + ax, ty + ay) && isPlainGround(tx + bx, ty + by)) mask |= bit;
+  return mask;
+}
+
+// Ecken einer Graskachel, die in einen unbefestigten Weg ragen (beide Nachbarn und der schräge sind Weg): { mask, under }
+export function grassPathCorners(tx, ty) {
+  if (!isPlainGround(tx, ty)) return null;
+  let mask = 0, under = null;
+  for (const [bit, [ax, ay], [bx, by], [dx, dy]] of EDGE) {
+    if (isSoftPath(tx + ax, ty + ay) && isSoftPath(tx + bx, ty + by) && isSoftPath(tx + dx, ty + dy)) {
+      mask |= bit;
+      under ??= groundAt(tx + ax, ty + ay);
+    }
+  }
+  return mask ? { mask, under } : null;
 }
 
 // Liegt neben einer Landkachel (c) hier Wasser, zu dem hin sie abgerundet wird? (Eis nur zum offenen Wasser hin)

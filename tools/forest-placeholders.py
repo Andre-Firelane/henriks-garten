@@ -12,7 +12,7 @@ import sprite_draw
 from sprite_draw import A, OUT, Pic, dark, light, wanted
 
 sprite_draw.EXPORT = 'Wald-Sprites/Neu'
-sprite_draw.SKIP = set(re.findall(r"'(\w+)':", re.search(r'ART = \{(.*?)\}', open('tools/forest-art.py', encoding='utf-8').read(), re.S).group(1)))  # schon echte Bilder (nur noch Vorlage)
+sprite_draw.SKIP = set(re.findall(r"'(\w+)':", open('tools/forest-art.py', encoding='utf-8').read()))  # schon echte Bilder (nur noch Vorlage)
 
 rnd = random.Random(11)
 STONE = (138, 134, 124, 255)
@@ -46,18 +46,6 @@ def inside(x, y, pts):
         if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
             hit = not hit
     return hit
-
-
-# großer bemooster Felsbrocken. Fuß bei (32, 46)
-def boulder():
-    p = Pic(64, 56)
-    p.poly([(8, 46), (6, 30), (16, 14), (34, 8), (52, 14), (58, 30), (56, 46), (32, 50)], STONE)
-    p.poly([(32, 50), (34, 8), (52, 14), (58, 30), (56, 46)], dark(STONE, 0.85), ol=False)
-    p.poly([(14, 22), (20, 14), (30, 12), (24, 22)], light(STONE, 0.25), ol=False)
-    p.line([(36, 30), (42, 38), (40, 46)], dark(STONE, 0.7), 0.6, ol=False)
-    moss_on(p, [(10, 26), (16, 14), (34, 8), (52, 14), (56, 26), (48, 24), (44, 30), (36, 22), (28, 26), (20, 22), (14, 30)])
-    p.shadow(32, 47, 28, 7)
-    p.save('forest_boulder')
 
 
 # bemooster Baumstumpf mit Jahresringen und zwei Pilzen. Fuß bei (20, 34)
@@ -430,7 +418,7 @@ def copies():
         print(dst)
 
 
-for make in [boulder, stump, mossy_log, bluebells, foxglove, bats, birds, log_bridge, river_rock, foam, wood_bridge, cave, stand]:
+for make in [stump, mossy_log, bluebells, foxglove, bats, birds, log_bridge, river_rock, foam, wood_bridge, cave, stand]:
     make()
 star_flowers('forest_anemones', (250, 250, 244, 255), (240, 200, 60, 255), (170, 170, 160, 255))
 star_flowers('forest_violets', (150, 96, 206, 255), (250, 220, 90, 255), (90, 50, 130, 255))

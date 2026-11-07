@@ -9,6 +9,7 @@ from PIL import Image, ImageFilter
 A = 'public/assets'
 F = 4
 OUT = {'': 1, 'hd': 4, 'hd2': 2}
+HOLE = 400  # eingeschlossene weiße Flächen ab so vielen Pixeln (im Originalbild) werden auch durchsichtig
 
 
 def cutout_white(im):
@@ -24,6 +25,24 @@ def cutout_white(im):
             continue
         bg[y, x] = True
         q.extend((nx, ny) for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if 0 <= nx < w and 0 <= ny < h and not bg[ny, nx])
+    # eingeschlossene weiße Flächen (z. B. ein Loch im Knochen) ab HOLE Pixeln auch; kleine Lichter bleiben
+    seen = bg.copy()
+    for y0, x0 in zip(*np.nonzero(cand & ~bg)):
+        if seen[y0, x0]:
+            continue
+        comp = []
+        q = deque([(x0, y0)])
+        seen[y0, x0] = True
+        while q:
+            x, y = q.popleft()
+            comp.append((y, x))
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if 0 <= nx < w and 0 <= ny < h and cand[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    q.append((nx, ny))
+        if len(comp) >= HOLE:
+            ys, xs = np.array(comp).T
+            bg[ys, xs] = True
     m = Image.fromarray(np.where(bg, 0, 255).astype(np.uint8)).filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.8))
     out = im.convert('RGBA')
     out.putalpha(m)
@@ -49,16 +68,60 @@ def place(new, ref, center=False, shrink=1):
     return out
 
 
-def install(art, ref_dir, src, center=(), prepare=None, shrink=None):
-    """alle Bilder aus art ({Name: Nummer oder Pfad}) einbauen; prepare(name, bild) kann ein Bild vorher bearbeiten;
-    shrink: {Name: Faktor} für Bilder, die kleiner als ihr Platzhalter sein sollen"""
+def pieces(path, min_share=0.02):
+    """einzelne Teile eines Sammelbilds (z. B. mehrere Felsen auf weißem Grund): freigestellt, nach Lage geordnet
+    (zeilenweise von oben links); winzige Krümel (unter min_share der größten Fläche) fallen weg"""
+    im = Image.open(path)
+    im = cutout_white(im) if path.lower().endswith('.jpg') else im.convert('RGBA')
+    small = 4  # Flächen auf einem verkleinerten Bild suchen (schneller)
+    a = np.asarray(im.getchannel('A').resize((im.width // small, im.height // small))) > 60
+    h, w = a.shape
+    seen = np.zeros_like(a)
+    boxes = []
+    for y0, x0 in zip(*np.nonzero(a)):
+        if seen[y0, x0]:
+            continue
+        q = deque([(x0, y0)])
+        seen[y0, x0] = True
+        xs, ys = [], []
+        while q:
+            x, y = q.popleft()
+            xs.append(x)
+            ys.append(y)
+            for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1), (x + 1, y + 1), (x - 1, y - 1), (x + 1, y - 1), (x - 1, y + 1)):
+                if 0 <= nx < w and 0 <= ny < h and a[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    q.append((nx, ny))
+        boxes.append((len(xs), (min(xs) * small, min(ys) * small, (max(xs) + 1) * small, (max(ys) + 1) * small), (xs, ys)))
+    big = max(b[0] for b in boxes)
+    boxes = [b for b in boxes if b[0] >= big * min_share]
+    boxes.sort(key=lambda b: (round(b[1][1] / (im.height / 3)), b[1][0]))  # grob zeilenweise, dann von links
+    out = []
+    for _, box, (xs, ys) in boxes:
+        # nur die eigene Fläche (ohne Ecken der Nachbarn im selben Rechteck)
+        m = np.zeros((h, w), np.uint8)
+        m[ys, xs] = 255
+        mask = Image.fromarray(m).resize(im.size, Image.NEAREST).filter(ImageFilter.MaxFilter(2 * small + 1))
+        part = im.copy()
+        part.putalpha(Image.fromarray(np.minimum(np.asarray(im.getchannel('A')), np.asarray(mask))))
+        out.append(part.crop(box))
+    return out
+
+
+def install(art, ref_dir, src, center=(), prepare=None, shrink=None, refs=None):
+    """alle Bilder aus art ({Name: Nummer, Pfad oder fertiges Bild}) einbauen; prepare(name, bild) kann ein Bild vorher
+    bearbeiten; shrink: {Name: Faktor} für Bilder, die kleiner als ihr Platzhalter sein sollen; refs: {Name: Name des
+    Platzhalters}, wenn ein Bild den Rahmen eines anderen nimmt (z. B. mehrere Felsen in der Größe eines Platzhalters)"""
     for key, n in art.items():
         if os.environ.get('ONLY') not in (None, key):
             continue
-        ref = Image.open(f'{ref_dir}/{key}.png').convert('RGBA')
-        path = src(n)
-        new = Image.open(path)
-        new = cutout_white(new) if path.lower().endswith('.jpg') else new.convert('RGBA')
+        ref = Image.open(f'{ref_dir}/{(refs or {}).get(key, key)}.png').convert('RGBA')
+        if isinstance(n, Image.Image):
+            new = n
+        else:
+            path = src(n)
+            new = Image.open(path)
+            new = cutout_white(new) if path.lower().endswith('.jpg') else new.convert('RGBA')
         new = crop(new)
         if prepare:
             new = prepare(key, new)
