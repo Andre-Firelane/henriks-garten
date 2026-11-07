@@ -16,6 +16,10 @@ ART = {
     'forest_bat0': 0, 'forest_bat1': 2, 'forest_bird': 3, 'forest_bird_fly0': 4, 'forest_bird_fly1': 5,
     'forest_cave': 'Sprites/Höhle.jpg', 'forest_elder': 8, 'forest_foxglove': 9, 'forest_hazel': 10, 'forest_log_bridge': 11, 'forest_moss0': 12,
     'forest_moss1': 13, 'forest_mossy_log': 14, 'forest_river_rock': 15, 'forest_stand': 16, 'forest_stump': 17,
+    # Biber: angenagter Baum und großer Stock (Vorlagen aus tools/beaver-placeholders.py)
+    'forest_gnawed_tree': 'Sprites/Wald_neu-5.png', 'forest_stick': 'Sprites/Wald_neu-6.png',
+    # Biberdamm (repariert und mit Loch) und Biberburg (Asthaufen)
+    'forest_beaver_dam': 'Sprites/Wald_neu-2.png', 'forest_beaver_dam_hole': 'Sprites/Wald_neu-3.png', 'forest_beaver_lodge': 'Sprites/Wald_neu-4.png',
 }
 REFS = {}
 

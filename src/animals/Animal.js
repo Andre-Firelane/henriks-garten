@@ -215,6 +215,23 @@ export const SPECIES = {
     catchWith: ['trap'],
     trapWeight: 3, // Füchse lieben den Köder
   },
+  // Biber (Wald, am Fluss): nagt an den Bäumen, kommt nur freiwillig mit, wenn man den Damm repariert (siehe Beaver.js)
+  beaver: {
+    texture: 'beaver',
+    // Videos; beim Stehen knabbert er an einem Holzstück (von vorne und hinten dieselbe Animation)
+    anims: { walkDown: 'beaver_walk', walkUp: 'beaver_walk_back', idleDown: 'beaver_gnaw', idleUp: 'beaver_gnaw' },
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 56 / 60,
+    speed: 22,
+    restChance: 0.55,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 1,
+    footW: 8,
+    shadowW: 24,
+    catchWith: ['dam'],
+  },
   // Gnu (Savanne, nur bei der Großen Wanderung): läuft aus dem Strom der Herde heraus und wieder hinein (siehe Gnu.js)
   gnu: {
     texture: 'gnu',

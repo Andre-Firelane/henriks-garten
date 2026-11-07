@@ -35,6 +35,7 @@
 //          ḃ  Glockenblumen   ƒ  Fingerhut   ȁ  Buschwindröschen   ṽ  Veilchen   Ĉ  Höhle (V ringsum)   Ħ  Hochstand
 //          Ŕ Ŵ  Felskante und Wasserfall wie im Dschungel (Bilder über objectKeys)
 //          Ƭ ƫ  umgestürzter Baumstamm als Brücke über den Fluss (entlang ty bzw. tx)   ř  Felsen im Fluss (Schaum drumherum)
+//          ƀ  angenagter Baum (Biber)   Ƅ  Biberburg
 // Savanne: ƚ  hohes Gras   Ƙ  Busch   Ʀ  Felsgruppe   Ţ  Termitenhügel   Ʋ  Fels
 //          Ș ƭ Ʈ Ʊ  Elefantenfriedhof (Schädel, Becken, Rippen, Beinknochen; dazu kahle Bäume Ǎ, dunkler Boden: gravePatch)
 //          (hohes Gras, Busch und trockener Strauch sehen je Wetterphase anders aus, siehe objectKeys in savanna.seasons)
@@ -273,11 +274,11 @@ export const LEVELS = {
       'Pkn.......~~~.nD.#......#..........ḩ...P',
       'PD..P....~~~..ḩ..#m..P..#.DȚ........P..P',
       'PP..DɌ..~~~......#...ḫ..#......m...Ŀ..kP',
-      'PDn.....~ř~...ɌD.#......#.ḃP.Ɍ...ṽṽ.n..P',
-      'PD..ȁȁ..~~~......#.PĿ.D.#ḃk...m.ṽṽ.....P',
+      'PDn.....~ř~.ƀ.ɌD.#......#.ḃP.Ɍ...ṽṽ.n..P',
+      'PD..ȁȁƀ.~~~......#.PĿ.D.#ḃk...m.ṽṽ.....P',
       'PD.ȁȁ....~~~.D..D#......#..............P',
       'PD...D...~~~~....#Pḃ..........ṽṽ.......P',
-      'PPnnnnȚ...~ř~.D.m#n.......n..ṽṽ..Ħ....DP',
+      'PPnnnnȚ..Ƅ~ř~ƀD.m#n.......n..ṽṽ..Ħ....DP',
       'PP..n.....~~~#####.....................P',
       'PDPPPPP....~~~..Ɍ..........P...........P',
       'P....ḩ......ř~~~............ḩ..........P',
@@ -317,6 +318,9 @@ export const LEVELS = {
     bees: 5, // einzelne Bienen fliegen von Blume zu Blume
     birds: 4, // kleine Vögel fliegen von Baum zu Baum
     herons: { every: [50, 110], landChance: 0.5 },
+    // Biber (siehe Beaver.js und BeaverDam.js): so viele sitzen an den angenagten Bäumen (ƀ) am Fluss; der Damm liegt quer
+    // über dem Fluss (mittlere Kachel, er reicht eine Kachel weit nach beiden Seiten entlang tx), an diesen Stellen liegen große Stöcke
+    beavers: { count: 3, dam: { tx: 10, ty: 24 }, sticks: [[3, 21], [15, 24], [6, 27], [20, 22]] },
   },
 
   savanna: {
@@ -887,16 +891,16 @@ const PARK_ROWS = [
       '2222222.|......m.....|k#.........######|.............|.b                                        ',
       ' 2mm...n--------------F#.........######---------------.b                                        ',
       ' X######################......n.....###.....ff.b.b...g.b                                        ',
-      ' 2----G----#{{{{{{{{.m.#.......n.n..###.b..gf.T.....bTbb                                        ',
-      ' 2|.n.....|#}.%....}mD.#....m.m...m.########g^^^^^^^^^^b                                        ',
-      ' 2|..n....|#}..oo..}...#..D.........###..f.#.;........;b                                        ',
-      ' 2|.mU.n..|#}.oooom}.n.#............###g.g.#.;........;b                                        ',
-      ' 2|n......|#G.oooo.}...#......mm..q.###....#g;........;b                                        ',
-      ' 2|.......|#}mnooo.}...#.m.P..0K.K..###g..g#.;....b...;b                                        ',
-      ' 2---------#}....%.}kkn#............###...b##G........;b                                        ',
-      ' 2222222.k.#{{{{{{{{k..#....n.q..l..###.bb.#.G.....*..;b                                        ',
-      '       2m..#.......kn..#..n.q.......###..T.##;...w.w..;b                                        ',
-      '       2mm.#.mn....k...#....ll......###..fb.#;........;b                                        ',
+      ' 2----G----#{{{{{{{{{{.#.......n.n..###.b..gf.T.....bTbb                                        ',
+      ' 2|.n.....|#}.%.....m}.#....m.m...m.########g^^^^^^^^^^b                                        ',
+      ' 2|..n....|#}..oo...ƀ}.#..D.........###..f.#.;........;b                                        ',
+      ' 2|.mU.n..|#}.oooom..}.#............###g.g.#.;........;b                                        ',
+      ' 2|n......|#G.ooooƄ..}.#......mm..q.###....#g;........;b                                        ',
+      ' 2|.......|#}mnooo..ƀ}.#.m.P..0K.K..###g..g#.;....b...;b                                        ',
+      ' 2---------#}....%..k}n#............###...b##G........;b                                        ',
+      ' 2222222.k.#}........}.#....n.q..l..###.bb.#.G.....*..;b                                        ',
+      '       2m..#}......kn}.#..n.q.......###..T.##;...w.w..;b                                        ',
+      '       2mm.#{{{{{{{{{{.#....ll......###..fb.#;........;b                                        ',
       '       2.n.#############...q.qq.....###b.b..#;........;b                                        ',
       '       2.k.n..k......nk#...........####..f..#^^^^^^^^^^b                                        ',
       '22222222222222222222222################################b    55555555555555555555               5',
@@ -958,7 +962,7 @@ const PARK_PENS = [
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
       { id: 'deerpark', name: tr('Hirschgehege', 'Deer Park'), species: ['deer'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
       { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
-      { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: tr('Größerer Teich mit Schilf, Pilzen und Farn', 'Bigger pond with reeds, mushrooms and ferns'), basic: [[14, 48, ':'], [17, 53, '<'], [18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.']] },
+      { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish', 'beaver'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9], beaver: [3, 5] }, upgrade: tr('Mehr Platz für die Biber und ein größerer Teich mit Schilf, Pilzen und Farn', 'More room for the beavers and a bigger pond with reeds, mushrooms and ferns'), basic: [[18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.'], [12, 54, '{'], [13, 54, '{'], [14, 54, '{'], [15, 54, '{'], [16, 54, '{'], [17, 54, '{'], [18, 54, '{'], [19, 54, '{'], [20, 54, '{'], [21, 54, '{']] }, // vor dem Ausbau: Innenzaun in Zeile 54 (der Ausbau bringt zwei Reihen mehr für die Biber)
       { id: 'wolves', name: tr('Wolfswald', 'Wolf Woods'), species: ['wolf'], gate: 'tall', world: 'forest', unlock: 'wolves', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 6, ty: 30 }, slots: [6, 9], upgrade: tr('Heulfelsen', 'Howling rock'), basic: [[5, 28, '.']] },
       { id: 'forestaviary', name: tr('Eichhörnchen-Voliere', 'Squirrel Aviary'), species: ['squirrel'], netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 25 }, slots: [5, 8], upgrade: tr('Zweiter Flügel mit Nistkasten', 'Second wing with a nest box'), basic: [[14, 32, ':'], [16, 33, '<'], [14, 30, '^'], [15, 30, '^'], [16, 30, '^'], [17, 30, '^']] },
       { id: 'cats', name: tr('Katzenhaus', 'Cat House'), species: ['cat'], gate: 'glass', world: 'meadow', seed: { tx: 50, ty: 26 }, slots: [4, 6], upgrade: tr('Zweiter Kratzbaum', 'Second cat tree'), basic: [[52, 26, ':']] },

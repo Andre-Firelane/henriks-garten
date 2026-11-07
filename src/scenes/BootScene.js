@@ -24,7 +24,7 @@ const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sh
 // mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket (Bauernhof,
 // Reittier der Wiese ...) kommt ins Paket misc
 const GROUPS = {
-  forest: { species: ['deer', 'fox', 'squirrel', 'wolf'], keys: /^(deer|stag|fox|squirrel|wolf|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$)/ },
+  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark: gleich mitladen
   savanna: {
     species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
     keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
@@ -128,6 +128,8 @@ const PIXEL_ART = [
   'forest_boulder', 'forest_boulder2', 'forest_stump', 'forest_mossy_log', 'forest_elder', 'forest_hazel', 'forest_bluebells', 'forest_foxglove',
   'forest_anemones', 'forest_violets', 'forest_cave', 'forest_stand', 'forest_bat0', 'forest_bat1', 'forest_bird', 'forest_bird_fly0', 'forest_bird_fly1', 'forest_log_bridge', 'forest_river_rock', 'forest_foam0', 'forest_foam1', 'forest_bridge', 'forest_bridge_front', 'forest_moss0', 'forest_moss1',
   'forest_cliff',
+  // Biber (Platzhalter aus tools/beaver-placeholders.py): Damm mit und ohne Loch, großer Stock, angenagter Baum, Biberburg
+  'forest_beaver_dam', 'forest_beaver_dam_hole', 'forest_stick', 'forest_gnawed_tree', 'forest_beaver_lodge', 'forest_dark_soil',
   'forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',
   // Savanne (Platzhalter aus tools/savanna-placeholders.py): hohes Gras, Busch, Strauch im Regen, Felsgruppe, Termitenhügel, Elefantenfriedhof
@@ -369,6 +371,10 @@ const VIDEO_ANIMS = {
   gibbon_idle_back: [88, 88, 107],
   anteater_walk: [104, 72, 24],
   iguana_walk: [96, 56, 85],
+  // Biber (Wald): läuft vorne und hinten, knabbert an einem Holzstück
+  beaver_walk: [80, 60, 24],
+  beaver_walk_back: [96, 72, 42], // größerer Rahmen: von hinten ist er höher
+  beaver_gnaw: [96, 72, 95],
   iguana_idle: [96, 56, 107],
   iguana2_walk: [96, 56, 29],
   iguana2_idle: [96, 56, 37],
@@ -666,6 +672,8 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('seal', 'assets/seal.png', { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     load.spritesheet('seal_lie', 'assets/seal_lie.png', { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
+    load.spritesheet('beaver', 'assets/beaver.png', { frameWidth: 80, frameHeight: 60 }); // Biber (Wald, aus Sprites/Biber.webp)
+    load.image('beaver_swim', 'assets/beaver_swim.png'); // ... schwimmt (aus dem Biber-Sprite, tools/beaver-swim.py)
     for (const k of ['iguana', 'iguana2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
     load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
     load.spritesheet('gorilla', 'assets/gorilla.png', { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung)

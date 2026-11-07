@@ -29,6 +29,7 @@ function worldSpecies(id) {
     if (l.hyenas) all.push('hyena');
     if (l.waterfallSun) all.push('iguana');
     if (l.gorillas) all.push('gorilla');
+    if (l.beavers) all.push('beaver');
   }
   if (id === 'jungle') all.push('snake', 'tarantula');
   return [...new Set(all)].filter((s) => s !== 'fish');

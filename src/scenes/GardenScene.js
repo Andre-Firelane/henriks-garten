@@ -88,6 +88,7 @@ import { EVENT_GROUPS, groupsLoaded, levelGroups, whenGroupsLoaded } from './Boo
 import ReefFish from '../animals/ReefFish.js';
 import Piranha from '../animals/Piranha.js';
 import Iguana from '../animals/Iguana.js';
+import Beaver from '../animals/Beaver.js';
 import Jaguar from '../animals/Jaguar.js';
 import Gorilla from '../animals/Gorilla.js';
 import WaterfallSun from '../world/WaterfallSun.js';
@@ -117,6 +118,7 @@ import Floes from '../world/Floes.js';
 import Sway from '../world/Sway.js';
 import MeadowLife from '../world/MeadowLife.js';
 import ForestLife from '../world/ForestLife.js';
+import BeaverDam from '../world/BeaverDam.js';
 import SavannaLife from '../world/SavannaLife.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
@@ -138,12 +140,14 @@ import Lasso from '../tools/Lasso.js';
 import TrapTool from '../tools/TrapTool.js';
 import FoodTool from '../tools/FoodTool.js';
 import BoneTool from '../tools/BoneTool.js';
+import StickTool from '../tools/StickTool.js';
 import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
 import BallTool from '../tools/BallTool.js';
 import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIconSquare, animalIcons } from '../ui/icons.js';
 import { touchHandlers, setTouchTool, IS_PHONE } from '../ui/touch.js';
+import { closeWalkHint } from '../ui/walkHint.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
@@ -168,7 +172,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 // Jeder Pool wird für sich aufgefüllt, so nehmen sich die Tiere der beiden nicht gegenseitig die Plätze weg
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -191,6 +195,7 @@ const CATCH_TOOLS = {
   herring: ['herring', tr('Fisch', 'Fish')],
   sealball: ['ball', 'Ball'],
   drum: ['drum', tr('Trommel-Duell', 'Drum duel')],
+  dam: ['forest_stick', tr('Damm reparieren', 'Repair the dam')],
 };
 const CATCH_TIPS = {
   fish: tr('Nur wenn er nach den Luftblasen auftaucht.', 'Only when it comes up after the air bubbles.'),
@@ -215,6 +220,7 @@ const CATCH_TIPS = {
   flamingo: tr('Nur beim Flamingo-Flug – und nur, wenn er gelandet ist.', 'Only during the Flamingo Flight – and only when it has landed.'),
   deer: tr('Scheu: aus der Ferne mit dem Lasso. Mit etwas Glück ist es ein seltener Hirsch.', 'Shy: use the lasso from a distance. With a bit of luck it is a rare stag.'),
   fox: tr('Nur mit der Falle.', 'Only with the trap.'),
+  beaver: tr('Die Biber sitzen am Fluss und nagen an den Bäumen. Fangen lassen sie sich nicht – aber ihr Damm hat ein Loch! Heb im Wald einen großen Stock auf (Aktionstaste) und steck ihn am Damm ins Loch. Dann kommt ein Biber freiwillig mit.', 'The beavers sit by the river gnawing on the trees. They won’t let you catch them – but their dam has a hole! Pick up a big stick in the forest (action key) and put it into the hole in the dam. Then a beaver will come along on its own.'),
   antelope: tr('Lebt in Herden – fängst du eine, rennen die anderen weg.', 'Lives in herds – catch one and the others run away.'),
   zebra: tr('Beim Trinken am Wasserloch flieht es nicht, dann kannst du es auch berühren.', 'While drinking at the water hole it doesn’t run away – then you can even touch it.'),
   meerkat: tr('Schleich dich von hinten an – der Wächter sieht nur, was vor ihm ist.', 'Sneak up from behind – the lookout only sees what is in front of it.'),
@@ -241,7 +247,7 @@ const CATCH_TIPS = {
   macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
 };
 
-// Für die Übersicht ganz oben: die Steuerung, getrennt für PC und Tablet/Handy
+// Steuerung aus dem Menü, getrennt für PC und Tablet/Handy
 const controlRows = (rows) => rows.map(([keys, what]) => `<div class="ctl-row"><span class="ctl-keys">${keys}</span><span>${what}</span></div>`).join('');
 const CONTROLS = `<h3>${tr('Steuerung', 'Controls')}</h3>
   <div class="controls">
@@ -303,6 +309,7 @@ const ANIMAL_INFO = {
   turtle: tr(['Meeresschildkröte', 'Hat Flossen statt Füße – damit „fliegt“ sie durchs Wasser. Zum Luftholen schwimmt sie an die Oberfläche.'], ['Sea turtle', 'Flippers instead of feet – it “flies” through the water with them. To breathe, it swims up to the surface.']),
   deer: tr(['Reh', 'Paarhufer: zwei schmale Hufhälften, vorne spitz.'], ['Deer', 'Even-toed hoofs: two narrow hoof halves, pointed at the front.']),
 
+  beaver: tr(['Biber', 'Fünf Zehen, und an den Hinterfüßen Schwimmhäute – dazwischen schleift oft der breite, flache Schwanz.'], ['Beaver', 'Five toes, with webbed hind feet – and often the drag mark of the broad, flat tail in between.']),
   fox: tr(['Fuchs', 'Vier Zehen mit Krallen und ein kleiner Ballen – fast wie beim Hund, nur schmaler.'], ['Fox', 'Four toes with claws and a small pad – almost like a dog, only narrower.']),
   squirrel: tr(['Eichhörnchen', 'Lange, dünne Finger mit spitzen Krallen – perfekt zum Klettern.'], ['Squirrel', 'Long, thin fingers with sharp claws – perfect for climbing.']),
   antelope: tr(['Antilope', 'Paarhufer: zwei schmale, spitze Hufhälften – gut zum schnellen Rennen.'], ['Antelope', 'Even-toed hoofs: two narrow, pointed hoof halves – good for running fast.']),
@@ -444,7 +451,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
+    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || s === 'beaver' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -455,6 +462,9 @@ const FLAMINGO_WORLDS = ['meadow', 'forest', 'savanna'];
 const PEACOCK_CALL_EVERY = [20, 40]; // so oft schallt der Ruf eines wilden Pfaus durchs ganze Gebiet (Sekunden)
 const PEACOCK_CALL_EVERY_PARK = [60, 120]; // ... im Tierpark seltener (dort laufen viele Pfauen frei herum)
 const ENCOUNTER_DIST = 200; // so nah muss ein Tier einer noch nie gefangenen Art sein, dann zeigt eine Blase das Werkzeug dafür
+const SOIL_UP = 6; // der Erdfleck unter der Biberburg liegt so viel über der Kachelmitte (die Äste sind hinten höher)
+const SOIL_DEPTH = -99996; // flach auf dem Boden, unter allem, was steht (wie der Friedhofsboden der Savanne)
+const BEAVER_HINT_DIST = 240; // so nah muss ein großer Stock sein, dann schwebt über ihm die Biber-Blase
 const ENCOUNTER_FLEES = 2; // so oft darf es fliehen, dann kommt der Fang-Tipp einmal von selbst
 const OFFICE_DOOR_H = 62; // so hoch über der Türkachel steht Mavis Pfeil am Haupthaus (oberer Rand der Glastür)
 const SHEEP_QUEST = 3; // so viele Schafe verlangt Mavis erste Aufgabe
@@ -504,7 +514,7 @@ const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'i
 const EVENT_SPECIES = { flamingo: ['flamingo', FLAMINGO_WORLDS], jellyfish: ['jellyfish', ['reef']], wolf: ['wolves', ['forest']], gnu: ['migration', ['savanna']], redpanda: ['fireflies', ['asia']] };
 const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨' };
 // lebt diese Art in diesem Level (bzw. dieser Wetterphase eines Levels)?
-const livesIn = (l, s) => !!spawnWeights(l)[s] || (s === 'heron' && !!l.herons) || (s === 'vulture' && !!l.vultures) || (s === 'hyena' && !!l.hyenas) || (s === 'iguana' && !!l.waterfallSun) || (s === 'gorilla' && !!l.gorillas) || ((s === 'snake' || s === 'tarantula') && l.name === LEVELS.jungle.name); // im Dickicht des Dschungels
+const livesIn = (l, s) => !!spawnWeights(l)[s] || (s === 'heron' && !!l.herons) || (s === 'vulture' && !!l.vultures) || (s === 'hyena' && !!l.hyenas) || (s === 'iguana' && !!l.waterfallSun) || (s === 'gorilla' && !!l.gorillas) || (s === 'beaver' && !!l.beavers) || ((s === 'snake' || s === 'tarantula') && l.name === LEVELS.jungle.name); // im Dickicht des Dschungels
 // Welten, in denen es eine Tierart gibt: [{ level, extra }]; extra = { icon, name }, wenn nur bei einem Wetter oder Event
 function worldsOf(s) {
   if (EVENT_SPECIES[s]) {
@@ -616,6 +626,12 @@ const TOOLS = {
     create: (scene, player) => new BoneTool(scene, player),
     name: tr('Knochen', 'Bones'),
     hint: tr(`Hörst du die Hyänen kichern, streu die Knochen aus – dann kommen die ${animalIcon('hyena')} zum Fressen`, `When you hear the hyenas giggle, scatter the bones – the ${animalIcon('hyena')} will come to eat`),
+  },
+  stick: {
+    create: (scene, player) => new StickTool(scene, player),
+    name: tr('Großer Stock', 'Big stick'),
+    image: 'forest_stick',
+    hint: tr('Steck ihn ins Loch im Biberdamm am Fluss', 'Put it into the hole in the beaver dam by the river'),
   },
   food: {
     create: (scene, player) => new FoodTool(scene, player),
@@ -751,6 +767,8 @@ export default class GardenScene extends Phaser.Scene {
           if (!raiseAt(tx, ty)) shore(x, y, tx, ty, groundAt(tx, ty));
         }
 
+        // Biberburg: ein weicher dunkler Erdfleck flach auf dem Gras darunter
+        if (charAt(tx, ty) === 'Ƅ') this.add.image(x, y - SOIL_UP, 'forest_dark_soil').setDepth(SOIL_DEPTH);
         const obj = objectAt(tx, ty);
         if (obj?.bridge) continue; // Brücken werden unten am Stück gezeichnet
         if (obj?.bed) this.beds.push({ tx, ty });
@@ -1063,6 +1081,10 @@ export default class GardenScene extends Phaser.Scene {
     } else {
       this.spawnAnimals(arrive);
     }
+    // Biber am Fluss: Damm, Stöcke und die Kolonie an den angenagten Bäumen (wilde Biber werden nicht gespeichert)
+    this.beaverDam = LEVEL.beavers ? new BeaverDam(this, LEVEL.beavers) : null;
+    this.beaverDam?.fill(true);
+    this.stashedTool = null;
     this.tutSheepTimer = TUT_SHEEP_CHECK;
     this.ensureStorySheep(false);
     this.ensureStoryAnimals(false);
@@ -1126,6 +1148,9 @@ export default class GardenScene extends Phaser.Scene {
     this.questCard = document.getElementById('quest-card');
     this.questTab = document.getElementById('quest-tab');
     this.encounterEl = document.getElementById('encounter');
+    this.beaverHintEl = document.getElementById('beaver-hint');
+    this.beaverHintEl.classList.remove('show');
+    this.beaverHintFor = null;
     this.encounterEl.classList.remove('show');
     this.encounterAnimal = null;
     this.encounterTimer = 0;
@@ -1147,7 +1172,10 @@ export default class GardenScene extends Phaser.Scene {
       this.showJournal();
     };
     this.mavi = new Mavi(this); // führt durch die Geschichte (siehe src/npc/Mavi.js)
-    this.events.once('shutdown', () => this.mavi.destroy());
+    this.events.once('shutdown', () => {
+      this.mavi.destroy();
+      closeWalkHint(); // Lauf-Hinweis nicht in die nächste Szene mitnehmen
+    });
     this.updateBookButton();
     this.updateQuestCard();
     this.updateEventBanner();
@@ -1177,7 +1205,6 @@ export default class GardenScene extends Phaser.Scene {
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
     sessionLoaded(); // für die Statistik: Ladezeit (nur beim ersten Gebiet der Runde)
-    if (data.intro) this.time.delayedCall(400, () => this.showIntro()); // neues Spiel: Willkommens-Tafel
     if (FLAMINGO_WORLDS.includes(LEVEL_ID)) this.time.delayedCall(SURPRISE_DELAY, () => this.maybeSurprise());
     if (data.fromWorld) {
       game.parkReturns++;
@@ -1237,6 +1264,14 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearCar && !this.leaving) {
         this.openCarMap(); // am Auto: Weltkarte statt Werkzeug
+        return;
+      }
+      if (this.nearDam && this.toolId === 'stick' && !this.leaving) {
+        this.fixDam(); // am Biberdamm: Stock ins Loch
+        return;
+      }
+      if (this.nearStick && this.toolId !== 'stick' && !this.leaving) {
+        this.takeStick(this.nearStick); // großen Stock aufheben
         return;
       }
       if (this.nearOrangutan && !this.tool && !this.leaving) {
@@ -1775,6 +1810,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Seal(this, x, y)
         : species === 'iguana'
           ? new Iguana(this, x, y)
+        : species === 'beaver'
+          ? new Beaver(this, x, y)
         : species === 'jaguar'
           ? new Jaguar(this, x, y)
         : species === 'gorilla'
@@ -2677,18 +2714,6 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Willkommens-Tafel zu Beginn eines neuen Spiels: nur die Steuerung – worum es geht, erzählt danach Mavi
-  showIntro() {
-    if (isJournalOpen() || this.leaving) return;
-    const html = `<div class="journal-box intro-box">
-      <h2>${tr('Willkommen bei My Little Zoo!', 'Welcome to My Little Zoo!')}</h2>
-      ${CONTROLS}
-      <p class="close-hint">${tr('Beliebige Taste oder Tippen – los geht’s!', 'Press any key or tap – let’s go!')}</p>
-    </div>`;
-    this.scene.pause();
-    openJournal(html, () => this.scene.resume());
-  }
-
   // Tierbuch (Taste I oder der Knopf oben links): Reiter für die Tiere, das Fangen, die Starter-Aufgaben und die Statistik
   showJournal() {
     if (isJournalOpen() || this.leaving) return;
@@ -2756,7 +2781,7 @@ export default class GardenScene extends Phaser.Scene {
       ['<span class="way-icon">✨</span>', tr('<b>Selten:</b> Viele Tiere gibt es ab und zu in einer seltenen Variante – etwa einen Hirsch statt eines Rehs. Sie locken besonders viele Besucher an. Mit dem Event „Seltene Tiere“ triffst du sie viel öfter.', '<b>Rare:</b> Many animals now and then come in a rare variant – like a stag instead of a deer. They attract lots of visitors. With the “Rare Animals” event you meet them much more often.')],
     ];
     const icons = (list) => list.map((s) => `<span class="chest-animal${caughtBefore(s) ? '' : ' unknown'}">${animalIconSquare(s, 2.2)}</span>`).join('');
-    const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar')].map((id) => {
+    const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar' && id !== 'stick')].map((id) => {
       const list = toolAnimals(id).filter((s) => SPECIES_ORDER.includes(s));
       if (!list.length) return '';
       return `<div class="tool-row">${img(id ? TOOLS[id].image ?? id : 'hand')}<b>${id ? TOOLS[id].name : tr('Hände frei', 'Empty hands')}</b><span class="tool-animals">${icons(list)}</span></div>`;
@@ -2860,6 +2885,16 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/scissors.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Netz aufschneiden', 'Cut the net')} ✂️ ${this.nearTurtle.cuts} / ${CUTS_NEEDED}</span></div>`;
       return;
     }
+    if (this.nearDam && this.toolId === 'stick') {
+      setTouchTool(null, 'assets/forest_stick.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/forest_stick.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Stock ins Loch stecken', 'Put the stick into the hole')}</span></div>`;
+      return;
+    }
+    if (this.nearStick && this.toolId !== 'stick') {
+      setTouchTool(null, 'assets/forest_stick.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/forest_stick.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Stock aufheben', 'Pick up the stick')}</span></div>`;
+      return;
+    }
     if (this.nearOrangutan && !this.tool) {
       setTouchTool(null, 'assets/orangutan_tree.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/orangutan_tree.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Zurückwinken', 'Wave back')} 👋</span></div>`;
@@ -2882,7 +2917,7 @@ export default class GardenScene extends Phaser.Scene {
   toolHint(id) {
     const t = TOOLS[id];
     if (!t.catches) return t.hint;
-    const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun) || (s === 'gorilla' && !!LEVEL.gorillas);
+    const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun) || (s === 'gorilla' && !!LEVEL.gorillas) || (s === 'beaver' && !!LEVEL.beavers);
     const list = toolAnimals(id).filter(here);
     return list.length ? t.hint(list) : '';
   }
@@ -2944,6 +2979,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Werkzeug in die Hand nehmen (ein getragenes kommt zurück an die Hütte)
   equipTool(id) {
+    if (this.toolId === 'stick') this.stashedTool = null; // Stock weg, neues Werkzeug: das eingesteckte bleibt in der Kiste
     if (this.tool) {
       this.tool.destroy();
       this.returnTool(this.toolId);
@@ -3409,7 +3445,7 @@ export default class GardenScene extends Phaser.Scene {
       let best = null;
       let bestD = ENCOUNTER_DIST;
       for (const a of this.animals) {
-        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || a.species === 'ray' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will; über Rochen keine Blase
+        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || a.species === 'ray' || a.species === 'beaver' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will; über Rochen keine Blase
         if (a.fleeing && !a.wasFleeing) this.countFlee(a.species);
         a.wasFleeing = a.fleeing;
         // getarnte Krake: erst, wenn sie sich zeigt; Gorilla im Trommel-Duell (und auf dem Weg dorthin): die Blase läge über der Trommelanzeige
@@ -3447,6 +3483,83 @@ export default class GardenScene extends Phaser.Scene {
     const top = a.sprite.y - a.sprite.displayHeight * a.sprite.originY;
     el.style.left = `${(a.sprite.x - cam.worldView.x) * cam.zoom * z}px`;
     el.style.top = `${(top - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
+  // Biber: Hinweisblase mit einem Biber über dem nächsten großen Stock, solange der Damm ein Loch hat; trägt Henrik einen
+  // Stock, zeigt sie stattdessen mit dem Stock auf das Loch im Damm. Antippen zeigt den Fang-Tipp
+  updateBeaverHint() {
+    const el = this.beaverHintEl;
+    const dam = this.beaverDam;
+    let target = null;
+    let what = null;
+    if (dam?.open && !this.leaving) {
+      if (this.toolId === 'stick') {
+        if (Math.hypot(this.player.x - dam.hole.x, (this.player.y - dam.hole.y) * 2) < BEAVER_HINT_DIST * 1.6) {
+          target = { x: dam.hole.x, y: dam.hole.y - 20 };
+          what = 'dam';
+        }
+      } else {
+        const s = dam.closestStick(this.player, BEAVER_HINT_DIST);
+        if (s) {
+          target = { x: s.x, y: s.y - 8 };
+          what = s;
+        }
+      }
+    }
+    if (what !== this.beaverHintFor) {
+      this.beaverHintFor = what;
+      if (what) {
+        el.innerHTML = what === 'dam' ? '<img src="assets/forest_stick.png" alt="">' : animalIcon('beaver', 1.6);
+        el.onclick = (e) => {
+          e.stopPropagation();
+          this.showCatchTip('beaver');
+        };
+      }
+      el.classList.toggle('show', !!what);
+    }
+    if (!target) return;
+    const cam = this.cameras.main;
+    const z = this.scale.zoom;
+    el.style.left = `${(target.x - cam.worldView.x) * cam.zoom * z}px`;
+    el.style.top = `${(target.y - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
+  // großen Stock aufheben: das getragene Werkzeug steckt Henrik so lange ein (es kommt nach dem Damm zurück)
+  takeStick(stick) {
+    const prev = this.toolId;
+    if (this.tool) this.tool.destroy();
+    this.stashedTool = prev && prev !== 'stick' ? prev : null;
+    this.beaverDam.takeStick(stick);
+    this.tool = TOOLS.stick.create(this, this.player);
+    this.toolId = 'stick';
+    this.updateToolbar();
+  }
+
+  // Stock ins Loch: der Damm ist dicht, die Biber freuen sich, und der nächste kommt mit
+  fixDam() {
+    this.tool.used = true;
+    this.tool.destroy();
+    this.tool = null;
+    this.toolId = null;
+    this.beaverDam.plug();
+    const prev = this.stashedTool;
+    this.stashedTool = null;
+    if (prev) this.equipTool(prev);
+    else this.updateToolbar();
+    if (this.cache.audio.exists('whoosh')) this.sound.play('whoosh', { volume: WHOOSH_VOLUME });
+    const p = this.player;
+    const beavers = this.beaverDam.wild().sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
+    const [helper, ...others] = beavers;
+    for (const b of others) b.cheer();
+    this.showToast(`${animalIcon('beaver', 3.2)} ${helper
+      ? tr('Der Damm ist wieder dicht! Die Biber freuen sich – einer kommt mit dir.', 'The dam is sealed again! The beavers are delighted – one of them comes along with you.')
+      : tr('Der Damm ist wieder dicht! Die Biber freuen sich.', 'The dam is sealed again! The beavers are delighted.')}`);
+    // der nächste Biber ist sofort gefangen und folgt (holt Henrik ein, auch wenn der gleich zum Auto läuft); Hinweise
+    // beim Fangen (z. B. Gehege voll) ersetzen die Meldung oben
+    if (helper) {
+      helper.mode = null;
+      this.catchAnimal(helper);
+    }
   }
 
   hideEncounterBubble() {
@@ -4541,6 +4654,13 @@ export default class GardenScene extends Phaser.Scene {
       exit = { ...exit, to: 'park2', arrive: AQUARIUM_TOUR };
     }
     let returned = null;
+    if (this.toolId === 'stick') {
+      // mit dem Stock in der Hand: der bleibt hier, das eingesteckte Werkzeug kommt wieder heraus
+      this.tool.destroy();
+      this.tool = this.stashedTool ? TOOLS[this.stashedTool].create(this, this.player) : null;
+      this.toolId = this.stashedTool;
+      this.stashedTool = null;
+    }
     if (this.toolId) {
       returned = TOOLS[this.toolId].name;
       this.returnTool(this.toolId);
@@ -4664,14 +4784,14 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
       season: LEVEL.season, // Wetterphase: wechselt sie bis zum nächsten Besuch, ziehen die wilden Tiere weiter
     };
     game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, origin: a.origin }));
-    game.tool = this.toolId; // beim Neuaufbau bleibt das Werkzeug in der Hand (beim Verlassen ist es schon zurückgelegt)
+    game.tool = this.toolId === 'stick' ? this.stashedTool : this.toolId; // beim Neuaufbau bleibt das Werkzeug in der Hand (beim Verlassen ist es schon zurückgelegt)
   }
 
   // Seilnetz über einem Gehege, auf Höhe der Netzstangen. Es liegt über allem, was im Gehege ist,
@@ -4905,6 +5025,17 @@ export default class GardenScene extends Phaser.Scene {
       this.nearTurtle = turtle;
       this.updateToolbar();
     }
+    // an einem großen Stock bzw. mit dem Stock am Biberdamm: die Aktionstaste hebt auf bzw. steckt ihn ins Loch
+    if (this.beaverDam) {
+      this.beaverDam.update(dt);
+      const stick = this.beaverDam.stickNear(p0);
+      const dam = this.beaverDam.nearHole(p0);
+      if (stick !== this.nearStick || dam !== this.nearDam) {
+        this.nearStick = stick;
+        this.nearDam = dam;
+        this.updateToolbar();
+      }
+    }
     // kurz nach dem Aufheben kein Tausch: sonst wechselt man aus Versehen, wenn man über die Werkzeuge daneben läuft
     if (this.time.now >= (this.toolLockUntil ?? 0)) {
       for (const p of [...this.pickups]) if (p.checkCollect(this.player)) this.takeTool(p);
@@ -4979,6 +5110,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateSign();
     this.mavi.update(dt);
     this.updateEncounter(dt);
+    this.updateBeaverHint();
     this.checkWrongHome(dt);
 
     // Tiere, die zuhause angekommen sind, folgen nicht mehr

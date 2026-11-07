@@ -71,12 +71,12 @@ export function openStartScreen(onStart) {
       deleteSave();
       resetGame();
       startSession('new');
-      start({ intro: true }); // intro: einmal die Willkommens-Tafel zeigen
+      start({});
     } else if (act === 'test') {
       save.testMode = true;
       resetGame();
       startSession('test');
-      start({ intro: true });
+      start({});
     }
   };
 }

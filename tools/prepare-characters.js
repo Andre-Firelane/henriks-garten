@@ -81,6 +81,8 @@ const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout.
   // Der Schwanz der 3. Figur ragt in die Spalten der 2., daher nach zusammenhängenden Flächen trennen
   { src: 'Sprites/Fuchs.png', out: 'fox.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64, byComponents: true },
+  // Biber: Sprites/Biber.png aus Sprites/Biber.webp (freigestellt, je Ansicht vorne/hinten einmal gespiegelt); die Rückansicht ist größer gemalt
+  { src: 'Sprites/Biber.png', out: 'beaver.png', frameW: 80, frameH: 60, feetY: 56, scale: 0.12, byComponents: true, viewScale: { 2: 0.85, 3: 0.85 } },
   // Fuchs schlafend (eingerollt). Im Bild schauen 1. und 2. Figur beide nach links, 3. und 4. beide nach oben links:
   // 1. und 3. werden gespiegelt. Gleicher Maßstab wie oben (0,210). Freigestellt mit npm run cutout
   // Wolf (Wald, Event Wolfsnacht): laufend, heulend (Schriftzug im Bild vorher entfernt) und fressend. Beim Fressen gibt es
@@ -861,6 +863,11 @@ const ANIMATIONS = [
   { src: 'Animation/Ameisenbär idle vorne.webm', out: 'anteater_idle.png', scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Animation/Ameisenbär idle hinten.mp4', out: 'anteater_idle_back.png', scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Sprites/Ameisenbär frisst.png', out: 'anteater_eat.png', cols: 1, rows: 1, scale: 0.145, frameW: 88, frameH: 80, feetY: 76 },
+  // Biber (Wald): Laufen von vorne (nach links gefilmt, gespiegelt) und hinten; Knabbern an einem Holzstück (nach links
+  // gefilmt, gespiegelt; das Holz ist mit im Bild, darum ein breiterer Rahmen). Gleiche Größe wie beaver.png
+  { src: 'Animation/Biber läuft vorne.mp4', out: 'beaver_walk.png', scale: 0.21, mirror: 'all', frameW: 80, frameH: 60, feetY: 56 },
+  { src: 'Animation/Biber läuft hinten.mp4', out: 'beaver_walk_back.png', scale: 0.19, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Biber knabbert.webm', out: 'beaver_gnaw.png', range: [12, 106], scale: 0.21, mirror: 'all', frameW: 96, frameH: 72, feetY: 68 }, // vorher fliegt das Holz herein
   // Leguan: Laufen und Stehen (nach links gefilmt, gespiegelt; ohne eigene Rückansicht)
   { src: 'Animation/Leguan läuft.mp4', out: 'iguana_walk.png', scale: 0.26, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
   { src: 'Animation/Leguan idle.webm', out: 'iguana_idle.png', scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },

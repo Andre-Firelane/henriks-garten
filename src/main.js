@@ -36,6 +36,7 @@ const game = new Phaser.Game({
   },
   scene: [BootScene, GardenScene],
 });
+if (import.meta.env.DEV) window.__game = game; // nur beim Entwickeln (vite): für Tests im Browser
 watchGpuTextures(game); // Bilder erst beim Malen auf die Grafikkarte (sonst friert das Tablet ein)
 window.addEventListener('resize', () => game.scale.resize(...size()));
 if (params.has('fps')) {

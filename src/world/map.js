@@ -203,6 +203,9 @@ export const OBJECTS = {
   ṽ: { key: 'forest_violets', originY: 25 / 32, solid: false, sway: 4 },
   Ĉ: { key: 'forest_cave', originY: 140 / 160, solid: true },
   Ħ: { key: 'forest_stand', originY: 158 / 176, solid: true, stand: true },
+  // Biber am Fluss: angenagter Baum (dort sitzen sie und nagen, siehe Beaver.js) und Biberburg
+  ƀ: { key: 'forest_gnawed_tree', originY: 74 / 80, solid: true, hitbox: 6, sway: 2 },
+  Ƅ: { key: 'forest_beaver_lodge', originY: 46 / 56, solid: true, hitbox: 22 },
   // Savanne: hohes Gras, Busch, Felsgruppe, Termitenhügel, Elefantenfriedhof (Bilder je Wetterphase: objectKeys in levels.js)
   ƚ: { key: 'savanna_tallgrass', originY: 48 / 56, solid: false, sway: 6 },
   Ƙ: { key: 'savanna_bush', originY: 40 / 48, solid: true, hitbox: 5, sway: 2 },

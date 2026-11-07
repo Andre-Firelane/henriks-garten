@@ -15,6 +15,7 @@ const SHEETS = {
   hero: [72, 116, 4, 0], // die Spielfigur (Tierpark auf der Weltkarte)
   squirrel: [56, 60, 4, 0],
   fox: [72, 72, 4, 0],
+  beaver: [80, 60, 4, 0],
   frog: [56, 52, 4, 0],
   mole: [56, 52, 4, 0],
   heron: [88, 108, 4, 0],

@@ -11,6 +11,7 @@ import { LEVELS, isPark } from '../world/levels.js';
 import { seaReady } from '../story/steps.js';
 import { activeStep, completeStep, stepDone } from '../story/story.js';
 import { closeSpeech, isSpeaking, placeSpeech, say, sayToast } from '../ui/speech.js';
+import { showWalkHint } from '../ui/walkHint.js';
 import { saveNow } from '../save.js';
 
 const FRAMES = { downRight: 0, downLeft: 1 }; // Standbild (mavi.png), falls die Videos fehlen
@@ -238,6 +239,7 @@ export default class Mavi {
     this.scene.updateQuestCard();
     saveNow();
     this.pending = [...(heard || s.talk ? [] : s.already ?? []), ...(s.outro ?? [])];
+    this.walkHint = s.id === 'welcome'; // nach der Begrüßung: zeigen, wie man läuft
     // ist sie zu sehen, aber nicht gleich neben einem (z. B. nach dem Neuaufbau beim Gehege-Ausbau): ihr Satz wartet, bis man
     // bei ihr ist (sie winkt so lange); sonst sagt sie ihn gleich (ist sie nicht zu sehen: am Rand)
     if (this.sprite && this.pending.length && this.onScreen() && this.distance() >= TALK_DIST * 2) return this.updateArrow();
@@ -249,6 +251,10 @@ export default class Mavi {
     const lines = this.pending ?? [];
     this.pending = null;
     this.speak(lines, () => {
+      if (this.walkHint) {
+        this.walkHint = false;
+        this.scene.time.delayedCall(250, () => !this.scene.leaving && showWalkHint());
+      }
       this.place();
       this.updateArrow();
       this.scene.time.delayedCall(600, () => this.check());
