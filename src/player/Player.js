@@ -12,6 +12,7 @@ const STEP_RATE = 11; // Schritte pro Sekunde (Hüpf-Tempo)
 const HOP = 2.5; // wie hoch er beim Laufen wippt
 const FOOT_W = 7; // halbe Breite der Füße für die Kollision
 const FOOT_H = 3;
+const SLIDE_ANGLES = [15, 30, 45, 60, 75]; // so weit abgedreht probiert die Figur, an einer Kante entlangzugleiten
 const TRAIL_STEP = 2; // Abstand der Spurpunkte
 const TRAIL_MAX = 400;
 const STEP_VOLUME = 0.065; // Lautstärke der Schritte
@@ -130,6 +131,30 @@ export default class Player {
     this.handLift = on ? BOAT_HAND_LIFT : HAND_LIFT[this.mount] ?? 0;
   }
 
+  // einen Schritt in Richtung dx/dy (Länge 1) gehen. Im Iso-Spiel sind fast alle Kanten schräg (Zäune, Kacheln, runde
+  // Stämme): Ist der Weg versperrt, gleitet die Figur an der Kante entlang, indem sie leicht abgedrehte Richtungen
+  // probiert (je schräger, desto langsamer). Erst danach die Achsen einzeln, für Kanten genau waagerecht oder senkrecht.
+  slide(dx, dy, dist, blocked) {
+    const tryMove = (mx, my) => {
+      if (blocked(this.x + mx, this.y + my)) return false;
+      this.x += mx;
+      this.y += my;
+      return true;
+    };
+    if (tryMove(dx * dist, dy * dist)) return;
+    for (const deg of SLIDE_ANGLES) {
+      const r = (deg * Math.PI) / 180;
+      const d = dist * Math.cos(r);
+      for (const s of [1, -1]) {
+        const c = Math.cos(r * s);
+        const sn = Math.sin(r * s);
+        if (tryMove((dx * c - dy * sn) * d, (dx * sn + dy * c) * d)) return;
+      }
+    }
+    if (dx) tryMove(dx * dist, 0);
+    if (dy) tryMove(0, dy * dist);
+  }
+
   update(dt) {
     if (this.stung > 0) this.stung -= dt;
     const k = this.keys;
@@ -139,10 +164,12 @@ export default class Player {
     if (k.D.isDown || k.RIGHT.isDown) vx += 1;
     if (k.W.isDown || k.UP.isDown) vy -= 1;
     if (k.S.isDown || k.DOWN.isDown) vy += 1;
-    // ohne Tastendruck: Joystick auf dem Tablet (stufenlos, kleiner Ausschlag = langsamer)
-    if (!vx && !vy) {
-      vx = touch.x;
-      vy = touch.y;
+    // ohne Tastendruck: Joystick auf dem Tablet – nur die Richtung zählt, gelaufen wird immer mit vollem Tempo (wie mit
+    // Tasten; sonst passen die Laufbilder nicht und die Tiere in der Schlange ruckeln)
+    if (!vx && !vy && (touch.x || touch.y)) {
+      const t = Math.hypot(touch.x, touch.y);
+      vx = touch.x / t;
+      vy = touch.y / t;
     }
     // Mavi spricht gerade (siehe src/npc/Mavi.js): stehen bleiben; auf dem Hochstand (perch) ebenso – wer dort laufen
     // will, steigt herunter (pushing, siehe GardenScene)
@@ -160,17 +187,12 @@ export default class Player {
       if (Math.abs(vx) > len * 0.25) this.faceX = Math.sign(vx);
       if (Math.abs(vy) > len * 0.25) this.faceY = Math.sign(vy);
 
-      // immer volles Tempo (auch schräg und beim Joystick, egal wie weit gezogen – sonst passen die Laufbilder nicht
-      // und die Tiere in der Schlange ruckeln)
+      // immer volles Tempo (auch schräg)
       const { tx: wx, ty: wy } = worldToTile(this.x, this.y);
       const wading = this.wade && charAt(wx, wy) === '~';
-      const step = (this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt) / len;
-      // Achsen getrennt prüfen, damit man an Hindernissen entlanggleitet
+      const dist = this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt;
       const blocked = (x, y) => (this.boat ? boatBlockedAt(x, y, BOAT_W, BOAT_H) : blockedAt(x, y, FOOT_W, FOOT_H, this.wade, this.trample, false, true));
-      const nx = this.x + vx * step;
-      if (!blocked(nx, this.y)) this.x = nx;
-      const ny = this.y + vy * step;
-      if (!blocked(this.x, ny)) this.y = ny;
+      this.slide(vx / len, vy / len, dist, blocked);
 
       this.walkTime += dt;
       this.recordTrail();
