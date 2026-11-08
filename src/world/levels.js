@@ -306,7 +306,7 @@ export const LEVELS = {
     ambient: 'ambient_forest_river', // Waldgeräusche mit leisem Flussrauschen darunter (tools/prepare-sounds.js)
     toolSpots: [],
     exits: [], // nur mit dem Auto
-    spawn: { population: 12, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, frog: 1.6, fox: 1 } }, // jedes zehnte Reh ist ein Hirsch (Skin)
+    spawn: { population: 12, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1 } }, // jedes zehnte Reh ist ein Hirsch (Skin); keine Frösche im Wald
     // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
     flow: { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40 },
     roundShore: true,
@@ -357,7 +357,7 @@ export const LEVELS = {
     spawn: { population: 8, weights: { antelope: 0.6, zebra: 0.6, giraffe: 0.4, meerkat: 0.3, lion: 0.25, crocodile: 0.2 } },
     // Wetterphasen (siehe src/world/season.js): ersetzen die Angaben oben; die normalen Tiere sind dann seltener
     seasons: {
-      // Starkregen: viel größere Wasserlöcher, Nilpferde, Fische (meist Lungenfische), Reiher (oft Schuhschnäbel),
+      // Starkregen: viel größere Wasserlöcher, Nilpferde, Fische (Lungenfische), Reiher (oft Schuhschnäbel),
       // mehr Krokodile (selten ein Albino-Krokodil)
       rain: {
         // trocken bleiben: Hütte und Auto, der Start und ein Streifen neben dem Gnu-Strom (Große Wanderung, siehe Gnu.js)

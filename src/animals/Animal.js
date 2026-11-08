@@ -914,6 +914,7 @@ export const SPECIES = {
   },
   fish: {
     texture: 'fish',
+    baseLevels: ['meadow'], // der orange Fisch (ohne Skin) kommt nur auf der Wiese vor, sonst die Arten in SKINS.fish
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
     originY: 68 / 72,
@@ -948,14 +949,25 @@ const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort,
 // Im Gehege locken sie mehr Besucher an (siehe SKIN_APPEAL in world/visitors.js).
 // Eine Art kann auch mehrere Skins haben (Liste); level/seasons: gilt nur dort bzw. in diesen Wetterphasen der Savanne
 // (wild dann auch je Phase: { rain: 0.6, dry: 1 }); common: so häufig, dass es keine Meldung „seltene …“ gibt.
+// upJump (Fische): oben im Wasser das Sprung-Bild statt der Seitenansicht (siehe Fish.js render)
+// share statt wild: alle Skins mit share (und das Grundbild, wo kind.baseLevels es erlaubt) teilen sich die Fänge nach diesem Gewicht.
 export const SKINS = {
   cat: { id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
   deer: { id: 'stag', name: tr('Hirsch', 'stag'), male: true, wild: 0.1, baby: 0 }, // ein Rehkitz ist nie ein Hirsch
   antelope: { id: 'antelope2', name: tr('Oryx-Antilope', 'oryx antelope'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
+  // Fischarten je Gebiet, alle gleich häufig (share, siehe rollSkin; der orange Fisch nur auf der Wiese, SPECIES.fish.baseLevels).
+  // Savanne: immer der Lungenfisch (in der Trockenzeit steckt er im Schlamm). Fische bekommen keine Babys.
   fish: [
-    // Lungenfisch: in der Savanne bei Starkregen meistens, in der Trockenzeit immer (steckt dann im Schlamm)
-    { id: 'lungfish', name: tr('Lungenfisch', 'lungfish'), male: true, level: 'savanna', seasons: ['rain', 'dry'], wild: { rain: 0.7, dry: 1 }, baby: 0, common: true },
-    { id: 'fish2', name: tr('Wels', 'catfish'), male: true, wild: 0.1, baby: 0 }, // Fische bekommen keine Babys
+    { id: 'fish_carp', name: tr('Karpfen', 'carp'), male: true, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish_tench', name: tr('Schleie', 'tench'), male: false, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish_roach', name: tr('Rotauge', 'roach'), male: false, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish_perch', name: tr('Barsch', 'perch'), male: true, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish_trout', name: tr('Forelle', 'trout'), male: false, level: 'forest', share: 1, baby: 0, common: true },
+    { id: 'fish_grayling', name: tr('Äsche', 'grayling'), male: false, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish_pike', name: tr('Hecht', 'pike'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish2', name: tr('Wels', 'catfish'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'fish_sturgeon', name: tr('Stör', 'sturgeon'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
+    { id: 'lungfish', name: tr('Lungenfisch', 'lungfish'), male: true, level: 'savanna', share: 1, baby: 0, common: true },
   ],
   heron: { id: 'shoebill', name: tr('Schuhschnabel', 'shoebill'), male: true, level: 'savanna', seasons: ['rain'], wild: 1, baby: 0, common: true }, // in der Savanne bei Starkregen immer ein Schuhschnabel
   crocodile: { id: 'croc_albino', name: tr('Albino-Krokodil', 'albino crocodile'), male: false, level: 'savanna', seasons: ['rain'], wild: 0.12, baby: 0 },
@@ -1123,7 +1135,24 @@ export default class Animal {
   // seltener Skin würfeln: from 'wild' (draußen) oder 'baby' (Tierbaby-Event, viel seltener)
   rollSkin(from) {
     this.skin = null;
-    for (const s of skinsHere(this.species)) {
+    const here = skinsHere(this.species);
+    const shared = here.filter((s) => s.share);
+    if (from === 'wild' && shared.length) {
+      // gleichmäßig verteilt (z. B. Fischarten je Gebiet): Grundbild nur, wo es vorkommt
+      const base = this.kind.baseLevels?.includes(LEVEL_ID) ? 1 : 0;
+      let r = Math.random() * (base + shared.reduce((n, s) => n + s.share, 0)) - base;
+      if (r < 0) return;
+      for (const s of shared) {
+        r -= s.share;
+        if (r < 0) {
+          this.skin = s.id;
+          return;
+        }
+      }
+      this.skin = shared.at(-1).id;
+      return;
+    }
+    for (const s of here) {
       const wild = typeof s.wild === 'object' ? s.wild[LEVEL.season] ?? 0 : s.wild ?? 0;
       const chance = from === 'wild' ? (s.common ? wild : rareChance(wild)) : s[from] ?? 0; // Event "Seltene Tiere": 50 %
       if (Math.random() < chance) {

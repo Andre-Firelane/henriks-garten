@@ -25,6 +25,7 @@ const HYENA_SCALE = 0.25;
 const HOWLER_SCALE = 0.25;
 const HOWLER_STAND_SCALE = 0.278; // Brüllaffe stehend so groß wie der Gibbon (fressend und springend passt HOWLER_SCALE schon)
 const CANOE_SCALE = 0.57;
+const FISH_SCALE = 0.36; // die neuen Fischarten (Wiese und Wald), alle im selben Maßstab
 const CHARACTERS = [
   // unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Main Character.png', out: 'hero.png', frameW: 72, frameH: 116, feetY: 112, figureH: 108 },
@@ -72,8 +73,12 @@ const CHARACTERS = [
   { src: 'Sprites/Hirsch.png', out: 'stag.png', frameW: 80, frameH: 112, feetY: 108, figureH: 100 },
   // auftauchen, nach rechts, nach links, Sprung; freigestellt mit npm run cutout
   { src: 'Sprites/Fisch.png', out: 'fish.png', frameW: 84, frameH: 64, feetY: 60, figureH: 56 },
-  // Wels (seltener Skin des Fischs): gleiches Format, etwas größer als der Fisch
-  { src: 'Sprites/Fisch2.png', out: 'fish2.png', frameW: 84, frameH: 64, feetY: 60, scale: 0.39, mirror: [0] }, // Auftauchen: Kopf in dieselbe Richtung wie beim Fisch
+  // weitere Fischarten (Skins des Fischs, freigestellt mit tools/fish-cut.py): gleiches Format (auftauchend, rechts, links,
+  // springend). Wiese: Karpfen, Schleie, Rotauge, Barsch; Wald: Forelle, Äsche, Hecht, Wels, Stör
+  { src: 'Sprites/Wels.png', out: 'fish2.png', frameW: 84, frameH: 64, feetY: 60, scale: FISH_SCALE }, // früher Sprites/Fisch2.png
+  ...[['Karpfen', 'carp'], ['Schleie', 'tench'], ['Rotauge', 'roach'], ['Barsch', 'perch'], ['Forelle', 'trout'], ['Äsche', 'grayling'], ['Hecht', 'pike'], ['Stör', 'sturgeon']].map(
+    ([name, id]) => ({ src: `Sprites/${name}.png`, out: `fish_${id}.png`, frameW: 84, frameH: 64, feetY: 60, scale: FISH_SCALE, viewScale: { 3: 0.94 } }), // Sprung mit Blasen etwas kleiner, sonst zu hoch
+  ),
   // unten-rechts, unten-links, oben-links, oben-rechts; freigestellt mit npm run cutout
   { src: 'Sprites/Fisch Beutel.png', out: 'fishbag.png', frameW: 64, frameH: 76, feetY: 72, figureH: 64 },
   // unten-rechts, unten-links, oben-rechts, oben-links; freigestellt mit npm run cutout
@@ -242,9 +247,9 @@ const CHARACTERS = [
   // Albino-Krokodil (seltener Skin bei Starkregen): wie das Krokodil
   { src: 'Sprites/Krokodil2.png', out: 'croc_albino.png', frameW: 72, frameH: 92, feetY: 88, scale: 0.29 },
   { src: 'Sprites/Krokodil2 Wasser.png', out: 'croc_albino_water.png', frameW: 64, frameH: 44, feetY: 40, figureH: 34, grid: [2, 2] }, // ... im Wasser (wie croc_water)
-  // Lungenfisch (Fisch-Skin): gemalt wie der Fisch (auftauchend, rechts, links, springend); in der Vorlage etwas größer
-  // gezeichnet, darum kleinerer Maßstab: im Spiel so groß wie der Fisch
-  { src: 'Sprites/Lungenfisch.png', out: 'lungfish.png', frameW: 84, frameH: 64, feetY: 60, scale: 0.32 },
+  // Lungenfisch (Fisch-Skin): gemalt wie der Fisch (auftauchend, rechts, links, springend), im selben Maßstab wie die
+  // anderen Fischarten
+  { src: 'Sprites/Lungenfisch neu.png', out: 'lungfish.png', frameW: 84, frameH: 64, feetY: 60, scale: FISH_SCALE }, // im 3. und 4. Bild unter Wasser abgeschnitten (tools/fish-cut.py)
   // Nilpferd (Starkregen): unten-rechts, unten-links, oben-rechts, oben-links; im Wasser nur die obere Kopfhälfte (gleicher Maßstab)
   { src: 'Sprites/Nilpferd.png', out: 'hippo.png', frameW: 96, frameH: 88, feetY: 84, scale: HIPPO_SCALE }, // ohne stripShadow: das Nilpferd selbst ist grau (Schatten: savanna-cut)
   { src: 'Sprites/Nilpferd Wasser.png', out: 'hippo_water.png', frameW: 64, frameH: 44, feetY: 40, scale: HIPPO_SCALE },

@@ -13,7 +13,10 @@ const HIPPO_SCALE = 0.65; // etwas größer als die anderen Tiere (0.5), an Land
 const WATER_TIME = [10, 18]; // so lange treibt es im Wasser ...
 const LAND_TIME = [14, 22]; // ... und so lange grast es am Ufer
 const DRIFT_SPEED = 6; // langsames Treiben
-const SHORE_RANGE = 220; // so weit sucht es sich ein Ufer zum Herausklettern
+const SHORE_RANGE = 220; // so weit sucht es sich ein Ufer zum Herausklettern ...
+const SHORE_PICK = 24; // ... und nimmt eins der nächsten (höchstens so viel weiter weg als das allernächste)
+const SHORE_SWIM = 1.5; // zum Ufer schwimmt es etwas schneller als beim Treiben
+const SHORE_TIMEOUT = 12; // kommt es nicht ans Ufer heran, klettert es trotzdem hinaus
 const GRAZE_RANGE = 50; // so weit grast es vom Ufer weg
 const CATCH_GAP = 24; // so weit muss es vom Wasser weg sein, damit man es fangen kann
 const BACK_TIMEOUT = 8; // kommt es nicht zum Ufer zurück, springt es trotzdem ins Wasser
@@ -78,7 +81,22 @@ export default class Hippo extends Crocodile {
       if (d < 600 && this.scene.cache.audio.exists('animal_hippo')) this.scene.sound.play('animal_hippo', { volume: CALL_VOLUME * (1 - d / 600), detune: Phaser.Math.Between(-150, 150) });
     }
     if (this.mode === 'water') {
-      if (this.modeTime <= 0 && this.climbOut()) return false;
+      if (this.modeTime <= 0) {
+        // erst zum nächsten Ufer schwimmen, dann dort herausklettern (nicht irgendwo im Wasserloch auftauchen)
+        this.target ??= this.wildShore();
+        if (!this.target) {
+          this.modeTime = Phaser.Math.FloatBetween(...WATER_TIME);
+        } else {
+          const w = this.target.water;
+          const tx = w.x - this.x;
+          const ty = w.y - this.y;
+          const td = Math.hypot(tx, ty);
+          if (td < 4 || this.modeTime < -SHORE_TIMEOUT || !this.move((tx / td) * DRIFT_SPEED * SHORE_SWIM * dt, (ty / td) * DRIFT_SPEED * SHORE_SWIM * dt)) {
+            this.climbOut(this.target);
+          }
+          return false;
+        }
+      }
       // langsam durchs Wasser treiben
       if (!this.drift || Math.hypot(this.drift.x - this.x, this.drift.y - this.y) < 3) {
         const { tx, ty } = worldToTile(this.x, this.y);
@@ -116,15 +134,18 @@ export default class Hippo extends Crocodile {
     return this.move((dx / d) * step, (dy / d) * step);
   }
 
-  // ans nächste Ufer klettern (falls eins in der Nähe ist)
-  climbOut() {
-    const near = SHORE_TILES.map((s) => ({ land: tileToWorld(s.tx, s.ty), water: tileToWorld(s.water.tx, s.water.ty) }))
-      .filter((s) => Math.hypot(s.water.x - this.x, s.water.y - this.y) < SHORE_RANGE);
-    const s = Phaser.Utils.Array.GetRandom(near);
-    if (!s) {
-      this.modeTime = Phaser.Math.FloatBetween(...WATER_TIME);
-      return false;
-    }
+  // wildes Wasserloch: eins der nächsten Ufer (falls eins in der Nähe ist); nicht nearestShore, das gilt im Becken (Crocodile.js)
+  wildShore() {
+    const dist = (s) => Math.hypot(s.water.x - this.x, s.water.y - this.y);
+    const near = SHORE_TILES.map((s) => ({ land: tileToWorld(s.tx, s.ty), water: tileToWorld(s.water.tx, s.water.ty) })).filter((s) => dist(s) < SHORE_RANGE);
+    if (!near.length) return null;
+    const min = Math.min(...near.map(dist));
+    return Phaser.Utils.Array.GetRandom(near.filter((s) => dist(s) <= min + SHORE_PICK));
+  }
+
+  // an diesem Ufer herausklettern
+  climbOut(s) {
+    this.target = null;
     this.splash();
     this.shore = s;
     this.x = s.land.x;
@@ -136,7 +157,6 @@ export default class Hippo extends Crocodile {
     this.faceY = Math.sign(s.land.y - s.water.y) || this.faceY;
     this.useBagLook();
     this.pickWander();
-    return true;
   }
 
   catch() {
@@ -149,6 +169,7 @@ export default class Hippo extends Crocodile {
     super.restore(state);
     if (state === 'wild') {
       this.mode = 'water';
+      this.target = null;
       this.unplaced = true;
       this.useWaterLook();
     } else {

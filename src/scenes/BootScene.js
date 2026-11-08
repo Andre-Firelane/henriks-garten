@@ -725,7 +725,8 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('flamingo_fly', 'assets/flamingo_fly.png', { frameWidth: 104, frameHeight: 100 });
     load.spritesheet('flamingo_baby', 'assets/flamingo_baby.png', HERON_FRAME); // Küken (Tierbabys)
     load.spritesheet('fish', 'assets/fish.png', FISH_FRAME);
-    load.spritesheet('fish2', 'assets/fish2.png', FISH_FRAME); // Wels (seltener Skin)
+    // weitere Fischarten (Skins): Wiese Karpfen, Schleie, Rotauge, Barsch; Wald Forelle, Äsche, Hecht, Wels (fish2), Stör
+    for (const k of ['fish2', 'fish_carp', 'fish_tench', 'fish_roach', 'fish_perch', 'fish_trout', 'fish_grayling', 'fish_pike', 'fish_sturgeon']) load.spritesheet(k, `assets/${k}.png`, FISH_FRAME);
     load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
     load.spritesheet('squirrel_run', 'assets/squirrel_run.png', { frameWidth: 64, frameHeight: 60 }); // rennt (Test)

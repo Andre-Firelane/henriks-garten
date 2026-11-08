@@ -3,9 +3,9 @@
 // Gefangen wird er zum Beutel und folgt dem Spieler. Am Fischteich wird er freigelassen und schwimmt dort;
 // ab und zu taucht er ab, und bevor er wieder auftaucht, blubbert es wie draußen.
 import Phaser from 'phaser';
-import Animal from './Animal.js';
+import Animal, { skinInfo } from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { FISH_SPOTS, FISHPOND_TILES, LEVEL, isFishpond, enclosureAt, accepts } from '../world/map.js';
+import { FISH_SPOTS, FISHPOND_TILES, LEVEL, LEVEL_ID, isFishpond, enclosureAt, accepts } from '../world/map.js';
 import { footTiles } from '../world/collision.js';
 
 // Bilder im Spritesheet "fish"
@@ -15,7 +15,8 @@ const WATER_SCALE = 0.38; // so groß im Wasser (Beutel und andere Tiere: 0.5)
 
 const HIDDEN_TIME = [2, 6]; // so lange ist nichts zu sehen
 const BUBBLE_TIME = [1, 3]; // so lange blubbert es, bevor er auftaucht
-const UP_TIME = [2, 4]; // so lange bleibt er oben
+const UP_TIME = [2, 4]; // so lange bleibt er oben ...
+const UP_TIME_LONG = { forest: [4, 6] }; // ... im Wald länger (dort ist der Weg zum Fluss weiter)
 const PEEK_TIME = 0.25; // kurzes Auf- und Abtauchen
 const HOME_DIST = 50; // so nah muss der Beutel an den Fischteich, damit der Fisch hineinspringt
 const POND_SWIM = [4, 10]; // im Teich: so lange schwimmt er sichtbar ...
@@ -35,7 +36,7 @@ export default class Fish extends Animal {
   }
 
   useWaterLook() {
-    this.sprite.setTexture(this.waterTexture(), FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y); // mit Skin: Wels, Lungenfisch
+    this.sprite.setTexture(this.waterTexture(), FISH_FRAME.right).setOrigin(0.5, FISH_ORIGIN_Y); // mit Skin: die Fischart (Karpfen, Forelle ... Lungenfisch)
     this.shadow.setVisible(false);
   }
 
@@ -88,7 +89,7 @@ export default class Fish extends Animal {
       this.bubbleTimer -= dt;
       if (this.bubbleTimer <= 0) {
         this.spawnBubble();
-        this.bubbleTimer = Phaser.Math.FloatBetween(0.2, 0.45);
+        this.bubbleTimer = Phaser.Math.FloatBetween(0.12, 0.28);
       }
     }
     if (this.phaseTime > 0) return false;
@@ -105,7 +106,7 @@ export default class Fish extends Animal {
         this.splash();
         break;
       case 'rising':
-        this.setPhase('up', Phaser.Math.FloatBetween(...UP_TIME));
+        this.setPhase('up', Phaser.Math.FloatBetween(...((this.species === 'fish' && UP_TIME_LONG[LEVEL_ID]) || UP_TIME)));
         break;
       case 'up':
         this.setPhase('sinking', PEEK_TIME);
@@ -126,7 +127,7 @@ export default class Fish extends Animal {
       d.bubble -= dt;
       if (d.bubble <= 0) {
         this.spawnBubble();
-        d.bubble = Phaser.Math.FloatBetween(0.2, 0.45);
+        d.bubble = Phaser.Math.FloatBetween(0.12, 0.28);
       }
     }
     if (d.time > 0) return;
@@ -185,33 +186,43 @@ export default class Fish extends Animal {
     if (this.sprite.texture.key !== this.waterTexture()) this.useWaterLook(); // Skin erst nach dem Erzeugen gewürfelt
     let frame = this.faceX > 0 ? FISH_FRAME.right : FISH_FRAME.left;
     let visible = !(this.state === 'penned' && this.dive?.under);
+    let flip = false;
     if (this.state === 'wild') {
       visible = SURFACED.includes(this.phase);
       if (this.phase !== 'up') frame = FISH_FRAME.peek;
+      else if (skinInfo(this.species, this.skin)?.upJump) {
+        // Arten, die in Bild 2 und 3 ganz von der Seite zu sehen sind: halb aus dem Wasser gucken mit dem Sprung-Bild
+        // (Kopf nach links, für rechts gespiegelt)
+        frame = FISH_FRAME.jump;
+        flip = this.faceX > 0;
+      }
     }
     // sanftes Schaukeln auf dem Wasser
     const bob = Math.sin(this.scene.time.now / 250 + this.x) * 1;
     this.sprite.setVisible(visible);
-    this.sprite.setFrame(frame);
+    this.sprite.setFrame(frame).setFlipX(flip);
     if (this.species === 'fish') this.sprite.setScale(WATER_SCALE); // im Wasser etwas kleiner (passend zu den anderen Tieren); der Lungenfisch im Schlamm genauso
     this.sprite.setPosition(this.x, this.y + 4 + bob);
     this.sprite.setAngle(0);
     this.sprite.setDepth(this.y);
   }
 
+  // Blase: groß, hell mit dunkelblauer Umrandung, damit man sie auch auf fließendem Wasser gut sieht
   spawnBubble() {
     const x = this.x + Phaser.Math.Between(-10, 10);
     const y = this.y + Phaser.Math.Between(-3, 3);
+    const mud = this.inMud();
+    const r = Phaser.Math.FloatBetween(2.5, 4.5);
     const bubble = this.scene.add
-      .circle(x, y, Phaser.Math.FloatBetween(1.5, 3), this.inMud() ? 0x8a6a44 : 0xd8f2ff, 0.9) // im Schlamm braune Blasen
-      .setStrokeStyle(1, this.inMud() ? 0x4a3420 : 0x2f7fbf)
+      .circle(x, y, r, mud ? 0x8a6a44 : 0xe8f8ff, 0.95) // im Schlamm braune Blasen
+      .setStrokeStyle(1.5, mud ? 0x4a3420 : 0x1f5f9f)
       .setDepth(y + 1);
     this.scene.tweens.add({
       targets: bubble,
-      y: y - Phaser.Math.Between(6, 12),
-      scale: 1.5,
+      y: y - Phaser.Math.Between(8, 16),
+      scale: 1.4,
       alpha: 0,
-      duration: Phaser.Math.Between(500, 800),
+      duration: Phaser.Math.Between(650, 950),
       ease: 'Quad.easeOut',
       onComplete: () => bubble.destroy(),
     });

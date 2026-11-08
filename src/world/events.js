@@ -41,7 +41,7 @@ export const EVENTS = [
   {
     id: 'rare',
     name: tr('Seltene Tiere', 'Rare Animals'),
-    text: tr('5 Minuten lang ist draußen jedes zweite neue Tier eine seltene Variante: Glöckchen-Katze, Oryx, Wels, Hirsch ...', 'For 5 minutes every second new animal outside is a rare variant: bell cat, oryx, catfish, stag ...'),
+    text: tr('5 Minuten lang ist draußen jedes zweite neue Tier eine seltene Variante: Glöckchen-Katze, Oryx, Hirsch, schwarzer Wolf ...', 'For 5 minutes every second new animal outside is a rare variant: bell cat, oryx, stag, black wolf ...'),
     cost: 200,
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
