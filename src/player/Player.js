@@ -160,10 +160,11 @@ export default class Player {
       if (Math.abs(vx) > len * 0.25) this.faceX = Math.sign(vx);
       if (Math.abs(vy) > len * 0.25) this.faceY = Math.sign(vy);
 
-      // Tasten: immer volles Tempo (auch schräg); Joystick: Tempo je nach Ausschlag
+      // immer volles Tempo (auch schräg und beim Joystick, egal wie weit gezogen – sonst passen die Laufbilder nicht
+      // und die Tiere in der Schlange ruckeln)
       const { tx: wx, ty: wy } = worldToTile(this.x, this.y);
       const wading = this.wade && charAt(wx, wy) === '~';
-      const step = (this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt * Math.min(1, len)) / len;
+      const step = (this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt) / len;
       // Achsen getrennt prüfen, damit man an Hindernissen entlanggleitet
       const blocked = (x, y) => (this.boat ? boatBlockedAt(x, y, BOAT_W, BOAT_H) : blockedAt(x, y, FOOT_W, FOOT_H, this.wade, this.trample, false, true));
       const nx = this.x + vx * step;

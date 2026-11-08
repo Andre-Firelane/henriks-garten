@@ -4559,7 +4559,11 @@ export default class GardenScene extends Phaser.Scene {
     const full = !isPark(LEVEL_ID) && this.parkPenFull(animal.species, animal.origin);
     const homeless = !isPark(LEVEL_ID) && noParkHome(animal.species); // noch kein Gehege: es kommt ins Naturreservat
     animal.catch();
-    countCatch(animal.farm ?? animal.species);
+    // für die Statistik nur einmal je Tier: ein Panda, der zum Bambus abhaut und wieder angelockt wird, zählt nicht doppelt
+    if (!animal.counted) {
+      animal.counted = true;
+      countCatch(animal.farm ?? animal.species);
+    }
     if (!caughtBefore(animal.species)) {
       game.caughtSpecies.push(animal.species);
       this.markNew(`caught:${animal.species}`);

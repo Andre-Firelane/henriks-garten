@@ -818,10 +818,44 @@ export function isBlockedPoint(x, y, wade = false, trample = false, thicket = fa
   if (wade && charAt(tx, ty) === '~') return false;
   if (trample && SMALL_BUSHES.includes(charAt(tx, ty))) return false;
   if (thicket && charAt(tx, ty) === 'Ď') return false;
-  const hitbox = objectAt(tx, ty)?.hitbox;
+  const obj = objectAt(tx, ty);
+  if (obj?.fence) return fenceBlocksPoint(x, y, tx, ty, obj.fence);
+  const hitbox = obj?.hitbox;
   if (!hitbox) return isBlocked(tx, ty);
   const c = tileToWorld(tx, ty);
   return Math.hypot(x - c.x, (y - c.y) * 2) < hitbox; // Abstand in Kachel-Proportionen
+}
+
+// Zaun: fest ist nur ein Streifen entlang der gezeichneten Zaunlinie durch die Kachelmitte (FENCE_HALF Kachel zu jeder
+// Seite), und nur die Hälften, die zu einem Nachbarzaun führen – wie addFence in GardenScene sie zeichnet. So ragt an
+// Ecken nichts über den sichtbaren Zaun hinaus. Der Streifen (gut 14 Pixel) ist dicker als ein Schritt pro Bild, damit
+// niemand hindurchschlüpft.
+const FENCE_HALF = 0.25;
+
+function fenceBlocksPoint(x, y, tx, ty, { kind, axis }) {
+  const a = x / (TILE_W / 2);
+  const b = y / (TILE_H / 2);
+  const u = (a + b) / 2 - tx; // 0 … 1 entlang tx
+  const v = (b - a) / 2 - ty; // 0 … 1 entlang ty
+  const joins = (dx, dy, ax) => {
+    const other = fenceAxisAt(tx + dx, ty + dy);
+    return !!other && (axis === ax || other === ax || objectAt(tx + dx, ty + dy)?.fence?.kind === kind);
+  };
+  let xl = joins(-1, 0, 'x');
+  let xr = joins(1, 0, 'x');
+  let yu = joins(0, -1, 'y');
+  let yd = joins(0, 1, 'y');
+  if (!xl && !xr && !yu && !yd) {
+    // einzelnes Stück: ganz entlang seiner Richtung
+    if (axis === 'x') xl = xr = true;
+    else yu = yd = true;
+  }
+  const nearV = Math.abs(v - 0.5) < FENCE_HALF;
+  const nearU = Math.abs(u - 0.5) < FENCE_HALF;
+  if (nearU && nearV) return true; // Pfosten in der Mitte
+  if (nearV && ((xl && u < 0.5) || (xr && u > 0.5))) return true;
+  if (nearU && ((yu && v < 0.5) || (yd && v > 0.5))) return true;
+  return false;
 }
 
 // Abstand eines Punkts von der Strecke a–b
