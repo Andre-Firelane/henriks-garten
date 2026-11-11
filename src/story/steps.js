@@ -47,7 +47,7 @@ const REEF_CATCHES = 10; // so viele Meerestiere verlangt die Riff-Aufgabe
 export const seaReady = (game) => seaCatches(game) >= REEF_CATCHES;
 
 const SHEEP = 3;
-const MEADOW = { cat: 3, frog: 3, butterfly: 3 };
+const MEADOW = { cat: 2, frog: 2, butterfly: 2 };
 const FOREST = { deer: 2, squirrel: 2 };
 const VISITOR_HEARTS = 10;
 const SAVANNA_KINDS = 3;
@@ -98,12 +98,12 @@ export const STEPS = [
   {
     id: 'meadow',
     at: { level: 'meadow', spot: 'hut' },
-    goal: tr('Fang 3 Katzen, 3 Frösche und 3 Schmetterlinge', 'Catch 3 cats, 3 frogs and 3 butterflies'),
+    goal: tr('Fang 2 Katzen, 2 Frösche und 2 Schmetterlinge', 'Catch 2 cats, 2 frogs and 2 butterflies'),
     progress: (game) => count(listProgress(game, MEADOW), listTotal(MEADOW)),
     wild: MEADOW,
     done: (game) => all(game, MEADOW),
     intro: [
-      tr('Jetzt wird es etwas kniffliger: Fang drei Katzen, drei Frösche und drei Schmetterlinge.', 'Now it gets a little trickier: catch three cats, three frogs and three butterflies.'),
+      tr('Jetzt wird es etwas kniffliger: Fang zwei Katzen, zwei Frösche und zwei Schmetterlinge.', 'Now it gets a little trickier: catch two cats, two frogs and two butterflies.'),
       tr('Katzen sind flinker als Schafe – lauf ihnen einfach hinterher. Frösche sitzen meistens am Wasser.', 'Cats are quicker than sheep – just run after them. Frogs mostly sit near the water.'),
       tr('Schmetterlinge fliegen weg, wenn du hinläufst. Für sie brauchst du den Kescher – er liegt im Regal in der Hütte!', 'Butterflies fly away when you walk up to them. For them you need the net – it’s on the shelf in the hut!'),
     ],

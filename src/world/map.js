@@ -581,6 +581,11 @@ export function inPen(tx, ty) {
   return !!enclosureAt(tx, ty);
 }
 
+// Sperrfläche für wilde Tiere (LEVEL.noWild, z. B. die eingezäunten Felder auf der Wiese)
+export function noWildAt(tx, ty) {
+  return (LEVEL.noWild ?? []).some((z) => tx >= z.tx0 && tx <= z.tx1 && ty >= z.ty0 && ty <= z.ty1);
+}
+
 // Kachel in einem Gehege oder direkt daneben (dort sollen keine wilden Tiere erscheinen)
 export function nearEnclosure(tx, ty) {
   if (inHut(tx, ty, 1)) return true; // auch an und in der Hütte erscheinen keine wilden Tiere

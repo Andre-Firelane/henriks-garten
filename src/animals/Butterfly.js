@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { worldToTile, tileToWorld } from '../world/iso.js';
-import { ENCLOSURES, LEVEL, MAP_W, MAP_H, NEAR_PATH, NEAR_PATH_TILES, buildingAt, charAt, inPen } from '../world/map.js';
+import { ENCLOSURES, LEVEL, MAP_W, MAP_H, NEAR_PATH, NEAR_PATH_TILES, buildingAt, charAt, inPen, noWildAt } from '../world/map.js';
 
 export const BUTTERFLY_KINDS = 12; // so viele Farben hat das Spritesheet (je 3 Bilder: offen, halb, fast zu)
 const SCALE = 0.42; // Bild 64 × 64
@@ -36,7 +36,7 @@ export function flowerTiles() {
   for (let ty = 1; ty < MAP_H - 1; ty++) {
     for (let tx = 1; tx < MAP_W - 1; tx++) {
       if (!FLOWERS.includes(charAt(tx, ty))) continue;
-      if (inPen(tx, ty)) continue;
+      if (inPen(tx, ty) || noWildAt(tx, ty)) continue;
       tiles.push({ tx, ty });
     }
   }
@@ -107,6 +107,7 @@ export default class Butterfly extends Animal {
     const { tx, ty } = worldToTile(x, y);
     if (tx < 1 || ty < 1 || tx > MAP_W - 2 || ty > MAP_H - 2 || charAt(tx, ty) === ' ') return true;
     if (this.isFree()) return !!buildingAt(tx, ty);
+    if (this.state === 'wild' && noWildAt(tx, ty)) return true; // nicht über die eingezäunten Felder (dort sähe man ihn nicht)
     return false;
   }
 
