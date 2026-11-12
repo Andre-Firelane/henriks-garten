@@ -170,6 +170,7 @@ const PHONE_VIEW_H = 310;
 const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: 'dry' };
 // Plätze für wilde Tiere: spawn gilt bei jedem Wetter, weatherSpawn (Dschungel) ist der eigene Pool der Wetterlage.
 // Jeder Pool wird für sich aufgefüllt, so nehmen sich die Tiere der beiden nicht gegenseitig die Plätze weg
+const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
 const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
@@ -1872,7 +1873,8 @@ export default class GardenScene extends Phaser.Scene {
   spawnAnimals(arrive) {
     const taken = [arrive, ...TOOL_SPOTS];
     for (const pool of spawnPools(LEVEL)) {
-      for (let n = 0; n < pool.population; n++) {
+      // bis die Plätze voll sind (Versuche, die nichts bringen – z. B. Tiger schon am Maximum –, zählen nicht als Platz)
+      for (let n = 0; n < pool.population * 3 && this.wildUnits(pool) < pool.population; n++) {
         const group = this.spawnOne(taken, false, pool);
         const life = Phaser.Math.FloatBetween(20, LIFETIME[1]);
         for (const a of group) a.life = life; // eine Gruppe verschwindet gemeinsam (und zählt als ein Platz)
@@ -2057,13 +2059,16 @@ export default class GardenScene extends Phaser.Scene {
   // Eichhörnchen nur oben im Baum), und fehlen Tiere, kommt ab und zu ein neues dazu.
   // Wie viele Plätze sind belegt? Eine Herde oder Kolonie zählt als einer, damit seltene Einzeltiere
   // (Giraffe, Löwe ...) neben den großen Gruppen noch eine Chance haben. Fischreiher zählen nicht. Mit pool nur dessen Tierarten
+  // Fische und Koi belegen nur einen halben Platz (sonst blockieren sie die großen Landtiere, z. B. im Bambuswald)
   wildUnits(pool = null) {
-    const units = new Set();
+    const units = new Map();
     for (const a of this.animals) {
       if (pool && !pool.weights[a.species]) continue;
-      if (a.state === 'wild' && a.species !== 'heron') units.add(a.herd ?? a.colony ?? a.troop ?? a.school ?? a);
+      if (a.state === 'wild' && a.species !== 'heron') units.set(a.herd ?? a.colony ?? a.troop ?? a.school ?? a, HALF_SLOT.includes(a.species) ? 0.5 : 1);
     }
-    return units.size;
+    let n = 0;
+    for (const w of units.values()) n += w;
+    return n;
   }
 
   updateSpawner(dt) {
@@ -2087,7 +2092,8 @@ export default class GardenScene extends Phaser.Scene {
     if (this.spawnTimer > 0) return;
     this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
     const pool = spawnPools(LEVEL).find((q) => this.wildUnits(q) < q.population);
-    if (pool) this.spawnOne([worldToTile(p.x, p.y), ...TOOL_SPOTS], true, pool);
+    // kam nichts (die Art ist schon am Maximum), gleich noch ein Versuch mit einer anderen
+    for (let i = 0; pool && i < 3; i++) if (this.spawnOne([worldToTile(p.x, p.y), ...TOOL_SPOTS], true, pool).length) break;
     this.spawnIguanas();
     this.spawnGorillas();
   }

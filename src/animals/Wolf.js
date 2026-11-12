@@ -9,13 +9,14 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 import { MAP_W, MAP_H, isBlocked, inPen } from '../world/map.js';
 import { tr } from '../i18n.js';
 
-const PACKS = 2; // so viele Rudel sind unterwegs
+const PACKS = 3; // so viele Rudel sind unterwegs
 const PACK_SIZE = [3, 4];
 const HOWL_TIME = [3, 4.5]; // so lange heulen sie (dann darf man laufen)
 const WATCH_TIME = [3, 6]; // so lange schauen sie sich um (dann stillstehen!)
 const WATCH_DIST = 210; // so weit sehen sie einen, der sich bewegt (Kachel-Proportionen, y doppelt)
 const PACK_RADIUS = 34; // so weit verteilen sich die Wölfe um die Mitte ihrer Lichtung
 const FAR_FROM_PLAYER = 9; // neue Lichtungen mindestens so viele Kacheln vom Spieler entfernt
+const EDGE = 4; // ... und so weit vom Kartenrand weg (dort sind sie hinter Bäumen kaum zu finden)
 const RUN_TIME = 1.6; // so lange rennen sie erschrocken davon, dann ziehen sie auf eine neue Lichtung
 const TRACK_STEPS = 18; // so viele Pfotenabdrücke führen zur Lichtung
 const TRACK_STEP = 0.75; // Abstand der Abdrücke (Kacheln)
@@ -96,6 +97,35 @@ export default class Wolf extends Animal {
   }
 }
 
+// Platz für einen Wolf rund um die Mitte der Lichtung (nicht in einem Baum oder Felsen)
+function packSpot(pack) {
+  for (let i = 0; i < 12; i++) {
+    const x = pack.x + Phaser.Math.Between(-PACK_RADIUS, PACK_RADIUS) * 0.6;
+    const y = pack.y + Phaser.Math.Between(-PACK_RADIUS, PACK_RADIUS) * 0.3;
+    const t = worldToTile(x, y);
+    if (!isBlocked(t.tx, t.ty)) return { x, y };
+  }
+  return { x: pack.x, y: pack.y };
+}
+
+// Kacheln, die man vom Spieler aus zu Fuß erreicht ("tx,ty")
+function reachable(from) {
+  const seen = new Set([from.tx + ',' + from.ty]);
+  const queue = [from];
+  while (queue.length) {
+    const { tx, ty } = queue.pop();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = tx + dx;
+      const ny = ty + dy;
+      const k = nx + ',' + ny;
+      if (nx < 0 || ny < 0 || nx >= MAP_W || ny >= MAP_H || seen.has(k) || isBlocked(nx, ny)) continue;
+      seen.add(k);
+      queue.push({ tx: nx, ty: ny });
+    }
+  }
+  return seen;
+}
+
 // Ein Rudel auf seiner Lichtung: gemeinsamer Takt aus Ruhen, Heulen und Umschauen
 class Pack {
   constructor(night, tile) {
@@ -139,8 +169,9 @@ class Pack {
       const tile = this.night.clearing();
       this.placeAt(tile);
       for (const w of this.members) {
-        w.x = this.x + Phaser.Math.Between(-PACK_RADIUS, PACK_RADIUS) * 0.6;
-        w.y = this.y + Phaser.Math.Between(-PACK_RADIUS, PACK_RADIUS) * 0.3;
+        const at = packSpot(this);
+        w.x = at.x;
+        w.y = at.y;
         w.spot = null;
       }
       return;
@@ -176,16 +207,26 @@ export class WolfNight {
     for (let i = 0; i < PACKS; i++) this.addPack();
   }
 
-  // freie Kachel weit weg vom Spieler und von den anderen Rudeln, nicht im Gehege
+  // freie Lichtung weit weg vom Spieler und von den anderen Rudeln, nicht im Gehege, nicht am Kartenrand, rundherum frei
+  // und zu Fuß erreichbar (nicht auf der anderen Seite des Flusses ohne Brücke, nicht zwischen Felsen eingeschlossen)
   clearing() {
     const p = worldToTile(this.scene.player.x, this.scene.player.y);
-    for (let i = 0; i < 200; i++) {
+    const reach = reachable(p);
+    const open = (tx, ty) => [-1, 0, 1].every((dx) => [-1, 0, 1].every((dy) => !isBlocked(tx + dx, ty + dy) && !inPen(tx + dx, ty + dy)));
+    const free = (tx, ty, far, gap) =>
+      reach.has(tx + ',' + ty) && open(tx, ty) && Math.hypot(tx - p.tx, ty - p.ty) >= far && !this.packs.some((k) => k.tile && Math.hypot(k.tile.tx - tx, k.tile.ty - ty) < gap);
+    // erst streng, dann etwas lockerer (näher am Spieler bzw. an den anderen Rudeln)
+    for (const [far, gap] of [[FAR_FROM_PLAYER, 7], [FAR_FROM_PLAYER - 3, 4], [3, 0]]) {
+      for (let i = 0; i < 300; i++) {
+        const tx = Phaser.Math.Between(EDGE, MAP_W - 1 - EDGE);
+        const ty = Phaser.Math.Between(EDGE, MAP_H - 1 - EDGE);
+        if (free(tx, ty, far, gap)) return { tx, ty };
+      }
+    }
+    for (let i = 0; i < 300; i++) {
       const tx = Phaser.Math.Between(2, MAP_W - 3);
       const ty = Phaser.Math.Between(2, MAP_H - 3);
-      if (isBlocked(tx, ty) || inPen(tx, ty)) continue;
-      if (Math.hypot(tx - p.tx, ty - p.ty) < FAR_FROM_PLAYER) continue;
-      if (this.packs.some((k) => k.tile && Math.hypot(k.tile.tx - tx, k.tile.ty - ty) < 6)) continue;
-      return { tx, ty };
+      if (!isBlocked(tx, ty) && !inPen(tx, ty)) return { tx, ty };
     }
     return { tx: Phaser.Math.Between(2, MAP_W - 3), ty: Phaser.Math.Between(2, MAP_H - 3) };
   }
@@ -195,7 +236,8 @@ export class WolfNight {
     this.packs.push(pack);
     const n = Phaser.Math.Between(...PACK_SIZE);
     for (let i = 0; i < n; i++) {
-      const w = this.scene.createAnimal('wolf', pack.x + Phaser.Math.Between(-PACK_RADIUS, PACK_RADIUS) * 0.6, pack.y + Phaser.Math.Between(-PACK_RADIUS, PACK_RADIUS) * 0.3);
+      const at = packSpot(pack);
+      const w = this.scene.createAnimal('wolf', at.x, at.y);
       w.pack = pack;
       w.herd = pack; // beim Fangen rennen die anderen davon (siehe scatter)
       w.life = Infinity;

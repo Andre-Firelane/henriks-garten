@@ -239,19 +239,6 @@ export const STEPS = [
     unlocks: ['asia', 'park3'],
   },
   {
-    id: 'event',
-    at: { level: 'park', spot: 'computer' },
-    goal: tr('Starte am Computer ein Event (nicht den Eiswagen)', 'Start an event at the computer (not the ice cream truck)'),
-    done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk oder Überraschungs-Flamingos)
-    intro: [
-      tr('Am Computer gibt es noch viel mehr Events: Tierbabys, Reittiere, Flamingos …', 'There are many more events at the computer: baby animals, mounts, flamingos …'),
-      tr('Manche bringen sogar ganz neue Tiere. Such dir eins aus!', 'Some even bring brand-new animals. Pick one!'),
-    ],
-    already: [tr('Du hast ja schon ein Event gestartet – prima!', 'You’ve already started an event – excellent!')],
-    outro: [tr('Was für ein Spaß! Jetzt auf in den Bambuswald.', 'What fun! Now off to the bamboo forest.')],
-    reward: 20,
-  },
-  {
     id: 'asia',
     at: { level: 'asia', spot: 'hut' },
     goal: tr('Fang 3 verschiedene Tierarten im Bambuswald', 'Catch 3 different kinds of animals in the bamboo forest'),
@@ -284,7 +271,7 @@ export const STEPS = [
   {
     id: 'jungle',
     at: { level: 'jungle', spot: 'hut' },
-    talk: true, // der Abschluss des Tutorials kommt bei ihr an der Hütte
+    talk: true, // abgehakt bei ihr an der Hütte
     goal: tr('Fang 2 verschiedene Tierarten im Dschungel und triff Mavi an der Hütte', 'Catch 2 different kinds of animals in the jungle and meet Mavi at the hut'),
     progress: (game) => count(kinds(game, 'jungle'), JUNGLE_KINDS),
     done: (game) => kinds(game, 'jungle') >= JUNGLE_KINDS,
@@ -298,11 +285,27 @@ export const STEPS = [
       tr('Super, zwei Dschungeltiere – du hast es geschafft!', 'Great, two jungle animals – you did it!'),
       tr('Ein Tipp noch: Hier wechselt das Wetter. Bei Regen oder Nebel zeigen sich ganz andere Tiere.', 'One more tip: the weather changes here. In rain or fog completely different animals appear.'),
       tr('Leg dich in der Hütte ins Bett, dann ist das Wetter nach einem Nickerchen weiter. Das klappt auch in der Savanne.', 'Lie down in the bed in the hut and the weather moves on after a nap. That works in the savanna too.'),
-      tr('Jetzt kennst du alles Wichtige – du bist ein richtiger Tierparkdirektor!', 'Now you know everything important – you’re a real zoo director!'),
+      tr('Fahr jetzt mit deinen Tieren zurück in den Tierpark. Ich warte am Computer im Haupthaus – ich zeige dir noch etwas Tolles!', 'Now take your animals back to the zoo. I’ll wait at the computer in the main building – I’ve got one more great thing to show you!'),
+    ],
+    reward: 30,
+    unlocks: ['ice'],
+  },
+  {
+    // ganz zum Schluss (vorher unterbrach es zwischen Aquarium und Bambuswald den Ablauf)
+    id: 'event',
+    at: { level: 'park', spot: 'computer' },
+    goal: tr('Starte am Computer ein Event (nicht den Eiswagen)', 'Start an event at the computer (not the ice cream truck)'),
+    done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk oder Überraschungs-Flamingos)
+    intro: [
+      tr('Da bist du ja! Am Computer gibt es noch viel mehr Events: Tierbabys, Reittiere, Flamingos …', 'There you are! There are many more events at the computer: baby animals, mounts, flamingos …'),
+      tr('Manche bringen sogar ganz neue Tiere, wie Wölfe, Gnus oder Quallen. Such dir eins aus!', 'Some even bring brand-new animals, like wolves, wildebeest or jellyfish. Pick one!'),
+    ],
+    already: [tr('Du hast ja schon ein Event gestartet – prima!', 'You’ve already started an event – excellent!')],
+    outro: [
+      tr('Was für ein Spaß! Jetzt kennst du alles Wichtige – du bist ein richtiger Tierparkdirektor!', 'What fun! Now you know everything important – you’re a real zoo director!'),
       tr('Es gibt noch mehr Welten zu entdecken, zum Beispiel die Eiswelt. Viel Spaß!', 'There are more worlds to discover, like the Ice World. Have fun!'),
     ],
-    reward: 50,
-    unlocks: ['ice'],
+    reward: 40,
   },
   // die letzte Aufgabe: danach steht Mavi vor dem Haupthaus und hat nur noch einen Gruß (siehe talk in src/npc/Mavi.js)
 ];

@@ -19,6 +19,13 @@ export function syncStory() {
   let i = STEPS.findIndex((t) => t.id === s.id);
   if (i < 0) i = STEPS.findIndex((t) => !s.done.includes(t.id));
   if (i < 0) i = STEPS.length;
+  // wurde eine Aufgabe nach hinten verschoben (z. B. das Event ans Ende), nicht die übersprungenen davor auslassen
+  const open = STEPS.findIndex((t) => !s.done.includes(t.id));
+  if (s.locks && open >= 0 && open < i) {
+    i = open;
+    s.heard = false;
+    s.readyShown = false;
+  }
   s.step = i;
   s.id = STEPS[i]?.id ?? null;
 }
@@ -52,7 +59,7 @@ export function stepDone(step) {
 export function completeStep() {
   const s = activeStep();
   if (!s) return null;
-  game.story.done.push(s.id);
+  if (!game.story.done.includes(s.id)) game.story.done.push(s.id);
   for (const id of s.unlocks ?? []) if (!game.story.unlocked.includes(id)) game.story.unlocked.push(id);
   game.story.step++;
   game.story.id = STEPS[game.story.step]?.id ?? null;

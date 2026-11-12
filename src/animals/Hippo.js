@@ -12,6 +12,7 @@ const WATER_ORIGIN_Y = 40 / 44; // Wasserlinie im Bild "hippo_water"
 const HIPPO_SCALE = 0.65; // etwas größer als die anderen Tiere (0.5), an Land und im Wasser
 const WATER_TIME = [10, 18]; // so lange treibt es im Wasser ...
 const LAND_TIME = [14, 22]; // ... und so lange grast es am Ufer
+const LAND_MIN = 5; // so lange bleibt es mindestens an Land, auch wenn man ihm nahe kommt (Zeit zum Fangen)
 const DRIFT_SPEED = 6; // langsames Treiben
 const SHORE_RANGE = 220; // so weit sucht es sich ein Ufer zum Herausklettern ...
 const SHORE_PICK = 24; // ... und nimmt eins der nächsten (höchstens so viel weiter weg als das allernächste)
@@ -111,7 +112,8 @@ export default class Hippo extends Crocodile {
       return false;
     }
     if (this.mode === 'land') {
-      if (this.modeTime <= 0 || this.shouldFlee(player)) this.mode = 'back';
+      this.landTime = (this.landTime ?? 0) + dt;
+      if (this.modeTime <= 0 || (this.landTime >= LAND_MIN && this.shouldFlee(player))) this.mode = 'back';
       else return Animal.prototype.updateFree.call(this, dt, player); // grast am Ufer (an der Leine)
     }
     // zurück ins Wasser: zum Ufer trotten und hineinspringen
@@ -151,6 +153,7 @@ export default class Hippo extends Crocodile {
     this.x = s.land.x;
     this.y = s.land.y;
     this.mode = 'land';
+    this.landTime = 0;
     this.modeTime = Phaser.Math.FloatBetween(...LAND_TIME);
     this.leash = { x: s.land.x, y: s.land.y, r: GRAZE_RANGE };
     this.faceX = Math.sign(s.land.x - s.water.x) || this.faceX;

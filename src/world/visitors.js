@@ -20,7 +20,7 @@ export const APPEAL = {
   zebra: 3,
   meerkat: 4.5,
   giraffe: 4,
-  flamingo: 4,
+  flamingo: 2.5, // leicht und in großer Zahl zu bekommen (Flamingo-Flug), sonst bringen sie zu viele Herzen
   panda: 5,
   tiger: 5,
   orangutan: 5,

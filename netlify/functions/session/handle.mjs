@@ -43,8 +43,8 @@ const PROMOS = {
 // Fortschritt (step, siehe progress in src/sessions.js): die Aufgabe in Mavis Geschichte (src/story/steps.js), danach fertig.
 // tut: Fassung des Tutorials (TUTORIAL_VERSION in sessions.js). Runden ohne tut stammen noch vom alten Mini-Tutorial mit den
 // Starter-Aufgaben, die der Fassung 2 (erste Geschichte mit Mavi, kurz online) zählen nur mit Nummer
-const TUTORIAL_VERSION = 3;
-const STEPS = ['beim Laden', 'Begrüßung', 'Schafe', 'Wiesentiere', 'Besucher', 'Eiswagen', 'Wald', 'Ausbau', 'Savanne', 'Savannentiere abgeben', 'Aquarium', 'Event', 'Bambuswald', 'Bambus-Tiere abgeben', 'Dschungel', 'Tutorial fertig'];
+const TUTORIAL_VERSION = 4;
+const STEPS = ['beim Laden', 'Begrüßung', 'Schafe', 'Wiesentiere', 'Besucher', 'Eiswagen', 'Wald', 'Ausbau', 'Savanne', 'Savannentiere abgeben', 'Aquarium', 'Bambuswald', 'Bambus-Tiere abgeben', 'Dschungel', 'Event', 'Tutorial fertig'];
 const OLD_STEPS = ['beim Laden', 'Auto', 'Regal', 'Schafe', 'Schafgehege', 'Herzen', 'Computer', 'Tutorial fertig'];
 const stepName = (r) => {
   const n = r.step;
@@ -55,7 +55,7 @@ const stepName = (r) => {
 };
 // Trichter für neue Spiele: so viele kamen mindestens bis hierher
 // Trichter (nur neue Spiele mit dem aktuellen Tutorial): so viele kamen mindestens bis hierher – je eine Marke pro Aufgabe
-const FUNNEL = [[1, 'geladen'], [2, 'Mavi begrüßt'], [3, 'Schafe gefangen'], [4, 'Wiesentiere gefangen'], [5, 'Besucher-Herzen'], [6, 'Eiswagen steht'], [7, 'Wald geschafft'], [8, 'Gehege ausgebaut'], [9, 'Savanne geschafft'], [10, 'Savannentiere abgegeben'], [11, 'Aquarium gesehen'], [12, 'Event gestartet'], [13, 'Bambuswald geschafft'], [14, 'Bambus-Tiere abgegeben'], [15, 'Tutorial fertig']];
+const FUNNEL = [[1, 'geladen'], [2, 'Mavi begrüßt'], [3, 'Schafe gefangen'], [4, 'Wiesentiere gefangen'], [5, 'Besucher-Herzen'], [6, 'Eiswagen steht'], [7, 'Wald geschafft'], [8, 'Gehege ausgebaut'], [9, 'Savanne geschafft'], [10, 'Savannentiere abgegeben'], [11, 'Aquarium gesehen'], [12, 'Bambuswald geschafft'], [13, 'Bambus-Tiere abgegeben'], [14, 'Dschungel geschafft'], [15, 'Tutorial fertig']];
 
 export async function handle(req, store, secret) {
   if (req.method === 'POST') return record(req, store);

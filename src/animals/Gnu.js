@@ -24,6 +24,8 @@ const STRAY_SPEED = 30; // seitlich (vom Strom weg und wieder hin) ...
 const STRAY_FLOW = FLOW * 1.1; // ... und dabei schnell mit der Herde nach unten
 const STRAY_TOP = 360; // dort (oben im Strom, knapp unter dem Kartenrand) tauchen sie auf
 const STRAY_WIDTH = 50; // so weit entfernen sie sich höchstens vom Strom (sie tauchen mitten in der Herde auf)
+const STRAY_STUCK = 0.5; // so lange (Sekunden) ohne Fortschritt nach unten, dann taucht es in den Staub ab
+const STRAY_EDGE = 40; // so weit vor dem unteren Kartenrand taucht es ab
 const CALL_EVERY = [4, 8]; // so oft grunzt ein Gnu aus der Herde (Sekunden), ...
 const CALL_VOLUME = 0.5; // ... ganz nah so laut, weiter weg leiser
 
@@ -75,7 +77,10 @@ export default class Gnu extends Animal {
         s.gone = true;
         this.scene.tweens.add({ targets: [this.sprite, this.shadow], alpha: 0, duration: 600, onComplete: () => this.state === 'wild' && this.scene.despawn(this) });
       }
-      return this.move(0, STRAY_FLOW * dt);
+      // ohne Hindernisse schräg zurück in den Staub und weiter nach unten (bleibt nie am Kartenrand hängen)
+      this.x += Math.sign((X0 + X1) / 2 - this.x) * STRAY_SPEED * dt;
+      this.y += STRAY_FLOW * dt;
+      return true;
     }
     // draußen: läuft schnell mit der Herde nach unten, dabei nur knapp neben dem Strom ein wenig hin und her
     s.turn -= dt;
@@ -84,11 +89,15 @@ export default class Gnu extends Animal {
       s.dir = this.x > X1 + STRAY_WIDTH ? -1 : this.x < X1 - 90 ? 1 : Phaser.Math.FloatBetween(-1, 1); // am rechten Rand bleiben
     }
     // die ganze Strecke mit der Herde: an einem Hindernis seitlich ausweichen, erst unten wieder in den Staub
+    const y0 = this.y;
     if (!this.move(s.dir * STRAY_SPEED * dt, STRAY_FLOW * dt)) {
       s.dir = -s.dir;
       if (!this.move(0, STRAY_FLOW * dt) && !this.move(s.dir * STRAY_SPEED * dt, 0)) s.back = true; // ganz eingeklemmt: zurück in die Herde
     }
-    if (this.y > Y_BOTTOM - 120) s.back = true;
+    // kommt es nicht mehr nach unten weiter (z. B. am unteren Kartenrand), taucht es gleich in den Staub ab, damit das nächste kommen kann
+    s.stuck = this.y - y0 < STRAY_FLOW * dt * 0.4 ? (s.stuck ?? 0) + dt : 0;
+    const below = worldToTile(this.x, this.y + STRAY_EDGE);
+    if (s.stuck > STRAY_STUCK || below.tx >= MAP_W - 1 || below.ty >= MAP_H - 1 || this.y > Y_BOTTOM - 120) s.back = true;
     return true;
   }
 }

@@ -43,7 +43,7 @@ function send(body, beacon = false) {
 // eins mehr als die letzte: alle geschafft)
 // Fassung des Tutorials, zu der die Zahl in step gehört (die Liste der Spielrunden beschriftet ältere anders); bei jeder
 // Änderung an der Reihenfolge oder Zahl der Aufgaben in src/story/steps.js eins hochzählen, ebenso in handle.mjs
-const TUTORIAL_VERSION = 3;
+const TUTORIAL_VERSION = 4;
 
 function progress() {
   if (!session.loadedAt) return 0;
