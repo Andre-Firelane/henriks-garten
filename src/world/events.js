@@ -89,6 +89,25 @@ export const EVENTS = [
 ];
 
 // Event "Seltene Tiere": so oft ist ein neues wildes Tier eine seltene Variante (sonst etwa 10 %)
+// Weltkarte: in diesen Gebieten läuft das Event (dort bekommt das Schild einen leuchtenden Rahmen). Das Reittier ist
+// kein Ereignis in einem Gebiet, sondern begleitet einen überall – es wird auf der Karte nicht markiert.
+const EVENT_AREAS = {
+  babies: ['park', 'park2', 'park3', 'aquarium'],
+  icecream: ['park'],
+  flamingo: ['meadow', 'forest', 'savanna'],
+  farm: ['meadow'],
+  rare: ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'],
+  jellyfish: ['reef'],
+  migration: ['savanna'],
+  wolves: ['forest'],
+  fireflies: ['asia'],
+};
+
+// laufende Events in einem Gebiet: [{ id, name, left }]
+export function eventsIn(level, now = Date.now()) {
+  return EVENTS.filter((e) => EVENT_AREAS[e.id]?.includes(level) && isActive(e.id, now)).map((e) => ({ id: e.id, name: e.name, left: eventState(e.id, now).left }));
+}
+
 export const RARE_EVENT_CHANCE = 0.5;
 export function rareChance(normal) {
   return isActive('rare') ? Math.max(normal, RARE_EVENT_CHANCE) : normal;

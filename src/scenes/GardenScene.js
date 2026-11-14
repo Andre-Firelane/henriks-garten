@@ -128,7 +128,7 @@ import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
 import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
-import { EVENTS, babyFamily, babyPlan, eventState, formatTime, isActive, startEvent } from '../world/events.js';
+import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
@@ -3598,9 +3598,10 @@ export default class GardenScene extends Phaser.Scene {
         x: l.map.x,
         y: l.map.y,
         status: l.seasons ? this.seasonStatus(id) : null,
+        events: eventsIn(id).map((e) => `${e.name} ${formatTime(e.left)}`), // laufende Events: leuchtender Rahmen
         wip: !!l.wip, // noch in Arbeit (Hinweis auf dem Schild)
         locked: !isUnlocked(id), // noch nicht freigeschaltet (Mavis Geschichte)
-        parts: isPark(id) ? PARK_LEVELS.map((p) => ({ id: p, name: LEVELS[p].part.name, icon: LEVELS[p].part.icon, main: p === id, locked: !isUnlocked(p) })) : null,
+        parts: isPark(id) ? PARK_LEVELS.map((p) => ({ id: p, name: LEVELS[p].part.name, icon: LEVELS[p].part.icon, main: p === id, locked: !isUnlocked(p), event: eventsIn(p).length > 0 })) : null,
       }));
     const at = LEVEL_ID;
     this.scene.pause();

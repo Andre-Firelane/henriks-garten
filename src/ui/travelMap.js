@@ -23,20 +23,23 @@ export function isTravelMapOpen() {
 // parts: [{ id, name, icon }] – das Gebiet hat mehrere Ziele, z. B. der Tierpark mit Zentrum und Reptilienhaus: dann ein
 // größeres Schild mit einem Feld je Ziel, übereinander; main: das Hauptziel, sein Feld ist größer); current: Ziel, an dem man gerade ist;
 // onTravel(id) wird beim Losfahren aufgerufen, onClose beim Schließen ohne Reise.
+// events: laufende Events in diesem Gebiet (Texte, z. B. "Wolfsnacht 3:12"): leuchtender Rahmen und Schild darüber;
+// bei den Feldern im Tierpark-Schild markiert event: true das Feld, die Texte stehen am großen Schild
 // locked: noch gesperrt (grau, nicht anklickbar; Antippen zeigt lockedHint, siehe Mavis Geschichte in src/story)
 // opts: { point: Gebiet, side: 'left' (sonst rechts), hint: Text } – Mavi: hüpfender Pfeil neben diesem Gebiet und
 // der Hinweis statt der Anleitung
 export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   panel = document.getElementById('travel');
-  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}${p.main ? ' main' : ''}${p.locked ? ' locked' : ''}" data-id="${p.id}"${style}>
+  const eventTag = (p) => (p.events?.length ? `<span class="event-tag">${p.events.join('<br>')}</span>` : '');
+  const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}${p.main ? ' main' : ''}${p.locked ? ' locked' : ''}${p.events?.length || p.event ? ' event' : ''}" data-id="${p.id}"${style}>
         ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.locked ? `<small>${tr('gesperrt', 'locked')}</small>` : p.wip ? `<small>🚧 ${tr('in Arbeit', 'in progress')}</small>` : ''}</span>
-        ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}
+        ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}${p.parts ? '' : eventTag(p)}
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
       </button>`;
   const markers = places
     .map((p) =>
       p.parts
-        ? `<div class="place-group" style="left:${p.x}%;top:${p.y}%"><span class="group-title">${p.name}</span>${p.parts.map((q) => button(q)).join('')}</div>`
+        ? `<div class="place-group${p.events?.length ? ' event' : ''}" style="left:${p.x}%;top:${p.y}%">${eventTag(p)}<span class="group-title">${p.name}</span>${p.parts.map((q) => button(q)).join('')}</div>`
         : button(p, ` style="left:${p.x}%;top:${p.y}%"`),
     )
     .join('');
