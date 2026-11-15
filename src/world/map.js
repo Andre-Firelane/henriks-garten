@@ -225,7 +225,7 @@ export const OBJECTS = {
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
 };
-// Spielzeug der zweiten Ausbaustufe (ⓐ …, siehe src/world/toys.js)
+// Spielzeug und Deko ausgebauter Gehege (ⓐ …, siehe src/world/toys.js)
 for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
 
 export let LEVEL_ID;
@@ -322,9 +322,9 @@ export function setLevel(id) {
     }
     ROWS = rows.map((r) => r.join(''));
   }
-  // zweite Ausbaustufe: Spielzeug auf freie Kacheln im Gehege (noch nicht gebaute Gehege ausgenommen)
+  // ausgebaute Gehege: Spielzeug und Deko auf freie Kacheln im Gehege (noch nicht gebaute Gehege ausgenommen)
   for (const e of LEVEL.enclosures ?? []) {
-    if (!PEN_TOYS[e.id] || penLevelOf(e) < 2 || !e.seed || e.free || e.pond) continue;
+    if (!PEN_TOYS[e.id] || !isUpgraded(e) || !e.seed || e.free || e.pond) continue;
     if (e.unlock && !game.unlocked.includes(e.unlock)) continue;
     ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id]);
   }
@@ -496,10 +496,6 @@ export function charAt(tx, ty) {
 export function isUpgraded(e) {
   return !!game.penLevel[e.id];
 }
-// Ausbaustufe: 0 wie gebaut, 1 größer, 2 mit Spielzeug (siehe src/world/toys.js)
-export function penLevelOf(e) {
-  return game.penLevel[e.id] ?? 0;
-}
 
 // Spielzeug in ein Gehege stellen (rows: Kartenzeilen, seed: eine Kachel im Gehege, list: Spielzeug-Namen). Nur auf Gras
 // (.), dessen Nachbarn alle im Gehege liegen (nicht am Zaun oder Tor), das erste möglichst mittig, jedes weitere mit
@@ -522,20 +518,21 @@ function placeToys(rows, seed, list) {
   const tiles = [...inside].map((k) => k.split(',').map(Number));
   const cx = tiles.reduce((s, [tx]) => s + tx, 0) / tiles.length;
   const cy = tiles.reduce((s, [, ty]) => s + ty, 0) / tiles.length;
-  const free = tiles.filter(([tx, ty]) => {
-    if (grid[ty][tx] !== '.') return false;
+  // lieber nicht am Zaun (alle Nachbarn im Gehege); ist innen kein Platz mehr, auch dort (kleine Gehege wie das Katzenhaus)
+  const grass = tiles.filter(([tx, ty]) => grid[ty][tx] === '.');
+  const inner = (tx, ty) => {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!inside.has(tx + dx + ',' + (ty + dy))) return false;
     return true;
-  });
+  };
   const picked = [];
   for (const id of list) {
     let best = null;
     let bestScore = -Infinity;
-    for (const [tx, ty] of free) {
-      if (picked.some(([px, py]) => Math.max(Math.abs(px - tx), Math.abs(py - ty)) <= 2)) continue;
+    for (const [tx, ty] of grass) {
+      if (picked.some(([px, py]) => Math.max(Math.abs(px - tx), Math.abs(py - ty)) <= 1)) continue; // eine Kachel Abstand
       const mid = Math.hypot(tx - cx, ty - cy);
       const apart = picked.length ? Math.min(...picked.map(([px, py]) => Math.hypot(px - tx, py - ty))) : 0;
-      const score = apart - mid * (picked.length ? 0.5 : 1) + (tx * 7 + ty * 13) % 5 * 0.01; // fest, aber nicht immer dieselbe Seite
+      const score = (inner(tx, ty) ? 1000 : 0) + apart - mid * (picked.length ? 0.5 : 1) + (tx * 7 + ty * 13) % 5 * 0.01; // fest, aber nicht immer dieselbe Seite
       if (score > bestScore) {
         bestScore = score;
         best = [tx, ty];

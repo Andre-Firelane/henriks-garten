@@ -1,6 +1,6 @@
 // Besucher im Tierpark: wie sehr die Tiere Besucher anlocken, das Wegnetz, auf dem sie laufen, und die Plätze
 // vor den Gehegen, an denen sie stehen bleiben und schauen.
-import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, penLevelOf, MAP_W, buildings, groundAt, isBlockedPoint, penQuotas, quotaKey } from './map.js';
+import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, isUpgraded, MAP_W, buildings, groundAt, isBlockedPoint, penQuotas, quotaKey } from './map.js';
 import { tileToWorld } from './iso.js';
 import { WHEEL_VISITORS, hasWheel, shopsIn } from './shops.js';
 import { TOY_BONUS } from './toys.js';
@@ -117,7 +117,7 @@ export function parkScore(animals) {
 }
 export function penScore(animals, e) {
   const sum = animals.reduce((s, a) => s + (a.state === 'penned' && a.enclosure === e ? appeal(a) : 0), 0);
-  const toys = penLevelOf(e) >= 2 ? TOY_BONUS : 1; // mit Spielzeug (zweite Ausbaustufe) noch beliebter
+  const toys = isUpgraded(e) ? TOY_BONUS : 1; // ausgebaut (mit Spielzeug): noch beliebter
   return (isFull(animals, e) ? sum * FULL_BONUS : sum) * toys;
 }
 

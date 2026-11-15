@@ -50,7 +50,6 @@ import { raiseAt,
   hasSlots,
   quotaKey,
   isUpgraded,
-  penLevelOf,
   upgradeCost,
   bridgeArch,
   slotsShown,
@@ -134,7 +133,7 @@ import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActiv
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, sourceDef, wheelSlot } from '../world/shops.js';
 import FerrisWheel from '../world/FerrisWheel.js';
-import { TOY_COST, maxPenLevel, toysText } from '../world/toys.js';
+import { PEN_TOYS, toysText } from '../world/toys.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
@@ -1201,8 +1200,7 @@ export default class GardenScene extends Phaser.Scene {
     if (data.level) {
       const back = data.returned ? `<br><small>${tr(`${data.returned} ist wieder im Regal im anderen Gebiet`, `${data.returned} – back on the shelf in the other area`)}</small>` : '';
       if (data.upgraded) {
-        if (data.toys) this.time.delayedCall(350, () => this.showToast(tr(`🧸 ${data.upgraded}: neues Spielzeug! Die Tiere freuen sich – und es kommen mehr Besucher.`, `🧸 ${data.upgraded}: new toys! The animals are happy – and more visitors come.`)));
-        else this.time.delayedCall(350, () => this.showToast(tr(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz und neue Ausstattung.`, `🏗️ ${data.upgraded} upgraded! More space and new equipment.`)));
+        this.time.delayedCall(350, () => this.showToast(tr(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz, neue Ausstattung und Spielzeug – es kommen mehr Besucher.`, `🏗️ ${data.upgraded} upgraded! More space, new equipment and toys – more visitors come.`)));
       }
       if (data.built) {
         const def = sourceDef(builtOn(data.built));
@@ -2539,50 +2537,35 @@ export default class GardenScene extends Phaser.Scene {
 
   // Gehegeausbau: alle Gehege mit Plätzen; noch nicht ausgebaute zuerst
   // (aus allen Abschnitten des Tierparks)
+  // (aus allen Abschnitten des Tierparks); der Ausbau bringt mehr Platz, neue Ausstattung und Spielzeug
   penUpgrades() {
+    const cost = upgradeCost();
     return parkPens().filter((e) => hasSlots(e) && !e.free)
       .map((e) => {
-        const level = penLevelOf(e);
-        const done = level >= maxPenLevel(e);
-        const cost = this.penUpgradeCost(e);
-        // Stufe 1: mehr Platz; Stufe 2: Spielzeug (fertig: was zuletzt dazukam)
-        const text = level === 0
-          ? `${penCapacity(e, 0)} → ${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}`
-          : level === 1 && !done
-            ? tr(`Stufe 2 · Spielzeug: ${toysText(e)} – lockt mehr Besucher an`, `Level 2 · Toys: ${toysText(e)} – attracts more visitors`)
-            : level >= 2
-              ? tr(`Stufe 2 · ${toysText(e)}`, `Level 2 · ${toysText(e)}`)
-              : `${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}`;
+        const done = isUpgraded(e);
+        const toys = PEN_TOYS[e.id] ? tr(` · Spielzeug: ${toysText(e)}`, ` · Toys: ${toysText(e)}`) : '';
         return {
           id: e.id,
           name: e.name,
           species: e.species ?? [],
           cost,
           done,
-          level,
-          text,
+          text: `${done ? '' : `${penCapacity(e, 0)} → `}${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}${toys}`,
           blocked: done ? null : game.hearts < cost ? tr('zu wenig Herzen', 'not enough hearts') : null,
         };
       })
-      .sort((u, v) => u.done - v.done || u.level - v.level);
-  }
-
-  // Kosten des nächsten Ausbaus dieses Geheges (Stufe 2 mit Spielzeug kostet mehr)
-  penUpgradeCost(e) {
-    return penLevelOf(e) >= 1 ? Math.round((upgradeCost() * TOY_COST) / 5) * 5 : upgradeCost();
+      .sort((u, v) => u.done - v.done);
   }
 
   // Gehege ausbauen: Herzen abziehen, Stand speichern und den Tierpark mit dem größeren Gehege neu aufbauen
   // (liegt es in einem anderen Abschnitt, ist es beim nächsten Besuch dort ausgebaut)
   upgradePen(id) {
     const e = parkPens().find((f) => f.id === id);
-    if (!e || penLevelOf(e) >= maxPenLevel(e)) return;
-    const cost = this.penUpgradeCost(e);
-    if (game.hearts < cost) return;
+    const cost = upgradeCost();
+    if (!e || isUpgraded(e) || game.hearts < cost) return;
     game.hearts -= cost;
     game.upgrades += 1;
-    game.penLevel[id] = penLevelOf(e) + 1;
-    const toys = game.penLevel[id] >= 2;
+    game.penLevel[id] = 1;
     if (e.level !== LEVEL_ID) {
       this.updateHud();
       this.mavi?.check();
@@ -2596,7 +2579,7 @@ export default class GardenScene extends Phaser.Scene {
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       showLoading(tr(`${e.name} wird ausgebaut …`, `Upgrading ${e.name} …`));
-      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name, toys }));
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name }));
     });
   }
 
@@ -3103,7 +3086,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     const pen = !this.tool && this.penAtSign();
     if (pen) {
-      const done = penLevelOf(pen) >= maxPenLevel(pen);
+      const done = isUpgraded(pen);
       setTouchTool(null, 'assets/esign_board.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${done ? tr('Gehege ansehen', 'View enclosure') : tr('Gehege ausbauen', 'Upgrade enclosure')}</span></div>`;
       return;
@@ -5139,11 +5122,9 @@ export default class GardenScene extends Phaser.Scene {
       .join(' · ');
     const slots = hasSlots(enclosure)
       ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: ${places}${isFull(this.animals, enclosure) ? ' ⭐' : ''}${
-          penLevelOf(enclosure) >= maxPenLevel(enclosure)
-            ? tr(` · ausgebaut${penLevelOf(enclosure) >= 2 ? ' mit Spielzeug' : ''}`, ` · upgraded${penLevelOf(enclosure) >= 2 ? ' with toys' : ''}`)
-            : isUpgraded(enclosure)
-              ? tr(` · Stufe 2: ${toysText(enclosure)} (${ACTION_KEY} oder Schild antippen)`, ` · Level 2: ${toysText(enclosure)} (${ACTION_KEY} or tap the sign)`)
-              : tr(` · Ausbau: ${enclosure.upgrade} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade} (${ACTION_KEY} or tap the sign)`)
+          isUpgraded(enclosure)
+            ? tr(' · ausgebaut', ' · upgraded')
+            : tr(` · Ausbau: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, Spielzeug: ${toysText(enclosure)}` : ''} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, toys: ${toysText(enclosure)}` : ''} (${ACTION_KEY} or tap the sign)`)
         }</div>`
       : '';
     return `<b>${enclosure.name} · ${tr('Hier wohnen', 'Who lives here')}:</b>${rows.join('')}${slots}`;

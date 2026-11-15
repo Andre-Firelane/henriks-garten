@@ -179,7 +179,7 @@ export const STEPS = [
     ],
     already: [tr('Du hast ja schon ein Gehege ausgebaut. Sieht toll aus!', 'You’ve already upgraded an enclosure. It looks great!')],
     outro: [
-      tr('Gut gemacht! Das Gehege ist jetzt größer – es passen mehr Tiere hinein.', 'Well done! The enclosure is bigger now – more animals fit inside.'),
+      tr('Gut gemacht! Das Gehege ist jetzt größer und hat Spielzeug – es passen mehr Tiere hinein, und die Besucher lieben es.', 'Well done! The enclosure is bigger now and has toys – more animals fit inside, and the visitors love it.'),
       tr('Komm mit, ich zeig dir noch was! Ich warte vor dem Haupthaus auf dich.', 'Come along, I’ve got something else to show you! I’ll wait for you in front of the main building.'),
     ],
     reward: 20,

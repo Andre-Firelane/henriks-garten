@@ -135,7 +135,7 @@ function status(item) {
   if (state.tab === 'pens') {
     if (item.done) return [`<span class="ev-status on">${tr('ausgebaut', 'upgraded')} ✓</span>`, false];
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
-    return [`<span class="ev-status go">${item.level ? tr('Spielzeug kaufen', 'Buy toys') : tr('Ausbauen', 'Upgrade')}</span>`, true];
+    return [`<span class="ev-status go">${tr('Ausbauen', 'Upgrade')}</span>`, true];
   }
   if (state.tab === 'build') {
     if (item.done) return [`<span class="ev-status on">${tr('gebaut', 'built')} ✓</span>`, false];
@@ -163,7 +163,7 @@ function render() {
     ? `<span class="ev-tab on">${state.title ?? TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege bzw. dieser Bauplatz: keine Reiter
     : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
   const hint = state.note ?? (state.tab === 'pens'
-    ? tr('Ausbau: mehr Plätze und neue Ausstattung. Danach Stufe 2: Spielzeug – die Tiere freuen sich, und es kommen mehr Besucher.', 'Upgrade: more spaces and new equipment. Then level 2: toys – the animals are happy and more visitors come.')
+    ? tr('Ein ausgebautes Gehege hat mehr Plätze, neue Ausstattung und Spielzeug – die Tiere freuen sich, und es kommen mehr Besucher.', 'An upgraded enclosure has more spaces, new equipment and toys – the animals are happy and more visitors come.')
     : state.tab === 'build'
       ? tr('Die Besucher kaufen an den Buden ein – jeder Verkauf bringt Herzen. Jede Sorte gibt es einmal pro Bereich.', 'Visitors buy snacks at the stands – every sale brings hearts. Each kind once per area.')
       : tr('Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.', 'Tap an event – or choose with <b>A</b>/<b>D</b> and start it with <b>E</b>.'));
