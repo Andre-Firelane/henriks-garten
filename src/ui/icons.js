@@ -73,6 +73,8 @@ const SHEETS = {
   squirrel2: [56, 60, 4, 0],
   beaver2: [80, 60, 4, 0],
   macaque2: [72, 72, 4, 0],
+  giraffe2: [104, 168, 4, 0],
+  panda2: [88, 96, 4, 0],
   gnu: [88, 96, 4, 0],
   hippo: [96, 88, 4, 0],
   redpanda: [72, 72, 4, 0],

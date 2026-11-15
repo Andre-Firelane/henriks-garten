@@ -166,6 +166,7 @@ export const SPECIES = {
   giraffe: {
     texture: 'giraffe',
     anims: { walkDown: 'giraffe_walk', walkUp: 'giraffe_walk_back', idleDown: 'giraffe_idle', idleUp: 'giraffe_idle_back' }, // Savanne
+    skinAnims: { giraffe2: { walkDown: 'giraffe2_walk', walkUp: 'giraffe2_walk_back', idleDown: 'giraffe2_idle', idleUp: 'giraffe2_idle_back' } }, // Schoko-Giraffe
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 164 / 168,
     speed: 16,
@@ -645,6 +646,7 @@ export const SPECIES = {
     texture: 'panda',
     // Video; im Stehen sitzt und frisst er (idle = fressen, siehe Panda.js), bisher nur von vorne
     anims: { walkDown: 'panda_walk', walkUp: 'panda_walk_back', idleDown: 'panda_idle' },
+    skinAnims: { panda2: { walkDown: 'panda2_walk', walkUp: 'panda2_walk_back', idleDown: 'panda2_idle' } }, // weinroter Panda
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 18,
@@ -984,6 +986,8 @@ export const SKINS = {
   squirrel: { id: 'squirrel2', name: tr('Streifenhörnchen', 'chipmunk'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
   beaver: { id: 'beaver2', name: tr('Nutria', 'nutria'), male: false, wild: 0.1, baby: 0.03 },
   macaque: { id: 'macaque2', name: tr('Goldstumpfnase', 'golden snub-nosed monkey'), male: false, wild: 0.1, baby: 0.03 },
+  giraffe: { id: 'giraffe2', name: tr('Schoko-Giraffe', 'chocolate giraffe'), male: false, wild: 0.1, baby: 0.03 }, // ohne Flecken
+  panda: { id: 'panda2', name: tr('weinroter Panda', 'burgundy panda'), male: true, wild: 0.1, baby: 0.03 },
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js
 };
 
@@ -1000,11 +1004,9 @@ const TINT_CSS = {
 };
 const PLACEHOLDER_SKINS = {
   mole: [TINT.gold, tr('goldener Maulwurf', 'golden mole'), 'm'],
-  giraffe: [TINT.rose, tr('rosa Giraffe', 'pink giraffe'), 'f'],
   meerkat: [TINT.gold, tr('goldenes Erdmännchen', 'golden meerkat'), 'n'],
   hippo: [TINT.rose, tr('rosa Nilpferd', 'pink hippo'), 'n'],
   warthog: [TINT.lilac, tr('lila Warzenschwein', 'purple warthog'), 'n'],
-  panda: [TINT.rose, tr('rosa Panda', 'pink panda'), 'm'],
   anteater: [TINT.sky, tr('blauer Ameisenbär', 'blue anteater'), 'm'],
   toucan: [TINT.sky, tr('blauer Tukan', 'blue toucan'), 'm'],
   penguin: [TINT.gold, tr('goldener Pinguin', 'golden penguin'), 'm'],

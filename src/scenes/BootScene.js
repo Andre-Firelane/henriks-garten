@@ -245,6 +245,11 @@ const SAVANNA_ANIMS = {
   giraffe_walk_back: [104, 168, 10],
   giraffe_idle: [114, 168, 20],
   giraffe_idle_back: [128, 168, 39],
+  // Schoko-Giraffe (seltene Variante, ohne Flecken)
+  giraffe2_walk: [106, 168, 11],
+  giraffe2_walk_back: [104, 168, 10],
+  giraffe2_idle: [114, 168, 20],
+  giraffe2_idle_back: [128, 168, 39],
   lion_walk: [74, 96, 10],
   lion_walk_back: [72, 96, 10],
   lion_idle: [78, 96, 21],
@@ -293,6 +298,8 @@ const SAVANNA_ANIMS = {
   zebra2_drinking_back: [80, 104, 39],
   giraffe_eating: [108, 180, 21],
   giraffe_eating_back: [106, 180, 10],
+  giraffe2_eating: [108, 180, 21],
+  giraffe2_eating_back: [106, 180, 10],
   vulture_flap: [126, 108, 40],
   vulture_flap_back: [96, 100, 37],
   shoebill_flap: [96, 92, 40],
@@ -469,6 +476,10 @@ const VIDEO_ANIMS = {
   panda_walk: [88, 96, 26],
   panda_walk_back: [88, 96, 25],
   panda_idle: [88, 96, 94],
+  // weinroter Panda (seltene Variante, aus dem Panda umgefärbt: tools/recolor.js)
+  panda2_walk: [88, 96, 26],
+  panda2_walk_back: [88, 96, 25],
+  panda2_idle: [88, 96, 94],
   redpanda_walk: [72, 72, 30],
   tiger_walk: [120, 104, 32],
   tiger_walk_back: [120, 104, 27],
@@ -730,6 +741,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['redpanda', 'redpanda_sit']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
     load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
     load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
+    for (const key of ['panda2', 'panda2_eat']) load.spritesheet(key, `assets/${key}.png`, { frameWidth: 88, frameHeight: 96 }); // weinroter Panda
     load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
     load.spritesheet('minifish_swim', 'assets/minifish_swim.png', { frameWidth: 20, frameHeight: 16 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
     load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
@@ -827,6 +839,8 @@ export default class BootScene extends Phaser.Scene {
     load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)
     load.spritesheet('giraffe', 'assets/giraffe.png', GIRAFFE_FRAME);
     load.spritesheet('giraffe_eat', 'assets/giraffe_eat.png', GIRAFFE_EAT_FRAME); // frisst mit gestrecktem Hals an einer Akazie
+    load.spritesheet('giraffe2', 'assets/giraffe2.png', GIRAFFE_FRAME); // Schoko-Giraffe (Standbilder aus ihren Animationen)
+    load.spritesheet('giraffe2_eat', 'assets/giraffe2_eat.png', GIRAFFE_EAT_FRAME);
     load.audio('step', 'assets/sounds/step.wav'); // Schritt-Geräusch (siehe tools/prepare-sounds.js)
     load.audio('step_indoor', 'assets/sounds/step_indoor.wav'); // ... drinnen (Haupthaus, Hütten, Aquarium)
     load.audio('step_snow', 'assets/sounds/step_snow.wav'); // ... im Schnee (Eiswelt, stepSound in levels.js)
@@ -897,7 +911,7 @@ export default class BootScene extends Phaser.Scene {
     // Giraffe: lange Beine, gemächliches Tempo – langsamere Schritte, sonst trippelt sie. Geier: ein Flügelschlag hat nur
     // 5 Bilder, schnell abgespielt flackert er
     // Gnu: rennt mit der Herde fast doppelt so schnell wie sein Gehtempo (die Animation wird dafür schneller), daher langsamer angesetzt
-    const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7, gnu_walk: 7, gnu_walk_back: 7 };
+    const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, giraffe2_walk: 7, giraffe2_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7, gnu_walk: 7, gnu_walk_back: 7 };
     for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY && this.textures.exists(key)) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo

@@ -698,6 +698,14 @@ const ANIMATIONS = [
   { src: 'Animation/Zebra2_läuft_hinten.png', out: 'zebra2_walk_back.png', cols: 5, rows: 2, scale: 0.289, frameW: 80, frameH: 104, feetY: 100 },
   { src: 'Animation/Zebra2_idle_vorne.png', out: 'zebra2_idle.png', cols: 5, rows: 8, steady: true, scale: 0.288, frameW: 80, frameH: 104, feetY: 100 },
   { src: 'Animation/Zebra2_idle_hinten.png', out: 'zebra2_idle_back.png', cols: 5, rows: 8, steady: true, scale: 0.287, frameW: 80, frameH: 104, feetY: 100 },
+  // Schoko-Giraffe (seltene Variante, ohne Flecken): Raster mit schwarzem Hintergrund, freigestellt mit tools/cutout-black.py;
+  // so groß wie die Animationen der normalen Giraffe (figureH = deren Figurhöhe)
+  { src: 'Animation/Giraffe2_läuft_vorne.png', out: 'giraffe2_walk.png', cols: 5, rows: 3, count: 11, frameW: 106, frameH: 168, feetY: 164, figureH: 159 },
+  { src: 'Animation/Giraffe2_läuft_hinten.png', out: 'giraffe2_walk_back.png', cols: 5, rows: 2, frameW: 104, frameH: 168, feetY: 164, figureH: 163 },
+  { src: 'Animation/Giraffe2_idle_vorne.png', out: 'giraffe2_idle.png', cols: 5, rows: 4, frameW: 114, frameH: 168, feetY: 164, figureH: 154 },
+  { src: 'Animation/Giraffe2_idle_hinten.png', out: 'giraffe2_idle_back.png', cols: 5, rows: 8, count: 39, frameW: 128, frameH: 168, feetY: 164, figureH: 160 },
+  { src: 'Animation/Giraffe2_frisst_vorne.png', out: 'giraffe2_eating.png', cols: 5, rows: 5, count: 21, frameW: 108, frameH: 180, feetY: 176, figureH: 175 },
+  { src: 'Animation/Giraffe2_frisst_hinten.png', out: 'giraffe2_eating_back.png', cols: 5, rows: 2, frameW: 106, frameH: 180, feetY: 176, figureH: 175 },
   // Giraffe: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
   { src: 'Animation/Giraffe_läuft_vorne.png', out: 'giraffe_walk.png', cols: 5, rows: 3, count: 11, scale: 0.639, frameW: 106, frameH: 168, feetY: 164 },
   { src: 'Animation/Giraffe_läuft_hinten.png', out: 'giraffe_walk_back.png', cols: 5, rows: 2, scale: 0.629, frameW: 104, frameH: 168, feetY: 164 },

@@ -152,7 +152,7 @@ export default class Panda extends Animal {
       this.useLook(this.lookTexture());
       return super.render(eating ? false : moving);
     }
-    this.showStill('panda_eat', EAT_ORIGIN_Y);
+    this.showStill(this.texSkin ? `${this.texSkin}_eat` : 'panda_eat', EAT_ORIGIN_Y); // weinroter Panda: panda2_eat
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     this.sprite.setPosition(this.x, this.y + SPRITE_SINK);
