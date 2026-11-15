@@ -535,6 +535,7 @@ export const SPECIES = {
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 26,
+    animMax: 1.3, // beim Rennen (siehe Jaguar.js) liefe die Animation sonst viel zu schnell
     restChance: 0.5,
     restTime: [2, 5],
     walkTime: [1.5, 3],
@@ -988,10 +989,53 @@ export const SKINS = {
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
 };
 
+// Platzhalter für seltene Skins, solange es noch kein eigenes Bild gibt: dasselbe Bild, nur eingefärbt (tint, siehe
+// set skin). id endet auf _r (danach richten sich Anziehung und Auswildern in world/visitors.js). neuter: "das" (Ein seltenes …).
+// Kommt das echte Bild, wird der Eintrag oben ein normaler Skin (ohne tint) und hier gestrichen.
+const TINT = { gold: 0xffd25a, rose: 0xff9ecb, sky: 0x9cc8ff, lilac: 0xc9a8ff };
+// dieselbe Färbung ungefähr als CSS-Filter (Tierbild auf der Kisten-Karte)
+const TINT_CSS = {
+  [TINT.gold]: 'sepia(0.9) saturate(2.2) brightness(1.05)',
+  [TINT.rose]: 'sepia(0.8) saturate(2.5) hue-rotate(290deg)',
+  [TINT.sky]: 'sepia(0.8) saturate(2.5) hue-rotate(170deg)',
+  [TINT.lilac]: 'sepia(0.8) saturate(2.5) hue-rotate(220deg)',
+};
+const PLACEHOLDER_SKINS = {
+  sheep: [TINT.gold, tr('goldenes Schaf', 'golden sheep'), 'n'],
+  mole: [TINT.gold, tr('goldener Maulwurf', 'golden mole'), 'm'],
+  squirrel: [TINT.lilac, tr('lila Eichhörnchen', 'purple squirrel'), 'n'],
+  fox: [TINT.sky, tr('Blaufuchs', 'blue fox'), 'm'],
+  giraffe: [TINT.rose, tr('rosa Giraffe', 'pink giraffe'), 'f'],
+  meerkat: [TINT.gold, tr('goldenes Erdmännchen', 'golden meerkat'), 'n'],
+  hippo: [TINT.rose, tr('rosa Nilpferd', 'pink hippo'), 'n'],
+  warthog: [TINT.lilac, tr('lila Warzenschwein', 'purple warthog'), 'n'],
+  panda: [TINT.rose, tr('rosa Panda', 'pink panda'), 'm'],
+  macaque: [TINT.gold, tr('goldener Makak', 'golden macaque'), 'm'],
+  anteater: [TINT.sky, tr('blauer Ameisenbär', 'blue anteater'), 'm'],
+  howler: [TINT.gold, tr('goldener Brüllaffe', 'golden howler monkey'), 'm'],
+  gibbon: [TINT.gold, tr('goldener Gibbon', 'golden gibbon'), 'm'],
+  toucan: [TINT.sky, tr('blauer Tukan', 'blue toucan'), 'm'],
+  penguin: [TINT.gold, tr('goldener Pinguin', 'golden penguin'), 'm'],
+  seal: [TINT.rose, tr('rosa Robbe', 'pink seal'), 'f'],
+  seahorse: [TINT.gold, tr('goldenes Seepferdchen', 'golden seahorse'), 'n'],
+  octopus: [TINT.lilac, tr('lila Krake', 'purple octopus'), 'm'],
+  turtle: [TINT.gold, tr('goldene Meeresschildkröte', 'golden sea turtle'), 'f'],
+};
+for (const [species, [tint, name, g]] of Object.entries(PLACEHOLDER_SKINS)) {
+  if (SKINS[species]) continue;
+  SKINS[species] = { id: `${species}_r`, name, male: g === 'm', neuter: g === 'n', wild: 0.1, baby: 0.03, tint, css: TINT_CSS[tint], placeholder: true };
+}
+
+// seltener Skin dieser Art, der hier und jetzt vorkommen kann (für die Kisten-Karte "seltenes Tier"), oder null
+export function rareSkinHere(species) {
+  return skinsHere(species).find((s) => !s.common) ?? null;
+}
+
 // Abspieltempo der Laufanimation: beim normalen Gehtempo (kind.speed) 1, schneller beim Wegrennen und Hinterherlaufen.
 // Nicht ganz proportional (Hoch 0,6), sonst trippeln die Beine bei hohem Tempo zu hektisch: dreifaches Tempo -> knapp doppelt so schnell
-function walkAnimSpeed(speed, normal) {
-  return Phaser.Math.Clamp(Math.pow((speed ?? normal) / normal, 0.6), 0.7, 2.2);
+// max: schneller nicht (kind.animMax, z. B. der Jaguar beim Rennen, sonst wirbeln die Beine)
+function walkAnimSpeed(speed, normal, max = 2.2) {
+  return Phaser.Math.Clamp(Math.pow((speed ?? normal) / normal, 0.6), 0.7, max);
 }
 
 // Skins dieser Art, die hier und jetzt vorkommen können (Gebiet und Wetterphase)
@@ -1262,10 +1306,32 @@ export default class Animal {
 
   // Bild für Stehen und Laufen: beim Fressen am Futter das Fress-Bild; mit Skin dessen Bilder (z. B. cat2, cat2_eat)
   baseTexture() {
-    return this.skin ?? this.kind.texture;
+    return this.texSkin ?? this.kind.texture;
   }
   eatTexture() {
-    return this.skin ? `${this.skin}_eat` : this.kind.eatTexture;
+    return this.texSkin ? `${this.texSkin}_eat` : this.kind.eatTexture;
+  }
+
+  // Skin setzen: Platzhalter-Skins (tint) färben das normale Bild ein, das bleibt auch bei jedem Bildwechsel
+  get skin() {
+    return this._skin ?? null;
+  }
+  set skin(id) {
+    this._skin = id ?? null;
+    const tint = id ? skinInfo(this.species, id)?.tint : null;
+    if (tint) {
+      this.sprite?.setTint(tint);
+      this.skinTinted = true;
+    } else if (this.skinTinted) {
+      this.sprite?.clearTint();
+      this.skinTinted = false;
+    }
+  }
+  // Skin mit eigenem Bild (Platzhalter-Skins nutzen das normale Bild der Art), oder null
+  get texSkin() {
+    const id = this._skin;
+    const info = id ? skinInfo(this.species, id) : null;
+    return info && !info.placeholder ? id : null;
   }
   lookTexture() {
     return this.eatingLook ? this.eatTexture() : this.baseTexture();
@@ -1380,7 +1446,7 @@ export default class Animal {
           const below = this.scene.textures.getFrame(this.baseTexture(), 0).height * (1 - this.kind.originY);
           this.sprite.setOrigin(0.5, feetY ? feetY / this.sprite.frame.height : 1 - below / this.sprite.frame.height);
         }
-        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed) : 1;
+        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed, this.kind.animMax) : 1;
         this.sprite.setFlipX(this.faceX < 0);
         this.placeSprite(false);
         return;
@@ -1393,7 +1459,7 @@ export default class Animal {
     }
 
     // zwischen Lauf- und Fress-Bild wechseln (andere Bilder wie Schlafen setzen die Unterklassen selbst)
-    if (this.kind.eatTexture || this.skin) {
+    if (this.kind.eatTexture || this.texSkin) {
       // (auch vom normalen Bild auf das des Skins; andere Bilder wie Schlafen setzen die Unterklassen selbst)
       const key = this.lookTexture();
       const looks = [this.kind.texture, this.kind.eatTexture, this.baseTexture(), this.eatTexture()];
@@ -1423,7 +1489,7 @@ export default class Animal {
 
   // Animationen dieses Tiers: kind.anims, mit Skin die des Skins (kind.skinAnims) oder keine
   animSet() {
-    return this.skin ? this.kind.skinAnims?.[this.skin] ?? null : this.kind.anims ?? null;
+    return this.texSkin ? this.kind.skinAnims?.[this.texSkin] ?? null : this.kind.anims ?? null;
   }
 
   // welche der Animationen (animSet) gerade läuft, oder keine (dann Standbild)

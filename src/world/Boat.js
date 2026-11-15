@@ -22,8 +22,8 @@ const PADDLE_ANIMS = { down: 'canoe_paddle_anim', up: 'canoe_paddle_anim_back' }
 // blickend; nach links gespiegelt) je Bild, damit sie im Heck auf dem Bootsboden steht, und Größe
 const BOX_AT = { down: [-20, -36], up: [-14, -13], paddleDown: [-12, -32], paddleUp: [-14, -16] };
 const BOX_SCALE = 0.22;
-const GHOST_DEPTH = 99000; // die Kontur liegt über allem auf der Karte (unter Nacht, Wetter und Beschriftungen) ...
-const GHOST_ALPHA = 0.55; // ... und scheint so durch Bäume und Pflanzen, die das Kanu verdecken (nur, wenn es verdeckt ist)
+export const GHOST_DEPTH = 99000; // die Kontur liegt über allem auf der Karte (unter Nacht, Wetter und Beschriftungen) ...
+export const GHOST_ALPHA = 0.55; // ... und scheint so durch Bäume und Pflanzen, die das Kanu verdecken (nur, wenn es verdeckt ist)
 const GHOST_CHECK = 0.15; // so oft (Sekunden) wird geprüft, ob etwas das Kanu verdeckt
 
 export default class Boat {
@@ -134,21 +134,7 @@ export default class Boat {
   // Liegt ein Baum, Busch o. Ä. über dem Kanu? Ein paar Punkte des Kanus werden gegen die sichtbaren Pixel der Bilder
   // davor geprüft (nicht nur ihr Rechteck, das ist bei Bäumen viel größer als der Baum)
   covered() {
-    const b = this.img.getBounds();
-    const pts = [];
-    for (const fx of [0.3, 0.5, 0.7]) for (const fy of [0.4, 0.6, 0.8]) pts.push([b.x + b.width * fx, b.y + b.height * fy]);
-    return this.scene.cullables.some((o) => {
-      if (!o.visible || o.depth <= this.img.depth || o.depth >= GHOST_DEPTH || !o.frame) return false;
-      const ob = o.getBounds();
-      if (ob.right < b.x || ob.x > b.right || ob.bottom < b.y || ob.y > b.bottom) return false;
-      return pts.some(([px, py]) => {
-        if (px < ob.x || px > ob.right || py < ob.y || py > ob.bottom) return false;
-        let lx = (px - ob.x) / Math.abs(o.scaleX);
-        const ly = (py - ob.y) / Math.abs(o.scaleY);
-        if (o.flipX) lx = o.frame.width - lx;
-        return (pixelAlpha(this.scene, Math.floor(lx), Math.floor(ly), o.texture.key, o.frame.name) ?? 0) > 128;
-      });
-    });
+    return isCovered(this.scene, this.img);
   }
 
   // Paddeln: hörbar, solange Henrik im Kanu fährt, sonst leise ausblenden
@@ -211,7 +197,7 @@ export default class Boat {
 
 // Kontur eines Bilds (heller Rand außen um alles Sichtbare), einmal erzeugt und gemerkt; mit denselben Einzelbildern
 // wie das Spritesheet (auch die Bildstreifen der Animationen)
-function outlineTexture(scene, key) {
+export function outlineTexture(scene, key) {
   const out = `${key}_outline`;
   if (scene.textures.exists(out)) return out;
   const sheet = scene.textures.get(key);
@@ -244,4 +230,23 @@ function outlineTexture(scene, key) {
   }
   tex.refresh();
   return out;
+}
+
+// Liegt ein Baum, Busch o. Ä. über diesem Bild (img)? Auch für die Schatztruhen (siehe world/LuckWorld.js)
+export function isCovered(scene, img) {
+  const b = img.getBounds();
+  const pts = [];
+  for (const fx of [0.3, 0.5, 0.7]) for (const fy of [0.4, 0.6, 0.8]) pts.push([b.x + b.width * fx, b.y + b.height * fy]);
+  return scene.cullables.some((o) => {
+    if (!o.visible || o.depth <= img.depth || o.depth >= GHOST_DEPTH || !o.frame) return false;
+    const ob = o.getBounds();
+    if (ob.right < b.x || ob.x > b.right || ob.bottom < b.y || ob.y > b.bottom) return false;
+    return pts.some(([px, py]) => {
+      if (px < ob.x || px > ob.right || py < ob.y || py > ob.bottom) return false;
+      let lx = (px - ob.x) / Math.abs(o.scaleX);
+      const ly = (py - ob.y) / Math.abs(o.scaleY);
+      if (o.flipX) lx = o.frame.width - lx;
+      return (pixelAlpha(scene, Math.floor(lx), Math.floor(ly), o.texture.key, o.frame.name) ?? 0) > 128;
+    });
+  });
 }

@@ -2,6 +2,10 @@
 // Ein Einsatz dauert "duration" Sekunden; im Zeitfenster catchFrom..catchTo (Anteil 0..1) fängt er Tiere,
 // deren Art dieses Werkzeug in catchWith stehen hat. Die Fangzone reicht vom Spieler bis zur Zone vor ihm,
 // damit auch Tiere direkt vor den Füßen gefangen werden.
+import { BIG_CATCH, bonusActive } from '../world/luck.js';
+
+// Bonus "Großes Lasso" aus einer Kiste: diese Werkzeuge fangen größer, das Lasso 2 Tiere auf einmal
+const BIG_TOOLS = ['lasso', 'net'];
 
 export default class ZoneTool {
   // maxCatch: höchstens so viele Tiere pro Einsatz (z. B. 1 beim Lasso); ohne Angabe beliebig viele
@@ -13,10 +17,12 @@ export default class ZoneTool {
     this.id = id;
     this.reach = reach; // Abstand der Fangzone vor dem Spieler
     this.radius = radius; // Größe der Fangzone (normaler Fangradius: 22)
+    this.baseRadius = radius;
     this.duration = duration;
     this.catchFrom = catchFrom;
     this.catchTo = catchTo;
     this.maxCatch = maxCatch;
+    this.baseMaxCatch = maxCatch;
     this.caughtCount = 0; // so viele hat der laufende Einsatz schon gefangen
     this.time = -1; // < 0: gerade nicht im Einsatz
     this.zone = null; // Fangzone des laufenden Einsatzes
@@ -35,6 +41,9 @@ export default class ZoneTool {
   use() {
     if (this.active) return false;
     this.time = 0;
+    const big = BIG_TOOLS.includes(this.id) && bonusActive('bigCatch');
+    this.radius = big ? this.baseRadius * BIG_CATCH : this.baseRadius;
+    this.maxCatch = big && this.baseMaxCatch === 1 ? 2 : this.baseMaxCatch;
     this.zone = this.zoneAhead();
     this.zoneStart = { x: this.player.x, y: this.player.y };
     this.caughtCount = 0;

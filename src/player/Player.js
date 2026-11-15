@@ -3,6 +3,7 @@ import { touch } from '../ui/touch.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { LEVEL, bridgeLift, buildingAt, charAt } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
+import { charmSpeed } from '../world/luck.js';
 
 // Bilder im Spritesheet "hero": Blickrichtung je nach Laufrichtung
 const FRAME = { downLeft: 1, downRight: 0, upRight: 2, upLeft: 3 };
@@ -200,7 +201,7 @@ export default class Player {
       // immer volles Tempo (auch schräg)
       const { tx: wx, ty: wy } = worldToTile(this.x, this.y);
       const wading = this.wade && charAt(wx, wy) === '~';
-      const dist = this.speed * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt;
+      const dist = this.speed * charmSpeed() * (wading ? WADE_SPEED : 1) * (this.stung > 0 ? STUNG_SPEED : 1) * dt; // Flinke Schuhe (Glücksbringer)
       const blocked = (x, y) => (this.boat ? boatBlockedAt(x, y, BOAT_W, BOAT_H) : blockedAt(x, y, FOOT_W, FOOT_H, this.wade, this.trample, false, true));
       this.slide(vx / len, vy / len, dist, blocked);
 

@@ -131,6 +131,10 @@ import { VisitorCrowd } from '../visitors/Visitor.js';
 import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
+import LuckWorld from '../world/LuckWorld.js';
+import { MORE_ANIMALS, bonusActive, chestState, price } from '../world/luck.js';
+import { isCharmsOpen, openCharms } from '../ui/charms.js';
+import { isLuckPickerOpen } from '../ui/luckPicker.js';
 import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, sourceDef, wheelSlot } from '../world/shops.js';
 import FerrisWheel from '../world/FerrisWheel.js';
 import { PEN_TOYS, toysText } from '../world/toys.js';
@@ -1194,6 +1198,18 @@ export default class GardenScene extends Phaser.Scene {
     this.markerBox = document.getElementById('markers');
     this.markerBox.innerHTML = '';
     this.markers = new Map(); // Fallen-ID → Hinweis am Bildschirmrand
+    // Kisten, Boni und Glücksbringer (siehe src/world/LuckWorld.js); Knöpfe oben rechts
+    this.luck = new LuckWorld(this);
+    const charmsBtn = document.getElementById('btn-charms');
+    charmsBtn.innerHTML = `<span class="charms-icon">🍀</span>${tr('Glücksbringer', 'Lucky Charms')}`;
+    charmsBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.showCharms();
+    };
+    document.getElementById('btn-campfire').onclick = (e) => {
+      e.stopPropagation();
+      this.luck.campfire();
+    };
     this.signPanel.classList.remove('show');
     this.updateHud();
     this.updateToolbar();
@@ -1264,6 +1280,10 @@ export default class GardenScene extends Phaser.Scene {
         this.openEventsPanel(); // am Hauptrechner: Events
         return;
       }
+      if (this.luck.nearChest && !this.leaving) {
+        this.luck.openChest(); // an einer Schatzkiste (Kisten-Karten)
+        return;
+      }
       if (this.nearChest && !this.leaving) {
         this.openChest(this.nearChest); // an der Kiste: Werkzeug auswählen
         return;
@@ -1272,11 +1292,7 @@ export default class GardenScene extends Phaser.Scene {
         this.rest(); // am Bett: ausruhen, danach ist das Wetter weiter
         return;
       }
-      if (this.driving && !this.leaving) {
-        this.getOffScooter(); // auf dem E-Roller: absteigen
-        return;
-      }
-      if (this.nearScooter && !this.leaving) {
+      if (this.nearScooter && !this.driving && !this.leaving) {
         this.getOnScooter(); // am E-Roller: aufsteigen
         return;
       }
@@ -1309,6 +1325,11 @@ export default class GardenScene extends Phaser.Scene {
         this.showToast(tr('✂️ Das Netz ist zu fest – hol die Schere aus dem Sack am Anker.', '✂️ The net is too strong – get the scissors from the bag at the anchor.')); // mit der Schere schneidet der Werkzeug-Einsatz
         return;
       }
+      // auf dem E-Roller: jede andere Aktion (oben) und das Werkzeug haben Vorrang, sonst steigt man ab
+      if (this.driving && !this.tool && !this.leaving) {
+        this.getOffScooter();
+        return;
+      }
       const tool = this.tool;
       if (this.leaving || !tool || tool.active) return; // läuft schon ein Schwung, zählt der Druck nicht
       tool.use();
@@ -1326,6 +1347,15 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-I', () => this.showJournal());
     // beim Reiten: Werkzeug wechseln (Q bzw. der Werkzeug-Knopf auf dem Tablet) – überall, ohne zur Hütte zu gehen
     this.input.keyboard.on('keydown-Q', () => this.openRideChest());
+    // Glücksbringer ansehen bzw. (im Tierpark) wechseln: Taste G; Lagerfeuer (Glücksbringer): Taste F
+    this.input.keyboard.on('keydown-G', () => this.showCharms());
+    this.input.keyboard.on('keydown-F', () => this.luck.campfire());
+    // Cheat zum Testen: K stellt in dieser Welt sofort neue Kisten auf
+    this.input.keyboard.on('keydown-K', () => {
+      if (!this.luck.enabled) return;
+      chestState().readyAt = 0;
+      this.luck.timer = 0;
+    });
     // Cheat zum Testen: L gibt 50 Bewunderungsherzen
     this.input.keyboard.on('keydown-L', () => {
       this.addHearts(50);
@@ -2118,7 +2148,8 @@ export default class GardenScene extends Phaser.Scene {
     this.spawnTimer -= dt;
     if (this.spawnTimer > 0) return;
     this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
-    const pool = spawnPools(LEVEL).find((q) => this.wildUnits(q) < q.population);
+    const more = bonusActive('moreAnimals') ? MORE_ANIMALS : 1; // Bonus "Mehr Tiere" aus einer Kiste
+    const pool = spawnPools(LEVEL).find((q) => this.wildUnits(q) < Math.round(q.population * more));
     // kam nichts (die Art ist schon am Maximum), gleich noch ein Versuch mit einer anderen
     for (let i = 0; pool && i < 3; i++) if (this.spawnOne([worldToTile(p.x, p.y), ...TOOL_SPOTS], true, pool).length) break;
     this.spawnIguanas();
@@ -2464,7 +2495,7 @@ export default class GardenScene extends Phaser.Scene {
       () => ({
         hearts: game.hearts,
         // den Eiswagen gibt es nur, solange nirgends ein fester Eisstand steht
-        events: EVENTS.filter((ev) => ev.id !== 'icecream' || !hasIceShop()).sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
+        events: EVENTS.filter((ev) => ev.id !== 'icecream' || !hasIceShop()).sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, cost: price(ev.cost), ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
         pens: this.penUpgrades(),
         build: this.shopOffers(slotId),
       }),
@@ -2517,7 +2548,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Reittier: in den Welten aufsitzen (in Gebäuden steigt Henrik ab), im Tierpark zu Fuß
   updateMount() {
-    const key = isActive('ride') ? RIDES[LEVEL_ID] ?? null : null;
+    const key = this.rideOn() ? RIDES[LEVEL_ID] ?? null : null;
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
     const mount = this.driving ? 'scooter' : key && !buildingAt(tx, ty) ? key : null; // auf dem E-Roller bleibt man stehen
     if (mount && !this.player.mount && !this.riding) {
@@ -2525,12 +2556,30 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.riding = !!key;
     this.player.setMount(mount);
-    document.body.classList.toggle('riding', !!key);
+    // Werkzeug-Knopf: beim Reiten und mit dem Bonus "Werkzeug überall"
+    this.toolsAnywhere = !!key || (bonusActive('toolsEverywhere') && !!(LEVEL.chests ?? [])[0]);
+    document.body.classList.toggle('riding', this.toolsAnywhere);
+  }
+
+  // reitet man gerade? (Reittier-Event überall in den Welten, oder der Bonus aus einer Kiste in diesem Gebiet)
+  rideOn() {
+    return isActive('ride') || bonusActive('ride');
+  }
+
+  // Glücksbringer-Tafel: im Tierpark wechseln, sonst nur ansehen
+  showCharms() {
+    if (this.leaving || isCharmsOpen() || isLuckPickerOpen() || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
+    this.scene.pause();
+    openCharms(isPark(LEVEL_ID), () => {
+      this.scene.resume();
+      this.luck.updateCampfireButton();
+      this.updateHud();
+    });
   }
 
   // Werkzeug wechseln vom Reittier aus: dieselbe Auswahl wie am Regal dieser Welt
   openRideChest() {
-    if (!this.riding) return;
+    if (!this.riding && !this.toolsAnywhere) return;
     const chest = (LEVEL.chests ?? [])[0];
     if (chest) this.openChest(chest);
   }
@@ -2539,7 +2588,7 @@ export default class GardenScene extends Phaser.Scene {
   // (aus allen Abschnitten des Tierparks)
   // (aus allen Abschnitten des Tierparks); der Ausbau bringt mehr Platz, neue Ausstattung und Spielzeug
   penUpgrades() {
-    const cost = upgradeCost();
+    const cost = price(upgradeCost());
     return parkPens().filter((e) => hasSlots(e) && !e.free)
       .map((e) => {
         const done = isUpgraded(e);
@@ -2561,7 +2610,7 @@ export default class GardenScene extends Phaser.Scene {
   // (liegt es in einem anderen Abschnitt, ist es beim nächsten Besuch dort ausgebaut)
   upgradePen(id) {
     const e = parkPens().find((f) => f.id === id);
-    const cost = upgradeCost();
+    const cost = price(upgradeCost());
     if (!e || isUpgraded(e) || game.hearts < cost) return;
     game.hearts -= cost;
     game.upgrades += 1;
@@ -2588,7 +2637,7 @@ export default class GardenScene extends Phaser.Scene {
     if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) {
       return tr('braucht 2 gleiche größere Tiere in einem Gehege', 'needs 2 matching grown-up animals in one enclosure');
     }
-    if (game.hearts < ev.cost) return tr('zu wenig Herzen', 'not enough hearts');
+    if (game.hearts < price(ev.cost)) return tr('zu wenig Herzen', 'not enough hearts');
     return null;
   }
 
@@ -2770,10 +2819,10 @@ export default class GardenScene extends Phaser.Scene {
       id: WHEEL.id,
       name: WHEEL.name,
       icon: WHEEL.icon,
-      cost: WHEEL.cost,
+      cost: price(WHEEL.cost),
       text: tr(`Jede Fahrt bringt ${WHEEL.hearts} Herzen, und es kommen mehr Besucher.`, `Every ride brings ${WHEEL.hearts} hearts, and more visitors come.`),
       done: builtOn(ws.id) === WHEEL.id,
-      blocked: game.hearts < WHEEL.cost ? tr('zu wenig Herzen', 'not enough hearts') : null,
+      blocked: game.hearts < price(WHEEL.cost) ? tr('zu wenig Herzen', 'not enough hearts') : null,
     };
     if (slotId && slotId === ws?.id) return [wheel];
     const target = slotId ? allSlots().find((s) => s.id === slotId) : null;
@@ -2784,13 +2833,13 @@ export default class GardenScene extends Phaser.Scene {
         id: def.id,
         name: def.name,
         icon: def.icon,
-        cost: def.cost,
+        cost: price(def.cost),
         text: tr(`Jeder Verkauf bringt ${def.hearts} Herzen.`, `Every sale brings ${def.hearts} hearts.`),
         blocked: here
           ? tr('steht hier schon', 'already in this area')
           : !where.length
             ? tr('kein freier Bauplatz', 'no free building plot')
-            : game.hearts < def.cost
+            : game.hearts < price(def.cost)
               ? tr('zu wenig Herzen', 'not enough hearts')
               : null,
       };
@@ -2802,8 +2851,8 @@ export default class GardenScene extends Phaser.Scene {
   buildShop(kind, slotId = null) {
     const def = kind === WHEEL.id ? WHEEL : shopDef(kind);
     const slot = kind === WHEEL.id ? wheelSlot() : slotId ? allSlots().find((s) => s.id === slotId) : this.freeSlotsFor(kind)[0];
-    if (!def || !slot || builtOn(slot.id) || (kind !== WHEEL.id && hasShop(slot.level, kind)) || game.hearts < def.cost) return;
-    game.hearts -= def.cost;
+    if (!def || !slot || builtOn(slot.id) || (kind !== WHEEL.id && hasShop(slot.level, kind)) || game.hearts < price(def.cost)) return;
+    game.hearts -= price(def.cost);
     game.builds[slot.id] = kind;
     if (slot.level !== LEVEL_ID) {
       this.updateHud();
@@ -2846,7 +2895,7 @@ export default class GardenScene extends Phaser.Scene {
   updateEvents() {
     this.updatePenSigns();
     this.updateIceStand();
-    if (this.riding && !isActive('ride')) this.showToast(tr('Das Reittier ist zurück im Stall.', 'Your mount is back in the stable.'));
+    if (this.riding && !this.rideOn()) this.showToast(tr('Das Reittier ist zurück im Stall.', 'Your mount is back in the stable.'));
     this.updateMount();
     const on = isActive('babies');
     if (BABY_LEVELS.includes(LEVEL_ID) && on && !this.babiesOn) this.spawnBabies(false);
@@ -2921,6 +2970,7 @@ export default class GardenScene extends Phaser.Scene {
         ? tr('🥶 Zu kalt zum Fangen – wärm dich in der Station auf!', '🥶 Too cold to catch animals – warm up at the station!')
         : `🌡️ ${tr('Wärme', 'Warmth')} ${bar}`);
     }
+    lines.push(...(this.luck?.bannerLines() ?? [])); // Boni aus einer Kiste (nur in diesem Gebiet)
     this.eventBanner.classList.toggle('show', lines.length > 0);
     if (lines.length) this.eventBanner.innerHTML = lines.join('<br>');
     this.layoutHudStack(); // direkt unter den Zähler oben links (auf dem Tablet ist er größer und kann umbrechen)
@@ -2929,6 +2979,7 @@ export default class GardenScene extends Phaser.Scene {
   // Bewunderungsherzen der Besucher aufs Konto; der Zähler oben hüpft kurz
   // source: Tierart (oder 'icecream') für die Statistik in der Übersicht; ohne Quelle (Cheat) zählt es dort nicht
   addHearts(n, source = null) {
+    if (n > 0 && bonusActive('heartRain')) n *= 2; // Bonus "Herzregen" aus einer Kiste
     game.hearts += n;
     if (source) game.heartsBy[source] = (game.heartsBy[source] ?? 0) + n;
     this.updateHud();
@@ -3005,6 +3056,8 @@ export default class GardenScene extends Phaser.Scene {
       ['<span class="way-icon">🌦️</span>', tr('<b>Wetter:</b> In der Savanne und im Dschungel wechselt das Wetter, in der Eiswelt Tag und Nacht – manche Tiere kommen nur bei Regen, Nebel oder Trockenzeit.', '<b>Weather:</b> In the savanna and the jungle the weather changes, in the ice world day and night – some animals only appear in rain, fog or the dry season.')],
       ['<span class="way-icon">🎉</span>', tr('<b>Events:</b> Am Computer im Haupthaus startest du mit Herzen Events. Manche bringen ganz neue Tiere: Flamingos, Wölfe, Gnus, Quallen, rote Pandas.', '<b>Events:</b> Start events with hearts at the computer in the main building. Some bring brand-new animals: flamingos, wolves, wildebeest, jellyfish, red pandas.')],
       ['<span class="way-icon">✨</span>', tr('<b>Selten:</b> Viele Tiere gibt es ab und zu in einer seltenen Variante – etwa einen Hirsch statt eines Rehs. Sie locken besonders viele Besucher an. Mit dem Event „Seltene Tiere“ triffst du sie viel öfter.', '<b>Rare:</b> Many animals now and then come in a rare variant – like a stag instead of a deer. They attract lots of visitors. With the “Rare Animals” event you meet them much more often.')],
+      ['<span class="way-icon">🎁</span>', tr('<b>Schatzkisten:</b> In jeder Welt steht eine Kiste. Hast du sie geöffnet, kommt nach ein paar Minuten eine neue. Darin wählst du 1 von 3 Karten: ein seltenes Tier, einen Bonus für 5 Minuten oder einen Glücksbringer. Für Herzen darfst du neu würfeln.', '<b>Treasure chests:</b> Every world has a chest. Once you open it, a new one comes after a few minutes. Inside you pick 1 of 3 cards: a rare animal, a 5-minute bonus or a lucky charm. You can reroll for hearts.')],
+      ['<span class="way-icon">🍀</span>', tr('<b>Glücksbringer:</b> Du kannst 2 gleichzeitig tragen (Knopf „Glücksbringer“ oben rechts oder Taste G). Wechseln geht nur im Tierpark.', '<b>Lucky charms:</b> You can wear 2 at a time (“Lucky Charms” button at the top right or key G). You can only switch them in the zoo.')],
     ];
     const icons = (list) => list.map((s) => `<span class="chest-animal${caughtBefore(s) ? '' : ' unknown'}">${animalIconSquare(s, 2.2)}</span>`).join('');
     const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar' && id !== 'stick')].map((id) => {
@@ -3073,7 +3126,7 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Futter holen', 'Get food')}</span></div>`;
       return;
     }
-    if (this.driving || this.nearScooter) {
+    if (this.nearScooter && !this.driving) {
       setTouchTool(null, 'assets/scooter_icon.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${this.driving ? tr('Absteigen', 'Get off') : tr('Aufsteigen', 'Get on')}</span></div>`;
       return;
@@ -3094,6 +3147,12 @@ export default class GardenScene extends Phaser.Scene {
     if (this.nearComputer) {
       setTouchTool(null, 'assets/office_desk.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/office_desk.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Computer benutzen', 'Use computer')}</span></div>`;
+      return;
+    }
+    if (this.luck?.nearChest) {
+      const img = this.luck.chestImage();
+      setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Schatzkiste öffnen', 'Open treasure chest')}</span></div>`;
       return;
     }
     if (this.nearChest) {
@@ -3142,6 +3201,12 @@ export default class GardenScene extends Phaser.Scene {
       // am Auto zeigt die Aktionstaste die Schnellreise
       setTouchTool(null, 'assets/worldmap.jpg');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/worldmap.jpg" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Schnellreise', 'Fast travel')}</span></div>`;
+      return;
+    }
+    // auf dem E-Roller: Absteigen erst, wenn sonst nichts zu tun ist (und kein Werkzeug in der Hand)
+    if (this.driving && !this.toolId) {
+      setTouchTool(null, 'assets/scooter_icon.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Absteigen', 'Get off')}</span></div>`;
       return;
     }
     const id = this.toolId;
@@ -3526,9 +3591,11 @@ export default class GardenScene extends Phaser.Scene {
     const top = Math.max(MARKER_MARGIN, this.hud.getBoundingClientRect().bottom + 26);
     // Hinweise auf ausgelegte Fallen nur im Wald (dort gibt es die Falle); woanders keine
     const traps = LEVEL_ID === 'forest' ? game.traps : [];
-    for (const t of traps) {
+    // dazu Pfeile zu Schatzkisten (Glücksbringer Kisten-Kompass) und zum seltenen Tier aus einer Kiste
+    const luck = this.luck?.markerTargets() ?? [];
+    for (const t of [...traps, ...luck]) {
       let target = t;
-      if (t.level !== LEVEL_ID) {
+      if (t.level && t.level !== LEVEL_ID) {
         // direkter Übergang dorthin (zwischen den Gebieten fährt man sonst mit dem Auto: dann kein Hinweis)
         const exit = EXITS.find((e) => e.to === t.level);
         if (!exit) continue;
@@ -3545,8 +3612,8 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (!el) {
         el = document.createElement('div');
-        el.className = 'marker';
-        el.innerHTML = '<span class="pointer"></span>';
+        el.className = t.icon ? 'marker luck' : 'marker';
+        el.innerHTML = `<span class="pointer"></span>${t.icon ?? ''}`;
         this.markerBox.appendChild(el);
         this.markers.set(t.id, el);
       }
@@ -3560,12 +3627,12 @@ export default class GardenScene extends Phaser.Scene {
       el.style.top = `${H / 2 + dy * k}px`;
       el.querySelector('.pointer').style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
       el.classList.add('show');
-      el.classList.toggle('caught', t.caught);
-      el.classList.toggle('elsewhere', t.level !== LEVEL_ID);
+      el.classList.toggle('caught', !!t.caught);
+      el.classList.toggle('elsewhere', !!t.level && t.level !== LEVEL_ID);
     }
     // Hinweise zu Fallen, die es nicht mehr gibt (oder außerhalb des Waldes), entfernen
     for (const [id, el] of this.markers) {
-      if (traps.some((t) => t.id === id)) continue;
+      if (traps.some((t) => t.id === id) || luck.some((t) => t.id === id)) continue;
       el.remove();
       this.markers.delete(id);
     }
@@ -4834,7 +4901,7 @@ export default class GardenScene extends Phaser.Scene {
     if (rare && !rare.common) {
       notes.push(
         tr(
-          `✨ ${rare.male ? 'Ein seltener' : 'Eine seltene'} ${rare.name}! Im Tierpark lockt ${rare.male ? 'er' : 'sie'} besonders viele Besucher an.`,
+          `✨ ${rare.neuter ? 'Ein seltenes' : rare.male ? 'Ein seltener' : 'Eine seltene'} ${rare.name}! Im Tierpark lockt ${rare.neuter ? 'es' : rare.male ? 'er' : 'sie'} besonders viele Besucher an.`,
           `✨ A rare ${rare.name}! It attracts lots of visitors to your zoo.`,
         ),
       );
@@ -5362,6 +5429,7 @@ export default class GardenScene extends Phaser.Scene {
       this.updateEvents();
     }
     this.updateTraps(dt);
+    this.luck.update(dt);
     this.updateTrapMarkers();
     this.updateWolfNight(dt);
     this.updateMigration(dt);

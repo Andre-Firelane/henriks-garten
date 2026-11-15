@@ -72,7 +72,13 @@ export const BABY_BONUS = 2.5;
 export const SKIN_APPEAL = { stag: 4, wolf2: 7, lion2: 8, zebra2: 4.5, cat2: 3, antelope2: 4.5, koi3: 3, frog2: 3, tiger2: 7, orangutan2: 7, peacock2: 6, jellyfish2: 7, ray2: 8, lungfish: 2, shoebill: 6, croc_albino: 8 }; // koi3: weißer Koi mit rotem Punkt
 
 // (geht auch mit gespeicherten Tieren eines anderen Levels: braucht nur species, skin, variant, baby)
-export const appeal = (a) => (a.baby ? BABY_APPEAL : SKIN_APPEAL[a.skin ?? a.variant] ?? APPEAL[a.species] ?? 1);
+export const appeal = (a) => (a.baby ? BABY_APPEAL : skinAppeal(a.species, a.skin ?? a.variant));
+
+// Platzhalter-Skins (id endet auf _r, siehe PLACEHOLDER_SKINS in Animal.js): 2,5-mal so beliebt wie die Art, mindestens 3
+function skinAppeal(species, look) {
+  const base = APPEAL[species] ?? 1;
+  return SKIN_APPEAL[look] ?? (typeof look === 'string' && look.endsWith('_r') ? Math.max(3, base * 2.5) : base);
+}
 
 // Für die Statistik: welche Tierart ein Herz an diesem Gehege gebracht hat – zufällig, je nach Anziehung
 // (seltene Tiere und Babys öfter)
@@ -123,7 +129,7 @@ export function penScore(animals, e) {
 
 // Naturreservat: ein überzähliges Tier bringt beim Auswildern 2, 3 oder 4 Herzen, je nach Seltenheit
 export function releaseHearts(species, skin = null) {
-  const v = SKIN_APPEAL[skin] ?? APPEAL[species] ?? 1;
+  const v = skinAppeal(species, skin);
   return v <= 1.5 ? 2 : v <= 3 ? 3 : 4;
 }
 

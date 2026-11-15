@@ -2,6 +2,7 @@
 // Uhr, ein Event läuft also auch weiter, wenn man den Park verlässt.
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
+import { RARE_LUCK, eventDuration, hasCharm, price } from './luck.js';
 
 const MINUTE = 60 * 1000;
 
@@ -110,7 +111,8 @@ export function eventsIn(level, now = Date.now()) {
 
 export const RARE_EVENT_CHANCE = 0.5;
 export function rareChance(normal) {
-  return isActive('rare') ? Math.max(normal, RARE_EVENT_CHANCE) : normal;
+  const luck = hasCharm('rareLuck') ? normal * RARE_LUCK : normal; // Glücksbringer Sternschnuppe
+  return isActive('rare') ? Math.max(luck, RARE_EVENT_CHANCE) : luck;
 }
 
 // Zustand eines Events: 'ready' (startbar), 'active' (läuft, left = Restzeit) oder 'cooldown' (left = bis wieder startbar)
@@ -126,10 +128,14 @@ export function isActive(id, now = Date.now()) {
 }
 
 // Herzen abziehen und das Event starten (free: geschenkt, kostet nichts)
+// (mit dem Glücksbringer Sparschwein billiger, mit der Festtags-Glocke länger). Läuft es schon (Bonus Event-Ruf aus
+// einer Kiste), beginnt die Zeit von vorn.
 export function startEvent(id, now = Date.now(), free = false) {
   const ev = EVENTS.find((e) => e.id === id);
-  if (!free) game.hearts -= ev.cost;
-  game.events[id] = { startsAt: now, endsAt: now + ev.duration, readyAt: now + ev.duration + ev.cooldown };
+  if (!free) game.hearts -= price(ev.cost);
+  const duration = eventDuration(ev.duration);
+  const startsAt = isActive(id, now) ? game.events[id].startsAt : now;
+  game.events[id] = { startsAt, endsAt: now + duration, readyAt: now + duration + ev.cooldown };
 }
 
 // "4:12"

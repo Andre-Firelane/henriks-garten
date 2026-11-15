@@ -82,6 +82,12 @@ export function loadSave() {
   for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.since) a.since += shift;
   if (Number.isFinite(game.seasonAnchor)) game.seasonAnchor += shift; // die Wetterphase läuft weiter, wo sie war
   for (const k of Object.keys(game.seasonAnchors ?? {})) game.seasonAnchors[k] += shift;
+  // Kisten, Boni und Lagerfeuer: die Uhr läuft weiter, wo sie war (ältere Spielstände haben noch keine)
+  game.chests ??= {};
+  for (const c of Object.values(game.chests)) if (c.readyAt) c.readyAt += shift;
+  if (!game.charms?.owned) game.charms = { owned: [], equipped: [] };
+  for (const k of Object.keys(game.levelBonus?.boni ?? {})) game.levelBonus.boni[k] += shift;
+  if (game.campfireAt) game.campfireAt += shift;
   migrateStag();
   if (!s.game.parkSplit) splitPark();
   if (!s.game.caughtSpecies) migrateCaught();

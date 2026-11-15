@@ -1,0 +1,193 @@
+// Kisten, Boni und Glücksbringer (leichte Roguelike-Elemente). In jeder Welt steht eine Kiste; hat man sie geöffnet,
+// kommt nach 5 bis 10 Minuten (echte Uhr, je Gebiet) eine neue. In der Kiste wählt man 1 aus 3 Karten
+// (mit dem Kleeblatt 4): ein garantiertes seltenes Tier, einen 5-Minuten-Bonus (gilt nur in diesem Gebiet) oder einen
+// Glücksbringer. Gegen Herzen darf man neu würfeln. Glücksbringer bleiben, 2 kann man tragen (wechseln nur im Tierpark).
+// Hier stehen nur Daten und Regeln; Kisten, Wirkungen und Anzeige siehe world/LuckWorld.js.
+import { game } from '../state.js';
+import { tr } from '../i18n.js';
+import { LEVEL_ID } from './map.js';
+
+const MINUTE = 60 * 1000;
+
+// Welten mit Kisten (nicht im Tierpark, im Aquarium und im Reptilienhaus)
+export const CHEST_LEVELS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'ice', 'reef'];
+export const CHEST_RESPAWN = [5 * MINUTE, 10 * MINUTE]; // so lange, bis nach dem Öffnen neue Kisten stehen
+export const CHEST_COUNT = 1; // Kisten je Welt
+
+// Event, das zu einem Gebiet gehört (für den Bonus "Event-Ruf")
+export const LEVEL_EVENT = { meadow: 'farm', forest: 'wolves', savanna: 'migration', asia: 'fireflies', reef: 'jellyfish' };
+
+// 5-Minuten-Boni (gelten nur im Gebiet der Kiste; available: kommt die Karte hier vor?)
+export const BONI = {
+  moreAnimals: { icon: '🐾', name: tr('Mehr Tiere', 'More Animals'), text: tr('Viel mehr wilde Tiere im Gebiet.', 'Lots more wild animals here.') },
+  ride: { icon: '🐴', name: tr('Reittier', 'Mount'), text: tr('Du reitest – schneller unterwegs.', 'You ride – much faster.') },
+  toolsEverywhere: { icon: '🧰', name: tr('Werkzeug überall', 'Tools Everywhere'), text: tr('Werkzeug wechseln, wo du willst (Q bzw. Werkzeug-Knopf).', 'Switch tools anywhere (Q or the tool button).') },
+  stands: { icon: '🗼', name: tr('2 Hochstände', '2 Lookouts'), text: tr('Zwei Hochstände – von oben siehst du alles.', 'Two lookouts – see everything from above.'), available: (l) => l !== 'reef' },
+  bigCatch: { icon: '🪢', name: tr('Großes Lasso', 'Big Lasso'), text: tr('Lasso und Kescher fangen viel größer – das Lasso 2 Tiere auf einmal.', 'Lasso and net catch much wider – the lasso 2 animals at once.') },
+  heartRain: { icon: '💖', name: tr('Herzregen', 'Heart Rain'), text: tr('Doppelte Herzen.', 'Double hearts.') },
+  eventCall: { icon: '📣', name: tr('Event-Ruf', 'Event Call'), text: tr('Das Event dieses Gebiets startet sofort – gratis.', 'This area’s event starts right away – for free.'), available: (l) => !!LEVEL_EVENT[l] },
+};
+const BONUS_MS = 5 * MINUTE;
+const HOURGLASS_MS = 8 * MINUTE;
+export const MORE_ANIMALS = 1.5; // so viel mehr wilde Tiere
+export const BIG_CATCH = 1.6; // so viel größer fangen Lasso und Kescher
+
+// Glücksbringer (dauerhaft, 2 gleichzeitig)
+export const CHARMS = {
+  cheapReroll: { icon: '🎲', name: tr('Glückswürfel', 'Lucky Die'), text: tr('Neu würfeln in Kisten kostet nur die Hälfte.', 'Rerolling in chests costs only half.') },
+  swift: { icon: '👟', name: tr('Flinke Schuhe', 'Swift Shoes'), text: tr('Du läufst etwas schneller.', 'You walk a bit faster.') },
+  rareLuck: { icon: '✨', name: tr('Sternschnuppe', 'Shooting Star'), text: tr('Seltene Tiere kommen öfter.', 'Rare animals come more often.') },
+  chestRadar: { icon: '🧭', name: tr('Kisten-Kompass', 'Chest Compass'), text: tr('Ein Pfeil am Rand zeigt zu Kisten in der Nähe.', 'An arrow at the edge points to nearby chests.') },
+  campfire: { icon: '🔥', name: tr('Lagerfeuer', 'Campfire'), text: tr('Setz dich ans Feuer: neue Tiere, in Savanne und Dschungel auch neues Wetter.', 'Sit by the fire: new animals, and new weather in the savanna and jungle.') },
+  longEvents: { icon: '🔔', name: tr('Festtags-Glocke', 'Festival Bell'), text: tr('Events dauern länger.', 'Events last longer.') },
+  clover: { icon: '🍀', name: tr('Kleeblatt', 'Clover'), text: tr('In Kisten 4 Karten statt 3.', '4 cards in chests instead of 3.') },
+  hourglass: { icon: '⌛', name: tr('Sanduhr', 'Hourglass'), text: tr('Boni aus Kisten halten 8 statt 5 Minuten.', 'Chest bonuses last 8 instead of 5 minutes.') },
+  piggy: { icon: '🐷', name: tr('Sparschwein', 'Piggy Bank'), text: tr('Alles im Tierpark ist etwas billiger.', 'Everything in the zoo is a bit cheaper.') },
+};
+export const CHARM_SLOTS = 2;
+export const SWIFT_SPEED = 1.15;
+export const RARE_LUCK = 1.5;
+export const LONG_EVENTS = 1.5;
+export const PIGGY = 0.85;
+export const CAMPFIRE_COOLDOWN = 3 * MINUTE;
+
+// Neu würfeln: 10, 20, 40 … Herzen (mit dem Glückswürfel die Hälfte), zählt je Kiste von vorn
+const REROLL_BASE = 10;
+
+// Seltenheit der Karte "seltenes Tier", nach dem Anteil der Art an den Tieren des Gebiets (Rahmenfarbe)
+export const TIERS = {
+  common: { color: '#5fae4a', name: tr('häufig', 'common') },
+  uncommon: { color: '#4a8fd8', name: tr('selten', 'rare') },
+  rare: { color: '#e0a820', name: tr('sehr selten', 'very rare') },
+};
+export const tierOf = (share) => (share >= 0.2 ? 'common' : share >= 0.08 ? 'uncommon' : 'rare');
+
+// Anteil der Kartenarten je Platz
+const CARD_KIND = { rare: 0.45, bonus: 0.4, charm: 0.15 };
+
+export function luckState() {
+  game.chests ??= {};
+  game.charms ??= { owned: [], equipped: [] };
+  return game;
+}
+
+// --- Glücksbringer ---
+export const hasCharm = (id) => !!game.charms?.equipped?.includes(id);
+export const ownsCharm = (id) => !!game.charms?.owned?.includes(id);
+export const charmSpeed = () => (hasCharm('swift') ? SWIFT_SPEED : 1);
+export const eventDuration = (ms) => (hasCharm('longEvents') ? Math.round(ms * LONG_EVENTS) : ms);
+// Preis im Tierpark (Events, Ausbau, Buden): mit dem Sparschwein etwas billiger
+export const price = (cost) => (hasCharm('piggy') ? Math.max(1, Math.round(cost * PIGGY)) : cost);
+export const rerollCost = (n) => Math.max(1, Math.round((REROLL_BASE * 2 ** n) / (hasCharm('cheapReroll') ? 2 : 1)));
+export const cardCount = () => (hasCharm('clover') ? 4 : 3);
+
+export function giveCharm(id) {
+  luckState();
+  if (!game.charms.owned.includes(id)) game.charms.owned.push(id);
+  // ein freier Platz: gleich anlegen (wechseln geht sonst nur im Tierpark)
+  if (game.charms.equipped.length < CHARM_SLOTS && !game.charms.equipped.includes(id)) game.charms.equipped.push(id);
+}
+
+// anlegen bzw. ablegen; gibt false zurück, wenn beide Plätze belegt sind
+export function toggleCharm(id) {
+  luckState();
+  const eq = game.charms.equipped;
+  if (eq.includes(id)) {
+    eq.splice(eq.indexOf(id), 1);
+    return true;
+  }
+  if (!ownsCharm(id) || eq.length >= CHARM_SLOTS) return false;
+  eq.push(id);
+  return true;
+}
+
+// Glücksbringer auf Platz i legen (Ziehen und Ablegen in der Tafel). Lag er schon auf dem anderen Platz, tauschen die
+// beiden; sonst wird der bisherige auf Platz i abgelegt.
+export function setCharmSlot(i, id) {
+  luckState();
+  if (!ownsCharm(id)) return;
+  const eq = game.charms.equipped;
+  const from = eq.indexOf(id);
+  if (from === i) return;
+  if (i >= eq.length) {
+    if (from >= 0) eq.splice(from, 1);
+    eq.push(id);
+    return;
+  }
+  const old = eq[i];
+  eq[i] = id;
+  if (from >= 0) eq[from] = old;
+}
+
+// Antippen: auf einen freien Platz, sonst statt des ersten
+export function equipCharm(id) {
+  luckState();
+  const eq = game.charms.equipped;
+  if (eq.includes(id) || !ownsCharm(id)) return;
+  setCharmSlot(eq.length < CHARM_SLOTS ? eq.length : 0, id);
+}
+
+// --- Boni (nur im Gebiet der Kiste) ---
+function levelBoni() {
+  const b = game.levelBonus;
+  return b && b.level === LEVEL_ID ? b.boni : {};
+}
+export const bonusLeft = (id, now = Date.now()) => Math.max(0, (levelBoni()[id] ?? 0) - now);
+export const bonusActive = (id, now = Date.now()) => bonusLeft(id, now) > 0;
+// laufende Boni: [{ id, left }]
+export const activeBoni = (now = Date.now()) =>
+  Object.keys(levelBoni())
+    .map((id) => ({ id, left: bonusLeft(id, now) }))
+    .filter((b) => b.left > 0);
+
+// Bonus starten; derselbe noch einmal stapelt nicht, die Zeit beginnt nur von vorn
+export function startBonus(id, now = Date.now()) {
+  if (game.levelBonus?.level !== LEVEL_ID) game.levelBonus = { level: LEVEL_ID, boni: {} };
+  game.levelBonus.boni[id] = now + (hasCharm('hourglass') ? HOURGLASS_MS : BONUS_MS);
+}
+
+// beim Betreten eines Gebiets: Boni aus einem anderen Gebiet sind vorbei
+export function dropBoniElsewhere() {
+  if (game.levelBonus && game.levelBonus.level !== LEVEL_ID) game.levelBonus = null;
+}
+
+// --- Kisten ---
+export function chestState(level = LEVEL_ID) {
+  luckState();
+  return (game.chests[level] ??= { spots: [], readyAt: 0 });
+}
+export function chestOpened(level = LEVEL_ID, now = Date.now()) {
+  const s = chestState(level);
+  s.spots = [];
+  s.readyAt = now + CHEST_RESPAWN[0] + Math.random() * (CHEST_RESPAWN[1] - CHEST_RESPAWN[0]);
+}
+
+// --- Karten ---
+// rare: [{ species, skin, share }] (Arten des Gebiets mit seltenem Skin), boni/charms: ids, die hier in Frage kommen.
+// Gibt n Karten zurück, keine doppelt: { kind: 'rare', species, skin, tier } | { kind: 'bonus', id } | { kind: 'charm', id }
+export function rollCards({ rare, boni, charms }, n) {
+  const pools = { rare: [...rare], bonus: [...boni], charm: [...charms] };
+  const cards = [];
+  for (let i = 0; i < n; i++) {
+    const kinds = Object.entries(CARD_KIND).filter(([k]) => pools[k].length);
+    if (!kinds.length) break;
+    let r = Math.random() * kinds.reduce((s, [, w]) => s + w, 0);
+    const kind = (kinds.find(([, w]) => (r -= w) <= 0) ?? kinds[0])[0];
+    const pool = pools[kind];
+    let pick;
+    if (kind === 'rare') {
+      // je häufiger die Art im Gebiet, desto öfter ihre Karte (ein seltenes Schaf eher als ein seltener Maulwurf)
+      let q = Math.random() * pool.reduce((s, c) => s + c.share, 0);
+      pick = pool.find((c) => (q -= c.share) <= 0) ?? pool[0];
+      cards.push({ kind, species: pick.species, skin: pick.skin, tier: tierOf(pick.share) });
+    } else {
+      pick = pool[Math.floor(Math.random() * pool.length)];
+      cards.push({ kind, id: pick });
+    }
+    pool.splice(pool.indexOf(pick), 1);
+  }
+  return cards;
+}
+
+// --- Lagerfeuer ---
+export const campfireLeft = (now = Date.now()) => Math.max(0, (game.campfireAt ?? 0) + CAMPFIRE_COOLDOWN - now);
