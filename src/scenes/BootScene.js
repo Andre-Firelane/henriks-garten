@@ -4,6 +4,7 @@ import { openFeatureTour, tourSeen } from '../ui/featureTour.js';
 import { afterPaint, hideLoading, setLoadingProgress, showLoading } from '../ui/loading.js';
 import { tr } from '../i18n.js';
 import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
+import { TOYS, toyKey } from '../world/toys.js';
 import { game } from '../state.js';
 import { isActive } from '../world/events.js';
 
@@ -17,7 +18,7 @@ const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) 
 // (levelGroups, whenGroupsLoaded). Events mit Tieren aus einem Paket warten ebenso (EVENT_GROUPS).
 // Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs und Eichhörnchen nur das Grundbild, das der Tierpark zeigt),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|icecream_seller|mavi|mavi_idle|mavi_wave|car_zoo)$/;
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 // Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
 // der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
@@ -116,6 +117,7 @@ const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : ITEMS
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
+  ...Object.keys(TOYS).map(toyKey), // Spielzeug der zweiten Ausbaustufe (src/world/toys.js)
   'grass0', 'grass1', 'grass2', 'path', 'soil', 'water',
   'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'fence_x', 'fence_y', 'gate_x', 'sign_fish', 'fishpond0', 'fishpond1',
   // Wiese (Platzhalter aus tools/meadow-placeholders.py): Weide, Felder, Blumen, Hof, Windmühle, Steg, Seerosen, Enten, Bienen
@@ -162,6 +164,8 @@ const PIXEL_ART = [
   'floor_office', 'office_desk', 'office_chair', 'office_plant_monstera', 'office_plant_strelitzia',
   'office_sofa', 'office_table', 'office_armchair', 'office_rug',
   'icecream_stand', // Eisstand-Event
+  'popcorn_stand', 'lemonade_stand', 'cottoncandy_stand', 'pretzel_stand', // feste Buden (src/world/shops.js)
+  // Riesenrad (vorerst gestrichen, siehe wheelSlot in levels.js): 'wheel_ring', 'wheel_stand', 'wheel_gondola', 'visitor1_sit' … 'visitor8_sit'
   'tire_swing', 'toy_ball', // Spielzeug im Pandagehege
   'climb_tree', // Kletterbaum im Affengehege
   'hay_shelter', 'hay_rack', 'reeds', 'fountain', 'nest_box', 'lion_rock', // Ausstattung ausgebauter Gehege
@@ -197,7 +201,7 @@ const PIXEL_ART = [
 const TEST_ART = {};
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -610,6 +614,9 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('cat_eat', 'assets/cat_eat.png', CAT_FRAME); // frisst am Futter (Kopf unten)
     for (const k of ['koi1', 'koi2', 'koi3']) load.spritesheet(k, `assets/${k}.png`, KOI_FRAME); // drei Farbmuster
     load.spritesheet('icecream_seller', 'assets/icecream_seller.png', HERO_FRAME); // Eisverkäuferin (Eisstand-Event)
+    for (const k of ['popcorn', 'lemonade', 'cottoncandy', 'pretzel']) load.spritesheet(`${k}_seller`, `assets/${k}_seller.png`, HERO_FRAME); // Verkäufer der festen Buden
+    // E-Roller im Tierpark: mit Henrik und abgestellt (tools/scooter-cut.py), fährt von vorne und hinten (tools/scooter-anim.py)
+    for (const k of ['scooter', 'scooter_empty', 'scooter_walk', 'scooter_walk_back']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 170, frameHeight: 170 });
     load.spritesheet('mavi', 'assets/mavi.png', HERO_FRAME); // Mavi die Tierpflegerin (führt durch die Geschichte)
     for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
@@ -621,7 +628,9 @@ export default class BootScene extends Phaser.Scene {
     for (const [k, count] of [['walk', 14], ['walk_back', 26], ['idle', 20], ['idle_back', 21]]) {
       load.spritesheet(`ride_savanna_${k}`, `assets/ride_savanna_${k}.png`, { frameWidth: 160, frameHeight: 230, endFrame: count - 1 });
     }
-    load.spritesheet('car_zoo', 'assets/car_zoo.png', CAR_FRAME); // Zooauto (Schnellreise, in allen Gebieten)
+    // Zooauto (Schnellreise, in allen Gebieten): wird vergrößert gezeigt, daher in großer Fassung (tools/car-hd.py)
+    const cz = this.useHd('car_zoo') ? hdFactor('car_zoo') : 1;
+    load.spritesheet('car_zoo', `assets/${cz > 1 ? `${HD_DIR}/` : ''}car_zoo.png`, { frameWidth: CAR_FRAME.frameWidth * cz, frameHeight: CAR_FRAME.frameHeight * cz });
     const bz = this.useHd('boat_zoo') ? hdFactor('boat_zoo') : 1; // Zoo-U-Boot (Schnellreise in der Unterwasserwelt), groß wie der Wasserfall
     load.spritesheet('boat_zoo', `assets/${bz > 1 ? `${HD_DIR}/` : ''}boat_zoo.png`, { frameWidth: 240 * bz, frameHeight: 160 * bz });
     load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
@@ -809,6 +818,8 @@ export default class BootScene extends Phaser.Scene {
     };
     // Bilder pro Sekunde so, dass ein Doppelschritt etwa 0,7 Sekunden dauert (vorne 10 Bilder, hinten 13)
     anims.create({ key: 'hero_walk', frames: anims.generateFrameNumbers('hero_walk'), frameRate: 14, repeat: -1 });
+    // E-Roller fährt (alle Videobilder, 24 je Sekunde)
+    for (const key of ['scooter_walk', 'scooter_walk_back']) if (this.textures.exists(key)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: 24, repeat: -1 });
     anims.create({ key: 'hero_walk_back', frames: anims.generateFrameNumbers('hero_walk_back'), frameRate: 14, repeat: -1 });
     anims.create({ key: 'hero_idle', frames: anims.generateFrameNumbers('hero_idle'), frameRate: 12, repeat: -1 });
     anims.create({ key: 'mavi_idle', frames: anims.generateFrameNumbers('mavi_idle'), frameRate: 16, repeat: -1, yoyo: true }); // vor und zurück (nur Bilder mit offenen Augen)

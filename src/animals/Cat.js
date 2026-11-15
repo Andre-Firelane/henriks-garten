@@ -9,6 +9,7 @@ const ROAM_TIME = [8, 16]; // so lange läuft sie im Katzenhaus herum, bevor sie
 const SLEEP_TIME = [12, 22]; // so lange schläft sie oben
 const WALK_TIMEOUT = 10; // kommt sie nicht an den Kratzbaum, versucht sie es später wieder
 const CUSHION = 47; // Höhe des Kissens oben auf dem Kratzbaum über dem Boden (Bild "cat_tree")
+const BASKET = 6; // ... und im Katzenkörbchen (Spielzeug der zweiten Ausbaustufe)
 // Plätze rund um den Stamm, von denen sie hinauf- und wieder hinunterspringt (der erste freie wird genommen)
 const JUMP_SPOTS = [[0, 14], [-20, 10], [20, 10], [-20, -10], [20, -10]];
 const JUMP_MS = 280;
@@ -30,8 +31,10 @@ export default class Cat extends Animal {
     const trees = [];
     for (const { tx, ty } of this.enclosure.tiles) {
       { // nur Kacheln, die wirklich zum Gehege gehören (auch bei L-Formen)
-        if (objectAt(tx, ty)?.key !== 'cat_tree' || taken.includes(`${tx},${ty}`)) continue;
-        trees.push({ key: `${tx},${ty}`, ...tileToWorld(tx, ty) });
+        const obj = objectAt(tx, ty);
+        const basket = obj?.toy === 'cat_basket'; // im Körbchen schläft sie genauso, nur am Boden
+        if ((obj?.key !== 'cat_tree' && !basket) || taken.includes(`${tx},${ty}`)) continue;
+        trees.push({ key: `${tx},${ty}`, ...tileToWorld(tx, ty), lift: basket ? BASKET : CUSHION });
       }
     }
     return trees;
@@ -97,7 +100,7 @@ export default class Cat extends Animal {
       targets: this,
       x: t.x,
       y: t.y + 1, // knapp vor dem Kratzbaum, damit sie über ihm gezeichnet wird
-      lift: CUSHION,
+      lift: t.lift ?? CUSHION,
       duration: JUMP_MS,
       ease: 'Quad.easeOut',
       onComplete: () => {

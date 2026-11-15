@@ -1,7 +1,9 @@
 // Besucher im Tierpark: wie sehr die Tiere Besucher anlocken, das Wegnetz, auf dem sie laufen, und die Plätze
 // vor den Gehegen, an denen sie stehen bleiben und schauen.
-import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, MAP_H, MAP_W, buildings, groundAt, isBlockedPoint, penQuotas, quotaKey } from './map.js';
+import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, penLevelOf, MAP_W, buildings, groundAt, isBlockedPoint, penQuotas, quotaKey } from './map.js';
 import { tileToWorld } from './iso.js';
+import { WHEEL_VISITORS, hasWheel, shopsIn } from './shops.js';
+import { TOY_BONUS } from './toys.js';
 
 // Anziehung je Tierart: seltene Tiere (kleines Gewicht in spawn.weights der Welten) und schwer zu fangende
 // (nur mit Lasso, Falle oder Futter) locken mehr Besucher an als häufige, die man einfach berührt
@@ -115,7 +117,8 @@ export function parkScore(animals) {
 }
 export function penScore(animals, e) {
   const sum = animals.reduce((s, a) => s + (a.state === 'penned' && a.enclosure === e ? appeal(a) : 0), 0);
-  return isFull(animals, e) ? sum * FULL_BONUS : sum;
+  const toys = penLevelOf(e) >= 2 ? TOY_BONUS : 1; // mit Spielzeug (zweite Ausbaustufe) noch beliebter
+  return (isFull(animals, e) ? sum * FULL_BONUS : sum) * toys;
 }
 
 // Naturreservat: ein überzähliges Tier bringt beim Auswildern 2, 3 oder 4 Herzen, je nach Seltenheit
@@ -194,18 +197,43 @@ export function buildPathGrid() {
       }
     }
   }
-  // Eisstand: Plätze auf dem Weg direkt am Wagen (dort warten die Besucher auf ihr Eis)
-  let ice = [];
-  const stand = LEVEL.iceStand;
-  if (stand) {
+  // Eisstand und Buden: Plätze auf dem Weg direkt davor (dort warten die Besucher auf ihren Snack); jede Wegkachel
+  // gehört nur zu einer Bude
+  const claimed = new Set();
+  const standSpots = (stand) => {
+    const list = [];
     for (const k of walk) {
+      if (claimed.has(k)) continue;
       const [tx, ty] = k.split(',').map(Number);
       const d = Math.max(Math.abs(tx - stand.tx), Math.abs(ty - stand.ty));
-      if (d >= 1 && d <= 2) ice.push({ tx, ty, d: Math.hypot(tx - stand.tx, ty - stand.ty), taken: null });
+      if (d >= 1 && d <= 2) list.push({ tx, ty, d: Math.hypot(tx - stand.tx, ty - stand.ty), taken: null });
     }
-    ice = ice.sort((a, b) => a.d - b.d).slice(0, 5);
+    const best = list.sort((a, b) => a.d - b.d).slice(0, 5);
+    for (const s of best) claimed.add(key(s.tx, s.ty));
+    return best;
+  };
+  const shops = shopsIn(LEVEL_ID).map(({ slot, kind }) => ({ id: slot.id, kind, at: { tx: slot.tx, ty: slot.ty }, spots: standSpots(slot) })).filter((s) => s.spots.length);
+  const ice = LEVEL.iceStand ? standSpots(LEVEL.iceStand) : [];
+  // Riesenrad: Warteplätze auf dem Weg nah an den 2×2 Kacheln (dort stellen sich die Besucher an)
+  let wheel = [];
+  const w = LEVEL.wheelSlot;
+  if (w && hasWheel(LEVEL_ID)) {
+    for (const k of walk) {
+      if (claimed.has(k)) continue;
+      const [tx, ty] = k.split(',').map(Number);
+      const dx = Math.max(w.tx - tx, 0, tx - (w.tx + 1));
+      const dy = Math.max(w.ty - ty, 0, ty - (w.ty + 1));
+      const d = Math.max(dx, dy);
+      if (d >= 1 && d <= 2) wheel.push({ tx, ty, d: Math.hypot(tx - w.tx - 0.5, ty - w.ty - 0.5), taken: null });
+    }
+    wheel = wheel.sort((a, b) => a.d - b.d).slice(0, 6);
   }
-  return { walk, exits, spots, ice };
+  return { walk, exits, spots, ice, shops, wheel };
+}
+
+// Obergrenze der Besucher in einem Tierpark-Abschnitt: mit dem Riesenrad kommen mehr
+export function parkCap(level) {
+  return MAX_VISITORS + (hasWheel(level) ? WHEEL_VISITORS : 0);
 }
 
 // kürzester Weg über das Wegnetz (Breitensuche); goal(tx, ty) sagt, ob eine Kachel ein Ziel ist.

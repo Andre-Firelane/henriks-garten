@@ -887,8 +887,8 @@ const PARK_ROWS = [
       'D2D2kD2.|....D.......|k#.MMMMGGMMM.####|..@..........|#b                                        ',
       '22k2DD2.|.&..........|m#bg.#####.fb####|...f......T..|#b                                        ',
       '2kkk222.|.P..........|.#..f#####g..####G.............|#X                                        ',
-      '2222kD2.|.m......D..n|k#############W##G.............|.b                                        ',
-      '2222kk2.|n...........|.################|.........f...|.b                                        ',
+      '2222kD2.|.m......D..n|k################G.............|.b                                        ',
+      '2222kk2.|n...........|.###############W|.........f...|.b                                        ',
       '22kDD22.|...D........|.##........######|.............|.b                                        ',
       '2222222.|......m.....|k#.........######|.............|.b                                        ',
       ' 2mm...n--------------F#.........######---------------.b                                        ',
@@ -1073,7 +1073,16 @@ LEVELS.park = parkSection('park', {
   backdrops: [{ key: 'wolf_forest_edge', tx: 0, ty: 29, ox: 560, oy: 400 }],
   // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
   buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
-  iceStand: { tx: 25, ty: 40 }, // Eisstand-Event: der Eiswagen steht mitten im Park vor dem Haupthaus, links am Vorplatz
+  // Eisstand-Event: der Eiswagen steht mitten im Park unterhalb des Hauptwegs (die Plätze oberhalb sind für feste Buden)
+  iceStand: { tx: 26, ty: 44 },
+  // Bauplätze für feste Buden (siehe src/world/shops.js): vor dem Haupthaus oberhalb des Hauptwegs, links und rechts vom
+  // Weg zur Tür – die Besucher stellen sich davor auf den Weg und sehen die Bude von vorne
+  buildSlots: [{ id: 'center1', tx: 25, ty: 40 }, { id: 'center2', tx: 33, ty: 40 }],
+  scooterSpot: { tx: 27, ty: 39 }, // E-Roller: abgestellt an der Hauswand links neben der Tür des Haupthauses
+  // Riesenrad (vorerst gestrichen – es passte nicht zur isometrischen Ansicht; der Code in src/world/FerrisWheel.js bleibt):
+  // großer Bauplatz auf der Wiese über dem Haupthaus, am Weg zur Savanne (2×2 Kacheln ab tx/ty; clear: dort stehen dann
+  // keine Bäume und Büsche). Zum Wiederaufnehmen diese Zeile einschalten und die Bilder in BootScene wieder laden.
+  // wheelSlot: { id: 'wheel', tx: 29, ty: 25, clear: { tx0: 25, tx1: 34, ty0: 24, ty1: 29 } },
   computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
   feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 22, ty: 45, world: 'forest' }],
   // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
@@ -1114,6 +1123,8 @@ LEVELS.park2 = parkSection('park2', {
   // Fische im Pflaster: von der Wegkreuzung oben bei der Savanne bis zum Aquarium, die Nasen zeigen dorthin
   pathMarks: [31, 28, 25, 22, 19, 16, 13].map((tx) => ({ tx, ty: 15, dir: { tx: -1, ty: 0 } })),
   feeders: [{ tx: 37, ty: 14, world: 'savanna' }],
+  scooterSpot: { tx: 31, ty: 16 }, // E-Roller: an der Kreuzung neben der Ecke des Erdmännchen-Zauns
+  buildSlots: [{ id: 'savanna1', tx: 34, ty: 17 }, { id: 'savanna2', tx: 46, ty: 17 }], // an der Kreuzung beim Auto, links und rechts
   sections: [
     { label: tr('Aquarium', 'Aquarium'), tx: 8, ty: 15 },
     { label: tr('Zentrum', 'Center'), tx: 32, ty: 24 },
@@ -1136,6 +1147,8 @@ LEVELS.park3 = parkSection('park3', {
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
   car: { tx: 38.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26 },
   start: { tx: 38, ty: 60 },
+  scooterSpot: { tx: 33, ty: 78 }, // E-Roller: im Gras links an der Kreuzung beim Auto
+  buildSlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // an der Hauptkreuzung: im Kirschgarten und neben dem Auto
   grounds: [
     { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
     { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },

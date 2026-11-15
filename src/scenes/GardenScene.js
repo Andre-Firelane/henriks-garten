@@ -50,8 +50,10 @@ import { raiseAt,
   hasSlots,
   quotaKey,
   isUpgraded,
+  penLevelOf,
   upgradeCost,
   bridgeArch,
+  slotsShown,
 } from '../world/map.js';
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
@@ -127,9 +129,12 @@ import DrumTool from '../tools/DrumTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
+import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, sourceDef, wheelSlot } from '../world/shops.js';
+import FerrisWheel from '../world/FerrisWheel.js';
+import { TOY_COST, maxPenLevel, toysText } from '../world/toys.js';
 import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
@@ -976,6 +981,8 @@ export default class GardenScene extends Phaser.Scene {
     this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
+    this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
+    this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
     this.hyenaPack = LEVEL.hyenas ? new HyenaPack(this, LEVEL.hyenas) : null; // Trockenzeit: das versteckte Hyänenrudel
     this.weather = SEASON_LEVELS.includes(LEVEL_ID) ? new Weather(this, LEVEL.season) : null; // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel
@@ -1028,6 +1035,8 @@ export default class GardenScene extends Phaser.Scene {
     // Kleidung passend zum Gebiet (fehlt das Bild noch, die normale Figur); unter Wasser schwimmt sie
     const hero = LEVEL.hero && this.textures.exists(LEVEL.hero) ? LEVEL.hero : 'hero';
     this.player = new Player(this, start.x, start.y, hero, { swim: !!LEVEL.sea });
+    // war Henrik beim Verlassen auf dem E-Roller (Tierpark-Abschnitt, Aquarium, Reptilienhaus, Ausbau): weiterfahren
+    if (game.scooterRiding && this.scooter) this.getOnScooter(true);
     // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel), findet es am Inselsteg
     if (LEVEL.boat && !data.seasonNote && game.boat) game.boat = null;
     this.boat = LEVEL.boat ? new Boat(this) : null;
@@ -1192,7 +1201,14 @@ export default class GardenScene extends Phaser.Scene {
     if (data.level) {
       const back = data.returned ? `<br><small>${tr(`${data.returned} ist wieder im Regal im anderen Gebiet`, `${data.returned} – back on the shelf in the other area`)}</small>` : '';
       if (data.upgraded) {
-        this.time.delayedCall(350, () => this.showToast(tr(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz und neue Ausstattung.`, `🏗️ ${data.upgraded} upgraded! More space and new equipment.`)));
+        if (data.toys) this.time.delayedCall(350, () => this.showToast(tr(`🧸 ${data.upgraded}: neues Spielzeug! Die Tiere freuen sich – und es kommen mehr Besucher.`, `🧸 ${data.upgraded}: new toys! The animals are happy – and more visitors come.`)));
+        else this.time.delayedCall(350, () => this.showToast(tr(`🏗️ ${data.upgraded} ausgebaut! Mehr Platz und neue Ausstattung.`, `🏗️ ${data.upgraded} upgraded! More space and new equipment.`)));
+      }
+      if (data.built) {
+        const def = sourceDef(builtOn(data.built));
+        if (def === WHEEL) this.time.delayedCall(350, () => this.showToast(tr(`${def.icon} Das Riesenrad dreht sich! Jede Fahrt bringt ${def.hearts} Herzen, und es kommen mehr Besucher.`, `${def.icon} The Ferris wheel is turning! Every ride brings ${def.hearts} hearts, and more visitors come.`)));
+        else if (def) this.time.delayedCall(350, () => this.showToast(tr(`${def.icon} ${def.name} ist fertig! Jeder Verkauf bringt ${def.hearts} Herzen.`, `${def.icon} ${def.name} is open! Every sale brings ${def.hearts} hearts.`)));
+        this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.built)); // gleich kauft jemand ein
       }
       if (data.seasonNote) this.showToast(data.seasonNote); // Wetterwechsel in der Savanne
       else this.showToast(`${LEVEL.name}${back}${moved}${LEVEL.wip ? `<br><small>${tr('🚧 Dieses Gebiet ist noch nicht fertig – hier kommen bald weitere Tiere dazu.', '🚧 This area is still under construction – more animals are coming soon.')}</small>` : ''}`);
@@ -1256,6 +1272,18 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearBed && !this.leaving) {
         this.rest(); // am Bett: ausruhen, danach ist das Wetter weiter
+        return;
+      }
+      if (this.driving && !this.leaving) {
+        this.getOffScooter(); // auf dem E-Roller: absteigen
+        return;
+      }
+      if (this.nearScooter && !this.leaving) {
+        this.getOnScooter(); // am E-Roller: aufsteigen
+        return;
+      }
+      if (this.nearSlot && !this.tool && !this.leaving) {
+        this.openEventsPanel(null, this.nearSlot.slot.id); // am Bauplatz: Bude aussuchen
         return;
       }
       const pen = this.penAtSign();
@@ -1508,11 +1536,12 @@ export default class GardenScene extends Phaser.Scene {
     const f = this.textures.getFrame(key, frame);
     const w = f.cutWidth;
     const h = f.cutHeight;
+    const hd = hdScale(this, key); // große Fassung (z. B. car_zoo): das Bild ist hd-mal so groß wie der Ausschnitt
     const src = document.createElement('canvas');
     src.width = w;
     src.height = h;
     const sctx = src.getContext('2d');
-    sctx.drawImage(f.source.image, f.cutX, f.cutY, w, h, 0, 0, w, h);
+    sctx.drawImage(f.source.image, f.cutX * hd, f.cutY * hd, w * hd, h * hd, 0, 0, w, h);
     const alpha = sctx.getImageData(0, 0, w, h).data;
     const bottom = new Array(w).fill(-1);
     for (let x = 0; x < w; x++) {
@@ -2429,29 +2458,36 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
-  // focus: Gehege-Id – dann nur der Ausbau dieses Geheges (am Gehegeschild)
-  openEventsPanel(focus = null) {
+  // focus: Gehege-Id – dann nur der Ausbau dieses Geheges (am Gehegeschild); slotId: nur die Buden für diesen Bauplatz
+  openEventsPanel(focus = null, slotId = null) {
     if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
     this.scene.pause();
     openEvents(
       () => ({
         hearts: game.hearts,
-        events: [...EVENTS].sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
+        // den Eiswagen gibt es nur, solange nirgends ein fester Eisstand steht
+        events: EVENTS.filter((ev) => ev.id !== 'icecream' || !hasIceShop()).sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
         pens: this.penUpgrades(),
+        build: this.shopOffers(slotId),
       }),
       (tab, id) => {
         this.scene.resume();
         if (tab === 'pens') return this.upgradePen(id);
+        if (tab === 'build') return this.buildShop(id, slotId);
         // Event mit Tieren, deren Bilder noch im Hintergrund laden: erst darauf warten, dann die Tafel noch einmal
         if (!groupsLoaded(EVENT_GROUPS[id] ?? [])) return this.afterGroupsLoaded(EVENT_GROUPS[id], () => this.openEventsPanel());
         this.beginEvent(id);
       },
       () => this.scene.resume(),
-      focus
-        ? { tab: 'pens', only: focus }
-        : activeId() === 'icecream' // Mavis Aufgabe: Pfeil auf den Eiswagen
-          ? { point: 'icecream', hint: tr('Starte den Eiswagen – jedes Eis bringt dir Herzen!', 'Start the ice cream truck – every ice cream brings you hearts!') }
-          : {},
+      slotId
+        ? slotId === wheelSlot()?.id
+          ? { tab: 'build', single: true, title: WHEEL.name, note: tr('Die Besucher fahren eine Runde mit – jede Fahrt bringt Herzen. Mit dem Riesenrad kommen mehr Besucher in den Park.', 'Visitors take a ride – every ride brings hearts. With the Ferris wheel, more visitors come to the zoo.') }
+          : { tab: 'build', single: true, point: activeId() === 'stands' ? 'icecream' : null } // Mavis Aufgabe: Pfeil auf den Eisstand
+        : focus
+          ? { tab: 'pens', only: focus }
+          : activeId() === 'babies' // Mavis Aufgabe: Pfeil auf die Tierbabys
+            ? { point: 'babies', hint: tr('Starte die Tierbabys – die Besucher lieben die Kleinen!', 'Start the animal babies – the visitors love the little ones!') }
+            : {},
     );
   }
 
@@ -2460,8 +2496,9 @@ export default class GardenScene extends Phaser.Scene {
     startEvent(id, Date.now(), free);
     countEvent(id);
     this.updateHud();
-    if (id === 'icecream' && activeId() === 'icecream') this.visitors?.sendToIce(); // gleich kauft jemand ein Eis
-    if (!free && id !== 'icecream') game.story.flags.event = true; // für Mavis Event-Aufgabe
+    if (id === 'icecream') this.visitors?.sendToShop('event'); // gleich kauft jemand ein Eis
+    // für Mavis Event-Aufgabe (ganz am Ende): nicht der Eiswagen und nicht die Tierbabys aus ihrer eigenen Aufgabe
+    if (!free && id !== 'icecream' && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true;
     this.mavi?.check();
     if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
     if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
@@ -2484,7 +2521,7 @@ export default class GardenScene extends Phaser.Scene {
   updateMount() {
     const key = isActive('ride') ? RIDES[LEVEL_ID] ?? null : null;
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
-    const mount = key && !buildingAt(tx, ty) ? key : null;
+    const mount = this.driving ? 'scooter' : key && !buildingAt(tx, ty) ? key : null; // auf dem E-Roller bleibt man stehen
     if (mount && !this.player.mount && !this.riding) {
       this.showToast(tr('🐴 Du reitest! Schneller unterwegs – Werkzeug wechseln mit Q bzw. dem Werkzeug-Knopf.', '🐴 You are riding! You move faster – switch tools with Q or the tool button.'));
     }
@@ -2503,32 +2540,49 @@ export default class GardenScene extends Phaser.Scene {
   // Gehegeausbau: alle Gehege mit Plätzen; noch nicht ausgebaute zuerst
   // (aus allen Abschnitten des Tierparks)
   penUpgrades() {
-    const cost = upgradeCost();
     return parkPens().filter((e) => hasSlots(e) && !e.free)
       .map((e) => {
-        const done = isUpgraded(e);
+        const level = penLevelOf(e);
+        const done = level >= maxPenLevel(e);
+        const cost = this.penUpgradeCost(e);
+        // Stufe 1: mehr Platz; Stufe 2: Spielzeug (fertig: was zuletzt dazukam)
+        const text = level === 0
+          ? `${penCapacity(e, 0)} → ${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}`
+          : level === 1 && !done
+            ? tr(`Stufe 2 · Spielzeug: ${toysText(e)} – lockt mehr Besucher an`, `Level 2 · Toys: ${toysText(e)} – attracts more visitors`)
+            : level >= 2
+              ? tr(`Stufe 2 · ${toysText(e)}`, `Level 2 · ${toysText(e)}`)
+              : `${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}`;
         return {
           id: e.id,
           name: e.name,
           species: e.species ?? [],
           cost,
           done,
-          text: `${done ? '' : `${penCapacity(e, 0)} → `}${penCapacity(e, 1)} ${tr('Plätze', 'spaces')} · ${e.upgrade}`,
+          level,
+          text,
           blocked: done ? null : game.hearts < cost ? tr('zu wenig Herzen', 'not enough hearts') : null,
         };
       })
-      .sort((u, v) => u.done - v.done);
+      .sort((u, v) => u.done - v.done || u.level - v.level);
+  }
+
+  // Kosten des nächsten Ausbaus dieses Geheges (Stufe 2 mit Spielzeug kostet mehr)
+  penUpgradeCost(e) {
+    return penLevelOf(e) >= 1 ? Math.round((upgradeCost() * TOY_COST) / 5) * 5 : upgradeCost();
   }
 
   // Gehege ausbauen: Herzen abziehen, Stand speichern und den Tierpark mit dem größeren Gehege neu aufbauen
   // (liegt es in einem anderen Abschnitt, ist es beim nächsten Besuch dort ausgebaut)
   upgradePen(id) {
     const e = parkPens().find((f) => f.id === id);
-    const cost = upgradeCost();
-    if (!e || isUpgraded(e) || game.hearts < cost) return;
+    if (!e || penLevelOf(e) >= maxPenLevel(e)) return;
+    const cost = this.penUpgradeCost(e);
+    if (game.hearts < cost) return;
     game.hearts -= cost;
     game.upgrades += 1;
-    game.penLevel[id] = 1;
+    game.penLevel[id] = penLevelOf(e) + 1;
+    const toys = game.penLevel[id] >= 2;
     if (e.level !== LEVEL_ID) {
       this.updateHud();
       this.mavi?.check();
@@ -2542,7 +2596,7 @@ export default class GardenScene extends Phaser.Scene {
     this.cameras.main.fadeOut(250);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       showLoading(tr(`${e.name} wird ausgebaut …`, `Upgrading ${e.name} …`));
-      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name }));
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, upgraded: e.name, toys }));
     });
   }
 
@@ -2600,6 +2654,189 @@ export default class GardenScene extends Phaser.Scene {
       this.tweens.add({ targets: [a.sprite, a.shadow], alpha: 0, duration: 800, onComplete: () => a.destroy() });
     }
     this.babiesOn = false;
+  }
+
+  // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
+  drawShops() {
+    this.shopSlots = [];
+    this.wheel = null;
+    // Riesenrad: gebaut dreht es sich, sonst ein Bauplatz mit Schild (Riesenrad darauf)
+    const w = LEVEL.wheelSlot;
+    if (w && hasWheel(LEVEL_ID)) this.wheel = new FerrisWheel(this, w);
+    else if (w && slotsShown()) {
+      const { x, y } = tileToWorld(w.tx, w.ty);
+      this.shopSlots.push({ slot: w, x, y, kind: null, wheel: true });
+      this.drawSlotSign(w, x, y, 'wheel_ring');
+    }
+    for (const slot of LEVEL.buildSlots ?? []) {
+      const { x, y } = tileToWorld(slot.tx, slot.ty);
+      const kind = builtOn(slot.id);
+      if (!kind && !slotsShown()) continue; // vor Mavis Ausbau-Aufgabe noch keine leeren Bauplätze
+      this.shopSlots.push({ slot, x, y, kind });
+      if (!kind) {
+        this.drawSlotSign(slot, x, y);
+        continue;
+      }
+      const def = shopDef(kind);
+      this.add.image(x, y, def.stand).setOrigin(0.5, 100 / 128).setScale(0.7).setDepth(y);
+      this.add.sprite(x + 8, y - 10, def.seller, 1).setOrigin(0.5, 112 / 116).setScale(0.5).setDepth(y - 6);
+    }
+  }
+
+  // E-Roller: steht in jedem Tierpark-Abschnitt an seinem Platz (scooterSpot); man steigt auf und fährt schneller durch den
+  // Park. Im Haupthaus und in Gehegen steigt man von selbst ab, der Roller bleibt davor stehen. Durch einen Ausgang (anderer
+  // Abschnitt, Aquarium, Reptilienhaus) und beim Neuaufbau nach einem Ausbau fährt man weiter: game.scooterRiding merkt es
+  // sich, zurück im Tierpark sitzt Henrik gleich wieder auf dem Roller (getOnScooter(true)). Mit dem Auto reist man zu Fuß.
+  drawScooter() {
+    this.driving = false;
+    this.scooter = null;
+    const spot = LEVEL.scooterSpot;
+    if (!spot) return;
+    const { x, y } = tileToWorld(spot.tx, spot.ty);
+    const img = this.add.sprite(x, y, 'scooter_empty', 1).setOrigin(0.5, 164 / 170).setScale(0.5).setDepth(y);
+    // Schatten wie beim Fahren (Player.js): schräg unter der Mitte des Rollers; Bild 1 = nach unten links
+    const shadow = this.add.ellipse(x, y - 9, 46, 13, 0x14320a, 0.3).setAngle(-26.6).setDepth(y - 0.5);
+    img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearScooter && this.getOnScooter());
+    this.scooter = { x, y, img, shadow };
+    this.scooterSafe = { x, y };
+  }
+
+  // resume: nach einem Gebietswechsel bzw. Neuaufbau weiterfahren (Henrik bleibt, wo er ankommt; ohne Hinweis)
+  getOnScooter(resume = false) {
+    if (!this.scooter || this.driving) return;
+    this.driving = true;
+    game.scooterRiding = true;
+    this.nearScooter = false;
+    this.scooter.img.setVisible(false);
+    this.scooter.shadow.setVisible(false);
+    if (!resume) {
+      this.player.x = this.scooter.x;
+      this.player.y = this.scooter.y;
+    }
+    this.player.setMount('scooter');
+    this.scooterSafe = { x: this.player.x, y: this.player.y };
+    if (resume) this.scooterHinted = true;
+    if (!this.scooterHinted) {
+      this.scooterHinted = true;
+      this.showToast(tr('🛴 Mit dem E-Roller bist du im Park schneller unterwegs. Absteigen mit der Aktionstaste.', '🛴 The e-scooter gets you around the zoo faster. Press the action button to get off.'));
+    }
+    this.updateToolbar();
+  }
+
+  // absteigen: der Roller bleibt hier stehen (at: anderer Platz, z. B. vor der Tür, durch die man gerade gegangen ist)
+  getOffScooter(at = null) {
+    if (!this.driving) return;
+    this.driving = false;
+    game.scooterRiding = false;
+    const p = at ?? { x: this.player.x, y: this.player.y };
+    const face = this.player.faceY > 0 ? (this.player.faceX < 0 ? 1 : 0) : this.player.faceX > 0 ? 2 : 3;
+    this.scooter.x = p.x;
+    this.scooter.y = p.y;
+    this.scooter.img.setPosition(p.x, p.y).setFrame(face).setDepth(p.y).setVisible(true);
+    this.scooter.shadow.setPosition(p.x, p.y - 9).setAngle(face === 1 || face === 2 ? -26.6 : 26.6).setDepth(p.y - 0.5).setVisible(true);
+    this.player.setMount(null);
+    this.updateToolbar();
+  }
+
+  // jedes Bild: in der Nähe des Rollers die Aktionstaste zum Aufsteigen; beim Fahren in Gebäude oder Gehege von selbst ab
+  updateScooter() {
+    if (!this.scooter) return;
+    if (this.driving) {
+      const { tx, ty } = worldToTile(this.player.x, this.player.y);
+      if (buildingAt(tx, ty) || enclosureAt(tx, ty)) this.getOffScooter(this.scooterSafe); // (durch Ausgänge fährt man weiter)
+      else this.scooterSafe = { x: this.player.x, y: this.player.y };
+      return;
+    }
+    const near = !this.tool && Math.hypot(this.player.x - this.scooter.x, (this.player.y - this.scooter.y) * 2) < 46;
+    if (near !== !!this.nearScooter) {
+      this.nearScooter = near;
+      this.updateToolbar();
+    }
+  }
+
+  // leerer Bauplatz: Schild auf einem Pfosten (wie an den Gehegen) mit einer kleinen Bude und einem pulsierenden Plus,
+  // damit man ihn bemerkt; antippen öffnet den Buden-Katalog (wenn man davorsteht)
+  drawSlotSign(slot, x, y, iconKey = 'icecream_stand') {
+    const front = y + 4;
+    const sx = x - 14;
+    const sy = y - 10;
+    this.add.rectangle(sx, sy - 4, 3, 22, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
+    const board = this.add.image(sx, sy - 26, 'esign_board').setScale(0.5).setDepth(front);
+    const icon = this.add.image(sx - 4, sy - 24, iconKey);
+    icon.setScale(SIGN_ICON_H / icon.height * 1.15).setDepth(front + 0.1);
+    const plus = this.add
+      .text(sx + 14, sy - 32, '+', { fontFamily: 'Trebuchet MS, Arial', fontSize: '10px', fontStyle: 'bold', color: '#ffffff', backgroundColor: '#3fae4a', padding: { x: 2, y: -1 }, resolution: 4 })
+      .setOrigin(0.5)
+      .setDepth(front + 0.2);
+    this.tweens.add({ targets: plus, scale: 1.2, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearSlot?.slot === slot && this.openEventsPanel(null, slot.id));
+  }
+
+  // freie Bauplätze für diese Buden-Art (jede Art nur einmal je Abschnitt), die in diesem Abschnitt zuerst
+  freeSlotsFor(kind) {
+    return allSlots()
+      .filter((s) => !builtOn(s.id) && !hasShop(s.level, kind))
+      .sort((a, b) => (b.level === LEVEL_ID) - (a.level === LEVEL_ID));
+  }
+
+  // Buden-Katalog: am Bauplatz für diesen einen Platz (slotId), am Computer für den nächsten freien Platz
+  shopOffers(slotId = null) {
+    // Riesenrad: am eigenen Bauplatz nur das, am Computer zusätzlich zu den Buden
+    const ws = wheelSlot();
+    const wheel = ws && {
+      id: WHEEL.id,
+      name: WHEEL.name,
+      icon: WHEEL.icon,
+      cost: WHEEL.cost,
+      text: tr(`Jede Fahrt bringt ${WHEEL.hearts} Herzen, und es kommen mehr Besucher.`, `Every ride brings ${WHEEL.hearts} hearts, and more visitors come.`),
+      done: builtOn(ws.id) === WHEEL.id,
+      blocked: game.hearts < WHEEL.cost ? tr('zu wenig Herzen', 'not enough hearts') : null,
+    };
+    if (slotId && slotId === ws?.id) return [wheel];
+    const target = slotId ? allSlots().find((s) => s.id === slotId) : null;
+    const shops = SHOPS.map((def) => {
+      const here = !!target && hasShop(target.level, def.id);
+      const where = target ? (here ? [] : [target]) : this.freeSlotsFor(def.id);
+      return {
+        id: def.id,
+        name: def.name,
+        icon: def.icon,
+        cost: def.cost,
+        text: tr(`Jeder Verkauf bringt ${def.hearts} Herzen.`, `Every sale brings ${def.hearts} hearts.`),
+        blocked: here
+          ? tr('steht hier schon', 'already in this area')
+          : !where.length
+            ? tr('kein freier Bauplatz', 'no free building plot')
+            : game.hearts < def.cost
+              ? tr('zu wenig Herzen', 'not enough hearts')
+              : null,
+      };
+    });
+    return slotId || !wheel ? shops : [...shops, wheel];
+  }
+
+  // Bude bauen: Herzen abziehen, merken und (im selben Abschnitt) den Park neu aufbauen; gleich kauft jemand dort ein
+  buildShop(kind, slotId = null) {
+    const def = kind === WHEEL.id ? WHEEL : shopDef(kind);
+    const slot = kind === WHEEL.id ? wheelSlot() : slotId ? allSlots().find((s) => s.id === slotId) : this.freeSlotsFor(kind)[0];
+    if (!def || !slot || builtOn(slot.id) || (kind !== WHEEL.id && hasShop(slot.level, kind)) || game.hearts < def.cost) return;
+    game.hearts -= def.cost;
+    game.builds[slot.id] = kind;
+    if (slot.level !== LEVEL_ID) {
+      this.updateHud();
+      this.mavi?.check();
+      this.saveGame();
+      this.showToast(tr(`${def.icon} ${def.name} wird gebaut! Du findest die Bude im Tierpark-Bereich „${LEVELS[slot.level].part.name}“.`, `${def.icon} ${def.name} is being built! You'll find it in the zoo area “${LEVELS[slot.level].part.name}”.`));
+      return;
+    }
+    this.saveLevelState();
+    const arrive = worldToTile(this.player.x, this.player.y);
+    this.leaving = true; // bis zum Neuaufbau steht alles (sonst hakt Mavi die Aufgabe ab, und ihr Satz geht verloren)
+    this.cameras.main.fadeOut(250);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      showLoading(tr(`${def.name} wird gebaut …`, `Building the ${def.name} …`));
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, built: slot.id }));
+    });
   }
 
   // Start und Ende der Events (auch wenn man zwischendurch woanders war) und die Restzeit oben
@@ -2818,8 +3055,9 @@ export default class GardenScene extends Phaser.Scene {
     const hearts = Object.entries(game.heartsBy).filter(([, n]) => n > 0).sort((u, v) => v[1] - u[1]);
     const top = hearts[0]?.[1] ?? 1;
     const heartRows = hearts.map(([s, n]) => {
-      const icon = s === 'icecream' ? '<span class="hs-ice">🍦</span>' : animalIcon(s, 2.2);
-      const name = s === 'icecream' ? tr('Eisstand', 'Ice cream stand') : (ANIMAL_INFO[s] ?? [s])[0];
+      const shop = sourceDef(s);
+      const icon = shop ? `<span class="hs-ice">${shop.icon}</span>` : animalIcon(s, 2.2);
+      const name = shop ? shop.name : (ANIMAL_INFO[s] ?? [s])[0];
       return `<div class="hs-row">${icon}<b>${name}</b><span class="hs-bar"><span style="width:${Math.max(3, (100 * n) / top)}%"></span></span><span class="hs-num"><span class="heart">♥</span> ${n}</span></div>`;
     });
     const heartSum = hearts.reduce((s, [, n]) => s + n, 0);
@@ -2852,9 +3090,20 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Futter holen', 'Get food')}</span></div>`;
       return;
     }
+    if (this.driving || this.nearScooter) {
+      setTouchTool(null, 'assets/scooter_icon.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${this.driving ? tr('Absteigen', 'Get off') : tr('Aufsteigen', 'Get on')}</span></div>`;
+      return;
+    }
+    if (this.nearSlot && !this.tool) {
+      setTouchTool(null, 'assets/icecream.png');
+      const label = this.nearSlot.wheel ? tr('Riesenrad bauen', 'Build the Ferris wheel') : tr('Bude bauen', 'Build a stand');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/icecream.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${label}</span></div>`;
+      return;
+    }
     const pen = !this.tool && this.penAtSign();
     if (pen) {
-      const done = isUpgraded(pen);
+      const done = penLevelOf(pen) >= maxPenLevel(pen);
       setTouchTool(null, 'assets/esign_board.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${done ? tr('Gehege ansehen', 'View enclosure') : tr('Gehege ausbauen', 'Upgrade enclosure')}</span></div>`;
       return;
@@ -3620,6 +3869,7 @@ export default class GardenScene extends Phaser.Scene {
   // Schnellreise: wie ein Gebietswechsel (Tiere kommen mit), Ankunft vor dem Auto im Zielgebiet
   travelTo(target) {
     if (this.cache.audio.exists('car')) this.sound.play('car', { volume: CAR_VOLUME }); // Motor springt an
+    game.scooterRiding = false; // mit dem Auto reist man zu Fuß, der Roller bleibt im Park
     const car = LEVELS[target].car;
     this.leaveLevel({ to: target, arrive: car.arrive ?? { tx: car.tx + 1, ty: car.ty + 1 }, label: LEVELS[target].name });
   }
@@ -3744,10 +3994,15 @@ export default class GardenScene extends Phaser.Scene {
     const adults = this.animals.filter((a) => a.state === 'penned' && !a.baby);
     const score = parkScore(adults);
     const babies = babyPlan(adults).length;
+    const cap = parkCap(LEVEL_ID); // mit Riesenrad mehr Besucher
+    const shops = shopsIn(LEVEL_ID).map(({ kind }) => ({ kind, rate: maxVisitors(score, cap) * AWAY_BUYS_PER_VISITOR_MINUTE * shopDef(kind).hearts }));
+    if (hasWheel(LEVEL_ID)) shops.push({ kind: WHEEL.id, rate: maxVisitors(score, cap) * AWAY_RIDES_PER_VISITOR_MINUTE * WHEEL.hearts });
     return {
-      normal: maxVisitors(score) * AWAY_HEARTS_PER_VISITOR_MINUTE,
-      babies: maxVisitors(score + babies * BABY_APPEAL) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS),
-      ice: LEVEL.iceStand ? maxVisitors(score) * AWAY_ICE_PER_VISITOR_MINUTE : 0, // der Eiswagen steht nur im Zentrum
+      normal: maxVisitors(score, cap) * AWAY_HEARTS_PER_VISITOR_MINUTE,
+      babies: maxVisitors(score + babies * BABY_APPEAL, cap) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS),
+      ice: LEVEL.iceStand ? maxVisitors(score, cap) * AWAY_ICE_PER_VISITOR_MINUTE : 0, // der Eiswagen steht nur im Zentrum
+      // feste Buden und Riesenrad: Herzen pro Minute je Bude
+      shops,
       split: splitHearts(adults, 1000), // Anteile je Tierart
     };
   }
@@ -3764,6 +4019,15 @@ export default class GardenScene extends Phaser.Scene {
     if (this.iceHearts >= 1) {
       this.iceHearts -= 1;
       this.addHearts(1, 'icecream');
+    }
+    this.shopHearts ??= {};
+    for (const r of rates) {
+      for (const { kind, rate } of r.shops ?? []) {
+        this.shopHearts[kind] = (this.shopHearts[kind] ?? 0) + (rate / 60) * dt;
+        if (this.shopHearts[kind] < 1) continue;
+        this.shopHearts[kind] -= 1;
+        this.addHearts(1, kind);
+      }
     }
     if (this.parkHearts < 1) return;
     this.parkHearts -= 1;
@@ -4875,9 +5139,11 @@ export default class GardenScene extends Phaser.Scene {
       .join(' · ');
     const slots = hasSlots(enclosure)
       ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: ${places}${isFull(this.animals, enclosure) ? ' ⭐' : ''}${
-          isUpgraded(enclosure)
-            ? tr(' · ausgebaut', ' · upgraded')
-            : tr(` · Ausbau: ${enclosure.upgrade} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade} (${ACTION_KEY} or tap the sign)`)
+          penLevelOf(enclosure) >= maxPenLevel(enclosure)
+            ? tr(` · ausgebaut${penLevelOf(enclosure) >= 2 ? ' mit Spielzeug' : ''}`, ` · upgraded${penLevelOf(enclosure) >= 2 ? ' with toys' : ''}`)
+            : isUpgraded(enclosure)
+              ? tr(` · Stufe 2: ${toysText(enclosure)} (${ACTION_KEY} oder Schild antippen)`, ` · Level 2: ${toysText(enclosure)} (${ACTION_KEY} or tap the sign)`)
+              : tr(` · Ausbau: ${enclosure.upgrade} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade} (${ACTION_KEY} or tap the sign)`)
         }</div>`
       : '';
     return `<b>${enclosure.name} · ${tr('Hier wohnen', 'Who lives here')}:</b>${rows.join('')}${slots}`;
@@ -4967,6 +5233,12 @@ export default class GardenScene extends Phaser.Scene {
     });
     if (computer !== this.nearComputer) {
       this.nearComputer = computer;
+      this.updateToolbar();
+    }
+    // an einem leeren Bauplatz: die Aktionstaste öffnet den Buden-Katalog
+    const slot = this.shopSlots?.find((s) => !s.kind && Math.hypot(this.player.x - s.x, (this.player.y - s.y) * 2) < CHEST_DIST * 1.8) ?? null;
+    if (slot !== this.nearSlot) {
+      this.nearSlot = slot;
       this.updateToolbar();
     }
     // an einer Kiste: die Aktionstaste öffnet sie
@@ -5093,6 +5365,8 @@ export default class GardenScene extends Phaser.Scene {
     this.updateWaterfallSound();
     this.waterfallSun?.update(dt);
     this.visitors?.update(dt);
+    this.wheel?.update(dt);
+    this.updateScooter();
     this.updateJellies(dt);
     if (!this.leaving) for (const h of Object.keys(HOUSES)) if (h !== LEVEL_ID) this.houseIncome(h, dt);
     if (!this.leaving) this.parkIncome(dt); // die anderen Tierpark-Abschnitte

@@ -5,6 +5,11 @@ import { game } from '../state.js';
 import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 import { tr } from '../i18n.js';
 import { currentSeason, firstSeason } from './season.js';
+import { storyAt } from '../story/story.js';
+import { PEN_TOYS, TOYS, toyKey } from './toys.js';
+
+// leere Bauplätze (Buden, Riesenrad) erst ab Mavis Ausbau-Aufgabe zeigen – vorher lenken sie nur ab
+export const slotsShown = () => storyAt('upgrade');
 
 // ≈: ausgetrocknetes Wasserloch (Schlamm, Savanne in der Trockenzeit; dort steckt der Lungenfisch)
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
@@ -220,6 +225,8 @@ export const OBJECTS = {
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
 };
+// Spielzeug der zweiten Ausbaustufe (ⓐ …, siehe src/world/toys.js)
+for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
 
 export let LEVEL_ID;
 export let LEVEL;
@@ -278,6 +285,17 @@ export function setLevel(id) {
       return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
     });
   }
+  // Bauplätze für Buden: leer stehen dort Baupflöcke, eine gebaute Bude ist fest (ihr Bild zeichnet GardenScene)
+  const put = (tx, ty, c) => (ROWS = ROWS.map((row, y) => (y === ty ? row.slice(0, tx) + c + row.slice(tx + 1) : row)));
+  const shown = slotsShown();
+  for (const s of LEVEL.buildSlots ?? []) if (game.builds?.[s.id] || shown) put(s.tx, s.ty, game.builds?.[s.id] ? 'V' : ':');
+  // Riesenrad: Wiese freiräumen; gebaut sind die 2×2 Kacheln fest, sonst Baupflöcke
+  const w = LEVEL.wheelSlot;
+  if (w && (game.builds?.[w.id] || shown)) {
+    for (let ty = w.clear.ty0; ty <= w.clear.ty1; ty++) for (let tx = w.clear.tx0; tx <= w.clear.tx1; tx++) put(tx, ty, '.');
+    if (game.builds?.[w.id]) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) put(w.tx + dx, w.ty + dy, 'V');
+    else put(w.tx, w.ty, ':');
+  }
   // Gehege vor dem Ausbau: Innenzaun bzw. ohne die Ausstattung, die erst der Ausbau bringt (basic in levels.js).
   // Baustellen-Hinweise (Pflöcke, Bretter) stehen nur im Abschnitt, der erst mit dem Ausbau dazukommt – nicht dort,
   // wo die Tiere schon laufen. Gehege ohne neuen Abschnitt bekommen keine.
@@ -303,6 +321,12 @@ export function setLevel(id) {
       }
     }
     ROWS = rows.map((r) => r.join(''));
+  }
+  // zweite Ausbaustufe: Spielzeug auf freie Kacheln im Gehege (noch nicht gebaute Gehege ausgenommen)
+  for (const e of LEVEL.enclosures ?? []) {
+    if (!PEN_TOYS[e.id] || penLevelOf(e) < 2 || !e.seed || e.free || e.pond) continue;
+    if (e.unlock && !game.unlocked.includes(e.unlock)) continue;
+    ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id]);
   }
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
@@ -471,6 +495,57 @@ export function charAt(tx, ty) {
 // Gehegeausbau: ist das Gehege ausgebaut? Wie viele Tiere passen hinein (ohne Babys)?
 export function isUpgraded(e) {
   return !!game.penLevel[e.id];
+}
+// Ausbaustufe: 0 wie gebaut, 1 größer, 2 mit Spielzeug (siehe src/world/toys.js)
+export function penLevelOf(e) {
+  return game.penLevel[e.id] ?? 0;
+}
+
+// Spielzeug in ein Gehege stellen (rows: Kartenzeilen, seed: eine Kachel im Gehege, list: Spielzeug-Namen). Nur auf Gras
+// (.), dessen Nachbarn alle im Gehege liegen (nicht am Zaun oder Tor), das erste möglichst mittig, jedes weitere mit
+// möglichst viel Abstand zu den anderen. Gibt die neuen Zeilen zurück.
+function placeToys(rows, seed, list) {
+  const grid = rows.map((r) => [...r]);
+  const inside = new Set([seed.tx + ',' + seed.ty]);
+  const todo = [seed];
+  while (todo.length && inside.size < 4000) {
+    const t = todo.pop();
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const tx = t.tx + dx;
+      const ty = t.ty + dy;
+      const c = grid[ty]?.[tx];
+      if (inside.has(tx + ',' + ty) || c === undefined || c === ' ' || c === 'G' || OBJECTS[c]?.fence) continue;
+      inside.add(tx + ',' + ty);
+      todo.push({ tx, ty });
+    }
+  }
+  const tiles = [...inside].map((k) => k.split(',').map(Number));
+  const cx = tiles.reduce((s, [tx]) => s + tx, 0) / tiles.length;
+  const cy = tiles.reduce((s, [, ty]) => s + ty, 0) / tiles.length;
+  const free = tiles.filter(([tx, ty]) => {
+    if (grid[ty][tx] !== '.') return false;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (!inside.has(tx + dx + ',' + (ty + dy))) return false;
+    return true;
+  });
+  const picked = [];
+  for (const id of list) {
+    let best = null;
+    let bestScore = -Infinity;
+    for (const [tx, ty] of free) {
+      if (picked.some(([px, py]) => Math.max(Math.abs(px - tx), Math.abs(py - ty)) <= 2)) continue;
+      const mid = Math.hypot(tx - cx, ty - cy);
+      const apart = picked.length ? Math.min(...picked.map(([px, py]) => Math.hypot(px - tx, py - ty))) : 0;
+      const score = apart - mid * (picked.length ? 0.5 : 1) + (tx * 7 + ty * 13) % 5 * 0.01; // fest, aber nicht immer dieselbe Seite
+      if (score > bestScore) {
+        bestScore = score;
+        best = [tx, ty];
+      }
+    }
+    if (!best) break;
+    picked.push(best);
+    grid[best[1]][best[0]] = TOYS[id].char;
+  }
+  return grid.map((r) => r.join(''));
 }
 // Tierarten, die sich ein Kontingent teilen (der Hirsch ist die seltene Variante des Rehs; Kuh, Schwein und Ziege
 // sind ohnehin Schafe)

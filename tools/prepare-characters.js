@@ -206,6 +206,11 @@ const CHARACTERS = [
   { src: 'Sprites/Ziege.png', out: 'farm_goat_eat.png', frameW: 80, frameH: 88, feetY: 84, figureH: 58, copyMirror: { 3: 2 } },
   // Eisverkäuferin am Eiswagen (Eisstand-Event), Format wie die Besucher. Freigestellt mit npm run cutout
   { src: 'Sprites/Eisverkäuferin.png', out: 'icecream_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  // Verkäufer der festen Buden (src/world/shops.js), Format wie die Eisverkäuferin. Freigestellt mit npm run cutout
+  { src: 'Sprites/Popcornverkäuferin.png', out: 'popcorn_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Brezelverkäufer.png', out: 'pretzel_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Limonadenverkäuferin.png', out: 'lemonade_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
+  { src: 'Sprites/Zuckerwatteverkäufer.png', out: 'cottoncandy_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
   // Mavi die Tierpflegerin (führt durch die Geschichte), Format wie die Besucher. Freigestellt mit npm run cutout
   { src: 'Sprites/Mavi.png', out: 'mavi.png', frameW: 72, frameH: 116, feetY: 112, figureH: 102 },
   // Panda (Asien): laufend und sitzend mit Bambus, gleicher Maßstab; beide Rückansichten schauen nach rechts,

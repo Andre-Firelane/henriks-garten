@@ -10,10 +10,18 @@ export function newStory(locks = true) {
   return { step: 0, id: STEPS[0].id, done: [], unlocked: [], heard: false, readyShown: false, locks, flags: {} };
 }
 
+// umbenannte Aufgaben (alt → neu) und neue, die als erledigt gelten, wenn eine frühere schon erledigt ist (sonst würde
+// syncStory Spielstände, die schon weiter sind, auf die neue Aufgabe zurückwerfen)
+const STEP_RENAMES = { icecream: 'babies' };
+const DONE_WITH = { stands: 'upgrade' };
+
 // beim Laden: die aktive Aufgabe steht auch mit Namen im Spielstand (id) – kommen Aufgaben dazu oder fallen weg, stimmt so
 // die Nummer wieder (eine weggefallene: die erste danach, die noch nicht erledigt ist)
 export function syncStory() {
   const s = game.story;
+  s.done = s.done.map((id) => STEP_RENAMES[id] ?? id);
+  if (STEP_RENAMES[s.id]) s.id = STEP_RENAMES[s.id];
+  for (const [id, after] of Object.entries(DONE_WITH)) if (s.done.includes(after) && !s.done.includes(id)) s.done.push(id);
   if (s.id === undefined) return (s.id = STEPS[s.step]?.id ?? null);
   if (s.id === null) return (s.step = STEPS.length); // alles geschafft
   let i = STEPS.findIndex((t) => t.id === s.id);

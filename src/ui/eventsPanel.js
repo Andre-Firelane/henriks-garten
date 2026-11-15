@@ -1,10 +1,12 @@
-// Hauptrechner im Haupthaus: zwei Reiter – "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown) und
-// "Gehege" (gegen Herzen ausbauen: mehr Plätze und neue Ausstattung). Tablet: Reiter und Kacheln antippen.
+// Hauptrechner im Haupthaus: drei Reiter – "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown),
+// "Gehege" (gegen Herzen ausbauen: mehr Plätze und neue Ausstattung) und "Buden" (auf einem freien Bauplatz bauen).
+// Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Tablet: Reiter und Kacheln antippen.
 // Laptop: Q/Tab wechselt den Reiter, A/D wählt, E/Enter/Leertaste bestätigt, Esc schließt.
 import { formatTime } from '../world/events.js';
 import { animalIcons } from './icons.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
+import { shopDef } from '../world/shops.js';
 
 let panel = null;
 let state = null;
@@ -14,6 +16,7 @@ const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nicht
 const TABS = [
   ['events', 'Events'],
   ['pens', tr('Gehege ausbauen', 'Upgrade enclosures')],
+  ['build', tr('Buden bauen', 'Build stands')],
 ];
 
 export function isEventsOpen() {
@@ -73,15 +76,28 @@ const THUMBS = {
     ['emoji', '🌧️', 40, 58, 22],
     ['emoji', '🌿', 30, 116, 8],
   ],
+  // Riesenrad (Bau-Reiter): Rad mit Gondeln
+  wheel: [
+    ['emoji', '🎡', 64, 48, 14],
+  ],
   ride: [
     ['ride_meadow', 160, 230, 0, 0.38, 2, 0],
     ['ride_savanna', 160, 230, 1, 0.4, 92, 0],
   ],
 };
 
+// Bude: Verkäufer und Snack (wie beim Eiswagen)
+function shopThumb(def) {
+  return [
+    [def.seller, 72, 116, 0, 0.8, 22, 0],
+    [def.items[0], 24, 36, 0, 2, 108, 4, 1],
+  ];
+}
+
 function thumb(item) {
   if (item.species) return `<div class="ev-thumb pen-thumb">${animalIcons(item.species, 3.4)}</div>`; // Gehege: seine Tiere
-  const parts = (THUMBS[item.id] ?? [])
+  const shop = state?.tab === 'build' ? shopDef(item.id) : null;
+  const parts = (shop ? shopThumb(shop) : THUMBS[item.id] ?? [])
     .map(([img, w, h, frame, k, left, bottom, frames = 4]) => {
       // Wettersymbol: ['emoji', Zeichen, Schriftgröße, links, unten]
       if (img === 'emoji') return `<span class="ev-sprite" style="left:${frame}px;bottom:${k}px;font-size:${h}px;line-height:1">${w}</span>`;
@@ -96,10 +112,11 @@ function thumb(item) {
 
 // getInfo(): { hearts, events: [...], pens: [...] }. Ein Event: { id, name, text, cost, state, left, blocked };
 // ein Gehege: { id, name, text, cost, species, done, blocked }. onPick(tab, id) startet bzw. baut aus.
-// opts: { tab: 'pens', only: Gehege-Id } zeigt nur den Ausbau dieses einen Geheges, ohne Reiter (am Gehegeschild)
+// opts: { tab: 'pens', only: Gehege-Id } zeigt nur den Ausbau dieses einen Geheges, ohne Reiter (am Gehegeschild);
+// { tab: 'build', single: true } nur den einen Reiter (am Bauplatz)
 export function openEvents(getInfo, onPick, onClose, opts = {}) {
   panel = document.getElementById('events');
-  state = { getInfo, onPick, onClose, tab: opts.tab ?? 'events', only: opts.only ?? null, selected: 0, point: opts.point ?? null, tut: opts.hint ?? null };
+  state = { getInfo, onPick, onClose, tab: opts.tab ?? 'events', only: opts.only ?? null, single: !!(opts.single || opts.only), title: opts.title ?? null, note: opts.note ?? null, selected: 0, point: opts.point ?? null, tut: opts.hint ?? null };
   // Mavis Aufgabe: dieses Event ist vorausgewählt, ein Pfeil zeigt darauf, darunter ihr Hinweis
   if (state.point) state.selected = Math.max(0, items().list.findIndex((it) => it.id === state.point));
   render();
@@ -118,7 +135,12 @@ function status(item) {
   if (state.tab === 'pens') {
     if (item.done) return [`<span class="ev-status on">${tr('ausgebaut', 'upgraded')} ✓</span>`, false];
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
-    return [`<span class="ev-status go">${tr('Ausbauen', 'Upgrade')}</span>`, true];
+    return [`<span class="ev-status go">${item.level ? tr('Spielzeug kaufen', 'Buy toys') : tr('Ausbauen', 'Upgrade')}</span>`, true];
+  }
+  if (state.tab === 'build') {
+    if (item.done) return [`<span class="ev-status on">${tr('gebaut', 'built')} ✓</span>`, false];
+    if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
+    return [`<span class="ev-status go">${tr('Bauen', 'Build')}</span>`, true];
   }
   if (item.state === 'active') return [`<span class="ev-status on">${tr(`läuft noch ${formatTime(item.left)}`, `running · ${formatTime(item.left)} left`)}</span>`, false];
   if (item.state === 'cooldown') return [`<span class="ev-status wait">${tr('wieder in', 'again in')} ${formatTime(item.left)}</span>`, false];
@@ -137,25 +159,27 @@ function render() {
   const { hearts, list } = items();
   state.list = list;
   state.selected = Math.min(state.selected, Math.max(0, list.length - 1));
-  const tabs = state.only
-    ? `<span class="ev-tab on">${TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege: keine Reiter
+  const tabs = state.single
+    ? `<span class="ev-tab on">${state.title ?? TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege bzw. dieser Bauplatz: keine Reiter
     : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
-  const hint = state.tab === 'pens'
-    ? tr('Ein ausgebautes Gehege hat mehr Plätze und neue Ausstattung.', 'An upgraded enclosure has more spaces and new equipment.')
-    : tr('Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.', 'Tap an event – or choose with <b>A</b>/<b>D</b> and start it with <b>E</b>.');
+  const hint = state.note ?? (state.tab === 'pens'
+    ? tr('Ausbau: mehr Plätze und neue Ausstattung. Danach Stufe 2: Spielzeug – die Tiere freuen sich, und es kommen mehr Besucher.', 'Upgrade: more spaces and new equipment. Then level 2: toys – the animals are happy and more visitors come.')
+    : state.tab === 'build'
+      ? tr('Die Besucher kaufen an den Buden ein – jeder Verkauf bringt Herzen. Jede Sorte gibt es einmal pro Bereich.', 'Visitors buy snacks at the stands – every sale brings hearts. Each kind once per area.')
+      : tr('Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.', 'Tap an event – or choose with <b>A</b>/<b>D</b> and start it with <b>E</b>.'));
   panel.innerHTML = `<div class="chest-box ev-box">${CLOSE_BUTTON}
       <div class="ev-tabs">${tabs}</div>
       <p class="ev-hearts">${tr('Dein Konto', 'Your hearts')}: <span class="heart">♥</span> <b>${hearts}</b></p>
       <div class="chest-items">${list
         .map(
           (it, i) => `<button class="chest-item ev-item" data-i="${i}">
-            ${state.tab === 'events' && it.id === state.point ? '<span class="chest-pointer">▼</span>' : ''}${thumb(it)}<span class="ev-name">${it.name}</span><small>${it.text}</small>
+            ${it.id === state.point ? '<span class="chest-pointer">▼</span>' : ''}${thumb(it)}<span class="ev-name">${it.name}</span><small>${it.text}</small>
             ${it.done ? '' : `<span class="ev-cost"><span class="heart">♥</span> ${it.cost}</span>`}<span class="ev-state"></span>
           </button>`,
         )
         .join('')}</div>
       ${state.tut && state.tab === 'events' ? `<p class="chest-tut">${state.tut}</p>` : ''}
-      <p class="chest-hint">${hint}${state.only ? tr(' <b>Esc</b> schließt.', ' <b>Esc</b> closes.') : tr(' <b>Q</b> wechselt zwischen Events und Gehegen.', ' <b>Q</b> switches between events and enclosures.')}</p>
+      <p class="chest-hint">${hint}${state.single ? tr(' <b>Esc</b> schließt.', ' <b>Esc</b> closes.') : tr(' <b>Q</b> wechselt zwischen Events, Gehegen und Buden.', ' <b>Q</b> switches between events, enclosures and stands.')}</p>
     </div>`;
   tick();
 }
@@ -178,7 +202,8 @@ function tick() {
 }
 
 function switchTab(tab) {
-  state.tab = tab ?? (state.tab === 'events' ? 'pens' : 'events');
+  const i = TABS.findIndex(([id]) => id === state.tab);
+  state.tab = tab ?? TABS[(i + 1) % TABS.length][0];
   state.selected = 0;
   render();
 }
@@ -188,7 +213,7 @@ function onKey(e) {
   e.stopPropagation(); // die Taste soll im Spiel nichts auslösen
   const k = e.key.toLowerCase();
   const n = state.list.length;
-  if ((k === 'q' || k === 'tab') && !state.only) return switchTab();
+  if ((k === 'q' || k === 'tab') && !state.single) return switchTab();
   if (k === 'a' || k === 'arrowleft' || k === 'w' || k === 'arrowup') state.selected = (state.selected + n - 1) % n;
   else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = (state.selected + 1) % n;
   else if (k === 'e' || k === 'enter' || k === ' ') return pick(state.selected);
@@ -209,7 +234,7 @@ function onClick(e) {
   if (performance.now() - openedAt < OPEN_GRACE) return;
   if (isCloseClick(e)) return close(true);
   const t = e.target.closest('.ev-tab');
-  if (t) return state.only ? undefined : switchTab(t.dataset.tab);
+  if (t) return state.single ? undefined : switchTab(t.dataset.tab);
   const b = e.target.closest('.ev-item');
   if (b) pick(Number(b.dataset.i));
   else if (!e.target.closest('.ev-box')) close(true); // Tipp neben die Tafel schließt

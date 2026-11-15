@@ -2,10 +2,12 @@
 // alten Pixel-Sprites, behalten beim Heranzoomen aber ihre Details. Dazu bekommt jedes Bild seine alte Größe
 // (Breite, Höhe, Fußpunkt bleiben gleich), zeigt aber das ganze große Bild.
 import { IS_PHONE } from '../ui/touch.js';
+import { TOYS, toyKey } from './toys.js';
 
 export const HD_SCALE = 4;
 
 export const HD = [
+  ...Object.keys(TOYS).map(toyKey), // Spielzeug der zweiten Ausbaustufe
   // Wald
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'planks_forest', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
   'forest_boulder', 'forest_boulder2', 'forest_stump', 'forest_mossy_log', 'forest_elder', 'forest_hazel', 'forest_bluebells', 'forest_foxglove',
@@ -28,7 +30,7 @@ export const HD = [
   'gate_door_office_x', 'gate_door_office_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x',
   'gate_net_y', 'gate_tall_x', 'gate_tall_y', 'gate_x', 'gate_y', 'hammock', 'hay_rack', 'hay_shelter', 'heliconia', 'hibiscus',
   'hotspring', 'hutroof_cathouse', 'hutroof_office', 'hutwall_cathouse_x', 'hutwall_cathouse_y', 'hutwall_office_x', 'hutwall_office_y',
-  'icecream', 'icecream2', 'icecream3', 'icecream_stand', 'jgrass0', 'jgrass1', 'jgrass2', 'jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2',
+  'icecream', 'icecream2', 'icecream3', 'icecream_stand', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'popcorn_stand', 'lemonade_stand', 'cottoncandy_stand', 'pretzel_stand', 'jgrass0', 'jgrass1', 'jgrass2', 'jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2',
   'jungle_plant', 'jungle_tree', 'lion_rock', 'mesh_x', 'mesh_y', 'nest_box', 'net_x', 'net_y', 'office_armchair', 'office_chair',
   'office_desk', 'office_plant_monstera', 'office_plant_strelitzia', 'office_rug', 'office_sofa', 'office_table', 'park_path', 'parkfood',
   'peacock_perch', 'reeds', 'reptile_facade', 'sgrass0', 'sgrass1', 'sgrass2', 'stone_lantern', 'sun_rock', 'tall_grass', 'tall_x',
@@ -45,6 +47,7 @@ export const HD = [
   'asia_path', 'planks_asia', 'gate_door_asia_x', 'gate_door_asia_y', 'hutwall_asia_x', 'hutwall_asia_y', 'hutroof_asia', 'hut_chair_asia',
   'hut_chest_small', 'hut_desk_asia', 'hut_plant_asia', 'hut_shelf_asia', 'jar', 'jar_glow', 'koifood',
   // Riff
+  'car_zoo', // Zooauto (Schnellreise, vergrößert gezeigt)
   'anchor_sack', 'boat_zoo', 'reef_algae', 'reef_anemone', 'reef_brain', 'reef_brain2', 'reef_branch', 'reef_branch2', 'reef_dark', 'reef_fan',
   'reef_fan2', 'reef_gravel', 'reef_kelp', 'reef_path', 'reef_rock', 'reef_sand0', 'reef_sand1', 'reef_sand2', 'reef_seagrass',
   'reef_starfish', 'reef_tube', 'reef_tube2', 'scissors', 'shell', 'tank_rock',

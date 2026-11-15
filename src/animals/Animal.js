@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate, enclosureAt, accepts, bridgeLift, raiseAt, LEVEL, LEVEL_ID } from '../world/map.js';
-import { worldToTile } from '../world/iso.js';
+import { inPen, isGate, enclosureAt, accepts, bridgeLift, raiseAt, objectAt, LEVEL, LEVEL_ID } from '../world/map.js';
+import { tileToWorld, worldToTile } from '../world/iso.js';
+import { TOY_PLAY } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
 
@@ -1074,7 +1075,8 @@ export default class Animal {
     } else if (this.feed) {
       moving = this.updateFeed(dt); // im Tierpark: zum Futter laufen und fressen
     } else {
-      moving = this.updateFree(dt, player);
+      const play = this.updateToy(dt); // im Gehege mit Spielzeug (zweite Ausbaustufe): ab und zu damit spielen
+      moving = play ?? this.updateFree(dt, player);
     }
 
     if (moving) this.walkTime += dt * (this.fleeing ? 1.8 : 1); // auf der Flucht schnellere Schritte
@@ -1096,6 +1098,147 @@ export default class Animal {
     return moved;
   }
 
+  // Spielzeug im Gehege (siehe TOY_PLAY in src/world/toys.js): gibt zurück, ob es sich dabei bewegt – oder null, wenn es
+  // gerade nicht spielt (dann läuft es wie sonst herum)
+  updateToy(dt) {
+    const how = TOY_PLAY[this.species];
+    if (!how || this.state !== 'penned' || !this.enclosure?.tiles || this.baby) return null;
+    if (!this.play) {
+      if (this.digging || this.sit?.phase === 'walk' || this.grazing || this.sleeping || this.jumping || this.tree) return null; // ist gerade mit etwas anderem beschäftigt
+      this.toyWait = (this.toyWait ?? Phaser.Math.FloatBetween(2, how.every[1])) - dt;
+      if (this.toyWait > 0) return null;
+      this.toyWait = Phaser.Math.FloatBetween(...how.every);
+      const taken = new Set(this.scene.animals.filter((a) => a !== this && a.play).map((a) => a.play.key));
+      const toys = this.enclosure.tiles
+        .filter(({ tx, ty }) => objectAt(tx, ty)?.toy === how.toy && !taken.has(`${tx},${ty}`))
+        .map(({ tx, ty }) => ({ key: `${tx},${ty}`, ...tileToWorld(tx, ty) }))
+        .sort((p, q) => Math.hypot(p.x - this.x, p.y - this.y) - Math.hypot(q.x - this.x, q.y - this.y));
+      for (const t of toys) {
+        // freier Platz vor dem Spielzeug (von dort springt, frisst, klettert es)
+        const spot = [[-18, 9], [18, 9], [0, 13], [-18, -9], [18, -9]].map(([dx, dy]) => ({ x: t.x + dx, y: t.y + dy })).find((p) => !this.blocked(p.x, p.y));
+        if (spot) {
+          // Zeit zum Hinlaufen: nach Entfernung und Tempo (langsame Tiere wie der Panda brauchen länger)
+          const time = Math.min(45, (Math.hypot(spot.x - this.x, spot.y - this.y) / this.kind.speed) * 2.5 + 4);
+          this.play = { ...t, spot, phase: 'walk', time };
+          this.sit = null; // sitzt der Panda am Bambus: steht auf und geht spielen
+          break;
+        }
+      }
+      if (!this.play) return null;
+    }
+    const p = this.play;
+    if (p.phase === 'leave') return false; // springt gerade wieder herunter (Tween)
+    p.time -= dt;
+    if (p.phase === 'walk') {
+      const dx = p.spot.x - this.x;
+      const dy = p.spot.y - this.y;
+      const d = Math.hypot(dx, dy);
+      if (d < 3) {
+        p.phase = 'play';
+        p.time = p.total = Phaser.Math.FloatBetween(...how.time);
+        this.faceX = Math.sign(p.x - this.x) || this.faceX;
+        this.faceY = Math.sign(p.y - this.y) || this.faceY;
+        this.startToy(how, p);
+        return false;
+      }
+      // hinlaufen; steht etwas im Weg, schräg daran vorbei (wie zum Bambus)
+      const step = Math.min(d, this.kind.speed * dt);
+      const angle = Math.atan2(dy, dx);
+      const moved = p.time > 0 && [0, 0.5, -0.5, 1, -1, 1.5, -1.5].some((turn) => this.move(Math.cos(angle + turn) * step, Math.sin(angle + turn) * step));
+      if (!moved) {
+        this.play = null; // kommt nicht hin: später wieder
+        return null;
+      }
+      return true;
+    }
+    const k = 1 - Math.max(0, p.time) / p.total; // 0 … 1 im Spiel
+    const moving = this.playToy(how, p, k);
+    if (p.time <= 0) this.stopToy(how, p);
+    return moving;
+  }
+
+  startToy(how, p) {
+    if (how.action === 'perch') {
+      // hinauf aufs Spielzeug (knapp davor, damit es über ihm gezeichnet wird)
+      this.scene.tweens.add({ targets: this, x: p.x, y: p.y + 1, toyLift: how.lift, duration: 280, ease: 'Quad.easeOut' });
+    }
+    if (how.action === 'eat') this.setEating(true);
+    if (how.action === 'slide') p.from = { x: this.x, y: this.y };
+  }
+
+  // jedes Bild beim Spielen; gibt zurück, ob es sich bewegt (Laufbild)
+  playToy(how, p, k) {
+    if (how.action === 'perch') {
+      this.faceY = 1; // oben: schaut nach vorne in die Runde
+      return false;
+    }
+    if (how.action === 'eat') {
+      if (!this.eatingLook) this.toyAngle = Math.sin(k * p.total * 6) * 3; // ohne Fress-Bild: nicken
+      return false;
+    }
+    if (how.action === 'rub') {
+      this.toyAngle = Math.sin(k * p.total * 14) * 7; // am Pfosten hin und her reiben
+      return false;
+    }
+    if (how.action === 'slide') {
+      // klettert hinauf (an der Leiter), sitzt kurz oben, rutscht auf der anderen Seite herunter
+      const top = { x: p.x - 4, y: p.y + 1 };
+      const end = { x: p.x + (p.x - p.from.x) * 1.2, y: p.y + (p.y - p.from.y) * 1.2 };
+      if (k < 0.45) {
+        const u = k / 0.45;
+        this.x = p.from.x + (top.x - p.from.x) * u;
+        this.y = p.from.y + (top.y - p.from.y) * u;
+        this.toyLift = how.lift * u;
+        return true;
+      }
+      if (k < 0.6) {
+        this.toyLift = how.lift;
+        this.faceY = 1;
+        return false;
+      }
+      const u = (k - 0.6) / 0.4;
+      this.x = top.x + (end.x - top.x) * u;
+      this.y = top.y + (end.y - top.y) * u;
+      this.toyLift = how.lift * (1 - u) * (1 - u * 0.3);
+      this.faceX = Math.sign(end.x - top.x) || this.faceX;
+      this.faceY = Math.sign(end.y - top.y) || this.faceY;
+      return false;
+    }
+    return false;
+  }
+
+  stopToy(how, p) {
+    if (how.action === 'perch') {
+      p.phase = 'leave';
+      this.scene.tweens.add({ targets: this, x: p.spot.x, y: p.spot.y, toyLift: 0, duration: 280, ease: 'Quad.easeIn', onComplete: () => this.endToy() });
+      return;
+    }
+    if (how.action === 'slide' && this.blocked(this.x, this.y)) {
+      this.x = p.spot.x; // unten angekommen, aber an einer festen Stelle: zurück an den Start
+      this.y = p.spot.y;
+    }
+    this.endToy();
+  }
+
+  // beim Speichern: oben auf dem Spielzeug (Wachposten, Rutsche) zählt der Platz davor, sonst steckt es nach dem Laden darin fest
+  savedSpot() {
+    return this.play && this.play.phase !== 'walk' ? { x: this.play.spot.x, y: this.play.spot.y } : { x: this.x, y: this.y };
+  }
+
+  // Spielen beenden (auch mittendrin, z. B. wenn gefüttert wird)
+  endToy() {
+    if (!this.play) return;
+    if (this.play.phase === 'leave' || this.toyLift) this.scene.tweens.killTweensOf(this);
+    if (this.play.phase !== 'walk' && this.toyLift && this.play.spot) {
+      this.x = this.play.spot.x;
+      this.y = this.play.spot.y;
+    }
+    this.play = null;
+    this.toyLift = 0;
+    this.toyAngle = 0;
+    if (TOY_PLAY[this.species]?.action === 'eat') this.setEating(false);
+  }
+
   // Futter im Gehege: Kann das Tier gerade zum Futter kommen? (z. B. nicht, während es auf dem Kratzbaum schläft)
   canFeed() {
     return this.state === 'penned';
@@ -1103,6 +1246,7 @@ export default class Animal {
 
   // zum Futterplatz laufen und dort time Sekunden fressen; food: Mitte des Futters (dorthin schaut es)
   eatAt(spot, food, time) {
+    this.endToy(); // spielt es gerade: aufhören
     this.startFeed();
     this.feed = { spot, food, time, phase: 'walk', timeout: FEED_WALK_TIMEOUT };
   }
@@ -1296,8 +1440,9 @@ export default class Animal {
     const hop = wobble ? Math.abs(Math.sin(phase)) * this.kind.hop : 0;
     // auf einer Bogenbrücke etwas höher; im Terrarium auf einem Sockel um dessen Höhe
     const lift = bridgeLift(this.x, this.y) + (this.state === 'penned' ? raiseAt(...Object.values(worldToTile(this.x, this.y))) : 0);
-    this.sprite.setPosition(this.x, this.y - hop - lift + SPRITE_SINK);
-    this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : 0);
+    const toy = this.toyLift ?? 0; // auf dem Spielzeug (Wachposten, Rutsche): höher, der Schatten bleibt am Boden
+    this.sprite.setPosition(this.x, this.y - hop - lift - toy + SPRITE_SINK);
+    this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : this.toyAngle ?? 0);
     this.shadow.setPosition(this.x, this.y - lift);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);

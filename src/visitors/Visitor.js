@@ -6,8 +6,9 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
+import { MAX_BUYS, RIDE_CHANCE, SHOP_CHANCE, WHEEL, shopDef } from '../world/shops.js';
 import { LEVEL, LEVEL_ID } from '../world/map.js';
-import { BABY_BONUS, HOUSE_VISITORS, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
+import { BABY_BONUS, HOUSE_VISITORS, parkCap, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
 const LOOKS = 8; // Besucher-Bilder visitor1 ... visitor8
 const FRAMES = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
@@ -19,14 +20,14 @@ const FEED_CHANCE = 0.25; // so oft füttert er am Ende des Schauens
 const PEN_FEED_PAUSE = 40; // Sekunden, bevor dasselbe Gehege wieder gefüttert wird
 const SPREAD = 8; // so weit stehen und laufen Besucher neben der Kachelmitte (damit sie sich nicht überlagern)
 const SCORE_EVERY = 3; // Sekunden zwischen zwei Neuberechnungen der Anziehung
-// Eisstand-Event: wer noch kein Eis hatte, geht mit dieser Wahrscheinlichkeit zum Eiswagen (beim Ankommen bzw. nach
-// einem Gehege); dort wartet er kurz, bekommt sein Eis (ein Herz) und trägt es eine Weile in der Hand
+// Eiswagen-Event und feste Buden (src/world/shops.js): wer eine Sorte noch nicht hatte, geht mit dieser Wahrscheinlichkeit
+// hin (beim Ankommen bzw. nach einem Gehege); dort wartet er kurz, bekommt seinen Snack (Herzen) und trägt ihn eine
+// Weile in der Hand. Feste Buden: SHOP_CHANCE, Eiswagen-Event: ICE_CHANCE.
 const ICE_CHANCE = 0.6;
-const ICE_BUY_TIME = [2, 3.5];
-const ICE_WALK_IN = 6; // Mini-Tutorial: so viele Felder vor dem Eiswagen taucht der erste Eis-Kunde auf (siehe sendToIce)
-const ICE_EAT_TIME = [40, 70]; // so lange hält er das Eis, dann ist es aufgegessen
-const ICE_LOOKS = ['icecream', 'icecream2', 'icecream3'];
-const ICE_HEARTS = 2; // so viele Herzen bringt jedes verkaufte Eis
+const BUY_TIME = [2, 3.5];
+const WALK_IN = 6; // Mini-Tutorial: so viele Felder vor der Bude taucht der erste Kunde auf (siehe sendToShop)
+const EAT_TIME = [40, 70]; // so lange hält er den Snack, dann ist er aufgegessen
+const QUEUE_PATIENCE = 90; // Riesenrad: so lange (Sekunden) wartet er höchstens, dann geht er weiter
 // Freilaufende Pfauen (und Schmetterlinge, die auf einer Blüte sitzen): kommt ein Besucher an einem vorbei, bleibt er kurz stehen und schaut; meist gibt es ein Herz
 // (immer, wenn der Pfau gerade ein Rad schlägt). Jeden Pfau schaut er sich nur einmal an.
 const PEACOCK_WATCH_DIST = 56;
@@ -53,6 +54,9 @@ export class Visitor {
     this.pen = null;
     this.phase = 'walk';
     this.timer = 0;
+    this.had = new Set(); // Sorten, die er schon gekauft hat
+    this.bought = 0;
+    this.shop = null; // Bude, zu der er gerade geht bzw. an der er wartet
     this.shadow = scene.add.ellipse(x, y, 22, 7, 0x14320a, 0.3);
     this.sprite = scene.add.sprite(x, y, `visitor${look}`, FRAMES.downRight).setOrigin(0.5, ORIGIN_Y).setScale(0.5);
   }
@@ -72,6 +76,7 @@ export class Visitor {
   }
 
   update(dt) {
+    if (this.phase === 'ride') return; // sitzt im Riesenrad (die Gondel zeigt ihn)
     let moving = false;
     if (this.phase === 'walk') this.lookForPeacock(dt);
     if (this.phase === 'watch') {
@@ -130,21 +135,30 @@ export class Visitor {
         if (Math.random() < FEED_CHANCE) this.crowd.feed(this);
         this.next();
       }
-    } else if (this.phase === 'buy') {
-      // am Eiswagen: warten, dann gibt es das Eis
+    } else if (this.phase === 'queue') {
+      // am Riesenrad angestellt: warten, bis unten eine Gondel frei ist (siehe FerrisWheel); zu lange, dann weiter
       this.timer -= dt;
-      this.faceTowards(LEVEL.iceStand);
+      this.faceTowards(LEVEL.wheelSlot);
       if (this.timer <= 0) {
-        this.takeIce();
+        this.rode = true; // nicht gleich wieder anstellen
+        this.next();
+      }
+    } else if (this.phase === 'buy') {
+      // an der Bude: warten, dann gibt es den Snack
+      this.timer -= dt;
+      this.faceTowards(this.shop?.at);
+      if (this.timer <= 0) {
+        this.takeItem(this.shop?.kind ?? 'icecream');
+        this.shop = null;
         this.crowd.release(this);
         if (!this.crowd.sendToPen(this)) this.crowd.sendHome(this);
       }
     }
-    if (this.iceSprite) {
-      this.iceTime -= dt;
-      if (this.iceTime <= 0) {
-        this.iceSprite.destroy(); // aufgegessen
-        this.iceSprite = null;
+    if (this.itemSprite) {
+      this.itemTime -= dt;
+      if (this.itemTime <= 0) {
+        this.itemSprite.destroy(); // aufgegessen
+        this.itemSprite = null;
       }
     }
     this.walkTime += moving ? dt : 0;
@@ -169,14 +183,16 @@ export class Visitor {
     this.faceY = Math.sign(pc.y - this.y) || this.faceY;
   }
 
-  // Eis bekommen: Herzen, und das Eis kommt in die Hand
-  takeIce() {
-    this.ice = true;
-    this.popHeart();
-    this.scene.time.delayedCall(250, () => this.popHeart()); // zweites Herz kurz danach
-    this.scene.addHearts(ICE_HEARTS, 'icecream');
-    this.iceSprite = this.scene.add.image(this.x, this.y, Phaser.Utils.Array.GetRandom(ICE_LOOKS)).setScale(0.5).setOrigin(0.5, 1);
-    this.iceTime = Phaser.Math.FloatBetween(...ICE_EAT_TIME);
+  // Snack bekommen: Herzen (je eins kurz nacheinander), und der Snack kommt in die Hand (statt eines alten)
+  takeItem(kind) {
+    const def = shopDef(kind);
+    this.had.add(kind);
+    this.bought++;
+    for (let i = 0; i < def.hearts; i++) this.scene.time.delayedCall(250 * i, () => this.popHeart());
+    this.scene.addHearts(def.hearts, kind);
+    this.itemSprite?.destroy();
+    this.itemSprite = this.scene.add.image(this.x, this.y, Phaser.Utils.Array.GetRandom(def.items)).setScale(0.5).setOrigin(0.5, 1);
+    this.itemTime = Phaser.Math.FloatBetween(...EAT_TIME);
   }
 
   faceTowards(t) {
@@ -186,12 +202,41 @@ export class Visitor {
     this.faceY = Math.sign(p.y - this.y) || this.faceY;
   }
 
-  // am Ziel angekommen: am Eiswagen anstellen bzw. am Gehege stehen bleiben und schauen
+  // Riesenrad: einsteigen (die Figur verschwindet, die Gondel zeigt seinen Oberkörper)
+  boardWheel() {
+    this.rideSpot = this.spot;
+    this.crowd.release(this);
+    this.phase = 'ride';
+    for (const o of [this.sprite, this.shadow, this.itemSprite]) o?.setVisible(false);
+  }
+
+  // ... nach einer Runde wieder aussteigen, dort wo er gewartet hat: Herzen, dann weiter zu den Gehegen
+  leaveWheel() {
+    this.rode = true;
+    const p = this.rideSpot ? this.crowd.standPoint(this.rideSpot) : { x: this.x, y: this.y };
+    this.rideSpot = null;
+    this.x = p.x;
+    this.y = p.y;
+    for (const o of [this.sprite, this.shadow, this.itemSprite]) o?.setVisible(true);
+    this.phase = 'walk';
+    this.route = [];
+    for (let i = 0; i < WHEEL.hearts; i++) this.scene.time.delayedCall(250 * i, () => this.popHeart());
+    this.scene.addHearts(WHEEL.hearts, WHEEL.id);
+    if (!this.crowd.sendToPen(this)) this.crowd.sendHome(this);
+  }
+
+  // am Ziel angekommen: an der Bude bzw. am Riesenrad anstellen oder am Gehege stehen bleiben und schauen
   arrive() {
-    if (this.goal === 'ice') {
+    if (this.goal === 'ride') {
+      this.goal = null;
+      this.phase = 'queue';
+      this.timer = QUEUE_PATIENCE;
+      return;
+    }
+    if (this.goal === 'shop') {
       this.goal = null;
       this.phase = 'buy';
-      this.timer = Phaser.Math.FloatBetween(...ICE_BUY_TIME);
+      this.timer = Phaser.Math.FloatBetween(...BUY_TIME);
       return;
     }
     this.phase = 'look';
@@ -218,7 +263,7 @@ export class Visitor {
   // zum nächsten Gehege oder, wenn genug gesehen, nach Hause
   next() {
     this.crowd.release(this);
-    if (this.crowd.maybeIce(this)) return; // erst noch ein Eis holen
+    if (this.crowd.maybeShop(this)) return; // erst noch etwas an einer Bude holen
     this.visitsLeft--;
     if (this.visitsLeft > 0 && this.crowd.sendToPen(this)) return;
     this.crowd.sendHome(this);
@@ -233,8 +278,8 @@ export class Visitor {
     this.shadow.setPosition(this.x, this.y);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
-    // Eis in der Hand: vorne seitlich auf Handhöhe, von hinten gesehen hinter dem Körper
-    if (this.iceSprite) this.iceSprite.setPosition(this.x + this.faceX * 8, this.y - hop - 14).setDepth(this.y + (this.faceY > 0 ? 0.2 : -0.2));
+    // Snack in der Hand: vorne seitlich auf Handhöhe, von hinten gesehen hinter dem Körper
+    if (this.itemSprite) this.itemSprite.setPosition(this.x + this.faceX * 8, this.y - hop - 14).setDepth(this.y + (this.faceY > 0 ? 0.2 : -0.2));
   }
 
   // Bewunderungsherz über dem Kopf (rosa, wie im Zähler oben)
@@ -247,9 +292,10 @@ export class Visitor {
   }
 
   destroy() {
+    this.gone = true;
     this.sprite.destroy();
     this.shadow.destroy();
-    this.iceSprite?.destroy();
+    this.itemSprite?.destroy();
   }
 }
 
@@ -269,7 +315,7 @@ export class VisitorCrowd {
 
   updateScore() {
     this.score = parkScore(this.scene.animals);
-    this.max = maxVisitors(this.score, HOUSE_VISITORS[LEVEL_ID]); // in Aquarium und Reptilienhaus eigene Obergrenze
+    this.max = maxVisitors(this.score, HOUSE_VISITORS[LEVEL_ID] ?? parkCap(LEVEL_ID)); // in Aquarium und Reptilienhaus eigene Obergrenze, mit Riesenrad mehr
     this.scoreTimer = SCORE_EVERY;
     // sind neue Tiere eingezogen, kommt der nächste Besucher entsprechend früher
     this.arrivalTimer = Math.min(this.arrivalTimer ?? Infinity, arrivalInterval(this.score));
@@ -335,25 +381,36 @@ export class VisitorCrowd {
     v.spot = null;
   }
 
-  // Eisstand-Event: ab und zu (wer noch keins hatte) zum Eiswagen statt zum nächsten Gehege
-  maybeIce(v) {
-    if (v.ice || !isActive('icecream') || Math.random() > ICE_CHANCE) return false;
-    return this.goToIce(v);
+  // Buden dieses Abschnitts, zu denen Besucher gehen können: die festen und (solange das Event läuft) der Eiswagen
+  shopList() {
+    const list = (this.grid.shops ?? []).map((s) => ({ ...s, chance: SHOP_CHANCE }));
+    if (isActive('icecream') && this.grid.ice?.length) list.push({ id: 'event', kind: 'icecream', at: LEVEL.iceStand, spots: this.grid.ice, chance: ICE_CHANCE });
+    return list;
   }
 
-  // Eisstand gerade im Mini-Tutorial gestartet: gleich holt sich jemand ein Eis – der Besucher, der dem Eiswagen am
-  // nächsten an einem Gehege steht, sonst ein neuer vom Ausgang
-  sendToIce() {
-    if (!LEVEL.iceStand || this.visitors.some((v) => v.goal === 'ice' || v.phase === 'buy')) return;
-    const stand = tileToWorld(LEVEL.iceStand.tx, LEVEL.iceStand.ty);
+  // ab und zu zu einer Bude, deren Sorte er noch nicht hatte, bzw. (einmal) zum Riesenrad (statt zum nächsten Gehege)
+  maybeShop(v) {
+    if (this.maybeRide(v)) return true;
+    if (v.bought >= MAX_BUYS) return false;
+    const shops = Phaser.Utils.Array.Shuffle(this.shopList().filter((s) => !v.had.has(s.kind)));
+    for (const s of shops) if (Math.random() < s.chance && this.goToShop(v, s)) return true;
+    return false;
+  }
+
+  // gerade gebaut: gleich kauft jemand dort ein – der Besucher, der der Bude am nächsten an einem Gehege steht, sonst
+  // ein neuer vom Ausgang. id: Bauplatz bzw. 'event' (Eiswagen)
+  sendToShop(id) {
+    const shop = this.shopList().find((s) => s.id === id);
+    if (!shop || this.visitors.some((v) => v.shop?.id === id)) return;
+    const stand = tileToWorld(shop.at.tx, shop.at.ty);
     const dist = (v) => Math.hypot(v.x - stand.x, v.y - stand.y);
-    const v = this.visitors.filter((u) => !u.ice && u.phase === 'look').sort((a, b) => dist(a) - dist(b))[0];
+    const v = this.visitors.filter((u) => !u.had.has(shop.kind) && u.phase === 'look').sort((a, b) => dist(a) - dist(b))[0];
     if (v) {
       this.release(v);
-      if (!this.goToIce(v) && !this.sendToPen(v)) this.sendHome(v);
+      if (!this.goToShop(v, shop) && !this.sendToPen(v)) this.sendHome(v);
       return;
     }
-    // sonst ein neuer, vom Ausgang am nächsten beim Eiswagen (damit er nicht ewig unterwegs ist)
+    // sonst ein neuer, vom Ausgang am nächsten bei der Bude (damit er nicht ewig unterwegs ist)
     const exit = [...this.grid.exits].sort((u, w) => dist(tileToWorld(u.tx, u.ty)) - dist(tileToWorld(w.tx, w.ty)))[0];
     if (!exit) return;
     const p = tileToWorld(exit.tx, exit.ty);
@@ -361,9 +418,9 @@ export class VisitorCrowd {
     this.visitors.push(fresh);
     fresh.sprite.setAlpha(0);
     this.scene.tweens.add({ targets: fresh.sprite, alpha: 1, duration: 500 });
-    if (!this.goToIce(fresh)) return this.remove(fresh);
-    // nicht den ganzen Weg vom Ausgang laufen: ein paar Felder vor dem Eiswagen auftauchen
-    const skip = fresh.route.length - ICE_WALK_IN;
+    if (!this.goToShop(fresh, shop)) return this.remove(fresh);
+    // nicht den ganzen Weg vom Ausgang laufen: ein paar Felder vor der Bude auftauchen
+    const skip = fresh.route.length - WALK_IN;
     if (skip > 0) {
       const p = fresh.route[skip - 1];
       fresh.x = p.x;
@@ -372,9 +429,20 @@ export class VisitorCrowd {
     }
   }
 
-  // zum Eiswagen laufen (an einen freien Platz davor); false, wenn es keinen gibt
-  goToIce(v) {
-    const free = this.grid.ice.filter((s) => !s.taken);
+  // Riesenrad: wer noch nicht gefahren ist, stellt sich ab und zu an
+  maybeRide(v) {
+    if (!this.scene.wheel || v.rode || !this.grid.wheel?.length || Math.random() > RIDE_CHANCE) return false;
+    return this.goToShop(v, { id: 'wheel', kind: 'wheel', at: LEVEL.wheelSlot, spots: this.grid.wheel }, 'ride');
+  }
+
+  // nächster Fahrgast fürs Riesenrad: wer am längsten ansteht
+  nextRider() {
+    return this.visitors.filter((v) => v.phase === 'queue').sort((a, b) => a.timer - b.timer)[0] ?? null;
+  }
+
+  // zur Bude (bzw. zum Riesenrad: goal 'ride') laufen, an einen freien Platz davor; false, wenn es keinen gibt
+  goToShop(v, shop, goal = 'shop') {
+    const free = shop.spots.filter((s) => !s.taken);
     if (!free.length) return false;
     const set = new Set(free.map((s) => s.tx + ',' + s.ty));
     const route = findRoute(this.grid, v.tile, (tx, ty) => set.has(tx + ',' + ty));
@@ -383,7 +451,8 @@ export class VisitorCrowd {
     const spot = free.find((s) => s.tx === end.tx && s.ty === end.ty);
     spot.taken = v;
     v.spot = spot;
-    v.goal = 'ice';
+    v.shop = goal === 'shop' ? shop : null;
+    v.goal = goal;
     v.phase = 'walk';
     v.setRoute(route, this.standPoint(spot));
     return true;
@@ -405,7 +474,7 @@ export class VisitorCrowd {
     this.visitors.push(v);
     v.sprite.setAlpha(0);
     this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
-    if (this.maybeIce(v)) return; // erst zum Eiswagen
+    if (this.maybeShop(v)) return; // erst zu einer Bude
     if (!this.sendToPen(v)) this.remove(v);
   }
 
@@ -453,7 +522,8 @@ export class VisitorCrowd {
 
   remove(v) {
     this.release(v);
+    if (v.phase === 'ride') this.scene.wheel?.drop(v);
     this.visitors.splice(this.visitors.indexOf(v), 1);
-    this.scene.tweens.add({ targets: [v.sprite, v.shadow, v.iceSprite].filter(Boolean), alpha: 0, duration: 400, onComplete: () => v.destroy() });
+    this.scene.tweens.add({ targets: [v.sprite, v.shadow, v.itemSprite].filter(Boolean), alpha: 0, duration: 400, onComplete: () => v.destroy() });
   }
 }

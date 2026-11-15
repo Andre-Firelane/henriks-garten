@@ -16,6 +16,7 @@
 // unlocks: Gebiete, die danach offen sind (Welten, Tierpark-Abschnitte park2/park3, reptiles)
 import { tr } from '../i18n.js';
 import { LEVELS } from '../world/levels.js';
+import { SHOP_IDS } from '../world/shops.js';
 
 // Tierarten einer Welt (alle Wetterphasen), ohne die überall häufigen Fische – wie im Tierbuch (livesIn in GardenScene):
 // Spawn und Wetter-Spawn, dazu die Tiere mit eigenem Auftritt (Reiher, Geier, Hyänen, Leguane am Wasserfall, Gorillas,
@@ -38,8 +39,8 @@ function worldSpecies(id) {
 const caught = (game, s) => game.catches?.[s] ?? 0;
 // so viele verschiedene Arten dieser Welt schon gefangen (dazu alles, was dort gefangen wurde, siehe countStoryCatch)
 const kinds = (game, world) => new Set([...worldSpecies(world).filter((s) => caught(game, s) > 0), ...(game.caughtIn?.[world] ?? [])].filter((s) => s !== 'fish')).size;
-// Herzen der Besucher (ohne Eisstand)
-const visitorHearts = (game) => Object.entries(game.heartsBy).reduce((n, [k, v]) => n + (k === 'icecream' ? 0 : v), 0);
+// Herzen der Besucher (ohne Eiswagen und Buden)
+const visitorHearts = (game) => Object.entries(game.heartsBy).reduce((n, [k, v]) => n + (SHOP_IDS.includes(k) ? 0 : v), 0);
 const count = (n, of) => ` (${Math.min(n, of)} / ${of})`;
 // schon Tiere aus dem Riff gefangen (ab dann zeigt Mavi das Aquarium)
 export const seaCatches = (game) => worldSpecies('reef').reduce((n, s) => n + caught(game, s), 0);
@@ -130,17 +131,18 @@ export const STEPS = [
     reward: 30,
   },
   {
-    id: 'icecream',
+    // (früher an dieser Stelle: der Eiswagen, siehe STEP_RENAMES in story.js)
+    id: 'babies',
     at: { level: 'park', spot: 'computer' },
-    goal: tr('Stell am Computer im Haupthaus den Eiswagen auf', 'Set up the ice cream truck at the computer in the main building'),
-    done: (game) => !!game.events.icecream,
+    goal: tr('Starte am Computer im Haupthaus die Tierbabys', 'Start the animal babies at the computer in the main building'),
+    done: (game) => !!game.events.babies,
     intro: [
-      tr('Hier am Computer startest du Events. Fangen wir mit dem Eiswagen an!', 'Here at the computer you start events. Let’s begin with the ice cream truck!'),
-      tr('Jedes Eis, das die Besucher kaufen, bringt dir Herzen.', 'Every ice cream the visitors buy brings you hearts.'),
+      tr('Hier am Computer startest du Events. Fangen wir mit den Tierbabys an!', 'Here at the computer you start events. Let’s begin with the animal babies!'),
+      tr('Wo zwei gleiche Tiere in einem Gehege wohnen, bekommen sie ein Baby. Die Besucher lieben die Kleinen und schenken dir mehr Herzen.', 'Where two matching animals live in one enclosure, they get a baby. The visitors love the little ones and give you more hearts.'),
     ],
-    already: [tr('Der Eiswagen steht ja schon – super!', 'The ice cream truck is already there – great!')],
+    already: [tr('Die Tierbabys hast du ja schon gestartet – wie süß!', 'You’ve already started the animal babies – how cute!')],
     outro: [
-      tr('Lecker! Die Besucher stehen schon an.', 'Yummy! The visitors are already queueing.'),
+      tr('Ohhh, wie süß! Schau mal in die Gehege.', 'Aww, how cute! Take a look in the enclosures.'),
       tr('Jetzt ist es Zeit für eine neue Welt: Der Wald ist offen! Ich warte dort auf dich.', 'Now it’s time for a new world: the forest is open! I’ll wait for you there.'),
     ],
     reward: 10,
@@ -178,6 +180,22 @@ export const STEPS = [
     already: [tr('Du hast ja schon ein Gehege ausgebaut. Sieht toll aus!', 'You’ve already upgraded an enclosure. It looks great!')],
     outro: [
       tr('Gut gemacht! Das Gehege ist jetzt größer – es passen mehr Tiere hinein.', 'Well done! The enclosure is bigger now – more animals fit inside.'),
+      tr('Komm mit, ich zeig dir noch was! Ich warte vor dem Haupthaus auf dich.', 'Come along, I’ve got something else to show you! I’ll wait for you in front of the main building.'),
+    ],
+    reward: 20,
+  },
+  {
+    id: 'stands',
+    at: { level: 'park', spot: 'build' },
+    goal: tr('Bau eine Bude auf einem Bauplatz', 'Build a stand on a building plot'),
+    done: (game) => Object.keys(game.builds ?? {}).length >= 1,
+    intro: [
+      tr('Siehst du die Baupflöcke? Hier ist Platz für eine Bude!', 'See the building stakes? There’s room for a stand here!'),
+      tr('Stell dich davor und drück die Aktionstaste. Wie wäre es mit einem Eisstand?', 'Stand in front of them and press the action button. How about an ice cream stand?'),
+    ],
+    already: [tr('Du hast ja schon eine Bude gebaut – lecker!', 'You’ve already built a stand – yummy!')],
+    outro: [
+      tr('Super! Die Besucher stehen schon an – jeder Verkauf bringt dir Herzen.', 'Great! The visitors are already queueing – every sale brings you hearts.'),
       tr('Jetzt geht die Reise richtig los: Die Savanne ist offen! Fahr mit dem Auto hin, ich warte dort an der Hütte auf dich.', 'Now the journey really begins: the savanna is open! Drive there by car, I’ll wait for you at the hut.'),
     ],
     reward: 20,
@@ -294,10 +312,10 @@ export const STEPS = [
     // ganz zum Schluss (vorher unterbrach es zwischen Aquarium und Bambuswald den Ablauf)
     id: 'event',
     at: { level: 'park', spot: 'computer' },
-    goal: tr('Starte am Computer ein Event (nicht den Eiswagen)', 'Start an event at the computer (not the ice cream truck)'),
-    done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk oder Überraschungs-Flamingos)
+    goal: tr('Starte am Computer ein Event (nicht die Tierbabys)', 'Start an event at the computer (not the animal babies)'),
+    done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk, Überraschungs-Flamingos oder die Tierbabys aus ihrer Aufgabe)
     intro: [
-      tr('Da bist du ja! Am Computer gibt es noch viel mehr Events: Tierbabys, Reittiere, Flamingos …', 'There you are! There are many more events at the computer: baby animals, mounts, flamingos …'),
+      tr('Da bist du ja! Am Computer gibt es noch viel mehr Events: Reittiere, Flamingos, seltene Tiere …', 'There you are! There are many more events at the computer: mounts, flamingos, rare animals …'),
       tr('Manche bringen sogar ganz neue Tiere, wie Wölfe, Gnus oder Quallen. Such dir eins aus!', 'Some even bring brand-new animals, like wolves, wildebeest or jellyfish. Pick one!'),
     ],
     already: [tr('Du hast ja schon ein Event gestartet – prima!', 'You’ve already started an event – excellent!')],

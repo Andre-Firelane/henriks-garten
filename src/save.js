@@ -4,6 +4,7 @@
 import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
 import { migrateStory, syncStory } from './story/story.js';
+import { SHOP_IDS } from './world/shops.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -119,7 +120,7 @@ function splitPark() {
 // Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik
 // ablesen
 function migrateCaught() {
-  const species = new Set(Object.keys(game.heartsBy).filter((s) => s !== 'icecream'));
+  const species = new Set(Object.keys(game.heartsBy).filter((s) => !SHOP_IDS.includes(s)));
   for (const lvl of Object.values(game.levels)) for (const a of lvl.animals) if (a.state === 'penned') species.add(a.species);
   for (const a of game.followers) species.add(a.species);
   game.caughtSpecies = [...species];

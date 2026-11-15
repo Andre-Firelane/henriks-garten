@@ -13,6 +13,8 @@ export const game = {
   parkSplit: true, // der Tierpark ist in drei Abschnitte geteilt (ältere Spielstände ziehen beim Laden um, siehe splitPark in save.js)
   events: {},
   unlocked: [],
+  scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
+  builds: {}, // gebaute Buden: { Bauplatz-Id: Buden-Art } (siehe src/world/shops.js)
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
   story: newStory(), // Geschichte mit Mavi: aktive Aufgabe, freigeschaltete Gebiete (siehe src/story/story.js)
   catches: {}, // so oft wurde jede Tierart schon gefangen (für Mavis Aufgaben)
@@ -42,6 +44,8 @@ export function resetGame() {
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};
+  game.builds = {};
+  game.scooterRiding = false;
   game.upgrades = 0;
   game.story = newStory();
   game.catches = {};

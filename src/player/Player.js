@@ -39,6 +39,7 @@ const MOUNT_ANIMS = {
   ride_asia: { walkDown: 'ride_asia_walk', walkUp: 'ride_asia_walk_back', idleDown: 'ride_asia_idle', idleUp: 'ride_asia_idle_back' }, // Videos
   ride_jungle: { walkDown: 'ride_jungle_walk', walkUp: 'ride_jungle_walk_back', idleDown: 'ride_jungle_idle', idleUp: 'ride_jungle_idle_back' }, // Maultier
   ride_reef: { walkDown: 'ride_reef_walk', walkUp: 'ride_reef_walk_back', idleDown: 'ride_reef_idle', idleUp: 'ride_reef_idle_back' }, // Seabob
+  scooter: { walkDown: 'scooter_walk', walkUp: 'scooter_walk_back', stand: { down: 0, up: 0 } }, // E-Roller (im Stand: erstes Bild vom Fahren)
 };
 // Reittier (Event): 30 % schneller, ruhigeres Wippen, Fußpunkt im Bild; die Kollision bleibt so klein wie zu Fuß
 const RIDE_SPEED = 1.3;
@@ -51,7 +52,15 @@ const WADE_SINK = 14; // so tief steht der Wasserbüffel im Wasser (bis zum halb
 const WADE_EASE = 6; // so schnell sinkt er ein bzw. taucht wieder auf
 const WADE_SPEED = 0.6; // im Wasser watet er langsamer
 // so viel höher als zu Fuß hält Henrik auf dem Reittier seine Hände (dort sitzen die Werkzeuge)
-const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31, ride_jungle: 21, ride_reef: 14 };
+const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31, ride_jungle: 21, ride_reef: 14, scooter: 14 };
+// E-Roller (im Tierpark, Bilder 170×170): schneller als das Reittier, Fußpunkt, Schatten und kaum Wippen (er gleitet).
+// Der Schatten liegt schräg in Fahrtrichtung (wie die Iso-Kacheln) und unter der Mitte des Rollers (SHADOW_UP über dem Fußpunkt)
+const MOUNT_SPEED = { scooter: 1.7 };
+const MOUNT_ORIGIN_Y = { scooter: 164 / 170 };
+const MOUNT_SHADOW = { scooter: [46, 13] };
+const MOUNT_SHADOW_UP = { scooter: 9 };
+const MOUNT_SHADOW_TILT = { scooter: 26.6 };
+const MOUNT_HOP = { scooter: 0.3 };
 const RIDE_SHADOW_UP = 5; // Schatten unter der Mitte der Hufe statt unter dem vordersten Huf
 // Schwimmen (Unterwasserwelt): Henrik schwebt über dem Meeresboden, wippt langsam auf und ab und neigt sich in Schwimmrichtung
 const SWIM_LIFT = 16; // so hoch über dem Boden
@@ -113,12 +122,13 @@ export default class Player {
   setMount(key) {
     if (key === this.mount) return;
     this.mount = key;
-    this.speed = key ? SPEED * RIDE_SPEED : SPEED;
+    this.speed = key ? SPEED * (MOUNT_SPEED[key] ?? RIDE_SPEED) : SPEED;
     this.wade = key === 'ride_asia'; // der Wasserbüffel darf ins Wasser
     this.trample = key === 'ride_savanna'; // der Elefant läuft über kleine Büsche
     this.sprite.stop(); // eine laufende Animation gehört zum alten Bild
-    this.sprite.setTexture(key ?? this.texture, 0).setOrigin(0.5, key ? RIDE_ORIGIN_Y : 112 / 116);
-    this.shadow.setSize(key ? 46 : 26, key ? 11 : 9);
+    this.sprite.setTexture(key ?? this.texture, 0).setOrigin(0.5, key ? MOUNT_ORIGIN_Y[key] ?? RIDE_ORIGIN_Y : 112 / 116);
+    const [sw, sh] = key ? MOUNT_SHADOW[key] ?? [46, 11] : [26, 9];
+    this.shadow.setSize(sw, sh);
     this.handLift = HAND_LIFT[key] ?? 0;
   }
 
@@ -255,7 +265,7 @@ export default class Player {
 
     // Laufen andeuten: leichtes Hüpfen und Wippen (die Laufanimation bewegt sich selbst)
     const phase = this.walkTime * (this.mount ? RIDE_STEP_RATE : STEP_RATE);
-    const hop = moving && !animated && !this.swim && !this.boat ? Math.abs(Math.sin(phase)) * (this.mount ? RIDE_HOP : HOP) : 0;
+    const hop = moving && !animated && !this.swim && !this.boat ? Math.abs(Math.sin(phase)) * (this.mount ? MOUNT_HOP[this.mount] ?? RIDE_HOP : HOP) : 0;
     const float = this.swim ? SWIM_LIFT + Math.sin((this.scene.time.now / 1000) * SWIM_BOB_RATE) * SWIM_BOB : 0;
     const lift = bridgeLift(this.x, this.y); // auf einer Bogenbrücke etwas höher
     const { tx, ty } = worldToTile(this.x, this.y);
@@ -281,8 +291,11 @@ export default class Player {
     );
     if (this.swim) this.sprite.setAngle(moving ? this.faceX * SWIM_TILT * Math.min(1, len) : 0);
     else if (this.boat) this.sprite.setAngle(Math.sin(this.scene.time.now / 420) * 2); // paddelt und schaukelt
-    else this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount ? 1.5 : 3) : 0);
-    this.shadow.setPosition(this.x, this.y - lift - (this.mount ? RIDE_SHADOW_UP : 0)).setVisible(!sink); // im Wasser kein Schatten
+    else this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount === 'scooter' ? 0.5 : this.mount ? 1.5 : 3) : 0);
+    this.shadow.setPosition(this.x, this.y - lift - (this.mount ? MOUNT_SHADOW_UP[this.mount] ?? RIDE_SHADOW_UP : 0)).setVisible(!sink); // im Wasser kein Schatten
+    // E-Roller: der Schatten liegt schräg wie der Roller (unten rechts/oben links bzw. unten links/oben rechts)
+    const tilt = MOUNT_SHADOW_TILT[this.mount] ?? 0;
+    this.shadow.setAngle(tilt && this.faceX * this.faceY < 0 ? -tilt : tilt);
     this.shadow.setScale(this.swim ? 0.8 - (float - SWIM_LIFT) * 0.03 : 1 - hop * 0.04); // schwimmend: kleinerer Schatten, der mitwippt
 
     // im Kanu zeigt Boat.js Henrik im Boot (eigenes Bild), die Figur selbst ist dann nicht zu sehen
@@ -308,7 +321,7 @@ export default class Player {
   }
 
   playStep() {
-    if (this.swim || this.boat) return; // unter Wasser und im Kanu keine Schritte
+    if (this.swim || this.boat || this.mount === 'scooter') return; // unter Wasser, im Kanu und auf dem E-Roller keine Schritte
     // drinnen (Haupthaus, Hütten, Aquarium) klingen die Schritte wie auf einem Flur, draußen wie auf Gras
     const { tx, ty } = worldToTile(this.x, this.y);
     // (in Gebieten mit eigenem Schritt-Geräusch draußen dieses, z. B. Schnee in der Eiswelt)

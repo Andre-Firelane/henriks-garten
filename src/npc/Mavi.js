@@ -25,9 +25,9 @@ const VISITORS_AT_PEN = 2; // so viele Besucher stehen bei der Besucher-Aufgabe 
 const SETTLE = 1200; // so lange nach dem Aufbau des Gebiets fängt sie noch nicht von selbst an (die Kamera blendet ein)
 
 // Aufgaben, die im Tierpark erledigt werden (egal, in welchem Abschnitt Mavi steht)
-const PARK_TASKS = ['visitors', 'icecream', 'event', 'upgrade'];
+const PARK_TASKS = ['visitors', 'babies', 'event', 'upgrade', 'stands'];
 // Aufgaben, bei denen der Pfeil auf etwas zeigt, wenn man dort ist
-const POINT = { icecream: 'computer', event: 'computer', upgrade: 'sign' };
+const POINT = { babies: 'computer', event: 'computer', upgrade: 'sign', stands: 'build' };
 
 export default class Mavi {
   constructor(scene) {
@@ -70,6 +70,10 @@ export default class Mavi {
       // vor dem Schild auf dem Weg, nicht auf dem Zaun: nächste Kachel mit Abstand zu allen Gehegen
       const s = this.scene.sheepSign();
       if (s) return this.freeTile(worldToTile(s.x, s.y), true);
+    } else if (at.spot === 'build' && LEVEL.buildSlots?.length) {
+      // neben dem ersten Bauplatz (auf dem Gras daneben, nicht auf den Pflöcken)
+      const b = LEVEL.buildSlots[0];
+      return this.freeTile({ tx: b.tx - 1, ty: b.ty + 1 });
     } else if (at.spot === 'aquarium') t = { tx: 4, ty: 15 }; // auf dem Weg neben der Ankunft vor der Tür
     else if (at.spot === 'entry') t = { tx: 9, ty: 16 }; // im Aquarium gleich neben der Tür (nicht hinter den Quallen-Lampen)
     t ??= { tx: START.tx + 2, ty: START.ty + 1 };
@@ -293,7 +297,10 @@ export default class Mavi {
       else if (goal !== LEVEL_ID) target = this.carPoint();
       else if (POINT[step.id] === 'computer' && game.story.heard) target = this.computerPoint();
       else if (this.needsNet(step)) target = this.scene.chestPoint(); // Wiesen-Aufgabe: zum Regal, dort liegt der Kescher
-      else if (POINT[step.id] === 'sign' && game.story.heard) {
+      else if (POINT[step.id] === 'build' && game.story.heard) {
+        const b = this.scene.shopSlots?.find((s) => !s.kind);
+        if (b) target = { x: b.x, y: b.y - 30 };
+      } else if (POINT[step.id] === 'sign' && game.story.heard) {
         const s = this.scene.sheepSign();
         if (s) target = { x: s.x, y: s.y - 52 };
       }
