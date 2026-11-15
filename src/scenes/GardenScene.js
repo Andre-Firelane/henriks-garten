@@ -181,7 +181,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'gibbon', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -251,8 +251,7 @@ const CATCH_TIPS = {
   seal: tr('Schwimmt in der Eiswelt am Ufer (nachts auch in den Eislöchern). Kommst du näher, taucht sie auf und wünscht sich einen Fisch oder einen Ball – hol das Richtige aus dem Regal und wirf es ihr zu, wie das Lasso. Daneben? Nach 2 Sekunden kannst du noch einmal werfen. Zu nah, und sie taucht ab!', 'Swims along the shore in the ice world (at night also in the ice holes). If you get closer, it pops up and wishes for a fish or a ball – get the right one from the shelf and throw it, like the lasso. Missed? After 2 seconds you can throw again. Too close, and it dives away!'),
   penguin: tr('In der Eiswelt, immer nah am Wasser. Kommst du zu nah, hüpft er ins Wasser und ist weg – wirf das Lasso aus etwas Abstand!', 'In the ice world, always close to the water. If you get too close, it hops into the water and is gone – throw the lasso from a little distance!'),
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
-  gibbon: tr('Nur bei Nebel im Dschungel. Wie der Brüllaffe sitzt er unsichtbar oben im Urwaldbaum – merk dir, wohin er springt, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in fog in the jungle. Like the howler monkey it sits unseen high up in a jungle tree – remember where it jumps, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
-  howler: tr('Nur bei normalem Wetter. Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso!', 'Only in normal weather. It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso!'),
+  howler: tr('Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso! Mit etwas Glück ist es ein seltener Gibbon.', 'It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso! With a bit of luck it is a rare gibbon.'),
   macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
 };
 
@@ -338,7 +337,6 @@ const ANIMAL_INFO = {
   seal: tr(['Seehund', 'Er kann bis zu 30 Minuten tauchen – und schläft sogar im Wasser, nur die Nase schaut zum Atmen heraus.'], ['Harbour seal', 'It can dive for up to 30 minutes – and even sleeps in the water with just its nose poking out to breathe.']),
   penguin: tr(['Kaiserpinguin', 'An Land watschelt er gemütlich – im Wasser aber schwimmt er schneller als ein Mensch rennen kann und taucht über 500 Meter tief.'], ['Emperor penguin', 'On land it waddles along slowly – but in the water it swims faster than a person can run and dives more than 500 metres deep.']),
   anteater: tr(['Großer Ameisenbär', 'Seine Zunge ist bis zu 60 Zentimeter lang – damit schleckt er an einem Tag bis zu 30.000 Ameisen und Termiten.'], ['Giant anteater', 'Its tongue is up to 60 centimetres long – with it, it licks up to 30,000 ants and termites in a single day.']),
-  gibbon: tr(['Gibbon', 'Mit seinen langen Armen schwingt er sich von Ast zu Ast – bis zu 15 Meter weit mit einem Schwung.'], ['Gibbon', 'With its long arms it swings from branch to branch – up to 15 metres in a single swing.']),
   howler: tr(['Brüllaffe', 'Sein Brüllen hört man kilometerweit – er ist eines der lautesten Tiere der Welt.'], ['Howler monkey', 'Its howl can be heard for miles – it is one of the loudest animals in the world.']),
   macaque: tr(['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'], ['Japanese macaque', 'Small hands and feet with five long fingers – almost like ours.']),
   panda: tr(['Panda', 'Breite Tatzen mit fünf Zehen und einem sechsten „Daumen“ zum Bambushalten.'], ['Panda', 'Wide paws with five toes and a sixth “thumb” for holding bamboo.']),
@@ -435,7 +433,7 @@ const WILD_SILENT = [
   'lion', 'tiger', 'jaguar', 'crocodile', 'warthog',
   'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish',
   'gorilla', 'meerkat', 'hyena', 'wolf', 'panda', 'orangutan',
-  'howler', 'gibbon', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
+  'howler', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
 ];
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
 const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', gorilla: 'gorilla_beat', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
@@ -553,7 +551,7 @@ const TOOLS = {
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler', 'gibbon', 'anteater', 'jaguar', 'penguin'],
+    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler', 'anteater', 'jaguar', 'penguin'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -651,7 +649,7 @@ const TOOLS = {
 };
 
 // Köder: locken diese Tiere an (gefangen werden sie dann mit dem Lasso oder sie folgen von selbst)
-const TOOL_LURES = { ball: ['tiger'], banana: ['howler', 'gibbon'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
+const TOOL_LURES = { ball: ['tiger'], banana: ['howler'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
 // alle Tierarten, die man mit diesem Werkzeug fängt oder lockt (null: mit leeren Händen, also durch Berühren)
 // (aus den Tierarten selbst, catchWith in Animal.js – dazu, was das Werkzeug selbst aufzählt)
 const toolAnimals = (id) => {
@@ -1858,8 +1856,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Warthog(this, x, y)
         : species === 'redpanda'
           ? new RedPanda(this, x, y)
-        : species === 'howler' || species === 'gibbon'
-          ? new Howler(this, x, y, species)
+        : species === 'howler'
+          ? new Howler(this, x, y)
         : species === 'anteater'
           ? new Anteater(this, x, y)
         : species === 'penguin'
@@ -1988,7 +1986,7 @@ export default class GardenScene extends Phaser.Scene {
       return group;
     }
     // Brüllaffen: ein kleiner Trupp unsichtbar oben in nahe beieinander stehenden Urwaldbäumen
-    if (species === 'howler' || species === 'gibbon') return this.finishSpawn(Howler.spawnTroop(this, species), false); // Gibbons genauso (bei Nebel)
+    if (species === 'howler') return this.finishSpawn(Howler.spawnTroop(this), false); // bei jedem Wetter; seltene Variante: Gibbon (Skin)
     // Piranhas: ein Schwarm mitten im Fluss
     if (species === 'piranha') return this.finishSpawn(Piranha.spawnSchool(this), fadeIn);
     // Aras: ein Paar in einem Uferbaum (fängt man einen, fliegt der andere davon)
@@ -2275,6 +2273,8 @@ export default class GardenScene extends Phaser.Scene {
 
   // Ruf eines Tiers (beim Bauernhof-Event muhen, grunzen und meckern die Schafe)
   callOf(a) {
+    // seltene Variante mit eigenem Ton (der Gibbon ruft anders als der Brüllaffe)
+    if (!a.farm && a.skin && this.cache.audio.exists(`animal_${a.skin}`)) return `animal_${a.skin}`;
     const key = a.farm ? `animal_${a.farm}` : `animal_${a.species}`;
     // ohne eigenen Ton: ein ähnlicher (der Tiger brüllt wie der Löwe)
     return this.cache.audio.exists(key) ? key : CALL_FALLBACK[a.species] ?? key;
@@ -5109,7 +5109,7 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'gibbon', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)

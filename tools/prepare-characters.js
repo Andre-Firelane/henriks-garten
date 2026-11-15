@@ -544,6 +544,31 @@ function writeSheet(out, sheet) {
 // count: Anzahl der Bilder, falls die letzten Zellen leer sind.
 // Alle Bilder bekommen denselben Maßstab und Versatz (gemeinsamer Rahmen über alle Zellen), damit die Figur nicht zittert.
 const ANIMATIONS = [
+  // seltene Varianten aus Videos (grüner Hintergrund), so groß wie die Animationen der normalen Tiere (figureH = deren
+  // Figurhöhe); range: nahtlose Schleife (Laufen) bzw. ohne Hinsetzen am Anfang und Ende (Streifenhörnchen rennt).
+  // Storch fliegt vorne: nur ein Flügelschlag (danach dreht er sich im Video), läuft im Spiel hin und zurück
+  { src: 'Animation/Schaf2 läuft vorne.mp4', out: 'sheep2_walk.png', mirror: 'all', frameW: 80, frameH: 88, feetY: 84, figureH: 63 },
+  { src: 'Animation/schaf2 läuft hinten.mp4', out: 'sheep2_walk_back.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
+  { src: 'Animation/Schaf2 idle vorne.mp4', out: 'sheep2_idle.png', mirror: 'all', frameW: 80, frameH: 88, feetY: 84, figureH: 62 },
+  { src: 'Animation/schaf2 idle hinten.mp4', out: 'sheep2_idle_back.png', frameW: 80, frameH: 88, feetY: 84, figureH: 70 },
+  { src: 'Animation/reiher2 fliegt vorne.mp4', out: 'heron2_flap.png', range: [0, 12], scale: 0.213, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Reiher2 fliegt hinten.mp4', out: 'heron2_flap_back.png', range: [26, 49], frameW: 96, frameH: 96, feetY: 89, figureH: 82 },
+  { src: 'Animation/reiher2 idle vorne.mp4', out: 'heron2_idle.png', frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
+  { src: 'Animation/Reiher2 idle hinten.mp4', out: 'heron2_idle_back.png', frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
+  { src: 'Animation/Fuchs2 läuft vorne.mp4', out: 'fox2_walk.png', range: [1, 22], frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs2 läuft hinten.mp4', out: 'fox2_walk_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs2 idle vorne.mp4', out: 'fox2_idle.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs2 idle hinten.mp4', out: 'fox2_idle_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/eichhörnchen2 läuft vorne.mp4', out: 'squirrel2_run.png', range: [13, 66], dropGreen: true, frameW: 64, frameH: 60, feetY: 56, figureH: 50 },
+  { src: 'Animation/Eichhörnchen2 idle vorne.mp4', out: 'squirrel2_idle.png', frameW: 64, frameH: 60, feetY: 56, figureH: 43 },
+  { src: 'Animation/Eichhörnchen2 idle hinten.mp4', out: 'squirrel2_idle_back.png', frameW: 64, frameH: 60, feetY: 56, figureH: 43 },
+  { src: 'Animation/Biber2 läuft vorne.mp4', out: 'beaver2_walk.png', range: [3, 17], mirror: 'all', frameW: 112, frameH: 60, feetY: 56, figureH: 53 },
+  { src: 'Animation/Biber2 läuft hinten.mp4', out: 'beaver2_walk_back.png', frameW: 96, frameH: 72, feetY: 68, figureH: 62 },
+  { src: 'Animation/Biber2 frisst vorne.mp4', out: 'beaver2_gnaw.png', mirror: 'all', frameW: 96, frameH: 72, feetY: 68, figureH: 50 },
+  { src: 'Animation/Affe2 läuft vorne.mp4', out: 'macaque2_walk.png', range: [29, 52], frameW: 72, frameH: 72, feetY: 68, figureH: 52 },
+  { src: 'Animation/Affe2 läuft hinten.mp4', out: 'macaque2_walk_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 62 },
+  { src: 'Animation/Affe2 idle vorne.mp4', out: 'macaque2_idle.png', frameW: 72, frameH: 72, feetY: 68, figureH: 60 },
+  { src: 'Animation/Affe2 idle hinten.mp4', out: 'macaque2_idle_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 61 },
   // Hauptfigur läuft nach unten-rechts (nach links wird im Spiel gespiegelt); gleiche Höhe und Füße wie hero.png.
   // Alternative: Animation/Character_Walking2.png (cols: 4, rows: 2; dann frameRate 11 in BootScene.js)
   { src: 'Animation/Character_Walking.png', out: 'hero_walk.png', cols: 5, rows: 2, frameW: 88, frameH: 116, feetY: 112, figureH: 108 },

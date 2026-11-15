@@ -13,6 +13,7 @@ export const SPECIES = {
     texture: 'sheep',
     // Test; nach links gespiegelt. Beim Grasen und als Bauernhof-Tier die Standbilder (siehe Sheep.js)
     anims: { walkDown: 'sheep_walk', walkUp: 'sheep_walk_back', idleDown: 'sheep_idle', idleUp: 'sheep_idle_back' },
+    skinAnims: { sheep2: { walkDown: 'sheep2_walk', walkUp: 'sheep2_walk_back', idleDown: 'sheep2_idle', idleUp: 'sheep2_idle_back' } }, // gefleckter Widder
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 25, // gemütlich, deutlich langsamer als der Spieler (80)
@@ -183,6 +184,7 @@ export const SPECIES = {
     texture: 'squirrel',
     // Test: rennt in Seitenansicht (auch beim Klettern) und sitzt (im Baum und am Boden); nach links gespiegelt
     anims: { walkDown: 'squirrel_run', walkUp: 'squirrel_run', idleDown: 'squirrel_idle', idleUp: 'squirrel_idle' },
+    skinAnims: { squirrel2: { walkDown: 'squirrel2_run', walkUp: 'squirrel2_run', idleDown: 'squirrel2_idle', idleUp: 'squirrel2_idle_back' } }, // Streifenhörnchen
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 56 / 60,
     speed: 45,
@@ -201,6 +203,7 @@ export const SPECIES = {
     texture: 'fox',
     eatTexture: 'fox_eat', // beim Fressen am Futter im Tierpark
     anims: { walkDown: 'fox_walk', walkUp: 'fox_walk_back', idleDown: 'fox_idle', idleUp: 'fox_idle_back' }, // Test; nach links gespiegelt
+    skinAnims: { fox2: { walkDown: 'fox2_walk', walkUp: 'fox2_walk_back', idleDown: 'fox2_idle', idleUp: 'fox2_idle_back' } }, // Silberfuchs
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 35,
@@ -221,6 +224,7 @@ export const SPECIES = {
     texture: 'beaver',
     // Videos; beim Stehen knabbert er an einem Holzstück (von vorne und hinten dieselbe Animation)
     anims: { walkDown: 'beaver_walk', walkUp: 'beaver_walk_back', idleDown: 'beaver_gnaw', idleUp: 'beaver_gnaw' },
+    skinAnims: { beaver2: { walkDown: 'beaver2_walk', walkUp: 'beaver2_walk_back', idleDown: 'beaver2_gnaw', idleUp: 'beaver2_gnaw' } }, // Nutria
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 56 / 60,
     speed: 22,
@@ -310,11 +314,11 @@ export const SPECIES = {
     texture: 'heron',
     flyTexture: 'heron_fly',
     flyAnims: { down: 'heron_flap', up: 'heron_flap_back' }, // Flügelschlag (Test; nach links gespiegelt)
-    skinFlyAnims: { shoebill: { down: 'shoebill_flap', up: 'shoebill_flap_back' } },
+    skinFlyAnims: { shoebill: { down: 'shoebill_flap', up: 'shoebill_flap_back' }, heron2: { down: 'heron2_flap', up: 'heron2_flap_back' } },
     followFlies: true, // fliegt gefangen hinter dem Spieler her (wie Flamingo und Geier)
     penStands: true, // im Gehege: steht nur oder fliegt (läuft nicht herum, auch nicht zum Futter; siehe Heron.js)
     anims: { idleDown: 'heron_idle', idleUp: 'heron_idle_back' }, // steht (Test); beim Staksen das Standbild
-    skinAnims: { shoebill: { idleDown: 'shoebill_idle', idleUp: 'shoebill_idle_back' } }, // Schuhschnabel steht
+    skinAnims: { shoebill: { idleDown: 'shoebill_idle', idleUp: 'shoebill_idle_back' }, heron2: { idleDown: 'heron2_idle', idleUp: 'heron2_idle_back' } }, // Schuhschnabel bzw. Storch steht
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 104 / 108,
     speed: 25,
@@ -490,23 +494,6 @@ export const SPECIES = {
     shadowW: 20,
     catchWith: ['net'],
   },
-  // Gibbon (Dschungel, nur bei Nebel): wie der Brüllaffe (siehe Howler.js)
-  gibbon: {
-    texture: 'gibbon',
-    anims: { walkDown: 'gibbon_walk', walkUp: 'gibbon_walk_back', idleDown: 'gibbon_idle', idleUp: 'gibbon_idle_back' }, // Videos; Springen: Standbild
-    eatTexture: 'gibbon_eat',
-    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 84 / 88,
-    speed: 30,
-    restChance: 0.4,
-    restTime: [1, 3],
-    walkTime: [1, 2.5],
-    stepRate: 10,
-    hop: 2,
-    footW: 6,
-    shadowW: 22,
-    catchWith: ['lasso'],
-  },
   // Leguan (Dschungel, normales Wetter, nur am Wasserfall): sonnt sich, wenn die Sonne auf den Wasserfall scheint; nur mit
   // dem Kescher, berührt plumpst er ins Wasser (siehe Iguana.js). Nur Seitenansichten: nach oben wie nach unten
   iguana: {
@@ -621,6 +608,7 @@ export const SPECIES = {
   howler: {
     texture: 'howler',
     anims: { walkDown: 'howler_walk', walkUp: 'howler_walk_back', idleDown: 'howler_idle', idleUp: 'howler_idle' }, // Videos; Springen: Standbild
+    skinAnims: { gibbon: { walkDown: 'gibbon_walk', walkUp: 'gibbon_walk_back', idleDown: 'gibbon_idle', idleUp: 'gibbon_idle_back' } }, // Gibbon (seltene Variante)
     eatTexture: 'howler_eat', // sitzt und frisst die Banane
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
@@ -639,6 +627,7 @@ export const SPECIES = {
     texture: 'macaque',
     // Video; im Stehen (und oben im Baum) sitzt er (Einzelbilder); Baden: Standbild
     anims: { walkDown: 'macaque_walk', walkUp: 'macaque_walk_back', idleDown: 'macaque_sit', idleUp: 'macaque_sit_back' },
+    skinAnims: { macaque2: { walkDown: 'macaque2_walk', walkUp: 'macaque2_walk_back', idleDown: 'macaque2_idle', idleUp: 'macaque2_idle_back' } }, // Goldstumpfnase
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 30,
@@ -971,7 +960,10 @@ export const SKINS = {
     { id: 'fish_sturgeon', name: tr('Stör', 'sturgeon'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
     { id: 'lungfish', name: tr('Lungenfisch', 'lungfish'), male: true, level: 'savanna', share: 1, baby: 0, common: true },
   ],
-  heron: { id: 'shoebill', name: tr('Schuhschnabel', 'shoebill'), male: true, level: 'savanna', seasons: ['rain'], wild: 1, baby: 0, common: true }, // in der Savanne bei Starkregen immer ein Schuhschnabel
+  heron: [
+    { id: 'shoebill', name: tr('Schuhschnabel', 'shoebill'), male: true, level: 'savanna', seasons: ['rain'], wild: 1, baby: 0, common: true }, // in der Savanne bei Starkregen immer ein Schuhschnabel
+    { id: 'heron2', name: tr('Storch', 'stork'), male: true, wild: 0.1, baby: 0.03 },
+  ],
   crocodile: { id: 'croc_albino', name: tr('Albino-Krokodil', 'albino crocodile'), male: false, level: 'savanna', seasons: ['rain'], wild: 0.12, baby: 0 },
   tiger: { id: 'tiger2', name: tr('weißer Tiger', 'white tiger'), male: true, wild: 0.1, baby: 0.03 },
   peacock: { id: 'peacock2', name: tr('weißer Pfau', 'white peacock'), male: true, wild: 0.1, baby: 0.03 },
@@ -987,6 +979,12 @@ export const SKINS = {
   snake: { id: 'snake2', name: tr('grüne Baumschlange', 'green tree snake'), male: false, wild: 0.15, baby: 0 },
   tarantula: { id: 'tarantula2', name: tr('Goldene Vogelspinne', 'golden tarantula'), male: false, wild: 0.15, baby: 0 },
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
+  sheep: { id: 'sheep2', name: tr('gefleckter Widder', 'spotted ram'), male: true, wild: 0.1, baby: 0.03 },
+  fox: { id: 'fox2', name: tr('Silberfuchs', 'silver fox'), male: true, wild: 0.1, baby: 0.03 },
+  squirrel: { id: 'squirrel2', name: tr('Streifenhörnchen', 'chipmunk'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
+  beaver: { id: 'beaver2', name: tr('Nutria', 'nutria'), male: false, wild: 0.1, baby: 0.03 },
+  macaque: { id: 'macaque2', name: tr('Goldstumpfnase', 'golden snub-nosed monkey'), male: false, wild: 0.1, baby: 0.03 },
+  howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js
 };
 
 // Platzhalter für seltene Skins, solange es noch kein eigenes Bild gibt: dasselbe Bild, nur eingefärbt (tint, siehe
@@ -1001,19 +999,13 @@ const TINT_CSS = {
   [TINT.lilac]: 'sepia(0.8) saturate(2.5) hue-rotate(220deg)',
 };
 const PLACEHOLDER_SKINS = {
-  sheep: [TINT.gold, tr('goldenes Schaf', 'golden sheep'), 'n'],
   mole: [TINT.gold, tr('goldener Maulwurf', 'golden mole'), 'm'],
-  squirrel: [TINT.lilac, tr('lila Eichhörnchen', 'purple squirrel'), 'n'],
-  fox: [TINT.sky, tr('Blaufuchs', 'blue fox'), 'm'],
   giraffe: [TINT.rose, tr('rosa Giraffe', 'pink giraffe'), 'f'],
   meerkat: [TINT.gold, tr('goldenes Erdmännchen', 'golden meerkat'), 'n'],
   hippo: [TINT.rose, tr('rosa Nilpferd', 'pink hippo'), 'n'],
   warthog: [TINT.lilac, tr('lila Warzenschwein', 'purple warthog'), 'n'],
   panda: [TINT.rose, tr('rosa Panda', 'pink panda'), 'm'],
-  macaque: [TINT.gold, tr('goldener Makak', 'golden macaque'), 'm'],
   anteater: [TINT.sky, tr('blauer Ameisenbär', 'blue anteater'), 'm'],
-  howler: [TINT.gold, tr('goldener Brüllaffe', 'golden howler monkey'), 'm'],
-  gibbon: [TINT.gold, tr('goldener Gibbon', 'golden gibbon'), 'm'],
   toucan: [TINT.sky, tr('blauer Tukan', 'blue toucan'), 'm'],
   penguin: [TINT.gold, tr('goldener Pinguin', 'golden penguin'), 'm'],
   seal: [TINT.rose, tr('rosa Robbe', 'pink seal'), 'f'],

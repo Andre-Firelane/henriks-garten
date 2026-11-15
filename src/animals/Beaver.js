@@ -12,10 +12,11 @@ const GNAW_TIME = [6, 14]; // so lange nagt er an einem Baum
 const CHIP_EVERY = [0.4, 1.1]; // so oft fliegt ein Span
 const MOVE_SPEED = 24; // zum nächsten Baum (gemütlich)
 const RIPPLE_EVERY = 0.5; // beim Schwimmen: Wellenringe
-const GNAW_ORIGIN = [45 / 96, 69 / 72]; // Animation "beaver_gnaw": Mitte des Bibers (das Holz liegt rechts davor) und seine Füße
+// Knabber-Animation: Mitte des Bibers (das Holz liegt rechts davor) und seine Füße; die Nutria (beaver2) sitzt weiter rechts
+const GNAW_ORIGIN = { beaver_gnaw: [45 / 96, 69 / 72], beaver2_gnaw: [51 / 96, 69 / 72] };
 const SWIM_ORIGIN_Y = 44 / 60; // Bild "beaver_swim" (Wasserlinie, siehe tools/beaver-swim.py)
 const CHIP_COLOR = 0xe2c48c;
-const OWN_LOOKS = ['beaver_swim']; // eigene Bilder (Laufen und Knabbern sind Animationen aus SPECIES, die wechselt Animal.render)
+const OWN_LOOKS = ['beaver_swim', 'beaver2_swim']; // eigene Bilder (Laufen und Knabbern sind Animationen aus SPECIES, die wechselt Animal.render)
 
 const inWater = (x, y) => {
   const { tx, ty } = worldToTile(x, y);
@@ -113,17 +114,19 @@ export default class Beaver extends Animal {
 
   render(moving) {
     if (this.state === 'wild' && this.mode === 'gnaw') {
-      if (this.sprite.anims.currentAnim?.key !== 'beaver_gnaw' || !this.sprite.anims.isPlaying) {
-        this.sprite.play({ key: 'beaver_gnaw', startFrame: Phaser.Math.Between(0, this.scene.anims.get('beaver_gnaw').frames.length - 1) });
+      const gnaw = this.texSkin ? `${this.texSkin}_gnaw` : 'beaver_gnaw'; // Nutria: beaver2_gnaw
+      if (this.sprite.anims.currentAnim?.key !== gnaw || !this.sprite.anims.isPlaying) {
+        this.sprite.play({ key: gnaw, startFrame: Phaser.Math.Between(0, this.scene.anims.get(gnaw).frames.length - 1) });
       }
       const left = this.faceX < 0; // gespiegelt: die Mitte des Bibers liegt dann auf der anderen Seite des Rahmens
-      this.sprite.setOrigin(left ? 1 - GNAW_ORIGIN[0] : GNAW_ORIGIN[0], GNAW_ORIGIN[1]).setFlipX(left).setScale(0.5);
+      const [ox, oy] = GNAW_ORIGIN[gnaw];
+      this.sprite.setOrigin(left ? 1 - ox : ox, oy).setFlipX(left).setScale(0.5);
       this.shadow.setVisible(true);
       this.placeSprite(false);
       return;
     }
     if ((this.state === 'wild' || this.state === 'following') && inWater(this.x, this.y)) { // folgt er durchs Wasser, schwimmt er
-      this.showStill('beaver_swim', SWIM_ORIGIN_Y);
+      this.showStill(this.texSkin ? `${this.texSkin}_swim` : 'beaver_swim', SWIM_ORIGIN_Y);
       this.sprite.setFlipX(this.faceX < 0);
       this.shadow.setVisible(false);
       this.placeSprite(false);
@@ -132,7 +135,7 @@ export default class Beaver extends Animal {
     if (OWN_LOOKS.includes(this.sprite.texture.key)) {
       this.sprite.stop();
       this.sprite.setFlipX(false);
-      this.sprite.setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY).setScale(0.5);
+      this.sprite.setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY).setScale(0.5);
     }
     this.shadow.setVisible(true);
     super.render(moving);

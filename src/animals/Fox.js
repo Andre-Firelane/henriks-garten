@@ -124,14 +124,15 @@ export default class Fox extends Animal {
     if (!(this.state === 'penned' && this.sleeping)) {
       // nach dem Schlafen zurück aufs normale Bild (die Laufanimation setzt ihr Bild selbst)
       const key = this.sprite.texture.key;
-      if (key !== this.lookTexture() && !Object.values(this.kind.anims).includes(key)) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+      if (key !== this.lookTexture() && !Object.values(this.animSet() ?? {}).includes(key)) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
       super.render(moving);
       return;
     }
-    // eingerollt
-    if (this.sprite.texture.key !== 'fox_sleep') {
+    // eingerollt (Silberfuchs: fox2_sleep)
+    const sleep = this.texSkin && this.scene.textures.exists(`${this.texSkin}_sleep`) ? `${this.texSkin}_sleep` : 'fox_sleep';
+    if (this.sprite.texture.key !== sleep) {
       this.sprite.stop().setFlipX(false);
-      this.sprite.setTexture('fox_sleep', 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
+      this.sprite.setTexture(sleep, 0).setOrigin(0.5, SLEEP_ORIGIN_Y);
     }
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);

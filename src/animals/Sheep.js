@@ -86,9 +86,11 @@ export default class Sheep extends Animal {
 
   render(moving) {
     const farm = this.farmLook();
-    const key = farm ? `farm_${farm}${this.grazing ? '_eat' : ''}` : this.grazing ? 'sheep_eat' : this.kind.texture;
+    // mit Skin (gefleckter Widder) dessen Bilder: sheep2, sheep2_eat
+    const key = farm ? `farm_${farm}${this.grazing ? '_eat' : ''}` : this.grazing ? this.eatTexture() ?? 'sheep_eat' : super.baseTexture();
     // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)
-    const allAnims = [...Object.values(this.kind.anims), ...ALL_ANIM_KEYS];
+    const skinAnims = Object.values(this.kind.skinAnims ?? {}).flatMap((s) => Object.values(s));
+    const allAnims = [...Object.values(this.kind.anims), ...skinAnims, ...ALL_ANIM_KEYS];
     const onAnim = !this.grazing && Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);
     if (this.sprite.texture.key !== key && !onAnim) {
       const fromAnim = allAnims.includes(this.sprite.texture.key);

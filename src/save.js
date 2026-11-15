@@ -88,7 +88,7 @@ export function loadSave() {
   if (!game.charms?.owned) game.charms = { owned: [], equipped: [] };
   for (const k of Object.keys(game.levelBonus?.boni ?? {})) game.levelBonus.boni[k] += shift;
   if (game.campfireAt) game.campfireAt += shift;
-  migrateStag();
+  migrateSkinSpecies();
   if (!s.game.parkSplit) splitPark();
   if (!s.game.caughtSpecies) migrateCaught();
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
@@ -132,18 +132,28 @@ function migrateCaught() {
   game.caughtSpecies = [...species];
 }
 
-// Früher war der Hirsch eine eigene Tierart, jetzt ist er ein seltenes Aussehen (Skin) des Rehs
-function migrateStag() {
+// Früher eigene Tierarten, jetzt seltene Aussehen (Skins) einer anderen Art: der Hirsch beim Reh, der Gibbon beim
+// Brüllaffen. Tiere, Herz-Statistik und Tierbuch-Listen ziehen zur Art um
+const SKIN_SPECIES = { stag: 'deer', gibbon: 'howler' };
+function migrateSkinSpecies() {
   const fix = (a) => {
-    if (a.species !== 'stag') return;
-    a.species = 'deer';
-    a.skin = 'stag';
+    const to = SKIN_SPECIES[a.species];
+    if (!to) return;
+    a.skin = a.species;
+    a.species = to;
   };
   for (const lvl of Object.values(game.levels)) lvl.animals.forEach(fix);
   game.followers.forEach(fix);
-  if (game.heartsBy.stag) {
-    game.heartsBy.deer = (game.heartsBy.deer ?? 0) + game.heartsBy.stag;
-    delete game.heartsBy.stag;
+  for (const [from, to] of Object.entries(SKIN_SPECIES)) {
+    if (game.heartsBy[from]) {
+      game.heartsBy[to] = (game.heartsBy[to] ?? 0) + game.heartsBy[from];
+      delete game.heartsBy[from];
+    }
+    const swap = (list) => (list ? [...new Set(list.map((s) => (s === from ? to : s)))] : list);
+    game.caughtSpecies = swap(game.caughtSpecies);
+    game.seenSpecies = swap(game.seenSpecies);
+    for (const k of Object.keys(game.caughtIn ?? {})) game.caughtIn[k] = swap(game.caughtIn[k]);
+    if (Array.isArray(game.bookNew)) game.bookNew = [...new Set(game.bookNew.map((e) => e.replace(new RegExp(`:${from}$`), `:${to}`)))];
   }
 }
 

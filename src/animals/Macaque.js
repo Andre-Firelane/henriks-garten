@@ -263,7 +263,7 @@ export default class Macaque extends Animal {
   render(moving) {
     const bathing = (this.phase === 'bath') && (this.state === 'wild' || this.state === 'penned');
     if (!bathing) {
-      this.useLook(this.kind.texture);
+      this.useLook(this.baseTexture()); // mit Skin: Goldstumpfnase
       super.render(moving && this.phase !== 'climb');
       this.sprite.setVisible(true);
       if (this.lift) this.sprite.setPosition(this.sprite.x, this.sprite.y - this.lift);
@@ -272,7 +272,7 @@ export default class Macaque extends Animal {
       return;
     }
     // in der Quelle: nur Kopf und Schultern, abgetaucht gar nicht zu sehen
-    this.showStill('macaque_bath', BATH_ORIGIN_Y);
+    this.showStill(this.texSkin ? `${this.texSkin}_bath` : 'macaque_bath', BATH_ORIGIN_Y);
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     const bob = Math.sin(this.scene.time.now / 700 + this.x) * 0.8;

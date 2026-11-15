@@ -37,7 +37,7 @@ const GROUPS = {
     art: /asia|^agrass|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii)$/,
   },
   jungle: {
-    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'gibbon', 'anteater', 'snake', 'tarantula', 'piranha'],
+    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'snake', 'tarantula', 'piranha'],
     keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|snake|tarantula|piranha|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
     art: /jungle|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web)$/,
   },
@@ -306,6 +306,30 @@ const SAVANNA_ANIMS = {
 // dauert 1 Sekunde, so lange wie die Pause vor seinem ersten Schlag (siehe DrumTool.js)
 const GORILLA_DRUM = { gorilla_drum_in: [0, 23, 0], gorilla_drum_loop: [24, 92, -1], gorilla_drum_out: [93, 101, 0] };
 const VIDEO_ANIMS = {
+  // seltene Varianten aus Videos (Schaf2: gefleckter Widder, Reiher2: Storch, Fuchs2: Silberfuchs, Eichhörnchen2:
+  // Streifenhörnchen, Biber2: Nutria, Affe2: Goldstumpfnase); gleiche Größe wie die normalen Tiere
+  sheep2_walk: [80, 88, 24],
+  sheep2_walk_back: [80, 88, 24],
+  sheep2_idle: [80, 88, 93],
+  sheep2_idle_back: [80, 88, 93],
+  heron2_flap: [96, 96, 13], // ein Flügelschlag, läuft hin und zurück (VIDEO_YOYO; im Video dreht er sich danach)
+  heron2_flap_back: [96, 96, 24],
+  heron2_idle: [88, 108, 90],
+  heron2_idle_back: [88, 108, 24],
+  fox2_walk: [72, 72, 22],
+  fox2_walk_back: [72, 72, 37],
+  fox2_idle: [72, 72, 43],
+  fox2_idle_back: [72, 72, 39],
+  squirrel2_run: [64, 60, 54],
+  squirrel2_idle: [64, 60, 31],
+  squirrel2_idle_back: [64, 60, 37],
+  beaver2_walk: [112, 60, 15], // breiterer Rahmen: langer Schwanz
+  beaver2_walk_back: [96, 72, 84],
+  beaver2_gnaw: [96, 72, 42],
+  macaque2_walk: [72, 72, 24],
+  macaque2_walk_back: [72, 72, 24],
+  macaque2_idle: [72, 72, 37],
+  macaque2_idle_back: [72, 72, 24],
   // Mavi die Tierpflegerin: steht (blinzelt) bzw. winkt
   mavi_idle: [88, 116, 36],
   mavi_wave: [88, 116, 107],
@@ -600,6 +624,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) load.spritesheet(`hero_savanna_${k}`, `assets/hero_savanna_${k}.png`, HERO_WALK_FRAME); // Safari-Kleidung
     load.spritesheet('sheep', 'assets/sheep.png', SHEEP_FRAME);
     load.spritesheet('sheep_eat', 'assets/sheep_eat.png', SHEEP_FRAME); // grasend, Kopf unten
+    for (const key of ['sheep2', 'sheep2_eat']) load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME); // gefleckter Widder (selten)
     // Lauf- und Stehanimation (Test), von vorne und hinten
     for (const key of ['sheep_walk', 'sheep_walk_back', 'sheep_idle', 'sheep_idle_back']) load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME);
     // Bauernhof-Event: Schafe sehen aus wie Kuh, Schwein oder Ziege (Platzhalter, gleiches Format wie das Schaf)
@@ -669,11 +694,14 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
     load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
     load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
+    load.spritesheet('heron2', 'assets/heron2.png', HERON_FRAME); // Storch (selten)
+    load.spritesheet('heron2_fly', 'assets/heron2_fly.png', HERON_FLY_FRAME);
     load.spritesheet('heron_flap', 'assets/heron_flap.png', { frameWidth: 96, frameHeight: 96 }); // Flügelschlag (Test)
     load.spritesheet('heron_idle', 'assets/heron_idle.png', HERON_FRAME); // steht (Test)
     load.spritesheet('heron_idle_back', 'assets/heron_idle_back.png', HERON_FRAME);
     load.spritesheet('heron_flap_back', 'assets/heron_flap_back.png', { frameWidth: 96, frameHeight: 96 });
     load.spritesheet('macaque', 'assets/macaque.png', { frameWidth: 72, frameHeight: 72 }); // Japanmakak (Asien)
+    load.spritesheet('macaque2', 'assets/macaque2.png', { frameWidth: 72, frameHeight: 72 }); // Goldstumpfnase (selten)
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
     // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
     load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
@@ -683,6 +711,8 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
     load.spritesheet('beaver', 'assets/beaver.png', { frameWidth: 80, frameHeight: 60 }); // Biber (Wald, aus Sprites/Biber.webp)
     load.image('beaver_swim', 'assets/beaver_swim.png'); // ... schwimmt (aus dem Biber-Sprite, tools/beaver-swim.py)
+    load.spritesheet('beaver2', 'assets/beaver2.png', { frameWidth: 80, frameHeight: 60 }); // Nutria (selten)
+    load.image('beaver2_swim', 'assets/beaver2_swim.png');
     for (const k of ['iguana', 'iguana2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
     load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
     load.spritesheet('gorilla', 'assets/gorilla.png', { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung)
@@ -695,6 +725,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['snake', 'snake2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
     for (const k of ['tarantula', 'tarantula2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 64 });
     load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
+    load.spritesheet('macaque2_bath', 'assets/macaque2_bath.png', { frameWidth: 72, frameHeight: 72 });
     load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     for (const k of ['redpanda', 'redpanda_sit']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
     load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
@@ -738,15 +769,18 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['fish2', 'fish_carp', 'fish_tench', 'fish_roach', 'fish_perch', 'fish_trout', 'fish_grayling', 'fish_pike', 'fish_sturgeon']) load.spritesheet(k, `assets/${k}.png`, FISH_FRAME);
     load.spritesheet('fishbag', 'assets/fishbag.png', FISHBAG_FRAME);
     load.spritesheet('squirrel', 'assets/squirrel.png', SQUIRREL_FRAME);
+    load.spritesheet('squirrel2', 'assets/squirrel2.png', SQUIRREL_FRAME); // Streifenhörnchen (selten)
     load.spritesheet('squirrel_run', 'assets/squirrel_run.png', { frameWidth: 64, frameHeight: 60 }); // rennt (Test)
     load.spritesheet('squirrel_idle', 'assets/squirrel_idle.png', { frameWidth: 64, frameHeight: 60 }); // sitzt (Test)
     load.spritesheet('fox', 'assets/fox.png', FOX_FRAME);
     load.spritesheet('fox_eat', 'assets/fox_eat.png', FOX_FRAME);
+    for (const key of ['fox2', 'fox2_eat']) load.spritesheet(key, `assets/${key}.png`, FOX_FRAME); // Silberfuchs (selten)
     load.spritesheet('fox_walk', 'assets/fox_walk.png', FOX_FRAME); // Laufanimation von vorne (Test)
     load.spritesheet('fox_walk_back', 'assets/fox_walk_back.png', FOX_FRAME); // dasselbe von hinten
     load.spritesheet('fox_idle', 'assets/fox_idle.png', FOX_FRAME); // steht (Test)
     load.spritesheet('fox_idle_back', 'assets/fox_idle_back.png', FOX_FRAME); // dasselbe von hinten
     load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
+    load.spritesheet('fox2_sleep', 'assets/fox2_sleep.png', FOX_SLEEP_FRAME); // ... Silberfuchs (aus fox_sleep umgefärbt)
     load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
     load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
     load.spritesheet('antelope2', 'assets/antelope2.png', ANTELOPE_FRAME); // Oryx (seltener Skin)
@@ -869,7 +903,8 @@ export default class BootScene extends Phaser.Scene {
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
     // Eiswelt: Henrik macht schnellere Schritte, sonst gleitet er vor dem hellen Schnee sichtbar über den Boden
     const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30 };
-    for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') });
+    const VIDEO_YOYO = ['heron2_flap']; // auch vor und zurück (nicht nur Stehen)
+    for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? 24, repeat: -1, yoyo: key.includes('_idle') || VIDEO_YOYO.includes(key) });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)
     for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {
       anims.create({ key, frames: anims.generateFrameNumbers('gorilla_drum', { start, end }), frameRate: 24, repeat });

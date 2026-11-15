@@ -2,7 +2,7 @@
 // springt einer von Krone zu Krone: die Kronen rascheln, und er brüllt laut. Man muss sich also merken, wo er gerade sitzt.
 // Legt man eine Banane unten an seinen Baum, klettert er herunter und frisst sie – dann fängt man ihn mit dem Lasso.
 // Danach (oder wenn man zu langsam ist) klettert er wieder hinauf.
-// Der Gibbon (nur bei Nebel) verhält sich genauso, nur mit eigenen Bildern und einem höheren Ruf (species 'gibbon').
+// Der Gibbon ist die seltene Variante (Skin 'gibbon'): verhält sich genauso, nur mit eigenen Bildern und eigenem Ruf.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
@@ -140,15 +140,18 @@ export default class Howler extends Animal {
     });
   }
 
-  // Brüllen: laut, weiter weg leiser (eigener Laut, falls es einen gibt, sonst der Affenruf viel tiefer)
+  // Brüllen: laut, weiter weg leiser (eigener Laut, falls es einen gibt, sonst der Affenruf viel tiefer). Der Gibbon
+  // (Skin) hat seinen eigenen Ruf; ohne ihn das Brüllen höher
   call() {
     const p = this.scene.player;
     const k = Math.max(0, 1 - Math.hypot(p.x - this.x, (p.y - this.y) * 2) / CALL_HEAR);
     if (k <= 0) return;
     const audio = this.scene.cache.audio;
     const volume = CALL_VOLUME * k * k; // weiter weg schnell leiser
-    if (audio.exists(`animal_${this.species}`)) this.scene.sound.play(`animal_${this.species}`, { volume, detune: Phaser.Math.Between(-100, 100) });
-    else if (this.species === 'gibbon' && audio.exists('animal_howler')) this.scene.sound.play('animal_howler', { volume, detune: 700 + Phaser.Math.Between(-100, 100) }); // Gibbon: höher, bis er einen eigenen Ruf hat
+    const gibbon = this.skin === 'gibbon';
+    if (gibbon && audio.exists('animal_gibbon')) this.scene.sound.play('animal_gibbon', { volume, detune: Phaser.Math.Between(-100, 100) });
+    else if (gibbon && audio.exists('animal_howler')) this.scene.sound.play('animal_howler', { volume, detune: 700 + Phaser.Math.Between(-100, 100) });
+    else if (audio.exists(`animal_${this.species}`)) this.scene.sound.play(`animal_${this.species}`, { volume, detune: Phaser.Math.Between(-100, 100) });
     else if (audio.exists('animal_macaque')) this.scene.sound.play('animal_macaque', { volume, detune: -1100 + Phaser.Math.Between(-100, 100) });
   }
 
@@ -215,8 +218,9 @@ export default class Howler extends Animal {
     // im Sprung und beim Klettern am Stamm das Sprungbild (Arme nach vorn, Standbild); sonst laufen bzw. sitzen
     // (Animationen, siehe Animal.render)
     const climbing = (this.phase === 'down' || this.phase === 'up') && this.lift > 0;
-    const jump = (this.phase === 'jump' || climbing) && this.scene.textures.exists(`${this.species}_jump`) ? `${this.species}_jump` : null;
-    if (!jump && this.sprite.texture.key === `${this.species}_jump`) this.showStill(this.lookTexture());
+    const jumpKey = `${this.baseTexture()}_jump`; // mit Skin dessen Sprungbild (gibbon_jump)
+    const jump = (this.phase === 'jump' || climbing) && this.scene.textures.exists(jumpKey) ? jumpKey : null;
+    if (!jump && this.sprite.texture.key === jumpKey) this.showStill(this.lookTexture());
     super.render(moving && !this.lift);
     if (jump) {
       const f = this.kind.frames;
