@@ -69,8 +69,8 @@ export function countEvent(id) {
   if (session) count(session.events, id);
 }
 
-// Tafeln im Tierpark: 'gift' gezeigt, 'giftbabies'/'giftride' gewählt; 'worlds' gezeigt, 'worldsmap' bis zum Ende durchgeblättert;
-// 'surprise': Überraschungs-Flamingos in einer Welt
+// Tafeln im Tierpark: 'gift' gezeigt, 'giftbabies'/'giftride' gewählt; 'worlds' gezeigt, 'worldsmap' bis zum Ende durchgeblättert
+// (früher auch 'surprise': Überraschungs-Flamingos in einer Welt, gibt es nicht mehr)
 export function countPromo(id) {
   if (session) count(session.promos, id);
 }

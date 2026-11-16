@@ -131,7 +131,7 @@ import { VisitorCrowd } from '../visitors/Visitor.js';
 import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
-import LuckWorld from '../world/LuckWorld.js';
+import LuckWorld, { rarePromiseHere } from '../world/LuckWorld.js';
 import { CHARMS, MORE_ANIMALS, bonusActive, chestState, price } from '../world/luck.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen } from '../ui/luckPicker.js';
@@ -479,10 +479,6 @@ const TUT_SHEEP = 2; // bei Mavis Schaf-Aufgabe grasen auf der Wiese immer so vi
 const TUT_SHEEP_R = 360; // ... so nah am Auto ...
 const TUT_SHEEP_CHECK = 2; // ... nachgeschaut wird alle paar Sekunden
 const PROMO_DELAY = 1200; // so lange nach der Ankunft im Tierpark, bis eine Tafel aufgeht (maybeShowPromo)
-// Überraschung (maybeSurprise): so lange nach der Ankunft in Wiese, Wald oder Savanne fliegen gratis Flamingos ein,
-// höchstens so oft
-const SURPRISE_DELAY = 60 * 1000;
-const SURPRISE_EVERY = 30 * 60 * 1000;
 let lastBookTab = 'animals'; // zuletzt offener Reiter im Tierbuch
 const QUEST_FOLD_KEY = 'my-little-zoo-quest-folded'; // Aufgaben-Karte eingeklappt (nur in diesem Browser)
 const AQUARIUM_TOUR = { tx: 3, ty: 16 }; // Ankunft vor der Aquariumtür (park2), wenn Mavi das Aquarium zeigt
@@ -513,6 +509,7 @@ const BALL_ROLL = [56, 44, 32]; // so weit rollt der Ball auf den Tiger zu (der 
 const BALL_KEEP = 20000; // so lange bleibt der Ball liegen, wenn der Tiger nicht mehr spielt (Millisekunden)
 const MAX_MACAQUES = 6; // so viele Japanmakaken baden höchstens in den wilden Quellen (sie verteilen sich)
 const FLAMINGO_EVERY = [6, 12]; // Sekunden zwischen zwei Flamingos (Reiher: 50–110)
+const PROMISE_WAIT = 6; // so lange (höchstens) bis der versprochene Storch bzw. Ohrengeier aus der Kiste heranfliegt
 const FLAMINGO_LAND = 0.6; // so oft landen sie (am Wasser)
 const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_savanna', asia: 'ride_asia', jungle: 'ride_jungle', reef: 'ride_reef' }; // Dschungel: Maultier, Riff: Seabob
 // Die Welten draußen (für das Tierbuch und das Regal: wo es welche Tiere gibt)
@@ -1235,7 +1232,6 @@ export default class GardenScene extends Phaser.Scene {
     if (data.level) cam.fadeIn(300); // nach einem Levelwechsel sanft einblenden
     hideLoading(); // fertig aufgebaut (siehe showLoading beim Starten, Gebietswechsel und Ausbau)
     sessionLoaded(); // für die Statistik: Ladezeit (nur beim ersten Gebiet der Runde)
-    if (FLAMINGO_WORLDS.includes(LEVEL_ID)) this.time.delayedCall(SURPRISE_DELAY, () => this.maybeSurprise());
     if (data.fromWorld) {
       game.parkReturns++;
       this.time.delayedCall(PROMO_DELAY, () => this.maybeShowPromo());
@@ -2205,14 +2201,18 @@ export default class GardenScene extends Phaser.Scene {
       }
     }
     // Trockenzeit: ab und zu kreist ein Geier heran und landet auf einer kahlen Akazie
+    // ein versprochenes seltenes Tier aus der Kiste (Storch, Ohrengeier) lässt nicht lange auf sich warten
+    const promised = rarePromiseHere()?.species;
     if (LEVEL.vultures) {
       this.vultureTimer = (this.vultureTimer ?? Phaser.Math.FloatBetween(4, LEVEL.vultures.every[0])) - dt;
+      if (promised === 'vulture') this.vultureTimer = Math.min(this.vultureTimer, PROMISE_WAIT);
       if (this.vultureTimer <= 0) {
         this.vultureTimer = Phaser.Math.FloatBetween(...LEVEL.vultures.every);
         this.flyInVulture();
       }
     }
     this.heronTimer -= dt;
+    if (promised === 'heron') this.heronTimer = Math.min(this.heronTimer, PROMISE_WAIT);
     if (this.heronTimer > 0) return;
     const { every, landChance } = LEVEL.herons;
     this.heronTimer = Phaser.Math.FloatBetween(...every);
@@ -2223,7 +2223,8 @@ export default class GardenScene extends Phaser.Scene {
   flyIn(species, landChance) {
     const angle = Math.random() * Math.PI * 2;
     const from = this.mapEdgePoint(angle);
-    const land = Math.random() < landChance && NEAR_WATER.length > 0;
+    // der versprochene seltene Vogel aus der Kiste landet immer (sonst flöge er nur über die Karte)
+    const land = (rarePromiseHere()?.species === species || Math.random() < landChance) && NEAR_WATER.length > 0;
     let to;
     if (land) {
       const t = Phaser.Utils.Array.GetRandom(NEAR_WATER);
@@ -2982,7 +2983,6 @@ export default class GardenScene extends Phaser.Scene {
   // Bewunderungsherzen der Besucher aufs Konto; der Zähler oben hüpft kurz
   // source: Tierart (oder 'icecream') für die Statistik in der Übersicht; ohne Quelle (Cheat) zählt es dort nicht
   addHearts(n, source = null) {
-    if (n > 0 && bonusActive('heartRain')) n *= 2; // Bonus "Herzregen" aus einer Kiste
     game.hearts += n;
     if (source) game.heartsBy[source] = (game.heartsBy[source] ?? 0) + n;
     this.updateHud();
@@ -5056,18 +5056,6 @@ export default class GardenScene extends Phaser.Scene {
       },
       () => this.scene.resume(),
     );
-  }
-
-  // Überraschung: ab und zu fliegen in Wiese, Wald und Savanne gratis Flamingos ein (das Event Flamingo-Flug), damit
-  // man Events nebenbei entdeckt. Erst nach dem Tutorial, nur wenn der Flamingo-Flug gerade startbar ist
-  maybeSurprise() {
-    if (this.leaving || !storyAt('upgrade') || !groupsLoaded(EVENT_GROUPS.flamingo) || eventState('flamingo').state !== 'ready') return;
-    if (Date.now() - (game.surpriseAt ?? 0) < SURPRISE_EVERY) return;
-    game.surpriseAt = Date.now();
-    startEvent('flamingo', Date.now(), true);
-    countPromo('surprise');
-    this.updateEventBanner();
-    this.showToast(tr('🦩 Überraschung! Ein Flamingo-Schwarm zieht 5 Minuten lang vorbei – fang einen für deinen Tierpark! Weitere Events startest du am Computer im Haupthaus.', '🦩 Surprise! A flock of flamingos is passing by for 5 minutes – catch one for your zoo! You can start more events at the computer in the main building.'));
   }
 
   // Spielstand speichern (Autosave, Menü). Während eines Levelwechsels nicht: der ist dann schon gespeichert.

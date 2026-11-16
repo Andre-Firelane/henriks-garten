@@ -30,9 +30,11 @@ export const BONI = {
   toolsEverywhere: { name: tr('Werkzeug überall', 'Tools Everywhere'), text: tr('Werkzeug wechseln, wo du willst (Q bzw. Werkzeug-Knopf).', 'Switch tools anywhere (Q or the tool button).') },
   stands: { name: tr('2 Hochstände', '2 Lookouts'), text: tr('Zwei Hochstände – von oben siehst du alles.', 'Two lookouts – see everything from above.'), available: (l) => l !== 'reef' },
   bigCatch: { name: tr('Großes Lasso', 'Big Lasso'), text: tr('Lasso und Kescher fangen viel größer – das Lasso 2 Tiere auf einmal.', 'Lasso and net catch much wider – the lasso 2 animals at once.') },
-  heartRain: { name: tr('Herzregen', 'Heart Rain'), text: tr('Doppelte Herzen.', 'Double hearts.') },
-  eventCall: { name: tr('Event-Ruf', 'Event Call'), text: tr('Das Event dieses Gebiets startet sofort – gratis.', 'This area’s event starts right away – for free.'), available: (l) => !!LEVEL_EVENT[l] },
+  // instant: wirkt sofort einmal (kein 5-Minuten-Bonus)
+  heartRain: { name: tr('Herzregen', 'Heart Rain'), text: tr('Sofort 100 Herzen.', '100 hearts right away.'), instant: true }, // 100: HEART_RAIN
+  eventCall: { name: tr('Event-Ruf', 'Event Call'), text: tr('Das Event dieses Gebiets startet sofort – gratis.', 'This area’s event starts right away – for free.'), available: (l) => !!LEVEL_EVENT[l], instant: true },
 };
+export const HEART_RAIN = 100; // so viele Herzen bringt der Herzregen (pauschal, unabhängig davon, wie lange man im Gebiet bleibt)
 for (const b of Object.values(BONI)) b.icon = iconImg('boost');
 const BONUS_MS = 5 * MINUTE;
 const HOURGLASS_MS = 8 * MINUTE;

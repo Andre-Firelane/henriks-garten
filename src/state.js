@@ -27,7 +27,6 @@ export const game = {
   tipsSeen: [], // Tierarten, zu denen der Fang-Tipp nach Fehlversuchen schon von selbst kam
   parkReturns: 0, // so oft ist man aus einer Welt zurück in den Tierpark gekommen (für die Tafeln in promos)
   promos: [], // schon gezeigte Tafeln im Tierpark: 'gift' (geschenktes Event); 'worlds' (die anderen Welten) nur in älteren Spielständen
-  surpriseAt: 0, // wann zuletzt ein Überraschungs-Flamingo-Flug kam (siehe maybeSurprise in GardenScene)
   bookNew: [], // Neues im Tierbuch (roter Punkt am Knopf, leuchtet beim Öffnen auf): 'caught:fox', 'seen:fox', 'quest:sheep'
   chests: {}, // Kisten je Welt: { meadow: { spots: [{ tx, ty }], readyAt } } (siehe src/world/luck.js)
   charms: { owned: [], equipped: [] }, // Glücksbringer: gefundene und angelegte (höchstens 2)
@@ -69,5 +68,4 @@ export function resetGame() {
   game.bookNew = [];
   game.parkReturns = 0;
   game.promos = [];
-  game.surpriseAt = 0;
 }

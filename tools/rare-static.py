@@ -22,8 +22,12 @@ fox2_sleep: aus fox_sleep umgefärbt (tools/rare-static.py --fox-sleep); beaver2
 gespiegelten Nutria-Vorderansicht (SCALE 0.115)."""
 import sys
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
+# --scharf (vor allen anderen Angaben): nach dem Verkleinern nachschärfen, für feine Vorlagen in kleinen Bildern
+# (Fetzenfisch, 48 x 64), die sonst neben der Pixel-Art der Grundart verschwommen wirken
+SHARP = sys.argv[1] == '--scharf'
+if SHARP: del sys.argv[1]
 if sys.argv[1] == '--fox-sleep':
     # Silberfuchs schläft: rotes und oranges Fell des schlafenden Fuchses dunkelgrau (Helligkeitsverlauf bleibt)
     im = np.array(Image.open('public/assets/fox_sleep.png').convert('RGBA')).astype(float)
@@ -47,6 +51,12 @@ for i, s in enumerate(srcs):
     th, bottom = ys.max() - ys.min() + 1, ys.max() + 1
     k = min(th / v.height, (FW - 2) / v.width)  # so hoch wie das Original, höchstens so breit wie der Rahmen
     w, h = max(1, round(v.width * k)), max(1, round(v.height * k))
-    res.alpha_composite(v.resize((w, h), Image.LANCZOS), (i * FW + round((FW - w) / 2), bottom - h))
+    small = v.resize((w, h), Image.LANCZOS)
+    if SHARP:
+        # Farben nachschärfen (Alpha bleibt), halbdurchsichtige Randpixel kräftiger: klarere Umrisse wie Pixel-Art
+        rgb = small.convert('RGB').filter(ImageFilter.UnsharpMask(radius=0.8, percent=80, threshold=2))
+        alpha = small.getchannel('A').point(lambda x: 0 if x < 50 else min(255, round(x * 1.2)))
+        small = Image.merge('RGBA', (*rgb.split(), alpha))
+    res.alpha_composite(small, (i * FW + round((FW - w) / 2), bottom - h))
 res.save(out)
 print(out, 'fertig')

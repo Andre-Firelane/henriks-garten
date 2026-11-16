@@ -13,8 +13,8 @@ import { openLuckPicker } from '../ui/luckPicker.js';
 import { EVENT_GROUPS, groupsLoaded } from '../scenes/BootScene.js';
 import { GHOST_ALPHA, GHOST_DEPTH, isCovered, outlineTexture } from './Boat.js';
 import {
-  BONI, CHARMS, CHEST_COUNT, CHEST_LEVELS, LEVEL_EVENT, TIERS,
-  activeBoni, bonusActive, campfireLeft, cardCount, chestOpened, chestState, dropBoniElsewhere, giveCharm, hasCharm,
+  BONI, CHARMS, CHEST_COUNT, CHEST_LEVELS, HEART_RAIN, LEVEL_EVENT, TIERS,
+  activeBoni, bonusActive, campfireLeft, cardCount, chestOpened, chestState, dropBoniElsewhere, giveCharm, hasCharm, iconImg,
   luckState, ownsCharm, rerollCost, rollCards, startBonus,
 } from './luck.js';
 
@@ -41,6 +41,14 @@ const CALLED = {
   iguana: { when: (l) => l.waterfallSun, at: (l) => box(l.waterfallSun), hint: tr('Sonnt sich bald am Wasserfall!', 'Will soon be sunbathing at the waterfall!') },
   gorilla: { when: (l) => l.gorillas, at: (l) => box(l.gorillas), hint: tr('Kommt bald auf die Lichtung!', 'Will soon come to the clearing!') },
 };
+// seltene Varianten mit großem Kartenbild public/assets/card_<skin>.png (tools/card-images.py): auf der Karte so scharf
+// wie die Glücksbringer-Bilder (die Spiel-Sprites wären dort 3- bis 4-fach vergrößert)
+const CARD_SKINS = new Set([
+  'cat2', 'stag', 'antelope2', 'croc_albino', 'tiger2', 'peacock2', 'orangutan2', 'frog2', 'jellyfish2', 'wolf2', 'lion2',
+  'iguana2', 'panther', 'macaw2', 'snake2', 'tarantula2', 'ray2', 'gibbon', 'octopus2', 'sheep2', 'heron2', 'fox2',
+  'squirrel2', 'beaver2', 'macaque2', 'anteater2', 'meerkat2', 'vulture2', 'gorilla2', 'hyena2', 'hippo2', 'panda2',
+  'penguin2', 'seal2', 'seahorse2', 'toucan2', 'turtle2', 'warthog2',
+]);
 const CALLED_SHARE = 0.1; // so oft kommt ihre Karte (wie eine seltene Art im Spawn-Pool)
 
 // Versprechen für dieses Gebiet (seltenes Tier aus der Kiste, das erst noch kommen muss), oder null
@@ -165,14 +173,17 @@ export default class Luck {
     if (c.kind === 'rare') {
       const info = skinInfo(c.species, c.skin);
       const tier = TIERS[c.tier];
-      // eigenes Bild der seltenen Variante (z. B. Hirsch statt Reh); Platzhalter: das Bild der Art, eingefärbt wie im Spiel
-      const pic = info?.css ? `<span style="filter:${info.css}">${safeIcon(c.species)}</span>` : safeIcon(c.skin, c.species);
+      // großes Kartenbild der seltenen Variante (tools/card-images.py); sonst das Spielbild (z. B. Schoko-Giraffe),
+      // Platzhalter: das Bild der Art, eingefärbt wie im Spiel
+      const pic = CARD_SKINS.has(c.skin)
+        ? iconImg(`card_${c.skin}`).replace('class="luck-img"', 'class="luck-img luck-animal"')
+        : info?.css ? `<span style="filter:${info.css}">${safeIcon(c.species)}</span>` : safeIcon(c.skin, c.species);
       return { icon: `${pic}<span class="luck-spark">✨</span>`, title: capital(info?.name ?? c.species), text: tr('Taucht garantiert hier im Gebiet auf!', 'Guaranteed to show up in this area!'), color: tier.color, tag: tier.name };
     }
     if (c.kind === 'bonus') {
       const b = BONI[c.id];
       const minutes = hasCharm('hourglass') ? 8 : 5;
-      return { icon: b.icon, title: b.name, text: b.text, color: CARD_COLOR.bonus, tag: c.id === 'eventCall' ? tr('sofort', 'right now') : tr(`${minutes} Minuten`, `${minutes} minutes`) };
+      return { icon: b.icon, title: b.name, text: b.text, color: CARD_COLOR.bonus, tag: b.instant ? tr('sofort', 'right now') : tr(`${minutes} Minuten`, `${minutes} minutes`) };
     }
     const ch = CHARMS[c.id];
     return { icon: ch.icon, title: ch.name, text: ch.text, color: CARD_COLOR.charm, tag: tr('Glücksbringer', 'Lucky charm') };
@@ -202,7 +213,8 @@ export default class Luck {
     const p = s.player;
     if (CALLED[species]) {
       // ist gerade eins da, wird es selten; sonst das nächste, das kommt
-      const wild = s.animals.find((a) => a.species === species && a.state === 'wild' && !a.skin);
+      // (keinen Vogel, der nur über die Karte fliegt oder schon wieder abfliegt: der wäre gleich weg)
+      const wild = s.animals.find((a) => a.species === species && a.state === 'wild' && !a.skin && a.land !== false && a.phase !== 'leaving');
       if (wild) {
         wild.skin = skin;
         wild.life = Math.max(wild.life ?? 0, RARE_LIFE);
@@ -247,6 +259,12 @@ export default class Luck {
       const groups = EVENT_GROUPS[ev] ?? [];
       if (!groupsLoaded(groups)) s.afterGroupsLoaded(groups, go);
       else go();
+      return;
+    }
+    if (id === 'heartRain') {
+      s.addHearts(HEART_RAIN);
+      s.showToast(`${b.icon} <b>${b.name}!</b> ${tr(`<span class="heart">♥</span> ${HEART_RAIN} für dich.`, `<span class="heart">♥</span> ${HEART_RAIN} for you.`)}`);
+      s.updateHud();
       return;
     }
     startBonus(id);
