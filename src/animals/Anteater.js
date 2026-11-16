@@ -122,13 +122,14 @@ export default class Anteater extends Animal {
 
   render(moving) {
     // am Baum: aufgerichtet, die Vorderpfoten am Stamm (das Bild schaut nach links, nach rechts gespiegelt)
+    const eat = this.texSkin ? `${this.texSkin}_eat` : 'anteater_eat'; // Tamandua: anteater2_eat
     if (this.eating) {
-      this.showStill('anteater_eat', EAT_ORIGIN_Y);
+      this.showStill(eat, EAT_ORIGIN_Y);
       this.sprite.setFlipX(this.faceX > 0);
       this.placeSprite(false);
       return;
     }
-    if (this.sprite.texture.key === 'anteater_eat') this.sprite.setFlipX(false).setTexture(this.kind.texture, 0).setOrigin(0.5, this.kind.originY);
+    if (this.sprite.texture.key === eat) this.sprite.setFlipX(false).setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
     super.render(moving);
   }
 }

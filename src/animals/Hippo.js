@@ -186,19 +186,23 @@ export default class Hippo extends Crocodile {
     this.sprite.setScale(this.baby ? 0.3 : HIPPO_SCALE);
   }
 
-  // im Wasser: nur die obere Kopfhälfte
+  // im Wasser: nur die obere Kopfhälfte (Zwergflusspferd: hippo2_water, umgefärbt mit tools/recolor.js)
+  waterTexture() {
+    return this.texSkin ? `${this.texSkin}_water` : 'hippo_water';
+  }
+
   useWaterLook() {
-    this.sprite.stop().setFlipX(false).setTexture('hippo_water', 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(HIPPO_SCALE);
+    this.sprite.stop().setFlipX(false).setTexture(this.waterTexture(), 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(HIPPO_SCALE);
     this.shadow.setVisible(false);
   }
 
   render(moving) {
     if (!this.inWater()) {
-      if (this.sprite.texture.key === 'hippo_water') this.useBagLook();
+      if (this.sprite.texture.key === this.waterTexture()) this.useBagLook();
       Animal.prototype.render.call(this, moving);
       return;
     }
-    if (this.sprite.texture.key !== 'hippo_water') this.useWaterLook();
+    if (this.sprite.texture.key !== this.waterTexture()) this.useWaterLook();
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     const bob = Math.sin(this.scene.time.now / 400 + this.x) * 1;

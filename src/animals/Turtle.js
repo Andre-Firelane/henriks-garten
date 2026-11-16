@@ -100,7 +100,7 @@ export default class Turtle extends ReefFish {
   }
 
   render(moving) {
-    const own = this.netted() && this.scene.textures.exists('turtle_net');
+    const own = this.netted() && !this.texSkin && this.scene.textures.exists('turtle_net'); // Karettschildkröte: eigenes Bild mit gezeichnetem Netz
     super.render(moving);
     this.net.clear();
     if (!this.netted()) return;
@@ -122,7 +122,7 @@ export default class Turtle extends ReefFish {
   catch() {
     this.net.clear();
     this.sprite.setAngle(0);
-    if (this.sprite.texture.key === 'turtle_net') this.sprite.setTexture(this.kind.texture);
+    if (this.sprite.texture.key === 'turtle_net') this.sprite.setTexture(this.baseTexture());
     super.catch();
   }
 

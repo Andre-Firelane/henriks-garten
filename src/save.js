@@ -136,6 +136,11 @@ function migrateCaught() {
 // Früher eigene Tierarten, jetzt seltene Aussehen (Skins) einer anderen Art: der Hirsch beim Reh, der Gibbon beim
 // Brüllaffen. Tiere, Herz-Statistik und Tierbuch-Listen ziehen zur Art um
 const SKIN_SPECIES = { stag: 'deer', gibbon: 'howler' };
+const PLACEHOLDER_DONE = {
+  sheep_r: 'sheep2', fox_r: 'fox2', squirrel_r: 'squirrel2', macaque_r: 'macaque2', octopus_r: 'octopus2',
+  meerkat_r: 'meerkat2', hippo_r: 'hippo2', warthog_r: 'warthog2', anteater_r: 'anteater2', toucan_r: 'toucan2',
+  penguin_r: 'penguin2', seal_r: 'seal2', seahorse_r: 'seahorse2', turtle_r: 'turtle2',
+};
 function migrateSkinSpecies() {
   const fix = (a) => {
     const to = SKIN_SPECIES[a.species];
@@ -145,6 +150,12 @@ function migrateSkinSpecies() {
   };
   for (const lvl of Object.values(game.levels)) lvl.animals.forEach(fix);
   game.followers.forEach(fix);
+  // eingefärbte Platzhalter-Skins, die inzwischen ein eigenes Bild haben, werden zu diesem Skin
+  const real = (a) => {
+    if (a.skin && PLACEHOLDER_DONE[a.skin]) a.skin = PLACEHOLDER_DONE[a.skin];
+  };
+  for (const lvl of Object.values(game.levels)) lvl.animals.forEach(real);
+  game.followers.forEach(real);
   for (const [from, to] of Object.entries(SKIN_SPECIES)) {
     if (game.heartsBy[from]) {
       game.heartsBy[to] = (game.heartsBy[to] ?? 0) + game.heartsBy[from];

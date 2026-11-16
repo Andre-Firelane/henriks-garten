@@ -32,6 +32,7 @@ export const game = {
   chests: {}, // Kisten je Welt: { meadow: { spots: [{ tx, ty }], readyAt } } (siehe src/world/luck.js)
   charms: { owned: [], equipped: [] }, // Glücksbringer: gefundene und angelegte (höchstens 2)
   levelBonus: null, // laufende Boni aus einer Kiste: { level, boni: { moreAnimals: endsAt, ... } } (nur in diesem Gebiet)
+  rarePromise: null, // seltenes Tier aus der Kiste, das erst noch kommen muss: { level, species, skin } (siehe CALLED in world/LuckWorld.js)
   campfireAt: 0, // wann zuletzt am Lagerfeuer gesessen
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
 };
@@ -54,6 +55,7 @@ export function resetGame() {
   game.chests = {};
   game.charms = { owned: [], equipped: [] };
   game.levelBonus = null;
+  game.rarePromise = null;
   game.campfireAt = 0;
   game.story = newStory();
   game.catches = {};

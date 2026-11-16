@@ -29,13 +29,33 @@ const CHEST_SCALE = 0.5; // die Truhe ist doppelt so groß gezeichnet
 const CHEST_ORIGIN_Y = 0.93;
 const GHOST_CHECK = 0.2; // so oft (Sekunden) wird geprüft, ob ein Baum o. Ä. die Truhe verdeckt (dann scheint ihre Kontur durch, wie beim Kanu)
 const CARD_COLOR = { bonus: '#9a6ad8', charm: '#d0485a' };
+// Tiere, die nicht im normalen Spawn-Pool stehen, sondern auf eigene Weise kommen (rufen, heranfliegen, nur bei Sonne
+// oder Nebel). Ihre Karte gibt es nur, wenn sie hier und jetzt vorkommen können (when). Ist gerade keins da, wird das
+// nächste, das auftaucht, die seltene Variante (Versprechen, game.rarePromise; eingelöst in Animal.rollSkin).
+// at: Ort, zu dem bis dahin ein Pfeil zeigt; hint: Hinweis, wie man es bekommt
+const box = (z) => ({ tx: (z.tx0 + z.tx1) / 2, ty: (z.ty0 + z.ty1) / 2 });
+const CALLED = {
+  hyena: { when: (l) => l.hyenas, at: (l) => l.hyenas.near, hint: tr('Kommt mit dem nächsten Hyänenrudel – streu am Elefantenfriedhof Knochen aus!', 'Comes with the next hyena pack – scatter bones at the elephant graveyard!') },
+  vulture: { when: (l) => l.vultures, hint: tr('Der nächste Geier, der heranfliegt, ist es!', 'The next vulture to fly in is the one!') },
+  heron: { when: (l) => l.herons, hint: tr('Der nächste Vogel, der hier landet, ist es!', 'The next bird to land here is the one!') },
+  iguana: { when: (l) => l.waterfallSun, at: (l) => box(l.waterfallSun), hint: tr('Sonnt sich bald am Wasserfall!', 'Will soon be sunbathing at the waterfall!') },
+  gorilla: { when: (l) => l.gorillas, at: (l) => box(l.gorillas), hint: tr('Kommt bald auf die Lichtung!', 'Will soon come to the clearing!') },
+};
+const CALLED_SHARE = 0.1; // so oft kommt ihre Karte (wie eine seltene Art im Spawn-Pool)
+
+// Versprechen für dieses Gebiet (seltenes Tier aus der Kiste, das erst noch kommen muss), oder null
+export function rarePromiseHere() {
+  const p = game.rarePromise;
+  return p && p.level === LEVEL_ID ? p : null;
+}
 
 export default class Luck {
   constructor(scene) {
     this.scene = scene;
     this.chests = []; // { spot, x, y, img, glint }
     this.standImgs = [];
-    this.rareTarget = null; // seltenes Tier aus der Kiste (Pfeil am Rand, bis man es hat)
+    // seltenes Tier aus der Kiste (Pfeil am Rand, bis man es hat); auch ein versprochenes, das schon beim Betreten kam
+    this.rareTarget = scene.animals?.find((a) => a.promised && a.state === 'wild') ?? null;
     this.timer = 0;
     this.nearChest = null;
     luckState();
@@ -132,6 +152,7 @@ export default class Luck {
     const rare = Object.entries(weights)
       .filter(([, w]) => w > 0)
       .map(([species, w]) => ({ species, skin: rareSkinHere(species)?.id, share: w / total }))
+      .concat(Object.entries(CALLED).filter(([, c]) => c.when(LEVEL)).map(([species]) => ({ species, skin: rareSkinHere(species)?.id, share: CALLED_SHARE })))
       .filter((c) => c.skin);
     const boni = Object.entries(BONI)
       .filter(([id, b]) => (!b.available || b.available(LEVEL_ID)) && (id !== 'ride' || RIDE_LEVELS.includes(LEVEL_ID)))
@@ -179,6 +200,20 @@ export default class Luck {
     const s = this.scene;
     const info = skinInfo(species, skin);
     const p = s.player;
+    if (CALLED[species]) {
+      // ist gerade eins da, wird es selten; sonst das nächste, das kommt
+      const wild = s.animals.find((a) => a.species === species && a.state === 'wild' && !a.skin);
+      if (wild) {
+        wild.skin = skin;
+        wild.life = Math.max(wild.life ?? 0, RARE_LIFE);
+        this.rareTarget = wild;
+        s.showToast(tr(`✨ ${capital(info?.name ?? species)} ist irgendwo im Gebiet – folge dem Pfeil!`, `✨ A ${info?.name ?? species} is somewhere in this area – follow the arrow!`));
+        return;
+      }
+      game.rarePromise = { level: LEVEL_ID, species, skin };
+      s.showToast(`✨ <b>${capital(info?.name ?? species)}</b>: ${CALLED[species].hint}`);
+      return;
+    }
     const pool = { population: 99, weights: { [species]: 1 } };
     let group = [];
     for (let i = 0; i < 5 && !group.length; i++) group = s.spawnOne([worldToTile(p.x, p.y)], true, pool);
@@ -367,12 +402,31 @@ export default class Luck {
     }
     const r = this.rareTarget;
     if (r) list.push({ id: 'luck-rare', x: r.x, y: r.y - 10, icon: '✨' });
+    // versprochenes seltenes Tier: Pfeil zu dem Ort, an dem es auftauchen wird (solange es dort vorkommen kann)
+    const promise = rarePromiseHere();
+    const called = promise && CALLED[promise.species];
+    if (!r && called?.at && called.when(LEVEL)) {
+      const t = called.at(LEVEL);
+      const w = tileToWorld(t.tx, t.ty);
+      list.push({ id: 'luck-promise', x: w.x, y: w.y - 10, icon: '✨' });
+    }
     return list;
+  }
+
+  // das versprochene seltene Tier ist aufgetaucht (Animal.rollSkin): Pfeil darauf
+  promiseKept(animal) {
+    this.rareTarget = animal;
+    animal.life = Math.max(animal.life ?? 0, RARE_LIFE);
+    const info = skinInfo(animal.species, animal.skin);
+    this.scene.showToast(tr(`✨ Da ist es: ${info?.name ?? animal.species} – folge dem Pfeil!`, `✨ Here it is: ${info?.name ?? animal.species} – follow the arrow!`));
   }
 
   // Zeilen für die Event-Anzeige oben links
   bannerLines() {
-    return activeBoni().map(({ id, left }) => `${BONI[id].icon} ${BONI[id].name} · ${tr(`noch ${formatTime(left)}`, `${formatTime(left)} left`)}`);
+    const lines = activeBoni().map(({ id, left }) => `${BONI[id].icon} ${BONI[id].name} · ${tr(`noch ${formatTime(left)}`, `${formatTime(left)} left`)}`);
+    const promise = rarePromiseHere();
+    if (promise) lines.push(`✨ ${capital(skinInfo(promise.species, promise.skin)?.name ?? promise.species)} · ${tr('kommt noch', 'still to come')}`);
+    return lines;
   }
 
   // Bild der Kiste für die Werkzeugleiste

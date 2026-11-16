@@ -93,6 +93,12 @@ export default class Gorilla extends Animal {
   }
 
   playDrum(key) {
+    // Albino-Gorilla: noch ohne eigene Trommel-Animation, er bleibt im Standbild (Aufrichten und Absetzen sind sofort fertig)
+    if (this.texSkin) {
+      if (this.drum === 'in') this.drum = 'loop';
+      else if (this.drum === 'out') this.drum = null;
+      return;
+    }
     if (!this.scene.anims.exists(key)) return;
     this.sprite.play(key);
     const feetY = this.sprite.texture.customData.feetY;

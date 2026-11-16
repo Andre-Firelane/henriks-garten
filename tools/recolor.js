@@ -1,8 +1,8 @@
 // Seltene Skins durch Umfärben: graue Töne eines fertigen Spritesheets (Weiß bis Schwarz) werden auf eine Farbskala
-// umgelegt, farbige Stellen (Augen, Nase, Zunge) bleiben. Aufruf: npm run recolor (ONLY=panda2.png,...: nur diese)
+// umgelegt, farbige Stellen (Augen, Nase, Zunge) bleiben. Aufruf: npm run recolor (ONLY=zebra2.png,...: nur diese)
 // Nach `npm run characters` erneut ausführen, wenn sich die Ausgangsbilder geändert haben.
 // darkOnly: nur das dunkle, farblose Fell umfärben (unter below, darüber über fade weich auslaufend), Weiß und die
-// bräunlichen Umrisse und Pupillen (Sättigung über sat) bleiben – weinroter Panda
+// bräunlichen Umrisse und Pupillen (Sättigung über sat) bleiben (früher für den weinroten Panda)
 import { PNG } from 'pngjs';
 import fs from 'node:fs';
 
@@ -11,10 +11,9 @@ const JOBS = [
   // Schoko-Zebra: Streifen schokobraun, das Weiß cremefarben
   { from: 'zebra', to: 'zebra2', light: [250, 240, 222], mid: [120, 72, 40], dark: [40, 20, 10] },
   { from: 'zebra_drink', to: 'zebra2_drink', light: [250, 240, 222], mid: [120, 72, 40], dark: [40, 20, 10] },
-  // weinroter Panda: das schwarze Fell weinrot, das weiße bleibt
-  ...['panda', 'panda_eat', 'panda_walk', 'panda_walk_back', 'panda_idle'].map((from) => ({
-    from, to: from.replace('panda', 'panda2'), mid: [128, 32, 56], dark: [48, 8, 22], darkOnly: { below: 120, fade: 50, sat: 20 },
-  })),
+  // Zwergflusspferd im Wasser (obere Kopfhälfte): das graue Nilpferd dunkel schiefergrau, die rosa Ohren bleiben
+  { from: 'hippo_water', to: 'hippo2_water', light: [150, 140, 152], mid: [74, 66, 78], dark: [22, 18, 26] },
+  // (früher auch der weinrote Panda; die seltene Panda-Variante hat jetzt eigene Bilder: Sprites/Panda2.webp, tools/rare-static.py)
 ];
 const ONLY = process.env.ONLY?.split(',');
 const MAX_SATURATION = 40; // stärker farbige Pixel bleiben, wie sie sind

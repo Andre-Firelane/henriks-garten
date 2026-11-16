@@ -1946,7 +1946,9 @@ export default class GardenScene extends Phaser.Scene {
     const wild = this.animals.filter((a) => a.species === 'gorilla' && a.state === 'wild').length;
     for (let i = wild; i < max; i++) {
       const [a] = Gorilla.spawnOnClearing(this);
-      if (a) a.life = Phaser.Math.FloatBetween(...LIFETIME);
+      if (!a) continue;
+      a.life = Phaser.Math.FloatBetween(...LIFETIME);
+      a.rollSkin('wild'); // selten ein Albino-Gorilla
     }
   }
 
@@ -2230,7 +2232,7 @@ export default class GardenScene extends Phaser.Scene {
       to = this.mapEdgePoint(angle + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6)); // quer hinüber
     }
     const bird = this.createAnimal(species, from.x, from.y);
-    bird.rollSkin('wild'); // z. B. der Schuhschnabel bei Starkregen in der Savanne
+    bird.rollSkin('wild', land); // z. B. der Schuhschnabel bei Starkregen in der Savanne; das versprochene Tier aus der Kiste nur, wenn er landet
     bird.startFlight(from, to, land);
   }
 
@@ -2244,6 +2246,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!t) return;
     const from = this.mapEdgePoint(Math.random() * Math.PI * 2);
     const bird = this.createAnimal('vulture', from.x, from.y);
+    bird.rollSkin('wild'); // selten ein Ohrengeier
     bird.startCircle(from, { x: t.x, y: t.y + 3 }); // knapp vor dem Stamm, damit er vor dem Baum gezeichnet wird
   }
 

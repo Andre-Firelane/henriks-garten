@@ -971,6 +971,8 @@ const ANIMATIONS = [
   { src: 'Animation/Schildkröte schwimmt hinten.mp4', out: 'turtle_swim_back.png', clipAbove: 110, clipBelow: 530, scale: 0.19, frameW: 112, frameH: 88, feetY: 84 },
   // Krake: nur von vorne (auch nach oben)
   { src: 'Animation/Krake schwimmt vorne.mp4', out: 'octopus_swim.png', loopBlend: 1, scale: 0.75, frameW: 88, frameH: 72, feetY: 68 },
+  // Kalmar (seltene Variante der Krake): ebenfalls nur von vorne
+  { src: 'Animation/Krake2 schwimmt vorne.mp4', out: 'octopus2_swim.png', loopBlend: 1, figureH: 62, frameW: 88, frameH: 72, feetY: 68 },
   { src: 'Animation/Qualle schwimmt vorne.mp4', out: 'jellyfish_swim.png', mirror: 'all', scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
   { src: 'Animation/Qualle schwimmt hinten.mp4', out: 'jellyfish_swim_back.png', loopBlend: 1, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
   { src: 'Animation/Qualle2 schwimt vorne.mp4', out: 'jellyfish2_swim.png', loopBlend: 2, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },

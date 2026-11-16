@@ -2,6 +2,7 @@
 jede Ansicht so groß wie die Figur im Original-Bild derselben Ansicht, mittig, Füße auf derselben Höhe.
 Aufruf: python tools/rare-static.py <Original-Sheet> <frameW> <frameH> <Ziel> v0.png v1.png v2.png v3.png
   ('m:x.png' = gespiegelt; Reihenfolge unten-rechts, unten-links, oben-rechts, oben-links). Danach python tools/make-webp.py .
+  Hat das Original weniger Bilder (z. B. anteater_eat), entsprechend weniger Ansichten angeben.
 
 So entstanden (V = "Tiersprites Test/views", A = public/assets):
   python tools/cutout-views.py Sprites/Schaf2.webp $V/sheep2 1 2 alle
@@ -34,9 +35,9 @@ if sys.argv[1] == '--fox-sleep':
     Image.fromarray(im.astype(np.uint8), 'RGBA').save('public/assets/fox2_sleep.png')
     sys.exit()
 orig, FW, FH, out = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
-srcs = sys.argv[5:9]
+srcs = sys.argv[5:]  # meist 4 Ansichten; weniger, wenn das Original weniger Bilder hat (z. B. anteater_eat: 1)
 O = Image.open(orig).convert('RGBA')
-res = Image.new('RGBA', (FW * 4, FH))
+res = Image.new('RGBA', (FW * len(srcs), FH))
 for i, s in enumerate(srcs):
     mirror = s.startswith('m:')
     v = Image.open(s[2:] if mirror else s).convert('RGBA')

@@ -451,6 +451,7 @@ const VIDEO_ANIMS = {
   turtle_swim: [112, 88, 102],
   turtle_swim_back: [112, 88, 48],
   octopus_swim: [88, 72, 55],
+  octopus2_swim: [88, 72, 103], // Kalmar (seltene Variante der Krake)
   jellyfish_swim: [72, 96, 42],
   jellyfish_swim_back: [72, 96, 61],
   jellyfish2_swim: [72, 96, 45],
@@ -476,10 +477,6 @@ const VIDEO_ANIMS = {
   panda_walk: [88, 96, 26],
   panda_walk_back: [88, 96, 25],
   panda_idle: [88, 96, 94],
-  // weinroter Panda (seltene Variante, aus dem Panda umgefärbt: tools/recolor.js)
-  panda2_walk: [88, 96, 26],
-  panda2_walk_back: [88, 96, 25],
-  panda2_idle: [88, 96, 94],
   redpanda_walk: [72, 72, 30],
   tiger_walk: [120, 104, 32],
   tiger_walk_back: [120, 104, 27],
@@ -715,24 +712,25 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('macaque2', 'assets/macaque2.png', { frameWidth: 72, frameHeight: 72 }); // Goldstumpfnase (selten)
     // Brüllaffe (Dschungel): laufend, springend (von Krone zu Krone) und mit der Banane
     // Ameisenbär (Dschungel): Standbilder und aufgerichtet am Baum beim Ameisen-Schlecken
-    load.spritesheet('anteater', 'assets/anteater.png', { frameWidth: 104, frameHeight: 72 });
-    load.spritesheet('penguin', 'assets/penguin.png', { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
-    load.spritesheet('seal', 'assets/seal.png', { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
-    load.spritesheet('seal_lie', 'assets/seal_lie.png', { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
-    load.spritesheet('anteater_eat', 'assets/anteater_eat.png', { frameWidth: 88, frameHeight: 80 });
+    // seltene Varianten (Tamandua, Felsenpinguin, Sattelrobbe) vorerst als Standbilder, ohne Animationen
+    for (const k of ['anteater', 'anteater2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 72 });
+    for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
+    for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
+    for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
+    for (const k of ['anteater_eat', 'anteater2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
     load.spritesheet('beaver', 'assets/beaver.png', { frameWidth: 80, frameHeight: 60 }); // Biber (Wald, aus Sprites/Biber.webp)
     load.image('beaver_swim', 'assets/beaver_swim.png'); // ... schwimmt (aus dem Biber-Sprite, tools/beaver-swim.py)
     load.spritesheet('beaver2', 'assets/beaver2.png', { frameWidth: 80, frameHeight: 60 }); // Nutria (selten)
     load.image('beaver2_swim', 'assets/beaver2_swim.png');
     for (const k of ['iguana', 'iguana2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 56 }); // Leguan und der seltene blaue
     load.audio('gorilla_beat', 'assets/sounds/gorilla_beat.wav'); // Schlag auf die Brust
-    load.spritesheet('gorilla', 'assets/gorilla.png', { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung)
+    for (const k of ['gorilla', 'gorilla2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 96 }); // Gorilla (Nebel, Lichtung) und Albino-Gorilla
     for (const k of ['jaguar', 'panther']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 96 }); // Jaguar und Panther (seltene Variante)
     for (const k of ['howler', 'howler_jump', 'howler_eat', 'gibbon', 'gibbon_jump', 'gibbon_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 88 }); // ... und der Gibbon (bei Nebel)
     // Schlange und Vogelspinne (Dschungel, Reptilienhaus), dazu ihre seltenen Farben
     // Ara (Dschungel) und der seltene blau-gelbe Ara: sitzend und fliegend
-    for (const k of ['macaw', 'macaw2', 'toucan']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
-    for (const k of ['macaw_fly', 'macaw2_fly', 'toucan_fly']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
+    for (const k of ['macaw', 'macaw2', 'toucan', 'toucan2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 80 });
+    for (const k of ['macaw_fly', 'macaw2_fly', 'toucan_fly', 'toucan2_fly']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
     for (const k of ['snake', 'snake2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
     for (const k of ['tarantula', 'tarantula2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 64 });
     load.spritesheet('macaque_bath', 'assets/macaque_bath.png', { frameWidth: 72, frameHeight: 72 }); // badet in der heißen Quelle
@@ -741,7 +739,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['redpanda', 'redpanda_sit']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
     load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
     load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
-    for (const key of ['panda2', 'panda2_eat']) load.spritesheet(key, `assets/${key}.png`, { frameWidth: 88, frameHeight: 96 }); // weinroter Panda
+    for (const key of ['panda2', 'panda2_eat']) load.spritesheet(key, `assets/${key}.png`, { frameWidth: 88, frameHeight: 96 }); // Panda ohne Augenflecken (seltene Variante)
     load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium
     load.spritesheet('minifish_swim', 'assets/minifish_swim.png', { frameWidth: 20, frameHeight: 16 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
     load.spritesheet('butterfly', 'assets/butterfly.png', { frameWidth: 64, frameHeight: 64 }); // Schmetterlinge (12 Farben, Platzhalter aus tools/butterfly-sprites.cjs)
@@ -751,13 +749,13 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('piranha_swim', 'assets/piranha_swim.png', { frameWidth: 96, frameHeight: 64 });
     load.spritesheet('piranha_box', 'assets/piranha_box.png', { frameWidth: 64, frameHeight: 76 });
     load.spritesheet('reeffish_swim', 'assets/reeffish_swim.png', { frameWidth: 96, frameHeight: 64 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
-    load.spritesheet('seahorse', 'assets/seahorse.png', { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff)
-    load.spritesheet('octopus', 'assets/octopus.png', { frameWidth: 72, frameHeight: 72 }); // Krake (Riff)
+    for (const k of ['seahorse', 'seahorse2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff) und Fetzenfisch
+    for (const k of ['octopus', 'octopus2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // Krake (Riff) und Kalmar (seltene Variante)
     for (const k of ['jellyfish', 'jellyfish2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
     load.spritesheet('gnu', 'assets/gnu.png', { frameWidth: 88, frameHeight: 96 }); // Gnu (Große Wanderung)
     for (const k of ['wolf', 'wolf_howl', 'wolf_eat', 'wolf2', 'wolf2_howl', 'wolf2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf und schwarzer Wolf (Wolfsnacht)
     for (const k of ['ray', 'ray2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 80 }); // Rochen und Mantarochen (Riff)
-    load.spritesheet('turtle', 'assets/turtle.png', { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (Riff); im Netz: turtle_net (kommt noch)
+    for (const k of ['turtle', 'turtle2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 88 }); // Meeresschildkröte (und Karettschildkröte) (Riff); im Netz: turtle_net (kommt noch)
     // Pfau (Asien) und der weiße Pfau (seltene Variante); _wheel: schlägt ein Rad
     for (const k of ['peacock', 'peacock_wheel', 'peacock2', 'peacock2_wheel']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 96 });
     // Orang-Utan (Asien) und das Flanschen-Männchen (seltene Variante); _eat: sitzt und frisst; _tree: oben in der Baumkrone
@@ -804,7 +802,7 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('zebra2_drink', 'assets/zebra2_drink.png', ZEBRA_FRAME);
     for (const [key, [frameWidth, frameHeight, count]] of Object.entries(SAVANNA_ANIMS)) load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
     for (const [key, [frameWidth, frameHeight, count]] of Object.entries(VIDEO_ANIMS)) load.spritesheet(key, `assets/${key}.png`, { frameWidth, frameHeight, endFrame: count - 1 });
-    load.spritesheet('meerkat', 'assets/meerkat.png', MEERKAT_FRAME);
+    for (const k of ['meerkat', 'meerkat2']) load.spritesheet(k, `assets/${k}.png`, MEERKAT_FRAME); // Erdmännchen und Fuchsmanguste
     load.spritesheet('meerkat_hole', 'assets/meerkat_hole.png', MEERKAT_HOLE_FRAME); // im Erdloch
     load.audio('meerkat_alarm', 'assets/sounds/meerkat_alarm.wav'); // Warnpfiff des Wächters
     load.spritesheet('lion', 'assets/lion.png', LION_FRAME);
@@ -827,13 +825,13 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('croc_albino_water', 'assets/croc_albino_water.png', CROC_WATER_FRAME); // Platzhalter (umgefärbt)
     load.spritesheet('lungfish', 'assets/lungfish.png', FISH_FRAME);
     load.spritesheet('lungfish_mud', 'assets/lungfish_mud.png', FISH_FRAME); // steckt im Schlamm (Trockenzeit, Platzhalter)
-    load.spritesheet('hippo', 'assets/hippo.png', { frameWidth: 96, frameHeight: 88 }); // Nilpferd (Starkregen)
-    load.spritesheet('hippo_water', 'assets/hippo_water.png', { frameWidth: 64, frameHeight: 44 }); // ... schwimmend: obere Kopfhälfte
-    for (const k of ['hyena', 'hyena_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Hyäne (Trockenzeit)
-    load.spritesheet('warthog', 'assets/warthog.png', { frameWidth: 80, frameHeight: 88 }); // Warzenschwein (Trockenzeit)
+    for (const k of ['hippo', 'hippo2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 88 }); // Nilpferd (Starkregen) und Zwergflusspferd
+    for (const k of ['hippo_water', 'hippo2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 44 }); // ... schwimmend: obere Kopfhälfte
+    for (const k of ['hyena', 'hyena_eat', 'hyena2', 'hyena2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Hyäne (Trockenzeit) und Streifenhyäne
+    for (const k of ['warthog', 'warthog2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 88 }); // Warzenschwein (Trockenzeit) und Pinselohrschwein
     load.image('warthog_hole', 'assets/warthog_hole.png'); // sein Erdloch (Platzhalter)
-    load.spritesheet('vulture', 'assets/vulture.png', HERON_FRAME); // Geier (Trockenzeit)
-    load.spritesheet('vulture_fly', 'assets/vulture_fly.png', HERON_FLY_FRAME);
+    for (const k of ['vulture', 'vulture2']) load.spritesheet(k, `assets/${k}.png`, HERON_FRAME); // Geier (Trockenzeit) und Ohrengeier
+    for (const k of ['vulture_fly', 'vulture2_fly']) load.spritesheet(k, `assets/${k}.png`, HERON_FLY_FRAME);
     load.image('bone_pile', `assets/${this.useHd('bone_pile') ? `${HD_DIR}/` : ''}bone_pile.png`); // gestreute Knochen (lockt die Hyänen an)
     load.audio('hyena_laugh', 'assets/sounds/hyena_laugh.wav');
     load.audio('tree_rustle', 'assets/sounds/tree_rustle.wav'); // Rascheln in der Baumkrone (Brüllaffen, Dschungel)

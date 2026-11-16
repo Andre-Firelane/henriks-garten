@@ -5,6 +5,7 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 import { TOY_PLAY } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
+import { game } from '../state.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -646,7 +647,6 @@ export const SPECIES = {
     texture: 'panda',
     // Video; im Stehen sitzt und frisst er (idle = fressen, siehe Panda.js), bisher nur von vorne
     anims: { walkDown: 'panda_walk', walkUp: 'panda_walk_back', idleDown: 'panda_idle' },
-    skinAnims: { panda2: { walkDown: 'panda2_walk', walkUp: 'panda2_walk_back', idleDown: 'panda2_idle' } }, // weinroter Panda
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 18,
@@ -831,6 +831,7 @@ export const SPECIES = {
   octopus: {
     texture: 'octopus',
     anims: { walkDown: 'octopus_swim', walkUp: 'octopus_swim' }, // nur von vorne
+    skinAnims: { octopus2: { walkDown: 'octopus2_swim', walkUp: 'octopus2_swim' } }, // Kalmar: ebenfalls nur von vorne
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -987,7 +988,21 @@ export const SKINS = {
   beaver: { id: 'beaver2', name: tr('Nutria', 'nutria'), male: false, wild: 0.1, baby: 0.03 },
   macaque: { id: 'macaque2', name: tr('Goldstumpfnase', 'golden snub-nosed monkey'), male: false, wild: 0.1, baby: 0.03 },
   giraffe: { id: 'giraffe2', name: tr('Schoko-Giraffe', 'chocolate giraffe'), male: false, wild: 0.1, baby: 0.03 }, // ohne Flecken
-  panda: { id: 'panda2', name: tr('weinroter Panda', 'burgundy panda'), male: true, wild: 0.1, baby: 0.03 },
+  panda: { id: 'panda2', name: tr('Panda ohne Augenflecken', 'panda without eye patches'), male: true, wild: 0.1, baby: 0.03 },
+  // seltene Varianten, bisher nur als Standbilder (Sprites/<Tier>2.webp, tools/rare-static.py); Animationen kommen noch
+  anteater: { id: 'anteater2', name: tr('Tamandua', 'tamandua'), male: true, wild: 0.1, baby: 0.03 },
+  meerkat: { id: 'meerkat2', name: tr('Fuchsmanguste', 'yellow mongoose'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Kolonie
+  vulture: { id: 'vulture2', name: tr('Ohrengeier', 'lappet-faced vulture'), male: true, wild: 0.1, baby: 0.03 },
+  gorilla: { id: 'gorilla2', name: tr('Albino-Gorilla', 'albino gorilla'), male: true, wild: 0.1, baby: 0.03 },
+  hyena: { id: 'hyena2', name: tr('Streifenhyäne', 'striped hyena'), male: false, wild: 0.1, baby: 0.03 },
+  hippo: { id: 'hippo2', name: tr('Zwergflusspferd', 'pygmy hippo'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
+  warthog: { id: 'warthog2', name: tr('Pinselohrschwein', 'red river hog'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
+  toucan: { id: 'toucan2', name: tr('Fischertukan', 'keel-billed toucan'), male: true, wild: 0.1, baby: 0.03 },
+  penguin: { id: 'penguin2', name: tr('Felsenpinguin', 'rockhopper penguin'), male: true, wild: 0.1, baby: 0.03 }, // gilt für die ganze Gruppe
+  seal: { id: 'seal2', name: tr('Sattelrobbe', 'harp seal'), male: false, wild: 0.1, baby: 0.03 }, // im Wasser: seal2_water
+  seahorse: { id: 'seahorse2', name: tr('Fetzenfisch', 'leafy seadragon'), male: true, wild: 0.1, baby: 0.03 },
+  turtle: { id: 'turtle2', name: tr('Karettschildkröte', 'hawksbill turtle'), male: false, wild: 0.1, baby: 0 },
+  octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js
 };
 
@@ -1004,16 +1019,6 @@ const TINT_CSS = {
 };
 const PLACEHOLDER_SKINS = {
   mole: [TINT.gold, tr('goldener Maulwurf', 'golden mole'), 'm'],
-  meerkat: [TINT.gold, tr('goldenes Erdmännchen', 'golden meerkat'), 'n'],
-  hippo: [TINT.rose, tr('rosa Nilpferd', 'pink hippo'), 'n'],
-  warthog: [TINT.lilac, tr('lila Warzenschwein', 'purple warthog'), 'n'],
-  anteater: [TINT.sky, tr('blauer Ameisenbär', 'blue anteater'), 'm'],
-  toucan: [TINT.sky, tr('blauer Tukan', 'blue toucan'), 'm'],
-  penguin: [TINT.gold, tr('goldener Pinguin', 'golden penguin'), 'm'],
-  seal: [TINT.rose, tr('rosa Robbe', 'pink seal'), 'f'],
-  seahorse: [TINT.gold, tr('goldenes Seepferdchen', 'golden seahorse'), 'n'],
-  octopus: [TINT.lilac, tr('lila Krake', 'purple octopus'), 'm'],
-  turtle: [TINT.gold, tr('goldene Meeresschildkröte', 'golden sea turtle'), 'f'],
 };
 for (const [species, [tint, name, g]] of Object.entries(PLACEHOLDER_SKINS)) {
   if (SKINS[species]) continue;
@@ -1336,9 +1341,19 @@ export default class Animal {
     return !!this.skin && !skinInfo(this.species, this.skin)?.common;
   }
 
-  // seltener Skin würfeln: from 'wild' (draußen) oder 'baby' (Tierbaby-Event, viel seltener)
-  rollSkin(from) {
+  // seltener Skin würfeln: from 'wild' (draußen) oder 'baby' (Tierbaby-Event, viel seltener).
+  // keep: darf ein Versprechen aus der Kiste einlösen (game.rarePromise, siehe CALLED in world/LuckWorld.js); nicht z. B.
+  // ein Reiher, der nur über die Karte hinwegfliegt
+  rollSkin(from, keep = true) {
     this.skin = null;
+    const promise = game.rarePromise;
+    if (from === 'wild' && keep && promise?.level === LEVEL_ID && promise.species === this.species) {
+      game.rarePromise = null;
+      this.skin = promise.skin;
+      this.promised = true; // beim Betreten des Gebiets gibt es die Kisten-Verwaltung noch nicht: sie sucht es dann selbst
+      this.scene.luck?.promiseKept(this);
+      return;
+    }
     const here = skinsHere(this.species);
     const shared = here.filter((s) => s.share);
     if (from === 'wild' && shared.length) {
