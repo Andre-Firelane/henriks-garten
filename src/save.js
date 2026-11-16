@@ -88,6 +88,7 @@ export function loadSave() {
   if (!game.charms?.owned) game.charms = { owned: [], equipped: [] };
   for (const k of Object.keys(game.levelBonus?.boni ?? {})) game.levelBonus.boni[k] += shift;
   if (game.campfireAt) game.campfireAt += shift;
+  delete game.events.icecream; // das Eiswagen-Event gibt es nicht mehr (feste Eisstände als Bude schon)
   migrateSkinSpecies();
   if (!s.game.parkSplit) splitPark();
   if (!s.game.caughtSpecies) migrateCaught();

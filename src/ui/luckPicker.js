@@ -34,7 +34,7 @@ function render() {
   const short = v.hearts < v.cost;
   panel.innerHTML = `<div class="chest-box luck-box">
       <h2>${tr('Eine Kiste! Such dir etwas aus:', 'A chest! Pick one:')}</h2>
-      <div class="chest-items luck-cards">${v.cards
+      <div class="chest-items luck-cards" style="--n:${v.cards.length}">${v.cards
         .map(
           (c, i) => `<button class="chest-item luck-card" data-i="${i}" style="--luck:${c.color}">
             ${c.tag ? `<span class="luck-tag">${c.tag}</span>` : ''}

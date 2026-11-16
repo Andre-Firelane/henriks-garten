@@ -1199,7 +1199,8 @@ export default class GardenScene extends Phaser.Scene {
     // Kisten, Boni und Glücksbringer (siehe src/world/LuckWorld.js); Knöpfe oben rechts
     this.luck = new LuckWorld(this);
     const charmsBtn = document.getElementById('btn-charms');
-    charmsBtn.innerHTML = `<span class="charms-icon">🍀</span>${tr('Glücksbringer', 'Lucky Charms')}`;
+    charmsBtn.innerHTML = `<span class="charms-icon">🍀</span><span class="btn-label">${tr('Glücksbringer', 'Lucky Charms')}</span>`;
+    charmsBtn.setAttribute('aria-label', tr('Glücksbringer', 'Lucky Charms'));
     charmsBtn.onclick = (e) => {
       e.stopPropagation();
       this.showCharms();
@@ -2413,6 +2414,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Abzeichen oben links: Gebiet und wie viele Tiere schon zuhause sind; die Einzelheiten zeigt die Übersicht (I)
   updateHud() {
+    if (!this.hud) return; // beim ersten Aufbau noch nicht da (z. B. Herzen fürs Auswildern beim Ankommen, siehe moveFollowersIntoPens)
     const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
     this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
     this.updateQuestCard(); // (Fortschritt der Besucher-Aufgabe)
@@ -2495,7 +2497,7 @@ export default class GardenScene extends Phaser.Scene {
       () => ({
         hearts: game.hearts,
         // den Eiswagen gibt es nur, solange nirgends ein fester Eisstand steht
-        events: EVENTS.filter((ev) => ev.id !== 'icecream' || !hasIceShop()).sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, cost: price(ev.cost), ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
+        events: [...EVENTS].sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, cost: price(ev.cost), ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
         pens: this.penUpgrades(),
         build: this.shopOffers(slotId),
       }),
@@ -2525,11 +2527,9 @@ export default class GardenScene extends Phaser.Scene {
     startEvent(id, Date.now(), free);
     countEvent(id);
     this.updateHud();
-    if (id === 'icecream') this.visitors?.sendToShop('event'); // gleich kauft jemand ein Eis
     // für Mavis Event-Aufgabe (ganz am Ende): nicht der Eiswagen und nicht die Tierbabys aus ihrer eigenen Aufgabe
-    if (!free && id !== 'icecream' && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true;
+    if (!free && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true;
     this.mavi?.check();
-    if (id === 'icecream') this.showToast(tr('🍦 Der Eiswagen ist da! Die Besucher holen sich Eis – jedes bringt zwei Herzen.', '🍦 The ice cream truck is here! Visitors buy ice cream – each one brings two hearts.'));
     if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
     if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
     if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
@@ -2983,7 +2983,7 @@ export default class GardenScene extends Phaser.Scene {
     game.hearts += n;
     if (source) game.heartsBy[source] = (game.heartsBy[source] ?? 0) + n;
     this.updateHud();
-    const el = this.hud.querySelector('.hearts');
+    const el = this.hud?.querySelector('.hearts');
     if (el) {
       el.classList.remove('pulse');
       void el.offsetWidth; // Animation neu starten
@@ -3231,7 +3231,7 @@ export default class GardenScene extends Phaser.Scene {
     // zwischen dem Abzeichen oben links und den Knöpfen oben rechts, damit die Meldung nichts davon verdeckt.
     // Ist dort zu wenig Platz (Handy hochkant), kommt sie darunter über die ganze Breite
     const hud = this.hud.getBoundingClientRect();
-    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
+    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full, #btn-charms, #btn-campfire')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
     const left = hud.right + 10;
     const right = Math.min(window.innerWidth - 10, ...buttons.map((r) => r.left - 10));
     if (right - left >= TOAST_MIN_W) {

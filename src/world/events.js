@@ -79,14 +79,6 @@ export const EVENTS = [
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
-  {
-    id: 'icecream',
-    name: tr('Eisstand', 'Ice Cream Stand'),
-    text: tr('8 Minuten lang steht mitten im Park ein Eiswagen. Jedes Eis, das sich ein Besucher holt, bringt zwei Herzen.', 'For 8 minutes an ice cream truck stands in the middle of the zoo. Every ice cream a visitor buys brings two hearts.'),
-    cost: 30,
-    duration: 8 * MINUTE,
-    cooldown: 5 * MINUTE,
-  },
 ];
 
 // Event "Seltene Tiere": so oft ist ein neues wildes Tier eine seltene Variante (sonst etwa 10 %)
@@ -94,7 +86,6 @@ export const EVENTS = [
 // kein Ereignis in einem Gebiet, sondern begleitet einen überall – es wird auf der Karte nicht markiert.
 const EVENT_AREAS = {
   babies: ['park', 'park2', 'park3', 'aquarium'],
-  icecream: ['park'],
   flamingo: ['meadow', 'forest', 'savanna'],
   farm: ['meadow'],
   rare: ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'],

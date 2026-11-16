@@ -146,7 +146,7 @@ export default class Luck {
       const tier = TIERS[c.tier];
       // eigenes Bild der seltenen Variante (z. B. Hirsch statt Reh); Platzhalter: das Bild der Art, eingefärbt wie im Spiel
       const pic = info?.css ? `<span style="filter:${info.css}">${safeIcon(c.species)}</span>` : safeIcon(c.skin, c.species);
-      return { icon: `${pic}✨`, title: capital(info?.name ?? c.species), text: tr('Taucht garantiert hier im Gebiet auf!', 'Guaranteed to show up in this area!'), color: tier.color, tag: tier.name };
+      return { icon: `${pic}<span class="luck-spark">✨</span>`, title: capital(info?.name ?? c.species), text: tr('Taucht garantiert hier im Gebiet auf!', 'Guaranteed to show up in this area!'), color: tier.color, tag: tier.name };
     }
     if (c.kind === 'bonus') {
       const b = BONI[c.id];
@@ -163,12 +163,12 @@ export default class Luck {
     else if (card.kind === 'bonus') this.applyBonus(card.id);
     else {
       giveCharm(card.id);
+      this.updateCampfireButton(); // vor der Meldung: sie richtet sich nach den sichtbaren Knöpfen oben rechts
       const ch = CHARMS[card.id];
       const worn = game.charms.equipped.includes(card.id);
       s.showToast(`${ch.icon} ${tr(`Neuer Glücksbringer: <b>${ch.name}</b>!`, `New lucky charm: <b>${ch.name}</b>!`)} ${ch.text}<br><small>${worn
         ? tr('Du trägst ihn schon.', 'You are already wearing it.')
         : tr('Anlegen kannst du ihn im Tierpark (Knopf „Glücksbringer“).', 'Put it on in the zoo (“Lucky Charms” button).')}</small>`);
-      this.updateCampfireButton();
     }
     s.updateHud();
   }
@@ -275,8 +275,10 @@ export default class Luck {
     if (!show) return;
     const left = campfireLeft();
     btn.disabled = left > 0;
-    const text = left > 0 ? `${tr('Lagerfeuer', 'Campfire')} ${formatTime(left)}` : tr('Lagerfeuer', 'Campfire');
-    if (btn.textContent !== text) btn.textContent = text;
+    // Handy: nur das Feuer und die Restzeit (der Name ist dort ausgeblendet, siehe .btn-label in index.html)
+    const html = `<span class="charms-icon">🔥</span><span class="btn-label">${tr('Lagerfeuer', 'Campfire')}</span>${left > 0 ? `<span>${formatTime(left)}</span>` : ''}`;
+    if (btn.innerHTML !== html) btn.innerHTML = html;
+    btn.setAttribute('aria-label', tr('Lagerfeuer', 'Campfire'));
   }
 
   campfire() {
