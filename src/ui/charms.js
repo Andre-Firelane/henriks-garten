@@ -86,7 +86,7 @@ function onMove(e) {
     if (!state.canChange) return; // in den Welten: kein Ziehen
     d.ghost = document.createElement('div');
     d.ghost.className = 'charm-ghost';
-    d.ghost.textContent = CHARMS[d.id].icon;
+    d.ghost.innerHTML = CHARMS[d.id].icon; // Bild (img)
     document.body.appendChild(d.ghost);
   }
   d.ghost.style.left = `${e.clientX}px`;

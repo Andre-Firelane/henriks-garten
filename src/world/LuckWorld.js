@@ -311,7 +311,7 @@ export default class Luck {
     const left = campfireLeft();
     btn.disabled = left > 0;
     // Handy: nur das Feuer und die Restzeit (der Name ist dort ausgeblendet, siehe .btn-label in index.html)
-    const html = `<span class="charms-icon">🔥</span><span class="btn-label">${tr('Lagerfeuer', 'Campfire')}</span>${left > 0 ? `<span>${formatTime(left)}</span>` : ''}`;
+    const html = `<span class="charms-icon">${CHARMS.campfire.icon}</span><span class="btn-label">${tr('Lagerfeuer', 'Campfire')}</span>${left > 0 ? `<span>${formatTime(left)}</span>` : ''}`;
     if (btn.innerHTML !== html) btn.innerHTML = html;
     btn.setAttribute('aria-label', tr('Lagerfeuer', 'Campfire'));
   }

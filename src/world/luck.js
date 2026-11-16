@@ -17,33 +17,41 @@ export const CHEST_COUNT = 1; // Kisten je Welt
 // Event, das zu einem Gebiet gehört (für den Bonus "Event-Ruf")
 export const LEVEL_EVENT = { meadow: 'farm', forest: 'wolves', savanna: 'migration', asia: 'fireflies', reef: 'jellyfish' };
 
-// 5-Minuten-Boni (gelten nur im Gebiet der Kiste; available: kommt die Karte hier vor?)
+// Symbole der Boni und Glücksbringer: kleine Bilder (tools/charm-icons.py) als HTML; Handy und Tablet laden die
+// WebP-Fassung (wie die Spielbilder, siehe webpUrl in scenes/BootScene.js)
+const COARSE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+export const iconImg = (file) => `<img class="luck-img" src="assets/${COARSE ? `webp/${file}.webp` : `${file}.png`}" alt="" draggable="false">`;
+
+// 5-Minuten-Boni (gelten nur im Gebiet der Kiste; available: kommt die Karte hier vor?); alle mit dem Boost-Symbol
+// (Stoppuhr mit Blitz), unterschieden werden sie am Namen
 export const BONI = {
-  moreAnimals: { icon: '🐾', name: tr('Mehr Tiere', 'More Animals'), text: tr('Viel mehr wilde Tiere im Gebiet.', 'Lots more wild animals here.') },
-  ride: { icon: '🐴', name: tr('Reittier', 'Mount'), text: tr('Du reitest – schneller unterwegs.', 'You ride – much faster.') },
-  toolsEverywhere: { icon: '🧰', name: tr('Werkzeug überall', 'Tools Everywhere'), text: tr('Werkzeug wechseln, wo du willst (Q bzw. Werkzeug-Knopf).', 'Switch tools anywhere (Q or the tool button).') },
-  stands: { icon: '🗼', name: tr('2 Hochstände', '2 Lookouts'), text: tr('Zwei Hochstände – von oben siehst du alles.', 'Two lookouts – see everything from above.'), available: (l) => l !== 'reef' },
-  bigCatch: { icon: '🪢', name: tr('Großes Lasso', 'Big Lasso'), text: tr('Lasso und Kescher fangen viel größer – das Lasso 2 Tiere auf einmal.', 'Lasso and net catch much wider – the lasso 2 animals at once.') },
-  heartRain: { icon: '💖', name: tr('Herzregen', 'Heart Rain'), text: tr('Doppelte Herzen.', 'Double hearts.') },
-  eventCall: { icon: '📣', name: tr('Event-Ruf', 'Event Call'), text: tr('Das Event dieses Gebiets startet sofort – gratis.', 'This area’s event starts right away – for free.'), available: (l) => !!LEVEL_EVENT[l] },
+  moreAnimals: { name: tr('Mehr Tiere', 'More Animals'), text: tr('Viel mehr wilde Tiere im Gebiet.', 'Lots more wild animals here.') },
+  ride: { name: tr('Reittier', 'Mount'), text: tr('Du reitest – schneller unterwegs.', 'You ride – much faster.') },
+  toolsEverywhere: { name: tr('Werkzeug überall', 'Tools Everywhere'), text: tr('Werkzeug wechseln, wo du willst (Q bzw. Werkzeug-Knopf).', 'Switch tools anywhere (Q or the tool button).') },
+  stands: { name: tr('2 Hochstände', '2 Lookouts'), text: tr('Zwei Hochstände – von oben siehst du alles.', 'Two lookouts – see everything from above.'), available: (l) => l !== 'reef' },
+  bigCatch: { name: tr('Großes Lasso', 'Big Lasso'), text: tr('Lasso und Kescher fangen viel größer – das Lasso 2 Tiere auf einmal.', 'Lasso and net catch much wider – the lasso 2 animals at once.') },
+  heartRain: { name: tr('Herzregen', 'Heart Rain'), text: tr('Doppelte Herzen.', 'Double hearts.') },
+  eventCall: { name: tr('Event-Ruf', 'Event Call'), text: tr('Das Event dieses Gebiets startet sofort – gratis.', 'This area’s event starts right away – for free.'), available: (l) => !!LEVEL_EVENT[l] },
 };
+for (const b of Object.values(BONI)) b.icon = iconImg('boost');
 const BONUS_MS = 5 * MINUTE;
 const HOURGLASS_MS = 8 * MINUTE;
 export const MORE_ANIMALS = 1.5; // so viel mehr wilde Tiere
 export const BIG_CATCH = 1.6; // so viel größer fangen Lasso und Kescher
 
-// Glücksbringer (dauerhaft, 2 gleichzeitig)
+// Glücksbringer (dauerhaft, 2 gleichzeitig); Bild je Glücksbringer: charm_<id>.png
 export const CHARMS = {
-  cheapReroll: { icon: '🎲', name: tr('Glückswürfel', 'Lucky Die'), text: tr('Neu würfeln in Kisten kostet nur die Hälfte.', 'Rerolling in chests costs only half.') },
-  swift: { icon: '👟', name: tr('Flinke Schuhe', 'Swift Shoes'), text: tr('Du läufst etwas schneller.', 'You walk a bit faster.') },
-  rareLuck: { icon: '✨', name: tr('Sternschnuppe', 'Shooting Star'), text: tr('Seltene Tiere kommen öfter.', 'Rare animals come more often.') },
-  chestRadar: { icon: '🧭', name: tr('Kisten-Kompass', 'Chest Compass'), text: tr('Ein Pfeil am Rand zeigt zu Kisten in der Nähe.', 'An arrow at the edge points to nearby chests.') },
-  campfire: { icon: '🔥', name: tr('Lagerfeuer', 'Campfire'), text: tr('Setz dich ans Feuer: neue Tiere, in Savanne und Dschungel auch neues Wetter.', 'Sit by the fire: new animals, and new weather in the savanna and jungle.') },
-  longEvents: { icon: '🔔', name: tr('Festtags-Glocke', 'Festival Bell'), text: tr('Events dauern länger.', 'Events last longer.') },
-  clover: { icon: '🍀', name: tr('Kleeblatt', 'Clover'), text: tr('In Kisten 4 Karten statt 3.', '4 cards in chests instead of 3.') },
-  hourglass: { icon: '⌛', name: tr('Sanduhr', 'Hourglass'), text: tr('Boni aus Kisten halten 8 statt 5 Minuten.', 'Chest bonuses last 8 instead of 5 minutes.') },
-  piggy: { icon: '🐷', name: tr('Sparschwein', 'Piggy Bank'), text: tr('Alles im Tierpark ist etwas billiger.', 'Everything in the zoo is a bit cheaper.') },
+  cheapReroll: { name: tr('Glückswürfel', 'Lucky Die'), text: tr('Neu würfeln in Kisten kostet nur die Hälfte.', 'Rerolling in chests costs only half.') },
+  swift: { name: tr('Flinke Schuhe', 'Swift Shoes'), text: tr('Du läufst etwas schneller.', 'You walk a bit faster.') },
+  rareLuck: { name: tr('Sternschnuppe', 'Shooting Star'), text: tr('Seltene Tiere kommen öfter.', 'Rare animals come more often.') },
+  chestRadar: { name: tr('Kisten-Kompass', 'Chest Compass'), text: tr('Ein Pfeil am Rand zeigt zu Kisten in der Nähe.', 'An arrow at the edge points to nearby chests.') },
+  campfire: { name: tr('Lagerfeuer', 'Campfire'), text: tr('Setz dich ans Feuer: neue Tiere, in Savanne und Dschungel auch neues Wetter.', 'Sit by the fire: new animals, and new weather in the savanna and jungle.') },
+  longEvents: { name: tr('Festtags-Glocke', 'Festival Bell'), text: tr('Events dauern länger.', 'Events last longer.') },
+  clover: { name: tr('Kleeblatt', 'Clover'), text: tr('In Kisten 4 Karten statt 3.', '4 cards in chests instead of 3.') },
+  hourglass: { name: tr('Sanduhr', 'Hourglass'), text: tr('Boni aus Kisten halten 8 statt 5 Minuten.', 'Chest bonuses last 8 instead of 5 minutes.') },
+  piggy: { name: tr('Sparschwein', 'Piggy Bank'), text: tr('Alles im Tierpark ist etwas billiger.', 'Everything in the zoo is a bit cheaper.') },
 };
+for (const [id, c] of Object.entries(CHARMS)) c.icon = iconImg(`charm_${id}`);
 export const CHARM_SLOTS = 2;
 export const SWIFT_SPEED = 1.15;
 export const RARE_LUCK = 1.5;

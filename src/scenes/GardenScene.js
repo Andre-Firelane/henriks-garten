@@ -132,7 +132,7 @@ import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, B
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import LuckWorld from '../world/LuckWorld.js';
-import { MORE_ANIMALS, bonusActive, chestState, price } from '../world/luck.js';
+import { CHARMS, MORE_ANIMALS, bonusActive, chestState, price } from '../world/luck.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen } from '../ui/luckPicker.js';
 import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, sourceDef, wheelSlot } from '../world/shops.js';
@@ -1199,7 +1199,7 @@ export default class GardenScene extends Phaser.Scene {
     // Kisten, Boni und Glücksbringer (siehe src/world/LuckWorld.js); Knöpfe oben rechts
     this.luck = new LuckWorld(this);
     const charmsBtn = document.getElementById('btn-charms');
-    charmsBtn.innerHTML = `<span class="charms-icon">🍀</span><span class="btn-label">${tr('Glücksbringer', 'Lucky Charms')}</span>`;
+    charmsBtn.innerHTML = `<span class="charms-icon">${CHARMS.clover.icon}</span><span class="btn-label">${tr('Glücksbringer', 'Lucky Charms')}</span>`;
     charmsBtn.setAttribute('aria-label', tr('Glücksbringer', 'Lucky Charms'));
     charmsBtn.onclick = (e) => {
       e.stopPropagation();

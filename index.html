@@ -639,6 +639,9 @@
         font: 44px/1 Arial, sans-serif; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
       }
       .charm.unknown .luck-icon { filter: brightness(0) opacity(0.35); }
+      /* Bilder der Glücksbringer und Boni (src/world/luck.js iconImg): so groß wie ein Emoji an derselben Stelle */
+      .luck-img { height: 1.2em; width: auto; max-width: 1.4em; object-fit: contain; vertical-align: -0.25em; pointer-events: none; }
+      .charm-ghost .luck-img { height: 1em; max-width: 1.2em; }
       @media (max-width: 900px), (max-height: 500px) {
         .luck-box .luck-cards { grid-template-columns: repeat(var(--n, 3), minmax(0, 130px)); gap: 8px; }
         .luck-card { min-height: 0; padding: 6px 5px; } .luck-card b { font-size: 14px; } .luck-card small { font-size: 12px; }
