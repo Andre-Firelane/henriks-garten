@@ -5,14 +5,15 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { worldToTile } from '../world/iso.js';
-import { eventBlock, isBlocked, MAP_W, MAP_H } from '../world/map.js';
+import { eventBlock, isBlocked, LEVEL, MAP_W, MAP_H } from '../world/map.js';
 
 // Der Strom ist ein Band quer durch die Ecke: Kacheln mit ty - tx zwischen 24 und 30, auf dem Bildschirm ein senkrechter
 // Streifen (x zwischen X0 und X1). Er fließt von oben (linker Kartenrand) nach unten (unterer Kartenrand).
-const X0 = -30 * 32;
-const X1 = -24 * 32;
-const Y_TOP = 300; // dort kommen Staub und Gnus herein (über dem Kartenrand) ...
-const Y_BOTTOM = 1000; // ... und dort verschwinden sie (unter dem Kartenrand)
+// Lage je Karte: LEVEL.migration = { from, to } (Savanne 24 bis 30; die Expeditions-Map Gnu-Furt hat ihren eigenen Streifen)
+let X0 = -30 * 32;
+let X1 = -24 * 32;
+let Y_TOP = 300; // dort kommen Staub und Gnus herein (über dem Kartenrand) ...
+let Y_BOTTOM = 1000; // ... und dort verschwinden sie (unter dem Kartenrand)
 const FLOW = 46; // so schnell zieht der Strom (Pixel pro Sekunde)
 const DUST = 46; // so viele Staubwolken sind gleichzeitig unterwegs
 const SHADOWS = 26; // ... und so viele Gnu-Schatten
@@ -22,7 +23,7 @@ const STRAY_EVERY = [6, 11]; // so oft löst sich ein Gnu aus dem Strom
 const STRAY_MAX = 2; // so viele sind höchstens gleichzeitig draußen
 const STRAY_SPEED = 30; // seitlich (vom Strom weg und wieder hin) ...
 const STRAY_FLOW = FLOW * 1.1; // ... und dabei schnell mit der Herde nach unten
-const STRAY_TOP = 360; // dort (oben im Strom, knapp unter dem Kartenrand) tauchen sie auf
+let STRAY_TOP = 360; // dort (oben im Strom, knapp unter dem Kartenrand) tauchen sie auf
 const STRAY_WIDTH = 50; // so weit entfernen sie sich höchstens vom Strom (sie tauchen mitten in der Herde auf)
 const STRAY_STUCK = 0.5; // so lange (Sekunden) ohne Fortschritt nach unten, dann taucht es in den Staub ab
 const STRAY_EDGE = 40; // so weit vor dem unteren Kartenrand taucht es ab
@@ -30,6 +31,15 @@ const CALL_EVERY = [4, 8]; // so oft grunzt ein Gnu aus der Herde (Sekunden), ..
 const CALL_VOLUME = 0.5; // ... ganz nah so laut, weiter weg leiser
 
 const inStream = (x) => x > X0 && x < X1;
+
+// Streifen für die aktuelle Karte einstellen (Werte wie oben für die Savanne mit from 24, to 30)
+function configure({ from, to } = { from: 24, to: 30 }) {
+  X0 = -to * 32;
+  X1 = -from * 32;
+  Y_TOP = from * 16 - 84;
+  Y_BOTTOM = (2 * (MAP_H - 1) - from) * 16 + 136;
+  STRAY_TOP = from * 16 - 24;
+}
 
 export default class Gnu extends Animal {
   constructor(scene, x, y) {
@@ -106,6 +116,7 @@ export default class Gnu extends Animal {
 export class Migration {
   constructor(scene) {
     this.scene = scene;
+    configure(LEVEL.migration);
     eventBlock.at = (x) => inStream(x);
     const tex = dustTexture(scene);
     this.dust = Array.from({ length: DUST }, () => this.makeDust(tex, Phaser.Math.Between(Y_TOP, Y_BOTTOM)));
@@ -179,7 +190,8 @@ export class Migration {
     this.strayIn -= dt;
     if (this.strayIn <= 0) {
       this.strayIn = Phaser.Math.FloatBetween(...STRAY_EVERY);
-      if (strays.length < STRAY_MAX) this.addStray();
+      // (Expedition: nur, solange auf der Map noch ein Gnu zu fangen ist)
+      if (strays.length < STRAY_MAX && (!scene.expMap || scene.expWants('gnu'))) this.addStray();
     }
     // Grunzen aus der Herde: je näher am Strom, desto lauter
     this.callIn -= dt;

@@ -81,6 +81,7 @@ export default class Fish extends Animal {
   }
 
   updateFree(dt) {
+    if (this.campBag) return false; // Expedition: im Beutel im Käfig im Camp, steht still
     if (this.state === 'penned') {
       if (this.species === 'fish') this.updateDive(dt);
       return super.updateFree(dt, null); // schwimmt im Fischteich herum
@@ -179,7 +180,7 @@ export default class Fish extends Animal {
   }
 
   render(moving) {
-    if (this.state === 'following') {
+    if (this.state === 'following' || this.campBag) {
       super.render(moving);
       return;
     }

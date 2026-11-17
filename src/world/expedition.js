@@ -1,0 +1,202 @@
+// Expeditionen (Roguelike-Test, erst einmal nur die Savanne): ein Durchlauf (Run) ist eine Kette aus höchstens RUN_LENGTH
+// kleinen Maps, dazwischen das Camp. Vor jeder Map wählt man 1 aus 3 Karten (wie in einer Kiste): jede Karte zeigt die
+// nächste Map und was dort dazukommt (sicher diese Tierart, eine seltene Variante, ein Bonus bis zum Ende des Runs oder eine
+// Kiste). Auf der Map lebt eine feste Tierliste (kein Nachspawnen), oben zählt sie herunter. Gefangene laufen hinterher; im
+// Camp kommen sie in den Wagen (WAGON_CAGES Käfige, je einer pro Art mit cageSize Plätzen) – was ohnehin ins
+// Naturreservat käme, wird gleich ausgewildert.
+// Verlieren kann man nicht: Heimfahrt aus jedem Camp. Hier stehen nur Zustand und Regeln; Ablauf siehe GardenScene
+// (exp…-Methoden), Maps siehe expeditionMaps.js.
+import { game } from '../state.js';
+import { tr } from '../i18n.js';
+import { LEVELS } from './levels.js';
+import { expeditionMaps, campOf } from './expeditionMaps.js';
+import { rareSkinFor } from '../animals/Animal.js';
+import { hasCharm } from './luck.js';
+
+export const RUN_LENGTH = 4; // so viele Maps hat ein Run höchstens
+export const WAGON_CAGES = 4; // Käfige im Wagen: je einer pro Tierart
+export const CAGE_SIZE = 3; // so viele Tiere einer Art passen in einen Käfig ...
+const BIG_CAGE = { fish: 5, reeffish: 5, koi: 5, piranha: 5, seahorse: 5 }; // ... Fische und andere kleine Wassertiere: Tank mit mehr Plätzen
+// mit dem Bonus "Mehr Tiere" ein Platz mehr in jedem Käfig, mit "Größerer Wagen" ein Käfig mehr
+const runHas = (id) => !!run()?.boni.includes(id);
+// (Glücksbringer Großer Käfig: noch ein Platz mehr)
+export const isWaterAnimal = (species) => species in BIG_CAGE; // schwimmt im Camp im Becken, nicht im Käfig
+export const cageSize = (species) => (BIG_CAGE[species] ?? CAGE_SIZE) + (runHas('moreAnimals') ? 1 : 0) + (hasCharm('bigCage') ? 1 : 0);
+export const wagonCageCount = () => WAGON_CAGES + (runHas('bigWagon') ? 1 : 0);
+export const MORE_UNITS = 1; // Bonus "Mehr Tiere": so viele Tiere mehr auf jeder Map (eine zufällige Art; gilt ab sofort, auch auf der laufenden)
+// Boni, die es als Karte gibt (vorhandene Kisten-Boni; sie gelten bis zum Ende des Runs)
+export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWagon', 'heartRain'];
+// Tiere, die nicht beim Betreten dastehen, sondern auf ihre Weise kommen (Geier fliegen heran, Hyänen kommen zu Knochen)
+export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu']; // (Gnus: aus der Großen Wanderung)
+// Anteil der Kartenarten
+const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt)
+
+export const run = () => game.expedition ?? null;
+export const inRun = () => !!game.expedition;
+
+export function startRun(biome) {
+  game.expedition = {
+    biome,
+    step: 0, // so viele Maps sind schon gespielt (bzw. die gerade laufende mitgezählt)
+    visited: [], // gespielte Maps
+    boni: [], // Boni bis zum Ende des Runs
+    wagon: [], // Tiere im Wagen: { species, variant, farm, skin, origin }
+    stay: [], // Tiere im Camp, die (noch) nicht im Wagen sind
+    left: {}, // laufende Map: so viele Fang-Einheiten je Art sind noch frei
+    map: null, // laufende Map
+    chestMap: null, // auf dieser Map steht eine Kiste (Kistenkarte)
+    finalChest: false, // Abschlusskiste nach der letzten Map schon geöffnet?
+    event: null, // auf dieser Map läuft das Event der Event-Karte (Große Wanderung)
+  };
+  return game.expedition;
+}
+
+export function endRun() {
+  game.expedition = null;
+}
+
+export const isFinalCamp = () => (run()?.step ?? 0) >= RUN_LENGTH;
+export const campLevel = () => (run() ? campOf(run().biome) : null);
+
+// --- Karten vor der nächsten Map ---
+
+// Karte: { map, kind: 'animal' | 'rare' | 'bonus' | 'chest', species?, skin?, id? }
+export function rollRunCards(n) {
+  const r = run();
+  const all = expeditionMaps(r.biome);
+  // nur Maps, die in diesem Run noch nicht dran waren (gibt es weniger als Karten, zeigen mehrere Karten dieselbe Map);
+  // sind alle schon gespielt, wieder alle – nur nie die gerade gespielte
+  const last = r.visited.at(-1);
+  let pool = all.filter((m) => !r.visited.includes(m));
+  if (!pool.length) pool = all.filter((m) => m !== last);
+  if (!pool.length) pool = all;
+  const maps = shuffle(pool);
+  const boni = RUN_BONI.filter((id) => !r.boni.includes(id));
+  // nichts doppelt in einer Auswahl: höchstens eine Kiste, jedes Tier (auch als seltene Variante) und jeder Bonus nur
+  // einmal; gibt es nicht genug verschiedene Karten, werden es weniger
+  const cards = [];
+  const has = (kind, key) => cards.some((c) => c.kind === kind && (c.species ?? c.id ?? null) === key);
+  for (let i = 0; i < n; i++) {
+    const map = maps[i % maps.length];
+    const season = LEVELS[map].fixedSeason;
+    const home = Object.keys(LEVELS[map].home ?? {}).filter((sp) => !has('animal', sp));
+    const rares = Object.keys(LEVELS[map].home ?? {}).filter((sp) => rareSkinFor(sp, r.biome, season) && !has('rare', sp));
+    const freeBoni = boni.filter((id) => !has('bonus', id));
+    const event = !!LEVELS[map].migration && !has('event', null);
+    const kinds = Object.entries(KINDS).filter(([k]) => (k === 'rare' ? rares.length : k === 'bonus' ? freeBoni.length : k === 'animal' ? home.length : k === 'event' ? event : !has('chest', null)));
+    if (!kinds.length) break;
+    let x = Math.random() * kinds.reduce((sum, [, w]) => sum + w, 0);
+    const kind = (kinds.find(([, w]) => (x -= w) <= 0) ?? kinds[0])[0];
+    if (kind === 'animal') cards.push({ map, kind, species: pick(home) });
+    else if (kind === 'rare') {
+      const species = pick(rares);
+      cards.push({ map, kind, species, skin: rareSkinFor(species, r.biome, season).id });
+    } else if (kind === 'bonus') cards.push({ map, kind, id: pick(freeBoni) });
+    else cards.push({ map, kind }); // Kiste oder Event
+  }
+  return cards;
+}
+
+// Karte gewählt: die nächste Map vorbereiten (Tierliste, Bonus, Kiste, seltenes Tier). Gibt die Map zurück.
+export function takeRunCard(card) {
+  const r = run();
+  const def = LEVELS[card.map];
+  if (card.kind === 'bonus' && card.id !== 'heartRain' && !r.boni.includes(card.id)) r.boni.push(card.id);
+  const left = { ...(def.home ?? {}) };
+  if (card.kind === 'animal' || card.kind === 'rare') left[card.species] = (left[card.species] ?? 0) + 1;
+  if (r.boni.includes('moreAnimals')) addMore(left);
+  if (hasCharm('bait')) addMore(left); // Glücksbringer Köder (stapelt mit dem Bonus)
+  r.left = left;
+  r.map = card.map;
+  r.step++;
+  r.visited.push(card.map);
+  r.chestMap = card.kind === 'chest' ? card.map : null;
+  // Event-Karte: auf der Map zieht die Große Wanderung vorbei, ein Gnu ist zu fangen
+  r.event = card.kind === 'event' ? card.map : null;
+  if (r.event) left.gnu = (left.gnu ?? 0) + 1;
+  // seltene Variante: das erste Tier dieser Art auf der Map wird sie (Versprechen wie aus der Kiste, siehe Animal.rollSkin)
+  game.rarePromise = card.kind === 'rare' ? { level: card.map, species: card.species, skin: card.skin } : null;
+  return card.map;
+}
+
+// --- Map ---
+
+// Bonus "Mehr Tiere" mitten auf einer Map bekommen (Kiste): gleich ein Tier mehr
+export function moreUnitsNow() {
+  const l = run()?.left;
+  if (l) addMore(l);
+}
+
+// MORE_UNITS Tiere mehr, von einer zufälligen Art der Map
+function addMore(left) {
+  const species = Object.keys(left);
+  if (!species.length) return;
+  for (let i = 0; i < MORE_UNITS; i++) {
+    const s = pick(species);
+    left[s] += 1;
+  }
+}
+
+export const unitsLeft = () => Object.values(run()?.left ?? {}).reduce((s, n) => s + n, 0);
+
+// eine Fang-Einheit dieser Art gefangen
+export function caughtUnit(species) {
+  const l = run()?.left;
+  if (l && l[species] > 0) l[species]--;
+}
+
+// eine Einheit kommt dazu (z. B. seltenes Tier aus einer Kiste auf der Map)
+export function addUnit(species) {
+  const l = run()?.left;
+  if (l) l[species] = (l[species] ?? 0) + 1;
+}
+
+// --- Wagen ---
+
+// Tiere im Camp ordnen: welche in den Wagen kommen (vorbelegt), welche dableiben, welche gleich ins Naturreservat gehen.
+// place(a): 'star' (neue Art im Zoo oder seltene Variante), 'house' (bekommt einen freien Gehege-Platz) oder 'tree'
+// (käme ins Naturreservat); room(a) sagt, wie viel Platz noch frei ist – siehe expSort in GardenScene.
+// Gibt { wagon, stay, release } zurück; Reihenfolge: Sterne, dann Häuser, ältere zuerst.
+export function sortWagon(animals, place) {
+  const rated = animals.map((a, i) => ({ a, i, p: place(a) }));
+  const release = rated.filter((r) => r.p === 'tree').map((r) => r.a);
+  const keep = rated.filter((r) => r.p !== 'tree').sort((u, v) => (u.p === 'star' ? 0 : 1) - (v.p === 'star' ? 0 : 1) || u.i - v.i);
+  const wagon = [];
+  const stay = [];
+  for (const { a } of keep) (fitsWagon(wagon, a) ? wagon : stay).push(a);
+  return { wagon, stay, release };
+}
+
+// Tiere im Wagen nach Käfigen: [{ species, animals }] (je Art ein Käfig, in der Reihenfolge, in der die Arten dazukamen)
+export function wagonCages(wagon) {
+  const cages = new Map();
+  for (const a of wagon) {
+    if (!cages.has(a.species)) cages.set(a.species, []);
+    cages.get(a.species).push(a);
+  }
+  return [...cages].map(([species, animals]) => ({ species, animals }));
+}
+
+// passt dieses Tier noch in den Wagen? (in den Käfig seiner Art, oder es ist noch ein Käfig frei)
+export function fitsWagon(wagon, a) {
+  const cages = wagonCages(wagon);
+  const own = cages.find((c) => c.species === a.species);
+  return own ? own.animals.length < cageSize(a.species) : cages.length < wagonCageCount();
+}
+
+// --- Texte ---
+
+export const runBonusTag = () => tr('bis Expeditionsende', 'until the expedition ends');
+export const mapName = (id) => LEVELS[id]?.name ?? id;
+
+function pick(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+function shuffle(list) {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}

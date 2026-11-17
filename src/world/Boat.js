@@ -5,7 +5,7 @@
 import { game } from '../state.js';
 import { tileToWorld, worldToTile } from './iso.js';
 import { LEVEL, LEVEL_ID, charAt } from './map.js';
-import { pixelAlpha } from './hd.js';
+import { pixelAlpha, shrinkTexture } from './hd.js';
 
 const BOARD_DIST = 40; // so nah muss man (auf dem Steg) am Kanu stehen, um einzusteigen
 const LAND_DIST = 12; // so nah muss das Kanu an einem Steg sein, um auszusteigen (direkt dran, sonst steigt man beim Fangen aus Versehen aus)
@@ -210,10 +210,16 @@ export function outlineTexture(scene, key) {
   const img = ctx.getImageData(0, 0, w, h);
   const a = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : img.data[(y * w + x) * 4 + 3]);
   const res = ctx.createImageData(w, h);
+  // HD-Bilder (world/hd.js): der Rand entsprechend breiter, damit er gleich dick aussieht
+  const hd = sheet.customData.hd ?? 1;
+  const near = (x, y) => {
+    for (let d = 1; d <= 2 * hd; d++) if (a(x - d, y) > 100 || a(x + d, y) > 100 || (d <= hd && (a(x, y - d) > 100 || a(x, y + d) > 100))) return true;
+    return false;
+  };
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (a(x, y) > 100) continue;
-      if (a(x - 1, y) > 100 || a(x + 1, y) > 100 || a(x, y - 1) > 100 || a(x, y + 1) > 100 || a(x - 2, y) > 100 || a(x + 2, y) > 100) {
+      if (near(x, y)) {
         const i = (y * w + x) * 4;
         res.data[i] = 255;
         res.data[i + 1] = 244;
@@ -226,9 +232,10 @@ export function outlineTexture(scene, key) {
   ctx.putImageData(res, 0, 0);
   for (const name of sheet.getFrameNames()) {
     const f = sheet.get(name);
-    tex.add(name, 0, f.cutX, f.cutY, f.cutWidth, f.cutHeight);
+    tex.add(name, 0, f.cutX * hd, f.cutY * hd, f.cutWidth * hd, f.cutHeight * hd); // (HD: Bildkoordinaten im großen Bild)
   }
   tex.refresh();
+  if (hd > 1) shrinkTexture(tex, hd); // so groß anzeigen wie das kleine Bild
   return out;
 }
 

@@ -113,6 +113,11 @@ export class HyenaPack {
     if (this.called && !this.pack.length && this.scene.time.now > this.calledAt + COME_DELAY + 1000) this.called = false;
     this.laughIn -= dt;
     if (this.laughIn > 0 || this.called) return;
+    // Expedition: nur, solange auf der Map noch ein Rudel zu fangen ist (siehe expWants in GardenScene)
+    if (this.scene.expMap && !this.scene.expWants('hyena')) {
+      this.laughIn = RECHECK;
+      return;
+    }
     if (!this.inEarshot()) {
       this.laughIn = RECHECK;
       return;
@@ -137,7 +142,9 @@ export class HyenaPack {
       scene.showToast(tr('🦴 Die Hyänen kichern – sie haben die Knochen gerochen und kommen!', '🦴 The hyenas are giggling – they smelled the bones and are coming!'));
       this.call();
     } else {
-      scene.showToast(tr('🦴 Am Elefantenfriedhof kichern Hyänen! Streu schnell Knochen aus der Hütte – dann kommen sie.', '🦴 Hyenas are giggling at the elephant graveyard! Quickly scatter bones from the hut – then they will come.'));
+      scene.showToast(scene.expMap
+        ? tr('🦴 Am Elefantenfriedhof kichern Hyänen! Streu schnell Knochen aus der Werkzeugkiste – dann kommen sie.', '🦴 Hyenas are giggling at the elephant graveyard! Quickly scatter bones from the tool box – then they will come.')
+        : tr('🦴 Am Elefantenfriedhof kichern Hyänen! Streu schnell Knochen aus der Hütte – dann kommen sie.', '🦴 Hyenas are giggling at the elephant graveyard! Quickly scatter bones from the hut – then they will come.'));
     }
   }
 
@@ -163,10 +170,11 @@ export class HyenaPack {
       const dir = Math.random() * Math.PI * 2;
       const from = { x: b.x + Math.cos(dir) * COME_FROM, y: b.y + (Math.sin(dir) * COME_FROM) / 2 };
       const n = Phaser.Math.Between(...PACK);
+      const pack = { pack: this }; // jedes Rudel für sich (Expedition: zählt als eine Fang-Einheit)
       for (let i = 0; i < n; i++) {
         const h = this.scene.createAnimal('hyena', from.x + Phaser.Math.Between(-20, 20), from.y + Phaser.Math.Between(-10, 10));
         h.life = Infinity;
-        h.herd = this; // ein Rudel: fängt man eine, rennen die anderen weg
+        h.herd = pack; // ein Rudel: fängt man eine, rennen die anderen weg
         h.rollSkin('wild');
         const a = (i / n) * Math.PI * 2 + Math.random() * 0.5;
         h.goEat({ x: b.x + Math.cos(a) * 18, y: b.y + Math.sin(a) * 9 }, b);

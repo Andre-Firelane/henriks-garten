@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate, enclosureAt, accepts, bridgeLift, raiseAt, objectAt, LEVEL, LEVEL_ID } from '../world/map.js';
+import { inPen, isGate, enclosureAt, accepts, bridgeLift, raiseAt, objectAt, biomeOf, LEVEL, LEVEL_ID } from '../world/map.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { TOY_PLAY } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
@@ -1030,6 +1030,11 @@ export function rareSkinHere(species) {
   return skinsHere(species).find((s) => !s.common) ?? null;
 }
 
+// seltener Skin dieser Art in einem Biom und Wetter (Expeditionen: für die Karten vor der nächsten Map), oder null
+export function rareSkinFor(species, biome, season) {
+  return [SKINS[species] ?? []].flat().find((s) => !s.common && (!s.level || s.level === biome) && (!s.seasons || s.seasons.includes(season))) ?? null;
+}
+
 // Abspieltempo der Laufanimation: beim normalen Gehtempo (kind.speed) 1, schneller beim Wegrennen und Hinterherlaufen.
 // Nicht ganz proportional (Hoch 0,6), sonst trippeln die Beine bei hohem Tempo zu hektisch: dreifaches Tempo -> knapp doppelt so schnell
 // max: schneller nicht (kind.animMax, z. B. der Jaguar beim Rennen, sonst wirbeln die Beine)
@@ -1039,7 +1044,7 @@ function walkAnimSpeed(speed, normal, max = 2.2) {
 
 // Skins dieser Art, die hier und jetzt vorkommen können (Gebiet und Wetterphase)
 function skinsHere(species) {
-  return [SKINS[species] ?? []].flat().filter((s) => (!s.level || s.level === LEVEL_ID) && (!s.seasons || s.seasons.includes(LEVEL.season)));
+  return [SKINS[species] ?? []].flat().filter((s) => (!s.level || s.level === biomeOf()) && (!s.seasons || s.seasons.includes(LEVEL.season)));
 }
 
 // Angaben zu einem Skin (Name, männlich ...), oder null
@@ -1358,7 +1363,7 @@ export default class Animal {
     const shared = here.filter((s) => s.share);
     if (from === 'wild' && shared.length) {
       // gleichmäßig verteilt (z. B. Fischarten je Gebiet): Grundbild nur, wo es vorkommt
-      const base = this.kind.baseLevels?.includes(LEVEL_ID) ? 1 : 0;
+      const base = this.kind.baseLevels?.includes(biomeOf()) ? 1 : 0;
       let r = Math.random() * (base + shared.reduce((n, s) => n + s.share, 0)) - base;
       if (r < 0) return;
       for (const s of shared) {

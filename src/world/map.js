@@ -263,12 +263,15 @@ let ROWS;
 
 const tilesWith = (ch) => ROWS.flatMap((row, ty) => [...row].flatMap((c, tx) => (c === ch ? [{ tx, ty }] : [])));
 
+// Biom eines Gebiets: Expeditions-Camp und -Maps gehören zu ihrer Welt (Tiere, Gehege, seltene Varianten, Ladepakete)
+export const biomeOf = (id = LEVEL_ID) => LEVELS[id]?.expedition ?? id;
+
 export function setLevel(id) {
   LEVEL_ID = id;
   // Wetterphase (Savanne, Dschungel): die Angaben der Phase ersetzen die normalen (Tiere, Boden, Geräusch ...), siehe season.js
   const base = LEVELS[id];
   const season = base.seasons ? currentSeason(id) : 'normal';
-  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: base.seasons ? firstSeason(id) : 'normal' };
+  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: base.fixedSeason ?? (base.seasons ? firstSeason(id) : 'normal') }; // Expeditions-Maps: festes Wetter
   ROWS = LEVEL.rows;
   // ... und ihre Kartenstücke (größere Teiche im Regen, Schlamm in der Trockenzeit): { tx, ty, rows }
   for (const u of LEVEL.mapPatches ?? []) {
@@ -280,6 +283,14 @@ export function setLevel(id) {
   // freigeschaltete Teile (z. B. das Flamingo-Gehege) über die Karte legen: { id, tx, ty, rows }
   for (const u of LEVEL.unlocks ?? []) {
     if (!game.unlocked.includes(u.id)) continue;
+    ROWS = ROWS.map((row, y) => {
+      const patch = u.rows[y - u.ty];
+      return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
+    });
+  }
+  // Kartenstücke, die nur unter einer Bedingung dazukommen (when(game)), z. B. der fünfte Käfig im Expeditions-Camp
+  for (const u of LEVEL.runPatches ?? []) {
+    if (!u.when(game)) continue;
     ROWS = ROWS.map((row, y) => {
       const patch = u.rows[y - u.ty];
       return patch === undefined ? row : row.slice(0, u.tx) + patch + row.slice(u.tx + patch.length);
@@ -360,7 +371,7 @@ export function setLevel(id) {
   });
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const all = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: tr('Gehege', 'Enclosure'), area: LEVEL.pen, species: null }] : []);
-  const list = all.filter((e) => !e.unlock || game.unlocked.includes(e.unlock)); // noch nicht gebaute Gehege fehlen
+  const list = all.filter((e) => (!e.unlock || game.unlocked.includes(e.unlock)) && (!e.when || e.when(game))); // noch nicht gebaute Gehege fehlen
   ENCLOSURES = list.map((e) => {
     // Kacheln der Innenfläche: entweder ein Rechteck (area) oder alles, was vom Startpunkt (seed) aus erreichbar ist,
     // ohne über Zaun, Wand oder Tor zu gehen. So sind auch L-Formen und unregelmäßige Gehege möglich.

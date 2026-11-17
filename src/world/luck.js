@@ -5,7 +5,7 @@
 // Hier stehen nur Daten und Regeln; Kisten, Wirkungen und Anzeige siehe world/LuckWorld.js.
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
-import { LEVEL_ID } from './map.js';
+import { LEVEL, LEVEL_ID } from './map.js';
 
 const MINUTE = 60 * 1000;
 
@@ -22,37 +22,46 @@ export const LEVEL_EVENT = { meadow: 'farm', forest: 'wolves', savanna: 'migrati
 const COARSE = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 export const iconImg = (file) => `<img class="luck-img" src="assets/${COARSE ? `webp/${file}.webp` : `${file}.png`}" alt="" draggable="false">`;
 
-// 5-Minuten-Boni (gelten nur im Gebiet der Kiste; available: kommt die Karte hier vor?); alle mit dem Boost-Symbol
-// (Stoppuhr mit Blitz), unterschieden werden sie am Namen
+// 5-Minuten-Boni (gelten nur im Gebiet der Kiste; available: kommt die Karte hier vor?)
+// eigene Symbole je Bonus: public/assets/bonus_<id>.png (tools/bonus-icons.py)
 export const BONI = {
   moreAnimals: { name: tr('Mehr Tiere', 'More Animals'), text: tr('Viel mehr wilde Tiere im Gebiet.', 'Lots more wild animals here.') },
   ride: { name: tr('Reittier', 'Mount'), text: tr('Du reitest – schneller unterwegs.', 'You ride – much faster.') },
-  toolsEverywhere: { name: tr('Werkzeug überall', 'Tools Everywhere'), text: tr('Werkzeug wechseln, wo du willst (Q bzw. Werkzeug-Knopf).', 'Switch tools anywhere (Q or the tool button).') },
-  stands: { name: tr('2 Hochstände', '2 Lookouts'), text: tr('Zwei Hochstände – von oben siehst du alles.', 'Two lookouts – see everything from above.'), available: (l) => l !== 'reef' },
+  // nur in der Erkundung (offene Welten): in der Expedition sind die Maps klein und die Werkzeugkiste steht in der Mitte
+  toolsEverywhere: { name: tr('Werkzeug überall', 'Tools Everywhere'), text: tr('Werkzeug wechseln, wo du willst (Q bzw. Werkzeug-Knopf).', 'Switch tools anywhere (Q or the tool button).'), available: () => !LEVEL?.expedition },
+  stands: { name: tr('Hochstand', 'Lookout'), text: tr('Ein Hochstand bei der Kiste – von oben siehst du alles.', 'A lookout by the chest – see everything from above.'), available: (l) => l !== 'reef' && !LEVEL?.expedition },
+  binoculars: { name: tr('Fernglas', 'Binoculars'), text: tr('Pfeile am Rand zeigen dir, wo die Tiere sind.', 'Arrows at the edge show you where the animals are.') },
+  bigWagon: { name: tr('Größerer Wagen', 'Bigger Wagon'), text: tr('Ein Käfig mehr im Wagen.', 'One more cage in the wagon.'), available: () => !!LEVEL?.expedition }, // nur in der Expedition
   bigCatch: { name: tr('Großes Lasso', 'Big Lasso'), text: tr('Lasso und Kescher fangen viel größer – das Lasso 2 Tiere auf einmal.', 'Lasso and net catch much wider – the lasso 2 animals at once.') },
   // instant: wirkt sofort einmal (kein 5-Minuten-Bonus)
-  heartRain: { name: tr('Herzregen', 'Heart Rain'), text: tr('Sofort 100 Herzen.', '100 hearts right away.'), instant: true }, // 100: HEART_RAIN
+  heartRain: { name: tr('Herzregen', 'Heart Rain'), text: tr('Sofort 50 Herzen.', '50 hearts right away.'), instant: true }, // 50: HEART_RAIN
   eventCall: { name: tr('Event-Ruf', 'Event Call'), text: tr('Das Event dieses Gebiets startet sofort – gratis.', 'This area’s event starts right away – for free.'), available: (l) => !!LEVEL_EVENT[l], instant: true },
 };
-export const HEART_RAIN = 100; // so viele Herzen bringt der Herzregen (pauschal, unabhängig davon, wie lange man im Gebiet bleibt)
-for (const b of Object.values(BONI)) b.icon = iconImg('boost');
+export const HEART_RAIN = 50; // so viele Herzen bringt der Herzregen (pauschal, unabhängig davon, wie lange man im Gebiet bleibt)
+for (const [id, b] of Object.entries(BONI)) b.icon = iconImg(`bonus_${id}`);
 const BONUS_MS = 5 * MINUTE;
 const HOURGLASS_MS = 8 * MINUTE;
 export const MORE_ANIMALS = 1.5; // so viel mehr wilde Tiere
 export const BIG_CATCH = 1.6; // so viel größer fangen Lasso und Kescher
 
 // Glücksbringer (dauerhaft, 2 gleichzeitig); Bild je Glücksbringer: charm_<id>.png
+// scope: wirkt nur in der Erkundung (offene Welten) bzw. nur in der Expedition; ohne scope überall
 export const CHARMS = {
   cheapReroll: { name: tr('Glückswürfel', 'Lucky Die'), text: tr('Neu würfeln in Kisten kostet nur die Hälfte.', 'Rerolling in chests costs only half.') },
   swift: { name: tr('Flinke Schuhe', 'Swift Shoes'), text: tr('Du läufst etwas schneller.', 'You walk a bit faster.') },
   rareLuck: { name: tr('Sternschnuppe', 'Shooting Star'), text: tr('Seltene Tiere kommen öfter.', 'Rare animals come more often.') },
-  chestRadar: { name: tr('Kisten-Kompass', 'Chest Compass'), text: tr('Ein Pfeil am Rand zeigt zu Kisten in der Nähe.', 'An arrow at the edge points to nearby chests.') },
-  campfire: { name: tr('Lagerfeuer', 'Campfire'), text: tr('Setz dich ans Feuer: neue Tiere, in Savanne und Dschungel auch neues Wetter.', 'Sit by the fire: new animals, and new weather in the savanna and jungle.') },
-  longEvents: { name: tr('Festtags-Glocke', 'Festival Bell'), text: tr('Events dauern länger.', 'Events last longer.') },
+  chestRadar: { name: tr('Kisten-Kompass', 'Chest Compass'), text: tr('Ein Pfeil am Rand zeigt zu Kisten in der Nähe.', 'An arrow at the edge points to nearby chests.'), scope: 'explore' },
+  campfire: { name: tr('Lagerfeuer', 'Campfire'), text: tr('Setz dich ans Feuer: neue Tiere, in Savanne und Dschungel auch neues Wetter.', 'Sit by the fire: new animals, and new weather in the savanna and jungle.'), scope: 'explore' },
+  longEvents: { name: tr('Festtags-Glocke', 'Festival Bell'), text: tr('Events dauern länger.', 'Events last longer.'), scope: 'explore' },
   clover: { name: tr('Kleeblatt', 'Clover'), text: tr('In Kisten 4 Karten statt 3.', '4 cards in chests instead of 3.') },
-  hourglass: { name: tr('Sanduhr', 'Hourglass'), text: tr('Boni aus Kisten halten 8 statt 5 Minuten.', 'Chest bonuses last 8 instead of 5 minutes.') },
+  hourglass: { name: tr('Sanduhr', 'Hourglass'), text: tr('Boni aus Kisten halten 8 statt 5 Minuten.', 'Chest bonuses last 8 instead of 5 minutes.'), scope: 'explore' },
   piggy: { name: tr('Sparschwein', 'Piggy Bank'), text: tr('Alles im Tierpark ist etwas billiger.', 'Everything in the zoo is a bit cheaper.') },
+  // nur Expedition (Wirkung siehe world/expedition.js und catchAnimal in GardenScene)
+  bigCage: { name: tr('Großer Käfig', 'Big Cage'), text: tr('Jeder Käfig im Wagen hat einen Platz mehr.', 'Every cage in the wagon has one more spot.'), scope: 'expedition' },
+  bait: { name: tr('Köder', 'Bait'), text: tr('Auf jeder Map ein Tier mehr.', 'One more animal on every map.'), scope: 'expedition' },
+  teddy: { name: tr('Stoffteddy', 'Teddy Bear'), text: tr('Jedes gefangene Tier bringt gleich Herzen – so viele wie im Naturreservat.', 'Every animal you catch brings hearts right away – as many as in the nature reserve.'), scope: 'expedition' },
 };
+export const CHARM_SCOPE = { explore: tr('nur Erkundung', 'exploring only'), expedition: tr('nur Expedition', 'expeditions only') };
 for (const [id, c] of Object.entries(CHARMS)) c.icon = iconImg(`charm_${id}`);
 export const CHARM_SLOTS = 2;
 export const SWIFT_SPEED = 1.15;
@@ -142,16 +151,24 @@ function levelBoni() {
   const b = game.levelBonus;
   return b && b.level === LEVEL_ID ? b.boni : {};
 }
-export const bonusLeft = (id, now = Date.now()) => Math.max(0, (levelBoni()[id] ?? 0) - now);
+// Expedition (Camp und Maps): Boni gelten bis zum Ende des Runs (game.expedition.boni, siehe expedition.js)
+export const inExpedition = () => !!(game.expedition && LEVEL?.expedition);
+const runBoni = () => (inExpedition() ? game.expedition.boni : []);
+export const bonusLeft = (id, now = Date.now()) => (runBoni().includes(id) ? Infinity : Math.max(0, (levelBoni()[id] ?? 0) - now));
 export const bonusActive = (id, now = Date.now()) => bonusLeft(id, now) > 0;
-// laufende Boni: [{ id, left }]
+// laufende Boni: [{ id, left }] (left: Infinity bei Boni bis zum Ende der Expedition)
 export const activeBoni = (now = Date.now()) =>
-  Object.keys(levelBoni())
+  [...new Set([...runBoni(), ...Object.keys(levelBoni())])]
+    .filter((id) => BONI[id]) // (ältere Spielstände: Boni, die es nicht mehr gibt, z. B. Hochstand, Werkzeug überall)
     .map((id) => ({ id, left: bonusLeft(id, now) }))
     .filter((b) => b.left > 0);
 
 // Bonus starten; derselbe noch einmal stapelt nicht, die Zeit beginnt nur von vorn
 export function startBonus(id, now = Date.now()) {
+  if (inExpedition()) {
+    if (!game.expedition.boni.includes(id)) game.expedition.boni.push(id);
+    return;
+  }
   if (game.levelBonus?.level !== LEVEL_ID) game.levelBonus = { level: LEVEL_ID, boni: {} };
   game.levelBonus.boni[id] = now + (hasCharm('hourglass') ? HOURGLASS_MS : BONUS_MS);
 }

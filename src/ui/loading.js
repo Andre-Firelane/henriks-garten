@@ -5,6 +5,7 @@
 // weiterzuspielen bzw. den Spielstand zu reparieren (siehe repairSave).
 import { repairSave } from '../save.js';
 import { tr } from '../i18n.js';
+import { LEVELS } from '../world/levels.js';
 
 const panel = () => document.getElementById('loading');
 
@@ -22,6 +23,7 @@ export function showLoading(text, progress = null) {
 const BACKGROUNDS = ['park', 'meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'aquarium'];
 export function setLoadingBackground(level) {
   if (level === 'park2' || level === 'park3') level = 'park'; // die Abschnitte des Tierparks
+  level = LEVELS[level]?.expedition ?? level; // Expedition: Bild ihrer Welt
   if (BACKGROUNDS.includes(level)) document.documentElement.style.setProperty('--bg', `url(assets/bg/bg_${level}.jpg)`);
 }
 

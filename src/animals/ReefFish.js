@@ -135,6 +135,7 @@ export default class ReefFish extends Animal {
   }
 
   updateFree(dt, player) {
+    if (this.campBag) return false; // im Tank im Camp: steht still
     this.phase += dt;
     if (this.state === 'wild' && this.shouldFlee(player)) {
       this.h += (Phaser.Math.Clamp(this.h + 6, ...HEIGHT) - this.h) * Math.min(1, dt * 2);
@@ -182,7 +183,7 @@ export default class ReefFish extends Animal {
 
   // unter Wasser als Fisch (schwimmend, mit kleinem Schatten am Boden), an Land im Beutel
   render(moving) {
-    const bag = this.state === 'following' && !LEVEL.sea;
+    const bag = (this.state === 'following' && !LEVEL.sea) || this.campBag; // campBag: Expedition, im Käfig im Camp
     if (bag) {
       if (this.sprite.texture.key !== this.kind.bagTexture) {
         this.sprite.stop().setFlipX(false);

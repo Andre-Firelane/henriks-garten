@@ -127,6 +127,61 @@ export function animalIconSquare(species, size = 3) {
   return `<span class="animal-box" style="width:${size}em;height:${size}em"><span class="animal" style="${style}"></span></span>`;
 }
 
+// Tierbild auf seinen sichtbaren Teil zugeschnitten, in einem quadratischen Feld (size em): so sind alle Tiere gleich groß,
+// egal wie viel leeren Rand ihr Bild hat (z. B. Zähler der Expedition). Den Rand misst das Bild einmal selbst aus; bis dahin
+// kommt animalIconSquare, und onReady() wird aufgerufen, sobald der Zuschnitt bekannt ist (dann neu zeichnen)
+const VISIBLE = {}; // Art → sichtbarer Bereich im Einzelbild { x, y, w, h } (in Bildpunkten des Spritesheets)
+const measuring = {};
+export function animalIconFit(species, size = 2, onReady = null) {
+  const box = VISIBLE[species];
+  if (!box) {
+    measureVisible(species, onReady);
+    return animalIconSquare(species, size);
+  }
+  const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];
+  const k = size / Math.max(box.w, box.h);
+  const style = [
+    `width:${(box.w * k).toFixed(3)}em`,
+    `height:${(box.h * k).toFixed(3)}em`,
+    `background-image:url(assets/${file}.png)`,
+    `background-size:${(w * count * k).toFixed(3)}em ${(h * rows * k).toFixed(3)}em`,
+    `background-position:${(-(w * frame + box.x) * k).toFixed(3)}em ${(-box.y * k).toFixed(3)}em`,
+  ].join(';');
+  return `<span class="animal-box" style="width:${size}em;height:${size}em"><span class="animal" style="${style}"></span></span>`;
+}
+
+function measureVisible(species, onReady) {
+  if (measuring[species]) {
+    if (onReady) measuring[species].push(onReady);
+    return;
+  }
+  measuring[species] = onReady ? [onReady] : [];
+  const [w, h, count, frame, file = species] = SHEETS[species];
+  const img = new Image();
+  img.onload = () => {
+    const scale = img.naturalWidth / (w * count); // (falls das Bild größer gespeichert ist als im Spritesheet angegeben)
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * scale);
+    c.height = Math.round(h * scale);
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, w * frame * scale, 0, w * scale, h * scale, 0, 0, c.width, c.height);
+    const a = ctx.getImageData(0, 0, c.width, c.height).data;
+    let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < c.height; y++) {
+      for (let x = 0; x < c.width; x++) {
+        if (a[(y * c.width + x) * 4 + 3] < 24) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    VISIBLE[species] = x1 < 0 ? { x: 0, y: 0, w, h } : { x: x0 / scale, y: y0 / scale, w: (x1 - x0 + 1) / scale, h: (y1 - y0 + 1) / scale };
+    for (const f of measuring[species]) f();
+  };
+  img.src = `assets/${file}.png`;
+}
+
 export function animalIcons(list, size) {
   return list.map((s) => animalIcon(s, size)).join('');
 }

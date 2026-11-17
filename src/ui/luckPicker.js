@@ -12,7 +12,7 @@ export function isLuckPickerOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// view(): { cards: [{ icon, title, text, color, tag }], cost, hearts } (wird nach dem Neuwürfeln neu geholt)
+// view(): { cards: [{ icon, title, text, color, tag }], cost, hearts, title? } (title: Überschrift statt "Eine Kiste!") (wird nach dem Neuwürfeln neu geholt)
 // onPick(i): Karte i genommen; onReroll(): neu würfeln (der Aufrufer zieht die Herzen ab und würfelt)
 export function openLuckPicker(view, onPick, onReroll) {
   panel = document.getElementById('luck');
@@ -33,7 +33,7 @@ function render() {
   state.selected = Math.min(state.selected, state.n - 1);
   const short = v.hearts < v.cost;
   panel.innerHTML = `<div class="chest-box luck-box">
-      <h2>${tr('Eine Kiste! Such dir etwas aus:', 'A chest! Pick one:')}</h2>
+      <h2>${v.title ?? tr('Eine Kiste! Such dir etwas aus:', 'A chest! Pick one:')}</h2>
       <div class="chest-items luck-cards" style="--n:${v.cards.length}">${v.cards
         .map(
           (c, i) => `<button class="chest-item luck-card" data-i="${i}" style="--luck:${c.color}">

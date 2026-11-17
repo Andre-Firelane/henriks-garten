@@ -4,19 +4,21 @@ import Phaser from 'phaser';
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from './iso.js';
-import { LEVEL, LEVEL_ID, buildingAt, isBlocked } from './map.js';
+import { LEVEL, LEVEL_ID, MAP_H, MAP_W, biomeOf, buildingAt, charAt, exitAt, isBlocked } from './map.js';
 import { SEASON_LEVELS, skipSeason } from './season.js';
 import { formatTime } from './events.js';
 import { rareSkinHere, skinInfo } from '../animals/Animal.js';
-import { animalIcon } from '../ui/icons.js';
+import { animalIcon, animalIconFit } from '../ui/icons.js';
 import { openLuckPicker } from '../ui/luckPicker.js';
 import { EVENT_GROUPS, groupsLoaded } from '../scenes/BootScene.js';
 import { GHOST_ALPHA, GHOST_DEPTH, isCovered, outlineTexture } from './Boat.js';
 import {
-  BONI, CHARMS, CHEST_COUNT, CHEST_LEVELS, HEART_RAIN, LEVEL_EVENT, TIERS,
+  BONI, CHARMS, CHARM_SCOPE, CHEST_COUNT, CHEST_LEVELS, HEART_RAIN, LEVEL_EVENT, TIERS,
   activeBoni, bonusActive, campfireLeft, cardCount, chestOpened, chestState, dropBoniElsewhere, giveCharm, hasCharm, iconImg,
-  luckState, ownsCharm, rerollCost, rollCards, startBonus,
+  inExpedition, luckState, ownsCharm, rerollCost, rollCards, startBonus,
 } from './luck.js';
+import { RUN_BONI, addUnit, moreUnitsNow, runBonusTag } from './expedition.js';
+import { coveredAt } from './expeditionMaps.js';
 
 const NEAR = 40; // so nah muss man an der Kiste stehen (wie an der Werkzeug-Kiste)
 const RADAR_DIST = 700; // Kisten-Kompass: Pfeil zu Kisten, die näher sind (Kachel-Abstand, y doppelt)
@@ -49,6 +51,9 @@ const CARD_SKINS = new Set([
   'squirrel2', 'beaver2', 'macaque2', 'anteater2', 'meerkat2', 'vulture2', 'gorilla2', 'hyena2', 'hippo2', 'panda2',
   'penguin2', 'seal2', 'seahorse2', 'toucan2', 'turtle2', 'warthog2',
 ]);
+const BINO_MAX = 8; // Fernglas: so viele Pfeile höchstens (in den großen Welten sonst zu viele)
+let binoId = 0;
+const SHEET_OK = (species) => { try { animalIcon(species); return true; } catch { return false; } };
 const CALLED_SHARE = 0.1; // so oft kommt ihre Karte (wie eine seltene Art im Spawn-Pool)
 
 // Versprechen für dieses Gebiet (seltenes Tier aus der Kiste, das erst noch kommen muss), oder null
@@ -71,6 +76,8 @@ export default class Luck {
     makeTextures(scene);
     this.enabled = CHEST_LEVELS.includes(LEVEL_ID);
     if (this.enabled) this.placeChests();
+    // Expedition: Kiste nur, wenn man vor dieser Map die Kistenkarte genommen hat (keine neuen nach dem Öffnen)
+    if (game.expedition?.chestMap === LEVEL_ID) this.drawChest(this.freeSpot([]));
     if (bonusActive('stands')) this.placeStands();
     this.known = new Set(activeBoni().map((b) => b.id));
     this.updateCampfireButton();
@@ -96,6 +103,7 @@ export default class Luck {
     for (let i = 0; i < 40; i++) {
       t = this.scene.randomFreeTile(taken);
       if (buildingAt(t.tx, t.ty, 1)) continue;
+      if (LEVEL.expedition && i < 35 && coveredAt(charAt, t.tx, t.ty)) continue; // Expedition: keine Kiste hinter Bäumen
       if (avoid.every((a) => Math.max(Math.abs(a.tx - t.tx), Math.abs(a.ty - t.ty)) >= CHEST_GAP)) return t;
     }
     return t;
@@ -131,7 +139,9 @@ export default class Luck {
   // Aktionstaste an der Kiste: sie verschwindet, die Karten kommen
   openChest() {
     const s = this.scene;
+    this.lastChestSpot = (this.nearChest ?? this.chests[0])?.spot ?? null; // dort kommt ein Hochstand hin (Bonus)
     chestOpened();
+    if (game.expedition?.chestMap === LEVEL_ID) game.expedition.chestMap = null;
     this.removeChests();
     s.updateToolbar();
     if (s.cache.audio.exists('trap')) s.sound.play('trap', { volume: 0.5 });
@@ -155,15 +165,18 @@ export default class Luck {
 
   roll() {
     // seltene Tiere: Arten dieses Gebiets (und dieser Wetterphase) mit seltenem Skin, je häufiger, desto öfter
-    const weights = Object.assign({}, ...[LEVEL.spawn, LEVEL.weatherSpawn].filter(Boolean).map((p) => p.weights));
+    const weights = LEVEL.expedition && LEVEL.home
+      ? Object.fromEntries(Object.keys(LEVEL.home).map((sp) => [sp, 1])) // Expedition: nur Arten dieser Map
+      : Object.assign({}, ...[LEVEL.spawn, LEVEL.weatherSpawn].filter(Boolean).map((p) => p.weights));
     const total = Object.values(weights).reduce((a, b) => a + b, 0) || 1;
     const rare = Object.entries(weights)
       .filter(([, w]) => w > 0)
       .map(([species, w]) => ({ species, skin: rareSkinHere(species)?.id, share: w / total }))
-      .concat(Object.entries(CALLED).filter(([, c]) => c.when(LEVEL)).map(([species]) => ({ species, skin: rareSkinHere(species)?.id, share: CALLED_SHARE })))
+      .concat(Object.entries(CALLED).filter(([sp, c]) => (LEVEL.expedition ? !weights[sp] && LEVEL.home?.[sp] : c.when(LEVEL))).map(([species]) => ({ species, skin: rareSkinHere(species)?.id, share: CALLED_SHARE })))
       .filter((c) => c.skin);
     const boni = Object.entries(BONI)
-      .filter(([id, b]) => (!b.available || b.available(LEVEL_ID)) && (id !== 'ride' || RIDE_LEVELS.includes(LEVEL_ID)))
+      .filter(([id, b]) => (!b.available || b.available(LEVEL_ID)) && (id !== 'ride' || RIDE_LEVELS.includes(biomeOf())))
+      .filter(([id]) => !inExpedition() || (RUN_BONI.includes(id) && !game.expedition.boni.includes(id))) // Expedition: Boni bis zum Ende (kein Event-Ruf)
       .map(([id]) => id);
     const charms = Object.keys(CHARMS).filter((id) => !ownsCharm(id));
     return rollCards({ rare, boni, charms }, cardCount());
@@ -183,10 +196,12 @@ export default class Luck {
     if (c.kind === 'bonus') {
       const b = BONI[c.id];
       const minutes = hasCharm('hourglass') ? 8 : 5;
-      return { icon: b.icon, title: b.name, text: b.text, color: CARD_COLOR.bonus, tag: b.instant ? tr('sofort', 'right now') : tr(`${minutes} Minuten`, `${minutes} minutes`) };
+      // Expedition: "Mehr Tiere" bringt ein Tier mehr je Map (in den Welten mehr Tiere im Gebiet, siehe MORE_ANIMALS)
+      const text = inExpedition() && c.id === 'moreAnimals' ? tr('Auf jeder Map ein Tier mehr – und ein Platz mehr in jedem Käfig.', 'One more animal on every map – and one more spot in every cage.') : b.text;
+      return { icon: b.icon, title: b.name, text, color: CARD_COLOR.bonus, tag: b.instant ? tr('sofort', 'right now') : inExpedition() ? runBonusTag() : tr(`${minutes} Minuten`, `${minutes} minutes`) };
     }
     const ch = CHARMS[c.id];
-    return { icon: ch.icon, title: ch.name, text: ch.text, color: CARD_COLOR.charm, tag: tr('Glücksbringer', 'Lucky charm') };
+    return { icon: ch.icon, title: ch.name, text: ch.scope ? `${ch.text}<br><i>${CHARM_SCOPE[ch.scope]}</i>` : ch.text, color: CARD_COLOR.charm, tag: tr('Glücksbringer', 'Lucky charm') };
   }
 
   take(card) {
@@ -211,6 +226,16 @@ export default class Luck {
     const s = this.scene;
     const info = skinInfo(species, skin);
     const p = s.player;
+    if (s.expMap) {
+      // eine Einheit mehr auf der Map; das nächste Tier dieser Art, das erscheint, ist die seltene Variante – es erscheint
+      // so, wie diese Art eben auftaucht (Leguan versteckt im Farn, Schlange im Dickicht, Brüllaffe im Baum ...)
+      game.rarePromise = { level: LEVEL_ID, species, skin };
+      addUnit(species);
+      s.expTopUp(worldToTile(p.x, p.y), true);
+      s.expUpdateCounter();
+      if (game.rarePromise) s.showToast(`✨ <b>${capital(info?.name ?? species)}</b> ${tr('ist irgendwo hier – halte die Augen offen!', 'is somewhere around here – keep your eyes open!')}`);
+      return;
+    }
     if (CALLED[species]) {
       // ist gerade eins da, wird es selten; sonst das nächste, das kommt
       // (keinen Vogel, der nur über die Karte fliegt oder schon wieder abfliegt: der wäre gleich weg)
@@ -219,16 +244,22 @@ export default class Luck {
         wild.skin = skin;
         wild.life = Math.max(wild.life ?? 0, RARE_LIFE);
         this.rareTarget = wild;
-        s.showToast(tr(`✨ ${capital(info?.name ?? species)} ist irgendwo im Gebiet – folge dem Pfeil!`, `✨ A ${info?.name ?? species} is somewhere in this area – follow the arrow!`));
+        s.showToast(tr(`✨ ${capital(info?.name ?? species)} ist irgendwo im Gebiet${follow(s)}!`, `✨ A ${info?.name ?? species} is somewhere in this area${followEn(s)}!`));
         return;
       }
       game.rarePromise = { level: LEVEL_ID, species, skin };
+      if (s.expMap) addUnit(species); // Expedition: es kommt eins dazu
       s.showToast(`✨ <b>${capital(info?.name ?? species)}</b>: ${CALLED[species].hint}`);
       return;
     }
     const pool = { population: 99, weights: { [species]: 1 } };
     let group = [];
     for (let i = 0; i < 5 && !group.length; i++) group = s.spawnOne([worldToTile(p.x, p.y)], true, pool);
+    if (group.length && s.expMap) {
+      addUnit(species); // Expedition: eine Einheit mehr auf der Map (bleibt, bis man sie fängt)
+      for (const a of group) a.life = Infinity;
+      s.expUpdateCounter();
+    }
     // keine Stelle frei (z. B. schon so viele Jaguare, wie in die Bäume passen): ein wildes Tier dieser Art wird selten
     if (!group.length) {
       const wild = s.animals.find((a) => a.species === species && a.state === 'wild');
@@ -245,7 +276,7 @@ export default class Luck {
       a.life = Math.max(a.life ?? 0, RARE_LIFE);
     }
     this.rareTarget = group[0];
-    s.showToast(tr(`✨ ${capital(info?.name ?? species)} ist irgendwo im Gebiet aufgetaucht – folge dem Pfeil!`, `✨ A ${info?.name ?? species} has appeared somewhere in this area – follow the arrow!`));
+    s.showToast(tr(`✨ ${capital(info?.name ?? species)} ist irgendwo im Gebiet aufgetaucht${follow(s)}!`, `✨ A ${info?.name ?? species} has appeared somewhere in this area${followEn(s)}!`));
   }
 
   // --- Boni ---
@@ -269,8 +300,15 @@ export default class Luck {
     }
     startBonus(id);
     this.known.add(id);
+    // Expedition: "Mehr Tiere" wirkt gleich auf dieser Map (nicht erst auf der nächsten)
+    if (id === 'moreAnimals' && s.expMap) {
+      moreUnitsNow();
+      s.expTopUp(worldToTile(s.player.x, s.player.y), true);
+      s.expUpdateCounter();
+    }
     const minutes = hasCharm('hourglass') ? 8 : 5;
-    s.showToast(`${b.icon} <b>${b.name}!</b> ${b.text} <small>(${tr(`${minutes} Minuten, nur in diesem Gebiet`, `${minutes} minutes, only in this area`)})</small>`);
+    const how = inExpedition() ? runBonusTag() : tr(`${minutes} Minuten, nur in diesem Gebiet`, `${minutes} minutes, only in this area`);
+    s.showToast(`${b.icon} <b>${b.name}!</b> ${b.text} <small>(${how})</small>`);
     if (id === 'ride' && !groupsLoaded(EVENT_GROUPS.ride)) s.afterGroupsLoaded(EVENT_GROUPS.ride, () => s.updateMount());
     else if (id === 'ride' || id === 'toolsEverywhere') s.updateMount();
     if (id === 'stands') this.placeStands();
@@ -285,15 +323,17 @@ export default class Luck {
     s.showToast(`${b.icon} ${tr(`${b.name} ist vorbei.`, `${b.name} is over.`)}`);
   }
 
-  // Bonus "2 Hochstände": wie der im Wald, an zwei freien Stellen (gemerkt, damit sie einen Wetterwechsel überstehen)
+  // Bonus "Hochstand": wie der im Wald, einer bei der Kiste (gemerkt, damit er einen Wetterwechsel übersteht)
   placeStands() {
     const s = this.scene;
-    const lb = game.levelBonus;
+    const lb = inExpedition() ? (this.runStands ??= {}) : game.levelBonus; // Expedition: Hochstand nur auf dieser Map
     if (!lb) return;
     this.removeStands();
     if (!lb.stands) {
-      lb.stands = [];
-      while (lb.stands.length < 2) lb.stands.push(this.freeSpot([...lb.stands, ...this.chests.map((c) => c.spot)]));
+      // ein Hochstand bei der Kiste: in der Expedition die Werkzeugkiste in der Mitte der Map, sonst die geöffnete Schatzkiste
+      const c = (inExpedition() && LEVEL.chests?.[0]) || this.lastChestSpot || { tx: Math.floor(MAP_W / 2), ty: Math.floor(MAP_H / 2) };
+      const spot = this.standSpotNear(c);
+      lb.stands = spot ? [spot] : [];
     }
     for (const t of lb.stands) {
       const p = tileToWorld(t.tx, t.ty);
@@ -303,6 +343,20 @@ export default class Luck {
       s.stands.push(stand);
       this.standImgs.push({ img, stand });
     }
+  }
+
+  // freie Kachel 2 bis 6 Kacheln von t entfernt, möglichst nah (nicht in Hütten, nicht an einem Übergang)
+  standSpotNear(t) {
+    let best = null;
+    for (let ty = t.ty - 6; ty <= t.ty + 6; ty++) {
+      for (let tx = t.tx - 6; tx <= t.tx + 6; tx++) {
+        const d = Math.max(Math.abs(tx - t.tx), Math.abs(ty - t.ty));
+        if (d < 2 || isBlocked(tx, ty) || buildingAt(tx, ty, 1) || exitAt(tx, ty) || charAt(tx, ty) === '#') continue;
+        const dd = Math.hypot(tx - t.tx, ty - t.ty);
+        if (!best || dd < best.dd) best = { tx, ty, dd };
+      }
+    }
+    return best && { tx: best.tx, ty: best.ty };
   }
 
   removeStands() {
@@ -413,17 +467,20 @@ export default class Luck {
   markerTargets() {
     const p = this.scene.player;
     const list = [];
-    if (hasCharm('chestRadar')) {
+    if (hasCharm('chestRadar') && !inExpedition()) { // (nur in der Erkundung)
       this.chests.forEach((c, i) => {
         if (Math.hypot(c.x - p.x, (c.y - p.y) * 2) < RADAR_DIST) list.push({ id: `luck-chest-${i}`, x: c.x, y: c.y - 10, icon: '🎁' });
       });
     }
-    const r = this.rareTarget;
+    // Expedition: die Maps sind klein, dort braucht es keinen Pfeil zum seltenen Tier
+    const r = this.scene.expMap ? null : this.rareTarget;
     if (r) list.push({ id: 'luck-rare', x: r.x, y: r.y - 10, icon: '✨' });
+    list.push(...(this.scene.expMarkers?.() ?? [])); // Expedition: Pfeil zum Ausgang, wenn die Map leer ist
+    if (bonusActive('binoculars')) list.push(...this.binocularTargets());
     // versprochenes seltenes Tier: Pfeil zu dem Ort, an dem es auftauchen wird (solange es dort vorkommen kann)
     const promise = rarePromiseHere();
     const called = promise && CALLED[promise.species];
-    if (!r && called?.at && called.when(LEVEL)) {
+    if (!r && !this.scene.expMap && called?.at && called.when(LEVEL)) {
       const t = called.at(LEVEL);
       const w = tileToWorld(t.tx, t.ty);
       list.push({ id: 'luck-promise', x: w.x, y: w.y - 10, icon: '✨' });
@@ -431,17 +488,35 @@ export default class Luck {
     return list;
   }
 
+  // Bonus "Fernglas": Pfeile am Rand zu den wilden Tieren (je Herde, Kolonie oder Rudel einer; höchstens BINO_MAX, die nächsten)
+  binocularTargets() {
+    const s = this.scene;
+    const p = s.player;
+    const units = new Map();
+    for (const a of s.animals) {
+      if (a.state !== 'wild' || a.gone || !SHEET_OK(a.species)) continue;
+      const u = a.herd ?? a.colony ?? a.troop ?? a.school ?? a;
+      if (!units.has(u)) units.set(u, a);
+    }
+    // dazu versteckte Schlangen und Vogelspinnen (Expedition): Pfeil zum raschelnden Dickicht
+    const hidden = (s.expHiddenTargets?.() ?? []).map((h) => ({ a: { x: h.x, y: h.y, species: h.species, binoId: `t${h.key}` }, d: Math.hypot(h.x - p.x, (h.y - p.y) * 2) }));
+    return [...[...units.values()].map((a) => ({ a, d: Math.hypot(a.x - p.x, (a.y - p.y) * 2) })), ...hidden]
+      .sort((u, v) => u.d - v.d)
+      .slice(0, BINO_MAX)
+      .map(({ a }) => ({ id: `bino-${(a.binoId ??= ++binoId)}`, x: a.x, y: a.y - 10, icon: animalIconFit(a.species, 1.5), bino: true }));
+  }
+
   // das versprochene seltene Tier ist aufgetaucht (Animal.rollSkin): Pfeil darauf
   promiseKept(animal) {
     this.rareTarget = animal;
     animal.life = Math.max(animal.life ?? 0, RARE_LIFE);
     const info = skinInfo(animal.species, animal.skin);
-    this.scene.showToast(tr(`✨ Da ist es: ${info?.name ?? animal.species} – folge dem Pfeil!`, `✨ Here it is: ${info?.name ?? animal.species} – follow the arrow!`));
+    this.scene.showToast(tr(`✨ Da ist es: ${info?.name ?? animal.species}${follow(this.scene)}!`, `✨ Here it is: ${info?.name ?? animal.species}${followEn(this.scene)}!`));
   }
 
   // Zeilen für die Event-Anzeige oben links
   bannerLines() {
-    const lines = activeBoni().map(({ id, left }) => `${BONI[id].icon} ${BONI[id].name} · ${tr(`noch ${formatTime(left)}`, `${formatTime(left)} left`)}`);
+    const lines = activeBoni().map(({ id, left }) => `${BONI[id].icon} ${BONI[id].name} · ${left === Infinity ? runBonusTag() : tr(`noch ${formatTime(left)}`, `${formatTime(left)} left`)}`);
     const promise = rarePromiseHere();
     if (promise) lines.push(`✨ ${capital(skinInfo(promise.species, promise.skin)?.name ?? promise.species)} · ${tr('kommt noch', 'still to come')}`);
     return lines;
@@ -460,6 +535,9 @@ export default class Luck {
 }
 
 const capital = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+// Zusatz "folge dem Pfeil" – nicht auf den kleinen Expeditions-Maps (dort gibt es keinen Pfeil zum seltenen Tier)
+const follow = (s) => (s.expMap ? '' : ' – folge dem Pfeil');
+const followEn = (s) => (s.expMap ? '' : ' – follow the arrow');
 
 // Tierbild für die Karte; gibt es keins (z. B. kein eigenes Bild der Variante), das der Ersatz-Art
 function safeIcon(species, fallback = null) {
@@ -526,6 +604,7 @@ function makeTextures(scene) {
     c.fill();
     tex.refresh();
   }
+  // (das gemalte Lagerfeuer public/assets/campfire.png wird beim Start geladen; dieser Platzhalter nur, falls es fehlt)
   if (!scene.textures.exists('campfire')) {
     const tex = scene.textures.createCanvas('campfire', 56, 60);
     const c = tex.getContext();

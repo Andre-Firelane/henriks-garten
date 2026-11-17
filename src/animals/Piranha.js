@@ -71,7 +71,7 @@ export default class Piranha extends ReefFish {
     if (!t) return [];
     const c = tileToWorld(t.tx, t.ty);
     const school = { x: c.x, y: c.y, tx: t.tx, ty: t.ty, members: [] };
-    const n = Phaser.Math.Between(...SCHOOL_SIZE);
+    const n = Phaser.Math.Between(...(LEVEL.expedition ? [2, 3] : SCHOOL_SIZE)); // Expedition: kleiner
     const group = [];
     for (let i = 0; i < n; i++) {
       const a = new Piranha(scene, c.x, c.y, school);

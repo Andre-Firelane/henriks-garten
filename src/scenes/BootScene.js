@@ -7,6 +7,7 @@ import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
 import { TOYS, toyKey } from '../world/toys.js';
 import { game } from '../state.js';
 import { isActive } from '../world/events.js';
+import { LEVELS } from '../world/levels.js';
 
 // Handy und Tablet (Touch): WebP-Fassung statt PNG (etwa ein Viertel so groß, siehe tools/make-webp.py); der PC lädt PNG
 const USE_WEBP = matchMedia('(pointer: coarse)').matches;
@@ -72,7 +73,7 @@ export const groupsLoaded = (groups) => groups.every((g) => loaded.has(g));
 
 // Pakete, die ein Gebiet braucht: seine eigenen und die der Tiere, die dort stehen bzw. einem folgen (Gehege im Tierpark)
 export function levelGroups(level) {
-  const groups = new Set(LEVEL_GROUPS[level] ?? GROUP_ORDER);
+  const groups = new Set(LEVEL_GROUPS[level] ?? LEVEL_GROUPS[LEVELS[level]?.expedition] ?? GROUP_ORDER); // Expedition: wie ihre Welt
   for (const a of [...(game.levels[level]?.animals ?? []), ...game.followers]) {
     const group = a.farm ? 'misc' : SPECIES_GROUP[a.species];
     if (group) groups.add(group);
@@ -138,7 +139,8 @@ const PIXEL_ART = [
   'savanna_tallgrass', 'savanna_tallgrass_rain', 'savanna_tallgrass_dry', 'savanna_bush', 'savanna_bush_rain', 'savanna_shrub_rain',
   'savanna_kopje', 'savanna_termite', 'savanna_skull', 'savanna_ribs', 'savanna_pelvis', 'savanna_bones',
   'savanna_rock0', 'savanna_rock1', 'savanna_rock2', 'savanna_rock3', 'savanna_rock4',
-  'savanna_grave_patch',
+  'savanna_grave_patch', 'savanna_grave_patch_soft', // _soft: weich auslaufend (Expedition, tools/grave-patch-soft.py)
+  'exp_tent', 'exp_board', 'campfire', // Expedition: Zelt und Tafel im Camp, Lagerfeuer (auch Glücksbringer; tools/expedition-sprites.py)
   'planks', 'cat_tree', 'mesh_x', 'mesh_y', 'gate_y', 'net_x', 'net_y',
   'chain_x', 'chain_y', 'post_wood', 'post_mesh', 'post_net', 'post_chain',
   'gate_chain_x', 'gate_chain_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x', 'gate_net_y',

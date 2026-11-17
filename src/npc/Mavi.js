@@ -291,7 +291,7 @@ export default class Mavi {
   updateArrow() {
     const step = activeStep();
     let target = null;
-    if (step && !isSpeaking()) {
+    if (step && !isSpeaking() && !LEVEL.expedition) { // (in der Expedition zeigt das Camp selbst, wohin es geht)
       const goal = this.taskLevel(step);
       if (this.hasNews()) target = this.inOffice() && !this.officeOpen() ? this.scene.officeDoor : { x: this.sprite.x, y: this.sprite.y - this.sprite.displayHeight * this.sprite.originY - ARROW_GAP };
       else if (goal !== LEVEL_ID) target = this.carPoint();

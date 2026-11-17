@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { JUNGLE_TREES } from '../world/map.js';
+import { JUNGLE_TREES, LEVEL } from '../world/map.js';
 
 const CROWN_UP = 104; // Höhe der Baumkrone über dem Fuß des Urwaldbaums (Bild "jungle_tree")
 const TROOP_SIZE = [3, 4]; // so viele sind in einem Trupp
@@ -37,7 +37,7 @@ export default class Howler extends Animal {
     const first = Phaser.Utils.Array.GetRandom(free);
     if (!first) return [];
     const near = Phaser.Utils.Array.Shuffle(free.filter((t) => t !== first && Math.hypot(t.tx - first.tx, t.ty - first.ty) <= TROOP_RANGE));
-    const trees = [first, ...near].slice(0, Phaser.Math.Between(...TROOP_SIZE));
+    const trees = [first, ...near].slice(0, Phaser.Math.Between(...(LEVEL.expedition ? [2, 3] : TROOP_SIZE))); // Expedition: kleiner
     const troop = { members: [] };
     return trees.map((tree) => {
       const a = scene.createAnimal(species, 0, 0);

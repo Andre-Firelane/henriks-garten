@@ -1,0 +1,781 @@
+// Expeditionen (Test, nur Savanne): Camp und kleine feste Maps. Sie stehen wie die anderen Gebiete in LEVELS (siehe Ende
+// von levels.js), haben aber das Kennzeichen expedition: '<Biom>' – Tiere, Gehege, Bilder und Ladepakete richten sich dann
+// nach dem Biom (biomeOf in map.js). Das Wetter ist fest an die Map gebunden (fixedSeason), es wechselt nicht.
+// Regeln (Karten, Tierliste, Wagen) siehe expedition.js.
+//
+// home: so viele Fang-Einheiten jeder Art leben auf der Map (eine Herde, Kolonie oder ein Hyänenrudel zählt als eine –
+// man fängt daraus ohnehin nur ein Tier). Es kommen keine neuen nach; fehlt eine (weggelaufen), taucht sie wieder auf.
+// Übergänge: '@camp' führt zurück ins Camp, '@next' aus dem Camp weiter (vorher kommen die Karten).
+import { tr } from '../i18n.js';
+
+// Optik der Savanne je Wetter (wie in levels.js unter savanna bzw. savanna.seasons)
+const SAVANNA = {
+  hero: 'hero_savanna',
+  background: '#b89a52',
+  ambient: 'ambient_savanna',
+  ambientVolume: 0.35,
+  path: 'savanna_path',
+  flies: true,
+  enclosures: [],
+  toolSpots: [],
+};
+const LOOK = {
+  normal: { grass: ['sgrass0', 'sgrass1', 'sgrass2'] },
+  dry: {
+    grass: ['sdry0', 'sdry1', 'sdry2'],
+    objectKeys: { A: 'acacia_bare', ƚ: 'savanna_tallgrass_dry', Ƙ: 'dry_bush' },
+    fishIn: '≈',
+  },
+  rain: {
+    grass: ['sgrass_rain0', 'sgrass_rain1', 'sgrass_rain2'],
+    objectKeys: { ƚ: 'savanna_tallgrass_rain', Ƙ: 'savanna_bush_rain', v: 'savanna_shrub_rain' },
+    ambient: 'ambient_savanna_rain',
+    ambientVolume: 0.5,
+  },
+};
+
+// Dschungel (Expedition): Grundlage und Optik je Wetter (wie in levels.js unter jungle bzw. jungle.seasons)
+const JUNGLE = {
+  hero: 'hero_jungle',
+  background: '#2f5a24',
+  ambient: 'ambient_jungle',
+  ambientVolume: 0.7,
+  path: 'jungle_path',
+  water: ['water'],
+  // alles Wasser grünlich und fließend wie der Fluss im offenen Dschungel (auch kleine Gewässer: minSize 1)
+  flow: { frames: ['jungle_flow0', 'jungle_flow1', 'jungle_flow2', 'jungle_flow3'], ms: 280, minSize: 1 },
+  roundShore: true,
+  enclosures: [],
+  toolSpots: [],
+};
+const LOOK_J = {
+  normal: { grass: ['jgrass0', 'jgrass1', 'jgrass2'] },
+  rain: { grass: ['jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2'], ambient: 'ambient_savanna_rain', ambientVolume: 0.5 },
+  fog: { grass: ['jgrass0', 'jgrass1', 'jgrass2'], ambientVolume: 0.18 },
+};
+const jmap = (season, def) => withRoute({ ...JUNGLE, ...LOOK_J[season], expedition: 'jungle', fixedSeason: season, ...def });
+// Dschungel-Maps: Start auf dem Steg am Fluss-Einlauf (man kommt mit dem Kanu), Ausgang rechts
+const EDGE_J = {
+  start: { tx: 4, ty: 13 },
+  inlet: { from: { tx: -1.5, ty: 13 }, to: { tx: 2, ty: 13 } }, // Kanu: von dort über den Fluss bis an den Steg
+  exits: [{ tx: 27, ty: 13, to: '@camp', label: tr('Weiter zum nächsten Camp', 'On to the next camp') }],
+};
+
+// Fluss-Maps (Aras, Tukane): man fängt sie nur im Tiefflug über dem Wasser – am besten vom Kanu aus. Fluss in den Zeilen
+// 15 bis 18, Steg in Spalte 6; das Kanu gleitet von links heran und bleibt danach fahrbar (boat, wie im offenen Dschungel)
+const RIVER_J = { ty0: 15, ty1: 18, dockX: 6 };
+const EDGE_JR = {
+  start: { tx: 6, ty: 14 },
+  inlet: { from: { tx: -1.5, ty: 16 }, to: { tx: 6, ty: 16 } },
+  boat: { tx: 6, ty: 16 },
+  current: { tx: 1, ty: 0, speed: 10 }, // der Fluss treibt das Kanu langsam nach rechts
+  exits: [{ tx: 27, ty: 6, to: '@camp', label: tr('Weiter zum nächsten Camp', 'On to the next camp') }], // weit weg vom Fluss: der Ausgang ist eindeutig zu Fuß
+};
+
+// Start links, Ausgang rechts (gleich für alle Maps aus makeRows)
+const EDGE = { start: { tx: 2, ty: 13 }, exits: [{ tx: 27, ty: 13, to: '@camp', label: tr('Weiter zum nächsten Camp', 'On to the next camp') }] };
+
+// Zeilen einer 28 × 28-Map aus wenigen Angaben, mit festem Zufall (seed: jedes Mal dieselbe Map):
+// ponds/muds: Ellipsen [Mitte tx, Mitte ty, Halbachse x, Halbachse y] aus Wasser (~) bzw. Schlamm (≈); scatter: so viele
+// von jedem Zeichen verstreut; grass: so viele Flecken hohes Gras; keepFree(x, y): dort nichts hinstellen.
+// Rand aus Sträuchern mit ein paar Akazien und Felsbrocken; Start (links) und Ausgang (rechts) bleiben frei
+// palette: Rand und Hohes-Gras-Zeichen je Welt (PALETTE); inlet: Fluss-Einlauf links mit Steg (Dschungel: man kommt
+// mit dem Kanu an, siehe expArriveByCanoe in GardenScene)
+const PALETTE = {
+  savanna: { edge: 'v', edgeMix: [['A', 0.6], ['R', 1]], edgeChance: 0.14, grass: 'ƚ' },
+  jungle: { edge: 'k', edgeMix: [['J', 0.7], ['Ṁ', 1]], edgeChance: 0.45, grass: 'q' },
+};
+// river: Fluss quer durch die Map (Zeilen ty0 bis ty1, ganze Breite); clearing: freie Lichtung (Rechteck) mit Dickicht-Rand
+// (Lücken bleiben); stamp: festes Kartenstück { tx, ty, rows } (z. B. Wasserfall mit Felskante); shoreTrees: so viele
+// Urwaldbäume direkt am Wasser (Aras und Tukane sitzen nur in Uferbäumen, höchstens 3 Kacheln vom Wasser)
+// riverInlet: Fluss quer durch die Map (Zeilen ty0 bis ty1), man kommt mit dem Kanu von links und legt an einem Steg in
+// Spalte dockX an (der Steg ragt vom Ufer oben in den Fluss); docks: weitere Stege [[tx, ty], ...] zum Aus- und Einsteigen
+function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13 }) {
+  const P = PALETTE[palette];
+  const N = 28;
+  let st = seed >>> 0;
+  const rnd = () => {
+    st = (st + 0x6d2b79f5) >>> 0;
+    let t = st;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const g = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => (x === 0 || y === 0 || x === N - 1 || y === N - 1 ? P.edge : '.')));
+  for (let i = 0; i < 4 * N; i++) if (rnd() < P.edgeChance) {
+    const k = Math.floor(rnd() * 4);
+    const t = Math.floor(rnd() * N);
+    const [x, y] = [[t, 0], [t, N - 1], [0, t], [N - 1, t]][k];
+    const r = rnd();
+    g[y][x] = P.edgeMix.find(([, w]) => r < w)[0];
+  }
+  const ellipse = ([cx, cy, rx, ry], c) => {
+    for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) g[y][x] = c;
+  };
+  for (const m of muds) ellipse(m, '≈');
+  for (const p of ponds) ellipse(p, '~');
+  if (river) for (let y = river.ty0; y <= river.ty1; y++) for (let x = 0; x < N; x++) g[y][x] = '~';
+  // Fluss mit Kurven: Ober- und Unterkante schwingen je Spalte (zwei Sinuswellen, je Map anders); am Einlauf bis
+  // hinter den Steg bleibt er gerade (dort gleitet das Kanu herein)
+  const bank = [];
+  if (riverInlet) {
+    const { ty0, ty1, dockX } = riverInlet;
+    const ph = rnd() * 6.3;
+    const ph2 = rnd() * 6.3;
+    for (let x = 0; x < N; x++) {
+      const k = Math.min(1, Math.max(0, (x - dockX - 1) / 4)); // sanft einsetzen
+      const mid = k * (2.4 * Math.sin(x * 0.23 + ph) + 0.6 * Math.sin(x * 0.52 + ph2)); // flach genug: je Spalte höchstens eine Kachel
+      const wide = k * Math.round(1.1 * Math.sin(x * 0.37 + ph2));
+      const top = Math.round(ty0 + mid - wide / 2);
+      const bot = Math.round(ty1 + mid + wide / 2);
+      bank[x] = { top, bot };
+      for (let y = top; y <= bot; y++) g[y][x] = '~';
+    }
+    g[ty0 - 1][dockX] = 'Ŝ';
+    g[ty0][dockX] = 'Ŝ';
+    // Stege an den Ufern: [x, 'n'|'s'] – Nordufer: Landkachel und erste Wasserkachel, Südufer ebenso
+    for (const [x, side] of docks) {
+      const { top, bot } = bank[x];
+      if (side === 'n') {
+        g[top - 1][x] = 'Ŝ';
+        g[top][x] = 'Ŝ';
+      } else {
+        g[bot][x] = 'Ŝ';
+        g[bot + 1][x] = 'Ŝ';
+      }
+    }
+  } else for (const [x, y] of docks) g[y][x] = 'Ŝ';
+  if (stamp) stamp.rows.forEach((r, dy) => [...r].forEach((c, dx) => (g[stamp.ty + dy][stamp.tx + dx] = c)));
+  const inClearing = (x, y) => clearing && x >= clearing.tx0 && x <= clearing.tx1 && y >= clearing.ty0 && y <= clearing.ty1;
+  // Fluss-Einlauf links (Zeilen 12 bis 14, bis Spalte 4), darin ein Steg (Spalten 3 und 4, Zeile 13) zum Ufer
+  if (inlet) {
+    for (let y = 12; y <= 14; y++) for (let x = 0; x <= 4; x++) g[y][x] = '~';
+    g[13][3] = 'Ŝ';
+    g[13][4] = 'Ŝ';
+  }
+  // am Start (mit Fluss-Einlauf: größer, damit kein Baum vor dem Steg steht) und am Ausgang bleibt es frei
+  // (vor dem Steg – zur Kamera hin – noch weiter frei, sonst steht ein Baum zwischen Kamera und Henrik)
+  const nearStart = (x, y) => (riverInlet ? x <= riverInlet.dockX + 5 && y >= riverInlet.ty0 - 5 && y < riverInlet.ty0 : inlet ? x <= 11 && y >= 10 && y <= 17 : x <= 4 && Math.abs(y - 13) <= 2);
+  const nearEnd = (x, y) => nearStart(x, y) || (x >= N - 6 && y >= exitY - 2 && y <= exitY + 4); // vor dem Ausgang (zur Kamera hin) mehr frei
+  const free = (x, y) => g[y][x] === '.' && !nearEnd(x, y) && !keepFree(x, y) && !inClearing(x, y);
+  const spot = () => {
+    for (let i = 0; i < 200; i++) {
+      const x = 2 + Math.floor(rnd() * (N - 4));
+      const y = 2 + Math.floor(rnd() * (N - 4));
+      // große Dinge nicht direkt ans Wasser (Ufer bleibt begehbar)
+      if (free(x, y) && ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => '~≈'.includes(g[y + dy][x + dx]))) return [x, y];
+    }
+    return null;
+  };
+  // Bäche (Dschungel): kurze, gewundene Wasserläufe (2 Kacheln breit), wie die Kanäle im offenen Dschungel
+  // würde etwas Hohes auf (x, y) Wasser verdecken? (Wasser dahinter, also bis 2 Kacheln nach links oder oben)
+  const hidesWater = (x, y) => [0, 1, 2].some((a) => [0, 1, 2].some((b) => (a || b) && g[y - b]?.[x - a] === '~'));
+  const HIGH = 'JṀḢ';
+  for (let i = 0; i < creeks; i++) {
+    const s = spot();
+    if (!s) continue;
+    let [x, y] = s;
+    let dir = Math.floor(rnd() * 4);
+    const len = 6 + Math.floor(rnd() * 6);
+    for (let n = 0; n < len; n++) {
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+        const cx = x + dx;
+        const cy = y + dy;
+        if (cx > 2 && cy > 2 && cx < N - 3 && cy < N - 3 && free(cx, cy)) g[cy][cx] = '~';
+      }
+      if (rnd() < 0.35) dir = (dir + (rnd() < 0.5 ? 1 : 3)) % 4;
+      const [dx, dy] = [[1, 0], [0, 1], [-1, 0], [0, -1]][dir];
+      x = Math.max(3, Math.min(N - 5, x + dx));
+      y = Math.max(3, Math.min(N - 5, y + dy));
+    }
+  }
+  // Mangroven direkt am Ufer (Stelzwurzeln)
+  if (mangroves) {
+    const shore = [];
+    for (let y = 2; y < N - 2; y++) for (let x = 2; x < N - 2; x++) if (free(x, y) && !hidesWater(x, y) && [[1, 0], [0, 1]].some(([dx, dy]) => g[y + dy][x + dx] === '~') && ![[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(([dx, dy]) => g[y + dy][x + dx] === 'Ŝ')) shore.push([x, y]); // (nicht neben Stegen)
+    for (let i = 0; i < mangroves && shore.length; i++) {
+      const [x, y] = shore.splice(Math.floor(rnd() * shore.length), 1)[0];
+      if ([-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => g[y + dy][x + dx] === 'Ṁ'))) { i--; continue; } // einzeln, keine Hecke
+      g[y][x] = 'Ṁ';
+    }
+  }
+  for (let i = 0; i < grass; i++) {
+    const s = spot();
+    if (!s) continue;
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]]) if (rnd() < 0.85 && free(s[0] + dx, s[1] + dy)) g[s[1] + dy][s[0] + dx] = P.grass;
+  }
+  // Uferbäume: freie Kacheln 1 bis 2 Kacheln neben Wasser (nicht über der Map-Mitte: dort zählt es für Aras nicht)
+  if (shoreTrees) {
+    const shore = [];
+    for (let y = 9; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
+      if (!free(x, y)) continue;
+      let d = 9;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (g[y + dy]?.[x + dx] === '~' && y + dy > 8) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dy)));
+      if (d >= 1 && d <= 2) shore.push([x, y]);
+    }
+    // zwei Drittel am hinteren Ufer (verdecken das Wasser nicht), der Rest egal wo
+    const back = shore.filter(([x, y]) => !hidesWater(x, y));
+    for (let i = 0; i < shoreTrees; i++) {
+      const list = i < (shoreTrees * 2) / 3 && back.length ? back : shore;
+      if (!list.length) break;
+      const [x, y] = list[Math.floor(rnd() * list.length)];
+      for (const l of [back, shore]) { const j = l.findIndex(([a, b]) => a === x && b === y); if (j >= 0) l.splice(j, 1); }
+      g[y][x] = 'J';
+    }
+  }
+  // Lichtung: Rand aus Dickicht (mit Lücken), innen bleibt frei
+  if (clearing) {
+    const { tx0, ty0, tx1, ty1 } = clearing;
+    for (let y = ty0 - 1; y <= ty1 + 1; y++) for (let x = tx0 - 1; x <= tx1 + 1; x++) {
+      if (inClearing(x, y) || g[y]?.[x] !== '.' || nearEnd(x, y)) continue;
+      if (rnd() < 0.7) g[y][x] = 'Ď';
+    }
+  }
+  // Dickicht-Massen (Dschungel, wie im offenen Dschungel): große, unregelmäßige Flächen Dickicht (5 bis 16 Kacheln),
+  // gewachsen von einer Kachel aus; darin ab und zu ein Busch oder Urwaldbaum
+  for (let i = 0; i < masses; i++) {
+    const s = spot();
+    if (!s) continue;
+    const size = 5 + Math.floor(rnd() * 12);
+    const cells = [s];
+    g[s[1]][s[0]] = 'Ď';
+    for (let n = 1, tries = 0; n < size && tries < 80; tries++) {
+      const [cx, cy] = cells[Math.floor(rnd() * cells.length)];
+      const [dx, dy] = [[1, 0], [-1, 0], [0, 1], [0, -1]][Math.floor(rnd() * 4)];
+      const x = cx + dx;
+      const y = cy + dy;
+      if (x < 1 || y < 1 || x > N - 2 || y > N - 2 || !free(x, y)) continue;
+      g[y][x] = rnd() < 0.08 ? 'k' : rnd() < 0.05 ? 'J' : 'Ď';
+      cells.push([x, y]);
+      n++;
+    }
+  }
+  // Dickicht-Inseln (Dschungel): je ein paar Kacheln Ď beieinander
+  for (let i = 0; i < thickets; i++) {
+    const s = spot();
+    if (!s) continue;
+    for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [0, -1], [2, 1]]) if (rnd() < 0.75 && free(s[0] + dx, s[1] + dy)) g[s[1] + dy][s[0] + dx] = 'Ď';
+  }
+  for (const [c, n] of Object.entries(scatter)) {
+    for (let i = 0; i < n; i++) {
+      let s = spot();
+      for (let t = 0; s && HIGH.includes(c) && hidesWater(s[0], s[1]) && t < 20; t++) s = spot(); // nichts Hohes vor Wasser
+      if (s && !(HIGH.includes(c) && hidesWater(s[0], s[1]))) g[s[1]][s[0]] = c;
+    }
+  }
+  if (!inlet) g[13][0] = P.edge;
+  g[exitY][N - 1] = 'X';
+  return g.map((r) => r.join(''));
+}
+const map = (season, def) => withRoute({ ...SAVANNA, ...LOOK[season], expedition: 'savanna', fixedSeason: season, ...def });
+
+// Maps (mit tools): ein durchgehender Weg vom Start zum Ausgang (um Wasser und Hindernisse herum, möglichst wenige Knicke)
+// und die Werkzeugkiste am Weg, möglichst in der Mitte der Map (sonst läuft man zu viel)
+const ROUTE_FREE = '.yƚqnľfg'; // darüber darf der Weg (Gras, Büschel, hohes Gras, Farn, Bodenpflanzen, Blumen)
+const TURN = 3; // so viel teurer ist ein Knick als ein gerades Stück
+const SHORE_COST = 4; // nicht am Wasser entlang (sonst ist unklar, ob man laufen oder fahren soll)
+const THICKET_COST = 6; // durch Dickicht nur, wenn es sonst einen großen Umweg gäbe (der Weg schneidet es dann frei)
+const TALL = 'AǍRƲƦŢuJkṀḢḟĎ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue): davor wird die Kiste verdeckt
+// steht vor der Kachel (zur Kamera hin, bis 2 Kacheln) etwas Hohes, das die Kiste verdecken würde?
+// Ein Objekt auf (x + i, y + j) steht vor der Kachel (x, y), wenn i + j > 0; es verdeckt sie, wenn es schmal genug
+// daneben steht (|i − j| ≤ 1, eine Kachel sind 32 Pixel zur Seite) und hoch genug ist (i + j Kacheln sind (i + j) · 16
+// Pixel tiefer im Bild). REACH: bis zu welcher Summe i + j das Objekt (Krone) eine Kiste noch verdeckt
+const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4 };
+export const coveredAt = (get, x, y) => {
+  for (let i = -1; i <= 9; i++) for (let j = -1; j <= 9; j++) {
+    if (i + j <= 0 || Math.abs(i - j) > 1) continue;
+    const c = get(x + i, y + j) ?? '';
+    if ((TALL.includes(c) || c === 'q') && i + j <= (REACH[c] ?? 2)) return true; // (auch hohes Gras direkt davor)
+  }
+  return false;
+};
+const hiddenAt = (g, x, y) => coveredAt((a, b) => g[b]?.[a], x, y);
+function withRoute(def) {
+  if (!def.tools) return def;
+  const g = def.rows.map((r) => [...r].map((c) => (c === '#' || c === 'e' ? '.' : c)));
+  const H = g.length;
+  const W = g[0].length;
+  const { tx: sx, ty: sy } = def.start;
+  const { tx: ex, ty: ey } = def.exits[0];
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const ok = (x, y) => (x === ex && y === ey) || (x > 0 && y > 0 && x < W - 1 && y < H - 1 && (ROUTE_FREE.includes(g[y][x]) || g[y][x] === 'Ď'));
+  // Dijkstra über (Kachel, Richtung)
+  const key = (x, y, d) => (y * W + x) * 4 + d;
+  const dist = new Map();
+  const from = new Map();
+  let open = [];
+  for (let d = 0; d < 4; d++) {
+    dist.set(key(sx, sy, d), 0);
+    open.push([0, sx, sy, d]);
+  }
+  let end = null;
+  while (open.length) {
+    open.sort((p, q) => p[0] - q[0]);
+    const [c, x, y, d] = open.shift();
+    if (c > dist.get(key(x, y, d))) continue;
+    if (x === ex && y === ey) {
+      end = key(x, y, d);
+      break;
+    }
+    DIRS.forEach(([dx, dy], nd) => {
+      const nx = x + dx;
+      const ny = y + dy;
+      if (!ok(nx, ny)) return;
+      const shore = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(([a, b]) => g[ny + b]?.[nx + a] === '~');
+      const nc = c + 1 + (nd === d ? 0 : TURN) + (g[ny][nx] === 'Ď' ? THICKET_COST : 0) + (shore ? SHORE_COST : 0);
+      const k = key(nx, ny, nd);
+      if (nc >= (dist.get(k) ?? Infinity)) return;
+      dist.set(k, nc);
+      from.set(k, key(x, y, d));
+      open.push([nc, nx, ny, nd]);
+    });
+  }
+  const path = [];
+  for (let k = end; k != null; k = from.get(k)) path.push({ x: Math.floor(k / 4) % W, y: Math.floor(Math.floor(k / 4) / W) });
+  for (const { x, y } of path) if (ROUTE_FREE.includes(g[y][x]) || g[y][x] === 'Ď') g[y][x] = '#'; // (Steg und Ausgang bleiben)
+  // Kiste: freie Kachel direkt am Weg, so nah wie möglich an der Mitte
+  const onPath = new Set(path.map(({ x, y }) => `${x},${y}`));
+  let best = null;
+  for (const { x, y } of path) {
+    for (const [dx, dy] of DIRS) {
+      const cx = x + dx;
+      const cy = y + dy;
+      if (onPath.has(`${cx},${cy}`) || !ok(cx, cy) || g[cy][cx] === 'Ď' || (cx === ex && cy === ey) || hiddenAt(g, cx, cy)) continue;
+      const dd = Math.hypot(cx - W / 2, cy - H / 2);
+      if (!best || dd < best.dd) best = { x: cx, y: cy, dd };
+    }
+  }
+  if (best) g[best.y][best.x] = 'e';
+  return { ...def, rows: g.map((r) => r.join('')), chests: best ? [{ tx: best.x, ty: best.y, tools: def.tools }] : [] };
+}
+const BACK = (tx, ty) => [{ tx, ty, to: '@camp', label: tr('Weiter zum nächsten Camp', 'On to the next camp') }];
+
+// Ausgang auf der gegenüberliegenden Seite (rechts, letzte Spalte); links am Start kein Übergang mehr (den Weg legt withRoute)
+function eastExit(rows, ty) {
+  return rows.map((r, y) => {
+    if (y !== ty) return r;
+    const c = [...r];
+    c[0] = 'v';
+    c[c.length - 1] = 'X';
+    return c.join('');
+  });
+}
+
+const BIG_WAGON = (game) => !!game.expedition?.boni?.includes('bigWagon'); // fünfter Käfig im Camp
+
+// Käfige im Camp (je einer pro Tierart): je 3 × 3 Kacheln innen (Gitterwand), oben links die Startkachel; unten rechts
+// ein Wassertrog (Krokodil, Nilpferd, Fische)
+const CAGES = [[3, 3], [7, 3], [3, 7], [7, 7]];
+
+// kleines Camp: links die 4 Käfige (2 × 2) und darunter das Sammelgehege, daneben Platz für den fünften Käfig (Bonus
+// "Größerer Wagen", siehe runPatches), rechts das Zelt (man kommt davor an),
+// die Tafel in der südlichen Ecke (dahinter ist frei: sie verdeckt nichts), ein kurzer Weg zum Ausgang, unten das Auto
+function campRows() {
+  const W = 18;
+  const H = 20;
+  const g = Array.from({ length: H }, (_, y) => Array.from({ length: W }, (_, x) => (y === 0 || y === H - 1 || x === 0 || x === W - 1 ? 'v' : '.')));
+  const put = (x, y, c) => (g[y][x] = c);
+  for (const [x, y] of [[0, 0], [W - 1, 0], [0, H - 1], [8, 0], [0, 7], [16, 2], [15, 1]]) put(x, y, 'A'); // zwei hinter dem Zelt; keine vor der Tafel und den Gehegen
+  for (const [x, y] of [[4, 0], [14, 0], [W - 1, 4], [5, H - 1]]) put(x, y, 'R');
+  // Käfige: Gitterwände in den Zeilen 2, 6, 10 (entlang tx) und den Spalten 2, 6, 10 (entlang ty)
+  for (const y of [2, 6, 10]) for (let x = 2; x <= 10; x++) put(x, y, '_');
+  for (const x of [2, 6, 10]) for (const y of [3, 4, 5, 7, 8, 9]) put(x, y, '!');
+  for (const [x, y] of CAGES) put(x + 2, y + 2, 'o'); // Wassertrog
+  // Sammelgehege (Holzzaun) für die Tiere, die nicht in den Wagen passen
+  for (const y of [12, 16]) for (let x = 2; x <= 7; x++) put(x, y, '-');
+  for (const x of [2, 7]) for (const y of [13, 14, 15]) put(x, y, '|');
+  // Zelt (3 × 3, fest), Tafel in der südlichen Ecke, Weg vom Zelteingang zum Ausgang rechts
+  for (let y = 3; y <= 5; y++) for (let x = 13; x <= 15; x++) put(x, y, 'V');
+  put(16, 17, 'V');
+  for (const [x, y] of [[14, 8], [14, 9], [15, 9], [16, 9]]) put(x, y, '#');
+  put(W - 1, 9, 'X');
+  for (const [x, y] of [[13, 1], [1, 11], [5, 18], [11, 18]]) put(x, y, 'y');
+  return g.map((r) => r.join(''));
+}
+
+// vorderer Waldrand des Dschungel-Camps: niedrige, gemischte Pflanzen (Büsche, Hibiskus, Farne, Bodenpflanzen, Blumen)
+const FRONT_PLANTS = ['k', 'ḟ', 'n', 'k', 'ľ', 'k', 'f', 'n', 'k', 'ḟ', 'g', 'ľ', 'k'];
+
+// Dschungel-Camp: wie das der Savanne, aber ringsum dichter Urwald (zwei Reihen) und unten ein Flussarm mit Steg
+function jungleCampRows() {
+  const W = 18;
+  const H = 22;
+  const g = Array.from({ length: H }, () => Array.from({ length: W }, () => '.'));
+  const put = (x, y, c) => (g[y][x] = c);
+  // Urwald-Ring: hinten (oben und links im Bild) hohe Urwaldbäume und Büsche, vorn (unten und rechts) nur niedrige Büsche,
+  // sonst verdecken die Bäume Fluss, Kanu, Wasserflugzeug und Tafel
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const ring = Math.min(x, y, W - 1 - x, H - 1 - y);
+    if (ring > 1) continue;
+    const front = x >= W - 2 || y >= H - 2;
+    put(x, y, front ? FRONT_PLANTS[(x * 7 + y * 11 + ring * 5) % FRONT_PLANTS.length] : ring === 0 ? ((x + y) % 2 ? 'J' : 'k') : (x * 3 + y) % 4 === 0 ? 'J' : 'k');
+  }
+  // Flussarm unten (Zeilen 17 bis 19), quer durch den Wald; Steg zum Kanu
+  for (let y = 17; y <= 19; y++) for (let x = 0; x < W; x++) put(x, y, '~');
+  put(13, 17, 'Ŝ');
+  put(13, 18, 'Ŝ');
+  // Käfige (wie in der Savanne)
+  for (const y of [2, 6, 10]) for (let x = 2; x <= 10; x++) put(x, y, '_');
+  for (const x of [2, 6, 10]) for (const y of [3, 4, 5, 7, 8, 9]) put(x, y, '!');
+  for (const [x, y] of CAGES) put(x + 2, y + 2, 'o');
+  // Sammelgehege
+  for (const y of [12, 16]) for (let x = 2; x <= 7; x++) put(x, y, '-');
+  for (const x of [2, 7]) for (const y of [13, 14, 15]) put(x, y, '|');
+  // Zelt, Tafel, Weg vom Zelt zum Steg
+  for (let y = 3; y <= 5; y++) for (let x = 13; x <= 15; x++) put(x, y, 'V');
+  put(15, 15, 'V');
+  for (const [x, y] of [[14, 8], [14, 9], [14, 10], [14, 11], [14, 12], [14, 13], [13, 14], [14, 14], [13, 15], [13, 16]]) put(x, y, '#');
+  // etwas Grün in der Lichtung
+  for (const [x, y] of [[12, 2], [3, 11], [9, 11], [16, 9], [11, 14], [12, 12]]) if (g[y][x] === '.') put(x, y, 'n');
+  for (const [x, y] of [[15, 7], [11, 1], [8, 15]]) if (g[y][x] === '.') put(x, y, 'ľ');
+  return g.map((r) => r.join(''));
+}
+
+export const EXPEDITION_LEVELS = {
+  // Camp (provisorisch, zieht mit: nach jeder Map steht es weiter vorn): Zelt mit der Fortschritts-Tafel, Lagerfeuer,
+  // das Auto (Jeep mit Anhänger: Expedition beenden) und der Wagen als 6 kleine Gitterkäfige (je ein Tier, siehe CAGES);
+  // wer nicht mehr hineinpasst, wartet im Sammelgehege. Man kommt vor dem Zelt an, rechts daneben geht es weiter
+  savanna_camp: map('normal', {
+    name: tr('Savannen-Expedition', 'Savanna Expedition'),
+    camp: true,
+    car: { tx: 15.6, ty: 12, texture: 'car_zoo', frame: 0, scale: 1.1, arrive: { tx: 14, ty: 7 } }, // mit dem Auto: Ankunft vor dem Zelt
+    map: { x: 62, y: 50, icon: 'lion' },
+    unlockWith: 'savanna', // auf der Weltkarte erst, wenn die Savanne offen ist
+    rows: campRows(),
+    start: { tx: 14, ty: 7 }, // vor dem Zelteingang
+    campfire: { tx: 12, ty: 9 },
+    tent: { tx: 14, ty: 4 }, // Mitte des Zelts (3 × 3 Kacheln, fest)
+    board: { tx: 16, ty: 17 }, // Fortschritts-Tafel in der südlichen Ecke
+    enclosures: [
+      ...CAGES.map(([tx, ty], i) => ({ id: `cage${i}`, name: tr('Käfig', 'Cage'), species: null, seed: { tx, ty }, cage: i })),
+      { id: 'corral', name: tr('Sammelgehege', 'Holding pen'), species: null, seed: { tx: 4, ty: 14 }, corral: true },
+      { id: 'cage4', name: tr('Käfig', 'Cage'), species: null, seed: { tx: 9, ty: 13 }, cage: 4, when: BIG_WAGON },
+    ],
+    // fünfter Käfig neben dem Sammelgehege, nur mit dem Bonus "Größerer Wagen"
+    runPatches: [{ tx: 8, ty: 12, rows: ['_____', '!...!', '!...!', '!..o!', '_____'], when: BIG_WAGON }],
+    cageAreas: [{ tx0: 1, ty0: 1, tx1: 11, ty1: 11 }, { tx0: 7, ty0: 11, tx1: 13, ty1: 17 }], // hier öffnet die Aktionstaste den Wagen
+    cageCenter: { tx: 8, ty: 8 }, // Pfeil über dem untersten Käfig (vom Zelt aus im Bild; weiter oben sieht man ihn nicht)
+    exits: [{ tx: 17, ty: 9, to: '@next', label: tr('Tiefer in die Savanne', 'Deeper into the savanna') }],
+    spawn: { population: 0, weights: {} },
+  }),
+
+  // Dschungel-Camp: Lichtung, ringsum dichter Urwald; unten fließt ein Flussarm – dort liegen das Kanu (weiter, siehe
+  // canoe) und das Wasserflugzeug (Expedition beenden). Käfige, Zelt, Tafel wie in der Savanne
+  jungle_camp: jmap('normal', {
+    name: tr('Dschungel-Expedition', 'Jungle Expedition'),
+    camp: true,
+    car: { tx: 16.4, ty: 18.1, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 14, ty: 7 } }, // rechts neben dem Steg: vom Ufer aus erreichbar
+    map: { x: 30, y: 64, icon: 'macaw' },
+    unlockWith: 'jungle',
+    rows: jungleCampRows(),
+    start: { tx: 14, ty: 7 },
+    campfire: { tx: 12, ty: 9 },
+    tent: { tx: 14, ty: 4 },
+    board: { tx: 15, ty: 15 },
+    canoe: { tx: 12.2, ty: 18.6, board: { tx: 13, ty: 18 } }, // Kanu links am Steg (rechts liegt das Wasserflugzeug); board: dort steht man zum Einsteigen
+    enclosures: [
+      ...CAGES.map(([tx, ty], i) => ({ id: `cage${i}`, name: tr('Käfig', 'Cage'), species: null, seed: { tx, ty }, cage: i })),
+      { id: 'corral', name: tr('Sammelgehege', 'Holding pen'), species: null, seed: { tx: 4, ty: 14 }, corral: true },
+      { id: 'cage4', name: tr('Käfig', 'Cage'), species: null, seed: { tx: 9, ty: 13 }, cage: 4, when: BIG_WAGON },
+    ],
+    runPatches: [{ tx: 8, ty: 12, rows: ['_____', '!...!', '!...!', '!..o!', '_____'], when: BIG_WAGON }],
+    cageAreas: [{ tx0: 1, ty0: 1, tx1: 11, ty1: 11 }, { tx0: 7, ty0: 11, tx1: 12, ty1: 16 }],
+    cageCenter: { tx: 8, ty: 8 },
+    exits: [],
+    campHint: tr('⛺ Willkommen im Dschungel-Camp! Unten am Steg liegt das Kanu – damit geht es tiefer in den Dschungel. Die Tafel zeigt deinen Weg.', '⛺ Welcome to the jungle camp! The canoe is down at the dock – it takes you deeper into the jungle. The board shows your route.'),
+    spawn: { population: 0, weights: {} },
+  }),
+
+  // Urwaldriesen: dichter Wald aus großen Urwaldbäumen – oben schläft der Jaguar, Brüllaffen-Trupps sitzen in den Kronen
+  jx_giants: jmap('normal', {
+    name: tr('Urwaldriesen', 'Jungle Giants'),
+    home: { jaguar: 1, howler: 2 },
+    rows: makeRows({ seed: 101, creeks: 2, mangroves: 8, palette: 'jungle', inlet: true, masses: 7, thickets: 2, scatter: { J: 50, k: 22, Ḣ: 8, ḟ: 6, n: 50, ľ: 30, f: 10, g: 3, r: 2 }, grass: 7 }),
+    ...EDGE_J,
+    tools: ['net', 'lasso', 'banana'],
+  }),
+
+  // Dickicht: viele Dickicht-Inseln; Schlangen und Vogelspinnen verstecken sich darin – wo eine sitzt, raschelt es
+  // (siehe expRustle in GardenScene); freischlagen, dann fängt man sie mit dem Kescher
+  jx_thicket: jmap('normal', {
+    name: tr('Dickicht', 'Thicket'),
+    home: { snake: 2, tarantula: 2 },
+    rows: makeRows({ seed: 113, creeks: 1, mangroves: 5, palette: 'jungle', inlet: true, masses: 6, thickets: 9, scatter: { J: 26, k: 18, Ḣ: 7, ḟ: 5, n: 45, ľ: 28, f: 8, r: 2 }, grass: 6 }),
+    ...EDGE_J,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Wasserfall: oben links die Felskante mit Wasserfall und Becken (wie im offenen Dschungel); wenn die Sonne kommt,
+  // sonnen sich dort Leguane (versteckt in Farn und Pflanzen, siehe WaterfallSun.js); Brüllaffen in den Kronen
+  jx_waterfall: jmap('normal', {
+    name: tr('Wasserfall', 'Waterfall'),
+    home: { iguana: 2, howler: 1 },
+    rows: makeRows({
+      seed: 127,
+      palette: 'jungle',
+      inlet: true,
+      stamp: {
+        tx: 0,
+        ty: 0,
+        rows: [
+          'kJkkJkkJkkJk',
+          'JŔŔŔŔŔŔŔŔk..',
+          'kŔŔ.ŴnḢrĎĎJ.', // (Sonnenfelsen wie im offenen Dschungel als normale Steine: der Sonnenfelsen gehört zum Bambuswald-Paket)
+          'kŔr~~~~ĎĎ.J.',
+          'JŔr~~~~nn.q.',
+          'kŔn~~~Ď.Jq..',
+          'kŔḟnĎr.nnn..',
+          'JŔĎĎĎnq.nľľ.',
+          'k...........',
+        ],
+      },
+      ponds: [[20, 21, 3.5, 2]], // Teich unten
+      shoreTrees: 3,
+      creeks: 1,
+      mangroves: 7,
+      masses: 6,
+      thickets: 2,
+      scatter: { J: 28, k: 18, Ḣ: 7, ḟ: 6, n: 44, ľ: 28, f: 10, r: 2 },
+      grass: 6,
+    }),
+    ...EDGE_J,
+    tools: ['net', 'lasso', 'banana'],
+    flow: { ...JUNGLE.flow, except: { tx0: 0, ty0: 0, tx1: 9, ty1: 7 } }, // das Becken am Wasserfall bleibt blau
+    waterfallSun: { tx0: 1, ty0: 1, tx1: 9, ty1: 7, iguanas: 2 }, // Sonne am Wasserfall: dort verstecken sich die Leguane
+  }),
+
+  // Ameisenbär-Lichtung: offene Lichtung mit Farnen, unten ein Teich; am Rand schläft ein Jaguar in einem Urwaldbaum
+  jx_clearing: jmap('normal', {
+    name: tr('Ameisenbär-Lichtung', 'Anteater Clearing'),
+    home: { anteater: 2, jaguar: 1 },
+    rows: makeRows({ seed: 139, creeks: 1, mangroves: 7, palette: 'jungle', inlet: true, ponds: [[18, 21, 4, 2.4], [6, 5, 2, 1.3]], shoreTrees: 3, masses: 5, thickets: 2, scatter: { J: 26, k: 16, r: 4, Ḣ: 6, ḟ: 5, n: 46, ľ: 30, f: 12, g: 6 }, grass: 8 }),
+    ...EDGE_J,
+    tools: ['net', 'lasso', 'banana'],
+  }),
+
+  // Piranha-Fluss (Starkregen): man kommt mit dem Kanu über den Fluss, der quer durch die Map fließt – Piranha-Schwärme
+  // (mit der Angel), Tukane in den Uferbäumen auf beiden Seiten; fangen im Tiefflug über dem Wasser, am besten vom Kanu aus
+  jx_river: jmap('rain', {
+    name: tr('Piranha-Fluss', 'Piranha River'),
+    home: { piranha: 2, toucan: 2 },
+    rows: makeRows({ seed: 151, creeks: 1, mangroves: 9, palette: 'jungle', riverInlet: RIVER_J, exitY: 6, docks: [[15, 's'], [22, 'n']], shoreTrees: 8, masses: 6, thickets: 2, scatter: { J: 18, k: 22, Ḣ: 7, ḟ: 5, n: 42, ľ: 26, f: 8, r: 2 }, grass: 6 }),
+    ...EDGE_JR,
+    tools: ['rod', 'net', 'banana'],
+  }),
+
+  // Ara-Fluss: wie der Piranha-Fluss, aber bei Sonne – Ara-Paare in den Uferbäumen fliegen ab und zu ans andere Ufer, im
+  // Tiefflug übers Wasser (mit dem Kescher vom Kanu aus); dazu ein Brüllaffen-Trupp
+  jx_macaw: jmap('normal', {
+    name: tr('Ara-Fluss', 'Macaw River'),
+    home: { macaw: 2, howler: 1 },
+    rows: makeRows({ seed: 173, creeks: 1, mangroves: 9, palette: 'jungle', riverInlet: RIVER_J, exitY: 6, docks: [[14, 's'], [21, 'n']], shoreTrees: 8, masses: 6, thickets: 2, scatter: { J: 18, k: 22, Ḣ: 8, ḟ: 6, n: 42, ľ: 26, f: 10, g: 3 }, grass: 6 }),
+    ...EDGE_JR,
+    tools: ['net', 'lasso', 'banana'],
+  }),
+
+  // Nebellichtung (Nebel): in der Mitte eine Lichtung hinter Dickicht – dort leben die Gorillas (mit der Trommel rufen);
+  // Brüllaffen in den Bäumen (im Nebel selten ein Gibbon)
+  jx_fog: jmap('fog', {
+    name: tr('Nebellichtung', 'Misty Clearing'),
+    home: { gorilla: 2, howler: 1 },
+    rows: makeRows({ seed: 163, creeks: 1, mangroves: 6, palette: 'jungle', inlet: true, masses: 6, thickets: 2, clearing: { tx0: 15, ty0: 16, tx1: 22, ty1: 22 }, scatter: { J: 32, k: 18, Ḣ: 7, ḟ: 5, n: 40, ľ: 26, f: 8, r: 2 }, grass: 6 }),
+    ...EDGE_J,
+    tools: ['drum', 'lasso', 'banana'],
+    gorillas: { tx0: 15, ty0: 16, tx1: 22, ty1: 22, count: 2 }, // Lichtung der Gorillas (siehe Gorilla.js)
+  }),
+
+  // Akazienhain: viele Akazien – Giraffen fressen an ihnen, Löwen dösen in ihrem Schatten
+  sx_acacia: map('normal', {
+    name: tr('Akazienhain', 'Acacia Grove'),
+    home: { giraffe: 2, lion: 2 },
+    rows: eastExit([
+      'AvvvRvvvvAvvvvvRvvvvAvvvvRvA',
+      'v...y......A.....y.....A...v',
+      'v..A....y......ƚƚ.........Ʋv',
+      'v.......ƚƚ...........y.....v',
+      'R..y...ƚƚƚ....A.......Ţ....v',
+      'v............y.............R',
+      'v.A....Ƙ...........A....y..v',
+      'v..........y...............v',
+      'v....A.........ƚƚ...Ʀ......v',
+      'v.y..........ƚƚƚƚ..........v',
+      'A.........A..........y..A..v',
+      'v...ƚƚ..........y..........v',
+      'v..ƚƚƚ...y..........A......v',
+      'X######.......A.......y....A',
+      'v.e...#...y............ƚƚ..v',
+      'v.....#.............ƚƚƚ....v',
+      'R...y.....A.....y..........v',
+      'v..............Ƙ.......A...v',
+      'v.A......y.................R',
+      'v.......ƚƚ.....A....y......v',
+      'v......ƚƚƚ..............y..v',
+      'A...y..........ƚƚ....A.....v',
+      'v.........A...ƚƚƚ..........v',
+      'v..Ţ...............y...Ʀ...v',
+      'v.......y.....A............A',
+      'v..A...............y.......v',
+      'v.........y.....A..........v',
+      'AvvvRvvvvAvvvvRvvvvvAvvvRvvA',
+    ], 13),
+    start: { tx: 2, ty: 13 },
+    tools: ['net', 'lasso', 'food'], // Werkzeugkiste am Weg in der Mitte (withRoute)
+    exits: BACK(27, 13),
+  }),
+
+  // Wasserloch: ein großer Teich (Krokodile), ringsum trinken Zebras und Antilopen
+  sx_waterhole: map('normal', {
+    name: tr('Wasserloch', 'Waterhole'),
+    home: { zebra: 2, antelope: 2, crocodile: 1 },
+    rows: eastExit([
+      'AvvvRvvvvAvvvvvRvvvvAvvvvRvA',
+      'v....y..........y.......A..v',
+      'v..A......ƚƚ...........y...v',
+      'v........ƚƚƚ......Ƙ........v',
+      'R...y.................ƚƚ...v',
+      'v.........................yR',
+      'v.....Ƙ......y.....A.......v',
+      'v..y......~~~~~............v',
+      'v........~~~~~~~~...y......v',
+      'v.......~~~~~~~~~~.........v',
+      'A......~~~~~~~~~~~~....Ţ...v',
+      'v......~~~~~~~~~~~~~.......v',
+      'v..y...~~~~~~~~~~~~~...y...v',
+      'X######.~~~~~~~~~~~~.......A',
+      'v.e....#~~~~~~~~~~~........v',
+      'v......#.~~~~~~~~~...ƚƚ....v',
+      'R...y..#..~~~~~~~....ƚƚƚ...v',
+      'v..........~~~~............v',
+      'v.A..............y.....A...v',
+      'v.......ƚƚ.................R',
+      'v......ƚƚƚ.....Ƙ.....y.....v',
+      'A...y......................v',
+      'v.........A.......~~~......v',
+      'v..Ţ.............~~~~~.....v',
+      'v.......y.........~~~...y..A',
+      'v..A......................yv',
+      'v.........y.....A..........v',
+      'AvvvRvvvvAvvvvRvvvvvAvvvRvvA',
+    ], 13),
+    start: { tx: 2, ty: 13 },
+    tools: ['net', 'lasso', 'food'], // Werkzeugkiste am Weg in der Mitte (withRoute)
+    exits: BACK(27, 13),
+  }),
+
+  // Elefantenfriedhof: eigener Ort, nur hier gibt es Hyänen (mit Knochen anlocken) und Geier (auf den kahlen Akazien).
+  // Trockenzeit: dunkler Boden, Schädel und Knochen
+  sx_graveyard: map('dry', {
+    name: tr('Elefantenfriedhof', 'Elephant Graveyard'),
+    home: { hyena: 1, vulture: 2 },
+    rows: eastExit([
+      'AvvvRvvvvAvvvvvRvvvvAvvvvRvA',
+      'v....y..........y.......A..v',
+      'v..A.......Ʋ...........y...v',
+      'v........ƚƚ.......Ʋ........v',
+      'R...y.........A.......Ʋ....v',
+      'v.....Ʋ...................yR',
+      'v..........Ʊ....Ș..........v',
+      'v..y....A.......Ʊ....A.....v',
+      'v.........Ʈ..........Ʋ.....v',
+      'v.....Ʊ.......Ș.....Ʊ......v',
+      'A..........ƭ...........y...v',
+      'v....Ș.........Ʊ....Ʈ......v',
+      'v..y......A..........ƭ.....v',
+      'X######......Ș......Ʊ......A',
+      'v.e...#...Ʊ.......A........v',
+      'v.....#.......Ʈ......Ș.....v',
+      'R...y.....Ʊ......Ʊ.........v',
+      'v.........ƭ....Ș.......Ʋ...v',
+      'v.A................y.......R',
+      'v.......Ʋ.......Ʊ..........v',
+      'v.............A.......y....v',
+      'A...y.....Ʋ................v',
+      'v...............ƚƚ...A.....v',
+      'v..Ʋ.....A......ƚƚƚ........v',
+      'v.......y..............y...A',
+      'v..A.........Ʋ.............v',
+      'v.........y.....A..........v',
+      'AvvvRvvvvAvvvvRvvvvvAvvvRvvA',
+    ], 13),
+    start: { tx: 2, ty: 13 },
+    tools: ['net', 'lasso', 'bone'], // Werkzeugkiste am Weg in der Mitte (withRoute)
+    exits: BACK(27, 13),
+    gravePatch: { key: 'savanna_grave_patch_soft', tx: 14, ty: 11 }, // weich auslaufend (das Original endet rechts am Kartenrand der Savanne)
+    vultures: { every: [12, 25] },
+    hyenas: { every: [15, 30], near: { tx: 14, ty: 13, r: 40 } },
+  }),
+
+  // --- weitere Maps (Zeilen aus makeRows: fester Zufall, also jedes Mal gleich) ---
+
+  // Erdmännchen-Ebene: offene Ebene mit Erdmännchenbauten, dazwischen Antilopen
+  sx_meerkats: map('normal', {
+    name: tr('Erdmännchen-Ebene', 'Meerkat Plain'),
+    home: { meerkat: 2, antelope: 2 },
+    rows: makeRows({ seed: 11, scatter: { u: 7, Ţ: 2, A: 5, Ʋ: 4, Ƙ: 3, y: 26 }, grass: 4 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+  }),
+
+  // Termitensteppe: viele Termitenhügel, Zebras und Giraffen ziehen dazwischen umher
+  sx_termites: map('normal', {
+    name: tr('Termitensteppe', 'Termite Steppe'),
+    home: { zebra: 2, giraffe: 2 },
+    rows: makeRows({ seed: 23, scatter: { Ţ: 11, A: 7, Ƙ: 4, Ʋ: 2, y: 20 }, grass: 5 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+  }),
+
+  // Gnu-Furt: ein Bach oben, unten links ein freier Streifen – dort zieht mit der Event-Karte die Große Wanderung vorbei
+  sx_gnuford: map('normal', {
+    name: tr('Gnu-Furt', 'Wildebeest Ford'),
+    home: { antelope: 2, zebra: 2 },
+    rows: makeRows({ seed: 37, ponds: [[17, 5, 6, 2.2]], scatter: { A: 6, Ţ: 2, Ʋ: 3, Ƙ: 3, y: 18 }, grass: 3, keepFree: (x, y) => y - x >= 9 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+    // Große Wanderung (Event-Karte): Streifen ty − tx zwischen 13 und 19 (unten links), siehe animals/Gnu.js
+    migration: { from: 13, to: 19 },
+  }),
+
+  // Überflutete Senke (Starkregen): zwei große Wasserflächen mit Nilpferden, Krokodilen und Lungenfischen
+  sx_flood: map('rain', {
+    name: tr('Überflutete Senke', 'Flooded Hollow'),
+    home: { hippo: 2, crocodile: 1, fish: 2 },
+    rows: makeRows({ seed: 41, ponds: [[9, 6, 5, 3], [18, 20, 6, 3.5]], scatter: { A: 5, Ƙ: 4, Ʋ: 2, y: 14 }, grass: 6 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+  }),
+
+  // Reiher-Sumpf (Starkregen): viele kleine Tümpel – dort landen Schuhschnäbel, im größten liegt ein Nilpferd
+  sx_swamp: map('rain', {
+    name: tr('Reiher-Sumpf', 'Heron Swamp'),
+    home: { heron: 2, hippo: 1 },
+    rows: makeRows({ seed: 53, ponds: [[7, 5, 3, 2], [19, 6, 3.5, 2.2], [8, 21, 3, 2], [20, 21, 4.5, 2.6], [14, 9, 2, 1.4]], scatter: { A: 4, Ƙ: 3, y: 14 }, grass: 8 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+    herons: { every: [8, 16], landChance: 1 },
+  }),
+
+  // Letztes Wasserloch (Trockenzeit): Schlamm ringsum, in der Mitte ein kleines Wasserloch; Zebras und Antilopen drängen
+  // sich daran, Warzenschweine wühlen im Schlamm
+  sx_lastwater: map('dry', {
+    name: tr('Letztes Wasserloch', 'Last Waterhole'),
+    home: { warthog: 2, zebra: 1, antelope: 1 },
+    rows: makeRows({ seed: 67, muds: [[14, 20, 6, 3.5]], ponds: [[14, 20, 1.6, 1.1]], scatter: { A: 6, Ʋ: 3, Ƙ: 3, y: 16 }, grass: 3 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+    gatherAt: { tx: 14, ty: 20, r: 110 }, // dort drängen sich Zebras und Antilopen (wie in der Trockenzeit der Savanne)
+  }),
+
+  // Kahle Ebene (Trockenzeit): Felsen, kahle Akazien und Erdmännchenbauten; Warzenschweine und Erdmännchen
+  sx_barren: map('dry', {
+    name: tr('Kahle Ebene', 'Barren Plain'),
+    home: { warthog: 2, meerkat: 2 },
+    rows: makeRows({ seed: 79, scatter: { Ʋ: 8, A: 5, u: 5, Ʀ: 1, Ƙ: 2, y: 18 }, grass: 2 }),
+    ...EDGE,
+    tools: ['net', 'lasso', 'food'],
+  }),
+};
+
+// alle Maps eines Bioms (ohne Camp)
+export const expeditionMaps = (biome) => Object.entries(EXPEDITION_LEVELS).filter(([, l]) => l.expedition === biome && !l.camp).map(([id]) => id);
+export const campOf = (biome) => Object.entries(EXPEDITION_LEVELS).find(([, l]) => l.expedition === biome && l.camp)?.[0] ?? null;

@@ -7,7 +7,7 @@
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
-import { CHARMS, CHARM_SLOTS, equipCharm, luckState, ownsCharm, setCharmSlot, toggleCharm } from '../world/luck.js';
+import { CHARMS, CHARM_SCOPE, CHARM_SLOTS, equipCharm, luckState, ownsCharm, setCharmSlot, toggleCharm } from '../world/luck.js';
 
 let panel = null;
 let state = null;
@@ -49,7 +49,7 @@ function render() {
         : tr('Wechseln kannst du sie nur im Tierpark.', 'You can only switch them in the zoo.'))}</p>
       <div class="chest-items charm-list">${Object.entries(CHARMS)
         .map(([id, c]) => ownsCharm(id)
-          ? `<button class="chest-item charm${eq.includes(id) ? ' worn' : ''}" data-id="${id}"><span class="luck-icon">${c.icon}</span><b>${c.name}</b><small>${c.text}</small>${eq.includes(id) ? `<span class="luck-tag">${tr('angelegt', 'worn')}</span>` : ''}</button>`
+          ? `<button class="chest-item charm${eq.includes(id) ? ' worn' : ''}" data-id="${id}"><span class="luck-icon">${c.icon}</span><b>${c.name}</b><small>${c.text}</small>${c.scope ? `<small class="charm-scope">${CHARM_SCOPE[c.scope]}</small>` : ''}${eq.includes(id) ? `<span class="luck-tag">${tr('angelegt', 'worn')}</span>` : ''}</button>`
           : `<div class="chest-item charm unknown"><span class="luck-icon">${c.icon}</span><b>?</b><small>${tr('Noch nicht gefunden – vielleicht in einer Kiste?', 'Not found yet – maybe in a chest?')}</small></div>`)
         .join('')}</div>
     </div>`;

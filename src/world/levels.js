@@ -41,6 +41,7 @@
 //          (hohes Gras, Busch und trockener Strauch sehen je Wetterphase anders aus, siehe objectKeys in savanna.seasons)
 
 import { tr } from '../i18n.js';
+import { EXPEDITION_LEVELS } from './expeditionMaps.js';
 
 // Savanne in der normalen Phase; Starkregen und Trockenzeit leiten ihre Karten daraus ab (siehe savanna.seasons)
 const SAVANNA_ROWS = [
@@ -1166,3 +1167,6 @@ LEVELS.park3 = parkSection('park3', {
     { tx: 74, ty: 11, to: 'reptiles', arrive: { tx: 8, ty: 16 }, label: tr('Reptilienhaus', 'Reptile House') }, // Tür in der Fassade im Dschungel-Bereich
   ],
 });
+
+// Expeditionen (Camp und Maps, siehe expeditionMaps.js)
+Object.assign(LEVELS, EXPEDITION_LEVELS);

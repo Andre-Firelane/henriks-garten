@@ -53,6 +53,7 @@ import { raiseAt,
   upgradeCost,
   bridgeArch,
   slotsShown,
+  biomeOf,
 } from '../world/map.js';
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
@@ -114,7 +115,7 @@ import FireflyEvening, { glowTexture } from '../world/Fireflies.js';
 import Weather from '../world/Weather.js';
 import { SEASON_INFO, SEASON_LEVELS, firstSeason, seasonState, skipSeason } from '../world/season.js';
 import Thicket from '../world/Thicket.js';
-import Boat from '../world/Boat.js';
+import Boat, { GHOST_ALPHA, GHOST_DEPTH, isCovered, outlineTexture } from '../world/Boat.js';
 import Floes from '../world/Floes.js';
 import Sway from '../world/Sway.js';
 import MeadowLife from '../world/MeadowLife.js';
@@ -132,9 +133,11 @@ import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, B
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import LuckWorld, { rarePromiseHere } from '../world/LuckWorld.js';
-import { CHARMS, MORE_ANIMALS, bonusActive, chestState, price } from '../world/luck.js';
+import { CHARMS, HEART_RAIN, MORE_ANIMALS, bonusActive, cardCount, chestState, hasCharm, iconImg, ownsCharm, price, rerollCost, rollCards } from '../world/luck.js';
+import { CALLED_UNITS, RUN_LENGTH, wagonCageCount, cageSize, fitsWagon, wagonCages, isWaterAnimal, campLevel, caughtUnit, endRun, isFinalCamp, mapName, rollRunCards, run as expRun, sortWagon, startRun, takeRunCard, unitsLeft } from '../world/expedition.js';
+import { isWagonOpen, openChoice, openConfirm, openWagon } from '../ui/wagon.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
-import { isLuckPickerOpen } from '../ui/luckPicker.js';
+import { isLuckPickerOpen, openLuckPicker } from '../ui/luckPicker.js';
 import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, sourceDef, wheelSlot } from '../world/shops.js';
 import FerrisWheel from '../world/FerrisWheel.js';
 import { PEN_TOYS, toysText } from '../world/toys.js';
@@ -153,7 +156,7 @@ import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
 import BallTool from '../tools/BallTool.js';
 import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
-import { animalIcon, animalIconSquare, animalIcons } from '../ui/icons.js';
+import { animalIcon, animalIconFit, animalIconSquare, animalIcons } from '../ui/icons.js';
 import { touchHandlers, setTouchTool, IS_PHONE } from '../ui/touch.js';
 import { closeWalkHint } from '../ui/walkHint.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
@@ -410,6 +413,7 @@ const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
 const PENGUIN_AT_HOLES = 0.75; // Eiswelt bei Nacht: Anteil der Pinguin-Gruppen, die an einem Eisloch erscheinen
 const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines Baums erscheinen
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
+const EXP_GROUP = [2, 3]; // Expedition: kleinere Gruppen (Herden, Trupps, Schwärme, Rudel)
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
 const FEED_CHANCE = 1 / 3; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
 const KOI_FEED_DIST = 50; // so nah muss Wasser vor dem Spieler sein, um Fischfutter zu streuen
@@ -537,6 +541,21 @@ function worldsOf(s) {
   });
 }
 const caughtBefore = (s) => game.caughtSpecies.includes(s);
+const FINAL_HEARTS = 100; // Expedition: Schatz in der Abschlusskiste, wenn es keine neuen Glücksbringer (mehr) gibt
+const BOARD_PLANK_H = 70; // Expeditions-Tafel (exp_board): so hoch ist das Brett oben im Bild (tools/expedition-sprites.py)
+// Fang-Einheit eines wilden Tiers (Expedition): Herde, Kolonie, Trupp, Schwarm oder das Tier selbst
+const unitOf = (a) => a.herd ?? a.colony ?? a.troop ?? a.school ?? a;
+// Bild eines Tiers im Wagen (seltene Variante mit eigenem Bild bzw. eingefärbt)
+function wagonIcon(a) {
+  const info = a.skin ? skinInfo(a.species, a.skin) : null;
+  if (a.skin) {
+    try {
+      return animalIcon(a.skin, 2.6);
+    } catch {}
+  }
+  const icon = animalIcon(a.species, 2.6);
+  return info?.css ? `<span style="filter:${info.css}">${icon}</span>` : icon;
+}
 
 const TOOLS = {
   net: {
@@ -696,6 +715,19 @@ export default class GardenScene extends Phaser.Scene {
     const urlLevel = new URLSearchParams(location.search).get('level');
     setLevel(data.level ?? (LEVELS[urlLevel] ? urlLevel : 'park'));
     this.leaving = false;
+    // Expedition (siehe world/expedition.js): Camp bzw. Map eines Runs; beides beginnt immer frisch (nichts gespeichert)
+    if (LEVEL.expedition && !expRun()) {
+      const r = startRun(LEVEL.expedition); // z. B. über die Adresse (?level=) gestartet
+      if (!LEVEL.camp) Object.assign(r, { map: LEVEL_ID, left: { ...(LEVEL.home ?? {}) }, step: 1, visited: [LEVEL_ID] });
+    }
+    this.expCamp = !!(LEVEL.camp && expRun());
+    this.expMap = !!(LEVEL.expedition && !LEVEL.camp && expRun());
+    this.expCaught = new Set(); // Einheiten (Herde, Rudel …), aus denen man auf dieser Map schon ein Tier gefangen hat
+    this.nearCages = false; // (die Szene wird beim Levelwechsel wiederverwendet: alte Werte nicht in die Werkzeugleiste mitnehmen)
+    this.nearCanoe = false;
+    this.expHidden = [];
+    this.expDoneShown = false;
+    if (LEVEL.expedition) delete game.levels[LEVEL_ID];
     this.beds = []; // Betten in den Hütten (Kacheln): dort kann man sich ausruhen
     this.stands = []; // Hochstände (Wald): mit der Aktionstaste hinauf, von oben sieht man weit
     this.onStand = null;
@@ -983,7 +1015,6 @@ export default class GardenScene extends Phaser.Scene {
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
     this.hyenaPack = LEVEL.hyenas ? new HyenaPack(this, LEVEL.hyenas) : null; // Trockenzeit: das versteckte Hyänenrudel
-    this.weather = SEASON_LEVELS.includes(LEVEL_ID) ? new Weather(this, LEVEL.season) : null; // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel
     this.waterfallSun = LEVEL.waterfallSun && this.waterfalls.length ? new WaterfallSun(this, this.waterfalls[0]) : null; // Dschungel: ab und zu Sonne am Wasserfall (Leguane)
     this.seasonTimer = 1;
     // weitere Autos (extraCars): öffnen dieselbe Weltkarte
@@ -996,7 +1027,7 @@ export default class GardenScene extends Phaser.Scene {
       if (car.texture.startsWith('car_')) this.add.image(img.x, img.y, this.carShadow(car.texture, car.frame)).setOrigin(0.5, 136 / (140 + SHADOW_PAD)).setScale(0.5 * k).setDepth(y - 1).setAlpha(0.43);
       img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearCar && this.openCarMap());
       const label = this.add
-        .text(x, y - 76 * k, tr('Schnellreise ▸', 'Fast travel ▸'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
+        .text(x, y - 76 * k, LEVEL.camp ? tr('Expedition beenden ▸', 'End expedition ▸') : tr('Schnellreise ▸', 'Fast travel ▸'), { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 5, y: 2 }, resolution: 4 })
         .setOrigin(0.5)
         .setDepth(100000)
         .setVisible(false);
@@ -1015,7 +1046,7 @@ export default class GardenScene extends Phaser.Scene {
       const locked = !isUnlocked(exit.to);
       if (locked) this.drawBarrier(exit);
       this.add
-        .text(x, y - 34, locked ? `${exit.label} · ${tr('noch im Bau', 'under construction')}` : `${exit.label} ▸`, {
+        .text(x, y - 34, locked ? `${exit.label} · ${tr('noch im Bau', 'under construction')}` : `${this.exitLabel(exit)} ▸`, {
           fontFamily: 'Trebuchet MS, Arial',
           fontSize: '11px',
           fontStyle: 'bold',
@@ -1033,6 +1064,8 @@ export default class GardenScene extends Phaser.Scene {
     // Kleidung passend zum Gebiet (fehlt das Bild noch, die normale Figur); unter Wasser schwimmt sie
     const hero = LEVEL.hero && this.textures.exists(LEVEL.hero) ? LEVEL.hero : 'hero';
     this.player = new Player(this, start.x, start.y, hero, { swim: !!LEVEL.sea });
+    // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel (erst nach Henrik: der Nebel richtet sich nach seiner Position)
+    this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.fixedSeason && LEVEL.fixedSeason !== 'normal') ? new Weather(this, LEVEL.season) : null;
     // war Henrik beim Verlassen auf dem E-Roller (Tierpark-Abschnitt, Aquarium, Reptilienhaus, Ausbau): weiterfahren
     if (game.scooterRiding && this.scooter) this.getOnScooter(true);
     // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel), findet es am Inselsteg
@@ -1128,7 +1161,9 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere, die dem Spieler aus dem letzten Level gefolgt sind
     this.followers = [];
-    for (const { species, variant, origin, farm, skin } of game.followers) {
+    // im Expeditions-Camp laufen sie nicht mehr mit: sie kommen in den Wagen (siehe expArriveCamp)
+    const campArrivals = this.expCamp ? game.followers.map((a) => ({ ...a })) : [];
+    for (const { species, variant, origin, farm, skin } of this.expCamp ? [] : game.followers) {
       if (!SPECIES[species]) continue;
       const a = this.createAnimal(species, start.x, start.y, variant);
       a.farm = farm ?? null;
@@ -1209,6 +1244,17 @@ export default class GardenScene extends Phaser.Scene {
     this.signPanel.classList.remove('show');
     this.updateHud();
     this.updateToolbar();
+    this.expUpdateCounter();
+    if (LEVEL.campfire) this.drawCampfire(LEVEL.campfire);
+    this.expArrow = null;
+    this.expCampAnimals = [];
+    if (this.expCamp) {
+      this.expDrawCamp();
+      if (LEVEL.canoe) this.drawCampCanoe(LEVEL.canoe);
+      this.expArriveCamp(campArrivals);
+    }
+    if (this.expMap) this.expTopUp(worldToTile(this.player.x, this.player.y), false); // (Dickicht gibt es erst jetzt)
+    if (this.expMap && LEVEL.inlet) this.expArriveByCanoe();
     if (data.level) {
       const back = data.returned ? `<br><small>${tr(`${data.returned} ist wieder im Regal im anderen Gebiet`, `${data.returned} – back on the shelf in the other area`)}</small>` : '';
       if (data.upgraded) {
@@ -1221,7 +1267,7 @@ export default class GardenScene extends Phaser.Scene {
         this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.built)); // gleich kauft jemand ein
       }
       if (data.seasonNote) this.showToast(data.seasonNote); // Wetterwechsel in der Savanne
-      else this.showToast(`${LEVEL.name}${back}${moved}${LEVEL.wip ? `<br><small>${tr('🚧 Dieses Gebiet ist noch nicht fertig – hier kommen bald weitere Tiere dazu.', '🚧 This area is still under construction – more animals are coming soon.')}</small>` : ''}`);
+      else this.showToast(`${LEVEL.name}${this.expMap ? ` · ${tr(`Map ${expRun().step} von ${RUN_LENGTH}`, `Map ${expRun().step} of ${RUN_LENGTH}`)}` : ''}${this.expEvent() ? `<br><small>${tr('🦬 Große Wanderung! Unten links zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing by on the lower left – keep your lasso ready.')}</small>` : ''}${back}${moved}${LEVEL.wip ? `<br><small>${tr('🚧 Dieses Gebiet ist noch nicht fertig – hier kommen bald weitere Tiere dazu.', '🚧 This area is still under construction – more animals are coming soon.')}</small>` : ''}`);
     }
 
     const cam = this.cameras.main;
@@ -1300,6 +1346,14 @@ export default class GardenScene extends Phaser.Scene {
         this.openEventsPanel(pen.id); // am Gehegeschild: Ausbau dieses Geheges
         return;
       }
+      if (this.nearCages && !this.leaving) {
+        this.expOpenWagon(); // Expeditions-Camp: an den Käfigen der Wagen
+        return;
+      }
+      if (this.nearCanoe && !this.leaving) {
+        this.expOnwards({ x: this.player.x, y: this.player.y }); // Dschungel-Camp: mit dem Kanu weiter (vorher die Karten)
+        return;
+      }
       if (this.nearCar && !this.leaving) {
         this.openCarMap(); // am Auto: Weltkarte statt Werkzeug
         return;
@@ -1375,7 +1429,7 @@ export default class GardenScene extends Phaser.Scene {
     // Unterwasserwelt, Eiswelt und Savanne: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel
     // pro Bild je Achse); Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie
     // Stottern aus (vor dem gleichmäßigen Schnee bzw. Sand besonders beim Laufen nach links und rechts zu sehen)
-    cam.roundPixels = !LEVEL.sea && !LEVEL.snow && LEVEL_ID !== 'savanna';
+    cam.roundPixels = !LEVEL.sea && !LEVEL.snow && biomeOf() !== 'savanna';
   }
 
   // Bogenbrücken: Bohlen als geschwungenes Band über dem Wasser, rote Geländer an beiden Seiten.
@@ -1923,6 +1977,7 @@ export default class GardenScene extends Phaser.Scene {
   // Erste Tiere beim Betreten eines neuen Levels: nicht zu nah an der Ankunft, nicht auf Werkzeugen,
   // nicht aufeinander. Ihre Lebenszeit ist gestaffelt, damit sie nicht alle gleichzeitig verschwinden.
   spawnAnimals(arrive) {
+    if (this.expMap) return this.expTopUp(arrive, false); // Expedition: die feste Tierliste der Map
     const taken = [arrive, ...TOOL_SPOTS];
     for (const pool of spawnPools(LEVEL)) {
       // bis die Plätze voll sind (Versuche, die nichts bringen – z. B. Tiger schon am Maximum –, zählen nicht als Platz)
@@ -1993,7 +2048,7 @@ export default class GardenScene extends Phaser.Scene {
     if (species === 'toucan') return this.finishSpawn(Macaw.spawnSingle(this, species), false); // Tukan: allein
     // Jaguar: schläft oben in einem Urwaldbaum (höchstens MAX_JAGUARS gleichzeitig)
     if (species === 'jaguar') {
-      if (this.animals.filter((a) => a.species === 'jaguar' && a.state === 'wild').length >= MAX_JAGUARS) return group;
+      if (!this.expMap && this.animals.filter((a) => a.species === 'jaguar' && a.state === 'wild').length >= MAX_JAGUARS) return group; // (Expedition: die Tierliste bestimmt die Zahl)
       return this.finishSpawn(Jaguar.spawnInTree(this), false);
     }
     // Orang-Utans sitzen oben in den Urwaldbäumen (höchstens MAX_ORANGUTANS gleichzeitig)
@@ -2057,7 +2112,7 @@ export default class GardenScene extends Phaser.Scene {
       group.push(this.createAnimal(species, p.x, p.y));
       // Antilopen: noch 1 bis 3 weitere dicht daneben
       if (SPECIES[species].herd) {
-        const more = Phaser.Math.Between(...(SPECIES[species].groupSize ?? HERD_SIZE)) - 1;
+        const more = Phaser.Math.Between(...(LEVEL.expedition ? EXP_GROUP : SPECIES[species].groupSize ?? HERD_SIZE)) - 1;
         for (let i = 0; i < more; i++) {
           const spot = this.freeSpotNear(p.x, p.y, 28);
           if (spot) group.push(this.createAnimal(species, spot.x, spot.y));
@@ -2127,6 +2182,15 @@ export default class GardenScene extends Phaser.Scene {
 
   updateSpawner(dt) {
     const p = this.player;
+    // Expedition: keine Lebenszeit, kein neuer Zufall – nur wer weggelaufen ist, taucht woanders wieder auf
+    if (this.expMap) {
+      this.spawnTimer -= dt;
+      if (this.spawnTimer <= 0) {
+        this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
+        this.expTopUp(worldToTile(p.x, p.y), true);
+      }
+      return;
+    }
     for (const a of [...this.animals]) {
       if (a.state !== 'wild') continue;
       a.life -= dt;
@@ -2208,7 +2272,7 @@ export default class GardenScene extends Phaser.Scene {
       if (promised === 'vulture') this.vultureTimer = Math.min(this.vultureTimer, PROMISE_WAIT);
       if (this.vultureTimer <= 0) {
         this.vultureTimer = Phaser.Math.FloatBetween(...LEVEL.vultures.every);
-        this.flyInVulture();
+        if (!this.expMap || this.expWants('vulture')) this.flyInVulture(); // Expedition: nur so viele, wie noch zu fangen sind
       }
     }
     this.heronTimer -= dt;
@@ -2216,6 +2280,7 @@ export default class GardenScene extends Phaser.Scene {
     if (this.heronTimer > 0) return;
     const { every, landChance } = LEVEL.herons;
     this.heronTimer = Phaser.Math.FloatBetween(...every);
+    if (this.expMap && !this.expWants('heron')) return; // Expedition: nur so viele, wie noch zu fangen sind
     this.flyIn('heron', landChance);
   }
 
@@ -2409,7 +2474,7 @@ export default class GardenScene extends Phaser.Scene {
     const add = (species, state) => {
       if (state === 'penned') counts[species] = (counts[species] ?? 0) + 1;
     };
-    for (const a of this.animals) if (!a.baby) add(a.species, a.state);
+    for (const a of this.animals) if (!a.baby && !LEVEL.camp) add(a.species, a.state); // (Käfige im Expeditions-Camp zählen nicht)
     for (const [id, saved] of Object.entries(game.levels)) {
       if (id !== LEVEL_ID) for (const s of saved.animals) add(s.species, s.state);
     }
@@ -2552,7 +2617,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Reittier: in den Welten aufsitzen (in Gebäuden steigt Henrik ab), im Tierpark zu Fuß
   updateMount() {
-    const key = this.rideOn() ? RIDES[LEVEL_ID] ?? null : null;
+    const key = this.rideOn() ? RIDES[biomeOf()] ?? null : null;
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
     const mount = this.driving ? 'scooter' : key && !buildingAt(tx, ty) ? key : null; // auf dem E-Roller bleibt man stehen
     if (mount && !this.player.mount && !this.riding) {
@@ -3200,6 +3265,21 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/orangutan_tree.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Zurückwinken', 'Wave back')} 👋</span></div>`;
       return;
     }
+    if (this.nearCanoe) {
+      setTouchTool(null, 'assets/canoe_icon.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/canoe_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${isFinalCamp() ? tr('Ziel erreicht', 'Goal reached') : tr('Mit dem Kanu weiter', 'On by canoe')}</span></div>`;
+      return;
+    }
+    if (this.nearCages) {
+      setTouchTool(null, 'assets/treasure_chest0.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/treasure_chest0.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Wagen ansehen', 'View wagon')}</span></div>`;
+      return;
+    }
+    if (this.nearCar && LEVEL.camp) {
+      setTouchTool(null, 'assets/worldmap.jpg');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/worldmap.jpg" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Expedition beenden', 'End expedition')}</span></div>`;
+      return;
+    }
     if (this.nearCar) {
       // am Auto zeigt die Aktionstaste die Schnellreise
       setTouchTool(null, 'assets/worldmap.jpg');
@@ -3615,10 +3695,14 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (!el) {
         el = document.createElement('div');
-        el.className = t.icon ? 'marker luck' : 'marker';
-        el.innerHTML = `<span class="pointer"></span>${t.icon ?? ''}`;
+        el.className = t.icon ? `marker luck${t.bino ? ' bino' : ''}` : 'marker'; // bino: Fernglas (Tierbild, etwas größer)
         this.markerBox.appendChild(el);
         this.markers.set(t.id, el);
+      }
+      // Bild neu setzen, wenn es sich ändert (z. B. Tierbild des Fernglases, sobald sein Zuschnitt bekannt ist)
+      if (el.iconHtml !== (t.icon ?? '')) {
+        el.iconHtml = t.icon ?? '';
+        el.innerHTML = `<span class="pointer"></span>${el.iconHtml}`;
       }
       // vom Bildschirmmittelpunkt in Richtung Falle bis an den Rand (oben unterhalb der Anzeigeleiste)
       const dx = sx - W / 2 || 1e-6;
@@ -3889,10 +3973,11 @@ export default class GardenScene extends Phaser.Scene {
 
   // Weltkarte öffnen (am Auto): das Spiel pausiert, bis man losfährt oder die Karte schließt
   openCarMap() {
+    if (this.expCamp) return this.expConfirmHome(); // im Expeditions-Camp: Expedition beenden (mit Rückfrage)
     if (this.leaving || isTravelMapOpen() || isJournalOpen()) return;
     // der Tierpark hat ein Schild mit einem Feld je Abschnitt (part in levels.js)
     const places = Object.entries(LEVELS)
-      .filter(([, l]) => l.car && l.map)
+      .filter(([, l]) => l.car && l.map && !l.camp) // (das Expeditions-Camp wählt man über seine Welt, siehe chooseTrip)
       .map(([id, l]) => ({
         id,
         name: l.name,
@@ -3902,7 +3987,7 @@ export default class GardenScene extends Phaser.Scene {
         status: l.seasons ? this.seasonStatus(id) : null,
         events: eventsIn(id).map((e) => `${e.name} ${formatTime(e.left)}`), // laufende Events: leuchtender Rahmen
         wip: !!l.wip, // noch in Arbeit (Hinweis auf dem Schild)
-        locked: !isUnlocked(id), // noch nicht freigeschaltet (Mavis Geschichte)
+        locked: !isUnlocked(l.unlockWith ?? id), // noch nicht freigeschaltet (Mavis Geschichte; das Expeditions-Camp mit seiner Welt)
         parts: isPark(id) ? PARK_LEVELS.map((p) => ({ id: p, name: LEVELS[p].part.name, icon: LEVELS[p].part.icon, main: p === id, locked: !isUnlocked(p), event: eventsIn(p).length > 0 })) : null,
       }));
     const at = LEVEL_ID;
@@ -3911,6 +3996,9 @@ export default class GardenScene extends Phaser.Scene {
       places,
       at,
       (id) => {
+        // Welt mit Expedition (Savanne): erst noch wählen – frei erkunden oder auf Expedition
+        const camp = Object.entries(LEVELS).find(([, l]) => l.camp && l.expedition === id)?.[0];
+        if (camp) return this.chooseTrip(id, camp);
         this.scene.resume();
         this.travelTo(id);
       },
@@ -3919,8 +4007,28 @@ export default class GardenScene extends Phaser.Scene {
     );
   }
 
+  // Weltkarte, Welt mit Expedition: Erkundung (die offene Welt, so lange man will) oder Expedition (Camp, mehrere Maps)
+  chooseTrip(world, camp) {
+    openChoice(
+      `<h2>${LEVELS[world].name}</h2>`,
+      [
+        { icon: iconImg('trip_explore'), label: tr('Erkundung', 'Explore'), text: tr('Frei herumstreifen – bleib, so lange du willst.', 'Roam freely – stay as long as you like.') },
+        // erst nach Mavis Tutorial (bis dahin als Vorschau ausgegraut)
+        activeStep()
+          ? { icon: iconImg('trip_expedition'), label: tr('Expedition', 'Expedition'), text: tr('Erst Tutorial abschließen', 'Finish the tutorial first'), disabled: true }
+          : { icon: iconImg('trip_expedition'), label: tr('Expedition', 'Expedition'), text: tr(`${RUN_LENGTH} Maps hintereinander, mit Wagen und Belohnung am Ziel.`, `${RUN_LENGTH} maps in a row, with a wagon and a reward at the end.`) },
+      ],
+      (i) => {
+        this.scene.resume();
+        this.travelTo(i === 0 ? world : camp);
+      },
+      () => this.scene.resume(),
+    );
+  }
+
   // Schnellreise: wie ein Gebietswechsel (Tiere kommen mit), Ankunft vor dem Auto im Zielgebiet
   travelTo(target) {
+    if (LEVELS[target].camp) startRun(LEVELS[target].expedition); // ins Expeditions-Camp: ein neuer Run beginnt
     if (this.cache.audio.exists('car')) this.sound.play('car', { volume: CAR_VOLUME }); // Motor springt an
     game.scooterRiding = false; // mit dem Auto reist man zu Fuß, der Roller bleibt im Park
     const car = LEVELS[target].car;
@@ -4472,6 +4580,7 @@ export default class GardenScene extends Phaser.Scene {
   // Dickicht weggeschlagen (siehe Thicket.strike): manchmal schreckt eine Schlange oder Vogelspinne auf und flieht ins
   // nächste Dickicht – solange fängt man sie mit dem Kescher (siehe Critter.js)
   thicketCut(tx, ty) {
+    if (this.expMap) return this.expThicketCut(tx, ty);
     if (Math.random() >= STARTLE_CHANCE || this.animals.some((a) => a instanceof Critter && a.phase === 'flee')) return;
     const { x, y } = tileToWorld(tx, ty);
     const a = this.createAnimal(randomCritter(), x, y);
@@ -4498,7 +4607,31 @@ export default class GardenScene extends Phaser.Scene {
 
   // eine Schlange oder Vogelspinne hat das Dickicht erreicht: weg
   critterHidden(a) {
+    // Expedition: im neuen Dickicht versteckt – dort raschelt es jetzt (nichts geht verloren)
+    if (this.expMap && this.thicket) {
+      const { tx, ty } = worldToTile(a.x, a.y);
+      const near = [...this.thicket.images.keys()].map((k) => k.split(',').map(Number)).filter(([x, y]) => this.thicket.stage(`${x},${y}`) === 2)
+        .sort((u, v) => Math.hypot(u[0] - tx, u[1] - ty) - Math.hypot(v[0] - tx, v[1] - ty))[0];
+      if (near) (this.expHidden ??= []).push({ species: a.species, tx: near[0], ty: near[1], skin: a.skin });
+    }
     this.despawn(a);
+  }
+
+  // Expedition: Dickicht freigeschlagen – saß dort eine Schlange oder Spinne, schreckt sie sicher auf
+  expThicketCut(tx, ty) {
+    const i = (this.expHidden ?? []).findIndex((h) => h.tx === tx && h.ty === ty);
+    if (i < 0) return;
+    const [h] = this.expHidden.splice(i, 1);
+    h.ghost?.destroy();
+    const { x, y } = tileToWorld(tx, ty);
+    const a = this.createAnimal(h.species, x, y);
+    a.life = Infinity;
+    if (h.skin === undefined) a.rollSkin('wild');
+    else a.skin = h.skin;
+    a.startle(tx, ty);
+    const t = this.add.text(x, y - 30, '❗', { fontSize: '18px', resolution: 4 }).setOrigin(0.5).setDepth(100000);
+    this.tweens.add({ targets: t, y: t.y - 14, alpha: 0, duration: 900, onComplete: () => t.destroy() });
+    if (this.cache.audio.exists('tree_rustle')) this.sound.play('tree_rustle', { volume: 0.4, detune: 300 });
   }
 
   // ein Brüllaffe frisst die Banane: sie verschwindet
@@ -4552,7 +4685,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Große Wanderung in der Savanne: der Gnu-Strom zieht, solange das Event läuft
   updateMigration(dt) {
-    const on = LEVEL_ID === 'savanna' && isActive('migration');
+    const on = (LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent(); // Expedition: Event-Karte
     if (on && !this.migration) {
       this.migration = new Migration(this);
       this.startAmbient(); // Hufgetrappel der Herde
@@ -4719,7 +4852,7 @@ export default class GardenScene extends Phaser.Scene {
     const a = e.area;
     const water = ['fish', 'koi', 'crocodile'].includes(animal.species);
     const tiles = [];
-    for (const { tx, ty } of e.tiles) if (water ? isFishpond(tx, ty) : !isBlocked(tx, ty)) tiles.push({ tx, ty });
+    for (const { tx, ty } of e.tiles) if (water && !animal.campBag ? isFishpond(tx, ty) : !isBlocked(tx, ty)) tiles.push({ tx, ty });
     const t = Phaser.Utils.Array.GetRandom(tiles) ?? { tx: a.tx0, ty: a.ty0 };
     const p = tileToWorld(t.tx, t.ty);
     animal.x = p.x + Phaser.Math.Between(-6, 6);
@@ -4848,7 +4981,7 @@ export default class GardenScene extends Phaser.Scene {
     // (Tiere aus der Falle sind 'trapped' und dürfen natürlich mit)
     if (animal.state === 'following' || animal.state === 'penned' || !this.animals.includes(animal)) return;
     if (this.tooCold()) return; // Eiswelt bei Nacht: mit klammen Fingern fängt man nichts
-    animal.origin ??= LEVEL_ID;
+    animal.origin ??= biomeOf(); // Expedition: Herkunft ist die Welt (Savanne), nicht die Map
     // der erste Flamingo: im Tierpark entsteht das Flamingo-Gehege
     if (animal.species === 'flamingo' && !game.unlocked.includes('flamingo')) {
       game.unlocked.push('flamingo');
@@ -4882,7 +5015,21 @@ export default class GardenScene extends Phaser.Scene {
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = !isPark(LEVEL_ID) && this.parkPenFull(animal.species, animal.origin);
     const homeless = !isPark(LEVEL_ID) && noParkHome(animal.species); // noch kein Gehege: es kommt ins Naturreservat
+    const unit = unitOf(animal);
     animal.catch();
+    // Expedition: eine Einheit (Herde, Rudel, Einzeltier) weniger auf der Map
+    if (this.expMap && !this.expCaught.has(unit)) {
+      this.expCaught.add(unit);
+      caughtUnit(animal.species);
+      this.expUpdateCounter();
+    }
+    // Glücksbringer Stoffteddy (Expedition): gleich Herzen wie fürs Naturreservat, eine Herz-Zahl steigt auf
+    if (this.expMap && hasCharm('teddy')) {
+      const h = releaseHearts(animal.species, animal.skin ?? animal.variant);
+      this.addHearts(h, animal.species);
+      const tag = this.add.text(animal.x, animal.y - 40, `♥ ${h}`, { fontFamily: 'Trebuchet MS, Arial', fontSize: '15px', fontStyle: 'bold', color: '#ff5a8c', stroke: '#ffffff', strokeThickness: 4, resolution: 4 }).setOrigin(0.5).setDepth(100000);
+      this.tweens.add({ targets: tag, y: tag.y - 22, alpha: 0, delay: 500, duration: 1200, onComplete: () => tag.destroy() });
+    }
     // für die Statistik nur einmal je Tier: ein Panda, der zum Bambus abhaut und wieder angelockt wird, zählt nicht doppelt
     if (!animal.counted) {
       animal.counted = true;
@@ -4932,6 +5079,16 @@ export default class GardenScene extends Phaser.Scene {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild');
       for (const a of mates) this.despawn(a);
       if (mates.length) notes.push(tr(`Die anderen ${animalIcon('reeffish')} sind blitzschnell davongeschwommen!`, `The other ${animalIcon('reeffish')} swam away in a flash!`));
+    } else if (this.expMap && unit !== animal && !animal.herd) {
+      // Expedition: Brüllaffen-Trupp, Ara-Paar, Piranha-Schwarm, Erdmännchen – die anderen sind weg (wie die Herde, die
+      // davonrennt), damit eine Gruppe im Zähler eindeutig ein Fang ist (unit: vor animal.catch() gemerkt)
+      const mates = this.animals.filter((a) => a !== animal && unitOf(a) === unit && a.state === 'wild');
+      for (const a of mates) {
+        if (a.tree) this.rustleCrown?.(a.tree);
+        this.despawn(a);
+      }
+      const how = { howler: tr('sind durch die Baumkronen davongeschwungen', 'swung away through the treetops'), piranha: tr('sind in die Tiefe abgetaucht', 'dived down into the deep'), meerkat: tr('sind in ihren Bau geflitzt', 'darted into their burrow') }[animal.species] ?? tr('sind davongeflogen', 'flew away');
+      if (mates.length) notes.push(tr(`Die anderen ${animalIcon(animal.species)} ${how}!`, `The other ${animalIcon(animal.species)} ${how}!`));
     } else if (animal.herd) {
       const mates = this.animals.filter((a) => a !== animal && a.herd === animal.herd && a.state === 'wild' && a.scatter);
       for (const a of mates) a.scatter();
@@ -4941,6 +5098,602 @@ export default class GardenScene extends Phaser.Scene {
     // kurzer Tierruf (falls es für diese Art einen gibt)
     const sound = this.callOf(animal);
     if (this.cache.audio.exists(sound)) this.sound.play(sound, { volume: ANIMAL_VOLUME });
+  }
+
+  // --- Expedition (Regeln siehe world/expedition.js) ---
+
+  // Map: fehlende Tiere der Tierliste auftauchen lassen (beim Betreten alle; danach nur, wenn eins weggelaufen ist).
+  // Geier, Hyänen und Reiher kommen über ihre eigenen Timer (siehe expWants)
+  expTopUp(near, fadeIn) {
+    const left = expRun()?.left ?? {};
+    const taken = [near, ...TOOL_SPOTS];
+    for (const [species, n] of Object.entries(left)) {
+      // Leguane (versteckt am Wasserfall), Gorillas (auf der Lichtung), Schlangen und Vogelspinnen (im Dickicht)
+      if (species === 'iguana' || species === 'gorilla') {
+        for (let tries = 0; tries < n * 3 && this.expWildUnits(species) < n; tries++) {
+          const [a] = species === 'iguana' ? Iguana.spawnHidden(this) : Gorilla.spawnOnClearing(this);
+          if (!a) break;
+          a.life = Infinity;
+          a.rollSkin('wild');
+        }
+        continue;
+      }
+      if (species === 'snake' || species === 'tarantula') {
+        this.expHideCritters(species, n);
+        continue;
+      }
+      if (CALLED_UNITS.includes(species) || !SPECIES[species]) continue;
+      for (let tries = 0; tries < n * 3 && this.expWildUnits(species) < n; tries++) {
+        const group = this.spawnOne(taken, fadeIn, { population: 99, weights: { [species]: 1 } });
+        for (const a of group) a.life = Infinity;
+      }
+    }
+  }
+
+  // freie Einheiten dieser Art (eine Herde, Kolonie oder ein Rudel zählt als eine; ohne die, aus denen man schon eins hat)
+  expWildUnits(species) {
+    const units = new Set();
+    for (const a of this.animals) {
+      if (a.species !== species || a.state !== 'wild' || a.gone) continue;
+      const u = unitOf(a);
+      if (!this.expCaught.has(u)) units.add(u);
+    }
+    return units.size;
+  }
+
+  // soll noch eins dieser Art kommen? (Geier fliegen heran, Hyänen kommen zu den Knochen)
+  expWants(species) {
+    return this.expWildUnits(species) < (expRun()?.left?.[species] ?? 0);
+  }
+
+  // Ziele für das Fernglas: raschelnde Dickichte (versteckte Schlangen und Spinnen)
+  expHiddenTargets() {
+    return (this.expHidden ?? []).map((h) => ({ ...tileToWorld(h.tx, h.ty), species: h.species, key: `${h.tx},${h.ty}` }));
+  }
+
+  // Zähler oben in der Mitte: je freie Einheit ein Schattenbild; alles gefangen → zurück zum Camp
+  expUpdateCounter() {
+    const el = document.getElementById('exp-counter');
+    if (!el) return;
+    if (!this.expMap) {
+      el.classList.remove('show', 'done');
+      return;
+    }
+    const left = expRun()?.left ?? {};
+    const icons = Object.entries(left).flatMap(([s, n]) => (SPECIES[s] ? Array.from({ length: n }, () => animalIconFit(s, 1.9, () => this.sys.isActive() && this.expUpdateCounter())) : []));
+    el.classList.add('show');
+    el.classList.toggle('done', !icons.length);
+    el.innerHTML = icons.length ? icons.join('') : tr('Alles gefangen – zurück zum Camp!', 'All caught – back to camp!');
+    if (!icons.length && !this.expDoneShown) {
+      this.expDoneShown = true;
+      this.time.delayedCall(1500, () => this.showToast(tr('⛺ Auf dieser Map ist alles gefangen! Folge dem Pfeil zurück zum Camp.', '⛺ Everything on this map is caught! Follow the arrow back to camp.')));
+    }
+  }
+
+  // Schlangen und Vogelspinnen (Expedition): jede sitzt in einem bestimmten dichten Dickicht, das ab und zu raschelt
+  // (expRustle). Schlägt man genau dieses frei, schreckt sie sicher auf; flieht sie ins nächste Dickicht, versteckt sie
+  // sich dort (critterHidden) – verloren geht nichts. this.expHidden: [{ species, tx, ty, skin }]
+  expHideCritters(species, n) {
+    if (!this.thicket) return;
+    this.expHidden ??= [];
+    const have = this.expHidden.filter((h) => h.species === species).length + this.expWildUnits(species);
+    const used = new Set(this.expHidden.map((h) => `${h.tx},${h.ty}`));
+    const free = [...this.thicket.images.keys()].filter((k) => !used.has(k) && this.thicket.stage(k) === 2);
+    for (let i = have; i < n && free.length; i++) {
+      const k = free.splice(Math.floor(Math.random() * free.length), 1)[0];
+      const [tx, ty] = k.split(',').map(Number);
+      this.expHidden.push({ species, tx, ty, skin: undefined });
+    }
+  }
+
+  // ab und zu raschelt ein Dickicht, in dem etwas sitzt: es wackelt, ein paar Blätter fliegen
+  expRustle(dt) {
+    if (!this.expHidden?.length) return;
+    this.rustleIn = (this.rustleIn ?? 1) - dt;
+    if (this.rustleIn > 0) return;
+    this.rustleIn = Phaser.Math.FloatBetween(1.2, 2.4);
+    const h = Phaser.Utils.Array.GetRandom(this.expHidden);
+    const img = this.thicket?.images.get(`${h.tx},${h.ty}`);
+    if (!img) return;
+    // verdeckt (z. B. hinter einem Baum)? Dann scheint beim Rascheln die Kontur des Dickichts durch
+    if (h.ghost === undefined) {
+      h.ghost = isCovered(this, img)
+        ? this.add.image(img.x, img.y, outlineTexture(this, img.texture.key), img.frame.name).setOrigin(img.originX, img.originY).setScale(img.scaleX).setDepth(GHOST_DEPTH).setAlpha(0)
+        : null;
+    }
+    // nur beim Rascheln kurz zu sehen
+    if (h.ghost) this.tweens.add({ targets: h.ghost, alpha: { from: 0, to: GHOST_ALPHA }, duration: 200, hold: 900, yoyo: true });
+    const wiggle = h.ghost ? [img, h.ghost] : img;
+    this.tweens.add({ targets: wiggle, angle: { from: -4, to: 4 }, duration: 90, yoyo: true, repeat: 3, onComplete: () => (h.ghost ? [img, h.ghost] : [img]).forEach((o) => o.setAngle(0)) });
+    for (let i = 0; i < 4; i++) {
+      const leaf = this.add.ellipse(img.x + Phaser.Math.Between(-14, 14), img.y - Phaser.Math.Between(18, 34), 5, 3, i % 2 ? 0x5a9a3a : 0x86c25a).setDepth(img.y + 1);
+      this.tweens.add({ targets: leaf, x: leaf.x + Phaser.Math.Between(-18, 18), y: leaf.y - Phaser.Math.Between(6, 16), angle: Phaser.Math.Between(-90, 90), alpha: 0, duration: 700, onComplete: () => leaf.destroy() });
+    }
+    if (this.cache.audio.exists('tree_rustle') && Math.hypot(img.x - this.player.x, (img.y - this.player.y) * 2) < 260) this.sound.play('tree_rustle', { volume: 0.25, detune: 400 });
+  }
+
+  // Kanu im Dschungel-Camp: liegt am Steg (damit geht es zur nächsten Map)
+  drawCampCanoe(c) {
+    const p = tileToWorld(c.tx, c.ty);
+    const img = this.add.sprite(p.x, p.y, 'canoe', 0).setOrigin(0.5, 148 / 152).setScale(0.5).setDepth(p.y);
+    this.tweens.add({ targets: img, y: img.y - 1.5, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.campCanoe = img;
+  }
+
+  // Ankunft auf einer Dschungel-Map: das Kanu gleitet mit Henrik über den Fluss-Einlauf an den Steg, dann steigt er aus
+  expArriveByCanoe() {
+    const { from, to } = LEVEL.inlet;
+    const a = tileToWorld(from.tx, from.ty);
+    const b = tileToWorld(to.tx, to.ty);
+    const boat = this.add.sprite(a.x, a.y, 'canoe_hero', 0).setOrigin(0.5, 148 / 152).setScale(0.5).setDepth(a.y + 1);
+    const p = this.player;
+    p.sprite.setVisible(false);
+    p.shadow?.setVisible(false);
+    this.boat?.img.setVisible(false); // Fluss-Map: das fahrbare Kanu erscheint erst, wenn Henrik angelegt hat
+    this.leaving = true; // solange steht alles still
+    const cam = this.cameras.main;
+    cam.startFollow(boat, true, 0.12, 0.12);
+    this.tweens.add({
+      targets: boat,
+      x: b.x,
+      y: b.y,
+      duration: 1900,
+      ease: 'Sine.easeOut',
+      onUpdate: () => boat.setDepth(boat.y + 1),
+      onComplete: () => {
+        if (this.boat) {
+          // Fluss-Map: ab jetzt das fahrbare Kanu (liegt genau dort)
+          boat.destroy();
+          this.boat.img.setVisible(true);
+        } else {
+          boat.setTexture('canoe', 0); // Henrik steigt aus, das Kanu bleibt am Steg
+          this.tweens.add({ targets: boat, y: boat.y - 1.5, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        }
+        p.sprite.setVisible(true);
+        p.shadow?.setVisible(true);
+        cam.startFollow(p.sprite, true, 0.12, 0.12);
+        this.leaving = false;
+      },
+    });
+  }
+
+  // läuft auf dieser Map das Event der Event-Karte? (Große Wanderung auf der Gnu-Furt)
+  expEvent() {
+    return !!(this.expMap && LEVEL.migration && expRun()?.event === LEVEL_ID);
+  }
+
+  // Pfeil am Bildschirmrand zum Ausgang, wenn die Map leer ist (über LuckWorld.markerTargets)
+  expMarkers() {
+    if (!this.expMap || unitsLeft() > 0) return [];
+    const exit = EXITS.find((e) => e.to === '@camp');
+    if (!exit) return [];
+    const p = tileToWorld(exit.tx, exit.ty);
+    return [{ id: 'exp-exit', x: p.x, y: p.y, icon: '⛺' }];
+  }
+
+  // Lagerfeuer im Camp (Bild aus LuckWorld), flackert
+  drawCampfire({ tx, ty }) {
+    const p = tileToWorld(tx, ty);
+    const fire = this.add.image(p.x, p.y + 6, 'campfire').setOrigin(0.5, 0.9).setScale(0.5).setDepth(p.y + 6);
+    const glow = this.add.image(fire.x, fire.y - 8, 'luck_sparkle').setBlendMode(Phaser.BlendModes.ADD).setTint(0xffa040).setScale(2.2).setDepth(fire.depth + 1).setAlpha(0.5);
+    this.tweens.add({ targets: fire, scaleY: 0.54, duration: 180, yoyo: true, repeat: -1 });
+    this.tweens.add({ targets: glow, alpha: 0.25, duration: 260, yoyo: true, repeat: -1 });
+  }
+
+  // Wohin käme dieses Tier im Zoo? 'star' (neue Art im Zoo oder seltene Variante), 'house' (freier Gehege-Platz) oder
+  // 'tree' (Gehege voll bzw. gar keins: Naturreservat). Der Platz wird beim Fragen verbraucht – also in der Reihenfolge
+  // fragen, in der die Tiere ankommen sollen (erst der Wagen, dann der Rest)
+  expPlacer() {
+    const room = new Map();
+    const starred = new Set();
+    const zoo = {};
+    for (const [id, saved] of Object.entries(game.levels)) if (!LEVELS[id]?.expedition) for (const s of saved.animals ?? []) if (s.state === 'penned') zoo[s.species] = (zoo[s.species] ?? 0) + 1; // (ohne die Käfige im Camp)
+    return (a) => {
+      if (noParkHome(a.species)) return 'tree';
+      const rare = !!a.skin && !skinInfo(a.species, a.skin)?.common;
+      const fresh = !zoo[a.species] && !starred.has(a.species);
+      const e = houseOf(a.species) ? null : parkPenFor(a.species, a.origin);
+      let key = null;
+      let free = Infinity;
+      if (e && hasSlots(e)) {
+        const qk = e.quota ? quotaKey(a.species) : null;
+        key = `${e.id}:${qk}`;
+        if (!room.has(key)) {
+          const cap = penQuotas(e).find((q) => q.key === qk)?.cap ?? Infinity;
+          const fits = (sp) => (qk ? quotaKey(sp) === qk : !e.species || e.species.includes(sp));
+          room.set(key, cap - (game.levels[e.level]?.animals ?? []).filter((s) => s.state === 'penned' && fits(s.species)).length);
+        }
+        free = room.get(key);
+      }
+      const use = () => key && room.set(key, free - 1);
+      if (rare || fresh) {
+        starred.add(a.species);
+        use();
+        return 'star';
+      }
+      if (free > 0) {
+        use();
+        return 'house';
+      }
+      return 'tree';
+    };
+  }
+
+  // Tiere im Camp auswildern (Naturreservat): bringt Herzen wie im Zoo. Gibt die Herzen zurück
+  expRelease(list) {
+    let hearts = 0;
+    for (const a of list) {
+      const h = releaseHearts(a.species, a.skin ?? a.variant);
+      hearts += h;
+      this.addHearts(h, a.species);
+    }
+    return hearts;
+  }
+
+  // Ankunft im Camp: Wagen vorbelegen, was ohnehin ins Reservat käme gleich auswildern, die Tiere in die Käfige setzen.
+  // Ein Pfeil zeigt erst auf die Käfige (neue Tiere), danach auf den Weg nach vorn (im letzten Camp aufs Auto)
+  expArriveCamp(arrivals) {
+    const r = expRun();
+    if (!r) return;
+    // seltene Varianten zuerst: sie bekommen sicher einen Platz (im Zoo zieht für sie eher ein normales Tier aus)
+    const rare = (a) => !!a.skin && !skinInfo(a.species, a.skin)?.common;
+    const all = [...r.wagon, ...r.stay, ...arrivals];
+    const { wagon, stay, release } = sortWagon([...all.filter(rare), ...all.filter((a) => !rare(a))], this.expPlacer());
+    r.wagon = wagon;
+    r.stay = stay;
+    const hearts = this.expRelease(release);
+    this.expWagonNote = null;
+    this.expPlaceCampAnimals();
+    const released = release.length
+      ? `<br>🌳 ${animalIcons(release.map((a) => a.species), 2)} ${tr('ins Naturreservat ausgewildert', 'released into the nature reserve')} · <span class="heart">♥</span> ${hearts}`
+      : '';
+    const later = (ms, fn) => this.time.delayedCall(ms, fn);
+    if (isFinalCamp() && !r.finalChest) {
+      this.expPoint('car');
+      later(700, () => this.expFinalChest(() => this.showToast(tr('🏁 Ziel erreicht! Sieh dir deinen Wagen an – mit dem Auto geht es zurück in den Zoo.', '🏁 Goal reached! Look at your wagon – the car takes you back to the zoo.') + released)));
+    } else if (arrivals.length) {
+      this.expPoint('cages');
+      later(900, () => this.showToast(tr('⛺ Neues Camp! Deine Tiere sind in den Käfigen – sieh nach, wen du mitnimmst.', '⛺ New camp! Your animals are in the cages – check who comes along.') + released));
+    } else if (r.step === 0) {
+      this.expPoint('exit');
+      later(900, () => this.showToast(LEVEL.campHint ?? tr('⛺ Willkommen im Expeditions-Camp! Folge rechts dem Weg tiefer in die Savanne – die Tafel am Zelt zeigt deinen Weg.', '⛺ Welcome to the expedition camp! Follow the path on the right deeper into the savanna – the board at the tent shows your route.')));
+    } else this.expPoint(isFinalCamp() ? 'car' : 'exit');
+  }
+
+  // Tiere des Wagens in die Käfige setzen (je eins), die übrigen ins Sammelgehege; vorher die alten entfernen
+  expPlaceCampAnimals() {
+    const r = expRun();
+    for (const a of this.expCampAnimals) {
+      const i = this.animals.indexOf(a);
+      if (i >= 0) this.animals.splice(i, 1);
+      a.destroy();
+    }
+    this.expCampAnimals = [];
+    if (!r) return;
+    const cages = ENCLOSURES.filter((e) => e.cage !== undefined).sort((p, q) => q.seed.tx + q.seed.ty - (p.seed.tx + p.seed.ty) || q.seed.ty - p.seed.ty); // vorderster Käfig (zur Kamera hin) zuerst
+    const corral = ENCLOSURES.find((e) => e.corral);
+    const put = (d, e) => {
+      if (!e || !SPECIES[d.species]) return;
+      const a = this.createAnimal(d.species, 0, 0, d.variant);
+      a.farm = d.farm ?? null;
+      a.skin = d.skin ?? null;
+      a.origin = d.origin;
+      if (isWaterAnimal(d.species)) a.campBag = true; // Fische: im Tank im Käfig (wie an Land), kein Wasser
+      this.placeInPen(a, e, true);
+      if (a.campBag) a.useBagLook?.();
+      // Nilpferde stehen im Käfig an Land (der Trog ist zu klein zum Schwimmen; sonst sähe man nur ihren Kopf im Sand)
+      if (a.species === 'hippo') {
+        a.onLand = true;
+        a.penTime = Infinity;
+        a.useBagLook();
+        a.pickWander();
+      }
+      this.expCampAnimals.push(a);
+    };
+    wagonCages(r.wagon).forEach((c, i) => c.animals.forEach((d) => put(d, cages[i]))); // je Art ein Käfig
+    for (const d of r.stay) put(d, corral);
+  }
+
+  // Pfeil über dem, was als Nächstes dran ist: 'cages', 'exit' oder 'car' (null: weg)
+  expPoint(what) {
+    this.expArrow?.destroy();
+    this.expArrow = null;
+    if (!what) return;
+    let at;
+    if (what === 'cages') at = { ...tileToWorld(LEVEL.cageCenter.tx, LEVEL.cageCenter.ty), lift: 30 };
+    else if (what === 'car') at = { ...tileToWorld(LEVEL.car.tx, LEVEL.car.ty), lift: 110 };
+    else if (LEVEL.canoe) at = { ...tileToWorld(LEVEL.canoe.tx, LEVEL.canoe.ty), lift: 46 }; // Dschungel: weiter mit dem Kanu
+    else {
+      const e = EXITS.find((x) => x.to === '@next');
+      at = { ...tileToWorld(e.tx, e.ty), lift: 50 }; // knapp über dem Schild am Ausgang
+    }
+    // wie Mavis Pfeil im Tutorial (npc/Mavi.js), nur größer
+    const img = this.add.text(at.x, at.y - at.lift, '▼', { fontFamily: 'Arial', fontSize: '34px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 5, resolution: 4 }).setOrigin(0.5, 1).setDepth(100001);
+    this.tweens.add({ targets: img, y: img.y - 12, duration: 450, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.expArrow = img;
+  }
+
+  // Camp-Deko: Zelt (gezeichneter Platzhalter) und Tafel mit dem Weg der Expedition
+  expDrawCamp() {
+    if (LEVEL.tent) {
+      if (!this.textures.exists('exp_tent')) {
+        const tex = this.textures.createCanvas('exp_tent', 200, 150);
+        const c = tex.getContext();
+        const poly = (pts, fill) => {
+          c.beginPath();
+          pts.forEach(([x, y], i) => (i ? c.lineTo(x, y) : c.moveTo(x, y)));
+          c.closePath();
+          c.fillStyle = fill;
+          c.fill();
+          c.strokeStyle = '#5a3c1c';
+          c.lineWidth = 2;
+          c.stroke();
+        };
+        c.fillStyle = 'rgba(40, 30, 10, 0.25)';
+        c.beginPath();
+        c.ellipse(100, 112, 96, 34, 0, 0, Math.PI * 2);
+        c.fill();
+        poly([[100, 8], [8, 100], [100, 146]], '#d8b46c'); // linke Seite (zur Kamera)
+        poly([[100, 8], [100, 146], [192, 100]], '#b48a48'); // rechte Seite
+        poly([[100, 40], [62, 110], [100, 132]], '#5a3c1c'); // Eingang
+        c.strokeStyle = '#6b4224';
+        c.lineWidth = 4;
+        c.beginPath();
+        c.moveTo(100, 8);
+        c.lineTo(100, 0);
+        c.stroke();
+        tex.refresh();
+      }
+      const p = tileToWorld(LEVEL.tent.tx, LEVEL.tent.ty);
+      const h = this.textures.getFrame('exp_tent').height; // gemaltes Zelt (tools/expedition-sprites.py) bzw. der Platzhalter: unten 4 Pixel Rand
+      this.add.image(p.x, p.y + 48, 'exp_tent').setOrigin(0.5, (h - 4) / h).setDepth(p.y + 48);
+    }
+    if (LEVEL.board) this.expDrawBoard(LEVEL.board);
+  }
+
+  // Tafel: 4 Maps und das Ziel als Stationen; gespielte abgehakt, ein roter Pfeil zeigt, wo man gerade ist (im Camp nach Map n)
+  expDrawBoard({ tx, ty }) {
+    const r = expRun();
+    const p = tileToWorld(tx, ty);
+    const d = p.y + 10;
+    const g = this.add.graphics().setDepth(d + 0.05);
+    // leichter Schatten auf dem Boden unter den Pfosten (wie bei Truhe und Zelt), weich in zwei Lagen
+    this.add.ellipse(p.x + 4, p.y - 1, 112, 26, 0x14320a, 0.12).setDepth(d - 1);
+    this.add.ellipse(p.x + 4, p.y - 1, 84, 16, 0x14320a, 0.16).setDepth(d - 0.9);
+    // gemaltes Brett mit Pfosten (exp_board, tools/expedition-sprites.py: Brett oben, BOARD.h hoch); ohne Bild gezeichnet
+    let x0;
+    let y0;
+    let W;
+    let H;
+    if (this.textures.exists('exp_board')) {
+      const f = this.textures.getFrame('exp_board');
+      const img = this.add.image(p.x, p.y, 'exp_board').setOrigin(0.5, (f.height - 4) / f.height).setDepth(d);
+      W = img.width;
+      H = BOARD_PLANK_H;
+      x0 = p.x - W / 2;
+      y0 = p.y - (f.height - 4);
+    } else {
+      W = 132;
+      H = 62;
+      x0 = p.x - W / 2;
+      y0 = p.y - 92;
+      g.fillStyle(0x6b4224, 1);
+      g.fillRect(p.x - 34, y0 + H - 4, 6, 96 - H);
+      g.fillRect(p.x + 28, y0 + H - 4, 6, 96 - H);
+      g.fillStyle(0xc9965a, 1).fillRoundedRect(x0, y0, W, H, 6);
+      g.lineStyle(3, 0x6b4224, 1).strokeRoundedRect(x0, y0, W, H, 6);
+    }
+    const n = RUN_LENGTH + 1; // Maps und Ziel
+    const R = 8; // Radius der Stationen
+    const step = (W - 36) / (n - 1);
+    const cy = y0 + H / 2 + 7;
+    const nx = (i) => x0 + 18 + i * step;
+    g.lineStyle(3, 0x6b4224, 0.7);
+    for (let i = 0; i < n - 1; i++) for (let k = 0; k < 4; k++) g.lineBetween(nx(i) + R - 2 + k * (step - 2 * R + 4) / 4, cy, nx(i) + R - 2 + (k + 0.5) * (step - 2 * R + 4) / 4, cy);
+    const style = { fontFamily: 'Trebuchet MS, Arial', fontSize: '11px', fontStyle: 'bold', color: '#3a2414', resolution: 4 };
+    for (let i = 0; i < n; i++) {
+      const done = i < r.step;
+      const goal = i === n - 1;
+      const x = nx(i);
+      g.fillStyle(goal ? 0xf4c43a : done ? 0x5fae4a : 0xf8e6c0, 1).fillCircle(x, cy, R);
+      g.lineStyle(2, 0x3a2414, 1).strokeCircle(x, cy, R);
+      // Haken und Stern gezeichnet (genau mittig), Zahlen als Text: dessen Kasten hat unten Platz für Unterlängen, darum
+      // sitzt die Mitte der Ziffer etwas über der Mitte des Kastens
+      if (goal) {
+        const pts = [];
+        for (let k = 0; k < 10; k++) {
+          const a = -Math.PI / 2 + (k * Math.PI) / 5;
+          const rr = k % 2 ? 2.4 : 5.6;
+          pts.push(new Phaser.Geom.Point(x + Math.cos(a) * rr, cy + 0.6 + Math.sin(a) * rr));
+        }
+        g.fillStyle(0x3a2414, 1).fillPoints(pts, true);
+      } else if (done) {
+        g.lineStyle(2.4, 0xffffff, 1).beginPath().moveTo(x - 4, cy + 0.2).lineTo(x - 1.2, cy + 3).lineTo(x + 4.2, cy - 3).strokePath();
+      } else {
+        this.add.text(x, cy, String(i + 1), style).setOrigin(0.5, 0.56).setDepth(d + 0.1);
+      }
+    }
+    // "Du bist hier": zwischen der zuletzt gespielten und der nächsten Station (am Anfang über der ersten)
+    const here = r.step >= RUN_LENGTH ? nx(n - 1) : r.step === 0 ? nx(0) : (nx(r.step - 1) + nx(r.step)) / 2;
+    g.fillStyle(0xe8483f, 1).fillTriangle(here - 6, cy - 22, here + 6, cy - 22, here, cy - 12);
+    this.add.text(p.x, y0 + 11, tr('Expedition', 'Expedition'), style).setOrigin(0.5).setDepth(d + 0.1);
+  }
+
+  // Wagen-Tafel (an den Käfigen im Camp)
+  expOpenWagon() {
+    const r = expRun();
+    if (!r || this.leaving || isWagonOpen() || isLuckPickerOpen()) return;
+    this.scene.pause();
+    const view = () => {
+      const place = this.expPlacer(); // erst der Wagen, dann die anderen (so verteilen sich die freien Plätze)
+      const list = wagonCages(r.wagon);
+      const cages = Array.from({ length: wagonCageCount() }, (_, i) => (list[i] ? { cap: cageSize(list[i].species), animals: list[i].animals.map((a) => ({ icon: wagonIcon(a), badge: place(a) })) } : null));
+      const stay = r.stay.map((a) => ({ icon: wagonIcon(a), badge: place(a) }));
+      const note = [this.expWagonNote, r.stay.length ? tr('Wer nicht im Wagen ist, wird beim Weiterziehen im Naturreservat ausgewildert (bringt Herzen).', 'Animals not in the wagon are released into the nature reserve when you move on (earns hearts).') : null].filter(Boolean).join('<br>');
+      return { cages, stay, note };
+    };
+    openWagon(view, {
+      tap: (where, i, j) => {
+        if (where === 'cage') {
+          const a = wagonCages(r.wagon)[i]?.animals[j];
+          if (a) r.stay.push(...r.wagon.splice(r.wagon.indexOf(a), 1));
+        } else if (fitsWagon(r.wagon, r.stay[i])) r.wagon.push(...r.stay.splice(i, 1));
+        else {
+          const own = wagonCages(r.wagon).some((c) => c.species === r.stay[i].species);
+          this.expWagonNote = own
+            ? tr('Der Käfig für diese Tiere ist voll – tippe erst eins davon im Wagen an.', 'The cage for these animals is full – tap one of them in the wagon first.')
+            : tr('Alle Käfige sind belegt – mach erst einen Käfig frei (tippe seine Tiere an).', 'All cages are taken – free a cage first (tap its animals).');
+          return;
+        }
+        this.expWagonNote = null;
+      },
+      close: () => {
+        this.scene.resume();
+        this.expWagonNote = null;
+        this.expPlaceCampAnimals();
+        this.expPoint(isFinalCamp() ? 'car' : 'exit');
+      },
+    });
+  }
+
+  // am Auto im Camp: Expedition beenden? (Rückfrage, damit man nicht aus Versehen heimfährt)
+  expConfirmHome() {
+    const r = expRun();
+    if (!r || this.leaving || isWagonOpen()) return;
+    this.scene.pause();
+    const icons = r.wagon.length ? animalIcons(r.wagon.map((a) => a.species), 2.4) : '';
+    const html = isFinalCamp()
+      ? `<h2>${tr('Zurück in den Zoo?', 'Back to the zoo?')}</h2><p>${icons}</p>`
+      : `<h2>${tr('Expedition beenden?', 'End the expedition?')}</h2><p>${tr(`Du hast erst ${r.step} von ${RUN_LENGTH} Maps geschafft.`, `You have only done ${r.step} of ${RUN_LENGTH} maps.`)}</p><p>${icons}</p>`;
+    openConfirm(html, tr('Zum Zoo fahren', 'Drive to the zoo'), isFinalCamp() ? tr('Noch nicht', 'Not yet') : tr('Weiter erkunden', 'Keep exploring'), {
+      yes: () => {
+        this.scene.resume();
+        this.expGoHome();
+      },
+      close: () => this.scene.resume(),
+    });
+  }
+
+  // Heimfahrt aus dem Camp: die Tiere im Wagen kommen mit in den Zoo, die übrigen ins Naturreservat; der Run ist vorbei
+  expGoHome() {
+    const r = expRun();
+    if (!r || this.leaving) return;
+    this.expRelease(r.stay);
+    this.carryHome = r.wagon.map((a) => ({ ...a }));
+    endRun();
+    this.travelTo('park');
+  }
+
+  // Beschriftung über einem Übergang (Expedition: welche Map als Nächstes kommt)
+  exitLabel(exit) {
+    const r = expRun();
+    if (exit.to === '@next' && r) return isFinalCamp() ? tr('Ziel erreicht', 'Goal reached') : tr(`Weiter · Map ${r.step + 1} von ${RUN_LENGTH}`, `Onward · Map ${r.step + 1} of ${RUN_LENGTH}`);
+    if (exit.to === '@camp' && r && r.step >= RUN_LENGTH) return tr('Zum Ziel-Camp', 'To the final camp');
+    return exit.label;
+  }
+
+  // am Weg aus dem Camp: die Karten für die nächste Map (wie in einer Kiste; neu würfeln gegen Herzen)
+  expOnwards(prev) {
+    this.player.x = prev.x;
+    this.player.y = prev.y;
+    if (this.leaving || isLuckPickerOpen() || isWagonOpen()) return;
+    const r = expRun();
+    if (!r) return;
+    if (isFinalCamp()) {
+      if (this.time.now < (this.blockedHintAt ?? 0)) return;
+      this.blockedHintAt = this.time.now + 4000;
+      this.showToast(tr('🏁 Die Expedition ist geschafft! Am Auto geht es mit deinem Wagen zurück in den Zoo.', '🏁 The expedition is complete! Take your wagon back to the zoo at the car.'));
+      return;
+    }
+    let rerolls = 0;
+    let cards = rollRunCards(cardCount());
+    this.scene.pause();
+    openLuckPicker(
+      () => ({
+        title: tr(`Wohin geht es? (Map ${r.step + 1} von ${RUN_LENGTH})`, `Where to? (Map ${r.step + 1} of ${RUN_LENGTH})`),
+        cards: cards.map((c) => this.expCardView(c)),
+        cost: rerollCost(rerolls),
+        hearts: game.hearts,
+      }),
+      (i) => {
+        this.scene.resume();
+        this.expTake(cards[i]);
+      },
+      () => {
+        game.hearts -= rerollCost(rerolls);
+        rerolls++;
+        cards = rollRunCards(cardCount());
+        this.updateHud();
+      },
+    );
+  }
+
+  expCardView(c) {
+    const where = `<br>${tr('Nächste Map', 'Next map')}: <b>${mapName(c.map)}</b>`;
+    if (c.kind === 'animal') {
+      const name = ANIMAL_INFO[c.species]?.[0] ?? c.species;
+      return { icon: animalIcon(c.species, 3), title: name, text: tr('Taucht dort sicher auf.', 'Sure to show up there.') + where, color: '#5fae4a', tag: tr('Tier', 'Animal') };
+    }
+    if (c.kind === 'rare') {
+      const v = this.luck.view({ kind: 'rare', species: c.species, skin: c.skin, tier: 'rare' });
+      return { ...v, text: tr('Kommt dort sicher als seltene Variante!', 'Sure to show up there as a rare variant!') + where };
+    }
+    if (c.kind === 'bonus') {
+      const v = this.luck.view({ kind: 'bonus', id: c.id });
+      return { ...v, text: v.text + where };
+    }
+    if (c.kind === 'event') {
+      return { icon: animalIcon('gnu', 3), title: tr('Große Wanderung', 'Great Migration'), text: tr('Eine riesige Gnu-Herde zieht vorbei – fang ein Gnu!', 'A huge herd of wildebeest passes by – catch one!') + where, color: '#d07a2a', tag: tr('Event', 'Event') };
+    }
+    return { icon: '<img class="luck-img" src="assets/treasure_chest0.png" alt="" draggable="false">', title: tr('Schatzkiste', 'Treasure chest'), text: tr('Auf der Map steht eine Kiste.', 'There is a chest on the map.') + where, color: '#c08a2a', tag: tr('Kiste', 'Chest') };
+  }
+
+  // Karte genommen: wer nicht im Wagen ist, bleibt im Camp (Naturreservat); dann zur gewählten Map
+  expTake(card) {
+    const r = expRun();
+    this.expRelease(r.stay);
+    r.stay = [];
+    if (card.kind === 'bonus' && card.id === 'heartRain') this.addHearts(HEART_RAIN);
+    const map = takeRunCard(card);
+    this.leaveLevel({ to: map, arrive: LEVELS[map].start, label: LEVELS[map].name });
+  }
+
+  // nach der letzten Map: die große Abschlusskiste – Glücksbringer, die man noch nicht hat; gibt es weniger als Karten
+  // (oder keine mehr), kommt ein Schatz mit FINAL_HEARTS Herzen dazu (eine große Belohnung, die immer wirkt)
+  expFinalChest(then) {
+    const r = expRun();
+    r.finalChest = true;
+    const roll = () => {
+      const charms = Object.keys(CHARMS).filter((id) => !ownsCharm(id));
+      const cards = rollCards({ rare: [], boni: [], charms }, cardCount());
+      if (cards.length < cardCount()) cards.push({ kind: 'treasure' });
+      return cards;
+    };
+    const view = (c) => (c.kind === 'treasure'
+      ? { icon: iconImg('bonus_heartRain'), title: tr('Schatz', 'Treasure'), text: tr(`${FINAL_HEARTS} Herzen für deinen Zoo.`, `${FINAL_HEARTS} hearts for your zoo.`), color: '#e0a820', tag: tr('Belohnung', 'Reward') }
+      : this.luck.view(c));
+    const take = (c) => {
+      if (c.kind !== 'treasure') return this.luck.take(c);
+      this.addHearts(FINAL_HEARTS);
+      this.showToast(`${iconImg('bonus_heartRain')} ${tr(`<b>Schatz!</b> <span class="heart">♥</span> ${FINAL_HEARTS} für deinen Zoo.`, `<b>Treasure!</b> <span class="heart">♥</span> ${FINAL_HEARTS} for your zoo.`)}`);
+    };
+    let rerolls = 0;
+    let cards = roll();
+    this.scene.pause();
+    openLuckPicker(
+      () => ({ title: tr('🏁 Expedition geschafft! Deine Belohnung:', '🏁 Expedition complete! Your reward:'), cards: cards.map(view), cost: rerollCost(rerolls), hearts: game.hearts }),
+      (i) => {
+        this.scene.resume();
+        take(cards[i]);
+        this.time.delayedCall(300, then);
+      },
+      () => {
+        game.hearts -= rerollCost(rerolls);
+        rerolls++;
+        cards = roll();
+        this.updateHud();
+      },
+    );
   }
 
   // Hintergrundgeräusch des Levels starten; ein anderes (oder in einem Level ohne) sofort beenden.
@@ -4968,7 +5721,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
   ambientKey() {
-    if (LEVEL_ID === 'savanna' && isActive('migration')) return 'ambient_migration';
+    if ((LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent?.()) return 'ambient_migration';
     if (LEVEL_ID === 'asia' && isActive('fireflies')) return 'ambient_forest_night'; // Glühwürmchen-Abend: Abendgeräusche
     return LEVEL_ID === 'forest' && isActive('wolves') ? 'ambient_forest_night' : LEVEL.ambient;
   }
@@ -4998,6 +5751,11 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (isPark(LEVEL_ID)) game.parkIncome = { ...game.parkIncome, [LEVEL_ID]: this.parkIncomeRates() }; // ab jetzt kommen die Herzen dieses Abschnitts laufend (siehe parkIncome)
     this.saveLevelState();
+    if (LEVEL.expedition) delete game.levels[LEVEL_ID]; // Expedition: Camp und Maps beginnen immer frisch
+    if (this.carryHome) {
+      game.followers.push(...this.carryHome); // Heimfahrt aus dem Camp: die Tiere aus dem Wagen ziehen im Zoo ein
+      this.carryHome = null;
+    }
     writeSave(exit.to); // beim Laden geht es dann im neuen Gebiet weiter
     // Hintergrundgeräusch ausblenden, wenn das nächste Level ein anderes hat
     if (ambient && LEVELS[exit.to].ambient !== ambient.key) this.tweens.add({ targets: ambient, volume: 0, duration: 240 });
@@ -5243,7 +6001,12 @@ export default class GardenScene extends Phaser.Scene {
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
     const exit = exitAt(tx, ty);
-    if (exit && !isUnlocked(exit.to)) this.blockedExit(exit, prev);
+    if (exit?.to === '@next') this.expOnwards(prev); // Expeditions-Camp: weiter (vorher die Karten)
+    else if (exit?.to === '@camp') {
+      const camp = campLevel();
+      this.leaveLevel({ ...exit, to: camp ?? 'park', arrive: camp ? LEVELS[camp].start : undefined });
+      return;
+    } else if (exit && !isUnlocked(exit.to)) this.blockedExit(exit, prev);
     else if (exit) {
       this.leaveLevel(exit);
       return;
@@ -5318,6 +6081,26 @@ export default class GardenScene extends Phaser.Scene {
         if (h.style === 'office') this.time.delayedCall(0, () => this.mavi.updateArrow()); // Pfeil: Tür ↔ Computer
         if (house.roof) this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
         this.tweens.add({ targets: house.front, alpha: inside ? Math.min(HUT_FRONT_ALPHA, FRONT_ALPHA[h.style] ?? 1) : (FRONT_ALPHA[h.style] ?? 1), duration: 250 });
+      }
+    }
+    // Dschungel-Camp: am Steg beim Kanu geht es weiter
+    if (this.expCamp && LEVEL.canoe) {
+      const b = tileToWorld(LEVEL.canoe.board.tx, LEVEL.canoe.board.ty);
+      const canoe = Math.hypot(this.player.x - b.x, (this.player.y - b.y) * 2) < 44;
+      if (canoe !== this.nearCanoe) {
+        this.nearCanoe = canoe;
+        this.updateToolbar();
+      }
+    }
+    // Raschelndes Dickicht (Expedition)
+    if (this.expMap) this.expRustle(dt);
+    // Expeditions-Camp: an den Käfigen öffnet die Aktionstaste den Wagen
+    if (this.expCamp) {
+      const t = worldToTile(this.player.x, this.player.y);
+      const cages = LEVEL.cageAreas.some((z) => t.tx >= z.tx0 && t.tx <= z.tx1 && t.ty >= z.ty0 && t.ty <= z.ty1);
+      if (cages !== this.nearCages) {
+        this.nearCages = cages;
+        this.updateToolbar();
       }
     }
     // am Auto: Schild zeigen, die Aktionstaste wird zur Schnellreise (das Auto ist breit, daher seitlich weiter)
@@ -5503,7 +6286,10 @@ function riverTiles() {
           }
         }
       }
-      if (group.length >= LEVEL.flow.minSize) group.forEach((k) => river.add(k));
+      // except: Rechteck, dessen Wasser normal (blau) bleibt, z. B. das Becken am Wasserfall
+      const ex = LEVEL.flow.except;
+      const kept = ex ? group.filter((k) => { const [x, y] = k.split(',').map(Number); return x < ex.tx0 || x > ex.tx1 || y < ex.ty0 || y > ex.ty1; }) : group;
+      if (group.length >= LEVEL.flow.minSize) kept.forEach((k) => river.add(k));
     }
   }
   return river;
