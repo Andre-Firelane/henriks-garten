@@ -19,6 +19,7 @@ import {
 } from './luck.js';
 import { RUN_BONI, addUnit, moreUnitsNow, runBonusTag } from './expedition.js';
 import { coveredAt } from './expeditionMaps.js';
+import { sideRecord } from './sideMaps.js';
 
 const NEAR = 40; // so nah muss man an der Kiste stehen (wie an der Werkzeug-Kiste)
 const CROWN_MARK = 96; // Fernglas: so hoch über dem Stammfuß steht das Bild eines Tiers in der Baumkrone
@@ -50,7 +51,7 @@ const CARD_SKINS = new Set([
   'cat2', 'stag', 'antelope2', 'croc_albino', 'tiger2', 'peacock2', 'orangutan2', 'frog2', 'jellyfish2', 'wolf2', 'lion2',
   'iguana2', 'panther', 'macaw2', 'snake2', 'tarantula2', 'ray2', 'gibbon', 'octopus2', 'sheep2', 'heron2', 'fox2',
   'squirrel2', 'beaver2', 'macaque2', 'anteater2', 'meerkat2', 'vulture2', 'gorilla2', 'hyena2', 'hippo2', 'panda2',
-  'penguin2', 'seal2', 'seahorse2', 'toucan2', 'turtle2', 'warthog2',
+  'penguin2', 'seal2', 'seahorse2', 'toucan2', 'turtle2', 'warthog2', 'tapir2', 'okapi2',
 ]);
 const BINO_MAX = 8; // Fernglas: so viele Pfeile höchstens (in den großen Welten sonst zu viele)
 let binoId = 0;
@@ -79,6 +80,8 @@ export default class Luck {
     if (this.enabled) this.placeChests();
     // Expedition: Kiste nur, wenn man vor dieser Map die Kistenkarte genommen hat (keine neuen nach dem Öffnen)
     if (game.expedition?.chestMap === LEVEL_ID) this.drawChest(this.freeSpot([]));
+    // hinter einem Durchgang: Kiste nur, wenn sie für diesen Durchgang gewürfelt wurde (bis zum Wetterwechsel einmal)
+    if (sideRecord(LEVEL_ID)?.chest) this.drawChest(this.freeSpot([]));
     if (bonusActive('stands')) this.placeStands();
     this.known = new Set(activeBoni().map((b) => b.id));
     this.updateCampfireButton();
@@ -143,6 +146,8 @@ export default class Luck {
     this.lastChestSpot = (this.nearChest ?? this.chests[0])?.spot ?? null; // dort kommt ein Hochstand hin (Bonus)
     chestOpened();
     if (game.expedition?.chestMap === LEVEL_ID) game.expedition.chestMap = null;
+    const side = sideRecord(LEVEL_ID);
+    if (side) side.chest = false;
     this.removeChests();
     s.updateToolbar();
     if (s.cache.audio.exists('trap')) s.sound.play('trap', { volume: 0.5 });
@@ -173,7 +178,7 @@ export default class Luck {
     const rare = Object.entries(weights)
       .filter(([, w]) => w > 0)
       .map(([species, w]) => ({ species, skin: rareSkinHere(species)?.id, share: w / total }))
-      .concat(Object.entries(CALLED).filter(([sp, c]) => (LEVEL.expedition ? !weights[sp] && LEVEL.home?.[sp] : c.when(LEVEL))).map(([species]) => ({ species, skin: rareSkinHere(species)?.id, share: CALLED_SHARE })))
+      .concat(Object.entries(CALLED).filter(([sp, c]) => (LEVEL.expedition && LEVEL.home ? !weights[sp] && LEVEL.home[sp] : c.when(LEVEL))).map(([species]) => ({ species, skin: rareSkinHere(species)?.id, share: CALLED_SHARE })))
       .filter((c) => c.skin);
     const boni = Object.entries(BONI)
       .filter(([id, b]) => (!b.available || b.available(LEVEL_ID)) && (id !== 'ride' || RIDE_LEVELS.includes(biomeOf())))
@@ -327,7 +332,9 @@ export default class Luck {
   // Bonus "Hochstand": wie der im Wald, einer bei der Kiste (gemerkt, damit er einen Wetterwechsel übersteht)
   placeStands() {
     const s = this.scene;
-    const lb = inExpedition() ? (this.runStands ??= {}) : game.levelBonus; // Expedition: Hochstand nur auf dieser Map
+    // Expedition: Hochstand nur auf dieser Map; sonst gilt der Bonus in der ganzen Gegend (große Map und Maps hinter den
+    // Durchgängen), jede Map hat ihren eigenen Hochstand (gemerkt je Map)
+    const lb = inExpedition() ? (this.runStands ??= {}) : game.levelBonus ? ((game.levelBonus.standsAt ??= {})[LEVEL_ID] ??= {}) : null;
     if (!lb) return;
     this.removeStands();
     if (!lb.stands) {
@@ -369,7 +376,7 @@ export default class Luck {
       img.destroy();
     }
     this.standImgs = [];
-    if (game.levelBonus && !bonusActive('stands')) delete game.levelBonus.stands;
+    if (game.levelBonus && !bonusActive('stands')) delete game.levelBonus.standsAt;
     s.updateToolbar();
   }
 

@@ -33,6 +33,8 @@ export const game = {
   levelBonus: null, // laufende Boni aus einer Kiste: { level, boni: { moreAnimals: endsAt, ... } } (nur in diesem Gebiet)
   rarePromise: null, // seltenes Tier aus der Kiste, das erst noch kommen muss: { level, species, skin } (siehe CALLED in world/LuckWorld.js)
   campfireAt: 0, // wann zuletzt am Lagerfeuer gesessen
+  sides: {}, // Durchgänge der großen Maps: { 'savanna:north': { map, season, chest } } (siehe src/world/sideMaps.js)
+  side: null, // gerade hinter einem Durchgang: { parent, passage, key, map, season, canoe, back }
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
 };
 
@@ -56,6 +58,8 @@ export function resetGame() {
   game.levelBonus = null;
   game.rarePromise = null;
   game.campfireAt = 0;
+  game.sides = {};
+  game.side = null;
   game.story = newStory();
   game.catches = {};
   game.caughtIn = {};

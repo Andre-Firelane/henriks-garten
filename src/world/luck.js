@@ -146,13 +146,17 @@ export function equipCharm(id) {
   setCharmSlot(eq.length < CHARM_SLOTS ? eq.length : 0, id);
 }
 
-// --- Boni (nur im Gebiet der Kiste) ---
+// --- Boni (in der Gegend der Kiste) ---
+// Gegend: eine große Map und die kleinen Maps hinter ihren Durchgängen (sideMaps.js) – ein Bonus aus einer Kiste gilt
+// überall dort, egal auf welcher dieser Maps die Kiste stand
+export const regionId = () => (game.side?.map === LEVEL_ID ? game.side.parent : LEVEL_ID);
 function levelBoni() {
   const b = game.levelBonus;
-  return b && b.level === LEVEL_ID ? b.boni : {};
+  return b && b.level === regionId() ? b.boni : {};
 }
-// Expedition (Camp und Maps): Boni gelten bis zum Ende des Runs (game.expedition.boni, siehe expedition.js)
-export const inExpedition = () => !!(game.expedition && LEVEL?.expedition);
+// Expedition (Camp und Maps): Boni gelten bis zum Ende des Runs (game.expedition.boni, siehe expedition.js); die Maps
+// hinter einem Durchgang gehören nicht dazu, auch wenn sie aus dem Expeditions-Baukasten stammen
+export const inExpedition = () => !!(game.expedition && LEVEL?.expedition && !LEVEL.side);
 const runBoni = () => (inExpedition() ? game.expedition.boni : []);
 export const bonusLeft = (id, now = Date.now()) => (runBoni().includes(id) ? Infinity : Math.max(0, (levelBoni()[id] ?? 0) - now));
 export const bonusActive = (id, now = Date.now()) => bonusLeft(id, now) > 0;
@@ -169,13 +173,13 @@ export function startBonus(id, now = Date.now()) {
     if (!game.expedition.boni.includes(id)) game.expedition.boni.push(id);
     return;
   }
-  if (game.levelBonus?.level !== LEVEL_ID) game.levelBonus = { level: LEVEL_ID, boni: {} };
+  if (game.levelBonus?.level !== regionId()) game.levelBonus = { level: regionId(), boni: {} };
   game.levelBonus.boni[id] = now + (hasCharm('hourglass') ? HOURGLASS_MS : BONUS_MS);
 }
 
-// beim Betreten eines Gebiets: Boni aus einem anderen Gebiet sind vorbei
+// beim Betreten eines Gebiets: Boni aus einer anderen Gegend sind vorbei
 export function dropBoniElsewhere() {
-  if (game.levelBonus && game.levelBonus.level !== LEVEL_ID) game.levelBonus = null;
+  if (game.levelBonus && game.levelBonus.level !== regionId()) game.levelBonus = null;
 }
 
 // --- Kisten ---

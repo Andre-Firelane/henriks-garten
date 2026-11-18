@@ -606,6 +606,43 @@ export const SPECIES = {
     catchWith: ['lasso', 'touch'], // Berühren nur beim Fressen am Baum
     thicket: true,
   },
+  // Tapir (Dschungel): wie das Nilpferd im Fluss, nur länger an Land (siehe Tapir.js); mit einem Blätterzweig vom
+  // Futterstrauch gefüttert, läuft er mit (siehe LeafBushes.js). Bisher nur Standbilder
+  tapir: {
+    texture: 'tapir',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 16,
+    restChance: 0.55,
+    restTime: [2, 5],
+    walkTime: [1, 2.5],
+    stepRate: 7,
+    hop: 1,
+    footW: 12,
+    shadowW: 44,
+    fleeDist: 70, // ohne Zweig in der Hand: kommt man näher, trottet er zurück ins Wasser ...
+    fleeSpeed: 40, // ... langsamer als Henrik
+    catchWith: ['leaves'],
+  },
+  // Okapi (Dschungel): scheu, rennt beim ersten Mal weg, wird mit jedem Mal mutiger (siehe Okapi.js); mit einem
+  // Blätterzweig gefüttert, läuft es mit. Bisher nur Standbilder
+  okapi: {
+    texture: 'okapi',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 100 / 104,
+    speed: 24,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 30,
+    fleeDist: 80,
+    fleeSpeed: 92, // etwas schneller als Henrik (80), bleibt aber bald stehen
+    catchWith: ['leaves'],
+    thicket: true, // läuft durchs Dickicht
+  },
   // Brüllaffe (Dschungel): sitzt unsichtbar oben in den Urwaldbäumen, kommt für eine Banane herunter (siehe Howler.js)
   howler: {
     texture: 'howler',
@@ -1003,6 +1040,8 @@ export const SKINS = {
   seahorse: { id: 'seahorse2', name: tr('Fetzenfisch', 'leafy seadragon'), male: true, wild: 0.1, baby: 0.03 },
   turtle: { id: 'turtle2', name: tr('Karettschildkröte', 'hawksbill turtle'), male: false, wild: 0.1, baby: 0 },
   octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },
+  tapir: { id: 'tapir2', name: tr('Schabrackentapir', 'Malayan tapir'), male: true, wild: 0.1, baby: 0.03 },
+  okapi: { id: 'okapi2', name: tr('Streifen-Okapi', 'striped okapi'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js
 };
 

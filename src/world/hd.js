@@ -28,7 +28,7 @@ export const HD = [
   'boulder', 'build_planks', 'build_stakes', 'cat_tree', 'chain_x', 'chain_y', 'cherry_tree', 'climb_tree', 'den', 'den_sand', 'dry_bush',
   'feeder', 'fence_x', 'fence_y', 'fishpond0', 'fishpond1', 'floor_office', 'fountain', 'gate_chain_x', 'gate_chain_y',
   'gate_door_office_x', 'gate_door_office_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x',
-  'gate_net_y', 'gate_tall_x', 'gate_tall_y', 'gate_x', 'gate_y', 'hammock', 'hay_rack', 'hay_shelter', 'heliconia', 'hibiscus',
+  'gate_net_y', 'gate_tall_x', 'gate_tall_y', 'gate_x', 'gate_y', 'hammock', 'hay_rack', 'hay_shelter', 'heliconia', 'hibiscus', 'leaf_bush', 'leaf_bush_bare', 'leaf_branch',
   'hotspring', 'hutroof_cathouse', 'hutroof_office', 'hutwall_cathouse_x', 'hutwall_cathouse_y', 'hutwall_office_x', 'hutwall_office_y',
   'icecream', 'icecream2', 'icecream3', 'icecream_stand', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'popcorn_stand', 'lemonade_stand', 'cottoncandy_stand', 'pretzel_stand', 'jgrass0', 'jgrass1', 'jgrass2', 'jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2',
   'jungle_plant', 'jungle_tree', 'lion_rock', 'mesh_x', 'mesh_y', 'nest_box', 'net_x', 'net_y', 'office_armchair', 'office_chair',

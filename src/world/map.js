@@ -6,6 +6,7 @@ import { TILE_W, TILE_H, tileToWorld, worldToTile } from './iso.js';
 import { tr } from '../i18n.js';
 import { currentSeason, firstSeason } from './season.js';
 import { storyAt } from '../story/story.js';
+import { sideHere, sideOverrides } from './sideMaps.js';
 import { PEN_TOYS, TOYS, toyKey } from './toys.js';
 
 // leere Bauplätze (Buden, Riesenrad) erst ab Mavis Ausbau-Aufgabe zeigen – vorher lenken sie nur ab
@@ -275,9 +276,12 @@ export function setLevel(id) {
   // Expeditions-Map: Wetter und Tierliste wurden für diesen Besuch gewürfelt (siehe planMap in expedition.js); das Wetter
   // ändert nur Aussehen und Geräusche (looks), nicht das Gelände
   if (base.expedition && !base.camp) {
+    // hinter einem Durchgang der großen Map (sideMaps.js): Wetter und Tiere wie dort
+    const side = sideHere(id);
     const r = game.expedition?.map === id ? game.expedition : null;
-    const weather = r?.season ?? 'normal';
+    const weather = side?.season ?? r?.season ?? 'normal';
     LEVEL = { ...base, ...(base.looks?.[weather] ?? {}), season: weather, home: r?.home ?? {} };
+    if (side) LEVEL = { ...LEVEL, ...sideOverrides(base, side) };
     if (weather !== 'dry') delete LEVEL.gatherAt; // am letzten Wasserloch drängen sich die Tiere nur in der Trockenzeit
   }
   ROWS = LEVEL.rows;

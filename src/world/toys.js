@@ -68,6 +68,7 @@ export const PEN_TOYS = {
   anteaters: ['termite_mound', 'termite_mound'],
   jaguars: ['tree_platform', 'jute_ball'],
   gorillas: ['straw_nest', 'climb_ropes'],
+  tapirs: ['melons', 'salt_lick'],
 };
 
 // Tiere, die ihr Spielzeug benutzen (Animal.updateToy): ab und zu (every, Sekunden) zum Spielzeug laufen und eine Weile
@@ -76,6 +77,8 @@ export const PEN_TOYS = {
 export const TOY_PLAY = {
   meerkat: { toy: 'lookout', action: 'perch', lift: 18, time: [6, 12], every: [6, 14] },
   hippo: { toy: 'melons', action: 'eat', time: [5, 9], every: [10, 20] },
+  tapir: { toy: 'melons', action: 'eat', time: [5, 9], every: [12, 24] },
+  okapi: { toy: 'salt_lick', action: 'eat', time: [4, 8], every: [10, 20] },
   warthog: { toy: 'scratch_post', action: 'rub', time: [3, 6], every: [8, 16] },
   sheep: { toy: 'scratch_post', action: 'rub', time: [2, 4], every: [15, 30] },
   panda: { toy: 'slide', action: 'slide', lift: 46, time: [4, 4], every: [10, 20] },

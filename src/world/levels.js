@@ -45,7 +45,7 @@ import { EXPEDITION_LEVELS } from './expeditionMaps.js';
 
 // Savanne in der normalen Phase; Starkregen und Trockenzeit leiten ihre Karten daraus ab (siehe savanna.seasons)
 const SAVANNA_ROWS = [
-  'AvvvvvvRvAvvvvvvRvAvvvvvvRƲǍƲƲƲƲƲƲRƲǍƲƲƲ',
+  'AvvvvvvRvA.vvvvvRvAvvvvvvRƲǍƲƲƲƲƲƲRƲǍƲƲƲ',
   'R...................#..................Ʋ',
   'v.y.....v..y.....y..#....Ʋ......Ǎ....Ʋ.Ʋ',
   'v.....vŢ......y..y..#.........Ʊ........Ʋ',
@@ -58,7 +58,7 @@ const SAVANNA_ROWS = [
   'R..v.~~~~~~..y......#y.v.........Ƙ.....Ʋ',
   'v.......~~......Ry.y#......v..v..A...y.Ʋ',
   'v......y.....vy...y.#..Ʋ.....Ƙ.......Ţ.v',
-  'v....y.....y........#..........Ʋ.......v',
+  'v....y.....y........#..........Ʋ........',
   'v.v.......v..Ţ......#..................v',
   'v.v.......ƚƚ.....R..#............ƚƚ..y.A',
   'v.....Ʀ..ƚƚƚƚ....Ƙy.#.y.....Ţ...ƚƚƚƚ...R',
@@ -84,7 +84,7 @@ const SAVANNA_ROWS = [
   'A.......y...........y..y....y..ƚƚv.....v',
   'R.v.v...v......v.v......v....vƚƚƚƚ.....v',
   'v......................................v',
-  'vvvvRvAvvvvvvRvAvvvvvvRvAvvvvvvRvAvvvvvv',
+  'vvvvRvAvvvvvvRvAvvvvvvRvAvv.vvvRvAvvvvvv',
 ];
 
 // Starkregen: die Wasserlöcher wachsen um rings Kacheln (nur über Gras und Büschel, nicht an Wege, Hütte, Auto und Start)
@@ -350,7 +350,12 @@ export const LEVELS = {
     // Bild aus tools/savanna-placeholders.py, Mitte über dieser Kachel)
     gravePatch: { key: 'savanna_grave_patch', tx: 33, ty: 4.5 },
     toolSpots: [],
-    exits: [], // nur mit dem Auto
+    // Durchgänge in kleine Maps aus dem Expeditions-Baukasten (siehe sideMaps.js); sonst nur mit dem Auto
+    exits: [
+      { tx: 10, ty: 0, to: '@side', passage: 'north', back: { tx: 10, ty: 1 }, label: tr('Tiefer in die Savanne', 'Deeper into the savanna') },
+      { tx: 39, ty: 13, to: '@side', passage: 'east', back: { tx: 38, ty: 13 }, label: tr('Tiefer in die Savanne', 'Deeper into the savanna') },
+      { tx: 27, ty: 39, to: '@side', passage: 'south', back: { tx: 27, ty: 38 }, label: tr('Tiefer in die Savanne', 'Deeper into the savanna') },
+    ],
     // Hier leben Antilopen (Gazellen) und Zebras in Gruppen zu 2 bis 4, etwa gleich häufig, und Giraffen;
     // keine Fischreiher. Giraffen sind viel seltener und erscheinen meist an Bäumen
     // Erdmännchen kommen als Kolonie (3 bis 5), seltener als Antilopen und Zebras
@@ -476,7 +481,7 @@ export const LEVELS = {
     car: { tx: 16.4, ty: 22.6, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 19, ty: 22 } },
     map: { x: 30, y: 64, icon: 'macaw' },
     rows: [
-      'kJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkk',
+      'kJkkJkkJkkJkkJkkJkkJk.JkkJkkJkkJkkJkkJkkJkkk',
       'JŔŔŔŔŔŔŔŔk.J.....nľf...nfqn..n....ľn.qnľqn.J',
       'kŔŔ.ŴnḢrĎĎJḟnJ.k.n..n..q...ḟJqJJ.qḢfľqqqn.nk',
       'kŔr~~~~ĎĎ.J...J.knľ.qkk.J..n.Jn.nqnJg.Ḣ.nqqk',
@@ -519,7 +524,7 @@ export const LEVELS = {
       'J..ľqkḟ.J...Jn.ľJnq.ĎĎĎĎĎq..nḟnkJ..........J',
       'kk...Jľg..ḟnnn...fľ.qf.ľ..f.k...ĎJqq....qľĎk',
       'kn.J..q.nkJľ.nf.k.Jqľľk.ľnk...J.qĎĎ.q.nn.ĎĎk',
-      'JJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJ',
+      'JJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJkkJ.kJkkJ',
     ],
     grass: ['jgrass0', 'jgrass1', 'jgrass2'],
     path: 'jungle_path',
@@ -547,10 +552,16 @@ export const LEVELS = {
     ambientVolume: 0.7, // das ruhige Stück ohne Brüllaffen ist leiser aufgenommen
     background: '#2f5a24',
     toolSpots: [],
-    exits: [], // hin und zurück nur mit dem Wasserflugzeug
+    // Durchgänge in kleine Maps aus dem Expeditions-Baukasten (siehe sideMaps.js): oben und unten zu Fuß, rechts auf dem
+    // Fluss mit dem Kanu (die ganze Flussbreite am Rand; dahinter immer eine Fluss-Map); sonst nur mit dem Wasserflugzeug
+    exits: [
+      { tx: 21, ty: 0, to: '@side', passage: 'north', back: { tx: 21, ty: 1 }, label: tr('Tiefer in den Dschungel', 'Deeper into the jungle') },
+      { tx: 38, ty: 43, to: '@side', passage: 'south', back: { tx: 38, ty: 42 }, label: tr('Tiefer in den Dschungel', 'Deeper into the jungle') },
+      ...[19, 20, 21, 22, 23, 24].map((ty) => ({ tx: 43, ty, to: '@side', passage: 'river', canoe: true, back: { tx: 41, ty: 21 }, label: tr('Mit dem Kanu flussabwärts', 'Downriver by canoe') })),
+    ],
     // Plätze (population: ein Trupp Brüllaffen, ein Ara-Paar, ein Piranha-Schwarm zählt als einer). spawn gilt bei jedem
     // Wetter, weatherSpawn ist der eigene Pool der Wetterlage (die Wetterphasen unten ersetzen nur ihn)
-    spawn: { population: 2, weights: { anteater: 1, jaguar: 1 } }, // Ameisenbären und ein Jaguar bei jedem Wetter
+    spawn: { population: 3, weights: { anteater: 1, jaguar: 1, tapir: 0.7, okapi: 0.7 } }, // Ameisenbären, ein Jaguar, Tapire am Fluss und Okapis bei jedem Wetter
     weatherSpawn: { population: 4, weights: { howler: 1, macaw: 1 } }, // normales Wetter: Brüllaffen und Aras in den Uferbäumen
     // Sonne am Wasserfall (nur bei normalem Wetter, siehe WaterfallSun.js): Fläche ums Becken, in der sich höchstens
     // so viele Leguane verstecken und sonnen (eigener Pool, siehe Iguana.js)
@@ -930,21 +941,21 @@ const PARK_ROWS = [
       '            5].......q....]....r...#.....q.]..........]bJ..#.;.........ľ.....ľ;.#.].......q.ľ.]5',
       '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ..#.^^^^^^^^^^^^^^^^^^ľ#.[[[[[[[[[[[[[5',
       '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb...#....................#..............5',
-      '                                                       5ľ.n#...ľ...q......ľ...n.#.q....ľ...n...5',
-      '                                                       5.#####################################.5',
-      '                                                       5.q...ľ...n......ľ...q....ľ....n...q.ľ..5',
-      '                                                       5.[[[[[[[[G[[[[[[[[[..[[[[[[[[G[[[[[[[[[5',
-      '                                                       5.]..ľ.......n.....]..]..n.....ľ...q...]5',
-      '                                                       5.]...J..q.....J...]..]...J.........J..]5',
-      '                                                       5.].n.....r.....ľ..]..].q....L.....n...]5',
-      '                                                       5.]....ľ........J..]..]......ľ.....J...]5',
-      '                                                       5.]..J........n.q..]..]..ľ........q....]5',
-      '                                                       5.].....q..ľ.......]..]....J..n........]5',
-      '                                                       5.].ľ...J......J...]..].n...L........ľ.]5',
-      '                                                       5.]......n.....ľ...]..]......q.....J...]5',
-      '                                                       5.]..q.....ľ.......]..]..ľ.....n.......]5',
-      '                                                       5.[[[[[[[[[[[[[[[[[[..[[[[[[[[[[[[[[[[[[5',
-      '                                                       55555555555555555555555555555555555555555',
+      '                                    5ľ.n..q.ľ...n.q..ľ.5ľ.n#...ľ...q......ľ...n.#.q....ľ...n...5',
+      '                                    5.########################################################.5',
+      '                                    5.q....ľ..#...n..ľ.5.q...ľ...n......ľ...q....ľ....n...q.ľ..5',
+      '                                    5[[[[[[[[[G[[[[[[[[5.[[[[[[[[G[[[[[[[[[..[[[[[[[[G[[[[[[[[[5',
+      '                                    5]..ľ..........n..]5.]..ľ.......n.....]..]..n.....ľ...q...]5',
+      '                                    5].n.....q......ľ.]5.]...J..q.....J...]..]...J.........J..]5',
+      '                                    5]....ľ.......q.J.]5.].n.....r.....ľ..]..].q....L.....n...]5',
+      '                                    5].ooooo.....L....]5.]....ľ........J..]..]......ľ.....J...]5',
+      '                                    5]ooooooo......n..]5.]..J........n.q..]..]..ľ........q....]5',
+      '                                    5]oooooooo....J...]5.].....q..ľ.......]..]....J..n........]5',
+      '                                    5].oooooo..ľ......]5.].ľ...J......J...]..].n...L........ľ.]5',
+      '                                    5]..ooo.....q...n.]5.]......n.....ľ...]..]......q.....J...]5',
+      '                                    5].ľ.......n......]5.]..q.....ľ.......]..]..ľ.....n.......]5',
+      '                                    5[[[[[[[[[[[[[[[[[[5.[[[[[[[[[[[[[[[[[[..[[[[[[[[[[[[[[[[[[5',
+      '                                    555555555555555555555555555555555555555555555555555555555555',
 ];
 
 // ground/water: Boden und Teichwasser im Gehege, passend zur Welt, aus der die Tiere kommen
@@ -986,6 +997,9 @@ const PARK_PENS = [
       { id: 'anteaters', name: tr('Ameisenbär-Gehege', 'Anteater Enclosure'), species: ['anteater'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 86, ty: 77 }, slots: [4, 6], upgrade: tr('Größeres Gehege mit zweitem Ameisenbaum', 'Bigger enclosure with a second ant tree'), basic: [[89, 75, ']'], [89, 76, ']'], [89, 77, ']'], [89, 78, ']'], [89, 79, ']'], [89, 80, ']'], [92, 78, '.']] }, // rechts neben der Ara-Voliere; frisst Ameisen an den Urwaldbäumen; vor dem Ausbau Innenzaun in Spalte 89
       { id: 'jaguars', name: tr('Jaguar-Gehege', 'Jaguar Enclosure'), species: ['jaguar'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 61, ty: 91 }, slots: [2, 4], upgrade: tr('Größeres Gehege mit mehr Kletterbäumen', 'Bigger enclosure with more climbing trees'), basic: [[66, 87, ']'], [66, 88, ']'], [66, 89, ']'], [66, 90, ']'], [66, 91, ']'], [66, 92, ']'], [66, 93, ']'], [66, 94, ']'], [66, 95, ']']] }, // unten links im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 66
       { id: 'gorillas', name: tr('Gorilla-Gehege', 'Gorilla Enclosure'), species: ['gorilla'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 81, ty: 91 }, slots: [3, 5], upgrade: tr('Größeres Gehege mit Kletterbäumen und Baumstämmen', 'Bigger enclosure with climbing trees and logs'), basic: [[87, 87, ']'], [87, 88, ']'], [87, 89, ']'], [87, 90, ']'], [87, 91, ']'], [87, 92, ']'], [87, 93, ']'], [87, 94, ']'], [87, 95, ']']] }, // unten rechts im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 87
+      // Tapire und Okapis teilen sich ein Gehege unten links neben dem Jaguar (Zeilen 83 bis 97): der Tapir badet im Teich
+      // (wie das Nilpferd), das Okapi läuft zwischen den Urwaldbäumen. Vor dem Ausbau ist der Teich kleiner und es fehlt ein Baum
+      { id: 'tapirs', name: tr('Tapir- und Okapi-Gehege', 'Tapir and Okapi Enclosure'), species: ['tapir', 'okapi'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 47, ty: 89 }, quota: { tapir: [2, 4], okapi: [2, 4] }, upgrade: tr('Größerer Badeteich und ein zweiter Urwaldbaum', 'Bigger bathing pond and a second jungle tree'), basic: [[44, 91, '.'], [44, 92, '.'], [45, 92, '.'], [50, 92, '.']] },
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
 ];
 
@@ -1139,7 +1153,7 @@ LEVELS.park2 = parkSection('park2', {
 
 // Bambuswald und rechts daneben der Dschungel mit dem Reptilienhaus. Oben geht es zurück ins Zentrum
 LEVELS.park3 = parkSection('park3', {
-  x0: 12, x1: 95, y0: 59, y1: 97, // unten im Dschungel-Teil: Jaguar- und Gorilla-Gehege (Zeilen 83 bis 97)
+  x0: 12, x1: 95, y0: 59, y1: 97, // unten im Dschungel-Teil: Tapir-/Okapi-, Jaguar- und Gorilla-Gehege (Zeilen 83 bis 97)
   edits: [
     [12, 59, edgeRow(12, '5'.repeat(44), [38])],
     [35, 82, 'b'], // früher der Ausgang in den Bambuswald
@@ -1153,6 +1167,7 @@ LEVELS.park3 = parkSection('park3', {
   grounds: [
     { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
     { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
+    { area: { tx0: 36, tx1: 55, ty0: 83, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Tapir- und Okapi-Gehege
     { area: { tx0: 12, tx1: 59, ty0: 59, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
   ],
   sections: [

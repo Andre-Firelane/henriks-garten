@@ -38,9 +38,9 @@ const GROUPS = {
     art: /asia|^agrass|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii)$/,
   },
   jungle: {
-    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'snake', 'tarantula', 'piranha'],
-    keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|snake|tarantula|piranha|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
-    art: /jungle|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web)$/,
+    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'tapir', 'okapi', 'snake', 'tarantula', 'piranha'],
+    keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|tapir|okapi|snake|tarantula|piranha|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
+    art: /jungle|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web|leaf_bush|leaf_bush_bare|leaf_branch)$/,
   },
   reef: {
     species: ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'],
@@ -134,6 +134,8 @@ const PIXEL_ART = [
   // Biber (Platzhalter aus tools/beaver-placeholders.py): Damm mit und ohne Loch, großer Stock, angenagter Baum, Biberburg
   'forest_beaver_dam', 'forest_beaver_dam_hole', 'forest_stick', 'forest_gnawed_tree', 'forest_beaver_lodge', 'forest_dark_soil',
   'forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3',
+  // Futterstrauch für Tapir und Okapi (Dschungel, tools/leaf-bush.py): voll, abgeerntet, der Blätterzweig in der Hand
+  'leaf_bush', 'leaf_bush_bare', 'leaf_branch',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',
   // Savanne (Platzhalter aus tools/savanna-placeholders.py): hohes Gras, Busch, Strauch im Regen, Felsgruppe, Termitenhügel, Elefantenfriedhof
   'savanna_tallgrass', 'savanna_tallgrass_rain', 'savanna_tallgrass_dry', 'savanna_bush', 'savanna_bush_rain', 'savanna_shrub_rain',
@@ -719,6 +721,11 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
     for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
+    // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus
+    // tools/static-sheet.py; der Tapir im Wasser: nur Kopf und Rücken (wie das Nilpferd)
+    for (const k of ['tapir', 'tapir2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 88 });
+    for (const k of ['tapir_water', 'tapir2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 44 });
+    for (const k of ['okapi', 'okapi2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 104 });
     for (const k of ['anteater_eat', 'anteater2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
     load.spritesheet('beaver', 'assets/beaver.png', { frameWidth: 80, frameHeight: 60 }); // Biber (Wald, aus Sprites/Biber.webp)
     load.image('beaver_swim', 'assets/beaver_swim.png'); // ... schwimmt (aus dem Biber-Sprite, tools/beaver-swim.py)

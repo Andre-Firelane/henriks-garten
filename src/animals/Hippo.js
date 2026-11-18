@@ -25,10 +25,11 @@ const CALL_EVERY = [15, 30]; // so oft grunzt es (Sekunden) ...
 const CALL_VOLUME = 0.45; // ... ganz nah so laut
 
 export default class Hippo extends Crocodile {
-  constructor(scene, allAnimals) {
-    super(scene, allAnimals, 'hippo');
+  // species: Tiere, die sich genauso verhalten (Tapir, siehe Tapir.js); die Zeiten und die Größe kommen von times()
+  constructor(scene, allAnimals, species = 'hippo') {
+    super(scene, allAnimals, species);
     this.mode = 'water';
-    this.modeTime = Phaser.Math.FloatBetween(2, WATER_TIME[1]);
+    this.modeTime = Phaser.Math.FloatBetween(2, this.times().water[1]);
     this.unplaced = true; // erst beim ersten Bild ins Wasserloch (die Szene setzt die Position nach dem Erzeugen)
   }
 
@@ -40,6 +41,11 @@ export default class Hippo extends Crocodile {
     this.x = p.x;
     this.y = p.y;
     this.drift = null;
+  }
+
+  // so lange treibt es im Wasser bzw. grast an Land, so groß ist es (Unterarten ändern das)
+  times() {
+    return { water: WATER_TIME, land: LAND_TIME, landMin: LAND_MIN, scale: HIPPO_SCALE };
   }
 
   inWater() {
@@ -79,14 +85,15 @@ export default class Hippo extends Crocodile {
     if (this.callIn <= 0) {
       this.callIn = Phaser.Math.FloatBetween(...CALL_EVERY);
       const d = Math.hypot(player.x - this.x, (player.y - this.y) * 2);
-      if (d < 600 && this.scene.cache.audio.exists('animal_hippo')) this.scene.sound.play('animal_hippo', { volume: CALL_VOLUME * (1 - d / 600), detune: Phaser.Math.Between(-150, 150) });
+      const call = `animal_${this.species}`; // (der Tapir hat keinen eigenen Ruf)
+      if (d < 600 && this.scene.cache.audio.exists(call)) this.scene.sound.play(call, { volume: CALL_VOLUME * (1 - d / 600), detune: Phaser.Math.Between(-150, 150) });
     }
     if (this.mode === 'water') {
       if (this.modeTime <= 0) {
         // erst zum nächsten Ufer schwimmen, dann dort herausklettern (nicht irgendwo im Wasserloch auftauchen)
         this.target ??= this.wildShore();
         if (!this.target) {
-          this.modeTime = Phaser.Math.FloatBetween(...WATER_TIME);
+          this.modeTime = Phaser.Math.FloatBetween(...this.times().water);
         } else {
           const w = this.target.water;
           const tx = w.x - this.x;
@@ -113,7 +120,7 @@ export default class Hippo extends Crocodile {
     }
     if (this.mode === 'land') {
       this.landTime = (this.landTime ?? 0) + dt;
-      if (this.modeTime <= 0 || (this.landTime >= LAND_MIN && this.shouldFlee(player))) this.mode = 'back';
+      if (this.modeTime <= 0 || (this.landTime >= this.times().landMin && this.shouldFlee(player))) this.mode = 'back';
       else return Animal.prototype.updateFree.call(this, dt, player); // grast am Ufer (an der Leine)
     }
     // zurück ins Wasser: zum Ufer trotten und hineinspringen
@@ -125,7 +132,7 @@ export default class Hippo extends Crocodile {
       this.x = b.water.x;
       this.y = b.water.y;
       this.mode = 'water';
-      this.modeTime = Phaser.Math.FloatBetween(...WATER_TIME);
+      this.modeTime = Phaser.Math.FloatBetween(...this.times().water);
       this.leash = null;
       this.fleeing = false;
       this.useWaterLook();
@@ -154,7 +161,7 @@ export default class Hippo extends Crocodile {
     this.y = s.land.y;
     this.mode = 'land';
     this.landTime = 0;
-    this.modeTime = Phaser.Math.FloatBetween(...LAND_TIME);
+    this.modeTime = Phaser.Math.FloatBetween(...this.times().land);
     this.leash = { x: s.land.x, y: s.land.y, r: GRAZE_RANGE };
     this.faceX = Math.sign(s.land.x - s.water.x) || this.faceX;
     this.faceY = Math.sign(s.land.y - s.water.y) || this.faceY;
@@ -183,16 +190,16 @@ export default class Hippo extends Crocodile {
   // an Land (auch gefangen und im Gehege am Ufer): groß wie ein Nilpferd
   useBagLook() {
     super.useBagLook();
-    this.sprite.setScale(this.baby ? 0.3 : HIPPO_SCALE);
+    this.sprite.setScale(this.baby ? 0.3 : this.times().scale);
   }
 
   // im Wasser: nur die obere Kopfhälfte (Zwergflusspferd: hippo2_water, umgefärbt mit tools/recolor.js)
   waterTexture() {
-    return this.texSkin ? `${this.texSkin}_water` : 'hippo_water';
+    return this.texSkin ? `${this.texSkin}_water` : `${this.species}_water`;
   }
 
   useWaterLook() {
-    this.sprite.stop().setFlipX(false).setTexture(this.waterTexture(), 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(HIPPO_SCALE);
+    this.sprite.stop().setFlipX(false).setTexture(this.waterTexture(), 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(this.times().scale);
     this.shadow.setVisible(false);
   }
 
@@ -206,7 +213,7 @@ export default class Hippo extends Crocodile {
     const f = this.kind.frames;
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     const bob = Math.sin(this.scene.time.now / 400 + this.x) * 1;
-    this.sprite.setVisible(true).setScale(HIPPO_SCALE).setAngle(0);
+    this.sprite.setVisible(true).setScale(this.times().scale).setAngle(0);
     this.sprite.setPosition(this.x, this.y + 4 + bob);
     this.sprite.setDepth(this.y);
   }

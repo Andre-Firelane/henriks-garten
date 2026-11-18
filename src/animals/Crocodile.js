@@ -41,15 +41,21 @@ export default class Crocodile extends Fish {
     return spots[0] ?? null;
   }
 
+  // im Gehege: so lange schwimmt es, so lange läuft es am Ufer herum (der Tapir ist länger an Land, siehe Tapir.js)
+  penTimes() {
+    return { swim: SWIM_TIME, land: LAND_TIME };
+  }
+
   updateFree(dt, player) {
     if (this.state !== 'penned') return super.updateFree(dt, player);
-    this.penTime = (this.penTime ?? Phaser.Math.FloatBetween(3, SWIM_TIME[1])) - dt;
+    const { swim: SWIM, land: LAND } = this.penTimes();
+    this.penTime = (this.penTime ?? Phaser.Math.FloatBetween(3, SWIM[1])) - dt;
     if (!this.onLand) {
       if (this.penTime > 0) return super.updateFree(dt, player); // schwimmt im Teich
       // ans Ufer klettern
       const shore = this.nearestShore();
       if (!shore) {
-        this.penTime = Phaser.Math.FloatBetween(...SWIM_TIME);
+        this.penTime = Phaser.Math.FloatBetween(...SWIM);
         return false;
       }
       this.splash();
@@ -57,7 +63,7 @@ export default class Crocodile extends Fish {
       this.y = shore.land.y;
       this.onLand = true;
       this.backTo = null;
-      this.penTime = Phaser.Math.FloatBetween(...LAND_TIME);
+      this.penTime = Phaser.Math.FloatBetween(...LAND);
       this.faceX = Math.sign(shore.land.x - shore.water.x) || this.faceX;
       this.faceY = Math.sign(shore.land.y - shore.water.y) || this.faceY;
       this.useBagLook();
@@ -78,7 +84,7 @@ export default class Crocodile extends Fish {
         this.y = water.y;
       }
       this.onLand = false;
-      this.penTime = Phaser.Math.FloatBetween(...SWIM_TIME);
+      this.penTime = Phaser.Math.FloatBetween(...SWIM);
       this.useWaterLook();
       this.splash();
       this.pickWander();
