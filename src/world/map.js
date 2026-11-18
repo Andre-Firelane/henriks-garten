@@ -271,7 +271,15 @@ export function setLevel(id) {
   // Wetterphase (Savanne, Dschungel): die Angaben der Phase ersetzen die normalen (Tiere, Boden, Geräusch ...), siehe season.js
   const base = LEVELS[id];
   const season = base.seasons ? currentSeason(id) : 'normal';
-  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: base.fixedSeason ?? (base.seasons ? firstSeason(id) : 'normal') }; // Expeditions-Maps: festes Wetter
+  LEVEL = base.seasons?.[season] ? { ...base, ...base.seasons[season], season } : { ...base, season: base.seasons ? firstSeason(id) : 'normal' };
+  // Expeditions-Map: Wetter und Tierliste wurden für diesen Besuch gewürfelt (siehe planMap in expedition.js); das Wetter
+  // ändert nur Aussehen und Geräusche (looks), nicht das Gelände
+  if (base.expedition && !base.camp) {
+    const r = game.expedition?.map === id ? game.expedition : null;
+    const weather = r?.season ?? 'normal';
+    LEVEL = { ...base, ...(base.looks?.[weather] ?? {}), season: weather, home: r?.home ?? {} };
+    if (weather !== 'dry') delete LEVEL.gatherAt; // am letzten Wasserloch drängen sich die Tiere nur in der Trockenzeit
+  }
   ROWS = LEVEL.rows;
   // ... und ihre Kartenstücke (größere Teiche im Regen, Schlamm in der Trockenzeit): { tx, ty, rows }
   for (const u of LEVEL.mapPatches ?? []) {

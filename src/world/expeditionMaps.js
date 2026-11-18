@@ -1,10 +1,12 @@
 // Expeditionen (Test, nur Savanne): Camp und kleine feste Maps. Sie stehen wie die anderen Gebiete in LEVELS (siehe Ende
 // von levels.js), haben aber das Kennzeichen expedition: '<Biom>' – Tiere, Gehege, Bilder und Ladepakete richten sich dann
-// nach dem Biom (biomeOf in map.js). Das Wetter ist fest an die Map gebunden (fixedSeason), es wechselt nicht.
+// nach dem Biom (biomeOf in map.js). Tiere und Wetter sind nicht fest: vor jeder Map werden sie neu gewürfelt (planMap in
+// expedition.js), passend zu den Merkmalen der Map (features: 'water', 'graveyard', 'thicket', 'waterfall', 'river',
+// 'clearing'). Das Wetter ändert nur Aussehen und Geräusche (looks, siehe setLevel in map.js).
 // Regeln (Karten, Tierliste, Wagen) siehe expedition.js.
 //
-// home: so viele Fang-Einheiten jeder Art leben auf der Map (eine Herde, Kolonie oder ein Hyänenrudel zählt als eine –
-// man fängt daraus ohnehin nur ein Tier). Es kommen keine neuen nach; fehlt eine (weggelaufen), taucht sie wieder auf.
+// Die gewürfelte Tierliste (home) sagt, wie viele Fang-Einheiten jeder Art auf der Map leben (eine Herde, Kolonie oder ein
+// Hyänenrudel zählt als eine). Es kommen keine neuen nach; fehlt eine (weggelaufen), taucht sie wieder auf.
 // Übergänge: '@camp' führt zurück ins Camp, '@next' aus dem Camp weiter (vorher kommen die Karten).
 import { tr } from '../i18n.js';
 
@@ -53,13 +55,35 @@ const LOOK_J = {
   rain: { grass: ['jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2'], ambient: 'ambient_savanna_rain', ambientVolume: 0.5 },
   fog: { grass: ['jgrass0', 'jgrass1', 'jgrass2'], ambientVolume: 0.18 },
 };
-const jmap = (season, def) => withRoute({ ...JUNGLE, ...LOOK_J[season], expedition: 'jungle', fixedSeason: season, ...def });
+const jmap = (def) => withRoute({ ...JUNGLE, ...LOOK_J.normal, looks: LOOK_J, expedition: 'jungle', ...def });
 // Dschungel-Maps: Start auf dem Steg am Fluss-Einlauf (man kommt mit dem Kanu), Ausgang rechts
 const EDGE_J = {
   start: { tx: 4, ty: 13 },
   inlet: { from: { tx: -1.5, ty: 13 }, to: { tx: 2, ty: 13 } }, // Kanu: von dort über den Fluss bis an den Steg
   exits: [{ tx: 27, ty: 13, to: '@camp', label: tr('Weiter zum nächsten Camp', 'On to the next camp') }],
 };
+
+// Felskante mit Wasserfall und Becken oben links (wie im offenen Dschungel); dazu die Sonnen-Fläche der Leguane
+const WATERFALL_STAMP = {
+  tx: 0,
+  ty: 0,
+  rows: [
+    'kJkkJkkJkkJk',
+    'JŔŔŔŔŔŔŔŔk..',
+    'kŔŔ.ŴnḢrĎĎJ.', // (Sonnenfelsen wie im offenen Dschungel als normale Steine: der Sonnenfelsen gehört zum Bambuswald-Paket)
+    'kŔr~~~~ĎĎ.J.',
+    'JŔr~~~~nn.q.',
+    'kŔn~~~Ď.Jq..',
+    'kŔḟnĎr.nnn..',
+    'JŔĎĎĎnq.nľľ.',
+    'k...........',
+  ],
+};
+const WATERFALL_SUN = { tx0: 1, ty0: 1, tx1: 9, ty1: 7, iguanas: 2 };
+// Lichtungen der Gorillas (freie Rechtecke mit Dickicht-Rand, siehe makeRows clearing und Gorilla.js)
+const CLEARING_A = { tx0: 15, ty0: 16, tx1: 22, ty1: 22 };
+const CLEARING_B = { tx0: 12, ty0: 7, tx1: 19, ty1: 12 };
+const CLEARING_C = { tx0: 14, ty0: 17, tx1: 21, ty1: 23 };
 
 // Fluss-Maps (Aras, Tukane): man fängt sie nur im Tiefflug über dem Wasser – am besten vom Kanu aus. Fluss in den Zeilen
 // 15 bis 18, Steg in Spalte 6; das Kanu gleitet von links heran und bleibt danach fahrbar (boat, wie im offenen Dschungel)
@@ -267,7 +291,13 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   g[exitY][N - 1] = 'X';
   return g.map((r) => r.join(''));
 }
-const map = (season, def) => withRoute({ ...SAVANNA, ...LOOK[season], expedition: 'savanna', fixedSeason: season, ...def });
+// (Reiher fliegen nur heran, wenn welche auf der Tierliste stehen, siehe expWants in GardenScene)
+const map = (def) => withRoute({ ...SAVANNA, ...LOOK.normal, looks: LOOK, expedition: 'savanna', ...(def.camp ? {} : { herons: { every: [10, 20], landChance: 1 } }), ...def });
+
+// Teich in eine gezeichnete Map legen: Ellipse [Mitte tx, Mitte ty, Halbachse x, Halbachse y]; nur auf freiem Boden
+function withPond(rows, [cx, cy, rx, ry]) {
+  return rows.map((row, y) => [...row].map((c, x) => ('.yƚ'.includes(c) && ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1 ? '~' : c)).join(''));
+}
 
 // Maps (mit tools): ein durchgehender Weg vom Start zum Ausgang (um Wasser und Hindernisse herum, möglichst wenige Knicke)
 // und die Werkzeugkiste am Weg, möglichst in der Mitte der Map (sonst läuft man zu viel)
@@ -435,7 +465,7 @@ export const EXPEDITION_LEVELS = {
   // Camp (provisorisch, zieht mit: nach jeder Map steht es weiter vorn): Zelt mit der Fortschritts-Tafel, Lagerfeuer,
   // das Auto (Jeep mit Anhänger: Expedition beenden) und der Wagen als 6 kleine Gitterkäfige (je ein Tier, siehe CAGES);
   // wer nicht mehr hineinpasst, wartet im Sammelgehege. Man kommt vor dem Zelt an, rechts daneben geht es weiter
-  savanna_camp: map('normal', {
+  savanna_camp: map({
     name: tr('Savannen-Expedition', 'Savanna Expedition'),
     camp: true,
     car: { tx: 15.6, ty: 12, texture: 'car_zoo', frame: 0, scale: 1.1, arrive: { tx: 14, ty: 7 } }, // mit dem Auto: Ankunft vor dem Zelt
@@ -461,7 +491,7 @@ export const EXPEDITION_LEVELS = {
 
   // Dschungel-Camp: Lichtung, ringsum dichter Urwald; unten fließt ein Flussarm – dort liegen das Kanu (weiter, siehe
   // canoe) und das Wasserflugzeug (Expedition beenden). Käfige, Zelt, Tafel wie in der Savanne
-  jungle_camp: jmap('normal', {
+  jungle_camp: jmap({
     name: tr('Dschungel-Expedition', 'Jungle Expedition'),
     camp: true,
     car: { tx: 16.4, ty: 18.1, texture: 'seaplane', frame: 0, scale: 1.2, bob: true, reach: 60, arrive: { tx: 14, ty: 7 } }, // rechts neben dem Steg: vom Ufer aus erreichbar
@@ -487,19 +517,19 @@ export const EXPEDITION_LEVELS = {
   }),
 
   // Urwaldriesen: dichter Wald aus großen Urwaldbäumen – oben schläft der Jaguar, Brüllaffen-Trupps sitzen in den Kronen
-  jx_giants: jmap('normal', {
+  jx_giants: jmap({
     name: tr('Urwaldriesen', 'Jungle Giants'),
-    home: { jaguar: 1, howler: 2 },
-    rows: makeRows({ seed: 101, creeks: 2, mangroves: 8, palette: 'jungle', inlet: true, masses: 7, thickets: 2, scatter: { J: 50, k: 22, Ḣ: 8, ḟ: 6, n: 50, ľ: 30, f: 10, g: 3, r: 2 }, grass: 7 }),
+    features: ['thicket'],
+    rows: makeRows({ seed: 101, creeks: 2, mangroves: 8, palette: 'jungle', inlet: true, masses: 7, thickets: 4, scatter: { J: 50, k: 22, Ḣ: 8, ḟ: 6, n: 50, ľ: 30, f: 10, g: 3, r: 2 }, grass: 7 }),
     ...EDGE_J,
     tools: ['net', 'lasso', 'banana'],
   }),
 
   // Dickicht: viele Dickicht-Inseln; Schlangen und Vogelspinnen verstecken sich darin – wo eine sitzt, raschelt es
   // (siehe expRustle in GardenScene); freischlagen, dann fängt man sie mit dem Kescher
-  jx_thicket: jmap('normal', {
+  jx_thicket: jmap({
     name: tr('Dickicht', 'Thicket'),
-    home: { snake: 2, tarantula: 2 },
+    features: ['thicket'],
     rows: makeRows({ seed: 113, creeks: 1, mangroves: 5, palette: 'jungle', inlet: true, masses: 6, thickets: 9, scatter: { J: 26, k: 18, Ḣ: 7, ḟ: 5, n: 45, ľ: 28, f: 8, r: 2 }, grass: 6 }),
     ...EDGE_J,
     tools: ['net', 'lasso'],
@@ -507,28 +537,14 @@ export const EXPEDITION_LEVELS = {
 
   // Wasserfall: oben links die Felskante mit Wasserfall und Becken (wie im offenen Dschungel); wenn die Sonne kommt,
   // sonnen sich dort Leguane (versteckt in Farn und Pflanzen, siehe WaterfallSun.js); Brüllaffen in den Kronen
-  jx_waterfall: jmap('normal', {
+  jx_waterfall: jmap({
     name: tr('Wasserfall', 'Waterfall'),
-    home: { iguana: 2, howler: 1 },
+    features: ['waterfall'],
     rows: makeRows({
       seed: 127,
       palette: 'jungle',
       inlet: true,
-      stamp: {
-        tx: 0,
-        ty: 0,
-        rows: [
-          'kJkkJkkJkkJk',
-          'JŔŔŔŔŔŔŔŔk..',
-          'kŔŔ.ŴnḢrĎĎJ.', // (Sonnenfelsen wie im offenen Dschungel als normale Steine: der Sonnenfelsen gehört zum Bambuswald-Paket)
-          'kŔr~~~~ĎĎ.J.',
-          'JŔr~~~~nn.q.',
-          'kŔn~~~Ď.Jq..',
-          'kŔḟnĎr.nnn..',
-          'JŔĎĎĎnq.nľľ.',
-          'k...........',
-        ],
-      },
+      stamp: WATERFALL_STAMP,
       ponds: [[20, 21, 3.5, 2]], // Teich unten
       shoreTrees: 3,
       creeks: 1,
@@ -541,23 +557,24 @@ export const EXPEDITION_LEVELS = {
     ...EDGE_J,
     tools: ['net', 'lasso', 'banana'],
     flow: { ...JUNGLE.flow, except: { tx0: 0, ty0: 0, tx1: 9, ty1: 7 } }, // das Becken am Wasserfall bleibt blau
-    waterfallSun: { tx0: 1, ty0: 1, tx1: 9, ty1: 7, iguanas: 2 }, // Sonne am Wasserfall: dort verstecken sich die Leguane
+    waterfallSun: WATERFALL_SUN, // Sonne am Wasserfall: dort verstecken sich die Leguane
   }),
 
   // Ameisenbär-Lichtung: offene Lichtung mit Farnen, unten ein Teich; am Rand schläft ein Jaguar in einem Urwaldbaum
-  jx_clearing: jmap('normal', {
-    name: tr('Ameisenbär-Lichtung', 'Anteater Clearing'),
-    home: { anteater: 2, jaguar: 1 },
-    rows: makeRows({ seed: 139, creeks: 1, mangroves: 7, palette: 'jungle', inlet: true, ponds: [[18, 21, 4, 2.4], [6, 5, 2, 1.3]], shoreTrees: 3, masses: 5, thickets: 2, scatter: { J: 26, k: 16, r: 4, Ḣ: 6, ḟ: 5, n: 46, ľ: 30, f: 12, g: 6 }, grass: 8 }),
+  jx_clearing: jmap({
+    name: tr('Teich-Lichtung', 'Pond Clearing'),
+    features: ['clearing'],
+    rows: makeRows({ seed: 139, creeks: 1, mangroves: 7, palette: 'jungle', inlet: true, ponds: [[18, 21, 4, 2.4], [6, 5, 2, 1.3]], shoreTrees: 3, masses: 5, thickets: 2, clearing: CLEARING_B, scatter: { J: 26, k: 16, r: 4, Ḣ: 6, ḟ: 5, n: 46, ľ: 30, f: 12, g: 6 }, grass: 8 }),
     ...EDGE_J,
     tools: ['net', 'lasso', 'banana'],
+    gorillas: { ...CLEARING_B, count: 2 }, // Lichtung der Gorillas (siehe Gorilla.js)
   }),
 
   // Piranha-Fluss (Starkregen): man kommt mit dem Kanu über den Fluss, der quer durch die Map fließt – Piranha-Schwärme
   // (mit der Angel), Tukane in den Uferbäumen auf beiden Seiten; fangen im Tiefflug über dem Wasser, am besten vom Kanu aus
-  jx_river: jmap('rain', {
-    name: tr('Piranha-Fluss', 'Piranha River'),
-    home: { piranha: 2, toucan: 2 },
+  jx_river: jmap({
+    name: tr('Breiter Fluss', 'Wide River'),
+    features: ['river'],
     rows: makeRows({ seed: 151, creeks: 1, mangroves: 9, palette: 'jungle', riverInlet: RIVER_J, exitY: 6, docks: [[15, 's'], [22, 'n']], shoreTrees: 8, masses: 6, thickets: 2, scatter: { J: 18, k: 22, Ḣ: 7, ḟ: 5, n: 42, ľ: 26, f: 8, r: 2 }, grass: 6 }),
     ...EDGE_JR,
     tools: ['rod', 'net', 'banana'],
@@ -565,9 +582,9 @@ export const EXPEDITION_LEVELS = {
 
   // Ara-Fluss: wie der Piranha-Fluss, aber bei Sonne – Ara-Paare in den Uferbäumen fliegen ab und zu ans andere Ufer, im
   // Tiefflug übers Wasser (mit dem Kescher vom Kanu aus); dazu ein Brüllaffen-Trupp
-  jx_macaw: jmap('normal', {
-    name: tr('Ara-Fluss', 'Macaw River'),
-    home: { macaw: 2, howler: 1 },
+  jx_macaw: jmap({
+    name: tr('Mangroven-Fluss', 'Mangrove River'),
+    features: ['river'],
     rows: makeRows({ seed: 173, creeks: 1, mangroves: 9, palette: 'jungle', riverInlet: RIVER_J, exitY: 6, docks: [[14, 's'], [21, 'n']], shoreTrees: 8, masses: 6, thickets: 2, scatter: { J: 18, k: 22, Ḣ: 8, ḟ: 6, n: 42, ľ: 26, f: 10, g: 3 }, grass: 6 }),
     ...EDGE_JR,
     tools: ['net', 'lasso', 'banana'],
@@ -575,20 +592,50 @@ export const EXPEDITION_LEVELS = {
 
   // Nebellichtung (Nebel): in der Mitte eine Lichtung hinter Dickicht – dort leben die Gorillas (mit der Trommel rufen);
   // Brüllaffen in den Bäumen (im Nebel selten ein Gibbon)
-  jx_fog: jmap('fog', {
-    name: tr('Nebellichtung', 'Misty Clearing'),
-    home: { gorilla: 2, howler: 1 },
-    rows: makeRows({ seed: 163, creeks: 1, mangroves: 6, palette: 'jungle', inlet: true, masses: 6, thickets: 2, clearing: { tx0: 15, ty0: 16, tx1: 22, ty1: 22 }, scatter: { J: 32, k: 18, Ḣ: 7, ḟ: 5, n: 40, ľ: 26, f: 8, r: 2 }, grass: 6 }),
+  jx_fog: jmap({
+    name: tr('Verborgene Lichtung', 'Hidden Clearing'),
+    features: ['clearing'],
+    rows: makeRows({ seed: 163, creeks: 1, mangroves: 6, palette: 'jungle', inlet: true, masses: 6, thickets: 2, clearing: CLEARING_A, scatter: { J: 32, k: 18, Ḣ: 7, ḟ: 5, n: 40, ľ: 26, f: 8, r: 2 }, grass: 6 }),
     ...EDGE_J,
     tools: ['drum', 'lasso', 'banana'],
-    gorillas: { tx0: 15, ty0: 16, tx1: 22, ty1: 22, count: 2 }, // Lichtung der Gorillas (siehe Gorilla.js)
+    gorillas: { ...CLEARING_A, count: 2 }, // Lichtung der Gorillas (siehe Gorilla.js)
+  }),
+
+  // Felsenbecken: zweiter Wasserfall (Leguane), dazu viele Dickicht-Inseln (Schlangen, Vogelspinnen)
+  jx_rockpool: jmap({
+    name: tr('Felsenbecken', 'Rock Pool'),
+    features: ['waterfall', 'thicket'],
+    rows: makeRows({ seed: 211, palette: 'jungle', inlet: true, stamp: WATERFALL_STAMP, ponds: [[19, 20, 3, 1.8]], shoreTrees: 3, creeks: 1, mangroves: 6, masses: 5, thickets: 5, scatter: { J: 24, k: 18, Ḣ: 7, ḟ: 6, n: 44, ľ: 28, f: 10, r: 3 }, grass: 6 }),
+    ...EDGE_J,
+    tools: ['net', 'lasso'],
+    flow: { ...JUNGLE.flow, except: { tx0: 0, ty0: 0, tx1: 9, ty1: 7 } },
+    waterfallSun: WATERFALL_SUN,
+  }),
+
+  // Farnlichtung: dritte Lichtung (Gorillas), ringsum hohe Urwaldbäume
+  jx_fernglade: jmap({
+    name: tr('Farnlichtung', 'Fern Glade'),
+    features: ['clearing'],
+    rows: makeRows({ seed: 223, creeks: 2, mangroves: 7, palette: 'jungle', inlet: true, masses: 6, thickets: 2, clearing: CLEARING_C, scatter: { J: 34, k: 18, Ḣ: 7, ḟ: 9, n: 42, ľ: 26, f: 8, g: 3 }, grass: 6 }),
+    ...EDGE_J,
+    tools: ['net', 'lasso'],
+    gorillas: { ...CLEARING_C, count: 2 },
+  }),
+
+  // Flussbiegung: dritter Fluss mit Kanu (Aras, Tukane, Piranhas), am Ufer ein paar Dickicht-Inseln
+  jx_bend: jmap({
+    name: tr('Flussbiegung', 'River Bend'),
+    features: ['river', 'thicket'],
+    rows: makeRows({ seed: 239, creeks: 1, mangroves: 8, palette: 'jungle', riverInlet: RIVER_J, exitY: 6, docks: [[13, 's'], [20, 'n']], shoreTrees: 8, masses: 5, thickets: 4, scatter: { J: 18, k: 20, Ḣ: 7, ḟ: 5, n: 42, ľ: 26, f: 8, r: 2 }, grass: 6 }),
+    ...EDGE_JR,
+    tools: ['net', 'lasso'],
   }),
 
   // Akazienhain: viele Akazien – Giraffen fressen an ihnen, Löwen dösen in ihrem Schatten
-  sx_acacia: map('normal', {
+  sx_acacia: map({
     name: tr('Akazienhain', 'Acacia Grove'),
-    home: { giraffe: 2, lion: 2 },
-    rows: eastExit([
+    features: ['water'],
+    rows: eastExit(withPond([
       'AvvvRvvvvAvvvvvRvvvvAvvvvRvA',
       'v...y......A.....y.....A...v',
       'v..A....y......ƚƚ.........Ʋv',
@@ -617,16 +664,16 @@ export const EXPEDITION_LEVELS = {
       'v..A...............y.......v',
       'v.........y.....A..........v',
       'AvvvRvvvvAvvvvRvvvvvAvvvRvvA',
-    ], 13),
+    ], [9, 6, 2.5, 1.5]), 13), // Teich oben links
     start: { tx: 2, ty: 13 },
     tools: ['net', 'lasso', 'food'], // Werkzeugkiste am Weg in der Mitte (withRoute)
     exits: BACK(27, 13),
   }),
 
   // Wasserloch: ein großer Teich (Krokodile), ringsum trinken Zebras und Antilopen
-  sx_waterhole: map('normal', {
+  sx_waterhole: map({
     name: tr('Wasserloch', 'Waterhole'),
-    home: { zebra: 2, antelope: 2, crocodile: 1 },
+    features: ['water'],
     rows: eastExit([
       'AvvvRvvvvAvvvvvRvvvvAvvvvRvA',
       'v....y..........y.......A..v',
@@ -664,10 +711,10 @@ export const EXPEDITION_LEVELS = {
 
   // Elefantenfriedhof: eigener Ort, nur hier gibt es Hyänen (mit Knochen anlocken) und Geier (auf den kahlen Akazien).
   // Trockenzeit: dunkler Boden, Schädel und Knochen
-  sx_graveyard: map('dry', {
+  sx_graveyard: map({
     name: tr('Elefantenfriedhof', 'Elephant Graveyard'),
-    home: { hyena: 1, vulture: 2 },
-    rows: eastExit([
+    features: ['graveyard', 'water'],
+    rows: eastExit(withPond([
       'AvvvRvvvvAvvvvvRvvvvAvvvvRvA',
       'v....y..........y.......A..v',
       'v..A.......Ʋ...........y...v',
@@ -696,7 +743,7 @@ export const EXPEDITION_LEVELS = {
       'v..A.........Ʋ.............v',
       'v.........y.....A..........v',
       'AvvvRvvvvAvvvvRvvvvvAvvvRvvA',
-    ], 13),
+    ], [5, 20, 2.2, 1.3]), 13), // kleines Wasserloch unten links
     start: { tx: 2, ty: 13 },
     tools: ['net', 'lasso', 'bone'], // Werkzeugkiste am Weg in der Mitte (withRoute)
     exits: BACK(27, 13),
@@ -708,27 +755,27 @@ export const EXPEDITION_LEVELS = {
   // --- weitere Maps (Zeilen aus makeRows: fester Zufall, also jedes Mal gleich) ---
 
   // Erdmännchen-Ebene: offene Ebene mit Erdmännchenbauten, dazwischen Antilopen
-  sx_meerkats: map('normal', {
-    name: tr('Erdmännchen-Ebene', 'Meerkat Plain'),
-    home: { meerkat: 2, antelope: 2 },
-    rows: makeRows({ seed: 11, scatter: { u: 7, Ţ: 2, A: 5, Ʋ: 4, Ƙ: 3, y: 26 }, grass: 4 }),
+  sx_meerkats: map({
+    name: tr('Weite Ebene', 'Wide Plain'),
+    features: ['water'],
+    rows: makeRows({ seed: 11, ponds: [[20, 20, 3, 1.8]], scatter: { u: 7, Ţ: 2, A: 5, Ʋ: 4, Ƙ: 3, y: 26 }, grass: 4 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
   }),
 
   // Termitensteppe: viele Termitenhügel, Zebras und Giraffen ziehen dazwischen umher
-  sx_termites: map('normal', {
+  sx_termites: map({
     name: tr('Termitensteppe', 'Termite Steppe'),
-    home: { zebra: 2, giraffe: 2 },
-    rows: makeRows({ seed: 23, scatter: { Ţ: 11, A: 7, Ƙ: 4, Ʋ: 2, y: 20 }, grass: 5 }),
+    features: ['water'],
+    rows: makeRows({ seed: 23, ponds: [[8, 21, 3, 1.8]], scatter: { Ţ: 11, A: 7, Ƙ: 4, Ʋ: 2, y: 20 }, grass: 5 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
   }),
 
   // Gnu-Furt: ein Bach oben, unten links ein freier Streifen – dort zieht mit der Event-Karte die Große Wanderung vorbei
-  sx_gnuford: map('normal', {
+  sx_gnuford: map({
     name: tr('Gnu-Furt', 'Wildebeest Ford'),
-    home: { antelope: 2, zebra: 2 },
+    features: ['water'],
     rows: makeRows({ seed: 37, ponds: [[17, 5, 6, 2.2]], scatter: { A: 6, Ţ: 2, Ʋ: 3, Ƙ: 3, y: 18 }, grass: 3, keepFree: (x, y) => y - x >= 9 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
@@ -737,18 +784,18 @@ export const EXPEDITION_LEVELS = {
   }),
 
   // Überflutete Senke (Starkregen): zwei große Wasserflächen mit Nilpferden, Krokodilen und Lungenfischen
-  sx_flood: map('rain', {
+  sx_flood: map({
     name: tr('Überflutete Senke', 'Flooded Hollow'),
-    home: { hippo: 2, crocodile: 1, fish: 2 },
+    features: ['water'],
     rows: makeRows({ seed: 41, ponds: [[9, 6, 5, 3], [18, 20, 6, 3.5]], scatter: { A: 5, Ƙ: 4, Ʋ: 2, y: 14 }, grass: 6 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
   }),
 
   // Reiher-Sumpf (Starkregen): viele kleine Tümpel – dort landen Schuhschnäbel, im größten liegt ein Nilpferd
-  sx_swamp: map('rain', {
-    name: tr('Reiher-Sumpf', 'Heron Swamp'),
-    home: { heron: 2, hippo: 1 },
+  sx_swamp: map({
+    name: tr('Tümpel-Sumpf', 'Pond Swamp'),
+    features: ['water'],
     rows: makeRows({ seed: 53, ponds: [[7, 5, 3, 2], [19, 6, 3.5, 2.2], [8, 21, 3, 2], [20, 21, 4.5, 2.6], [14, 9, 2, 1.4]], scatter: { A: 4, Ƙ: 3, y: 14 }, grass: 8 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
@@ -757,22 +804,25 @@ export const EXPEDITION_LEVELS = {
 
   // Letztes Wasserloch (Trockenzeit): Schlamm ringsum, in der Mitte ein kleines Wasserloch; Zebras und Antilopen drängen
   // sich daran, Warzenschweine wühlen im Schlamm
-  sx_lastwater: map('dry', {
+  sx_lastwater: map({
     name: tr('Letztes Wasserloch', 'Last Waterhole'),
-    home: { warthog: 2, zebra: 1, antelope: 1 },
+    features: ['water'],
     rows: makeRows({ seed: 67, muds: [[14, 20, 6, 3.5]], ponds: [[14, 20, 1.6, 1.1]], scatter: { A: 6, Ʋ: 3, Ƙ: 3, y: 16 }, grass: 3 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
     gatherAt: { tx: 14, ty: 20, r: 110 }, // dort drängen sich Zebras und Antilopen (wie in der Trockenzeit der Savanne)
   }),
 
-  // Kahle Ebene (Trockenzeit): Felsen, kahle Akazien und Erdmännchenbauten; Warzenschweine und Erdmännchen
-  sx_barren: map('dry', {
+  // Kahle Ebene: Felsen, kahle Akazien, Erdmännchenbauten und verstreute Knochen (zweiter Ort für Hyänen und Geier), ein
+  // kleines Wasserloch
+  sx_barren: map({
     name: tr('Kahle Ebene', 'Barren Plain'),
-    home: { warthog: 2, meerkat: 2 },
-    rows: makeRows({ seed: 79, scatter: { Ʋ: 8, A: 5, u: 5, Ʀ: 1, Ƙ: 2, y: 18 }, grass: 2 }),
+    features: ['graveyard', 'water'],
+    rows: makeRows({ seed: 79, ponds: [[21, 6, 2.2, 1.4]], scatter: { Ʋ: 8, A: 5, u: 5, Ʀ: 1, Ƙ: 2, y: 18, Ʊ: 5, Ș: 3, Ʈ: 2, ƭ: 2 }, grass: 2 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
+    vultures: { every: [12, 25] },
+    hyenas: { every: [15, 30], near: { tx: 14, ty: 13, r: 40 } },
   }),
 };
 

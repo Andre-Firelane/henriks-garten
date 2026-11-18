@@ -134,7 +134,7 @@ import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActiv
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import LuckWorld, { rarePromiseHere } from '../world/LuckWorld.js';
 import { CHARMS, HEART_RAIN, MORE_ANIMALS, bonusActive, cardCount, chestState, hasCharm, iconImg, ownsCharm, price, rerollCost, rollCards } from '../world/luck.js';
-import { CALLED_UNITS, RUN_LENGTH, wagonCageCount, cageSize, fitsWagon, wagonCages, isWaterAnimal, campLevel, caughtUnit, endRun, isFinalCamp, mapName, rollRunCards, run as expRun, sortWagon, startRun, takeRunCard, unitsLeft } from '../world/expedition.js';
+import { CALLED_UNITS, RUN_LENGTH, planMap, wagonCageCount, cageSize, fitsWagon, wagonCages, isWaterAnimal, campLevel, caughtUnit, endRun, isFinalCamp, mapName, rollRunCards, run as expRun, sortWagon, startRun, takeRunCard, unitsLeft } from '../world/expedition.js';
 import { isWagonOpen, openChoice, openConfirm, openWagon } from '../ui/wagon.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen, openLuckPicker } from '../ui/luckPicker.js';
@@ -718,7 +718,11 @@ export default class GardenScene extends Phaser.Scene {
     // Expedition (siehe world/expedition.js): Camp bzw. Map eines Runs; beides beginnt immer frisch (nichts gespeichert)
     if (LEVEL.expedition && !expRun()) {
       const r = startRun(LEVEL.expedition); // z. B. über die Adresse (?level=) gestartet
-      if (!LEVEL.camp) Object.assign(r, { map: LEVEL_ID, left: { ...(LEVEL.home ?? {}) }, step: 1, visited: [LEVEL_ID] });
+      if (!LEVEL.camp) {
+        const plan = planMap(LEVEL_ID, LEVEL.expedition); // Tiere und Wetter würfeln, dann die Map damit neu einstellen
+        Object.assign(r, { map: LEVEL_ID, home: { ...plan.home }, season: plan.season, left: { ...plan.home }, step: 1, visited: [LEVEL_ID] });
+        setLevel(LEVEL_ID);
+      }
     }
     this.expCamp = !!(LEVEL.camp && expRun());
     this.expMap = !!(LEVEL.expedition && !LEVEL.camp && expRun());
@@ -1065,7 +1069,7 @@ export default class GardenScene extends Phaser.Scene {
     const hero = LEVEL.hero && this.textures.exists(LEVEL.hero) ? LEVEL.hero : 'hero';
     this.player = new Player(this, start.x, start.y, hero, { swim: !!LEVEL.sea });
     // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel (erst nach Henrik: der Nebel richtet sich nach seiner Position)
-    this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.fixedSeason && LEVEL.fixedSeason !== 'normal') ? new Weather(this, LEVEL.season) : null;
+    this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.expedition && !LEVEL.camp && LEVEL.season !== 'normal') ? new Weather(this, LEVEL.season) : null; // Expedition: gewürfeltes Wetter
     // war Henrik beim Verlassen auf dem E-Roller (Tierpark-Abschnitt, Aquarium, Reptilienhaus, Ausbau): weiterfahren
     if (game.scooterRiding && this.scooter) this.getOnScooter(true);
     // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel), findet es am Inselsteg
@@ -3780,7 +3784,7 @@ export default class GardenScene extends Phaser.Scene {
   // Werkzeug-Kiste öffnen: Werkzeuge dieses Gebiets und "Hände frei"; das Spiel pausiert so lange
   openChest(chest) {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
-    const tools = [...chest.tools, ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(LEVEL_ID === 'asia' && isActive('fireflies') ? ['fireflyjar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
+    const tools = [...(this.expMap ? this.expTools() : chest.tools), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(LEVEL_ID === 'asia' && isActive('fireflies') ? ['fireflyjar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
     const items = [...tools, null].map((id) => ({
       id,
       name: id ? TOOLS[id].name : tr('Hände frei', 'Empty hands'),
@@ -5130,6 +5134,19 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Werkzeuge in der Kiste einer Expeditions-Map: Kescher und Lasso, dazu was die gewürfelten Tiere brauchen (Angel,
+  // Trommel, Grünfutter) bzw. womit man sie lockt (Banane, Knochen)
+  expTools() {
+    const species = Object.keys({ ...(expRun()?.home ?? {}), ...(expRun()?.left ?? {}) });
+    const need = new Set(['net', 'lasso']);
+    for (const sp of species) {
+      for (const t of SPECIES[sp]?.catchWith ?? []) if (TOOLS[t]) need.add(t);
+      for (const [t, list] of Object.entries(TOOL_LURES)) if (list.includes(sp) && TOOLS[t]) need.add(t);
+    }
+    const order = ['net', 'lasso', 'rod', 'drum', 'food', 'banana', 'bone'];
+    return [...need].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
+  }
+
   // freie Einheiten dieser Art (eine Herde, Kolonie oder ein Rudel zählt als eine; ohne die, aus denen man schon eins hat)
   expWildUnits(species) {
     const units = new Set();
@@ -5629,7 +5646,10 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   expCardView(c) {
-    const where = `<br>${tr('Nächste Map', 'Next map')}: <b>${mapName(c.map)}</b>`;
+    // darunter: Map, ihr gewürfeltes Wetter und ihre Tiere (kleine Bilder)
+    const w = SEASON_INFO[c.plan?.season ?? 'normal'];
+    const animals = Object.keys(c.plan?.home ?? {}).map((s) => animalIcon(s, 1.6)).join('');
+    const where = `<br>${tr('Nächste Map', 'Next map')}: <b>${mapName(c.map)}</b><span class="exp-plan" title="${w.name}">${w.icon}${animals}</span>`;
     if (c.kind === 'animal') {
       const name = ANIMAL_INFO[c.species]?.[0] ?? c.species;
       return { icon: animalIcon(c.species, 3), title: name, text: tr('Taucht dort sicher auf.', 'Sure to show up there.') + where, color: '#5fae4a', tag: tr('Tier', 'Animal') };

@@ -31,6 +31,75 @@ export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu']; // (Gnus: aus 
 // Anteil der Kartenarten
 const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt)
 
+// --- Tiere und Wetter einer Map (werden vor jeder Map neu gewürfelt) ---
+
+// Ansprüche der Tierarten: needs = Merkmal, das die Map haben muss (features in expeditionMaps.js), seasons = bei welchem
+// Wetter sie vorkommen (ohne Angabe: bei jedem), units = so viele Fang-Einheiten [min, max] (Herde, Kolonie, Rudel = eine)
+export const SPECIES_RULES = {
+  savanna: {
+    antelope: { units: [1, 2] },
+    zebra: { units: [1, 2] },
+    giraffe: { units: [1, 2] },
+    lion: { units: [1, 2] },
+    meerkat: { units: [1, 2] },
+    crocodile: { needs: 'water', seasons: ['normal', 'rain'], units: [1, 1] },
+    hippo: { needs: 'water', seasons: ['rain'], units: [1, 2] },
+    fish: { needs: 'water', seasons: ['rain'], units: [1, 2] }, // Lungenfisch
+    heron: { needs: 'water', seasons: ['rain'], units: [1, 2] }, // Schuhschnabel
+    warthog: { seasons: ['dry'], units: [1, 2] },
+    hyena: { needs: 'graveyard', seasons: ['dry'], units: [1, 1] },
+    vulture: { needs: 'graveyard', seasons: ['dry'], units: [1, 2] },
+  },
+  jungle: {
+    jaguar: { units: [1, 1] },
+    anteater: { units: [1, 2] },
+    howler: { seasons: ['normal', 'fog'], units: [1, 2] },
+    snake: { needs: 'thicket', units: [1, 2] },
+    tarantula: { needs: 'thicket', units: [1, 2] },
+    iguana: { needs: 'waterfall', seasons: ['normal'], units: [1, 2] }, // sonnen sich am Wasserfall
+    piranha: { needs: 'river', seasons: ['rain'], units: [1, 2] },
+    toucan: { needs: 'river', seasons: ['rain'], units: [1, 2] },
+    macaw: { needs: 'river', seasons: ['normal', 'fog'], units: [1, 2] },
+    gorilla: { needs: 'clearing', seasons: ['fog'], units: [1, 2] },
+  },
+};
+export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'] };
+const SPECIES_PER_MAP = [2, 3];
+// Seltene Merkmale (Wasserfall, Lichtung, Fluss, Dickicht, Elefantenfriedhof): auf ihren Maps kommt meist (SPECIAL_CHANCE)
+// eine Art, die es braucht; Wasser hat jede Savannen-Map, das zählt nicht als selten
+const SPECIAL_CHANCE = 0.6;
+const COMMON_FEATURES = ['water'];
+
+// Tiere und Wetter für eine Map auswürfeln. Erst ein Anker: auf Maps mit seltenem Merkmal meist eine Art dafür (ihr
+// Wetter gilt dann), sonst ein gleichmäßig gewürfeltes Wetter; dann weitere Arten, die auf die Map passen und mit dem
+// bisher möglichen Wetter zusammengehen; zuletzt eins der Wetter, das alle erlauben. must: diese Art soll sicher dabei sein.
+// Gibt { home: { Art: Einheiten }, season } zurück
+export function planMap(map, biome, must = null) {
+  const rules = SPECIES_RULES[biome] ?? {};
+  const all = BIOME_SEASONS[biome] ?? ['normal'];
+  const feats = LEVELS[map]?.features ?? [];
+  const fits = (sp) => !rules[sp].needs || feats.includes(rules[sp].needs);
+  const allowed = (sp) => rules[sp].seasons ?? all;
+  let seasons = [...all];
+  const home = {};
+  const add = (sp) => {
+    seasons = seasons.filter((x) => allowed(sp).includes(x));
+    const [a, b] = rules[sp].units;
+    home[sp] = a + Math.floor(Math.random() * (b - a + 1));
+  };
+  const specials = Object.keys(rules).filter((sp) => rules[sp].needs && !COMMON_FEATURES.includes(rules[sp].needs) && fits(sp));
+  if (must && rules[must] && fits(must)) add(must);
+  else if (specials.length && Math.random() < SPECIAL_CHANCE) add(pick(specials));
+  else seasons = [pick(all)];
+  const n = SPECIES_PER_MAP[0] + Math.floor(Math.random() * (SPECIES_PER_MAP[1] - SPECIES_PER_MAP[0] + 1));
+  while (Object.keys(home).length < n) {
+    const pool = Object.keys(rules).filter((sp) => !home[sp] && fits(sp) && allowed(sp).some((x) => seasons.includes(x)));
+    if (!pool.length) break;
+    add(pick(pool));
+  }
+  return { home, season: pick(seasons.length ? seasons : all) };
+}
+
 export const run = () => game.expedition ?? null;
 export const inRun = () => !!game.expedition;
 
@@ -44,6 +113,8 @@ export function startRun(biome) {
     stay: [], // Tiere im Camp, die (noch) nicht im Wagen sind
     left: {}, // laufende Map: so viele Fang-Einheiten je Art sind noch frei
     map: null, // laufende Map
+    home: {}, // ... ihre gewürfelte Tierliste (fest für diesen Besuch)
+    season: 'normal', // ... und ihr gewürfeltes Wetter
     chestMap: null, // auf dieser Map steht eine Kiste (Kistenkarte)
     finalChest: false, // Abschlusskiste nach der letzten Map schon geöffnet?
     event: null, // auf dieser Map läuft das Event der Event-Karte (Große Wanderung)
@@ -60,7 +131,8 @@ export const campLevel = () => (run() ? campOf(run().biome) : null);
 
 // --- Karten vor der nächsten Map ---
 
-// Karte: { map, kind: 'animal' | 'rare' | 'bonus' | 'chest', species?, skin?, id? }
+// Karte: { map, plan: { home, season }, kind: 'animal' | 'rare' | 'bonus' | 'chest' | 'event', species?, skin?, id? }
+// Jede Karte würfelt für ihre Map eigene Tiere und eigenes Wetter (planMap)
 export function rollRunCards(n) {
   const r = run();
   const all = expeditionMaps(r.biome);
@@ -78,21 +150,22 @@ export function rollRunCards(n) {
   const has = (kind, key) => cards.some((c) => c.kind === kind && (c.species ?? c.id ?? null) === key);
   for (let i = 0; i < n; i++) {
     const map = maps[i % maps.length];
-    const season = LEVELS[map].fixedSeason;
-    const home = Object.keys(LEVELS[map].home ?? {}).filter((sp) => !has('animal', sp));
-    const rares = Object.keys(LEVELS[map].home ?? {}).filter((sp) => rareSkinFor(sp, r.biome, season) && !has('rare', sp));
+    const plan = planMap(map, r.biome);
+    const { season } = plan;
+    const home = Object.keys(plan.home).filter((sp) => !has('animal', sp));
+    const rares = Object.keys(plan.home).filter((sp) => rareSkinFor(sp, r.biome, season) && !has('rare', sp));
     const freeBoni = boni.filter((id) => !has('bonus', id));
     const event = !!LEVELS[map].migration && !has('event', null);
     const kinds = Object.entries(KINDS).filter(([k]) => (k === 'rare' ? rares.length : k === 'bonus' ? freeBoni.length : k === 'animal' ? home.length : k === 'event' ? event : !has('chest', null)));
     if (!kinds.length) break;
     let x = Math.random() * kinds.reduce((sum, [, w]) => sum + w, 0);
     const kind = (kinds.find(([, w]) => (x -= w) <= 0) ?? kinds[0])[0];
-    if (kind === 'animal') cards.push({ map, kind, species: pick(home) });
+    if (kind === 'animal') cards.push({ map, plan, kind, species: pick(home) });
     else if (kind === 'rare') {
       const species = pick(rares);
-      cards.push({ map, kind, species, skin: rareSkinFor(species, r.biome, season).id });
-    } else if (kind === 'bonus') cards.push({ map, kind, id: pick(freeBoni) });
-    else cards.push({ map, kind }); // Kiste oder Event
+      cards.push({ map, plan, kind, species, skin: rareSkinFor(species, r.biome, season).id });
+    } else if (kind === 'bonus') cards.push({ map, plan, kind, id: pick(freeBoni) });
+    else cards.push({ map, plan, kind }); // Kiste oder Event
   }
   return cards;
 }
@@ -100,9 +173,11 @@ export function rollRunCards(n) {
 // Karte gewählt: die nächste Map vorbereiten (Tierliste, Bonus, Kiste, seltenes Tier). Gibt die Map zurück.
 export function takeRunCard(card) {
   const r = run();
-  const def = LEVELS[card.map];
   if (card.kind === 'bonus' && card.id !== 'heartRain' && !r.boni.includes(card.id)) r.boni.push(card.id);
-  const left = { ...(def.home ?? {}) };
+  const plan = card.plan ?? planMap(card.map, r.biome);
+  r.home = { ...plan.home };
+  r.season = plan.season;
+  const left = { ...plan.home };
   if (card.kind === 'animal' || card.kind === 'rare') left[card.species] = (left[card.species] ?? 0) + 1;
   if (r.boni.includes('moreAnimals')) addMore(left);
   if (hasCharm('bait')) addMore(left); // Glücksbringer Köder (stapelt mit dem Bonus)

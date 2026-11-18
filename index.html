@@ -653,7 +653,7 @@
       @media (max-width: 900px), (max-height: 500px) { #exp-counter { top: 96px; font-size: 17px; padding: 8px 16px; gap: 8px; } } /* Handy */
       /* Raster: alle Karten gleich hoch (grid-auto-rows: 1fr), auch über zwei Reihen; lange Wörter brechen um */
       .luck-box .luck-cards { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 150px)); grid-auto-rows: 1fr; justify-content: center; gap: 12px; padding-top: 12px; }
-      .luck-card { width: auto; height: 100%; min-height: 170px; box-sizing: border-box; justify-content: flex-start; border-color: var(--luck, #a8743f); border-width: 4px; background: #f8e6c0; overflow-wrap: anywhere; hyphens: auto; }
+      .luck-card { width: auto; height: 100%; min-height: 170px; box-sizing: border-box; justify-content: flex-start; border-color: var(--luck, #a8743f); border-width: 4px; background: #f8e6c0; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
       .luck-card b { line-height: 1.15; }
       .luck-icon { position: relative; }
       .luck-spark { position: absolute; right: -0.35em; top: -0.15em; font-size: 0.5em; }
@@ -691,6 +691,9 @@
       .charm-ghost .luck-img { height: 1em; max-width: 1.2em; }
       /* auf den Kisten-Karten etwa so groß wie das Tierbild der seltenen Tiere (3em, mit Rand im Bild) */
       .luck-card .luck-img { height: 2.4em; max-width: 2.6em; }
+      /* Expedition: Wetter und Tiere der nächsten Map unten auf der Karte */
+      .exp-plan { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: center; gap: 2px; margin-top: 4px; font-size: 18px; line-height: 1; }
+      .exp-plan .animal { margin: 0; }
       /* Kartenbild eines seltenen Tiers (eng zugeschnitten, ohne Rand): so hoch wie die Symbole, breite Tiere dürfen breiter sein */
       .luck-card .luck-img.luck-animal { max-width: 3.2em; }
       @media (max-width: 900px), (max-height: 500px) {
