@@ -34,6 +34,7 @@ export const SEASON_INFO = {
   rain: { icon: '🌧️', name: tr('Starkregen', 'Heavy Rain') },
   dry: { icon: '☀️', name: tr('Trockenzeit', 'Dry Season') },
   fog: { icon: '🌫️', name: tr('Nebel', 'Fog') },
+  snow: { icon: '❄️', name: tr('Schneefall', 'Snowfall') }, // Bambuswald-Expedition
   day: { icon: '☀️', name: tr('Tag', 'Day') },
   night: { icon: '🌙', name: tr('Nacht', 'Night') },
 };

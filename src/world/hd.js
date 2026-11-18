@@ -47,6 +47,8 @@ export const HD = [
   // Bambuswald
   'asia_path', 'planks_asia', 'gate_door_asia_x', 'gate_door_asia_y', 'hutwall_asia_x', 'hutwall_asia_y', 'hutroof_asia', 'hut_chair_asia',
   'hut_chest_small', 'hut_desk_asia', 'hut_plant_asia', 'hut_shelf_asia', 'jar', 'jar_glow', 'koifood',
+  'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn', // verschneite Felsen (tools/snow-rocks.py)
+  'prayer_pole', 'stupa', 'salt_stone', 'salttool', 'brush', // Hochebene (tools/plateau-hd.py)
   // Riff
   'car_zoo', // Zooauto (Schnellreise, vergrößert gezeigt)
   'anchor_sack', 'boat_zoo', 'reef_algae', 'reef_anemone', 'reef_brain', 'reef_brain2', 'reef_branch', 'reef_branch2', 'reef_dark', 'reef_fan',

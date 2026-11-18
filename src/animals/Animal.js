@@ -351,6 +351,54 @@ export const SPECIES = {
     shadowW: 24,
     catchWith: ['touch'],
   },
+  // Tanuki (Bambuswald, im Tal bei den Steinlaternen): verkleidet sich als Laterne, Busch oder Grasbüschel; berührt man
+  // die Verkleidung, sitzt er verdutzt da und lässt sich durch Berühren fangen (siehe Tanuki.js). Bisher nur Standbilder
+  tanuki: {
+    texture: 'tanuki',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 28,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 1.5,
+    footW: 7,
+    shadowW: 26,
+    catchWith: ['touch'],
+  },
+  // Yak (Bambuswald, Hochebene): grast in der Herde am Steinhaufen; mit dem Salzstein gelockt und dreimal gebürstet,
+  // kommt es mit (siehe Yak.js und world/YakHerd.js). Bisher nur Standbilder
+  yak: {
+    texture: 'yak',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 100 / 104,
+    speed: 12,
+    restChance: 0.65,
+    restTime: [3, 7],
+    walkTime: [1.5, 3],
+    stepRate: 6,
+    hop: 1,
+    footW: 14,
+    shadowW: 54,
+    catchWith: [],
+  },
+  // Schneeleopard (Bambuswald, Hochebene; selten): döst auf einem großen Felsen, zu dem seine Pfotenspuren führen; mit
+  // dem Lasso gefangen (siehe SnowLeopard.js). Bisher nur Standbilder
+  snowleopard: {
+    texture: 'snowleopard',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 26,
+    restChance: 0.55,
+    restTime: [2, 5],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1,
+    footW: 9,
+    shadowW: 32,
+    catchWith: ['lasso'],
+  },
   // Savanne, Wetterphasen (siehe src/world/season.js)
   // Nilpferd (Starkregen): schwimmt im Wasserloch, grast ab und zu am Ufer; nur an Land fangbar (siehe Hippo.js)
   hippo: {
@@ -1042,6 +1090,8 @@ export const SKINS = {
   octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },
   tapir: { id: 'tapir2', name: tr('Schabrackentapir', 'Malayan tapir'), male: true, wild: 0.1, baby: 0.03 },
   okapi: { id: 'okapi2', name: tr('Streifen-Okapi', 'striped okapi'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
+  tanuki: { id: 'tanuki2', name: tr('Fuchs-Tanuki', 'fox tanuki'), male: true, wild: 0.1, baby: 0.03 },
+  yak: { id: 'yak2', name: tr('Gefleckter Yak', 'spotted yak'), male: true, wild: 0.1, baby: 0.03 },
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js
 };
 
@@ -1548,6 +1598,7 @@ export default class Animal {
   // welche der Animationen (animSet) gerade läuft, oder keine (dann Standbild)
   animKey(moving) {
     const anims = this.animSet();
+    if (!anims) return null; // ohne Animationen (z. B. eine Variante nur mit Standbild)
     const down = this.faceY > 0;
     if (moving) return down ? anims.walkDown : anims.walkUp;
     return down ? anims.idleDown : anims.idleUp;

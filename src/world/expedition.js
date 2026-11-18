@@ -1,4 +1,4 @@
-// Expeditionen (Roguelike-Test, erst einmal nur die Savanne): ein Durchlauf (Run) ist eine Kette aus höchstens RUN_LENGTH
+// Expeditionen (Roguelike-Modus: Savanne, Dschungel, Bambuswald): ein Durchlauf (Run) ist eine Kette aus höchstens RUN_LENGTH
 // kleinen Maps, dazwischen das Camp. Vor jeder Map wählt man 1 aus 3 Karten (wie in einer Kiste): jede Karte zeigt die
 // nächste Map und was dort dazukommt (sicher diese Tierart, eine seltene Variante, ein Bonus bis zum Ende des Runs oder eine
 // Kiste). Auf der Map lebt eine feste Tierliste (kein Nachspawnen), oben zählt sie herunter. Gefangene laufen hinterher; im
@@ -23,13 +23,17 @@ const runHas = (id) => !!run()?.boni.includes(id);
 export const isWaterAnimal = (species) => species in BIG_CAGE; // schwimmt im Camp im Becken, nicht im Käfig
 export const cageSize = (species) => (BIG_CAGE[species] ?? CAGE_SIZE) + (runHas('moreAnimals') ? 1 : 0) + (hasCharm('bigCage') ? 1 : 0);
 export const wagonCageCount = () => WAGON_CAGES + (runHas('bigWagon') ? 1 : 0);
-export const MORE_UNITS = 1; // Bonus "Mehr Tiere": so viele Tiere mehr auf jeder Map (eine zufällige Art; gilt ab sofort, auch auf der laufenden)
+export const MORE_UNITS = 1; // Bonus "Mehr Tiere": so viele Tiere mehr je Art auf jeder Map (gilt ab sofort, auch auf der laufenden)
 // Boni, die es als Karte gibt (vorhandene Kisten-Boni; sie gelten bis zum Ende des Runs)
 export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWagon', 'heartRain'];
 // Tiere, die nicht beim Betreten dastehen, sondern auf ihre Weise kommen (Geier fliegen heran, Hyänen kommen zu Knochen)
-export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu']; // (Gnus: aus der Großen Wanderung)
+export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen)
 // Anteil der Kartenarten
-const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt)
+const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend)
+// Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnu aus der Großen Wanderung, rote Pandas in
+// den Kirschbäumen am Glühwürmchen-Abend)
+export const MAP_EVENTS = { migration: { species: 'gnu', units: 1 }, fireflies: { species: 'redpanda', units: 2 } };
+export const mapEvent = (map) => Object.keys(MAP_EVENTS).find((k) => LEVELS[map]?.[k]) ?? null;
 
 // --- Tiere und Wetter einer Map (werden vor jeder Map neu gewürfelt) ---
 
@@ -39,7 +43,7 @@ const SPECIES_PER_MAP = [2, 3];
 // Seltene Merkmale (Wasserfall, Lichtung, Fluss, Dickicht, Elefantenfriedhof): auf ihren Maps kommt meist (SPECIAL_CHANCE)
 // eine Art, die es braucht; Wasser hat jede Savannen-Map, das zählt nicht als selten
 const SPECIAL_CHANCE = 0.6;
-const COMMON_FEATURES = ['water'];
+const COMMON_FEATURES = ['water', 'meadow']; // (meadow: grüne Maps im Bambuswald, für den Pfau)
 
 // Tiere und Wetter für eine Map auswürfeln. Erst ein Anker: auf Maps mit seltenem Merkmal meist eine Art dafür (ihr
 // Wetter gilt dann), sonst ein gleichmäßig gewürfeltes Wetter; dann weitere Arten, die auf die Map passen und mit dem
@@ -126,7 +130,7 @@ export function rollRunCards(n) {
     const home = Object.keys(plan.home).filter((sp) => !has('animal', sp));
     const rares = Object.keys(plan.home).filter((sp) => rareSkinFor(sp, r.biome, season) && !has('rare', sp));
     const freeBoni = boni.filter((id) => !has('bonus', id));
-    const event = !!LEVELS[map].migration && !has('event', null);
+    const event = !!mapEvent(map) && !has('event', null);
     const kinds = Object.entries(KINDS).filter(([k]) => (k === 'rare' ? rares.length : k === 'bonus' ? freeBoni.length : k === 'animal' ? home.length : k === 'event' ? event : !has('chest', null)));
     if (!kinds.length) break;
     let x = Math.random() * kinds.reduce((sum, [, w]) => sum + w, 0);
@@ -151,15 +155,17 @@ export function takeRunCard(card) {
   const left = { ...plan.home };
   if (card.kind === 'animal' || card.kind === 'rare') left[card.species] = (left[card.species] ?? 0) + 1;
   if (r.boni.includes('moreAnimals')) addMore(left);
-  if (hasCharm('bait')) addMore(left); // Glücksbringer Köder (stapelt mit dem Bonus)
+  if (hasCharm('bait')) addOne(left); // Glücksbringer Köder: ein Tier mehr (stapelt mit dem Bonus)
   r.left = left;
   r.map = card.map;
   r.step++;
   r.visited.push(card.map);
   r.chestMap = card.kind === 'chest' ? card.map : null;
-  // Event-Karte: auf der Map zieht die Große Wanderung vorbei, ein Gnu ist zu fangen
+  // Event-Karte: auf der Map zieht die Große Wanderung vorbei (ein Gnu ist zu fangen) bzw. es wird Glühwürmchen-Abend
+  // (rote Pandas in den Kirschbäumen)
   r.event = card.kind === 'event' ? card.map : null;
-  if (r.event) left.gnu = (left.gnu ?? 0) + 1;
+  const ev = r.event && MAP_EVENTS[mapEvent(r.event)];
+  if (ev) left[ev.species] = (left[ev.species] ?? 0) + ev.units;
   // seltene Variante: das erste Tier dieser Art auf der Map wird sie (Versprechen wie aus der Kiste, siehe Animal.rollSkin)
   game.rarePromise = card.kind === 'rare' ? { level: card.map, species: card.species, skin: card.skin } : null;
   return card.map;
@@ -173,14 +179,15 @@ export function moreUnitsNow() {
   if (l) addMore(l);
 }
 
-// MORE_UNITS Tiere mehr, von einer zufälligen Art der Map
+// von jeder Art der Map MORE_UNITS Tiere mehr (bei 2 bis 3 Arten also 2 bis 3 Tiere mehr – man soll es merken)
 function addMore(left) {
+  for (const s of Object.keys(left)) left[s] += MORE_UNITS;
+}
+
+// ein Tier mehr, von einer zufälligen Art der Map
+function addOne(left) {
   const species = Object.keys(left);
-  if (!species.length) return;
-  for (let i = 0; i < MORE_UNITS; i++) {
-    const s = pick(species);
-    left[s] += 1;
-  }
+  if (species.length) left[pick(species)] += 1;
 }
 
 export const unitsLeft = () => Object.values(run()?.left ?? {}).reduce((s, n) => s + n, 0);

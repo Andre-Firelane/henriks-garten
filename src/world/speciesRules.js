@@ -31,5 +31,18 @@ export const SPECIES_RULES = {
     tapir: { needs: 'river', units: [1, 1] }, // grast lange am Ufer, frisst Blätter vom Futterstrauch
     okapi: { needs: 'thicket', seasons: ['normal', 'fog'], units: [1, 1] }, // scheu, im dichten Wald
   },
+  // Bambuswald: der Rote Panda kommt nur mit der Event-Karte Glühwürmchen-Abend (fireflies in expeditionMaps.js), die
+  // Yaks grasen als Herde am Steinhaufen (eine Einheit je Yak, siehe YakHerd.js)
+  asia: {
+    peacock: { needs: 'meadow', seasons: ['normal', 'fog'], units: [1, 2] }, // nur auf grünen Maps, nicht im Schnee
+    panda: { needs: 'bamboo', units: [1, 2] },
+    tiger: { needs: 'bamboo', seasons: ['normal', 'snow', 'fog'], units: [1, 1] },
+    macaque: { needs: 'hotspring', units: [1, 2] },
+    tanuki: { needs: 'lanterns', units: [1, 2] },
+    koi: { needs: 'pond', units: [1, 2] },
+    orangutan: { needs: 'forest', seasons: ['normal', 'fog'], units: [1, 1] },
+    yak: { needs: 'plateau', seasons: ['normal', 'snow'], units: [2, 3] },
+    snowleopard: { needs: 'rocks', seasons: ['normal', 'snow'], units: [1, 1] }, // selten: höchstens einer
+  },
 };
-export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'] };
+export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'], asia: ['normal', 'snow', 'fog'] };

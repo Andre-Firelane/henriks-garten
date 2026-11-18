@@ -105,6 +105,9 @@ import Gnu, { Migration } from '../animals/Gnu.js';
 import Hippo from '../animals/Hippo.js';
 import Tapir from '../animals/Tapir.js';
 import Okapi from '../animals/Okapi.js';
+import Tanuki from '../animals/Tanuki.js';
+import Yak, { BRUSHES_NEEDED } from '../animals/Yak.js';
+import SnowLeopard from '../animals/SnowLeopard.js';
 import Vulture from '../animals/Vulture.js';
 import Hyena, { HyenaPack } from '../animals/Hyena.js';
 import Warthog from '../animals/Warthog.js';
@@ -121,8 +124,11 @@ import Boat, { GHOST_ALPHA, GHOST_DEPTH, isCovered, outlineTexture } from '../wo
 import Floes from '../world/Floes.js';
 import Sway from '../world/Sway.js';
 import MeadowLife from '../world/MeadowLife.js';
+import PrayerFlags from '../world/PrayerFlags.js';
+import SnowCover from '../world/SnowCover.js';
 import ForestLife from '../world/ForestLife.js';
 import BeaverDam from '../world/BeaverDam.js';
+import YakHerd from '../world/YakHerd.js';
 import LeafBushes from '../world/LeafBushes.js';
 import { coveredAt } from '../world/expeditionMaps.js';
 import SavannaLife from '../world/SavannaLife.js';
@@ -157,6 +163,8 @@ import TrapTool from '../tools/TrapTool.js';
 import FoodTool from '../tools/FoodTool.js';
 import BoneTool from '../tools/BoneTool.js';
 import StickTool from '../tools/StickTool.js';
+import SaltTool from '../tools/SaltTool.js';
+import BrushTool from '../tools/BrushTool.js';
 import LeafTool from '../tools/LeafTool.js';
 import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
 import BallTool from '../tools/BallTool.js';
@@ -190,7 +198,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -229,6 +237,9 @@ const CATCH_TIPS = {
   hyena: tr('Nur in der Trockenzeit in der Savanne, am Elefantenfriedhof oben rechts. Hörst du sie dort kichern, streu Knochen aus der Hütte – dann kommen sie. Solange sie fressen, fängst du sie mit dem Lasso.', 'Only in the dry season in the savanna, at the elephant graveyard in the top right. When you hear them giggle there, scatter bones from the hut – then they come. While they eat, catch them with the lasso.'),
   warthog: tr('Nur in der Trockenzeit in der Savanne. Kommst du näher, flitzt es in sein Erdloch. Warte mit dem Lasso in etwas Abstand davor – irgendwann schaut es kurz heraus.', 'Only in the dry season in the savanna. If you get closer, it dashes into its burrow. Wait with the lasso a little way off – sooner or later it pops out for a moment.'),
   vulture: tr('Nur in der Trockenzeit in der Savanne. Sein Schatten kreist über einer kahlen Akazie, dann landet er oben im Baum – dort erwischst du ihn mit dem Kescher.', 'Only in the dry season in the savanna. Its shadow circles over a bare acacia, then it lands up in the tree – there you can get it with the net.'),
+  snowleopard: tr('Selten, auf der Hochebene im Bambuswald. Du siehst ihn erst aus der Nähe – aber er hinterlässt Pfotenspuren im Schnee. Folge ihnen: Sie führen an Felsen vorbei zu einem großen Felsen, auf dem er schläft. Fang ihn dort mit dem Lasso.', 'Rare, on the high plateau of the bamboo forest. You only see it up close – but it leaves paw prints in the snow. Follow them: they lead past rocks to a big rock where it sleeps. Catch it there with the lasso.'),
+  yak: tr('Auf der Hochebene im Bambuswald. Die Herde grast am Steinhaufen. Such den Salzstein, der irgendwo im Schnee liegt, und leg ihn auf den Steinhaufen – dann kommt ein Yak zum Lecken. Bürste es dreimal, dann kommt es mit.', 'On the high plateau of the bamboo forest. The herd grazes by the cairn. Find the salt lick lying somewhere in the snow and put it on the cairn – a yak will come to lick it. Brush it three times and it comes along.'),
+  tanuki: tr('Im Bambuswald bei den Steinlaternen. Er verkleidet sich als Laterne, Busch oder Grasbüschel – nur sein buschiger Schwanz schaut heraus, und manchmal wackelt die Verkleidung. Berühre sie: Puff! Dann sitzt er verdutzt da – berühre ihn schnell noch einmal.', 'In the bamboo forest by the stone lanterns. It disguises itself as a lantern, a bush or a tuft of grass – only its bushy tail peeks out, and sometimes the disguise wobbles. Touch it: poof! Then it sits there, baffled – touch it again quickly.'),
   redpanda: tr('Nur beim Glühwürmchen-Abend im Bambuswald. Er sitzt oben im Kirschbaum: fang 3 Glühwürmchen mit dem Glas, stell das leuchtende Glas vor den Baum – dann kommt er herunter und du kannst ihn berühren.', 'Only during the Firefly Evening in the bamboo forest. It sits up in a cherry tree: catch 3 fireflies with the jar, put the glowing jar in front of the tree – then it comes down and you can touch it.'),
   gnu: tr('Nur bei der Großen Wanderung in der Savanne. Ab und zu läuft ein Gnu aus der Staubwolke heraus – fang es mit dem Lasso, bevor es wieder hineinläuft!', 'Only during the Great Migration in the savanna. Now and then a wildebeest runs out of the dust cloud – catch it with the lasso before it runs back in!'),
   wolf: tr('Nur in der Wolfsnacht im Wald. Folge den leuchtenden Spuren. Heulen die Wölfe, darfst du laufen – hören sie auf und schauen sich um (👀), bleib sofort stehen! Erreichst du einen, berühre ihn.', 'Only during the Wolf Night in the forest. Follow the glowing tracks. While the wolves howl, you may walk – when they stop and look around (👀), stand still at once! When you reach one, touch it.'),
@@ -324,6 +335,9 @@ const ANIMAL_INFO = {
   hyena: tr(['Hyäne', 'Vier Zehen mit stumpfen Krallen, die Vorderpfoten größer als die hinteren.'], ['Hyena', 'Four toes with blunt claws, the front paws larger than the back ones.']),
   warthog: tr(['Warzenschwein', 'Zweigeteilte Hufe wie beim Schwein – die Spur führt meist zu einem Erdloch.'], ['Warthog', 'Split hooves like a pig – the trail usually leads to a burrow.']),
   vulture: tr(['Geier', 'Kräftige Krallen zum Festhalten – auf dem Boden sieht man ihn selten, er sitzt lieber hoch oben.'], ['Vulture', 'Strong talons for gripping – you rarely see it on the ground, it prefers to sit high up.']),
+  snowleopard: tr(['Schneeleopard', 'Runde Katzenpfoten ohne Krallenspuren – riesig und dicht behaart, wie Schneeschuhe. Sein langer Schwanz dient als Schal.'], ['Snow leopard', 'Round cat paws with no claw marks – huge and furry, like snowshoes. Its long tail doubles as a scarf.']),
+  yak: tr(['Yak', 'Zweigeteilte Hufe wie beim Rind, mit harten Rändern – damit steht es sicher auf Fels und Eis.'], ['Yak', 'Split hooves like cattle, with hard edges – perfect for standing safely on rock and ice.']),
+  tanuki: tr(['Tanuki', 'Vier Zehen mit Krallen wie beim Fuchs – er gehört zu den Hundeartigen, auch wenn er wie ein Waschbär aussieht.'], ['Tanuki', 'Four clawed toes like a fox – it belongs to the dog family, even though it looks like a raccoon.']),
   redpanda: tr(['Roter Panda', 'Fünf Zehen mit Krallen und behaarten Sohlen – damit klettert er sicher durch die Bäume.'], ['Red panda', 'Five clawed toes with furry soles – perfect for climbing safely through the trees.']),
   gnu: tr(['Gnu', 'Paarhufer wie die Antilope, aber mit breiteren Hufhälften – Tausende davon hinterlassen eine riesige Staubspur.'], ['Wildebeest', 'Cloven hooves like an antelope, but wider – thousands of them leave a huge trail of dust.']),
   wolf: tr(['Wolf', 'Vier Zehen mit Krallen und ein großer Ballen – wie beim Hund, nur größer. Wölfe laufen oft genau in der Spur des Vordermanns.'], ['Wolf', 'Four toes with claws and a big pad – like a dog, only bigger. Wolves often step right into the tracks of the wolf in front.']),
@@ -428,7 +442,7 @@ const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
 const EXP_GROUP = [2, 3]; // Expedition: kleinere Gruppen (Herden, Trupps, Schwärme, Rudel)
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
 // Dinge, die Henrik in der Welt aufhebt (nicht aus dem Regal): das getragene Werkzeug steckt er so lange ein
-const CARRIED = ['stick', 'leaves'];
+const CARRIED = ['stick', 'leaves', 'salt', 'brush'];
 const LEAF_BUSHES = 3; // so viele Futtersträucher stehen dort, wo Tapire oder Okapis leben
 const LEAF_BUSH_GAP = 7; // so weit (Kacheln) stehen sie mindestens auseinander
 const FEED_CHANCE = 1 / 3; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
@@ -456,7 +470,7 @@ const WILD_SILENT = [
   'howler', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
 ];
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
-const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', gorilla: 'gorilla_beat', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
+const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -478,7 +492,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || s === 'beaver' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
+    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || s === 'beaver' || s === 'yak' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -522,6 +536,7 @@ const STING_HINT_EVERY = 20000; // Millisekunden zwischen zwei Hinweisen zum Bre
 const AQUA_FISH = ['reeffish', 'seahorse', 'octopus']; // nur diese verdrängen die Zierfische aus ihrem Becken (Schildkröten nicht) // Meerestiere: ziehen ins Aquarium (in dessen Becken)
 const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
 const REEF_GROUP = [2, 5]; // ... die anderen in Gruppen dieser Größe (eine Art)
+const MAX_TANUKIS = 2; // so viele Tanukis sind höchstens gleichzeitig verkleidet
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
 const MAX_JAGUARS = 1; // so viele Jaguare schlafen höchstens gleichzeitig in den Urwaldbäumen
 const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
@@ -538,7 +553,7 @@ const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'i
 const EVENT_SPECIES = { flamingo: ['flamingo', FLAMINGO_WORLDS], jellyfish: ['jellyfish', ['reef']], wolf: ['wolves', ['forest']], gnu: ['migration', ['savanna']], redpanda: ['fireflies', ['asia']] };
 const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨' };
 // lebt diese Art in diesem Level (bzw. dieser Wetterphase eines Levels)?
-const livesIn = (l, s) => !!spawnWeights(l)[s] || (s === 'heron' && !!l.herons) || (s === 'vulture' && !!l.vultures) || (s === 'hyena' && !!l.hyenas) || (s === 'iguana' && !!l.waterfallSun) || (s === 'gorilla' && !!l.gorillas) || (s === 'beaver' && !!l.beavers) || ((s === 'snake' || s === 'tarantula') && l.name === LEVELS.jungle.name); // im Dickicht des Dschungels
+const livesIn = (l, s) => !!spawnWeights(l)[s] || (s === 'heron' && !!l.herons) || (s === 'vulture' && !!l.vultures) || (s === 'hyena' && !!l.hyenas) || (s === 'iguana' && !!l.waterfallSun) || (s === 'gorilla' && !!l.gorillas) || (s === 'beaver' && !!l.beavers) || (s === 'yak' && !!l.yaks) || ((s === 'snake' || s === 'tarantula') && l.name === LEVELS.jungle.name); // im Dickicht des Dschungels
 // Welten, in denen es eine Tierart gibt: [{ level, extra }]; extra = { icon, name }, wenn nur bei einem Wetter oder Event
 function worldsOf(s) {
   if (EVENT_SPECIES[s]) {
@@ -671,6 +686,20 @@ const TOOLS = {
     name: tr('Großer Stock', 'Big stick'),
     image: 'forest_stick',
     hint: tr('Steck ihn ins Loch im Biberdamm am Fluss', 'Put it into the hole in the beaver dam by the river'),
+  },
+  // Salzstein und Bürste (Bambuswald, Hochebene): kommen nicht ins Regal (siehe world/YakHerd.js)
+  salt: {
+    create: (scene, player) => new SaltTool(scene, player),
+    name: tr('Salzstein', 'Salt lick'),
+    image: 'salttool',
+    hint: tr('Leg ihn auf den Steinhaufen bei den Yaks', 'Put it on the cairn near the yaks'),
+  },
+  brush: {
+    create: (scene, player) => new BrushTool(scene, player),
+    name: tr('Bürste', 'Brush'),
+    image: 'brush',
+    catches: ['yak'],
+    hint: tr(`Bürste den ${animalIcon('yak')} dreimal, während er am Salzstein leckt`, `Brush the ${animalIcon('yak')} three times while it licks the salt`),
   },
   // Blätterzweig vom Futterstrauch (Dschungel): kommt nicht ins Regal, man bricht ihn am Strauch ab (siehe LeafBushes.js)
   leaves: {
@@ -1102,6 +1131,8 @@ export default class GardenScene extends Phaser.Scene {
     this.floes = LEVEL.floes ? new Floes(this) : null; // Eisschollen (Eiswelt am Tag)
     this.sway = new Sway(this, swayPlants);
     this.meadowLife = new MeadowLife(this, this.sway); // Enten, Bienen, Windmühle, Pusteblumen (Wiese)
+    this.snowCover = LEVEL.snowline ? new SnowCover(this) : null; // Schneedecke der Hochebene, läuft weich aus (Bambuswald)
+    if (LEVEL.prayerFlags) new PrayerFlags(this); // Gebetsfahnen auf der Hochebene (Bambuswald)
     this.forestLife = LEVEL.bats || LEVEL.bees || LEVEL.birds || LEVEL.moss ? new ForestLife(this) : null; // Schaum, Moos, Bienen, Vögel, Fledermäuse (Wald)
     this.savannaLife = LEVEL.flies || LEVEL.gravePatch ? new SavannaLife(this) : null; // Friedhofsboden, Fliegen- und Mückenschwärme (Savanne)
     this.coldHintIn = 0;
@@ -1153,6 +1184,11 @@ export default class GardenScene extends Phaser.Scene {
     // Biber am Fluss: Damm, Stöcke und die Kolonie an den angenagten Bäumen (wilde Biber werden nicht gespeichert)
     this.beaverDam = LEVEL.beavers ? new BeaverDam(this, LEVEL.beavers) : null;
     this.beaverDam?.fill(true);
+    // Yak-Herde auf der Hochebene: Steinhaufen, Salzstein und die Herde (wilde Yaks werden nicht gespeichert)
+    // (Expedition: so viele Yaks, wie auf der Tierliste noch frei sind)
+    const yaks = this.expMap ? (LEVEL.yaks && expRun()?.left?.yak ? { ...LEVEL.yaks, count: () => expRun()?.left?.yak ?? 0 } : null) : LEVEL.yaks;
+    this.yakHerd = yaks ? new YakHerd(this, yaks) : null;
+    this.yakHerd?.fill(true);
     // Futtersträucher, wo Tapire oder Okapis leben (Dschungel, Expeditions-Maps, Maps hinter den Durchgängen)
     this._leafTiles = null;
     this.leafBushes = this.leafBushTiles().length ? new LeafBushes(this, this.leafBushTiles()) : null;
@@ -1396,6 +1432,14 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearStick && this.toolId !== 'stick' && !this.leaving) {
         this.takeStick(this.nearStick); // großen Stock aufheben
+        return;
+      }
+      if (this.nearCairn && this.toolId === 'salt' && !this.leaving) {
+        this.putSalt(); // am Steinhaufen: Salzstein ablegen
+        return;
+      }
+      if (this.nearSalt && this.toolId !== 'salt' && this.toolId !== 'brush' && !this.leaving) {
+        this.takeSalt(); // Salzstein aufheben
         return;
       }
       if (this.nearBush && this.toolId !== 'leaves' && !this.leaving) {
@@ -1939,6 +1983,12 @@ export default class GardenScene extends Phaser.Scene {
           ? new Tapir(this, this.animals)
         : species === 'okapi'
           ? new Okapi(this, x, y)
+        : species === 'tanuki'
+          ? new Tanuki(this, x, y)
+        : species === 'yak'
+          ? new Yak(this, x, y)
+        : species === 'snowleopard'
+          ? new SnowLeopard(this, x, y)
         : species === 'vulture'
           ? new Vulture(this, x, y)
         : species === 'hyena'
@@ -2100,6 +2150,23 @@ export default class GardenScene extends Phaser.Scene {
         group.push(a);
       }
       return this.finishSpawn(group, fadeIn);
+    }
+    // Schneeleopard (selten): döst auf einem großen Felsen der Hochebene, seine Spur führt dorthin (höchstens einer)
+    if (species === 'snowleopard') {
+      if (this.animals.some((a) => a.species === 'snowleopard' && a.state === 'wild')) return group;
+      const [a] = this.finishSpawn([this.createAnimal('snowleopard', 0, 0)], false);
+      if (a.lieDownSomewhere(worldToTile(this.player.x, this.player.y))) return [a];
+      this.despawn(a);
+      return group;
+    }
+    // Tanukis stehen verkleidet neben Steinlaternen (höchstens MAX_TANUKIS gleichzeitig); erst die Variante würfeln
+    // (finishSpawn), dann verkleiden: der Schwanz hat die Farbe des Fells
+    if (species === 'tanuki') {
+      if (this.animals.filter((a) => a.species === 'tanuki' && a.state === 'wild').length >= MAX_TANUKIS) return group;
+      const [a] = this.finishSpawn([this.createAnimal('tanuki', 0, 0)], false);
+      if (a.hideSomewhere()) return [a];
+      this.despawn(a);
+      return group;
     }
     // Tiger streifen als Schemen durch den Bambus (höchstens MAX_TIGERS gleichzeitig)
     if (species === 'tiger') {
@@ -3168,7 +3235,7 @@ export default class GardenScene extends Phaser.Scene {
       ['<span class="way-icon">🍀</span>', tr('<b>Glücksbringer:</b> Du kannst 2 gleichzeitig tragen (Knopf „Glücksbringer“ oben rechts oder Taste G). Wechseln geht nur im Tierpark.', '<b>Lucky charms:</b> You can wear 2 at a time (“Lucky Charms” button at the top right or key G). You can only switch them in the zoo.')],
     ];
     const icons = (list) => list.map((s) => `<span class="chest-animal${caughtBefore(s) ? '' : ' unknown'}">${animalIconSquare(s, 2.2)}</span>`).join('');
-    const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar' && id !== 'stick')].map((id) => {
+    const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar' && id !== 'stick' && id !== 'salt')].map((id) => {
       const list = toolAnimals(id).filter((s) => SPECIES_ORDER.includes(s));
       if (!list.length) return '';
       return `<div class="tool-row">${img(id ? TOOLS[id].image ?? id : 'hand')}<b>${id ? TOOLS[id].name : tr('Hände frei', 'Empty hands')}</b><span class="tool-animals">${icons(list)}</span></div>`;
@@ -3300,6 +3367,21 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/leaf_branch.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Zweig abbrechen', 'Break off a branch')}</span></div>`;
       return;
     }
+    if (this.nearCairn && this.toolId === 'salt') {
+      setTouchTool(null, 'assets/salttool.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/salttool.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Salzstein auf den Steinhaufen legen', 'Put the salt lick on the cairn')}</span></div>`;
+      return;
+    }
+    if (this.nearLicker && this.toolId === 'brush') {
+      setTouchTool('brush');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/brush.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Yak bürsten', 'Brush the yak')} ${this.nearLicker.brushed} / ${BRUSHES_NEEDED}</span></div>`;
+      return;
+    }
+    if (this.nearSalt && this.toolId !== 'salt' && this.toolId !== 'brush') {
+      setTouchTool(null, 'assets/salttool.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/salttool.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Salzstein aufheben', 'Pick up the salt lick')}</span></div>`;
+      return;
+    }
     if (this.nearStick && this.toolId !== 'stick') {
       setTouchTool(null, 'assets/forest_stick.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/forest_stick.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Stock aufheben', 'Pick up the stick')}</span></div>`;
@@ -3348,7 +3430,7 @@ export default class GardenScene extends Phaser.Scene {
   toolHint(id) {
     const t = TOOLS[id];
     if (!t.catches) return t.hint;
-    const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun) || (s === 'gorilla' && !!LEVEL.gorillas) || (s === 'beaver' && !!LEVEL.beavers);
+    const here = (s) => !!spawnWeights(LEVEL)[s] || (s === 'heron' && !!LEVEL.herons) || (s === 'vulture' && !!LEVEL.vultures) || (s === 'hyena' && !!LEVEL.hyenas) || (s === 'iguana' && !!LEVEL.waterfallSun) || (s === 'gorilla' && !!LEVEL.gorillas) || (s === 'beaver' && !!LEVEL.beavers) || (s === 'yak' && !!LEVEL.yaks);
     const list = toolAnimals(id).filter(here);
     return list.length ? t.hint(list) : '';
   }
@@ -3915,7 +3997,7 @@ export default class GardenScene extends Phaser.Scene {
   // Werkzeug-Kiste öffnen: Werkzeuge dieses Gebiets und "Hände frei"; das Spiel pausiert so lange
   openChest(chest) {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
-    const tools = [...(this.expMap || LEVEL.side ? this.expTools() : chest.tools), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(LEVEL_ID === 'asia' && isActive('fireflies') ? ['fireflyjar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
+    const tools = [...(this.expMap || LEVEL.side ? this.expTools() : chest.tools), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(this.fireflyEvening() && !this.expMap ? ['fireflyjar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
     const items = [...tools, null].map((id) => ({
       id,
       name: id ? TOOLS[id].name : tr('Hände frei', 'Empty hands'),
@@ -4060,6 +4142,68 @@ export default class GardenScene extends Phaser.Scene {
     this.tool = TOOLS.stick.create(this, this.player);
     this.toolId = 'stick';
     this.updateToolbar();
+  }
+
+  // Salzstein aufheben: das getragene Werkzeug steckt Henrik so lange ein (es kommt danach zurück)
+  takeSalt() {
+    const prev = this.toolId;
+    if (this.tool) this.tool.destroy();
+    this.stashedTool = prev && !CARRIED.includes(prev) ? prev : null;
+    this.yakHerd.takeSalt();
+    this.tool = TOOLS.salt.create(this, this.player);
+    this.toolId = 'salt';
+    this.updateToolbar();
+  }
+
+  // Salzstein auf den Steinhaufen: ein Yak trottet herbei, Henrik nimmt die Bürste in die Hand
+  putSalt() {
+    this.tool.used = true;
+    this.tool.destroy();
+    const yak = this.yakHerd.putOnCairn();
+    this.nearCairn = false;
+    this.tool = TOOLS.brush.create(this, this.player);
+    this.toolId = 'brush';
+    this.updateToolbar();
+    this.showToast(yak
+      ? `${animalIcon('yak', 3.2)} ${tr('Ein Yak riecht das Salz und trottet herbei! Bürste es dreimal, während es leckt.', 'A yak smells the salt and comes trotting over! Brush it three times while it licks.')}`
+      : tr('🧂 Der Salzstein liegt bereit – gleich kommt ein Yak.', '🧂 The salt lick is ready – a yak will come soon.'));
+  }
+
+  // Bürste: das leckende Yak einmal bürsten; nach dem dritten Mal kommt es mit
+  brushYak() {
+    const yak = this.yakHerd?.lickerNear(this.player);
+    if (!yak) {
+      this.showToast(tr(`Geh zum ${animalIcon('yak')} am Steinhaufen und bürste es, während es am Salzstein leckt.`, `Go to the ${animalIcon('yak')} at the cairn and brush it while it licks the salt.`));
+      return;
+    }
+    this.tool.scrub?.();
+    if (!yak.brush()) {
+      const left = BRUSHES_NEEDED - yak.brushed;
+      this.showToast(tr(`🪮 Das gefällt ihm! Noch ${left}-mal bürsten.`, `🪮 It likes that! ${left} more ${left === 1 ? 'time' : 'times'}.`));
+      this.updateToolbar();
+      return;
+    }
+    this.yakHerd.caught();
+    this.putAwayCarried();
+    this.showToast(`${animalIcon(yak.skin ?? 'yak', 3.2)} ${tr('Das Yak ist ganz flauschig und zufrieden – es kommt mit dir!', 'The yak is all fluffy and happy – it comes along with you!')}`);
+    this.catchAnimal(yak);
+  }
+
+  // das Yak hat den Salzstein aufgeleckt (nicht fertig gebürstet) und ist zurück bei der Herde
+  yakLickEnded() {
+    if (this.toolId === 'brush') this.putAwayCarried();
+    this.showToast(`${animalIcon('yak', 3.2)} ${tr('Der Salzstein ist aufgeleckt – das Yak trottet zurück. Such einen neuen Salzstein!', 'The salt is all licked up – the yak trots back. Find a new salt lick!')}`);
+  }
+
+  // getragenes Ding (Bürste) weglegen, das eingesteckte Werkzeug kommt wieder heraus
+  putAwayCarried() {
+    this.tool?.destroy();
+    this.tool = null;
+    this.toolId = null;
+    const prev = this.stashedTool;
+    this.stashedTool = null;
+    if (prev) this.equipTool(prev);
+    else this.updateToolbar();
   }
 
   // Stock ins Loch: der Damm ist dicht, die Biber freuen sich, und der nächste kommt mit
@@ -4645,7 +4789,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Glühwürmchen-Abend im Bambuswald: Abendlicht, leuchtende Laternen, Glühwürmchen und rote Pandas in den Kirschbäumen
   updateFireflies(dt) {
-    const on = LEVEL_ID === 'asia' && isActive('fireflies');
+    const on = this.fireflyEvening();
     if (on && !this.fireflies) {
       this.fireflies = new FireflyEvening(this);
       this.startAmbient(); // Abendgeräusche
@@ -5271,6 +5415,8 @@ export default class GardenScene extends Phaser.Scene {
     const home = expRun()?.home ?? {};
     const lines = [];
     if (home.howler) lines.push(tr(`${animalIcon('howler')} Brüllaffen sitzen unsichtbar oben in den Bäumen – wo die Krone raschelt, leg eine Banane unter den Baum.`, `${animalIcon('howler')} Howler monkeys sit unseen high up in the trees – where a crown rustles, put a banana at the foot of the tree.`));
+    if (this.expFireflies()) lines.push(tr(`✨ Glühwürmchen-Abend! Fang mit dem Glas aus der Kiste 3 Glühwürmchen – das leuchtende Glas lockt die ${animalIcon('redpanda')} aus den Kirschbäumen.`, `✨ Firefly evening! Catch 3 fireflies with the jar from the chest – the glowing jar lures the ${animalIcon('redpanda')} down from the cherry trees.`));
+    if (home.yak) lines.push(tr(`🧂 Die ${animalIcon('yak')} grasen am Steinhaufen – such den Salzstein und leg ihn darauf.`, `🧂 The ${animalIcon('yak')} graze by the cairn – find the salt lick and put it on top.`));
     if (home.snake || home.tarantula) lines.push(tr('🌿 Schlangen und Vogelspinnen verstecken sich im Dickicht – wo es raschelt, schlag es frei.', '🌿 Snakes and tarantulas hide in the thicket – where it rustles, cut it away.'));
     return lines.map((l) => `<br><small>${l}</small>`).join('');
   }
@@ -5286,9 +5432,9 @@ export default class GardenScene extends Phaser.Scene {
     const need = new Set(['net', 'lasso']);
     for (const sp of species) {
       for (const t of SPECIES[sp]?.catchWith ?? []) if (TOOLS[t] && !CARRIED.includes(t)) need.add(t); // (den Blätterzweig gibt es am Strauch)
-      for (const [t, list] of Object.entries(TOOL_LURES)) if (list.includes(sp) && TOOLS[t]) need.add(t);
+      for (const [t, list] of Object.entries(TOOL_LURES)) if (list.includes(sp) && TOOLS[t] && t !== 'glowjar') need.add(t); // (das leuchtende Glas entsteht erst aus dem Glas)
     }
-    const order = ['net', 'lasso', 'rod', 'drum', 'food', 'banana', 'bone'];
+    const order = ['net', 'lasso', 'rod', 'drum', 'food', 'banana', 'bone', 'ball', 'koifood', 'fireflyjar'];
     return [...need].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
   }
 
@@ -5424,6 +5570,24 @@ export default class GardenScene extends Phaser.Scene {
     return !!(this.expMap && LEVEL.migration && expRun()?.event === LEVEL_ID);
   }
 
+  // Ist hier gerade Glühwürmchen-Abend? Im Bambuswald und hinter seinen Durchgängen (Maps mit Kirschbäumen) beim Event,
+  // auf einer Expeditions-Map mit der Event-Karte
+  fireflyEvening() {
+    if (this.expMap) return this.expFireflies();
+    return isActive('fireflies') && (LEVEL_ID === 'asia' || !!(LEVEL.side && LEVEL.fireflies));
+  }
+
+  // ... bzw. der Glühwürmchen-Abend (Bambuswald: Koi-Garten, Kirschblütenhang)
+  expFireflies() {
+    return !!(this.expMap && LEVEL.fireflies && expRun()?.event === LEVEL_ID);
+  }
+
+  // so viele rote Pandas sitzen beim Glühwürmchen-Abend gleichzeitig in den Kirschbäumen (Expedition: nur so viele, wie
+  // auf der Tierliste noch frei sind; null: wie beim Event)
+  redPandaTarget() {
+    return this.expMap ? expRun()?.left?.redpanda ?? 0 : null;
+  }
+
   // Pfeil am Bildschirmrand zum Ausgang, wenn die Map leer ist (über LuckWorld.markerTargets)
   expMarkers() {
     if (!this.expMap || unitsLeft() > 0) return [];
@@ -5492,7 +5656,8 @@ export default class GardenScene extends Phaser.Scene {
     return hearts;
   }
 
-  // Ankunft im Camp: Wagen vorbelegen, was ohnehin ins Reservat käme gleich auswildern, die Tiere in die Käfige setzen.
+  // Ankunft im Camp: Wagen vorbelegen, die Tiere in die Käfige setzen; wer nicht in den Wagen passt (auch wer im Zoo
+  // ins Naturreservat käme), wartet im Sammelgehege bis zum Ende der Expedition – man kann ihn jederzeit noch einpacken.
   // Ein Pfeil zeigt erst auf die Käfige (neue Tiere), danach auf den Weg nach vorn (im letzten Camp aufs Auto)
   expArriveCamp(arrivals) {
     const r = expRun();
@@ -5502,13 +5667,10 @@ export default class GardenScene extends Phaser.Scene {
     const all = [...r.wagon, ...r.stay, ...arrivals];
     const { wagon, stay, release } = sortWagon([...all.filter(rare), ...all.filter((a) => !rare(a))], this.expPlacer());
     r.wagon = wagon;
-    r.stay = stay;
-    const hearts = this.expRelease(release);
+    r.stay = [...stay, ...release]; // (ausgewildert wird erst bei der Heimfahrt, siehe expGoHome)
     this.expWagonNote = null;
     this.expPlaceCampAnimals();
-    const released = release.length
-      ? `<br>🌳 ${animalIcons(release.map((a) => a.species), 2)} ${tr('ins Naturreservat ausgewildert', 'released into the nature reserve')} · <span class="heart">♥</span> ${hearts}`
-      : '';
+    const released = '';
     const later = (ms, fn) => this.time.delayedCall(ms, fn);
     if (isFinalCamp() && !r.finalChest) {
       this.expPoint('car');
@@ -5691,7 +5853,7 @@ export default class GardenScene extends Phaser.Scene {
       const list = wagonCages(r.wagon);
       const cages = Array.from({ length: wagonCageCount() }, (_, i) => (list[i] ? { cap: cageSize(list[i].species), animals: list[i].animals.map((a) => ({ icon: wagonIcon(a), badge: place(a) })) } : null));
       const stay = r.stay.map((a) => ({ icon: wagonIcon(a), badge: place(a) }));
-      const note = [this.expWagonNote, r.stay.length ? tr('Wer nicht im Wagen ist, wird beim Weiterziehen im Naturreservat ausgewildert (bringt Herzen).', 'Animals not in the wagon are released into the nature reserve when you move on (earns hearts).') : null].filter(Boolean).join('<br>');
+      const note = [this.expWagonNote, r.stay.length ? tr('Wer nicht im Wagen ist, wartet im Sammelgehege bis zum Ende der Expedition – bei der Heimfahrt wird er im Naturreservat ausgewildert (bringt Herzen).', 'Animals not in the wagon wait in the holding pen until the expedition ends – when you head home they are released into the nature reserve (earns hearts).') : null].filter(Boolean).join('<br>');
       return { cages, stay, note };
     };
     openWagon(view, {
@@ -5807,17 +5969,18 @@ export default class GardenScene extends Phaser.Scene {
       const v = this.luck.view({ kind: 'bonus', id: c.id });
       return { ...v, text: v.text + where };
     }
+    if (c.kind === 'event' && LEVELS[c.map]?.fireflies) {
+      return { icon: animalIcon('redpanda', 3), title: tr('Glühwürmchen-Abend', 'Firefly Evening'), text: tr('Es wird Abend, Glühwürmchen schweben umher – rote Pandas sitzen in den Kirschbäumen!', 'Evening falls and fireflies drift about – red pandas sit in the cherry trees!') + where, color: '#7a5ad0', tag: tr('Event', 'Event') };
+    }
     if (c.kind === 'event') {
       return { icon: animalIcon('gnu', 3), title: tr('Große Wanderung', 'Great Migration'), text: tr('Eine riesige Gnu-Herde zieht vorbei – fang ein Gnu!', 'A huge herd of wildebeest passes by – catch one!') + where, color: '#d07a2a', tag: tr('Event', 'Event') };
     }
     return { icon: '<img class="luck-img" src="assets/treasure_chest0.png" alt="" draggable="false">', title: tr('Schatzkiste', 'Treasure chest'), text: tr('Auf der Map steht eine Kiste.', 'There is a chest on the map.') + where, color: '#c08a2a', tag: tr('Kiste', 'Chest') };
   }
 
-  // Karte genommen: wer nicht im Wagen ist, bleibt im Camp (Naturreservat); dann zur gewählten Map
+  // Karte genommen: zur gewählten Map (wer nicht im Wagen ist, zieht im Sammelgehege mit ins nächste Camp)
   expTake(card) {
     const r = expRun();
-    this.expRelease(r.stay);
-    r.stay = [];
     if (card.kind === 'bonus' && card.id === 'heartRain') this.addHearts(HEART_RAIN);
     const map = takeRunCard(card);
     this.leaveLevel({ to: map, arrive: LEVELS[map].start, label: LEVELS[map].name });
@@ -5887,7 +6050,7 @@ export default class GardenScene extends Phaser.Scene {
   // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
   ambientKey() {
     if ((LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent?.()) return 'ambient_migration';
-    if (LEVEL_ID === 'asia' && isActive('fireflies')) return 'ambient_forest_night'; // Glühwürmchen-Abend: Abendgeräusche
+    if (this.fireflyEvening?.()) return 'ambient_forest_night'; // Glühwürmchen-Abend: Abendgeräusche
     return LEVEL_ID === 'forest' && isActive('wolves') ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
@@ -6023,7 +6186,7 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
         .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
@@ -6160,6 +6323,7 @@ export default class GardenScene extends Phaser.Scene {
     this.floes?.update(dt); // auf einer fahrenden Scholle fährt Henrik mit
     this.sway.update(dt);
     this.meadowLife.update(dt);
+    this.snowCover?.update(); // Fußspuren im Schnee
     this.forestLife?.update(dt);
     this.savannaLife?.update(dt);
 
@@ -6323,6 +6487,19 @@ export default class GardenScene extends Phaser.Scene {
       if (stick !== this.nearStick || dam !== this.nearDam) {
         this.nearStick = stick;
         this.nearDam = dam;
+        this.updateToolbar();
+      }
+    }
+    // Yak-Herde: Salzstein aufheben, auf den Steinhaufen legen, das leckende Yak bürsten
+    if (this.yakHerd) {
+      this.yakHerd.update(dt);
+      const salt = this.yakHerd.saltNear(p0);
+      const cairn = this.toolId === 'salt' && this.yakHerd.nearCairn(p0);
+      const licker = this.yakHerd.lickerNear(p0);
+      if (salt !== this.nearSalt || cairn !== this.nearCairn || licker !== this.nearLicker) {
+        this.nearSalt = salt;
+        this.nearCairn = cairn;
+        this.nearLicker = licker;
         this.updateToolbar();
       }
     }

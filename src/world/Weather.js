@@ -176,7 +176,7 @@ export default class Weather {
     if (this.aurora) this.updateAurora(dt);
     if (this.flakes) {
       this.updateSnow(dt);
-      this.updateSteps('~GX', 0x7f97b0, 0.42, SNOW_STEP_FADE); // Fußspuren im Schnee (auch auf dem Schneeweg und dem Eis)
+      if (!LEVEL.snowline) this.updateSteps('~GX', 0x7f97b0, 0.42, SNOW_STEP_FADE); // Fußspuren im Schnee (auch auf dem Schneeweg und dem Eis)
     }
   }
 

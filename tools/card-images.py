@@ -25,7 +25,7 @@ CARDS = {
     'gorilla2': 'view:gorilla2_v0', 'hyena2': 'view:hyena2_v0', 'hippo2': 'view:hippo2_v0', 'panda2': 'view:panda2_v0',
     'penguin2': 'view:penguin2_v0', 'seal2': 'view:seal2_v0', 'seahorse2': 'view:seahorse2_v1', 'toucan2': 'view:toucan2_v0',
     'turtle2': 'view:turtle2_v0', 'warthog2': 'view:warthog2_v0',
-    'tapir2': 'view:tapir2_v0', 'okapi2': 'view:okapi2_v0',
+    'tapir2': 'view:tapir2_v0', 'okapi2': 'view:okapi2_v0', 'tanuki2': 'view:tanuki2_v0', 'yak2': 'view:yak2_v0',
 }
 
 

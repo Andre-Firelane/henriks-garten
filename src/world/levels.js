@@ -396,10 +396,26 @@ export const LEVELS = {
   asia: {
     name: tr('Bambuswald', 'Bamboo Forest'),
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
-    car: { tx: 13.16, ty: 41.54, texture: 'car_zoo', frame: 0, scale: 1.3 },
+    car: { tx: 13.16, ty: 57.54, texture: 'car_zoo', frame: 0, scale: 1.3 },
     map: { x: 78, y: 37, icon: 'panda' },
     rows: [
-      'JQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQJQQk',
+      'ȒȞȒȒȞȒȒȞȒȒȞȒȒȞȒȒȞȒȒȞȒȒȞȒȒȞȒȒȞȒȒȞ.ȒȞȒȒȞȒȒ',
+      'Ȟ......hhh.............................Ȓ',
+      'Ȓ.....hhhhh...Ɵ.............Ȓ..........Ȓ',
+      'Ȓ.Ȩ..hhhhhhh.........ȓ..............Ɵ..Ȓ',
+      'Ȟ.....hhhhhȞ.....Ƨ.....Ƨ.....Ƨ.........Ȓ',
+      'Ȓ....Ɵ.hhh................ȓ......Ƨ....ȓȒ',
+      'Ȓ.ȓ.....Ȓ..ȓ........Ʃ.........ȓ........Ȓ',
+      'Ȟ...................#...Ȓ..............Ȓ',
+      'Ȓ..Ȟ........Ƨ....Ƨ..#.....Ƈ.......ȓ..Ȟ.Ȓ',
+      'Ȓ........Ɵ..........#.ȓ......Ƨ.........Ȓ',
+      'Ȟ..................Ȓ#.....hhh......Ȓ...Ȓ',
+      'Ȓ...Ƨ....Ƨ.....Ȓ....#....hhhhh.........Ȓ',
+      'Ȓ......Ȩ........ȓ...#.....hhh....Ƨ.....Ȓ',
+      'Ȟ...........Ȓ.....Ȓ.#..Ȟ...Ȩ...Ɵ....Ȓ..Ȓ',
+      'Ȓ...Ȓ...Ȟ...........#..................Ȓ',
+      'Ȓ...................#..................Ȓ',
+      'J..J....q....J..q...#..Q..qq...Q..q..Q.k',
       'Q.....nqnq....q.q...#...qqq.QQ.Q..qQQQqk',
       'Q......nJ.n.Jn.J.J..#...qqQ...QQq.qQq..k',
       'J..J.J........nnn...#......Q....qqQQq..k',
@@ -429,43 +445,62 @@ export const LEVELS = {
       'J.............~~~~~~B~~~~r~~~~~~.......k',
       'Q............~~~~~..#......~~~~........k',
       'Q............~~~~~..#.........q........k',
-      'J................K..#..................k',
+      '.................K..#..................k',
       'Q....###############################...k',
       'Q...................#..................k',
       'J..q......r.l....q.l#l....O.........O..k',
-      'Q.......hhhrr.......#..........O.......k',
-      'Q....r.hhhhh........#.......O..........k',
-      'J.....hhhhhhhrMMMMM.#l..........q.O....k',
-      'Q......hhhhh.rNap,N.#...q..............k',
-      'Q.......hhh.r.N,j,G##........O.n.......k',
+      'Q..........rr.......#..........O........',
+      'Q....r..............#.......O..........k',
+      'J............rMMMMM.#l..........q.O....k',
+      'Q............rNap,N.#...q..............k',
+      'Q...........r.N,j,G##........O.n.......k',
       'J............#MMMMM.#............O.....k',
       'Q...........####c####..................k',
-      'Q...........##.....l#l..........hhhr...k',
-      'J...........##......#...K..q..rhhhhh...k',
-      'Q...........#..K....#..........hhhhhr..k',
-      'Q..q................I...........hhh....k',
+      'Q...........##.....l#l.............r...k',
+      'J...........##......#...K..q..r........k',
+      'Q...........#..K....#...............r..k',
+      'Q..q................I..................k',
       'J..........n........#.....K....r.......k',
       'Q............K......#..................k',
-      'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
+      'kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.kkkkkkkkk',
     ],
     grass: ['agrass0', 'agrass1', 'agrass2'],
     path: 'asia_path',
     water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], // Koi-Teich, ab und zu Seerosen und Lotus
-    start: { tx: 20, ty: 45 },
+    // Hochebene im Norden (Zeilen 0 bis 15, hinter dem Bambushain; der Weg führt hinauf zur Stupa): bis Zeile full eine
+    // dichte Schneedecke, darunter läuft sie über band Zeilen weich aus (siehe src/world/SnowCover.js)
+    snowline: { full: 9, band: 8 },
+    // Yak-Herde am Steinhaufen (Ƈ); der Salzstein liegt an einer dieser Stellen (siehe src/world/YakHerd.js)
+    yaks: { count: 3, salt: [[14, 6], [3, 6], [36, 6], [31, 2], [30, 7], [10, 13], [25, 14], [37, 11], [16, 3], [5, 9]] },
+    // Gebetsfahnen: Leinen von Stange zu Stange (Ƨ), auch über Eck (siehe src/world/PrayerFlags.js)
+    prayerFlags: [
+      [[12, 8], [17, 8], [17, 4]],
+      [[23, 4], [29, 4], [29, 9]],
+      [[33, 5], [33, 12]],
+      [[4, 11], [9, 11]],
+    ],
+    start: { tx: 20, ty: 61 },
     enclosures: [], // die Gehege sind im Tierpark
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
-    hut: { tx0: 14, ty0: 36, tx1: 18, ty1: 39, style: 'asia' },
+    hut: { tx0: 14, ty0: 52, tx1: 18, ty1: 55, style: 'asia' },
     chests: [
-      { tx: 16, ty: 40, tools: ['net', 'lasso', 'koifood', 'food', 'ball'] }, // Grünfutter für die Pandas, Ball zum Anlocken des Tigers
-      { tx: 19, ty: 23, tools: ['net', 'lasso', 'koifood', 'food', 'ball'] }, // Kiste auf der Insel: alle Werkzeuge von Asien
+      { tx: 16, ty: 56, tools: ['net', 'lasso', 'koifood', 'food', 'ball'] }, // Grünfutter für die Pandas, Ball zum Anlocken des Tigers
+      { tx: 19, ty: 39, tools: ['net', 'lasso', 'koifood', 'food', 'ball'] }, // Kiste auf der Insel: alle Werkzeuge von Asien
     ],
     hero: 'hero_asia', // Kleidung der Spielfigur in diesem Gebiet (Strohhut)
     ambient: 'ambient_asia', // Asien-Geräusche, leise über die Wiesengeräusche gelegt (siehe tools/prepare-sounds.js)
     background: '#3f7a35',
     toolSpots: [],
-    exits: [], // nur mit dem Auto
+    // Durchgänge in kleine Maps aus dem Expeditions-Baukasten (siehe sideMaps.js): oben auf der Hochebene nur verschneite
+    // Maps, unten die aus dem Bambuswald; sonst nur mit dem Auto
+    exits: [
+      { tx: 32, ty: 0, to: '@side', passage: 'north', back: { tx: 32, ty: 1 }, maps: ['ax_stupa', 'ax_ridge', 'ax_spring'], label: tr('Höher auf die Hochebene', 'Higher up the plateau') },
+      { tx: 0, ty: 46, to: '@side', passage: 'west', back: { tx: 1, ty: 46 }, maps: ['ax_grove', 'ax_lanterns', 'ax_koi', 'ax_cherry', 'ax_forest', 'ax_lake'], label: tr('Tiefer in den Bambuswald', 'Deeper into the bamboo forest') },
+      { tx: 39, ty: 50, to: '@side', passage: 'east', back: { tx: 38, ty: 50 }, maps: ['ax_grove', 'ax_lanterns', 'ax_koi', 'ax_cherry', 'ax_forest', 'ax_lake'], label: tr('Tiefer in den Bambuswald', 'Deeper into the bamboo forest') },
+      { tx: 30, ty: 63, to: '@side', passage: 'south', back: { tx: 30, ty: 62 }, maps: ['ax_grove', 'ax_lanterns', 'ax_koi', 'ax_cherry', 'ax_forest', 'ax_lake'], label: tr('Tiefer in den Bambuswald', 'Deeper into the bamboo forest') },
+    ],
     // Koi leben im Koi-Teich (nur als Schatten zu sehen, bis man sie mit Fischfutter anlockt)
-    spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35, peacock: 0.8 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald
+    spawn: { population: 9, weights: { koi: 1, panda: 0.4, macaque: 0.7, tiger: 0.35, orangutan: 0.35, peacock: 0.8, tanuki: 0.5, snowleopard: 0.15 } }, // Pandas beim Bambus, Japanmakaken in der heißen Quelle, Tiger als Schemen im Bambuswald, Tanukis verkleidet bei den Laternen, selten ein Schneeleopard auf der Hochebene
   },
 
   // Dschungel: ein breiter Fluss teilt den Urwald in Nord- und Südufer. Man landet mit dem Wasserflugzeug an der kleinen
@@ -941,21 +976,21 @@ const PARK_ROWS = [
       '            5].......q....]....r...#.....q.]..........]bJ..#.;.........ľ.....ľ;.#.].......q.ľ.]5',
       '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ..#.^^^^^^^^^^^^^^^^^^ľ#.[[[[[[[[[[[[[5',
       '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb...#....................#..............5',
-      '                                    5ľ.n..q.ľ...n.q..ľ.5ľ.n#...ľ...q......ľ...n.#.q....ľ...n...5',
-      '                                    5.########################################################.5',
-      '                                    5.q....ľ..#...n..ľ.5.q...ľ...n......ľ...q....ľ....n...q.ľ..5',
-      '                                    5[[[[[[[[[G[[[[[[[[5.[[[[[[[[G[[[[[[[[[..[[[[[[[[G[[[[[[[[[5',
-      '                                    5]..ľ..........n..]5.]..ľ.......n.....]..]..n.....ľ...q...]5',
-      '                                    5].n.....q......ľ.]5.]...J..q.....J...]..]...J.........J..]5',
-      '                                    5]....ľ.......q.J.]5.].n.....r.....ľ..]..].q....L.....n...]5',
-      '                                    5].ooooo.....L....]5.]....ľ........J..]..]......ľ.....J...]5',
-      '                                    5]ooooooo......n..]5.]..J........n.q..]..]..ľ........q....]5',
-      '                                    5]oooooooo....J...]5.].....q..ľ.......]..]....J..n........]5',
-      '                                    5].oooooo..ľ......]5.].ľ...J......J...]..].n...L........ľ.]5',
-      '                                    5]..ooo.....q...n.]5.]......n.....ľ...]..]......q.....J...]5',
-      '                                    5].ľ.......n......]5.]..q.....ľ.......]..]..ľ.....n.......]5',
-      '                                    5[[[[[[[[[[[[[[[[[[5.[[[[[[[[[[[[[[[[[[..[[[[[[[[[[[[[[[[[[5',
-      '                                    555555555555555555555555555555555555555555555555555555555555',
+      '            5.K...l....q...l...K...#5ľ.n..q.ľ...n.q..ľ.5ľ.n#...ľ...q......ľ...n.#.q....ľ...n...5',
+      '            5#################################################################################.5',
+      '            5.l..q...l...q...K....l.5.q....ľ..#...n..ľ.5.q...ľ...n......ľ...q....ľ....n...q.ľ..5',
+      '            5[[[G[[[[[[[G[[[[[[[G[[[5[[[[[[[[[G[[[[[[[[5.[[[[[[[[G[[[[[[[[[..[[[[[[[[G[[[[[[[[[5',
+      '            5]l...K]]Ƨ....Ƨ]]......]5]..ľ..........n..]5.]..ľ.......n.....]..]..n.....ľ...q...]5',
+      '            5].....]]......]].O....]5].n.....q......ľ.]5.]...J..q.....J...]..]...J.........J..]5',
+      '            5]..l..]]..r...]]......]5]....ľ.......q.J.]5.].n.....r.....ľ..]..].q....L.....n...]5',
+      '            5]q....]]......]]....O.]5].ooooo.....L....]5.]....ľ........J..]..]......ľ.....J...]5',
+      '            5]...l.]]....r.]]......]5]ooooooo......n..]5.]..J........n.q..]..]..ľ........q....]5',
+      '            5].K...]]......]]......]5]oooooooo....J...]5.].....q..ľ.......]..]....J..n........]5',
+      '            5]....q]].Ʃ....]]..r...]5].oooooo..ľ......]5.].ľ...J......J...]..].n...L........ľ.]5',
+      '            5]l....]]......]]......]5]..ooo.....q...n.]5.]......n.....ľ...]..]......q.....J...]5',
+      '            5]..n..]]......]]......]5].ľ.......n......]5.]..q.....ľ.......]..]..ľ.....n.......]5',
+      '            5[[[[[[[[[[[[[[[[[[[[[[[5[[[[[[[[[[[[[[[[[[5.[[[[[[[[[[[[[[[[[[..[[[[[[[[[[[[[[[[[[5',
+      '            555555555555555555555555555555555555555555555555555555555555555555555555555555555555',
 ];
 
 // ground/water: Boden und Teichwasser im Gehege, passend zur Welt, aus der die Tiere kommen
@@ -999,7 +1034,12 @@ const PARK_PENS = [
       { id: 'gorillas', name: tr('Gorilla-Gehege', 'Gorilla Enclosure'), species: ['gorilla'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 81, ty: 91 }, slots: [3, 5], upgrade: tr('Größeres Gehege mit Kletterbäumen und Baumstämmen', 'Bigger enclosure with climbing trees and logs'), basic: [[87, 87, ']'], [87, 88, ']'], [87, 89, ']'], [87, 90, ']'], [87, 91, ']'], [87, 92, ']'], [87, 93, ']'], [87, 94, ']'], [87, 95, ']']] }, // unten rechts im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 87
       // Tapire und Okapis teilen sich ein Gehege unten links neben dem Jaguar (Zeilen 83 bis 97): der Tapir badet im Teich
       // (wie das Nilpferd), das Okapi läuft zwischen den Urwaldbäumen. Vor dem Ausbau ist der Teich kleiner und es fehlt ein Baum
-      { id: 'tapirs', name: tr('Tapir- und Okapi-Gehege', 'Tapir and Okapi Enclosure'), species: ['tapir', 'okapi'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 47, ty: 89 }, quota: { tapir: [2, 4], okapi: [2, 4] }, upgrade: tr('Größerer Badeteich und ein zweiter Urwaldbaum', 'Bigger bathing pond and a second jungle tree'), basic: [[44, 91, '.'], [44, 92, '.'], [45, 92, '.'], [50, 92, '.']] },
+      { id: 'tapirs', name: tr('Tapir- und Okapi-Gehege', 'Tapir and Okapi Enclosure'), species: ['tapir', 'okapi'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 47, ty: 89 }, quota: { tapir: [3, 5], okapi: [3, 5] }, upgrade: tr('Größerer Badeteich und ein zweiter Urwaldbaum', 'Bigger bathing pond and a second jungle tree'), basic: [[44, 91, '.'], [44, 92, '.'], [45, 92, '.'], [50, 92, '.']] },
+      // Bambuswald, unten links (Zeilen 83 bis 97, am Weg zum Dschungel): Tanuki-Garten mit Steinlaternen, Yak-Weide mit
+      // Gebetsfahnen und Stupa, Schneeleoparden-Felsen mit Sonnenfelsen (im Tierpark ohne Schnee: alle auf Wiese)
+      { id: 'tanukis', name: tr('Tanuki-Garten', 'Tanuki Garden'), species: ['tanuki'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 16, ty: 90 }, slots: [3, 5], upgrade: tr('Mehr Steinlaternen und ein Kirschbaum', 'More stone lanterns and a cherry tree'), basic: [[16, 89, ':'], [17, 91, '<'], [15, 92, '.']] },
+      { id: 'yaks', name: tr('Yak-Weide', 'Yak Pasture'), species: ['yak'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 23, ty: 90 }, slots: [4, 5], upgrade: tr('Eine kleine Stupa', 'A small stupa'), basic: [[22, 93, ':'], [24, 94, '<']] },
+      { id: 'snowleopards', name: tr('Schneeleoparden-Felsen', 'Snow Leopard Rocks'), species: ['snowleopard'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 31, ty: 91 }, slots: [2, 3], upgrade: tr('Ein zweiter Sonnenfelsen', 'A second sunning rock'), basic: [[33, 90, ':'], [32, 91, '<']] },
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
 ];
 
@@ -1156,7 +1196,7 @@ LEVELS.park3 = parkSection('park3', {
   x0: 12, x1: 95, y0: 59, y1: 97, // unten im Dschungel-Teil: Tapir-/Okapi-, Jaguar- und Gorilla-Gehege (Zeilen 83 bis 97)
   edits: [
     [12, 59, edgeRow(12, '5'.repeat(44), [38])],
-    [35, 82, 'b'], // früher der Ausgang in den Bambuswald
+    [35, 82, '#'], // Weg vom Bambuswald hinunter zu Tanuki-, Yak- und Schneeleoparden-Gehege
   ],
   name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
@@ -1165,11 +1205,13 @@ LEVELS.park3 = parkSection('park3', {
   scooterSpot: { tx: 33, ty: 78 }, // E-Roller: im Gras links an der Kreuzung beim Auto
   buildSlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // an der Hauptkreuzung: im Kirschgarten und neben dem Auto
   grounds: [
+    { area: { tx0: 12, tx1: 35, ty0: 83, ty1: 97 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Tanuki-, Yak- und Schneeleoparden-Gehege
     { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
     { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
     { area: { tx0: 36, tx1: 55, ty0: 83, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Tapir- und Okapi-Gehege
     { area: { tx0: 12, tx1: 59, ty0: 59, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
   ],
+  prayerFlags: [[{ tx: 21, ty: 87 }, { tx: 26, ty: 87 }]], // Gebetsfahnen über der Yak-Weide
   sections: [
     // kleiner Wegweiser im Bambuswald an der Abzweigung zum Dschungel (at: nur an diesem Pfosten)
     { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, at: [43, 71] },

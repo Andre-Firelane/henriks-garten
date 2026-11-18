@@ -369,7 +369,7 @@ function glowTexture(scene) {
 }
 
 // leuchtender Pfotenabdruck (Ballen und vier Zehen), zeigt nach oben
-function pawTexture(scene) {
+export function pawTexture(scene) {
   const key = 'wolf_paw';
   if (scene.textures.exists(key)) return key;
   const tex = scene.textures.createCanvas(key, 24, 24);

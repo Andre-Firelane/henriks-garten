@@ -152,6 +152,18 @@ export const OBJECTS = {
   O: { key: 'sun_rock', originY: 40 / 48, solid: true, hitbox: 20 },
   l: { key: 'stone_lantern', originY: 58 / 64, solid: true, hitbox: 8 },
   I: { key: 'torii', originY: 100 / 128, solid: false }, // rotes Tor über dem Weg
+  // Hochebene im Bambuswald: Stange der Gebetsfahnen (die Leinen: PrayerFlags.js), Steinhaufen (dort legt man den
+  // Salzstein für die Yaks ab), großer verschneiter Felsen (Liegeplatz des Schneeleoparden), kleine Stupa
+  Ƨ: { key: 'prayer_pole', originY: 60 / 64, solid: true, hitbox: 4 },
+  Ƈ: { key: 'snow_cairn', originY: 49 / 56, solid: true, hitbox: 12 },
+  Ɵ: { key: 'snow_lionrock', originY: 104 / 128, solid: true, hitbox: 30 },
+  Ʃ: { key: 'stupa', originY: 72 / 80, solid: true, hitbox: 14 },
+  // verschneite Felsen (aus Felsen anderer Gebiete, tools/snow-rocks.py): große Felsgruppe, Felsen in mehreren Formen,
+  // Geröll (begehbar), Steinstapel
+  Ȟ: { key: 'snow_kopje', originY: 82 / 96, solid: true, hitbox: 24 },
+  Ȓ: { key: 'snow_rocks0', variants: ['snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire'], originY: 49 / 56, solid: true, hitbox: 14 },
+  ȓ: { key: 'snow_rubble', originY: 49 / 56, solid: false },
+  Ȩ: { key: 'snow_stack', originY: 84 / 96, solid: true },
   // Bogenbrücken: B entlang ty, E entlang tx; gezeichnet werden sie am Stück (siehe drawBridges in GardenScene)
   B: { solid: false, bridge: 'y' },
   E: { solid: false, bridge: 'x' },

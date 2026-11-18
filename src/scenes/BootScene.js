@@ -33,14 +33,14 @@ const GROUPS = {
     art: /savanna|^sgrass|^sdry|^(acacia_bare|mud|den_sand|boulder)$/,
   },
   asia: {
-    species: ['panda', 'redpanda', 'macaque', 'tiger', 'orangutan', 'peacock'],
-    keys: /^(panda|redpanda|macaque|tiger|orangutan|peacock|hero_asia|ride_asia)/,
-    art: /asia|^agrass|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii)$/,
+    species: ['panda', 'redpanda', 'macaque', 'tiger', 'orangutan', 'peacock', 'tanuki', 'yak', 'snowleopard'],
+    keys: /^(panda|redpanda|macaque|tiger|orangutan|peacock|tanuki|yak|snowleopard|hero_asia|ride_asia)/,
+    art: /asia|^agrass|^snow_(kopje|rocks0|rocks1|pair|spire|rubble|stack|lionrock|cairn)$|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii|prayer_pole|stupa|salt_stone|salttool|brush)$/,
   },
   jungle: {
     species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'tapir', 'okapi', 'snake', 'tarantula', 'piranha'],
     keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|tapir|okapi|snake|tarantula|piranha|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
-    art: /jungle|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web|leaf_bush|leaf_bush_bare|leaf_branch)$/,
+    art: /jungle(?!_tree$)|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web|leaf_bush|leaf_bush_bare|leaf_branch)$/, // der Urwaldbaum steht auch im Bambuswald (Orang-Utans): gleich mitladen
   },
   reef: {
     species: ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'],
@@ -151,6 +151,11 @@ const PIXEL_ART = [
   'agrass0', 'agrass1', 'agrass2', 'asia_path', 'asia_water0', 'asia_water1', 'asia_water2', 'hotspring',
   'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree', 'hammock', 'peacock_perch',
   'sun_rock', 'stone_lantern', 'torii',
+  // Hochebene im Bambuswald (der Schnee selbst: src/world/SnowCover.js): Gebetsfahnen-Stange, Stupa, Salzstein (am Boden
+  // und in der Hand) und Bürste für die Yaks (tools/plateau-hd.py)
+  'prayer_pole', 'stupa', 'salt_stone', 'salttool', 'brush',
+  // verschneite Felsen der Hochebene (tools/snow-rocks.py)
+  'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn',
   // Tierpark
   'park_path', 'signpost_post',
   // begehbare Hütten
@@ -538,6 +543,9 @@ const ANIMAL_SOUNDS = {
   vulture: 'animal_vulture.wav', // Krächzen
   hippo: 'animal_hippo.wav', // Grunzen (auch ab und zu aus dem Wasserloch)
   howler: 'animal_howler.wav', // Brüllen (beim Springen von Baum zu Baum und beim Fangen)
+  tapir: 'animal_tapir.wav', // Fiepen (beim Fangen und ab und zu aus dem Wasser)
+  tanuki: 'animal_tanuki.wav',
+  yak: 'animal_yak.wav', // Grunzen
   gibbon: 'animal_gibbon.wav', // Rufe (beim Springen von Baum zu Baum und beim Fangen)
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
   toucan: 'animal_toucan.wav', // Tukan-Ruf (beim Losfliegen und beim Fangen)
@@ -747,6 +755,12 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('panda', 'assets/panda.png', { frameWidth: 88, frameHeight: 96 }); // Panda (Asien)
     for (const k of ['redpanda', 'redpanda_sit']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // roter Panda (Glühwürmchen-Abend), laufend und sitzend
     load.image('redpanda_tree', 'assets/redpanda_tree.png'); // ... oben im Kirschbaum
+    // Tanuki (Bambuswald) und Fuchs-Tanuki (seltene Variante), Standbilder; dazu je der Schwanz, der hinter der Verkleidung
+    // hervorschaut (doppelte Auflösung)
+    for (const k of ['tanuki', 'tanuki2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 });
+    for (const k of ['tanuki_tail', 'tanuki2_tail']) load.image(k, `assets/${k}.png`);
+    for (const k of ['yak', 'yak2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 112, frameHeight: 104 }); // Yak und gefleckter Yak (Hochebene)
+    load.spritesheet('snowleopard', 'assets/snowleopard.png', { frameWidth: 88, frameHeight: 80 }); // Schneeleopard (Hochebene)
     load.spritesheet('panda_eat', 'assets/panda_eat.png', { frameWidth: 88, frameHeight: 96 }); // sitzt und frisst Bambus
     for (const key of ['panda2', 'panda2_eat']) load.spritesheet(key, `assets/${key}.png`, { frameWidth: 88, frameHeight: 96 }); // Panda ohne Augenflecken (seltene Variante)
     load.spritesheet('minifish', 'assets/minifish.png', { frameWidth: 20, frameHeight: 16 }); // Zierfische im Aquarium

@@ -101,14 +101,15 @@ export default class FireflyEvening {
     if (this.pandaIn <= 0) {
       this.pandaIn = 2;
       const wild = this.scene.animals.filter((a) => a.species === 'redpanda' && a.state === 'wild').length;
+      const max = this.scene.redPandaTarget?.() ?? RED_PANDAS; // Expedition: nur so viele, wie auf der Tierliste frei sind
       // gerade einer gefangen: erst etwas später ein neuer (in einem anderen Baum, siehe RedPanda.placeInTree)
       if (wild < (this.lastWild ?? wild)) {
         this.lastWild = wild;
         this.pandaIn = REFILL_DELAY;
         return;
       }
-      this.lastWild = RED_PANDAS;
-      for (let i = wild; i < RED_PANDAS; i++) {
+      this.lastWild = max;
+      for (let i = wild; i < max; i++) {
         const a = this.scene.createAnimal('redpanda', 0, 0);
         a.life = Infinity;
         if (!a.placeInTree()) this.scene.despawn(a);

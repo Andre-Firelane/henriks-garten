@@ -11,7 +11,13 @@ So entstanden (V = "Tiersprites Test/views", A = public/assets):
   python tools/cutout-views.py Sprites/Tapir.webp $V/tapir 1 4 schatten-grau,loecher,alle   (ebenso Tapir2)
   python tools/cutout-views.py Sprites/Okapi.webp $V/okapi 1 4 schatten,loecher,alle   (ebenso Okapi2)
   python tools/static-sheet.py 96 88 74 84 $A/tapir.png --wasser 64 44 40 0.42 $A/tapir_water.png $V/tapir_v0.png ... _v3.png
-  python tools/static-sheet.py 80 104 90 100 $A/okapi.png $V/okapi_v0.png ... _v3.png"""
+  python tools/static-sheet.py 80 104 90 100 $A/okapi.png $V/okapi_v0.png ... _v3.png
+  python tools/cutout-views.py Sprites/Tanuki.webp $V/tanuki 1 4 schatten,loecher,alle   (ebenso Tanuki2)
+  python tools/static-sheet.py 72 72 56 68 $A/tanuki.png $V/tanuki_v0.png ... _v3.png   (ebenso tanuki2)
+  python tools/cutout-views.py Sprites/Yak.webp $V/yak 1 4 schatten,loecher,alle   (ebenso Yak2; _v3 = _v2 gespiegelt)
+  python tools/static-sheet.py 112 104 92 100 $A/yak.png $V/yak_v0.png ... _v3.png   (ebenso yak2)
+  python tools/cutout-views.py Sprites/Schneeleopard.webp $V/snowleopard 1 4 schatten,loecher,alle
+  python tools/static-sheet.py 88 80 64 76 $A/snowleopard.png $V/snowleopard_v0.png ... _v3.png"""
 import sys
 import numpy as np
 from PIL import Image

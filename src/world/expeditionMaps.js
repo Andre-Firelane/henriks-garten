@@ -108,15 +108,21 @@ const EDGE = { start: { tx: 2, ty: 13 }, exits: [{ tx: 27, ty: 13, to: '@camp', 
 const PALETTE = {
   savanna: { edge: 'v', edgeMix: [['A', 0.6], ['R', 1]], edgeChance: 0.14, grass: 'ƚ' },
   jungle: { edge: 'k', edgeMix: [['J', 0.7], ['Ṁ', 1]], edgeChance: 0.45, grass: 'q' },
+  asia: { edge: 'k', edgeMix: [['Q', 0.7], ['K', 0.85], ['r', 1]], edgeChance: 0.4, grass: 'q' },
+  plateau: { edge: 'Ȓ', edgeMix: [['Ȟ', 0.6], ['ȓ', 1]], edgeChance: 0.3, grass: 'q' }, // verschneite Felsen (Hochebene)
 };
 // river: Fluss quer durch die Map (Zeilen ty0 bis ty1, ganze Breite); clearing: freie Lichtung (Rechteck) mit Dickicht-Rand
 // (Lücken bleiben); stamp: festes Kartenstück { tx, ty, rows } (z. B. Wasserfall mit Felskante); shoreTrees: so viele
 // Urwaldbäume direkt am Wasser (Aras und Tukane sitzen nur in Uferbäumen, höchstens 3 Kacheln vom Wasser)
 // riverInlet: Fluss quer durch die Map (Zeilen ty0 bis ty1), man kommt mit dem Kanu von links und legt an einem Steg in
 // Spalte dockX an (der Steg ragt vom Ufer oben in den Fluss); docks: weitere Stege [[tx, ty], ...] zum Aus- und Einsteigen
-function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13 }) {
-  const P = PALETTE[palette];
+// (Bambuswald) springs: Ellipsen aus heißer Quelle (h); groves: so viele Bambushaine (Q, am Rand hohes Gras);
+// snowRows: bis zu dieser Zeile ist der Rand aus verschneiten Felsen (Hochebene, PALETTE.plateau)
+function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13, springs = [], groves = 0, snowRows = -1 }) {
+  const P0 = PALETTE[palette];
+  const PS = PALETTE.plateau;
   const N = 28;
+  const P = P0;
   let st = seed >>> 0;
   const rnd = () => {
     st = (st + 0x6d2b79f5) >>> 0;
@@ -125,19 +131,22 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  const g = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => (x === 0 || y === 0 || x === N - 1 || y === N - 1 ? P.edge : '.')));
-  for (let i = 0; i < 4 * N; i++) if (rnd() < P.edgeChance) {
+  const pal = (y) => (y <= snowRows ? PS : P0); // Rand: oben verschneit (Hochebene), darunter wie die Welt
+  const g = Array.from({ length: N }, (_, y) => Array.from({ length: N }, (_, x) => (x === 0 || y === 0 || x === N - 1 || y === N - 1 ? pal(y).edge : '.')));
+  // (gleiche Zufallsfolge wie früher: die Savannen- und Dschungel-Maps bleiben, wie sie sind)
+  for (let i = 0; i < 4 * N; i++) if (rnd() < P0.edgeChance) {
     const k = Math.floor(rnd() * 4);
     const t = Math.floor(rnd() * N);
     const [x, y] = [[t, 0], [t, N - 1], [0, t], [N - 1, t]][k];
     const r = rnd();
-    g[y][x] = P.edgeMix.find(([, w]) => r < w)[0];
+    g[y][x] = pal(y).edgeMix.find(([, w]) => r < w)[0];
   }
   const ellipse = ([cx, cy, rx, ry], c) => {
     for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) g[y][x] = c;
   };
   for (const m of muds) ellipse(m, '≈');
   for (const p of ponds) ellipse(p, '~');
+  for (const s of springs) ellipse(s, 'h');
   if (river) for (let y = river.ty0; y <= river.ty1; y++) for (let x = 0; x < N; x++) g[y][x] = '~';
   // Fluss mit Kurven: Ober- und Unterkante schwingen je Spalte (zwei Sinuswellen, je Map anders); am Einlauf bis
   // hinter den Steg bleibt er gerade (dort gleitet das Kanu herein)
@@ -194,7 +203,7 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   // Bäche (Dschungel): kurze, gewundene Wasserläufe (2 Kacheln breit), wie die Kanäle im offenen Dschungel
   // würde etwas Hohes auf (x, y) Wasser verdecken? (Wasser dahinter, also bis 2 Kacheln nach links oder oben)
   const hidesWater = (x, y) => [0, 1, 2].some((a) => [0, 1, 2].some((b) => (a || b) && g[y - b]?.[x - a] === '~'));
-  const HIGH = 'JṀḢ';
+  const HIGH = 'JṀḢQKƟȞ';
   for (let i = 0; i < creeks; i++) {
     const s = spot();
     if (!s) continue;
@@ -280,6 +289,26 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
     if (!s) continue;
     for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [0, -1], [2, 1]]) if (rnd() < 0.75 && free(s[0] + dx, s[1] + dy)) g[s[1] + dy][s[0] + dx] = 'Ď';
   }
+  // Bambushaine (Bambuswald): unregelmäßige Flächen Bambus (6 bis 15 Kacheln), am Rand und dazwischen hohes Gras –
+  // dort sitzen die Pandas, und die Tiger streifen hindurch
+  for (let i = 0; i < groves; i++) {
+    const s = spot();
+    if (!s) continue;
+    const size = 6 + Math.floor(rnd() * 10);
+    const cells = [s];
+    g[s[1]][s[0]] = 'Q';
+    for (let n = 1, tries = 0; n < size && tries < 80; tries++) {
+      const [cx, cy] = cells[Math.floor(rnd() * cells.length)];
+      const [dx, dy] = [[1, 0], [-1, 0], [0, 1], [0, -1]][Math.floor(rnd() * 4)];
+      const x = cx + dx;
+      const y = cy + dy;
+      if (x < 2 || y < 2 || x > N - 3 || y > N - 3 || !free(x, y) || hidesWater(x, y)) continue;
+      g[y][x] = rnd() < 0.25 ? 'q' : 'Q';
+      cells.push([x, y]);
+      n++;
+    }
+    for (const [cx, cy] of cells) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (rnd() < 0.3 && free(cx + dx, cy + dy)) g[cy + dy][cx + dx] = 'q';
+  }
   for (const [c, n] of Object.entries(scatter)) {
     for (let i = 0; i < n; i++) {
       let s = spot();
@@ -287,7 +316,7 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
       if (s && !(HIGH.includes(c) && hidesWater(s[0], s[1]))) g[s[1]][s[0]] = c;
     }
   }
-  if (!inlet) g[13][0] = P.edge;
+  if (!inlet) g[13][0] = pal(13).edge;
   g[exitY][N - 1] = 'X';
   return g.map((r) => r.join(''));
 }
@@ -301,16 +330,16 @@ function withPond(rows, [cx, cy, rx, ry]) {
 
 // Maps (mit tools): ein durchgehender Weg vom Start zum Ausgang (um Wasser und Hindernisse herum, möglichst wenige Knicke)
 // und die Werkzeugkiste am Weg, möglichst in der Mitte der Map (sonst läuft man zu viel)
-const ROUTE_FREE = '.yƚqnľfg'; // darüber darf der Weg (Gras, Büschel, hohes Gras, Farn, Bodenpflanzen, Blumen)
+const ROUTE_FREE = '.yƚqnľfgȓ'; // darüber darf der Weg (Gras, Büschel, hohes Gras, Farn, Bodenpflanzen, Blumen, Geröll)
 const TURN = 3; // so viel teurer ist ein Knick als ein gerades Stück
 const SHORE_COST = 4; // nicht am Wasser entlang (sonst ist unklar, ob man laufen oder fahren soll)
 const THICKET_COST = 6; // durch Dickicht nur, wenn es sonst einen großen Umweg gäbe (der Weg schneidet es dann frei)
-const TALL = 'AǍRƲƦŢuJkṀḢḟĎ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue): davor wird die Kiste verdeckt
+const TALL = 'AǍRƲƦŢuJkṀḢḟĎQKƟȞȨƩ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue, Bambus, Stupa): davor wird die Kiste verdeckt
 // steht vor der Kachel (zur Kamera hin, bis 2 Kacheln) etwas Hohes, das die Kiste verdecken würde?
 // Ein Objekt auf (x + i, y + j) steht vor der Kachel (x, y), wenn i + j > 0; es verdeckt sie, wenn es schmal genug
 // daneben steht (|i − j| ≤ 1, eine Kachel sind 32 Pixel zur Seite) und hoch genug ist (i + j Kacheln sind (i + j) · 16
 // Pixel tiefer im Bild). REACH: bis zu welcher Summe i + j das Objekt (Krone) eine Kiste noch verdeckt
-const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4 };
+const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4, Q: 6, K: 5, Ɵ: 6, Ȟ: 4, Ȩ: 4, Ʃ: 3 };
 export const coveredAt = (get, x, y) => {
   for (let i = -1; i <= 9; i++) for (let j = -1; j <= 9; j++) {
     if (i + j <= 0 || Math.abs(i - j) > 1) continue;
@@ -461,7 +490,201 @@ function jungleCampRows() {
   return g.map((r) => r.join(''));
 }
 
+// --- Bambuswald (Expedition) ---
+
+// Grundlage und Optik je Wetter (wie der Bambuswald in levels.js). Schneefall: überall Schnee (die Schneedecke, siehe
+// SnowCover.js) und fallende Flocken; Nebel: der Schleier aus Weather.js
+const ASIA = {
+  hero: 'hero_asia',
+  background: '#3f7a35',
+  ambient: 'ambient_asia',
+  path: 'asia_path',
+  water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'],
+  enclosures: [],
+  toolSpots: [],
+};
+const SNOW_BG = '#dfe7ee'; // hinter verschneiten Maps (statt Grün)
+const LOOK_A = {
+  normal: { grass: ['agrass0', 'agrass1', 'agrass2'] },
+  snow: { grass: ['agrass0', 'agrass1', 'agrass2'], snow: true, snowline: { full: 40, band: 1 }, background: SNOW_BG },
+  fog: { grass: ['agrass0', 'agrass1', 'agrass2'], ambientVolume: 0.5 },
+};
+// Start links, Ausgang rechts (wie EDGE); auf dem Weg steht ein rotes Tor (Torii)
+const amap = (def) => withTorii(withRoute({ ...ASIA, ...LOOK_A.normal, looks: LOOK_A, expedition: 'asia', ...EDGE, ...def }));
+// Das Tor passt nur über ein Wegstück entlang ty (wie im Bambuswald): das erste solche Stück vom Start aus, nicht
+// direkt am Start oder Ausgang
+function withTorii(def) {
+  if (def.camp || !def.tools) return def;
+  const g = def.rows.map((r) => [...r]);
+  const along = (x, y) => g[y][x] === '#' && g[y - 1]?.[x] === '#' && g[y + 1]?.[x] === '#' && g[y][x - 1] !== '#' && g[y][x + 1] !== '#';
+  const spots = [];
+  for (let y = 2; y < g.length - 2; y++) for (let x = 3; x < g[0].length - 3; x++) if (along(x, y)) spots.push([x, y]);
+  spots.sort((a, b) => Math.hypot(a[0] - def.start.tx, a[1] - def.start.ty) - Math.hypot(b[0] - def.start.tx, b[1] - def.start.ty));
+  if (spots[0]) g[spots[0][1]][spots[0][0]] = 'I';
+  return { ...def, rows: g.map((r) => r.join('')) };
+}
+// Yak-Herde am Steinhaufen (Ƈ): Salzstein-Stellen von selbst, freie Wiese 3 bis 8 Kacheln um den Steinhaufen
+function yaksAt(rows) {
+  let cairn = null;
+  rows.forEach((r, ty) => [...r].forEach((c, tx) => c === 'Ƈ' && (cairn = { tx, ty })));
+  const spots = [];
+  rows.forEach((r, ty) => [...r].forEach((c, tx) => {
+    const d = Math.max(Math.abs(tx - cairn.tx), Math.abs(ty - cairn.ty));
+    if (c === '.' && d >= 3 && d <= 8 && tx > 1 && ty > 1 && tx < 26 && ty < 26) spots.push([tx, ty]);
+  }));
+  // gleichmäßig verteilt höchstens 10 davon
+  const step = Math.max(1, Math.floor(spots.length / 10));
+  return { count: 3, salt: spots.filter((_, i) => i % step === 0).slice(0, 10) };
+}
+// Hochebene: Gebetsfahnen, Stupa und Steinhaufen (Kartenstück; die Leinen der Fahnen siehe STUPA_FLAGS)
+const STUPA_STAMP = {
+  tx: 9,
+  ty: 3,
+  rows: [
+    'Ƨ.......Ƨ',
+    '.........',
+    '..Ʃ......',
+    '.........',
+    '......Ƈ..',
+    '.........',
+    'Ƨ.......Ƨ',
+  ],
+};
+const STUPA_FLAGS = [[[9, 3], [17, 3]], [[9, 9], [17, 9]], [[17, 3], [17, 9]]];
+const inStamp = (s) => (x, y) => x >= s.tx - 1 && x <= s.tx + s.rows[0].length && y >= s.ty - 1 && y <= s.ty + s.rows.length;
+// Felsengrat: Steinhaufen mit Gebetsfahne unten rechts (die großen Felsen verstreut, siehe scatter)
+const RIDGE_STAMP = { tx: 16, ty: 17, rows: ['Ƨ.....', '......', '..Ƈ...', '......', '.....Ƨ'] };
+const RIDGE_FLAGS = [[[16, 17], [21, 21]]];
+
+// Bambuswald-Camp: wie das der Savanne, ringsum Büsche, Bambus und Kirschbäume; rechts zwischen Steinlaternen geht es weiter
+function asiaCampRows() {
+  const sub = { v: 'k', A: 'K', R: 'r' };
+  const g = campRows().map((r) => [...r].map((c) => sub[c] ?? c));
+  for (const [x, y] of [[0, 3], [0, 9], [3, 0], [11, 0], [0, 15], [10, 0]]) g[y][x] = 'Q'; // Bambus hinten (oben und links)
+  for (const [x, y] of [[16, 8], [16, 10], [12, 7]]) g[y][x] = 'l'; // Steinlaternen am Weg
+  return g.map((r) => r.join(''));
+}
+
+const ASIA_LEVELS = {
+  asia_camp: amap({
+    name: tr('Bambuswald-Expedition', 'Bamboo Forest Expedition'),
+    camp: true,
+    car: { tx: 15.6, ty: 12, texture: 'car_zoo', frame: 0, scale: 1.1, arrive: { tx: 14, ty: 7 } },
+    map: { x: 78, y: 37, icon: 'panda' },
+    unlockWith: 'asia',
+    rows: asiaCampRows(),
+    start: { tx: 14, ty: 7 },
+    campfire: { tx: 12, ty: 9 },
+    tent: { tx: 14, ty: 4 },
+    board: { tx: 16, ty: 17 },
+    enclosures: [
+      ...CAGES.map(([tx, ty], i) => ({ id: `cage${i}`, name: tr('Käfig', 'Cage'), species: null, seed: { tx, ty }, cage: i })),
+      { id: 'corral', name: tr('Sammelgehege', 'Holding pen'), species: null, seed: { tx: 4, ty: 14 }, corral: true },
+      { id: 'cage4', name: tr('Käfig', 'Cage'), species: null, seed: { tx: 9, ty: 13 }, cage: 4, when: BIG_WAGON },
+    ],
+    runPatches: [{ tx: 8, ty: 12, rows: ['_____', '!...!', '!...!', '!..o!', '_____'], when: BIG_WAGON }],
+    cageAreas: [{ tx0: 1, ty0: 1, tx1: 11, ty1: 11 }, { tx0: 7, ty0: 11, tx1: 13, ty1: 17 }],
+    cageCenter: { tx: 8, ty: 8 },
+    exits: [{ tx: 17, ty: 9, to: '@next', label: tr('Tiefer in den Bambuswald', 'Deeper into the bamboo forest') }],
+    campHint: tr('⛺ Willkommen im Bambuswald-Camp! Rechts zwischen den Steinlaternen geht es tiefer in den Bambuswald – die Tafel am Zelt zeigt deinen Weg.', '⛺ Welcome to the bamboo forest camp! Between the stone lanterns on the right you go deeper into the bamboo forest – the board by the tent shows your route.'),
+    spawn: { population: 0, weights: {} },
+  }),
+
+  // Bambushain: dichte Bambushaine mit hohem Gras – Pandas sitzen und fressen, Tiger streifen als Schemen hindurch
+  ax_grove: amap({
+    name: tr('Bambushain', 'Bamboo Grove'),
+    features: ['bamboo', 'meadow'],
+    rows: makeRows({ seed: 301, palette: 'asia', groves: 9, scatter: { K: 3, r: 4, k: 6, n: 18, f: 6, y: 22 }, grass: 5 }),
+    tools: ['net', 'lasso'],
+  }),
+
+  // Heiße Quelle: oben am verschneiten Hang dampfen drei Quellen (Japanmakaken), dazwischen große Felsen (Schneeleopard)
+  ax_spring: amap({
+    name: tr('Heiße Quelle', 'Hot Spring'),
+    features: ['hotspring', 'rocks'],
+    rows: makeRows({ seed: 313, palette: 'asia', snowRows: 14, springs: [[8, 6, 3, 1.8], [19, 5, 2.6, 1.5], [21, 20, 2.6, 1.6]], scatter: { Ɵ: 3, Ȓ: 7, ȓ: 8, Ȩ: 2, r: 3, k: 5, y: 18, n: 8 }, grass: 3 }),
+    snowline: { full: 9, band: 8 },
+    tools: ['net', 'lasso'],
+  }),
+
+  // Laternental: viele Steinlaternen zwischen Büschen und Kirschbäumen – dort stehen die Tanukis verkleidet
+  ax_lanterns: amap({
+    name: tr('Laternental', 'Lantern Valley'),
+    features: ['lanterns', 'meadow'],
+    rows: makeRows({ seed: 331, palette: 'asia', groves: 2, scatter: { l: 16, K: 5, k: 10, r: 3, n: 12, f: 6, g: 4, y: 20 }, grass: 4 }),
+    tools: ['net', 'lasso'],
+  }),
+
+  // Koi-Garten: großer Teich mit Koi (Fischfutter), Kirschbäume und Laternen ringsum; mit der Event-Karte wird es
+  // Glühwürmchen-Abend – dann sitzen rote Pandas in den Kirschbäumen
+  ax_koi: amap({
+    name: tr('Koi-Garten', 'Koi Garden'),
+    features: ['pond', 'cherry', 'lanterns', 'meadow'],
+    rows: makeRows({ seed: 347, palette: 'asia', ponds: [[15, 7, 5.5, 3], [8, 21, 3, 1.8]], groves: 2, scatter: { K: 8, l: 8, k: 6, r: 3, n: 10, f: 8, g: 4, y: 16 }, grass: 3 }),
+    tools: ['net', 'lasso'],
+    fireflies: true,
+  }),
+
+  // Kirschblütenhang: viele Kirschbäume, ein paar Laternen und Bambus; zweiter Ort für den Glühwürmchen-Abend
+  ax_cherry: amap({
+    name: tr('Kirschblütenhang', 'Cherry Blossom Slope'),
+    features: ['cherry', 'lanterns', 'bamboo', 'meadow'],
+    rows: makeRows({ seed: 359, palette: 'asia', groves: 3, scatter: { K: 16, l: 7, k: 6, r: 2, n: 10, f: 10, g: 6, y: 16 }, grass: 3 }),
+    tools: ['net', 'lasso'],
+    fireflies: true,
+  }),
+
+  // Stupa-Weide: verschneite Hochebene mit Stupa und Gebetsfahnen – die Yak-Herde grast am Steinhaufen (Salzstein, Bürste)
+  ax_stupa: (() => {
+    const rows = makeRows({ seed: 373, palette: 'plateau', snowRows: 30, stamp: STUPA_STAMP, keepFree: inStamp(STUPA_STAMP), scatter: { Ȓ: 9, ȓ: 12, Ȩ: 3, Ȟ: 2, y: 22, q: 0 }, grass: 3 });
+    return amap({
+      name: tr('Stupa-Weide', 'Stupa Pasture'),
+      features: ['plateau'],
+      rows,
+      snowline: { full: 16, band: 10 },
+      background: SNOW_BG,
+      yaks: yaksAt(rows),
+      prayerFlags: STUPA_FLAGS,
+      tools: ['net', 'lasso'],
+    });
+  })(),
+
+  // Felsengrat: große verschneite Felsen – auf einem döst der Schneeleopard, seine Pfotenspuren führen hin; unten rechts
+  // ein Steinhaufen für die Yaks
+  ax_ridge: (() => {
+    const rows = makeRows({ seed: 389, palette: 'plateau', snowRows: 30, stamp: RIDGE_STAMP, keepFree: inStamp(RIDGE_STAMP), scatter: { Ɵ: 5, Ȓ: 10, ȓ: 12, Ȩ: 3, Ȟ: 3, y: 18 }, grass: 2 });
+    return amap({
+      name: tr('Felsengrat', 'Rocky Ridge'),
+      features: ['rocks', 'plateau'],
+      rows,
+      snowline: { full: 40, band: 1 },
+      background: SNOW_BG,
+      yaks: yaksAt(rows),
+      prayerFlags: RIDGE_FLAGS,
+      tools: ['net', 'lasso'],
+    });
+  })(),
+
+  // Urwaldrand: hohe Urwaldbäume gehen in Bambus über – oben in den Kronen sitzen Orang-Utans, im Bambus der Tiger
+  ax_forest: amap({
+    name: tr('Urwaldrand', 'Forest Edge'),
+    features: ['forest', 'bamboo', 'meadow'],
+    rows: makeRows({ seed: 401, palette: 'asia', groves: 5, ponds: [[20, 21, 2.6, 1.6]], scatter: { J: 14, k: 10, K: 2, r: 3, n: 22, f: 6, y: 16 }, grass: 4 }),
+    tools: ['net', 'lasso'],
+  }),
+
+  // Bergsee: unten ein großer See (Koi), oben am verschneiten Hang zwei heiße Quellen (Japanmakaken)
+  ax_lake: amap({
+    name: tr('Bergsee', 'Mountain Lake'),
+    features: ['pond', 'hotspring', 'meadow'],
+    rows: makeRows({ seed: 419, palette: 'asia', snowRows: 9, ponds: [[16, 20, 6, 3.2]], springs: [[7, 5, 2.6, 1.5], [20, 5, 2.4, 1.4]], scatter: { Ȓ: 4, ȓ: 6, K: 3, l: 3, k: 6, r: 3, n: 10, f: 4, y: 18 }, grass: 3 }),
+    snowline: { full: 5, band: 7 },
+    tools: ['net', 'lasso'],
+  }),
+};
+
 export const EXPEDITION_LEVELS = {
+  ...ASIA_LEVELS,
   // Camp (provisorisch, zieht mit: nach jeder Map steht es weiter vorn): Zelt mit der Fortschritts-Tafel, Lagerfeuer,
   // das Auto (Jeep mit Anhänger: Expedition beenden) und der Wagen als 6 kleine Gitterkäfige (je ein Tier, siehe CAGES);
   // wer nicht mehr hineinpasst, wartet im Sammelgehege. Man kommt vor dem Zelt an, rechts daneben geht es weiter
