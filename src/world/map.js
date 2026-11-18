@@ -17,7 +17,7 @@ export const slotsShown = () => storyAt('upgrade');
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
 // ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar)
 // ŝ ĉ ṗ ķ ẋ: Sonnenblumen, Mais, Kürbisse, Kohl und Vogelscheuche auf dem Acker (Wiese)
-const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
+const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -171,6 +171,8 @@ export const OBJECTS = {
   Ƭ: { solid: false, bridge: 'y', log: true },
   ƫ: { solid: false, bridge: 'x', log: true },
   ř: { key: 'forest_river_rock', originY: 40 / 52, solid: true }, // Felsen im Fluss (darunter fließt Wasser, Schaum: ForestLife.js)
+  // alter, knorriger Baum, der halb aus dem Moorwasser ragt (darunter Wasser); zwei Formen: mit wenig Laub und kahl
+  ǒ: { key: 'forest_bogtree', variants: ['forest_bogtree', 'forest_bogtree2'], originY: 104 / 128, solid: true, hitbox: 12 },
   // Dschungel: Bootssteg (liegt flach über dem Wasser, begehbar), Dickicht (fest, bis man es mit der Machete wegschlägt;
   // es wächst wieder nach, siehe Thicket.js und thicketBlock), Felsklippe und Wasserfall (oben links in der Ecke)
   Ŝ: { key: 'jungle_dock', originY: 0.5, solid: false, floor: true },
@@ -224,6 +226,13 @@ export const OBJECTS = {
   // Biber am Fluss: angenagter Baum (dort sitzen sie und nagen, siehe Beaver.js) und Biberburg
   ƀ: { key: 'forest_gnawed_tree', originY: 74 / 80, solid: true, hitbox: 6, sway: 2 },
   Ƅ: { key: 'forest_beaver_lodge', originY: 46 / 56, solid: true, hitbox: 22 },
+  // Moor (Süden des Walds): Birke, Wollgras (Schilf: %, Steg über den Tümpeln: Ŝ mit eigenem Bild, siehe levels.js);
+  // Eichenhain: große Eiche, Laubhaufen (Versteck der Igel), Pilzkreis (Platzhalter: tools/moor-oak-placeholders.py)
+  Ɋ: { key: 'forest_birch', originY: 92 / 104, solid: true, hitbox: 8, sway: 2 },
+  ẉ: { key: 'forest_cottongrass', originY: 25 / 32, solid: false, sway: 5 },
+  Ø: { key: 'forest_oak', originY: 116 / 128, solid: true, hitbox: 16 },
+  ɫ: { key: 'forest_leafpile', originY: 40 / 48, solid: true, hitbox: 10 },
+  ọ: { key: 'forest_toadstools', originY: 22 / 40, solid: false },
   // Savanne: hohes Gras, Busch, Felsgruppe, Termitenhügel, Elefantenfriedhof (Bilder je Wetterphase: objectKeys in levels.js)
   ƚ: { key: 'savanna_tallgrass', originY: 48 / 56, solid: false, sway: 6 },
   Ƙ: { key: 'savanna_bush', originY: 40 / 48, solid: true, hitbox: 5, sway: 2 },
@@ -753,8 +762,9 @@ export function groundAt(tx, ty) {
   // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel
   if (c === 'W' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => PATH_CHARS.includes(charAt(tx + dx, ty + dy)))) return LEVEL.path;
   const g = GROUND[c];
-  // eigenes Teichwasser des Gehege bzw. Gebiets (z. B. Koi-Teich mit Seerosen), fest pro Kachel verteilt
-  const water = enclosureAt(tx, ty)?.water ?? LEVEL.water;
+  if (g && LEVEL.groundKeys?.[c]) return LEVEL.groundKeys[c]; // eigenes Bild des Gebiets (z. B. Schlamm der Suhle im Wald)
+  // eigenes Teichwasser des Gehege, der Bodenzone bzw. des Gebiets (z. B. Koi-Teich mit Seerosen, Moorwasser), fest pro Kachel verteilt
+  const water = enclosureAt(tx, ty)?.water ?? groundZoneAt(tx, ty, true)?.water ?? LEVEL.water;
   if (g === 'fishpond' && !water) return (tx + ty) % 2 ? 'fishpond0' : 'fishpond1';
   if ((g === 'water' || g === 'fishpond') && water) return water[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % water.length];
   if (g === 'sea_ice' && LEVEL.seaIce) return LEVEL.seaIce[(((tx * 73856093) ^ (ty * 19349663)) >>> 0) % LEVEL.seaIce.length]; // Varianten der Eisfläche
@@ -766,12 +776,36 @@ export function groundAt(tx, ty) {
 export function grassAt(tx, ty) {
   const h = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
   const n = h % 10;
-  // im Tierpark hat jedes Gehege und jeder Randstreifen den Boden seiner Welt
-  const zone = LEVEL.grounds?.find(({ area: a }) => tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1);
+  // im Tierpark hat jedes Gehege und jeder Randstreifen den Boden seiner Welt; im Wald haben Moor und Eichenhain ihren eigenen
+  const zone = groundZoneAt(tx, ty);
   const grass = enclosureAt(tx, ty)?.ground ?? zone?.ground ?? LEVEL.grass;
   // Flecken anderer Böden (Riff: Kies, Seegras, Algen ...): je Art eine weiche Fleckenkarte, fest pro Kachel
   for (const [i, p] of (LEVEL.patches ?? []).entries()) if (patchNoise(tx, ty, i) > 1 - p.amount) return p.ground;
   return grass[n < 6 ? 0 : n < 9 ? 1 : 2];
+}
+
+// Bodenzone an dieser Kachel (LEVEL.grounds: Rechteck area, Boden ground, optional Teichwasser water). soft: so viele
+// Kacheln breit geht der Boden weich in den drumherum über (siehe zoneWeight und groundBlend.js); die Kachel selbst
+// gehört zur Zone, wenn in ihrer Mitte mehr als die Hälfte Zonenboden liegt.
+// hard: nur das Rechteck (für das Wasser, sonst wäre ein Tümpel am Rand gefleckt)
+export function groundZoneAt(tx, ty, hard = false) {
+  return LEVEL.grounds?.find((z) => {
+    const a = z.area;
+    if (!z.soft || hard) return tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1;
+    return zoneWeight(z, tx + 0.5, ty + 0.5) >= 0.5;
+  });
+}
+
+// Anteil des Zonenbodens an einem Punkt (A, B in Kacheln, gebrochen): 1 tief in der Zone, 0 weit draußen; dazwischen
+// ein weicher Übergang soft Kacheln breit um den Rand des Rechtecks, dessen Lage nach einer Fleckenkarte schwankt
+// (Buchten statt gerader Linien)
+export function zoneWeight(z, A, B) {
+  const a = z.area;
+  let d = Math.min(A - a.tx0, a.tx1 + 1 - A, B - a.ty0, a.ty1 + 1 - B); // Abstand zum Rand, innen positiv
+  if (!z.soft) return d >= 0 ? 1 : 0;
+  d += (patchNoise(A, B, 9) - 0.5) * z.soft * 1.3 + (patchNoise(A * 2.7, B * 2.7, 10) - 0.5) * z.soft * 0.4;
+  const t = Math.max(0, Math.min(1, d / z.soft + 0.5));
+  return t * t * (3 - 2 * t);
 }
 
 // weiches Rauschen zwischen 0 und 1 (Gitter alle 4 Kacheln, dazwischen weich überblendet); layer: eigene Karte je Fleckenart
@@ -796,7 +830,7 @@ export function outerWaterCorners(tx, ty) {
   // Wasser rundet auch zum Schlamm hin ab (darunter liegt dann Schlamm, siehe cornerGroundAt), Schlamm nicht zum Wasser hin.
   // Zugefrorenes Meer (Eiswelt bei Nacht) rundet zum Schnee hin ab; zum offenen Wasser hin rundet das Eis selbst ab wie
   // ein Ufer (siehe outerLandCorners)
-  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜƬƫř'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~') && !(c === 'ɨ' && charAt(x, y) === '~');
+  const land = (x, y) => charAt(x, y) !== c && !(c === '~' && 'BEŜƬƫřǒ'.includes(charAt(x, y))) && !(c === '≈' && charAt(x, y) === '~') && !(c === 'ɨ' && charAt(x, y) === '~');
   // Nachbarn an den Kanten: oben links (tx-1), oben rechts (ty-1), unten rechts (tx+1), unten links (ty+1)
   const ul = land(tx - 1, ty), ur = land(tx, ty - 1), dr = land(tx + 1, ty), dl = land(tx, ty + 1);
   return (ul && ur ? CORNER.top : 0) | (ur && dr ? CORNER.right : 0) | (dr && dl ? CORNER.bottom : 0) | (dl && ul ? CORNER.left : 0);
@@ -808,7 +842,7 @@ export function outerWaterCorners(tx, ty) {
 export function outerLandCorners(tx, ty) {
   if (!LEVEL.roundShore) return 0;
   const c = charAt(tx, ty);
-  if (c === ' ' || '~owh≈BEŜƬƫř'.includes(c)) return 0;
+  if (c === ' ' || '~owh≈BEŜƬƫřǒ'.includes(c)) return 0;
   const water = (x, y) => isShoreWater(c, charAt(x, y));
   const ul = water(tx - 1, ty), ur = water(tx, ty - 1), dr = water(tx + 1, ty), dl = water(tx, ty + 1);
   return (ul && ur && water(tx - 1, ty - 1) ? CORNER.top : 0) | (ur && dr && water(tx + 1, ty - 1) ? CORNER.right : 0)
@@ -849,7 +883,7 @@ export function grassPathCorners(tx, ty) {
 
 // Liegt neben einer Landkachel (c) hier Wasser, zu dem hin sie abgerundet wird? (Eis nur zum offenen Wasser hin)
 export function isShoreWater(c, n) {
-  return n === '~' || n === 'ř' || (n === 'ɨ' && c !== 'ɨ'); // ř: Felsen im Fluss (darunter Wasser)
+  return n === '~' || n === 'ř' || n === 'ǒ' || (n === 'ɨ' && c !== 'ɨ'); // ř: Felsen im Fluss, ǒ: Moorbaum (darunter Wasser)
 }
 
 // Boden unter den abgerundeten Ecken einer Wasserkachel: Schlamm, wenn das Wasser im Schlammloch liegt (Trockenzeit),

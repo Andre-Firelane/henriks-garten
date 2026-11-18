@@ -3,13 +3,13 @@
 // Wasser bzw. den abgerundeten Wasserecken). Die Form folgt dem echten Wasserrand samt Rundungen (siehe roundedTiles.js),
 // das Muster (Körnung, Kiesel, Flecken) hängt an der Weltposition, damit es über die Kachelgrenzen hinweg weiterläuft.
 import Phaser from 'phaser';
-import { CORNER, charAt, outerWaterCorners, outerLandCorners } from './map.js';
+import { CORNER, LEVEL, charAt, outerWaterCorners, outerLandCorners } from './map.js';
 import { TILE_W, TILE_H } from './iso.js';
 import { shrinkTexture } from './hd.js';
 
 const RES = 2; // Bildschärfe (die Bodenflächen werden höchstens doppelt so fein gemalt, siehe bakeGround)
 const ROUND = 0.45; // wie in roundedTiles.js
-const WATER = '~owh≈BEŜƬƫř0'; // Wasser (auch unter Brücken und Felsen im Fluss) und Schlamm
+const WATER = '~owh≈BEŜƬƫřǒ0'; // Wasser (auch unter Brücken und Felsen im Fluss) und Schlamm
 const REACH = 1; // so weit (Kacheln) über die Kachel hinaus wird nach Wasser gesucht
 const GRID = 20; // Abstands-Raster je Kachel
 const BLEED = 0.04; // so weit (Kacheln) malt jede Kachel über ihren Rand: das Muster hängt an der Welt, die Überlappung fällt nicht auf
@@ -18,6 +18,7 @@ const BLEED = 0.04; // so weit (Kacheln) malt jede Kachel über ihren Rand: das 
 const STYLE_OF = [
   ['sgrass', 'savanna'], ['sdry', 'savanna'],
   ['fgrass', 'gravel'],
+  ['forest_moor', 'peat'], ['forest_leaves', 'gravel'], // Moor und Eichenhain im Wald
   ['agrass', 'pebbles'],
   ['jgrass', 'jungle'],
   ['grass', 'sand'],
@@ -30,6 +31,7 @@ const STYLES = {
   savanna: { width: 0.44, base: [158, 118, 76], wet: [108, 76, 46], grain: 16, stones: 0.06, stone: [170, 150, 120], mottle: 22 },
   pebbles: { width: 0.32, base: [150, 142, 124], wet: [110, 104, 92], grain: 8, stones: 0.9, stone: [196, 192, 182] },
   jungle: { width: 0.36, base: [138, 106, 68], wet: [92, 70, 46], grain: 10, stones: 0.15, stone: [120, 112, 98], mottle: 14 },
+  peat: { width: 0.4, base: [96, 82, 58], wet: [58, 50, 38], grain: 10, stones: 0.05, stone: [118, 112, 96], mottle: 18 }, // dunkler, weicher Torfrand im Moor
 };
 
 export function shoreStyle(groundKey) {
@@ -38,10 +40,11 @@ export function shoreStyle(groundKey) {
   return hit ? hit[1] : null;
 }
 
-const isWaterChar = (c) => c !== undefined && c !== ' ' && WATER.includes(c);
+// noMudShore (levels.js): um den Schlamm liegt kein Ufer (Suhle im Wald)
+const isWaterChar = (c) => c !== undefined && c !== ' ' && WATER.includes(c) && !(c === '≈' && LEVEL.noMudShore);
 
 // Liegt der Punkt (in Kachelkoordinaten der Welt) im Wasser? Abgerundete Wasserecken sind Land, abgerundete Landecken Wasser
-function waterAt(A, B) {
+export function waterAt(A, B) {
   const tx = Math.floor(A), ty = Math.floor(B);
   const c = charAt(tx, ty);
   if (c === undefined || c === ' ') return false;

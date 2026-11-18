@@ -134,6 +134,8 @@ const PIXEL_ART = [
   // Biber (Platzhalter aus tools/beaver-placeholders.py): Damm mit und ohne Loch, großer Stock, angenagter Baum, Biberburg
   'forest_beaver_dam', 'forest_beaver_dam_hole', 'forest_stick', 'forest_gnawed_tree', 'forest_beaver_lodge', 'forest_dark_soil',
   'forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3',
+  // Moor und Eichenhain (Platzhalter aus tools/moor-oak-placeholders.py): Birke, Wollgras, Eiche, Laubhaufen, Pilzkreis, Steg, Böden, Moorwasser, Suhle
+  'forest_birch', 'forest_cottongrass', 'forest_oak', 'forest_leafpile', 'forest_toadstools', 'forest_boardwalk', 'forest_moor0', 'forest_moor1', 'forest_moor2', 'forest_leaves0', 'forest_leaves1', 'forest_leaves2', 'forest_moor_water', 'forest_mud', 'forest_bogtree', 'forest_bogtree2',
   // Futterstrauch für Tapir und Okapi (Dschungel, tools/leaf-bush.py): voll, abgeerntet, der Blätterzweig in der Hand
   'leaf_bush', 'leaf_bush_bare', 'leaf_branch',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',

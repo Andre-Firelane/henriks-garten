@@ -95,6 +95,7 @@ import Jaguar from '../animals/Jaguar.js';
 import Gorilla from '../animals/Gorilla.js';
 import WaterfallSun from '../world/WaterfallSun.js';
 import { shoreTexture, removeShoreTextures } from '../world/shore.js';
+import { blendTexture, mudTexture, clearBlendCache } from '../world/groundBlend.js';
 import Seahorse from '../animals/Seahorse.js';
 import Octopus from '../animals/Octopus.js';
 import Turtle, { CUTS_NEEDED, CUT_DIST } from '../animals/Turtle.js';
@@ -127,6 +128,7 @@ import MeadowLife from '../world/MeadowLife.js';
 import PrayerFlags from '../world/PrayerFlags.js';
 import SnowCover from '../world/SnowCover.js';
 import ForestLife from '../world/ForestLife.js';
+import MoorFog from '../world/MoorFog.js';
 import BeaverDam from '../world/BeaverDam.js';
 import YakHerd from '../world/YakHerd.js';
 import LeafBushes from '../world/LeafBushes.js';
@@ -809,6 +811,14 @@ export default class GardenScene extends Phaser.Scene {
         shoreKeys.push(k);
       }
     };
+    // weicher Übergang zwischen Bodenarten (siehe groundBlend.js): vor dem Ufer gemalt, damit das Ufer obenauf liegt
+    const blend = (x, y, tx, ty) => {
+      for (const k of [blendTexture(this, tx, ty), mudTexture(this, tx, ty)]) {
+        if (!k) continue;
+        ground.push([x, y, k]);
+        shoreKeys.push(k);
+      }
+    };
     const firstStatic = this.children.list.length; // ab hier: feste Dinge der Karte (werden außerhalb des Bildes ausgeblendet)
     for (let ty = 0; ty < MAP_H; ty++) {
       for (let tx = 0; tx < MAP_W; tx++) {
@@ -818,12 +828,14 @@ export default class GardenScene extends Phaser.Scene {
         const corners = outerWaterCorners(tx, ty);
         if (river?.has(tx + ',' + ty)) {
           if (corners) ground.push([x, y, cornerGroundAt(tx, ty)]);
+          if (corners) blend(x, y, tx, ty);
           if (corners) shore(x, y, tx, ty, cornerGroundAt(tx, ty));
           const key = LEVEL.flow.frames[0];
           const img = this.add.image(x, y, corners ? roundedTexture(this, key, corners) : key).setDepth(-99998);
           this.flowTiles.push({ img, corners });
         } else if (corners) {
           ground.push([x, y, cornerGroundAt(tx, ty)]); // Gras, im Schlammloch Schlamm
+          blend(x, y, tx, ty);
           shore(x, y, tx, ty, cornerGroundAt(tx, ty)); // Ufer unter der Rundung
           ground.push([x, y, roundedTexture(this, groundAt(tx, ty), corners)]);
         } else if (outerLandCorners(tx, ty)) {
@@ -842,6 +854,7 @@ export default class GardenScene extends Phaser.Scene {
           } else {
             ground.push([x, y, groundAt(wx, wy)]);
             ground.push([x, y, round]);
+            blend(x, y, tx, ty);
             shore(x, y, tx, ty, groundAt(tx, ty));
           }
         } else {
@@ -856,6 +869,7 @@ export default class GardenScene extends Phaser.Scene {
             ground.push([x, y, roundedTexture(this, groundAt(tx, ty), grassRound.mask)]);
           } else {
             ground.push([x, y - raiseAt(tx, ty), groundAt(tx, ty)]); // Terrarium auf einem Sockel: der Boden liegt höher
+            if (!raiseAt(tx, ty) && groundAt(tx, ty) === grassAt(tx, ty)) blend(x, y, tx, ty);
           }
           if (!raiseAt(tx, ty)) shore(x, y, tx, ty, groundAt(tx, ty));
         }
@@ -962,7 +976,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.cullView = null;
     this.bakeGround(ground);
-    removeShoreTextures(this, shoreKeys); // sind jetzt im Boden gemalt
+    removeShoreTextures(this, shoreKeys); // sind jetzt im Boden gemalt (auch die Übergänge zwischen Bodenarten)
+    clearBlendCache();
 
     // Tore der Gehege: jedes verschwindet kurz, solange jemand hindurchgeht
     this.gateGroups = ENCLOSURES.filter((e) => e.gates.length).map((e) => ({
@@ -1134,6 +1149,7 @@ export default class GardenScene extends Phaser.Scene {
     this.snowCover = LEVEL.snowline ? new SnowCover(this) : null; // Schneedecke der Hochebene, läuft weich aus (Bambuswald)
     if (LEVEL.prayerFlags) new PrayerFlags(this); // Gebetsfahnen auf der Hochebene (Bambuswald)
     this.forestLife = LEVEL.bats || LEVEL.bees || LEVEL.birds || LEVEL.moss ? new ForestLife(this) : null; // Schaum, Moos, Bienen, Vögel, Fledermäuse (Wald)
+    this.moorFog = LEVEL.moorFog ? new MoorFog(this) : null; // Nebel über dem Moor (Wald)
     this.savannaLife = LEVEL.flies || LEVEL.gravePatch ? new SavannaLife(this) : null; // Friedhofsboden, Fliegen- und Mückenschwärme (Savanne)
     this.coldHintIn = 0;
     this.nearBoat = null;
@@ -6325,6 +6341,7 @@ export default class GardenScene extends Phaser.Scene {
     this.meadowLife.update(dt);
     this.snowCover?.update(); // Fußspuren im Schnee
     this.forestLife?.update(dt);
+    this.moorFog?.update(dt);
     this.savannaLife?.update(dt);
 
     // Übergang in ein anderes Level?
@@ -6637,7 +6654,7 @@ function pathFishTexture(scene, dir) {
 // Kacheln des Flusses (LEVEL.flow): zusammenhängendes Wasser samt Stegen, das groß genug ist (kleine Becken wie das am
 // Wasserfall fließen nicht). Set "tx,ty"
 function riverTiles() {
-  const water = (tx, ty) => '~ŜBEƬƫř'.includes(charAt(tx, ty)) && tx >= 0 && ty >= 0 && tx < MAP_W && ty < MAP_H; // unter Brücken fließt er weiter
+  const water = (tx, ty) => '~ŜBEƬƫřǒ'.includes(charAt(tx, ty)) && tx >= 0 && ty >= 0 && tx < MAP_W && ty < MAP_H; // unter Brücken fließt er weiter
   const seen = new Set();
   const river = new Set();
   for (let ty = 0; ty < MAP_H; ty++) {

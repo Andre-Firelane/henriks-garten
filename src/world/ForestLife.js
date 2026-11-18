@@ -5,7 +5,7 @@
 // Wald. Nur Deko: man fängt sie nicht.
 import Phaser from 'phaser';
 import { tileToWorld } from './iso.js';
-import { LEVEL, MAP_W, MAP_H, charAt } from './map.js';
+import { LEVEL, MAP_W, MAP_H, charAt, groundZoneAt } from './map.js';
 import { isActive } from './events.js';
 import { NIGHT_DEPTH } from '../animals/Wolf.js';
 
@@ -136,7 +136,7 @@ export default class ForestLife {
     const path = (tx, ty) => [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => charAt(tx + dx, ty + dy) === '#'));
     for (let ty = 1; ty < MAP_H - 1; ty++) {
       for (let tx = 1; tx < MAP_W - 1; tx++) {
-        if (charAt(tx, ty) !== '.' || path(tx, ty)) continue;
+        if (charAt(tx, ty) !== '.' || path(tx, ty) || groundZoneAt(tx, ty)?.noMoss) continue; // kein Moos im Laub des Eichenhains
         const h = ((tx * 73856093) ^ (ty * 19349663)) >>> 0;
         if ((h % 1000) / 1000 >= amount) continue;
         const p = tileToWorld(tx + ((h >>> 10) % 40) / 100 - 0.2, ty + ((h >>> 16) % 40) / 100 - 0.2);
