@@ -188,6 +188,7 @@ const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', '
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
+const TOAST_MS = 6000; // so lange steht eine Meldung (Animation toast in index.html)
 const TOAST_MIN_W = 260; // so breit (CSS-Pixel) muss der Platz neben dem Abzeichen oben links sein, sonst kommen Meldungen darunter
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
 const SIGN_INNER_W = 38; // helle Tafel des Torschilds (Welt-Pixel), darauf die Tierbilder
@@ -1271,7 +1272,7 @@ export default class GardenScene extends Phaser.Scene {
         this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.built)); // gleich kauft jemand ein
       }
       if (data.seasonNote) this.showToast(data.seasonNote); // Wetterwechsel in der Savanne
-      else this.showToast(`${LEVEL.name}${this.expMap ? ` · ${tr(`Map ${expRun().step} von ${RUN_LENGTH}`, `Map ${expRun().step} of ${RUN_LENGTH}`)}` : ''}${this.expEvent() ? `<br><small>${tr('🦬 Große Wanderung! Unten links zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing by on the lower left – keep your lasso ready.')}</small>` : ''}${back}${moved}${LEVEL.wip ? `<br><small>${tr('🚧 Dieses Gebiet ist noch nicht fertig – hier kommen bald weitere Tiere dazu.', '🚧 This area is still under construction – more animals are coming soon.')}</small>` : ''}`);
+      else this.showToast(`${LEVEL.name}${this.expMap ? ` · ${tr(`Map ${expRun().step} von ${RUN_LENGTH}`, `Map ${expRun().step} of ${RUN_LENGTH}`)}` : ''}${this.expHiddenHint()}${this.expEvent() ? `<br><small>${tr('🦬 Große Wanderung! Unten links zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing by on the lower left – keep your lasso ready.')}</small>` : ''}${back}${moved}${LEVEL.wip ? `<br><small>${tr('🚧 Dieses Gebiet ist noch nicht fertig – hier kommen bald weitere Tiere dazu.', '🚧 This area is still under construction – more animals are coming soon.')}</small>` : ''}`);
     }
 
     const cam = this.cameras.main;
@@ -3334,6 +3335,23 @@ export default class GardenScene extends Phaser.Scene {
     this.toast.classList.remove('show');
     void this.toast.offsetWidth; // Animation neu starten
     this.toast.classList.add('show');
+    // Expedition: der Tier-Zähler rückt unter die Meldung, solange sie steht (TOAST_MS), danach wieder hoch
+    this.toastShownAt = Date.now();
+    this.layoutExpCounter();
+    clearTimeout(this.toastCounterTimer);
+    this.toastCounterTimer = setTimeout(() => this.sys.isActive() && this.layoutExpCounter(), TOAST_MS + 50);
+  }
+
+  // Tier-Zähler der Expedition auf dem Handy: direkt unter der Knopfreihe (CSS), steht oben eine Meldung, darunter
+  layoutExpCounter() {
+    const el = document.getElementById('exp-counter');
+    if (!el) return;
+    const small = matchMedia('(max-width: 900px), (max-height: 500px)').matches;
+    const showing = Date.now() - (this.toastShownAt ?? 0) < TOAST_MS;
+    el.style.top = '';
+    if (!small || !showing) return;
+    const base = parseFloat(getComputedStyle(el).top) || 0; // (ohne eigene Angabe: die aus dem CSS)
+    el.style.top = `${Math.max(base, Math.round(this.toast.getBoundingClientRect().bottom + 6))}px`;
   }
 
   // Werkzeuge kommen zurück in die Kiste (dort gibt es beliebig viele). Nur Werkzeuge mit einem festen Platz
@@ -3693,7 +3711,9 @@ export default class GardenScene extends Phaser.Scene {
       const sy = (target.y - 8 - view.y) * cam.zoom * z;
       const onScreen = sx > 0 && sx < W && sy > 0 && sy < H;
       let el = this.markers.get(t.id);
-      if (onScreen) {
+      // im Bild: weg – außer bei versteckten Tieren (Fernglas: Affe oben in der Krone, Schlange im Dickicht), dort steht
+      // das Tierbild direkt über der Stelle
+      if (onScreen && !t.here) {
         el?.classList.remove('show');
         continue;
       }
@@ -3707,6 +3727,13 @@ export default class GardenScene extends Phaser.Scene {
       if (el.iconHtml !== (t.icon ?? '')) {
         el.iconHtml = t.icon ?? '';
         el.innerHTML = `<span class="pointer"></span>${el.iconHtml}`;
+      }
+      el.classList.toggle('here', onScreen);
+      if (onScreen) {
+        el.style.left = `${sx}px`;
+        el.style.top = `${sy}px`;
+        el.classList.add('show');
+        continue;
       }
       // vom Bildschirmmittelpunkt in Richtung Falle bis an den Rand (oben unterhalb der Anzeigeleiste)
       const dx = sx - W / 2 || 1e-6;
@@ -5132,6 +5159,16 @@ export default class GardenScene extends Phaser.Scene {
         for (const a of group) a.life = Infinity;
       }
     }
+  }
+
+  // Ankunft auf einer Expeditions-Map: kurzer Hinweis zu Tieren, die man nicht gleich sieht
+  expHiddenHint() {
+    if (!this.expMap) return '';
+    const home = expRun()?.home ?? {};
+    const lines = [];
+    if (home.howler) lines.push(tr(`${animalIcon('howler')} Brüllaffen sitzen unsichtbar oben in den Bäumen – wo die Krone raschelt, leg eine Banane unter den Baum.`, `${animalIcon('howler')} Howler monkeys sit unseen high up in the trees – where a crown rustles, put a banana at the foot of the tree.`));
+    if (home.snake || home.tarantula) lines.push(tr('🌿 Schlangen und Vogelspinnen verstecken sich im Dickicht – wo es raschelt, schlag es frei.', '🌿 Snakes and tarantulas hide in the thicket – where it rustles, cut it away.'));
+    return lines.map((l) => `<br><small>${l}</small>`).join('');
   }
 
   // Werkzeuge in der Kiste einer Expeditions-Map: Kescher und Lasso, dazu was die gewürfelten Tiere brauchen (Angel,

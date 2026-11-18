@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { JUNGLE_TREES, LEVEL } from '../world/map.js';
+import { LEVEL, reachableJungleTrees } from '../world/map.js';
 
 const CROWN_UP = 104; // Höhe der Baumkrone über dem Fuß des Urwaldbaums (Bild "jungle_tree")
 const TROOP_SIZE = [3, 4]; // so viele sind in einem Trupp
@@ -33,7 +33,7 @@ export default class Howler extends Animal {
   // einen Trupp in nahe beieinander stehende, freie Urwaldbäume setzen; gibt die Affen zurück
   static spawnTroop(scene, species = 'howler') {
     const taken = Howler.takenTrees(scene);
-    const free = JUNGLE_TREES.filter((t) => !taken.has(t.tx + ',' + t.ty));
+    const free = reachableJungleTrees().filter((t) => !taken.has(t.tx + ',' + t.ty)); // nur Bäume, an deren Fuß man herankommt (Banane)
     const first = Phaser.Utils.Array.GetRandom(free);
     if (!first) return [];
     const near = Phaser.Utils.Array.Shuffle(free.filter((t) => t !== first && Math.hypot(t.tx - first.tx, t.ty - first.ty) <= TROOP_RANGE));
@@ -107,7 +107,7 @@ export default class Howler extends Animal {
     const taken = Howler.takenTrees(this.scene, this);
     const mates = this.troop?.members.filter((a) => a !== this && a.state === 'wild' && a.tree) ?? [];
     const center = mates.length ? { tx: mates.reduce((s, a) => s + a.tree.tx, 0) / mates.length, ty: mates.reduce((s, a) => s + a.tree.ty, 0) / mates.length } : this.tree;
-    const options = JUNGLE_TREES.filter(
+    const options = reachableJungleTrees().filter(
       (t) => !taken.has(t.tx + ',' + t.ty) && (t.tx !== this.tree.tx || t.ty !== this.tree.ty) && Math.hypot(t.tx - this.tree.tx, t.ty - this.tree.ty) <= JUMP_RANGE && Math.hypot(t.tx - center.tx, t.ty - center.ty) <= TROOP_SPREAD,
     );
     const next = Phaser.Utils.Array.GetRandom(options);

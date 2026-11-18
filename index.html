@@ -650,7 +650,8 @@
       #exp-counter .animal-box { align-items: center; }
       #exp-counter.done { font-size: 18px; background: rgba(40, 110, 40, 0.85); animation: exp-done 1.2s ease-in-out infinite; }
       @keyframes exp-done { 50% { transform: translateX(-50%) scale(1.06); } }
-      @media (max-width: 900px), (max-height: 500px) { #exp-counter { top: 96px; font-size: 17px; padding: 8px 16px; gap: 8px; } } /* Handy */
+      /* Handy: kleiner und weiter oben, direkt unter der Knopfreihe (steht oben eine Meldung, rückt er darunter, siehe layoutExpCounter) */
+      @media (max-width: 900px), (max-height: 500px) { #exp-counter { top: 64px; font-size: 12px; padding: 4px 10px; gap: 4px; border-radius: 12px; transition: top 0.25s; } #exp-counter.done { font-size: 13px; } }
       /* Raster: alle Karten gleich hoch (grid-auto-rows: 1fr), auch über zwei Reihen; lange Wörter brechen um */
       .luck-box .luck-cards { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 150px)); grid-auto-rows: 1fr; justify-content: center; gap: 12px; padding-top: 12px; }
       .luck-card { width: auto; height: 100%; min-height: 170px; box-sizing: border-box; justify-content: flex-start; border-color: var(--luck, #a8743f); border-width: 4px; background: #f8e6c0; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
@@ -721,6 +722,10 @@
       .marker.luck { background-image: none; display: flex; align-items: center; justify-content: center; font: 22px/1 Arial, sans-serif; border-color: #ffd84a; }
       .marker.bino { width: 50px; height: 50px; margin: -27px 0 0 -27px; font-size: 26px; }
       .marker.bino .pointer { margin: -7px 0 0 -6px; } .marker.bino .pointer::after { left: 35px; }
+      /* Fernglas: verstecktes Tier im Bild (Affe in der Krone, Schlange im Dickicht) – das Bild steht über der Stelle, ohne Pfeil */
+      .marker.here .pointer { display: none; }
+      .marker.here { animation: marker-here 1.2s ease-in-out infinite; }
+      @keyframes marker-here { 50% { transform: translateY(-5px); } }
       /* Startbildschirm und Menü */
       #start, #menu {
         position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center;

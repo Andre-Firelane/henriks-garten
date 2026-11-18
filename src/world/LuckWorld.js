@@ -21,6 +21,7 @@ import { RUN_BONI, addUnit, moreUnitsNow, runBonusTag } from './expedition.js';
 import { coveredAt } from './expeditionMaps.js';
 
 const NEAR = 40; // so nah muss man an der Kiste stehen (wie an der Werkzeug-Kiste)
+const CROWN_MARK = 96; // Fernglas: so hoch über dem Stammfuß steht das Bild eines Tiers in der Baumkrone
 const RADAR_DIST = 700; // Kisten-Kompass: Pfeil zu Kisten, die näher sind (Kachel-Abstand, y doppelt)
 const CHEST_GAP = 10; // mehrere Kisten (CHEST_COUNT) stehen mindestens so viele Kacheln auseinander
 const RARE_LIFE = 600; // so lange (Sekunden) bleibt das seltene Tier aus der Kiste mindestens im Gebiet
@@ -499,11 +500,15 @@ export default class Luck {
       if (!units.has(u)) units.set(u, a);
     }
     // dazu versteckte Schlangen und Vogelspinnen (Expedition): Pfeil zum raschelnden Dickicht
-    const hidden = (s.expHiddenTargets?.() ?? []).map((h) => ({ a: { x: h.x, y: h.y, species: h.species, binoId: `t${h.key}` }, d: Math.hypot(h.x - p.x, (h.y - p.y) * 2) }));
+    const hidden = (s.expHiddenTargets?.() ?? []).map((h) => ({ a: { x: h.x, y: h.y, species: h.species, binoId: `t${h.key}`, hidden: true }, d: Math.hypot(h.x - p.x, (h.y - p.y) * 2) }));
     return [...[...units.values()].map((a) => ({ a, d: Math.hypot(a.x - p.x, (a.y - p.y) * 2) })), ...hidden]
       .sort((u, v) => u.d - v.d)
       .slice(0, BINO_MAX)
-      .map(({ a }) => ({ id: `bino-${(a.binoId ??= ++binoId)}`, x: a.x, y: a.y - 10, icon: animalIconFit(a.species, 1.5), bino: true }));
+      .map(({ a }) => {
+        // versteckt (oben in der Krone bzw. im Dickicht): das Bild steht auch im Bild über der Stelle (here)
+        const up = a.inTree?.() ? CROWN_MARK : 10;
+        return { id: `bino-${(a.binoId ??= ++binoId)}`, x: a.x, y: a.y - up, icon: animalIconFit(a.species, 1.5), bino: true, here: !!(a.hidden || a.inTree?.()) };
+      });
   }
 
   // das versprochene seltene Tier ist aufgetaucht (Animal.rollSkin): Pfeil darauf

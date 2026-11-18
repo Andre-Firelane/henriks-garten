@@ -967,6 +967,38 @@ export function isTerrainBlocked(tx, ty) {
   return '~owHh '.includes(charAt(tx, ty));
 }
 
+// Urwaldbäume, an deren Fuß man herankommt (zu Fuß vom Start aus, Dickicht lässt sich freischlagen, mit Kanu auch übers
+// Wasser): nur dort setzen sich Brüllaffen hin – sonst könnte man sie nie mit einer Banane herunterlocken.
+// Einmal je Level berechnet (beim ersten Aufruf nach setLevel)
+let reachCache = null;
+const LURE_REACH = 55; // so nah (Welt-Pixel) muss man dem Fuß des Baums kommen (die Banane liegt vor einem)
+export function reachableJungleTrees() {
+  if (reachCache?.rows === ROWS) return reachCache.trees;
+  const land = (tx, ty) => !isBlocked(tx, ty) || charAt(tx, ty) === 'Ď';
+  const pass = (tx, ty) => land(tx, ty) || (!!LEVEL.boat && charAt(tx, ty) === '~');
+  const s = { tx: Math.round(START?.tx ?? 0), ty: Math.round(START?.ty ?? 0) };
+  const seen = new Set([s.tx + ',' + s.ty]);
+  const todo = [s];
+  const reached = [];
+  while (todo.length) {
+    const t = todo.pop();
+    if (land(t.tx, t.ty)) reached.push(tileToWorld(t.tx, t.ty));
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { tx: t.tx + dx, ty: t.ty + dy };
+      const k = n.tx + ',' + n.ty;
+      if (n.tx < 0 || n.ty < 0 || n.tx >= MAP_W || n.ty >= MAP_H || seen.has(k) || !pass(n.tx, n.ty)) continue;
+      seen.add(k);
+      todo.push(n);
+    }
+  }
+  const trees = JUNGLE_TREES.filter((t) => {
+    const f = tileToWorld(t.tx, t.ty);
+    return reached.some((w) => Math.hypot(w.x - f.x, w.y - f.y) < LURE_REACH);
+  });
+  reachCache = { rows: ROWS, trees: trees.length ? trees : JUNGLE_TREES };
+  return reachCache.trees;
+}
+
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
   const c = charAt(tx, ty);
