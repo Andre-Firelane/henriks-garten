@@ -1,12 +1,14 @@
-// Durchgänge der großen Erkundungs-Maps (Savanne, Dschungel, Bambuswald): an den Rändern liegen je 3 bis 4 Durchgänge (passages in
+// Durchgänge der großen Erkundungs-Maps (Savanne, Dschungel, Bambuswald, Wald): an den Rändern liegen je 3 bis 4 Durchgänge (passages in
 // levels.js, als Ausgänge mit to: '@side'). Dahinter wartet eine kleine Map aus dem Expeditions-Baukasten
 // (expeditionMaps.js) – ohne Karten, Camp und feste Tierliste: die Tiere kommen wie auf der großen Map (dasselbe Wetter),
 // nur Arten, die zur kleinen Map passen (SPECIES_RULES), und etwas weniger. Der Ausgang führt zurück zum Durchgang.
 // Jeder Durchgang behält seine Map bis zum nächsten Wetterwechsel der großen Map; so lange gibt es dort auch höchstens
 // einmal eine Kiste (SIDE_CHEST_CHANCE) – rein und raus würfelt nichts neu.
 // Ein Durchgang mit canoe liegt auf dem Fluss: man fährt mit dem Kanu hinein (immer auf eine Fluss-Map) und kommt im
-// Kanu zurück. Ein Durchgang mit maps führt nur auf diese Maps (Bambuswald: oben auf der Hochebene nur verschneite Maps).
-// Welten ohne Wetterwechsel (Bambuswald): immer Normal, die Map hinter einem Durchgang wechselt nach SIDE_KEEP.
+// Kanu zurück. Ein Durchgang mit maps führt nur auf diese Maps (Bambuswald: oben auf der Hochebene nur verschneite Maps;
+// Wald: aus dem Moor nur Moor-Maps, aus dem Eichenhain nur Maps mit Eichen oder Laub).
+// Welten ohne Wetterwechsel (Bambuswald, Wald): immer Normal, die Map hinter einem Durchgang wechselt nach SIDE_KEEP. Dort
+// gilt auch das Wetter der Arten (seasons in SPECIES_RULES) nicht: es kommt, was auf der großen Map kommt (Reiher im Wald).
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { LEVELS } from './levels.js';
@@ -55,7 +57,7 @@ export function sideOverrides(base, side) {
   const rules = SPECIES_RULES[base.expedition] ?? {};
   const feats = base.features ?? [];
   const fits = (sp) => !rules[sp]?.needs || feats.includes(rules[sp].needs);
-  const inSeason = (sp) => !rules[sp]?.seasons || rules[sp].seasons.includes(side.season);
+  const inSeason = (sp) => !parent.seasons || !rules[sp]?.seasons || rules[sp].seasons.includes(side.season);
   const pool = (p) => {
     if (!p) return null;
     const weights = Object.fromEntries(Object.entries(p.weights ?? {}).filter(([sp]) => fits(sp)));
@@ -82,4 +84,10 @@ function riverExits(base) {
   return exits.length ? exits : (base.exits ?? []).map((e) => ({ ...e, to: '@back', label: backLabel(base.expedition) }));
 }
 
-const backLabel = (biome) => (biome === 'jungle' ? tr('Zurück in den Dschungel', 'Back to the jungle') : biome === 'asia' ? tr('Zurück in den Bambuswald', 'Back to the bamboo forest') : tr('Zurück in die Savanne', 'Back to the savanna'));
+const BACK = {
+  jungle: () => tr('Zurück in den Dschungel', 'Back to the jungle'),
+  asia: () => tr('Zurück in den Bambuswald', 'Back to the bamboo forest'),
+  forest: () => tr('Zurück in den Wald', 'Back to the forest'),
+  savanna: () => tr('Zurück in die Savanne', 'Back to the savanna'),
+};
+const backLabel = (biome) => (BACK[biome] ?? BACK.savanna)();

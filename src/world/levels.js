@@ -255,7 +255,7 @@ export const LEVELS = {
     car: { tx: 24.16, ty: 16.24, texture: 'car_zoo', frame: 0, scale: 1.1 },
     map: { x: 53, y: 16, icon: 'stag' },
     rows: [
-      'PDDPDPPDDPDDPPDPPDPPDPPDPDPPDPPDDPPDPPDP',
+      'PDDPDPPDDPDDPPDPPDPPDP#DPDPPDPPDDPPDPPDP',
       'DŔŔŔŔŔŔŔŔŔn..........m#.....P....nVVV..P',
       'DŔŔ.Ŵ.r..D.....k.D....#nm.......Ț.VĈV.kD',
       'PŔr~~~~..ƒ.....P.Dȁ...#mn..ṽn..n.r...ɌkP',
@@ -273,7 +273,7 @@ export const LEVELS = {
       'PPṽṽ..kk..~ř~.PPn.P..n####.c...#..P...kD',
       'PkP.....k.~~~ƒƒPDP..Dȁ###......#.......P',
       'DPnPḫkDn..~~~.D....ȁȁ.###......#......DD',
-      'PD......##EEE##########################P',
+      'PD......##EEE###########################',
       'Dkn.......~~~.nD.#......#..........ḩ...P',
       'DD..P....~~~..ḩ..#m..P..#.DȚ........P..D',
       'PP..DɌ..~~~......#...ḫ..#......m...Ŀ..kD',
@@ -303,7 +303,7 @@ export const LEVELS = {
       'Dk.ẉẉ~ǒ~Ŝ~~~.........~~~....m....Ø....DØ',
       'PD...%~~Ŝ~~%ẉẉẉ..ẉɊ.~~~.......ɫ...ɫ...DD',
       'D...ẉẉ%~Ŝ~........ẉ~~~.............ọ...D',
-      'D.ẉ.ẉnɊ..ẉ.ẉ..%~~~~~~.e.Ø...Ø..........P',
+      '..ẉ.ẉnɊ..ẉ.ẉ..%~~~~~~.e.Ø...Ø..........P',
       'PD............~~~~~~..................kP',
       'Ɋ...ẉ........ŜŜŜŜŜŜŜŜ.ɫ....ɫ.........m.Ø',
       'P.....Ɋ....ẉĿ.~~~~~~.........≈≈≈≈≈....kD',
@@ -318,7 +318,7 @@ export const LEVELS = {
       'Ɋ..........~~ǒ~~..ẉ.Ŀ........ȁ.......Ø.P',
       'ɊD..ẉẉ.....%...........Ț...............Ø',
       'DDkkɊkɊkkk...k..ɊɊkk.kPk..DPkPD.DDkk.kkP',
-      'DPPɊɊDPDDPDPPDDɊPDDPPDDPPDDPØDPPDPPDDPPD',
+      'DPPɊɊDPDDPDPPDDɊPDDPPDDPPDDPØDP.DPPDDPPD',
     ],
     grass: ['fgrass0', 'fgrass1', 'fgrass2'],
     // Süden: links das Moor (Moorboden, dunkles stilles Wasser, Nebel), rechts hinter dem Fluss der Eichenhain (Laubboden);
@@ -349,7 +349,15 @@ export const LEVELS = {
     // je näher man dem Moor kommt, desto mehr Moorgeräusche (siehe updateZoneAmbient in GardenScene.js)
     ambientZone: { sound: 'ambient_moor', area: { tx0: 1, tx1: 20, ty0: 39, ty1: 62 }, fade: 7 },
     toolSpots: [],
-    exits: [], // nur mit dem Auto
+    // Durchgänge in kleine Maps aus dem Expeditions-Baukasten (siehe sideMaps.js); sonst nur mit dem Auto. Oben am Ende des
+    // Wegs und rechts am Querweg auf jede Wald-Map, links aus dem Moor nur auf Moor-Maps, unten aus dem Eichenhain nur auf
+    // Maps mit Eichen oder Laub
+    exits: [
+      { tx: 22, ty: 0, to: '@side', passage: 'north', back: { tx: 22, ty: 1 }, label: tr('Tiefer in den Wald', 'Deeper into the forest') },
+      { tx: 39, ty: 18, to: '@side', passage: 'east', back: { tx: 38, ty: 18 }, label: tr('Tiefer in den Wald', 'Deeper into the forest') },
+      { tx: 0, ty: 48, to: '@side', passage: 'west', back: { tx: 1, ty: 48 }, maps: ['fx_bog', 'fx_birch', 'fx_moorside'], label: tr('Tiefer ins Moor', 'Deeper into the bog') },
+      { tx: 31, ty: 63, to: '@side', passage: 'south', back: { tx: 31, ty: 62 }, maps: ['fx_oakgrove', 'fx_leafwood', 'fx_gorge', 'fx_moorside'], label: tr('Tiefer in den Eichenwald', 'Deeper into the oak wood') },
+    ],
     spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 1.6, elk: 0.7, hedgehog: 1.2, boar: 0.9 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
     // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
     // im Moor (except) läuft er in stille Tümpel aus

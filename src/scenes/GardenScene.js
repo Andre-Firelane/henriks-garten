@@ -456,6 +456,7 @@ const FROG_NEAR_WATER = 0.75; // Anteil der Frösche, die am Wasser erscheinen
 const PENGUIN_AT_HOLES = 0.75; // Eiswelt bei Nacht: Anteil der Pinguin-Gruppen, die an einem Eisloch erscheinen
 const GIRAFFE_NEAR_TREES = 0.85; // Anteil der Giraffen, die in der Nähe eines Baums erscheinen
 const HERD_SIZE = [2, 4]; // so viele Antilopen erscheinen zusammen
+const SIDE_WOLF_PACKS = 2; // Wolfsnacht hinter einem Durchgang des Walds: so viele Rudel (die große Map hat 3)
 const EXP_GROUP = [2, 3]; // Expedition: kleinere Gruppen (Herden, Trupps, Schwärme, Rudel)
 const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füttern
 // Dinge, die Henrik in der Welt aufhebt (nicht aus dem Regal): das getragene Werkzeug steckt er so lange ein
@@ -4124,7 +4125,7 @@ export default class GardenScene extends Phaser.Scene {
   // Werkzeug-Kiste öffnen: Werkzeuge dieses Gebiets und "Hände frei"; das Spiel pausiert so lange
   openChest(chest) {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
-    const tools = [...(this.expMap || LEVEL.side ? this.expTools() : chest.tools), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(this.fireflyEvening() && !this.expMap ? ['fireflyjar'] : [])]; // beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
+    const tools = [...new Set([...(this.expMap || LEVEL.side ? this.expTools() : chest.tools), ...(this.sideWolfNight() ? ['lantern'] : []), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(this.fireflyEvening() && !this.expMap ? ['fireflyjar'] : [])])]; // (Wolfsnacht hinter einem Durchgang: die Laterne für die Spuren) beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
     const items = [...tools, null].map((id) => ({
       id,
       name: id ? TOOLS[id].name : tr('Hände frei', 'Empty hands'),
@@ -5349,9 +5350,10 @@ export default class GardenScene extends Phaser.Scene {
   // Wolfsnacht im Wald: beginnt bzw. endet mit dem Event (auch wenn man schon im Wald ist)
   updateWolfNight(dt) {
     const exp = this.expWolfNight(); // Expedition: Event-Karte (ein kleines Rudel je Wolf auf der Tierliste)
-    const on = (LEVEL_ID === 'forest' && isActive('wolves')) || exp;
+    const side = this.sideWolfNight(); // hinter einem Durchgang: weniger Rudel, die Map ist kleiner
+    const on = (LEVEL_ID === 'forest' && isActive('wolves')) || exp || side;
     if (on && !this.wolfNight) {
-      this.wolfNight = new WolfNight(this, exp ? { packs: () => expRun()?.left?.wolf ?? 0, size: EXP_GROUP, leave: true } : {});
+      this.wolfNight = new WolfNight(this, exp ? { packs: () => expRun()?.left?.wolf ?? 0, size: EXP_GROUP, leave: true } : side ? { packs: () => SIDE_WOLF_PACKS } : {});
       this.startAmbient(); // Wald bei Nacht
     }
     if (!on && this.wolfNight) {
@@ -5948,6 +5950,11 @@ export default class GardenScene extends Phaser.Scene {
     return !!(this.expMap && LEVEL.wolfNight && expRun()?.event === LEVEL_ID);
   }
 
+  // Wolfsnacht im Wald: auch hinter seinen Durchgängen auf Maps, die eine Wolfsnacht kennen (Waldwiese, Felsenschlucht)
+  sideWolfNight() {
+    return !!(LEVEL.side && LEVEL.wolfNight && game.side?.parent === 'forest' && isActive('wolves'));
+  }
+
   // Ist hier gerade Glühwürmchen-Abend? Im Bambuswald und hinter seinen Durchgängen (Maps mit Kirschbäumen) beim Event,
   // auf einer Expeditions-Map mit der Event-Karte
   fireflyEvening() {
@@ -6446,7 +6453,7 @@ export default class GardenScene extends Phaser.Scene {
   ambientKey() {
     if ((LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent?.()) return 'ambient_migration';
     if (this.fireflyEvening?.()) return 'ambient_forest_night'; // Glühwürmchen-Abend: Abendgeräusche
-    return (LEVEL_ID === 'forest' && isActive('wolves')) || this.expWolfNight() ? 'ambient_forest_night' : LEVEL.ambient;
+    return (LEVEL_ID === 'forest' && isActive('wolves')) || this.expWolfNight() || this.sideWolfNight() ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
   // Level verlassen: Stand merken, folgende Tiere mitnehmen. Jedes Level hat seine eigenen Werkzeuge:

@@ -29,7 +29,7 @@ export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWa
 // Tiere, die nicht beim Betreten dastehen, sondern auf ihre Weise kommen (Geier fliegen heran, Hyänen kommen zu Knochen)
 export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht)
 // Anteil der Kartenarten
-const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend, Wolfsnacht)
+const KINDS = { animal: 0.45, rare: 0.2, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend, Wolfsnacht)
 // Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnu aus der Großen Wanderung, rote Pandas in
 // den Kirschbäumen am Glühwürmchen-Abend, Wolfsrudel in der Wolfsnacht). alone: in dieser Nacht gibt es nur diese Tiere
 // (wie bei der Wolfsnacht im Wald), das Wetter bleibt normal
@@ -132,7 +132,9 @@ export function rollRunCards(n) {
     const map = maps[i % maps.length];
     const plan = planMap(map, r.biome);
     const { season } = plan;
-    const home = Object.keys(plan.home).filter((sp) => !has('animal', sp));
+    // (Standardtiere – plain in speciesRules.js – bekommen keine Tierkarte, nur seltene Karten: eine Map mit nur
+    // Standardtieren lockt dann mit Bonus, Kiste oder seltener Variante)
+    const home = Object.keys(plan.home).filter((sp) => !has('animal', sp) && !SPECIES_RULES[r.biome]?.[sp]?.plain);
     const rares = Object.keys(plan.home).filter((sp) => rareSkinFor(sp, r.biome, season) && !has('rare', sp));
     const freeBoni = boni.filter((id) => !has('bonus', id));
     const event = !!mapEvent(map) && !has('event', null);
