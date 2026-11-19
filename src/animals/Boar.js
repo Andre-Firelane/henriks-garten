@@ -22,6 +22,10 @@ const PIGLETS = [3, 4]; // so viele Frischlinge laufen der Bache hinterher ...
 const PIGLET_GAP = 13; // ... mit so viel Abstand (Pixel entlang ihres Wegs)
 const MUD_COLORS = [0x5e4128, 0x77543a, 0x4a321e];
 const PEN_MUD_SPREAD = 34; // so weit um die Mitte des Schlammlochs im Gehege suhlt es sich
+// schlammig: eigene Videos (von hinten nur Laufen, im Stehen dann das Standbild boar_mud)
+const MUD_ANIMS = { walkDown: 'boar_mud_walk', walkUp: 'boar_mud_walk_back', idleDown: 'boar_mud_idle' };
+const STILLS = ['boar', 'boar2', 'boar_mud', 'boar2_mud']; // Standbilder (alles andere mit "boar" vorne sind Animationen)
+const PIGLET_HOLD = 250; // so lange (ms) nach dem letzten Schritt zeigt ein Frischling noch das Laufen (sonst flackert es)
 
 // Suhle (alle Schlammkacheln der Karte und die Schlammlöcher in den Gehegen, einmal je Szene)
 function mudTiles(scene) {
@@ -49,6 +53,12 @@ export default class Boar extends Animal {
   baseTexture() {
     const base = super.baseTexture();
     return this.muddy ? `${base}_mud` : base;
+  }
+
+  // schlammig: die Schlamm-Videos (auch die Bache)
+  animSet() {
+    const set = super.animSet();
+    return set && this.muddy ? MUD_ANIMS : set;
   }
 
   canBeCaughtNow() {
@@ -195,9 +205,16 @@ export default class Boar extends Animal {
   }
 
   render(moving) {
-    // schlammig oder sauber: das passende Bild (Animal.render wechselt nur zwischen Skin und Fressen)
+    // schlammig oder sauber: das passende Bild (Animal.render wechselt nur zwischen Skin und Fressen). Läuft noch eine
+    // Animation des anderen Zustands (gerade sauber bzw. schlammig geworden), zurück aufs Standbild: Animal.render
+    // startet dann die passende
     const key = this.baseTexture();
-    if (this.sprite.texture.key !== key && this.sprite.texture.key.startsWith('boar')) this.sprite.setTexture(key, this.sprite.frame.name);
+    const tex = this.sprite.texture.key;
+    if (STILLS.includes(tex)) {
+      if (tex !== key) this.sprite.setTexture(key, this.sprite.frame.name);
+    } else if (tex.startsWith('boar') && !Object.values(this.animSet() ?? {}).includes(tex)) {
+      this.sprite.stop().setFlipX(false).setTexture(key, 0).setOrigin(0.5, this.kind.originY);
+    }
     super.render(moving);
     if (this.state === 'wild' && this.phase === 'eat') this.sprite.setAngle(Math.sin((this.eatBob ?? 0) * 8) * 3 * this.faceX); // wühlt
     if (this.state !== 'following' && this.phase === 'wallow') this.sprite.setAngle(Math.sin(this.wallowT * 5) * 12); // wälzt sich
@@ -231,6 +248,20 @@ export default class Boar extends Animal {
       }
       pg.x = at.x;
       pg.y = at.y;
+      // Videos: Laufen bzw. Stehen, nach links gespiegelt (sonst die Standbilder mit Wippen)
+      const now = this.scene.time.now;
+      if (moved) pg.lastMove = now;
+      const walking = now - (pg.lastMove ?? -Infinity) < PIGLET_HOLD;
+      const key = `piglet_${walking ? 'walk' : 'idle'}${pg.faceY > 0 ? '' : '_back'}`;
+      if (this.scene.anims.exists(key)) {
+        if (!pg.sprite.anims.isPlaying || pg.sprite.anims.currentAnim?.key !== key) {
+          // Stehen an zufälliger Stelle beginnen, damit nicht alle Frischlinge im Gleichtakt schnuppern
+          pg.sprite.play({ key, startFrame: walking ? 0 : Phaser.Math.Between(0, this.scene.anims.get(key).frames.length - 1) });
+        }
+        pg.sprite.setFlipX(pg.faceX < 0).setPosition(pg.x, pg.y).setDepth(pg.y).setVisible(visible);
+        pg.shadow.setPosition(pg.x, pg.y).setDepth(pg.y - 0.5).setVisible(visible);
+        return;
+      }
       const frame = pg.faceY > 0 ? (pg.faceX < 0 ? 1 : 0) : pg.faceX > 0 ? 2 : 3;
       const hop = moved ? Math.abs(Math.sin(pg.walk)) * 1.2 : 0;
       pg.sprite.setFrame(frame).setPosition(pg.x, pg.y - hop).setDepth(pg.y).setVisible(visible);

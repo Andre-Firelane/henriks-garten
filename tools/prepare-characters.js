@@ -547,26 +547,26 @@ const ANIMATIONS = [
   // seltene Varianten aus Videos (grüner Hintergrund), so groß wie die Animationen der normalen Tiere (figureH = deren
   // Figurhöhe); range: nahtlose Schleife (Laufen) bzw. ohne Hinsetzen am Anfang und Ende (Streifenhörnchen rennt).
   // Storch fliegt vorne: nur ein Flügelschlag (danach dreht er sich im Video), läuft im Spiel hin und zurück
-  { src: 'Animation/Schaf2 läuft vorne.mp4', out: 'sheep2_walk.png', mirror: 'all', frameW: 80, frameH: 88, feetY: 84, figureH: 63 },
+  { src: 'Animation/Schaf2 läuft vorne.mp4', out: 'sheep2_walk.png', range: [0, 22], mirror: 'all', frameW: 80, frameH: 88, feetY: 84, figureH: 63 },
   { src: 'Animation/schaf2 läuft hinten.mp4', out: 'sheep2_walk_back.png', frameW: 80, frameH: 88, feetY: 84, figureH: 72 },
-  { src: 'Animation/Schaf2 idle vorne.mp4', out: 'sheep2_idle.png', mirror: 'all', frameW: 80, frameH: 88, feetY: 84, figureH: 62 },
-  { src: 'Animation/schaf2 idle hinten.mp4', out: 'sheep2_idle_back.png', frameW: 80, frameH: 88, feetY: 84, figureH: 70 },
+  { src: 'Animation/Schaf2 idle vorne.mp4', out: 'sheep2_idle.png', every: 2, mirror: 'all', frameW: 80, frameH: 88, feetY: 84, figureH: 62 },
+  { src: 'Animation/schaf2 idle hinten.mp4', out: 'sheep2_idle_back.png', every: 2, frameW: 80, frameH: 88, feetY: 84, figureH: 70 },
   { src: 'Animation/reiher2 fliegt vorne.mp4', out: 'heron2_flap.png', range: [0, 12], scale: 0.213, frameW: 96, frameH: 96, feetY: 92 },
   { src: 'Animation/Reiher2 fliegt hinten.mp4', out: 'heron2_flap_back.png', range: [26, 49], frameW: 96, frameH: 96, feetY: 89, figureH: 82 },
-  { src: 'Animation/reiher2 idle vorne.mp4', out: 'heron2_idle.png', frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
+  { src: 'Animation/reiher2 idle vorne.mp4', out: 'heron2_idle.png', every: 2, frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
   { src: 'Animation/Reiher2 idle hinten.mp4', out: 'heron2_idle_back.png', frameW: 88, frameH: 108, feetY: 104, figureH: 100 },
   { src: 'Animation/Fuchs2 läuft vorne.mp4', out: 'fox2_walk.png', range: [1, 22], frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
-  { src: 'Animation/Fuchs2 läuft hinten.mp4', out: 'fox2_walk_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
-  { src: 'Animation/Fuchs2 idle vorne.mp4', out: 'fox2_idle.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs2 läuft hinten.mp4', out: 'fox2_walk_back.png', range: [7, 26], frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
+  { src: 'Animation/Fuchs2 idle vorne.mp4', out: 'fox2_idle.png', every: 2, frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
   { src: 'Animation/Fuchs2 idle hinten.mp4', out: 'fox2_idle_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 64 },
-  { src: 'Animation/eichhörnchen2 läuft vorne.mp4', out: 'squirrel2_run.png', range: [13, 66], dropGreen: true, frameW: 64, frameH: 60, feetY: 56, figureH: 50 },
+  { src: 'Animation/eichhörnchen2 läuft vorne.mp4', out: 'squirrel2_run.png', range: [40, 61], dropGreen: true, frameW: 64, frameH: 60, feetY: 56, figureH: 50 },
   { src: 'Animation/Eichhörnchen2 idle vorne.mp4', out: 'squirrel2_idle.png', frameW: 64, frameH: 60, feetY: 56, figureH: 43 },
   { src: 'Animation/Eichhörnchen2 idle hinten.mp4', out: 'squirrel2_idle_back.png', frameW: 64, frameH: 60, feetY: 56, figureH: 43 },
   { src: 'Animation/Biber2 läuft vorne.mp4', out: 'beaver2_walk.png', range: [3, 17], mirror: 'all', frameW: 112, frameH: 60, feetY: 56, figureH: 53 },
-  { src: 'Animation/Biber2 läuft hinten.mp4', out: 'beaver2_walk_back.png', frameW: 96, frameH: 72, feetY: 68, figureH: 62 },
+  { src: 'Animation/Biber2 läuft hinten.mp4', out: 'beaver2_walk_back.png', range: [60, 75], frameW: 96, frameH: 72, feetY: 68, figureH: 62 },
   { src: 'Animation/Biber2 frisst vorne.mp4', out: 'beaver2_gnaw.png', mirror: 'all', frameW: 96, frameH: 72, feetY: 68, figureH: 50 },
-  { src: 'Animation/Affe2 läuft vorne.mp4', out: 'macaque2_walk.png', range: [29, 52], frameW: 72, frameH: 72, feetY: 68, figureH: 52 },
-  { src: 'Animation/Affe2 läuft hinten.mp4', out: 'macaque2_walk_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 62 },
+  { src: 'Animation/Affe2 läuft vorne.mp4', out: 'macaque2_walk.png', range: [29, 40], frameW: 72, frameH: 72, feetY: 68, figureH: 52 },
+  { src: 'Animation/Affe2 läuft hinten.mp4', out: 'macaque2_walk_back.png', range: [2, 13], frameW: 72, frameH: 72, feetY: 68, figureH: 62 },
   { src: 'Animation/Affe2 idle vorne.mp4', out: 'macaque2_idle.png', frameW: 72, frameH: 72, feetY: 68, figureH: 60 },
   { src: 'Animation/Affe2 idle hinten.mp4', out: 'macaque2_idle_back.png', frameW: 72, frameH: 72, feetY: 68, figureH: 61 },
   // Hauptfigur läuft nach unten-rechts (nach links wird im Spiel gespiegelt); gleiche Höhe und Füße wie hero.png.
@@ -744,8 +744,8 @@ const ANIMATIONS = [
   // Hyäne: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
   { src: 'Animation/Hyäne_läuft_vorne.mp4', out: 'hyena_walk.png', scale: 0.9, frameW: 80, frameH: 80, feetY: 76 }, // Video
   { src: 'Animation/Hyäne_läuft_hinten.mp4', out: 'hyena_walk_back.png', scale: 0.9, frameW: 80, frameH: 80, feetY: 76 }, // Video
-  { src: 'Animation/Hyäne_idle_vorne.mp4', out: 'hyena_idle.png', scale: 0.2, frameW: 80, frameH: 80, feetY: 76 }, // Video
-  { src: 'Animation/Hyäne_idle_hinten.mp4', out: 'hyena_idle_back.png', scale: 0.2, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_idle_vorne.mp4', out: 'hyena_idle.png', every: 2, scale: 0.2, frameW: 80, frameH: 80, feetY: 76 }, // Video
+  { src: 'Animation/Hyäne_idle_hinten.mp4', out: 'hyena_idle_back.png', every: 2, scale: 0.2, frameW: 80, frameH: 80, feetY: 76 }, // Video
   // Gnu: Laufen und Stehen, von vorne und hinten (Maßstab: so groß wie das Standbild)
   { src: 'Animation/Gnu_läuft_vorne.png', out: 'gnu_walk.png', cols: 5, rows: 3, scale: 0.262, frameW: 88, frameH: 96, feetY: 92 },
   { src: 'Animation/Gnu_läuft_hinten.png', out: 'gnu_walk_back.png', cols: 5, rows: 3, scale: 0.252, frameW: 88, frameH: 96, feetY: 92 },
@@ -786,67 +786,67 @@ const ANIMATIONS = [
   { src: 'Animation/Panda_läuft_hinten.mp4', out: 'panda_walk_back.png', scale: 0.218, frameW: 88, frameH: 96, feetY: 92 },
   // Panda sitzt und frisst Bambus (= Stehen): die ersten 13 Bilder zoomen heran (Panda wächst), daher erst ab Bild 13;
   // im Video sinkt er langsam ab und steigt wieder (5 Pixel), daher stabilize. Etwas größer als zuerst (Höhe 80)
-  { src: 'Animation/Panda_idle.webm', out: 'panda_idle.png', range: [13, 106], stabilize: true, scale: 0.79, frameW: 88, frameH: 96, feetY: 92 },
+  { src: 'Animation/Panda_idle.webm', out: 'panda_idle.png', every: 2, range: [13, 106], stabilize: true, scale: 0.79, frameW: 88, frameH: 96, feetY: 92 },
   { src: 'Animation/RoterPanda_läuft_vorne.mp4', out: 'redpanda_walk.png', mirror: 'all', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
   { src: 'Animation/Tiger_läuft_vorne.mp4', out: 'tiger_walk.png', scale: 0.1945, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger_läuft_hinten.mp4', out: 'tiger_walk_back.png', scale: 0.9724, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger_idle_vorne.mp4', out: 'tiger_idle.png', scale: 0.9724, frameW: 120, frameH: 104, feetY: 99 },
-  { src: 'Animation/Tiger_idle_hinten.mp4', out: 'tiger_idle_back.png', scale: 0.2497, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger_idle_hinten.mp4', out: 'tiger_idle_back.png', every: 2, scale: 0.2497, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger2_läuft_vorne.mp4', out: 'tiger2_walk.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger2_läuft_hinten.mp4', out: 'tiger2_walk_back.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
-  { src: 'Animation/Tiger2_idle_vorne.mp4', out: 'tiger2_idle.png', scale: 0.1978, frameW: 120, frameH: 104, feetY: 99 },
+  { src: 'Animation/Tiger2_idle_vorne.mp4', out: 'tiger2_idle.png', every: 2, scale: 0.1978, frameW: 120, frameH: 104, feetY: 99 },
   { src: 'Animation/Tiger2_idle_hinten.mp4', out: 'tiger2_idle_back.png', scale: 0.989, frameW: 120, frameH: 104, feetY: 99 },
   // nach vorne etwas kleiner (89 %), sonst größer als der stehende Pfau
   { src: 'Animation/Pfau_läuft_vorne.mp4', out: 'peacock_walk.png', scale: 0.83, frameW: 96, frameH: 96, feetY: 92 },
   // von hinten: ein Ausschnitt, der sauber im Kreis läuft
-  { src: 'Animation/Pfau_läuft_hinten.mp4', out: 'peacock_walk_back.png', range: [23, 95], scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
-  { src: 'Animation/Pfau2_läuft_vorne.mp4', out: 'peacock2_walk.png', scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Pfau_läuft_hinten.mp4', out: 'peacock_walk_back.png', range: [51, 79], scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
+  { src: 'Animation/Pfau2_läuft_vorne.mp4', out: 'peacock2_walk.png', range: [0, 30], scale: 0.93, frameW: 96, frameH: 96, feetY: 92 },
   // Japanmakak sitzt (Einzelbilder, für das Stehen): im Original 1,39-mal so groß gemalt wie der stehende (Gesicht),
   // daher so verkleinert, dass er zum Laufen passt (sitzend ca. 60 hoch); von hinten schaut er nach links: gespiegelt
   { src: 'Sprites/Japanmakak_sitzt_vorne.png', out: 'macaque_sit.png', cols: 1, rows: 1, scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
   { src: 'Sprites/Japanmakak_sitzt_hinten.png', out: 'macaque_sit_back.png', cols: 1, rows: 1, mirror: 'all', scale: 0.388, frameW: 72, frameH: 72, feetY: 68 },
-  { src: 'Animation/Japanmakak_läuft_vorne.mp4', out: 'macaque_walk.png', range: [3, 32], scale: 0.653, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Japanmakak_läuft_vorne.mp4', out: 'macaque_walk.png', range: [7, 16], scale: 0.653, frameW: 72, frameH: 72, feetY: 68 },
   // von hinten: ab Bild 38 dreht er sich im Video um (dann von vorne); Bilder 8-31 laufen nahtlos im Kreis.
   // 10 % größer als vorne, sonst wirkt er von hinten kleiner (gleiche Fläche wie von vorne)
-  { src: 'Animation/Japanmakak_läuft_hinten.mp4', out: 'macaque_walk_back.png', range: [8, 31], scale: 0.718, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Japanmakak_läuft_hinten.mp4', out: 'macaque_walk_back.png', range: [17, 28], scale: 0.718, frameW: 72, frameH: 72, feetY: 68 },
   // Spielfigur im Bambuswald (Kleidung Asien), Höhe wie die anderen Kleidungen (108); gemeinsamer Maßstab für alle vier.
   // Laufen: Ausschnitte, die nahtlos im Kreis laufen
-  { src: 'Animation/Character_bambuswald_läuft_vorne.mp4', out: 'hero_asia_walk.png', range: [26, 69], scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character_bambuswald_läuft_vorne.mp4', out: 'hero_asia_walk.png', range: [29, 50], scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   // von hinten (neue Fassung): ein ganzer Doppelschritt, nur vom letzten Bild zurück zum ersten fehlt eins: ein Zwischenbild
   { src: 'Animation/Chatacter_bambuswald_läuft_hinten.mp4', out: 'hero_asia_walk_back.png', loopBlend: 1, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
-  { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character_bambuswald_idle_vorne.mp4', out: 'hero_asia_idle.png', every: 2, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   // Mavi die Tierpflegerin (Blick nach unten-links, nach rechts wird im Spiel gespiegelt): steht bzw. winkt, wenn man als
   // Nächstes mit ihr sprechen soll. So groß wie mavi.png (Höhe 102). Vom Stehen nur die Bilder mit offenen Augen (bis
   // Bild 56 hat sie sie im Video zu); das Spiel spielt sie vor und zurück
   { src: 'Animation/Mavi idle.mp4', out: 'mavi_idle.png', range: [57, 92], figureH: 102, frameW: 88, frameH: 116, feetY: 112, dropShadowGreen: 30 },
   { src: 'Animation/Mavi winkt.webm', out: 'mavi_wave.png', figureH: 102, frameW: 88, frameH: 116, feetY: 112 },
-  { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character_bambuswald_idle_hinten.mp4', out: 'hero_asia_idle_back.png', every: 2, scale: 0.31, frameW: 88, frameH: 116, feetY: 112 },
   // Wolf und schwarzer Wolf (Wolfsnacht): laufen und stehen (Videos), so groß wie wolf.png (Höhe 69). Heulen und Fressen
   // bleiben Standbilder (siehe Wolf.js). Laufen läuft nicht sauber im Kreis: Zwischenbilder
   { src: 'Animation/Wolf Läuft vorne.mp4', out: 'wolf_walk.png', loopBlend: 2, scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Wolf läuft hinten.mp4', out: 'wolf_walk_back.png', loopBlend: 2, scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Wolf idle vorne.webm', out: 'wolf_idle.png', scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Wolf idle hinten.webm', out: 'wolf_idle_back.png', scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf läuft hinten.mp4', out: 'wolf_walk_back.png', range: [13, 31], scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf idle vorne.webm', out: 'wolf_idle.png', every: 2, scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf idle hinten.webm', out: 'wolf_idle_back.png', every: 2, scale: 0.6, frameW: 80, frameH: 80, feetY: 76 },
   { src: 'Animation/Wolf2 läuft vorne.mp4', out: 'wolf2_walk.png', loopBlend: 1, scale: 0.231, frameW: 80, frameH: 80, feetY: 76 },
   { src: 'Animation/Wolf2 läuft hinten.mp4', out: 'wolf2_walk_back.png', loopBlend: 1, scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Wolf2 idle vorne.webm', out: 'wolf2_idle.png', scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
-  { src: 'Animation/Wolf2 idle hinten.webm', out: 'wolf2_idle_back.png', scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf2 idle vorne.webm', out: 'wolf2_idle.png', every: 2, scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Wolf2 idle hinten.webm', out: 'wolf2_idle_back.png', every: 2, scale: 0.58, frameW: 80, frameH: 80, feetY: 76 },
   // Spielfigur im Dschungel läuft (Videos); im Stehen das Standbild (hero_jungle). Höhe wie die anderen Kleidungen (108)
   { src: 'Animation/Character Dschungel läuft vorne.mp4', out: 'hero_jungle_walk.png', scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
-  { src: 'Animation/Charcter Dschungel läuft hinten.mp4', out: 'hero_jungle_walk_back.png', scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Charcter Dschungel läuft hinten.mp4', out: 'hero_jungle_walk_back.png', range: [0, 22], scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
   // (kleine Videos mit 128 Pixeln nie vergrößern, Maßstab höchstens 1: sonst werden sie unscharf)
   // Bauernhof-Event (Schafe als Kuh, Schwein, Ziege): laufen und stehen (Videos), so groß wie farm_*.png. Das Schwein
   // hat kein Steh-Video (Standbild)
-  { src: 'Animation/Kuh läuft vorne.mp4', out: 'farm_cow_walk.png', loopBlend: 2, scale: 0.97, frameW: 96, frameH: 88, feetY: 84 },
-  { src: 'Animation/Kuh läuft hinten.mp4', out: 'farm_cow_walk_back.png', scale: 0.235, frameW: 96, frameH: 88, feetY: 84 },
-  { src: 'Animation/Kuh idle vorne.webm', out: 'farm_cow_idle.png', scale: 0.97, frameW: 96, frameH: 88, feetY: 84 },
-  { src: 'Animation/kuh hinten idle.webm', out: 'farm_cow_idle_back.png', scale: 1, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Kuh läuft vorne.mp4', out: 'farm_cow_walk.png', range: [59, 87], scale: 0.97, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Kuh läuft hinten.mp4', out: 'farm_cow_walk_back.png', range: [24, 44], scale: 0.235, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Kuh idle vorne.webm', out: 'farm_cow_idle.png', every: 2, scale: 0.97, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/kuh hinten idle.webm', out: 'farm_cow_idle_back.png', every: 2, scale: 1, frameW: 96, frameH: 88, feetY: 84 },
   { src: 'Animation/Schwein läuft vorne.mp4', out: 'farm_pig_walk.png', loopBlend: 1, scale: 0.63, frameW: 80, frameH: 88, feetY: 84 },
   { src: 'Animation/schwein läuft hinten.mp4', out: 'farm_pig_walk_back.png', loopBlend: 1, scale: 0.63, frameW: 80, frameH: 88, feetY: 84 },
-  { src: 'Animation/Ziege läuft vorne.mp4', out: 'farm_goat_walk.png', scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
-  { src: 'Animation/Ziege läuft hinten.mp4', out: 'farm_goat_walk_back.png', scale: 0.155, frameW: 80, frameH: 88, feetY: 84 },
-  { src: 'Animation/Ziege idle vorne.mp4', out: 'farm_goat_idle.png', scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
-  { src: 'Animation/Ziege idle hinten.webm', out: 'farm_goat_idle_back.png', scale: 0.75, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege läuft vorne.mp4', out: 'farm_goat_walk.png', range: [16, 37], scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege läuft hinten.mp4', out: 'farm_goat_walk_back.png', range: [0, 22], scale: 0.155, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege idle vorne.mp4', out: 'farm_goat_idle.png', every: 2, scale: 0.15, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Ziege idle hinten.webm', out: 'farm_goat_idle_back.png', every: 2, scale: 0.75, frameW: 80, frameH: 88, feetY: 84 },
   // Piranha (Dschungel, Regenzeit): Seitenansicht wie die Riff-Fische (Bild 0 nach rechts, 1 nach links, Rahmen wie
   // reeffish); im Original nach links, daher gespiegelt und dann noch einmal ungespiegelt angehängt. Quelle freigestellt
   // mit npm run cutout, danach nur die größte Fläche behalten (Blasen und Wasserstriche weg). Transportbox wie fishbag
@@ -854,12 +854,12 @@ const ANIMATIONS = [
   { src: 'Sprites/Piranha Box.png', out: 'piranha_box.png', cols: 1, rows: 1, frameW: 64, frameH: 76, feetY: 72, figureH: 52 },
   // Dschungel (Videos). Fehlt eine Rückansicht, nimmt das Spiel die Vorderansicht; ohne Steh-Animation das Standbild.
   // Kleine Videos (128/192 Pixel) nie über Maßstab 1. Spielfigur steht:
-  { src: 'Animation/Character Dschungel idle vorne.mp4', out: 'hero_jungle_idle.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
-  { src: 'Animation/Character Dschungel idle hinten.mp4', out: 'hero_jungle_idle_back.png', dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character Dschungel idle vorne.mp4', out: 'hero_jungle_idle.png', every: 2, dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character Dschungel idle hinten.mp4', out: 'hero_jungle_idle_back.png', every: 2, dropShadowGreen: 70, scale: 0.284, frameW: 88, frameH: 116, feetY: 112 },
   // Pinguin (Eiswelt): laufen und stehen (Videos in verschiedenen Auflösungen, daher je eigener Maßstab: überall etwa
   // 66 hoch wie das Standbild); von vorne schaut er im Video nach links: gespiegelt. Laufen: Fußlinie tiefer, damit er so
   // tief steht wie beim Stehen; von hinten nur ein Doppelschritt, der nahtlos im Kreis läuft
-  { src: 'Animation/Pinguin läuft vorne.mp4', out: 'penguin_walk.png', mirror: 'all', buttonEyes: true, scale: 0.1875, frameW: 72, frameH: 80, feetY: 80 },
+  { src: 'Animation/Pinguin läuft vorne.mp4', out: 'penguin_walk.png', range: [0, 22], mirror: 'all', buttonEyes: true, scale: 0.1875, frameW: 72, frameH: 80, feetY: 80 },
   { src: 'Animation/Pinguin läuft hinten.mp4', out: 'penguin_walk_back.png', range: [5, 16], scale: 0.407, frameW: 72, frameH: 80, feetY: 79 },
   { src: 'Animation/Pinguin idle vorne.mp4', out: 'penguin_idle.png', mirror: 'all', scale: 0.338, frameW: 72, frameH: 80, feetY: 76 },
   { src: 'Animation/Pinguin idle hinten.mp4', out: 'penguin_idle_back.png', scale: 0.418, frameW: 72, frameH: 80, feetY: 76 },
@@ -867,95 +867,95 @@ const ANIMATIONS = [
   // erwartungsvoll (vor und zurück abgespielt, Maßstab passend zur aufrechten Robbe samt Wasserring); vorne schaut sie im
   // Video nach links: gespiegelt. Robben: je ein Ausschnitt, der nahtlos im Kreis läuft, Fußlinie so tief wie im Liegen
   { src: 'Animation/Robbe läuft vorne.mp4', out: 'seal_walk.png', range: [6, 25], mirror: 'all', scale: 0.25, frameW: 96, frameH: 80, feetY: 80 },
-  { src: 'Animation/Robbe  läuft hinten.mp4', out: 'seal_walk_back.png', range: [4, 47], scale: 0.25, frameW: 96, frameH: 72, feetY: 69 },
+  { src: 'Animation/Robbe  läuft hinten.mp4', out: 'seal_walk_back.png', range: [22, 42], scale: 0.25, frameW: 96, frameH: 72, feetY: 69 },
   { src: 'Animation/Robbe schwimmt vorne.mp4', out: 'seal_swim_idle.png', mirror: 'all', scale: 0.51, frameW: 72, frameH: 88, feetY: 84 },
   // Spielfigur in der Eiswelt (Parka): laufen und stehen (Videos), Maßstab wie im Dschungel. Laufen: je ein Doppelschritt,
   // der nahtlos im Kreis läuft (vorne das ganze Video, hinten 22 Bilder); Stehen breiter (die Machete ragt heraus), ohne die Atemwolke.
   // Höher als die anderen Kleidungen (die Kapuze); Fußlinie im selben Verhältnis (140 / 145 = 112 / 116), siehe Player.js
   // Laufen: Fußlinie 5 Pixel tiefer, damit die Sohlen so tief stehen wie beim Stehen (dort reicht der Schatten bis 140)
   { src: 'Animation/Character Eis läuft vorne.mp4', out: 'hero_ice_walk.png', dropShadowGreen: 25, scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
-  { src: 'Animation/Character Eis läuft hinten.mp4', out: 'hero_ice_walk_back.png', range: [10, 31], dropSteel: true, onlyFigure: true, scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
-  { src: 'Animation/Character Eis idle vorne.mp4', out: 'hero_ice_idle.png', dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
-  { src: 'Animation/Character Eis idle hinten.mp4', out: 'hero_ice_idle_back.png', dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
+  { src: 'Animation/Character Eis läuft hinten.mp4', out: 'hero_ice_walk_back.png', range: [10, 30], dropSteel: true, onlyFigure: true, scale: 0.284, frameW: 88, frameH: 145, feetY: 145 },
+  { src: 'Animation/Character Eis idle vorne.mp4', out: 'hero_ice_idle.png', every: 2, dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
+  { src: 'Animation/Character Eis idle hinten.mp4', out: 'hero_ice_idle_back.png', every: 2, dropShadowGreen: 70, onlyFigure: true, scale: 0.284, frameW: 104, frameH: 145, feetY: 140 },
   // Ara und Blau-gelber Ara: sitzen (nur vorne) und fliegen (Flügelschlag, breiterer Rahmen)
-  { src: 'Animation/Ara idle vorne.webm', out: 'macaw_idle.png', scale: 0.195, frameW: 64, frameH: 80, feetY: 76 },
-  { src: 'Animation/Ara2 idle vorne.webm', out: 'macaw2_idle.png', scale: 0.52, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Ara idle vorne.webm', out: 'macaw_idle.png', every: 2, scale: 0.195, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Ara2 idle vorne.webm', out: 'macaw2_idle.png', every: 2, scale: 0.52, frameW: 64, frameH: 80, feetY: 76 },
   // Tukan: sitzen (vorne und hinten) und fliegen; alle nach rechts gefilmt
-  { src: 'Animation/Tucan idle vorne.webm', out: 'toucan_idle.png', scale: 0.64, frameW: 64, frameH: 80, feetY: 76 },
-  { src: 'Animation/Tucan idle hinten.webm', out: 'toucan_idle_back.png', scale: 0.7, frameW: 64, frameH: 80, feetY: 76 },
-  { src: 'Animation/Tucan fliegt vorne.webm', out: 'toucan_flap.png', scale: 0.55, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Tucan fliegt hinten.mp4', out: 'toucan_flap_back.png', scale: 0.68, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Ara fliegt vorne.mp4', out: 'macaw_flap.png', loopBlend: 1, scale: 0.75, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Ara fliegt hinten.mp4', out: 'macaw_flap_back.png', scale: 0.15, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Ara2 fliegt vorne.mp4', out: 'macaw2_flap.png', loopBlend: 1, scale: 0.27, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Ara2 fliegt hinten.mp4', out: 'macaw2_flap_back.png', scale: 0.55, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Tucan idle vorne.webm', out: 'toucan_idle.png', every: 2, scale: 0.64, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Tucan idle hinten.webm', out: 'toucan_idle_back.png', every: 2, scale: 0.7, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Tucan fliegt vorne.webm', out: 'toucan_flap.png', range: [85, 96], scale: 0.55, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Tucan fliegt hinten.mp4', out: 'toucan_flap_back.png', range: [13, 26], scale: 0.68, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara fliegt vorne.mp4', out: 'macaw_flap.png', range: [34, 45], scale: 0.75, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara fliegt hinten.mp4', out: 'macaw_flap_back.png', range: [0, 22], scale: 0.15, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara2 fliegt vorne.mp4', out: 'macaw2_flap.png', range: [16, 35], scale: 0.27, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Ara2 fliegt hinten.mp4', out: 'macaw2_flap_back.png', range: [63, 72], scale: 0.55, frameW: 104, frameH: 96, feetY: 92 },
   // Schlange und grüne Baumschlange: kriechen (von vorne im Video nach links; ausgestreckt länger, breiterer Rahmen) und
   // liegen eingerollt (nur vorne)
   { src: 'Animation/Schlnage läuft vorne.webm', out: 'snake_walk.png', mirror: 'all', scale: 0.48, frameW: 96, frameH: 72, feetY: 68 },
   { src: 'Animation/Schlange läuft_hinten.mp4', out: 'snake_walk_back.png', keyPerFrame: true, loopBlend: 1, scale: 0.27, frameW: 96, frameH: 72, feetY: 68 },
-  { src: 'Animation/Schlange idle vorne.mp4', out: 'snake_idle.png', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
-  { src: 'Animation/Schlange2 läuft vorne.webm', out: 'snake2_walk.png', mirror: 'all', scale: 0.48, frameW: 96, frameH: 72, feetY: 68 },
-  { src: 'Animation/Schlange2 läuft hinten.webm', out: 'snake2_walk_back.png', scale: 0.5, frameW: 96, frameH: 72, feetY: 68 },
-  { src: 'Animation/Schlange2 idle vorne.webm', out: 'snake2_idle.png', scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange idle vorne.mp4', out: 'snake_idle.png', every: 2, scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange2 läuft vorne.webm', out: 'snake2_walk.png', range: [16, 62], mirror: 'all', scale: 0.48, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange2 läuft hinten.webm', out: 'snake2_walk_back.png', range: [30, 53], scale: 0.5, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Schlange2 idle vorne.webm', out: 'snake2_idle.png', every: 2, scale: 0.69, frameW: 72, frameH: 72, feetY: 68 },
   // Vogelspinne und Goldene Vogelspinne: krabbeln
-  { src: 'Animation/Spinne läuft vorne.mp4', out: 'tarantula_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne läuft vorne.mp4', out: 'tarantula_walk.png', range: [0, 22], scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
   // Ameisenbär (Dschungel): Laufen und Stehen von vorne (nach links gefilmt, gespiegelt) und hinten; beim Fressen steht er
   // aufgerichtet am Baum (nur ein Bild, nach links; freigestellt mit npm run cutout)
   { src: 'Animation/Ameisenbär läuft vorne.mp4', out: 'anteater_walk.png', scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Animation/Ameisenbär läuft hinten.mp4', out: 'anteater_walk_back.png', scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
-  { src: 'Animation/Ameisenbär idle vorne.webm', out: 'anteater_idle.png', scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
-  { src: 'Animation/Ameisenbär idle hinten.mp4', out: 'anteater_idle_back.png', scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär idle vorne.webm', out: 'anteater_idle.png', every: 2, scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär idle hinten.mp4', out: 'anteater_idle_back.png', every: 2, scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Sprites/Ameisenbär frisst.png', out: 'anteater_eat.png', cols: 1, rows: 1, scale: 0.145, frameW: 88, frameH: 80, feetY: 76 },
   // Biber (Wald): Laufen von vorne (nach links gefilmt, gespiegelt) und hinten; Knabbern an einem Holzstück (nach links
   // gefilmt, gespiegelt; das Holz ist mit im Bild, darum ein breiterer Rahmen). Gleiche Größe wie beaver.png
-  { src: 'Animation/Biber läuft vorne.mp4', out: 'beaver_walk.png', scale: 0.21, mirror: 'all', frameW: 80, frameH: 60, feetY: 56 },
-  { src: 'Animation/Biber läuft hinten.mp4', out: 'beaver_walk_back.png', scale: 0.19, frameW: 96, frameH: 72, feetY: 68 },
+  { src: 'Animation/Biber läuft vorne.mp4', out: 'beaver_walk.png', range: [0, 22], scale: 0.21, mirror: 'all', frameW: 80, frameH: 60, feetY: 56 },
+  { src: 'Animation/Biber läuft hinten.mp4', out: 'beaver_walk_back.png', range: [12, 32], scale: 0.19, frameW: 96, frameH: 72, feetY: 68 },
   { src: 'Animation/Biber knabbert.webm', out: 'beaver_gnaw.png', range: [12, 106], scale: 0.21, mirror: 'all', frameW: 96, frameH: 72, feetY: 68 }, // vorher fliegt das Holz herein
   // Leguan: Laufen und Stehen (nach links gefilmt, gespiegelt; ohne eigene Rückansicht)
-  { src: 'Animation/Leguan läuft.mp4', out: 'iguana_walk.png', scale: 0.26, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
-  { src: 'Animation/Leguan idle.webm', out: 'iguana_idle.png', scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  { src: 'Animation/Leguan läuft.mp4', out: 'iguana_walk.png', range: [55, 78], scale: 0.26, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  { src: 'Animation/Leguan idle.webm', out: 'iguana_idle.png', every: 2, scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
   // seltener Leguan: nach links gefilmt, gespiegelt
-  { src: 'Animation/Leguan2 läuft.mp4', out: 'iguana2_walk.png', scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
+  { src: 'Animation/Leguan2 läuft.mp4', out: 'iguana2_walk.png', range: [0, 27], scale: 0.5, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
   { src: 'Animation/Leguan2 idle.mp4', out: 'iguana2_idle.png', scale: 0.27, mirror: 'all', frameW: 96, frameH: 56, feetY: 52 },
   // Jaguar: Laufen (vorne, hinten) und Stehen (nur vorne); aus dem Stehen schneidet tools/jaguar-tail.py den Schwanz
-  { src: 'Animation/Jaguar läuft vorne.webm', out: 'jaguar_walk.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Jaguar läuft hinten.webm', out: 'jaguar_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Jaguar idle vorne.mp4', out: 'jaguar_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar läuft vorne.webm', out: 'jaguar_walk.png', range: [41, 50], scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar läuft hinten.webm', out: 'jaguar_walk_back.png', range: [42, 51], scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar idle vorne.mp4', out: 'jaguar_idle.png', every: 2, scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   // Panther (Jaguar2): Laufen und Stehen, vorne und hinten; alle nach rechts gefilmt
-  { src: 'Animation/Jaguar2 läuft vorne.mp4', out: 'panther_walk.png', scale: 0.19, keyPerFrame: true, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Jaguar2 rennt hinten.webm', out: 'panther_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar2 läuft vorne.mp4', out: 'panther_walk.png', range: [11, 22], scale: 0.19, keyPerFrame: true, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Jaguar2 rennt hinten.webm', out: 'panther_walk_back.png', range: [76, 92], scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Jaguar2 idle vorne.mp4', out: 'panther_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Jaguar2 idle hinten.mp4', out: 'panther_idle_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   // Gorilla: Laufen und Stehen (vorne, hinten) und Trommeln auf die Brust (aufrichten, trommeln, zurück; siehe BootScene)
-  { src: 'Animation/Gorilla läuft vorne.webm', out: 'gorilla_walk.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla läuft vorne.webm', out: 'gorilla_walk.png', range: [61, 99], scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Gorilla läuft hinten.mp4', out: 'gorilla_walk_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Gorilla idle vorne.webm', out: 'gorilla_idle.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Gorilla idle hinten.webm', out: 'gorilla_idle_back.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla idle vorne.webm', out: 'gorilla_idle.png', every: 2, scale: 1, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla idle hinten.webm', out: 'gorilla_idle_back.png', every: 2, scale: 1, frameW: 104, frameH: 96, feetY: 92 },
   { src: 'Animation/Gorilla trommelt.mp4', out: 'gorilla_drum.png', scale: 1, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', scale: 0.58, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne läuft hinten.mp4', out: 'tarantula_walk_back.png', range: [6, 17], scale: 0.58, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
   { src: 'Animation/Spinne2 läuft vorne.mp4', out: 'tarantula2_walk.png', scale: 0.58, frameW: 64, frameH: 64, feetY: 60 },
-  { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', scale: 0.115, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
+  { src: 'Animation/Spinne2 läuft hinten.mp4', out: 'tarantula2_walk_back.png', range: [58, 73], scale: 0.115, mirror: 'all', frameW: 64, frameH: 64, feetY: 60 },
   // Brüllaffe und Gibbon: laufen und sitzen (Springen bleibt Standbild); der Brüllaffe so groß wie der Gibbon
-  { src: 'Animation/Brüllaffe läuft vorne.mp4', out: 'howler_walk.png', mirror: 'all', scale: 0.9, frameW: 88, frameH: 88, feetY: 84 },
-  { src: 'Animation/Brüllaffe läuft hinten.mp4', out: 'howler_walk_back.png', mirror: 'all', loopBlend: 2, scale: 0.94, frameW: 88, frameH: 88, feetY: 84 },
-  { src: 'Animation/Brüllaffe Idle vorne.webm', out: 'howler_idle.png', scale: 0.886, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe läuft vorne.mp4', out: 'howler_walk.png', range: [0, 24], mirror: 'all', scale: 0.9, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe läuft hinten.mp4', out: 'howler_walk_back.png', range: [0, 26], mirror: 'all', scale: 0.94, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Brüllaffe Idle vorne.webm', out: 'howler_idle.png', every: 2, scale: 0.886, frameW: 88, frameH: 88, feetY: 84 },
   { src: 'Animation/Gibbon läuft vorne.mp4', out: 'gibbon_walk.png', loopBlend: 1, scale: 0.196, frameW: 88, frameH: 88, feetY: 84 },
   { src: 'Animation/Gibbon läuft hinten.mp4', out: 'gibbon_walk_back.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
-  { src: 'Animation/Gibbon idle vorne.mp4', out: 'gibbon_idle.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
-  { src: 'Animation/Gibbon idle hinten.webm', out: 'gibbon_idle_back.png', scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Gibbon idle vorne.mp4', out: 'gibbon_idle.png', every: 2, scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
+  { src: 'Animation/Gibbon idle hinten.webm', out: 'gibbon_idle_back.png', every: 2, scale: 0.87, frameW: 88, frameH: 88, feetY: 84 },
   // Henrik paddelt im Kanu (etwas breiter als canoe_hero.png, Paddel)
   { src: 'Animation/Kanu paddelt vorne.mp4', out: 'canoe_paddle_anim.png', loopBlend: 1, scale: 0.34, frameW: 160, frameH: 152, feetY: 148 },
   { src: 'Animation/Kanu paddelt hinten.mp4', out: 'canoe_paddle_anim_back.png', loopBlend: 2, scale: 0.34, frameW: 160, frameH: 152, feetY: 148 },
   // Reittiere: Maultier (Dschungel) und Seabob (Riff), laufen bzw. schwimmen und stehen
   { src: 'Animation/Maultier läuft vorne.mp4', out: 'ride_jungle_walk.png', loopBlend: 2, scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Maultier läuft hinten.mp4', out: 'ride_jungle_walk_back.png', range: [18, 57], scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Maultier idle vorne.mp4', out: 'ride_jungle_idle.png', scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Maultier idle hinten.mp4', out: 'ride_jungle_idle_back.png', scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Maultier läuft hinten.mp4', out: 'ride_jungle_walk_back.png', range: [37, 56], scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Maultier idle vorne.mp4', out: 'ride_jungle_idle.png', every: 2, scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Maultier idle hinten.mp4', out: 'ride_jungle_idle_back.png', every: 2, scale: 0.36, frameW: 160, frameH: 230, feetY: 224 },
   // Seabob von vorne: der Hintergrund wechselt im Video zwischen zwei Grüntönen
   { src: 'Animation/Seabob schwimmt vorne.mp4', out: 'ride_reef_walk.png', keyPerFrame: true, scale: 0.25, frameW: 160, frameH: 230, feetY: 224 },
   { src: 'Animation/Seabob schwimmt hinten.mp4', out: 'ride_reef_walk_back.png', range: [15, 44], loopBlend: 1, scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Seabob idle vorne.mp4', out: 'ride_reef_idle.png', keyPerFrame: true, clipAbove: 150, scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Seabob idle hinten.mp4', out: 'ride_reef_idle_back.png', scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Seabob idle vorne.mp4', out: 'ride_reef_idle.png', every: 2, keyPerFrame: true, clipAbove: 150, scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Seabob idle hinten.mp4', out: 'ride_reef_idle_back.png', every: 2, scale: 0.32, frameW: 160, frameH: 230, feetY: 224 },
   // Riff-Tiere schwimmen (Videos; dieselbe Animation beim Schwimmen und Stillhalten), vorne nach unten-rechts, hinten nach
   // oben-rechts; Rahmen wie die Standbilder (etwas breiter, wo Tentakel und Flossen weiter ausholen), Maßstab so, dass sie
   // im Schnitt so groß sind wie diese. Der Rochen von vorne und das Seepferdchen (vorne und hinten) schauen im Video nach links.
@@ -964,15 +964,15 @@ const ANIMATIONS = [
   { src: 'Animation/Rochen schwimmt hinten.mp4', out: 'ray_swim_back.png', loopBlend: 1, scale: 0.2, frameW: 112, frameH: 80, feetY: 76 },
   { src: 'Animation/Rochen2 schwimmt vorne.mp4', out: 'ray2_swim.png', mirror: 'all', scale: 0.92, frameW: 112, frameH: 80, feetY: 76 },
   { src: 'Animation/Rochen2 schwimmt hinten.mp4', out: 'ray2_swim_back.png', loopBlend: 1, scale: 0.92, frameW: 112, frameH: 80, feetY: 76 },
-  { src: 'Animation/Seepferdchen schwimmt vorne.mp4', out: 'seahorse_swim.png', mirror: 'all', scale: 0.455, frameW: 48, frameH: 64, feetY: 60 },
+  { src: 'Animation/Seepferdchen schwimmt vorne.mp4', out: 'seahorse_swim.png', range: [11, 31], mirror: 'all', scale: 0.455, frameW: 48, frameH: 64, feetY: 60 },
   { src: 'Animation/Seepferdchen schwimmt hinten.mp4', out: 'seahorse_swim_back.png', mirror: 'all', scale: 0.143, frameW: 48, frameH: 64, feetY: 60 },
-  { src: 'Animation/Schildkröte schwimmt vorne.mp4', out: 'turtle_swim.png', scale: 0.85, frameW: 112, frameH: 88, feetY: 84 },
+  { src: 'Animation/Schildkröte schwimmt vorne.mp4', out: 'turtle_swim.png', range: [41, 66], scale: 0.85, frameW: 112, frameH: 88, feetY: 84 },
   // von hinten steigen Blasen über und unter ihr auf: oben und unten abgeschnitten (das Spiel zeichnet eigene)
   { src: 'Animation/Schildkröte schwimmt hinten.mp4', out: 'turtle_swim_back.png', clipAbove: 110, clipBelow: 530, scale: 0.19, frameW: 112, frameH: 88, feetY: 84 },
   // Krake: nur von vorne (auch nach oben)
   { src: 'Animation/Krake schwimmt vorne.mp4', out: 'octopus_swim.png', loopBlend: 1, scale: 0.75, frameW: 88, frameH: 72, feetY: 68 },
   // Kalmar (seltene Variante der Krake): ebenfalls nur von vorne
-  { src: 'Animation/Krake2 schwimmt vorne.mp4', out: 'octopus2_swim.png', loopBlend: 1, figureH: 62, frameW: 88, frameH: 72, feetY: 68 },
+  { src: 'Animation/Krake2 schwimmt vorne.mp4', out: 'octopus2_swim.png', range: [65, 100], figureH: 62, frameW: 88, frameH: 72, feetY: 68 },
   { src: 'Animation/Qualle schwimmt vorne.mp4', out: 'jellyfish_swim.png', mirror: 'all', scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
   { src: 'Animation/Qualle schwimmt hinten.mp4', out: 'jellyfish_swim_back.png', loopBlend: 1, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
   { src: 'Animation/Qualle2 schwimt vorne.mp4', out: 'jellyfish2_swim.png', loopBlend: 2, scale: 0.7, frameW: 72, frameH: 96, feetY: 92 },
@@ -981,13 +981,13 @@ const ANIMATIONS = [
   // (oberhalb des Kopfs) weg, das Spiel zeichnet eigene; so groß wie hero_swim.png (Kopf bis Flossen ca. 105).
   // Vorne: kein sauberer Schleifenpunkt, zwei Zwischenbilder zurück zum Anfang. Hinten: Bilder 22-85 laufen fast im Kreis
   // (ein Zwischenbild); das letzte Bild hat einen anderen Grünton und lässt sich nicht freistellen
-  { src: 'Animation/Character schwimmt vorne.mp4', out: 'hero_swim_anim.png', clipAbove: 145, loopBlend: 2, scale: 0.29, frameW: 88, frameH: 116, feetY: 112 },
+  { src: 'Animation/Character schwimmt vorne.mp4', out: 'hero_swim_anim.png', range: [0, 46], clipAbove: 145, scale: 0.29, frameW: 88, frameH: 116, feetY: 112 },
   { src: 'Animation/Character schwimmt hinten.mp4', out: 'hero_swim_anim_back.png', range: [22, 85], clipAbove: 140, loopBlend: 1, scale: 0.29, frameW: 88, frameH: 116, feetY: 112 },
   // Wasserbüffel mit Henrik (Reittier Asien), Maße wie ride_asia.png (Höhe 160)
   { src: 'Animation/Wasserbüffel_läuft_vorne.mp4', out: 'ride_asia_walk.png', range: [8, 34], scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
   { src: 'Animation/Wasserbüffel_läuft_hinten.mp4', out: 'ride_asia_walk_back.png', range: [9, 29], scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Wasserbüffel_idle_vorne.mp4', out: 'ride_asia_idle.png', scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
-  { src: 'Animation/Wasserbüffel_idle_hinten.mp4', out: 'ride_asia_idle_back.png', scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Wasserbüffel_idle_vorne.mp4', out: 'ride_asia_idle.png', every: 2, scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
+  { src: 'Animation/Wasserbüffel_idle_hinten.mp4', out: 'ride_asia_idle_back.png', every: 2, scale: 0.444, frameW: 160, frameH: 230, feetY: 224 },
   // Dschungel: Orang-Utan und Orang-Utan mit Backenwülsten (orangutan2); Sitzen nur von vorne, Winken etwas breiter (Arm).
   // 10 % größer als zuerst, daher Rahmen 96x96 (Fußlinie 92/96, fast wie orangutan.png mit 84/88)
   { src: 'Animation/Orangutan_läuft_vorne.mp4', out: 'orangutan_walk.png', scale: 0.99, frameW: 96, frameH: 96, feetY: 92 },
@@ -1007,6 +1007,51 @@ const ANIMATIONS = [
   // ab Bild 28 fällt ihm etwas aus der Hand bis weit unter die Füße: unterhalb der Füße (Zeile 490) abgeschnitten
   { src: 'Animation/Orangutan2_idle_vorne.mp4', out: 'orangutan2_idle.png', clipBelow: 490, scale: 0.2024, frameW: 96, frameH: 96, feetY: 92 },
   { src: 'Animation/Orangutan2_winken.mp4', out: 'orangutan2_wave.png', range: [8, 55], scale: 0.792, offsetX: -4, frameW: 112, frameH: 96, feetY: 92 },
+  // Wald (Elch, Igel, Wildschwein auch schlammig, Frischling), Dschungel (Okapi, Tapir), Bambuswald (Tanuki, Yak, Schneeleopard):
+  // Rahmen, Fußlinie und Größe wie die Standbilder aus tools/static-sheet.py (Maßstab: Figurhöhe im Laufen wie dort, Stehen
+  // derselbe Maßstab, damit das Tier beim Wechsel nicht springt; Elch von hinten etwas kleiner, sonst stößt das Geweih im Laufen oben an). Laufen: genau ein Schrittzyklus (range, siehe
+  // tools/find-loop.py); Stehen: jedes zweite Bild (every: 2, 12 Bilder pro Sekunde, läuft vor und zurück)
+  { src: 'Animation/Elch läuft vorne.mp4', out: 'elk_walk.png', range: [0, 23], mirror: 'all', scale: 0.28, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Elch läuft hinten.mp4', out: 'elk_walk_back.png', range: [18, 41], scale: 0.39, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Elch idle vorne.mp4', out: 'elk_idle.png', every: 2, mirror: 'all', scale: 0.28, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Elch idle hinten.mp4', out: 'elk_idle_back.png', every: 2, scale: 0.39, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Igel läuft vorne.mp4', out: 'hedgehog_walk.png', range: [8, 23], scale: 0.148, frameW: 80, frameH: 64, feetY: 60 },
+  { src: 'Animation/Igel läuft hinten.mp4', out: 'hedgehog_walk_back.png', range: [17, 28], scale: 0.148, frameW: 80, frameH: 64, feetY: 60 },
+  { src: 'Animation/Igel idle vorne.mp4', out: 'hedgehog_idle.png', every: 2, scale: 0.148, frameW: 80, frameH: 64, feetY: 60 },
+  { src: 'Animation/Igel idle hinten.mp4', out: 'hedgehog_idle_back.png', every: 2, scale: 0.148, frameW: 80, frameH: 64, feetY: 60 },
+  { src: 'Animation/Wildschwein läuft vorne.mp4', out: 'boar_walk.png', range: [18, 43], scale: 0.209, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Wildschwein läuft hinten.mp4', out: 'boar_walk_back.png', range: [6, 28], scale: 0.26, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Wildschwein idle vorne.mp4', out: 'boar_idle.png', every: 2, scale: 0.209, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Wildschwein idle hinten.mp4', out: 'boar_idle_back.png', every: 2, scale: 0.26, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Wildschwein schlamm läuft vorne.mp4', out: 'boar_mud_walk.png', range: [2, 30], scale: 0.209, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Wildschwein schlamm läuft hinten.mp4', out: 'boar_mud_walk_back.png', range: [52, 74], scale: 0.26, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Wildschwein schlamm idle vorne.mp4', out: 'boar_mud_idle.png', every: 2, scale: 0.209, frameW: 104, frameH: 96, feetY: 92 },
+  // Frischling (folgt der Bache, im Spiel halb so groß angezeigt wie piglet.png)
+  { src: 'Animation/Frischling läuft vorne.mp4', out: 'piglet_walk.png', range: [15, 33], mirror: 'all', scale: 0.084, frameW: 48, frameH: 40, feetY: 37 },
+  { src: 'Animation/Frischling läuft hinten.mp4', out: 'piglet_walk_back.png', range: [17, 34], scale: 0.083, frameW: 48, frameH: 40, feetY: 37 },
+  { src: 'Animation/Frischling idle vorne.mp4', out: 'piglet_idle.png', every: 2, mirror: 'all', scale: 0.084, frameW: 48, frameH: 40, feetY: 37 },
+  { src: 'Animation/Frischling idle hinten.mp4', out: 'piglet_idle_back.png', every: 2, scale: 0.0845, frameW: 48, frameH: 40, feetY: 37 },
+  { src: 'Animation/Okapi läuft vorne.mp4', out: 'okapi_walk.png', loopBlend: 1, scale: 0.259, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Okapi läuft hinten.mp4', out: 'okapi_walk_back.png', range: [22, 39], scale: 0.263, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Okapi idle vorne.mp4', out: 'okapi_idle.png', every: 2, scale: 0.259, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Okapi idle hinten.mp4', out: 'okapi_idle_back.png', every: 2, scale: 0.263, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Tapir läuft vorne.mp4', out: 'tapir_walk.png', range: [32, 54], scale: 0.191, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Tapir läuft hinten.mp4', out: 'tapir_walk_back.png', range: [0, 22], scale: 0.237, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Tapir idle vorne.mp4', out: 'tapir_idle.png', every: 2, mirror: 'all', scale: 0.191, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Tapir idle hinten.mp4', out: 'tapir_idle_back.png', every: 2, scale: 0.237, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Tanuki läuft vorne.mp4', out: 'tanuki_walk.png', range: [16, 36], scale: 0.161, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tanuki löuft hinten.mp4', out: 'tanuki_walk_back.png', range: [0, 23], scale: 0.199, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tanuki idle vorne.mp4', out: 'tanuki_idle.png', every: 2, scale: 0.161, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tanuki idle hinten.mp4', out: 'tanuki_idle_back.png', every: 2, scale: 0.199, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Yak läuft vorne.mp4', out: 'yak_walk.png', loopBlend: 1, scale: 0.247, frameW: 112, frameH: 104, feetY: 100 },
+  { src: 'Animation/Yak läuft hinten.mp4', out: 'yak_walk_back.png', range: [1, 22], scale: 0.25, frameW: 112, frameH: 104, feetY: 100 },
+  { src: 'Animation/Yak Idle vorne.mp4', out: 'yak_idle.png', every: 2, scale: 0.247, frameW: 112, frameH: 104, feetY: 100 },
+  { src: 'Animation/Yak idle hinten.mp4', out: 'yak_idle_back.png', every: 2, scale: 0.25, frameW: 112, frameH: 104, feetY: 100 },
+  // Schneeleopard: im Stehen das ganze Video, er duckt sich mittendrin; dropShadowGreen und onlyFigure: gemalter Schatten und Schimmer auf dem Greenscreen weg
+  { src: 'Animation/Schneeleopard löuft vorne.mp4', out: 'snowleopard_walk.png', dropShadowGreen: 25, range: [0, 47], scale: 0.174, frameW: 88, frameH: 80, feetY: 76 },
+  { src: 'Animation/Schneeleopard läuft hinten.mp4', out: 'snowleopard_walk_back.png', dropShadowGreen: 25, loopBlend: 1, scale: 0.203, frameW: 88, frameH: 80, feetY: 76 },
+  { src: 'Animation/Schneelopard idle vorne.mp4', out: 'snowleopard_idle.png', dropShadowGreen: 25, onlyFigure: true, every: 2, scale: 0.174, frameW: 88, frameH: 80, feetY: 76 },
+  { src: 'Animation/Schneeleopard idle hinten.mp4', out: 'snowleopard_idle_back.png', dropShadowGreen: 25, dropGreyHalo: true, onlyFigure: true, every: 2, scale: 0.203, frameW: 104, frameH: 80, feetY: 76 },
   // Zooauto mit Anhänger (Schnellreise, in allen Gebieten): ein Bild, Fahrtrichtung unten-links wie bisher Bild 0/1 der
   // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
   // (ca. 199,183,172) in der unteren Hälfte entfernt
@@ -1027,13 +1072,16 @@ const ANIMATIONS = [
 // evenBrightness: zu dunkle Bilder (z. B. eingeblendet wie im Video) auf die Helligkeit der übrigen anheben;
 // degreen: Grünstich und Grashalme weg (Zebra trinkt); steady: Flimmern dämpfen (siehe steadyFrames); alignFeet: Füße jedes Bilds auf die Fußlinie (siehe prepareGrid).
 // Statt eines Spritesheets geht auch ein Video (.mp4) vor Greenscreen: dann ohne cols/rows, jedes Videobild ist ein Bild (siehe readVideo);
-// range: [von, bis] nur diese Bilder (z. B. ein Ausschnitt eines Videos, der sauber im Kreis läuft);
+// range: [von, bis] nur diese Bilder (z. B. ein Ausschnitt eines Videos, der sauber im Kreis läuft; finden mit
+// python tools/find-loop.py: genau ein Schrittzyklus statt mehrerer, damit die Spritesheets klein bleiben);
+// every: nur jedes n-te Bild (Stehen bewegt sich langsam, 12 statt 24 Bilder pro Sekunde reichen; dazu VIDEO_RATE in BootScene.js);
 // stabilize: Wackeln der Kamera ausgleichen (siehe stabilizeFrames); brightness: Helligkeit mal diesen Faktor;
 // clipBelow: alles unterhalb dieser Zeile (in der Zelle) weg, z. B. was der Figur herunterfällt und unter ihren Füßen landet;
 // clipAbove: ebenso alles oberhalb (z. B. aufsteigende Blasen, die das Spiel selbst zeichnet);
 // keyPerFrame: Video wechselt zwischen Hintergrundtönen (Hintergrund je Bild erkennen, siehe readVideo);
 // dropShadowGreen: dunkelgrüne Reste (gemalter Schatten auf dem Greenscreen): Pixel mit so viel mehr Grün als Rot/Blau weg;
 // whiteBreath: Halbdurchsichtiges vor dem Greenscreen (Atemwölkchen) ist grün geworden: grünstichige Pixel weiß und zart;
+// dropGreyHalo: halb durchsichtiges Dunkelgrau ohne Rotstich weg (Schatten, Rand eines Lichtscheins; Schneeleopard von hinten);
 // onlyFigure: Grünstichiges weg und je Bild nur das größte zusammenhängende Stück behalten (z. B. ohne die Atemwolke);
 // dropSteel: neutral graue, helle Pixel weg (eine Messerklinge; Kleidung und Fell sind wärmer getönt), den Umriss danach
 // entfernt onlyFigure
@@ -1098,7 +1146,7 @@ function keepLargestPart(data, W, ox, oy, w, h) {
   for (let p = 0; p < w * h; p++) if (!keep[p]) data[((oy + Math.floor(p / w)) * W + ox + (p % w)) * 4 + 3] = 0;
 }
 
-function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false }) {
+function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false, dropGreyHalo = false }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
   const img = video ? readVideo(src, keyPerFrame) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
@@ -1106,11 +1154,18 @@ function loadGrid({ src, cols, rows, count, range, skip = [], mirror = [], dropG
   const { width: W, height: H, data } = img;
   const cw = W / cols;
   const ch = H / rows;
-  const frames = [...Array(count).keys()].filter((i) => !skip.includes(i) && (!range || (i >= range[0] && i <= range[1])));
+  const frames = [...Array(count).keys()].filter((i) => !skip.includes(i) && (!range || (i >= range[0] && i <= range[1]))).filter((_, n) => n % every === 0);
   if (mirror === 'all') mirror = frames; // alle Bilder schauen in die falsche Richtung
 
   if (dropGreen) {
     for (let k = 0; k < data.length; k += 4) if (data[k + 1] > data[k] + 10 && data[k + 1] > data[k + 2]) data[k + 3] = 0;
+  }
+  if (dropGreyHalo) {
+    // halb durchsichtiges Dunkelgrau ohne Rotstich weg (Schatten und Rand eines Lichtscheins auf dem Greenscreen); der
+    // Umriss der Figur ist deckend bzw. violett getönt und bleibt
+    for (let k = 0; k < data.length; k += 4) {
+      if (data[k + 3] && data[k + 3] < 230 && Math.max(data[k], data[k + 1], data[k + 2]) < 90 && data[k + 1] >= data[k] - 2) data[k + 3] = 0;
+    }
   }
   if (saturate !== 1) {
     for (let k = 0; k < data.length; k += 4) {

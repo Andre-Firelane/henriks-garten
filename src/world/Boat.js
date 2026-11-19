@@ -30,8 +30,11 @@ export default class Boat {
   constructor(scene) {
     this.scene = scene;
     const start = tileToWorld(LEVEL.boat.tx, LEVEL.boat.ty);
-    if (game.boat?.level !== LEVEL_ID) game.boat = { level: LEVEL_ID, x: start.x, y: start.y, riding: false };
-    this.state = game.boat;
+    // Fluss-Maps hinter Durchgängen und in der Expedition haben ein eigenes Kanu: game.boat (das Kanu der großen Map)
+    // bleibt dabei unangetastet, sonst läge es nach der Rückkehr wieder am Inselsteg und man käme nicht mehr zurück
+    const own = game.boat?.level === LEVEL_ID ? game.boat : { level: LEVEL_ID, x: start.x, y: start.y, riding: false };
+    if (!LEVEL.expedition && !LEVEL.side) game.boat = own;
+    this.state = own;
     this.state.frame ??= FRAME.downRight;
     this.img = scene.add.sprite(this.state.x, this.state.y, 'canoe', this.state.frame).setOrigin(0.5, CANOE_ORIGIN_Y).setScale(0.5);
     this.ghost = scene.add.sprite(this.state.x, this.state.y, outlineTexture(scene, 'canoe'), this.state.frame).setOrigin(0.5, CANOE_ORIGIN_Y).setScale(0.5).setDepth(GHOST_DEPTH).setAlpha(0);

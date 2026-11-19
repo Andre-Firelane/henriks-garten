@@ -352,9 +352,10 @@ export const SPECIES = {
     catchWith: ['touch'],
   },
   // Tanuki (Bambuswald, im Tal bei den Steinlaternen): verkleidet sich als Laterne, Busch oder Grasbüschel; berührt man
-  // die Verkleidung, sitzt er verdutzt da und lässt sich durch Berühren fangen (siehe Tanuki.js). Bisher nur Standbilder
+  // die Verkleidung, sitzt er verdutzt da und lässt sich durch Berühren fangen (siehe Tanuki.js)
   tanuki: {
     texture: 'tanuki',
+    anims: { walkDown: 'tanuki_walk', walkUp: 'tanuki_walk_back', idleDown: 'tanuki_idle', idleUp: 'tanuki_idle_back' }, // Videos; Fuchs-Tanuki (tanuki2) weiter als Standbild
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 28,
@@ -368,9 +369,10 @@ export const SPECIES = {
     catchWith: ['touch'],
   },
   // Yak (Bambuswald, Hochebene): grast in der Herde am Steinhaufen; mit dem Salzstein gelockt und dreimal gebürstet,
-  // kommt es mit (siehe Yak.js und world/YakHerd.js). Bisher nur Standbilder
+  // kommt es mit (siehe Yak.js und world/YakHerd.js).
   yak: {
     texture: 'yak',
+    anims: { walkDown: 'yak_walk', walkUp: 'yak_walk_back', idleDown: 'yak_idle', idleUp: 'yak_idle_back' }, // Videos; gefleckter Yak (yak2) weiter als Standbild
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 100 / 104,
     speed: 12,
@@ -384,9 +386,10 @@ export const SPECIES = {
     catchWith: [],
   },
   // Schneeleopard (Bambuswald, Hochebene; selten): döst auf einem großen Felsen, zu dem seine Pfotenspuren führen; mit
-  // dem Lasso gefangen (siehe SnowLeopard.js). Bisher nur Standbilder
+  // dem Lasso gefangen (siehe SnowLeopard.js).
   snowleopard: {
     texture: 'snowleopard',
+    anims: { walkDown: 'snowleopard_walk', walkUp: 'snowleopard_walk_back', idleDown: 'snowleopard_idle', idleUp: 'snowleopard_idle_back' }, // Videos
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 26,
@@ -655,9 +658,10 @@ export const SPECIES = {
     thicket: true,
   },
   // Tapir (Dschungel): wie das Nilpferd im Fluss, nur länger an Land (siehe Tapir.js); mit einem Blätterzweig vom
-  // Futterstrauch gefüttert, läuft er mit (siehe LeafBushes.js). Bisher nur Standbilder
+  // Futterstrauch gefüttert, läuft er mit (siehe LeafBushes.js).
   tapir: {
     texture: 'tapir',
+    anims: { walkDown: 'tapir_walk', walkUp: 'tapir_walk_back', idleDown: 'tapir_idle', idleUp: 'tapir_idle_back' }, // Videos (an Land; im Wasser das Standbild tapir_water); Schabrackentapir weiter als Standbild
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 16,
@@ -667,15 +671,16 @@ export const SPECIES = {
     stepRate: 7,
     hop: 1,
     footW: 12,
-    shadowW: 44,
+    shadowW: 40,
     fleeDist: 70, // ohne Zweig in der Hand: kommt man näher, trottet er zurück ins Wasser ...
     fleeSpeed: 40, // ... langsamer als Henrik
     catchWith: ['leaves'],
   },
   // Elch (Wald, Moor): steht wild immer im Moorwasser, im Nebel nur als Schemen zu sehen; im Licht der Moorlaterne wird er
-  // sichtbar und lässt sich mit dem Lasso fangen (siehe Elk.js). Bisher nur Standbilder
+  // sichtbar und lässt sich mit dem Lasso fangen (siehe Elk.js)
   elk: {
     texture: 'elk',
+    anims: { walkDown: 'elk_walk', walkUp: 'elk_walk_back', idleDown: 'elk_idle', idleUp: 'elk_idle_back' }, // Videos (gefangen, folgend, im Gehege; wild im Moorwasser das Standbild elk_water)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 124 / 128,
     speed: 18,
@@ -689,9 +694,10 @@ export const SPECIES = {
     catchWith: ['lasso'],
   },
   // Igel (Wald): sitzt versteckt in einem Laubhaufen, der ab und zu raschelt; Nüsse daneben locken ihn heraus, dann mit
-  // dem Kescher oder durch Berühren (siehe Hedgehog.js). Bisher nur Standbilder
+  // dem Kescher oder durch Berühren (siehe Hedgehog.js)
   hedgehog: {
     texture: 'hedgehog',
+    anims: { walkDown: 'hedgehog_walk', walkUp: 'hedgehog_walk_back', idleDown: 'hedgehog_idle', idleUp: 'hedgehog_idle_back' }, // Videos; Apfel-Igel (hedgehog2) weiter als Standbild
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 60 / 64,
     speed: 14,
@@ -705,9 +711,11 @@ export const SPECIES = {
     catchWith: ['net', 'touch'],
   },
   // Wildschwein (Wald, Eichenhain): scheu, suhlt sich im Schlamm; frisst es hingelegte Eicheln, fängt man es mit dem Lasso
-  // (siehe Boar.js). Bisher nur Standbilder (sauber und schlammig)
+  // (siehe Boar.js).
   boar: {
     texture: 'boar',
+    anims: { walkDown: 'boar_walk', walkUp: 'boar_walk_back', idleDown: 'boar_idle', idleUp: 'boar_idle_back' }, // Videos; schlammig: boar_mud_* (siehe Boar.js animSet)
+    skinAnims: { boar2: { walkDown: 'boar_walk', walkUp: 'boar_walk_back', idleDown: 'boar_idle', idleUp: 'boar_idle_back' } }, // die Bache sieht genauso aus
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 20,
@@ -723,9 +731,10 @@ export const SPECIES = {
     catchWith: ['lasso'],
   },
   // Okapi (Dschungel): scheu, rennt beim ersten Mal weg, wird mit jedem Mal mutiger (siehe Okapi.js); mit einem
-  // Blätterzweig gefüttert, läuft es mit. Bisher nur Standbilder
+  // Blätterzweig gefüttert, läuft es mit.
   okapi: {
     texture: 'okapi',
+    anims: { walkDown: 'okapi_walk', walkUp: 'okapi_walk_back', idleDown: 'okapi_idle', idleUp: 'okapi_idle_back' }, // Videos; Streifen-Okapi (okapi2) weiter als Standbild
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 100 / 104,
     speed: 24,

@@ -54,7 +54,7 @@ export const SPECIES_RULES = {
     boar: { needs: 'oaks', units: [1, 1] }, // frisst Eicheln aus den Eichen (dann mit dem Lasso)
     hedgehog: { needs: 'leaves', seasons: ['normal', 'fog'], units: [1, 2] }, // versteckt in Laubhaufen
     elk: { needs: 'moor', seasons: ['normal', 'fog'], units: [1, 1] }, // im Moorwasser, nur im Licht der Laterne
-    frog: { plain: true, needs: 'water', seasons: ['normal', 'rain'], units: [1, 2] },
+    frog: { plain: true, needs: 'water', seasons: ['normal', 'rain'], units: [1, 1] },
     fish: { plain: true, needs: 'river', seasons: ['normal', 'rain'], units: [1, 2] }, // Forellen im Bach
     heron: { needs: 'water', seasons: ['rain'], units: [1, 1] },
     beaver: { needs: 'dam', units: [1, 1] }, // nur auf Maps mit Biberdamm (beavers): Stock ins Loch, dann kommt einer mit

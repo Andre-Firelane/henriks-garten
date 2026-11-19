@@ -1183,8 +1183,8 @@ export default class GardenScene extends Phaser.Scene {
     this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.expedition && !LEVEL.camp && LEVEL.season !== 'normal') ? new Weather(this, LEVEL.season) : null; // Expedition: gewürfeltes Wetter
     // war Henrik beim Verlassen auf dem E-Roller (Tierpark-Abschnitt, Aquarium, Reptilienhaus, Ausbau): weiterfahren
     if (game.scooterRiding && this.scooter) this.getOnScooter(true);
-    // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel), findet es am Inselsteg
-    if (LEVEL.boat && !data.seasonNote && !data.keepBoat && game.boat) game.boat = null; // (zurück durch den Fluss-Durchgang: man sitzt noch im Kanu)
+    // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel, nicht zurück aus einer kleinen Map), findet es am Inselsteg
+    if (LEVEL.boat && !LEVEL.expedition && !LEVEL.side && !data.seasonNote && !data.keepBoat && game.boat) game.boat = null; // (zurück durch den Fluss-Durchgang: man sitzt noch im Kanu)
     this.boat = LEVEL.boat ? new Boat(this) : null;
     this.floes = LEVEL.floes ? new Floes(this) : null; // Eisschollen (Eiswelt am Tag)
     this.sway = new Sway(this, swayPlants);
@@ -6756,7 +6756,7 @@ export default class GardenScene extends Phaser.Scene {
         const w = tileToWorld(side.back.tx, side.back.ty);
         game.boat = { level: side.parent, x: w.x, y: w.y, riding: true };
       }
-      this.leaveLevel({ ...exit, to: side?.parent ?? 'park', arrive: side?.back, keepBoat: !!side?.canoe });
+      this.leaveLevel({ ...exit, to: side?.parent ?? 'park', arrive: side?.back, keepBoat: true }); // (auch zu Fuß: das Kanu liegt noch, wo man es verlassen hat)
       return;
     } else if (exit && !isUnlocked(exit.to)) this.blockedExit(exit, prev);
     else if (exit) {

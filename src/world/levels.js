@@ -358,7 +358,7 @@ export const LEVELS = {
       { tx: 0, ty: 48, to: '@side', passage: 'west', back: { tx: 1, ty: 48 }, maps: ['fx_bog', 'fx_birch', 'fx_moorside'], label: tr('Tiefer ins Moor', 'Deeper into the bog') },
       { tx: 31, ty: 63, to: '@side', passage: 'south', back: { tx: 31, ty: 62 }, maps: ['fx_oakgrove', 'fx_leafwood', 'fx_gorge', 'fx_moorside'], label: tr('Tiefer in den Eichenwald', 'Deeper into the oak wood') },
     ],
-    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 1.6, elk: 0.7, hedgehog: 1.2, boar: 0.9 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
+    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 0.7, elk: 0.7, hedgehog: 1.2, boar: 0.9 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
     // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
     // im Moor (except) läuft er in stille Tümpel aus
     flow: { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40, except: { tx0: 0, tx1: 21, ty0: 46, ty1: 63 } },

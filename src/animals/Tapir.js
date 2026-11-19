@@ -11,7 +11,7 @@ import { SHORE_TILES } from '../world/map.js';
 const WATER_TIME = [8, 14]; // so lange treibt er im Fluss ...
 const LAND_TIME = [35, 55]; // ... und so lange grast er am Ufer (das Nilpferd: 14 bis 22)
 const LAND_MIN = 3; // so lange bleibt er mindestens an Land, auch wenn man ihm ohne Zweig nahe kommt
-const TAPIR_SCALE = 0.56; // kleiner als das Nilpferd (0.65)
+const TAPIR_SCALE = 0.5; // kleiner als das Nilpferd (0.65); vorher 0.56, mit den Videos wirkte er zu groß
 const PEN_SWIM = [8, 14]; // im Gehege: so lange badet er ...
 const PEN_LAND = [25, 40]; // ... und so lange läuft er am Ufer herum
 
