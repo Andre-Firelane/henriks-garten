@@ -34,7 +34,8 @@ export default class Squirrel extends Animal {
   pickTree() {
     const used = this.allAnimals.filter((a) => a !== this && a.tree).map((a) => a.tree);
     const free = SQUIRREL_TREES.filter((t) => !used.includes(t));
-    this.tree = Phaser.Utils.Array.GetRandom(free.length ? free : SQUIRREL_TREES);
+    this.tree = Phaser.Utils.Array.GetRandom(free.length ? free : SQUIRREL_TREES) ?? null;
+    if (!this.tree) return; // kein Baum hier (z. B. im Expeditions-Camp): dann läuft es am Boden wie andere Tiere
     const foot = tileToWorld(this.tree.tx, this.tree.ty);
     const ground = tileToWorld(this.tree.ground.tx, this.tree.ground.ty);
     this.crownPos = { x: foot.x + 6, y: foot.y - CROWN_Y };
@@ -55,11 +56,12 @@ export default class Squirrel extends Animal {
   }
 
   canBeCaughtNow() {
-    return this.state === 'wild' && this.phase === 'ground';
+    return this.state === 'wild' && (this.phase === 'ground' || !this.tree);
   }
 
   updateFree(dt, player) {
     if (this.state === 'penned') return this.updatePen(dt, player);
+    if (!this.tree) return super.updateFree(dt, player); // (ohne Baum: am Boden)
 
     this.phaseTime -= dt;
     switch (this.phase) {
@@ -211,7 +213,7 @@ export default class Squirrel extends Animal {
       this.sprite.setDepth(c.treeY + 1);
       return;
     }
-    if (this.state !== 'wild') {
+    if (this.state !== 'wild' || !this.tree) {
       this.shadow.setVisible(true);
       return;
     }
@@ -234,6 +236,6 @@ export default class Squirrel extends Animal {
     this.penClimb = null;
     this.penTime = undefined;
     super.restore(state);
-    if (state === 'wild') this.setPhase('up', Phaser.Math.FloatBetween(1, UP_TIME[1]));
+    if (state === 'wild' && this.tree) this.setPhase('up', Phaser.Math.FloatBetween(1, UP_TIME[1]));
   }
 }

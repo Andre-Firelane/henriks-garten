@@ -230,9 +230,10 @@ export const OBJECTS = {
   // Eichenhain: große Eiche, Laubhaufen (Versteck der Igel), Pilzkreis (Platzhalter: tools/moor-oak-placeholders.py)
   Ɋ: { key: 'forest_birch', originY: 92 / 104, solid: true, hitbox: 8, sway: 2 },
   ẉ: { key: 'forest_cottongrass', originY: 25 / 32, solid: false, sway: 5 },
-  Ø: { key: 'forest_oak', originY: 116 / 128, solid: true, hitbox: 16 },
-  ɫ: { key: 'forest_leafpile', originY: 40 / 48, solid: true, hitbox: 10 },
+  Ø: { key: 'forest_oak', originY: 116 / 128, solid: true, hitbox: 16, sway: 0.6 }, // wackelt beim Eichelnschütteln (shakeOak)
+  ɫ: { key: 'forest_leafpile', originY: 40 / 48, solid: true, hitbox: 10, sway: 3 }, // raschelt, wenn ein Igel darin sitzt (Hedgehog.js)
   ọ: { key: 'forest_toadstools', originY: 22 / 40, solid: false },
+  ʬ: { key: 'wallow', originY: 0.5, solid: false, floor: true }, // Schlammloch im Gehege: dort suhlen sich die Wildschweine (Boar.js)
   // Savanne: hohes Gras, Busch, Felsgruppe, Termitenhügel, Elefantenfriedhof (Bilder je Wetterphase: objectKeys in levels.js)
   ƚ: { key: 'savanna_tallgrass', originY: 48 / 56, solid: false, sway: 6 },
   Ƙ: { key: 'savanna_bush', originY: 40 / 48, solid: true, hitbox: 5, sway: 2 },

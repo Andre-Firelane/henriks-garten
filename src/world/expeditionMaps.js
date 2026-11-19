@@ -110,6 +110,8 @@ const PALETTE = {
   jungle: { edge: 'k', edgeMix: [['J', 0.7], ['Ṁ', 1]], edgeChance: 0.45, grass: 'q' },
   asia: { edge: 'k', edgeMix: [['Q', 0.7], ['K', 0.85], ['r', 1]], edgeChance: 0.4, grass: 'q' },
   plateau: { edge: 'Ȓ', edgeMix: [['Ȟ', 0.6], ['ȓ', 1]], edgeChance: 0.3, grass: 'q' }, // verschneite Felsen (Hochebene)
+  forest: { edge: 'D', edgeMix: [['P', 0.5], ['k', 0.85], ['Ɍ', 1]], edgeChance: 0.5, grass: 'n' }, // Wald: Laubbäume, Tannen, Büsche; Farn statt hohem Gras
+  moor: { edge: 'Ɋ', edgeMix: [['P', 0.4], ['k', 0.8], ['D', 1]], edgeChance: 0.5, grass: 'ẉ' }, // Moor: Birken am Rand, Wollgras
 };
 // river: Fluss quer durch die Map (Zeilen ty0 bis ty1, ganze Breite); clearing: freie Lichtung (Rechteck) mit Dickicht-Rand
 // (Lücken bleiben); stamp: festes Kartenstück { tx, ty, rows } (z. B. Wasserfall mit Felskante); shoreTrees: so viele
@@ -118,7 +120,10 @@ const PALETTE = {
 // Spalte dockX an (der Steg ragt vom Ufer oben in den Fluss); docks: weitere Stege [[tx, ty], ...] zum Aus- und Einsteigen
 // (Bambuswald) springs: Ellipsen aus heißer Quelle (h); groves: so viele Bambushaine (Q, am Rand hohes Gras);
 // snowRows: bis zu dieser Zeile ist der Rand aus verschneiten Felsen (Hochebene, PALETTE.plateau)
-function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13, springs = [], groves = 0, snowRows = -1 }) {
+// (Wald) vriver: Bach von oben nach unten { x, bridgeY, damY, rocks } (siehe unten); bogTrees: so viele Moorbäume (ǒ) im
+// Wasser; walks: Holzstege [[tx, ty0, ty1], ...] entlang ty; gnawed: so viele angenagte Bäume (ƀ) direkt am Wasser;
+// lodge: Biberburg (Ƅ) am Ufer, möglichst nah an [tx, ty]
+function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13, springs = [], groves = 0, snowRows = -1, vriver = null, bogTrees = 0, walks = [], gnawed = 0, lodge = null }) {
   const P0 = PALETTE[palette];
   const PS = PALETTE.plateau;
   const N = 28;
@@ -148,6 +153,58 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   for (const p of ponds) ellipse(p, '~');
   for (const s of springs) ellipse(s, 'h');
   if (river) for (let y = river.ty0; y <= river.ty1; y++) for (let x = 0; x < N; x++) g[y][x] = '~';
+  // Bach von oben nach unten (Wald): 3 Kacheln breit (ab Spalte x), leicht geschwungen; an der Brücke (bridgeY) und am
+  // Biberdamm (damY) genau gerade, damit Brückenbild und Damm passen. Die Brücke (E) liegt quer darüber, rocks: so viele
+  // Felsen im Bach (ř, Schaum drumherum)
+  const fixedRows = vriver ? [vriver.bridgeY, vriver.damY].filter((y) => y != null) : [];
+  const nearFixed = (y, d = 1) => fixedRows.some((f) => Math.abs(y - f) <= d);
+  if (vriver) {
+    const ph = rnd() * 6.3;
+    const bank = [];
+    for (let y = 0; y < N; y++) {
+      bank[y] = vriver.x + (nearFixed(y) ? 0 : Math.round(1.2 * Math.sin(y * 0.3 + ph))); // je Zeile höchstens eine Kachel versetzt
+      for (let x = bank[y]; x < bank[y] + 3; x++) g[y][x] = '~';
+    }
+    if (vriver.bridgeY != null) for (let x = vriver.x; x < vriver.x + 3; x++) g[vriver.bridgeY][x] = 'E';
+    for (let i = 0, tries = 0; i < (vriver.rocks ?? 0) && tries < 50; tries++) {
+      const y = 3 + Math.floor(rnd() * (N - 6));
+      if (nearFixed(y, 2) || g[y - 1][bank[y] + 1] === 'ř' || g[y + 1][bank[y] + 1] === 'ř') continue;
+      g[y][bank[y] + 1] = 'ř';
+      i++;
+    }
+  }
+  // Moorbäume: ragen aus dem Wasser (ringsum meist Wasser), nicht dicht beieinander
+  for (let i = 0, tries = 0; i < bogTrees && tries < 300; tries++) {
+    const x = 2 + Math.floor(rnd() * (N - 4));
+    const y = 2 + Math.floor(rnd() * (N - 4));
+    if (g[y][x] !== '~') continue;
+    const wet = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => g[y + dy][x + dx] === '~').length;
+    if (wet < 2 || [-1, 0, 1].some((dy) => [-1, 0, 1].some((dx) => g[y + dy][x + dx] === 'ǒ'))) continue;
+    g[y][x] = 'ǒ';
+    i++;
+  }
+  for (const [x, y0, y1] of walks) for (let y = y0; y <= y1; y++) if ('~.'.includes(g[y][x])) g[y][x] = 'Ŝ';
+  // Ufer für die Biber: freie Kacheln direkt am Wasser (nicht an Brücke und Damm, nicht am Start oder Ausgang)
+  const bankTiles = () => {
+    const list = [];
+    for (let y = 2; y < N - 2; y++) for (let x = 2; x < N - 2; x++) {
+      if (g[y][x] !== '.' || nearFixed(y, 2) || x <= 5 || x >= N - 6) continue;
+      if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy][x + dx] === '~')) list.push([x, y]);
+    }
+    return list;
+  };
+  if (lodge) {
+    const [lx, ly] = bankTiles().sort((a, b) => Math.hypot(a[0] - lodge[0], a[1] - lodge[1]) - Math.hypot(b[0] - lodge[0], b[1] - lodge[1]))[0] ?? [];
+    if (lx != null) g[ly][lx] = 'Ƅ';
+  }
+  for (let i = 0, tries = 0; i < gnawed && tries < 200; tries++) {
+    const list = bankTiles();
+    if (!list.length) break;
+    const [x, y] = list[Math.floor(rnd() * list.length)];
+    if ([-2, -1, 0, 1, 2].some((dy) => [-2, -1, 0, 1, 2].some((dx) => 'ƀƄ'.includes(g[y + dy]?.[x + dx])))) continue; // verteilt
+    g[y][x] = 'ƀ';
+    i++;
+  }
   // Fluss mit Kurven: Ober- und Unterkante schwingen je Spalte (zwei Sinuswellen, je Map anders); am Einlauf bis
   // hinter den Steg bleibt er gerade (dort gleitet das Kanu herein)
   const bank = [];
@@ -203,7 +260,7 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   // Bäche (Dschungel): kurze, gewundene Wasserläufe (2 Kacheln breit), wie die Kanäle im offenen Dschungel
   // würde etwas Hohes auf (x, y) Wasser verdecken? (Wasser dahinter, also bis 2 Kacheln nach links oder oben)
   const hidesWater = (x, y) => [0, 1, 2].some((a) => [0, 1, 2].some((b) => (a || b) && g[y - b]?.[x - a] === '~'));
-  const HIGH = 'JṀḢQKƟȞ';
+  const HIGH = 'JṀḢQKƟȞPDØɊǒĦ';
   for (let i = 0; i < creeks; i++) {
     const s = spot();
     if (!s) continue;
@@ -330,16 +387,17 @@ function withPond(rows, [cx, cy, rx, ry]) {
 
 // Maps (mit tools): ein durchgehender Weg vom Start zum Ausgang (um Wasser und Hindernisse herum, möglichst wenige Knicke)
 // und die Werkzeugkiste am Weg, möglichst in der Mitte der Map (sonst läuft man zu viel)
-const ROUTE_FREE = '.yƚqnľfgȓ'; // darüber darf der Weg (Gras, Büschel, hohes Gras, Farn, Bodenpflanzen, Blumen, Geröll)
+const ROUTE_FREE = '.yƚqnľfgȓmḃƒȁṽẉọ'; // darüber darf der Weg (Gras, Büschel, hohes Gras, Farn, Bodenpflanzen, Blumen, Geröll; Wald: Pilze, Blumen, Wollgras)
+const ROUTE_OVER = 'E'; // ... und über Brücken (die bleiben, wie sie sind)
 const TURN = 3; // so viel teurer ist ein Knick als ein gerades Stück
 const SHORE_COST = 4; // nicht am Wasser entlang (sonst ist unklar, ob man laufen oder fahren soll)
 const THICKET_COST = 6; // durch Dickicht nur, wenn es sonst einen großen Umweg gäbe (der Weg schneidet es dann frei)
-const TALL = 'AǍRƲƦŢuJkṀḢḟĎQKƟȞȨƩ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue, Bambus, Stupa): davor wird die Kiste verdeckt
+const TALL = 'AǍRƲƦŢuJkṀḢḟĎQKƟȞȨƩPDØɊǒḩḫɌƀĦ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue, Bambus, Stupa): davor wird die Kiste verdeckt
 // steht vor der Kachel (zur Kamera hin, bis 2 Kacheln) etwas Hohes, das die Kiste verdecken würde?
 // Ein Objekt auf (x + i, y + j) steht vor der Kachel (x, y), wenn i + j > 0; es verdeckt sie, wenn es schmal genug
 // daneben steht (|i − j| ≤ 1, eine Kachel sind 32 Pixel zur Seite) und hoch genug ist (i + j Kacheln sind (i + j) · 16
 // Pixel tiefer im Bild). REACH: bis zu welcher Summe i + j das Objekt (Krone) eine Kiste noch verdeckt
-const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4, Q: 6, K: 5, Ɵ: 6, Ȟ: 4, Ȩ: 4, Ʃ: 3 };
+const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4, Q: 6, K: 5, Ɵ: 6, Ȟ: 4, Ȩ: 4, Ʃ: 3, P: 7, D: 7, Ø: 8, Ɋ: 6, ǒ: 7, ḩ: 3, ḫ: 3, Ɍ: 3, ƀ: 5, Ħ: 8 };
 export const coveredAt = (get, x, y) => {
   for (let i = -1; i <= 9; i++) for (let j = -1; j <= 9; j++) {
     if (i + j <= 0 || Math.abs(i - j) > 1) continue;
@@ -357,7 +415,7 @@ function withRoute(def) {
   const { tx: sx, ty: sy } = def.start;
   const { tx: ex, ty: ey } = def.exits[0];
   const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-  const ok = (x, y) => (x === ex && y === ey) || (x > 0 && y > 0 && x < W - 1 && y < H - 1 && (ROUTE_FREE.includes(g[y][x]) || g[y][x] === 'Ď'));
+  const ok = (x, y) => (x === ex && y === ey) || (x > 0 && y > 0 && x < W - 1 && y < H - 1 && (ROUTE_FREE.includes(g[y][x]) || ROUTE_OVER.includes(g[y][x]) || g[y][x] === 'Ď'));
   // Dijkstra über (Kachel, Richtung)
   const key = (x, y, d) => (y * W + x) * 4 + d;
   const dist = new Map();
@@ -399,7 +457,7 @@ function withRoute(def) {
     for (const [dx, dy] of DIRS) {
       const cx = x + dx;
       const cy = y + dy;
-      if (onPath.has(`${cx},${cy}`) || !ok(cx, cy) || g[cy][cx] === 'Ď' || (cx === ex && cy === ey) || hiddenAt(g, cx, cy)) continue;
+      if (onPath.has(`${cx},${cy}`) || !ok(cx, cy) || g[cy][cx] === 'Ď' || ROUTE_OVER.includes(g[cy][cx]) || (cx === ex && cy === ey) || hiddenAt(g, cx, cy)) continue;
       const dd = Math.hypot(cx - W / 2, cy - H / 2);
       if (!best || dd < best.dd) best = { x: cx, y: cy, dd };
     }
@@ -683,8 +741,202 @@ const ASIA_LEVELS = {
   }),
 };
 
+// --- Wald (Expedition) ---
+
+// Grundlage und Optik je Wetter (wie der Wald in levels.js). Regen: Regengeräusch, Nebel: der Schleier aus Weather.js
+const FOREST = {
+  hero: 'hero_forest',
+  ambient: 'ambient_forest_river',
+  path: 'forest_path',
+  groundKeys: { '≈': 'forest_mud' }, // Schlamm der Wildschwein-Suhle
+  noMudShore: true,
+  roundShore: true,
+  bridgeStyle: 'wood',
+  bridgeArt: { back: 'forest_bridge', front: 'forest_bridge_front', len: 3, ox: 42, oy: 34 },
+  objectKeys: { Ŵ: 'forest_waterfall', Ŕ: 'forest_cliff', Ŝ: 'forest_boardwalk' },
+  moss: 0.14,
+  bees: 3,
+  birds: 3,
+  enclosures: [],
+  toolSpots: [],
+};
+const FGRASS = { grass: ['fgrass0', 'fgrass1', 'fgrass2'] };
+const LOOK_F = {
+  normal: FGRASS,
+  rain: { ...FGRASS, ambient: 'ambient_savanna_rain', ambientVolume: 0.5 },
+  fog: { ...FGRASS, ambientVolume: 0.3 },
+};
+const fmap = (def) => withRoute({ ...FOREST, ...LOOK_F.normal, looks: LOOK_F, expedition: 'forest', ...EDGE, ...def });
+// Bach, der fließt (wie der Fluss im Wald); stilles Moorwasser fließt nicht
+const FLOW_F = { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40 };
+const WHOLE = { tx0: -4, tx1: 31, ty0: -4, ty1: 31 }; // (über den Rand hinaus: der weiche Übergang liegt dann außerhalb)
+const INSIDE = { tx0: 1, tx1: 26, ty0: 1, ty1: 26 };
+// Böden (grounds in levels.js): Moorboden mit dunklem, stillem Wasser bzw. Laubboden
+const MOOR_GROUND = (area) => ({ area, soft: 3, ground: ['forest_moor0', 'forest_moor1', 'forest_moor2'], water: ['forest_moor_water'] });
+const LEAF_GROUND = (area) => ({ area, soft: 3, ground: ['forest_leaves0', 'forest_leaves1', 'forest_leaves2'], noMoss: true });
+// Moor: Nebel darüber (MoorFog.js, dort stehen die Elche), Moorgeräusche, Frösche und Reiher bevorzugt dort
+const moor = (area) => ({ moorFog: area, prefer: { area, frog: 0.8, heron: 0.75 }, ambientZone: { sound: 'ambient_moor', area, fade: 7 } });
+const HERONS_F = { herons: { every: [10, 20], landChance: 1 } };
+
+// Biberdamm: große Stöcke auf freiem Boden 2 bis 4 Kacheln vom Wasser, verteilt (der Damm selbst: dam, siehe BeaverDam.js)
+function sticksAt(rows, n = 4) {
+  const water = (x, y, d) => {
+    for (let dy = -d; dy <= d; dy++) for (let dx = -d; dx <= d; dx++) if (rows[y + dy]?.[x + dx] === '~') return true;
+    return false;
+  };
+  const list = [];
+  for (let y = 3; y < rows.length - 3; y++) for (let x = 6; x < rows[0].length - 6; x++) {
+    if (rows[y][x] !== '.' || water(x, y, 1) || !water(x, y, 4)) continue;
+    if (list.every(([a, b]) => Math.abs(a - x) + Math.abs(b - y) >= 7)) list.push([x, y]);
+  }
+  return list.slice(0, n);
+}
+
+// Wald-Camp: wie das der Savanne, ringsum Laubbäume, Tannen und Büsche; rechts zwischen zwei Baumstümpfen geht es weiter
+function forestCampRows() {
+  const sub = { v: 'k', A: 'D', R: 'Ɍ', y: 'n' };
+  const g = campRows().map((r) => [...r].map((c) => sub[c] ?? c));
+  for (const [x, y] of [[0, 3], [0, 9], [3, 0], [11, 0], [0, 15], [10, 0]]) g[y][x] = 'P'; // Tannen hinten (oben und links)
+  for (const [x, y] of [[16, 8], [16, 10]]) g[y][x] = 'Ț'; // Baumstümpfe am Weg
+  for (const [x, y] of [[12, 1], [1, 5], [9, 1]]) if (g[y][x] === '.') g[y][x] = 'm';
+  return g.map((r) => r.join(''));
+}
+
+const FOREST_LEVELS = {
+  forest_camp: fmap({
+    name: tr('Wald-Expedition', 'Forest Expedition'),
+    camp: true,
+    car: { tx: 15.6, ty: 12, texture: 'car_zoo', frame: 0, scale: 1.1, arrive: { tx: 14, ty: 7 } },
+    map: { x: 53, y: 16, icon: 'stag' },
+    unlockWith: 'forest',
+    rows: forestCampRows(),
+    start: { tx: 14, ty: 7 },
+    campfire: { tx: 12, ty: 9 },
+    tent: { tx: 14, ty: 4 },
+    board: { tx: 16, ty: 17 },
+    enclosures: [
+      ...CAGES.map(([tx, ty], i) => ({ id: `cage${i}`, name: tr('Käfig', 'Cage'), species: null, seed: { tx, ty }, cage: i })),
+      { id: 'corral', name: tr('Sammelgehege', 'Holding pen'), species: null, seed: { tx: 4, ty: 14 }, corral: true },
+      { id: 'cage4', name: tr('Käfig', 'Cage'), species: null, seed: { tx: 9, ty: 13 }, cage: 4, when: BIG_WAGON },
+    ],
+    runPatches: [{ tx: 8, ty: 12, rows: ['_____', '!...!', '!...!', '!..o!', '_____'], when: BIG_WAGON }],
+    cageAreas: [{ tx0: 1, ty0: 1, tx1: 11, ty1: 11 }, { tx0: 7, ty0: 11, tx1: 13, ty1: 17 }],
+    cageCenter: { tx: 8, ty: 8 },
+    exits: [{ tx: 17, ty: 9, to: '@next', label: tr('Tiefer in den Wald', 'Deeper into the forest') }],
+    campHint: tr('⛺ Willkommen im Wald-Camp! Rechts zwischen den Baumstümpfen geht es tiefer in den Wald – die Tafel am Zelt zeigt deinen Weg.', '⛺ Welcome to the forest camp! Between the tree stumps on the right you go deeper into the forest – the board by the tent shows your route.'),
+    spawn: { population: 0, weights: {} },
+  }),
+
+  // Laubwald: Laubbäume, Farne, Pilze; in den Laubhaufen verstecken sich Igel (Eicheln aus den Eichen locken sie heraus),
+  // ein kleiner Tümpel für die Frösche
+  fx_leafwood: fmap({
+    name: tr('Laubwald', 'Broadleaf Wood'),
+    features: ['leaves', 'water'],
+    rows: makeRows({ seed: 501, palette: 'forest', ponds: [[21, 21, 2.2, 1.4]], scatter: { D: 18, P: 5, Ɋ: 2, Ø: 3, ɫ: 8, k: 7, Ț: 3, Ŀ: 2, ḫ: 3, ḩ: 2, n: 26, m: 8, ḃ: 6, ȁ: 6, ṽ: 4, ọ: 2 }, grass: 4 }),
+    boarArea: INSIDE, // (an den Eichen Eicheln schütteln)
+    tools: ['net', 'lasso'],
+  }),
+
+  // Eichenhain: viele große Eichen auf Laubboden, eine Suhle – Wildschweine wühlen nach Eicheln, Igel in den Laubhaufen
+  fx_oakgrove: fmap({
+    name: tr('Eichenhain', 'Oak Grove'),
+    features: ['oaks', 'leaves'],
+    rows: makeRows({ seed: 503, palette: 'forest', muds: [[19, 20, 3, 1.8]], scatter: { Ø: 12, ɫ: 7, D: 4, k: 5, Ț: 3, Ŀ: 2, ḫ: 3, n: 10, m: 6, ọ: 4, ȁ: 4 }, grass: 2 }),
+    grounds: [LEAF_GROUND(WHOLE)],
+    boarArea: INSIDE,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Hochmoor: große, stille Moortümpel mit alten Moorbäumen, ein Holzsteg; Nebel liegt darüber – im Moorwasser stehen
+  // Elche (nur im Licht der Laterne zu sehen), Frösche, Reiher
+  fx_bog: fmap({
+    name: tr('Hochmoor', 'Raised Bog'),
+    features: ['moor', 'water'],
+    rows: makeRows({ seed: 505, palette: 'moor', ponds: [[8, 6, 4, 2.4], [19, 8, 3.5, 2.2], [9, 21, 3.5, 2.2], [20, 21, 4.5, 2.6]], bogTrees: 5, walks: [[20, 18, 24]], scatter: { Ɋ: 8, P: 3, '%': 10, ẉ: 20, k: 4, Ț: 2, Ɍ: 2, m: 4 }, grass: 4 }),
+    grounds: [MOOR_GROUND(WHOLE)],
+    ...moor(INSIDE),
+    ...HERONS_F,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Birkenbruch: lichter Birkenwald im Moor, viel Wollgras, kleine Tümpel
+  fx_birch: fmap({
+    name: tr('Birkenbruch', 'Birch Fen'),
+    features: ['moor', 'water'],
+    rows: makeRows({ seed: 507, palette: 'moor', ponds: [[7, 7, 2.6, 1.6], [16, 5, 2.4, 1.5], [21, 16, 2.8, 1.8], [10, 20, 3, 1.8], [19, 23, 2.4, 1.4]], bogTrees: 3, scatter: { Ɋ: 18, P: 3, D: 2, ẉ: 26, '%': 6, k: 4, Ŀ: 2, Ț: 2, m: 5, ọ: 2 }, grass: 5 }),
+    grounds: [MOOR_GROUND(WHOLE)],
+    ...moor(INSIDE),
+    ...HERONS_F,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Forellenbach: ein Bach fließt von oben nach unten durch den Wald (Holzbrücke, Felsen im Wasser) – Forellen mit der
+  // Angel, Reiher am Ufer
+  fx_trout: fmap({
+    name: tr('Forellenbach', 'Trout Stream'),
+    features: ['river', 'water'],
+    rows: makeRows({ seed: 509, palette: 'forest', vriver: { x: 12, bridgeY: 13, rocks: 4 }, scatter: { D: 14, P: 8, Ɋ: 2, k: 6, Ɍ: 5, Ț: 2, Ŀ: 2, ḫ: 2, ḩ: 2, n: 24, m: 4, ḃ: 4, ƒ: 4, ȁ: 4 }, grass: 3 }),
+    flow: FLOW_F,
+    ...HERONS_F,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Biberteich: der Bach ist zu einem Teich gestaut, am Ufer die Biberburg und angenagte Bäume; im Damm ist ein Loch –
+  // steckt man einen großen Stock hinein, kommt ein Biber mit (BeaverDam.js)
+  fx_beaver: (() => {
+    const DAM = { tx: 13, ty: 17 }; // mittlere Dammkachel (der Bach ist dort gerade: Spalten 12 bis 14)
+    const rows = makeRows({ seed: 511, palette: 'forest', ponds: [[13, 11, 4.5, 3]], vriver: { x: 12, bridgeY: 23, damY: DAM.ty, rocks: 1 }, lodge: [16, 9], gnawed: 5, scatter: { D: 12, P: 6, k: 5, Ț: 5, Ŀ: 3, Ɍ: 2, ḫ: 2, n: 20, m: 4, ȁ: 4, ṽ: 3 }, grass: 3 });
+    return fmap({
+      name: tr('Biberteich', 'Beaver Pond'),
+      features: ['river', 'dam', 'water'],
+      rows,
+      flow: FLOW_F,
+      beavers: { count: 2, dam: DAM, sticks: sticksAt(rows) },
+      ...HERONS_F,
+      tools: ['net', 'lasso'],
+    });
+  })(),
+
+  // Waldwiese: offene Wiese voller Blumen mit einem Hochstand, ringsum Wald – Rehe und Füchse; mit der Event-Karte wird es
+  // Wolfsnacht (Rudel auf der Wiese, siehe Wolf.js)
+  fx_meadow: fmap({
+    name: tr('Waldwiese', 'Forest Meadow'),
+    features: ['water'],
+    rows: makeRows({ seed: 513, palette: 'forest', ponds: [[20, 6, 2.4, 1.5]], scatter: { D: 7, P: 4, Ɋ: 2, k: 4, ḫ: 2, ḩ: 2, Ħ: 1, Ț: 2, ḃ: 12, ƒ: 8, ȁ: 10, ṽ: 8, n: 10, m: 4 }, grass: 2 }),
+    wolfNight: true,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Felsenschlucht: bemooste Felsbrocken, oben eine Höhle, Eichen und Laubhaufen (Igel); zweiter Ort für die Wolfsnacht
+  fx_gorge: (() => {
+    const CAVE = { tx: 12, ty: 1, rows: ['VVV', 'VĈV'] };
+    return fmap({
+      name: tr('Felsenschlucht', 'Rocky Gorge'),
+      features: ['leaves'],
+      rows: makeRows({ seed: 515, palette: 'forest', stamp: CAVE, keepFree: inStamp(CAVE), scatter: { Ɍ: 16, D: 8, P: 6, Ø: 3, ɫ: 6, k: 5, Ț: 2, Ŀ: 3, ḫ: 2, n: 22, m: 6, ƒ: 4, ọ: 3 }, grass: 3 }),
+      boarArea: INSIDE,
+      bats: { tx: 13, ty: 2 }, // Fledermäuse aus der Höhle (Wolfsnacht)
+      wolfNight: true,
+      tools: ['net', 'lasso'],
+    });
+  })(),
+
+  // Moorrand: links Moor mit Tümpeln und Birken (Elche), rechts Eichen auf Laubboden mit Suhle (Wildschweine)
+  fx_moorside: fmap({
+    name: tr('Moorrand', 'Bog Edge'),
+    features: ['moor', 'oaks', 'water'],
+    rows: makeRows({ seed: 517, palette: 'forest', ponds: [[6, 7, 3, 2], [8, 20, 3.5, 2.2]], bogTrees: 3, muds: [[20, 21, 2.6, 1.6]], scatter: { Ø: 7, ɫ: 4, Ɋ: 6, P: 3, D: 3, '%': 6, ẉ: 12, k: 4, Ț: 2, n: 8, m: 4, ọ: 2 }, grass: 2 }),
+    grounds: [MOOR_GROUND({ tx0: -4, tx1: 12, ty0: -4, ty1: 31 }), LEAF_GROUND({ tx0: 15, tx1: 31, ty0: -4, ty1: 31 })],
+    ...moor({ tx0: 1, tx1: 12, ty0: 1, ty1: 26 }),
+    boarArea: { tx0: 14, tx1: 26, ty0: 2, ty1: 25 },
+    ...HERONS_F,
+    tools: ['net', 'lasso'],
+  }),
+};
+
 export const EXPEDITION_LEVELS = {
   ...ASIA_LEVELS,
+  ...FOREST_LEVELS,
   // Camp (provisorisch, zieht mit: nach jeder Map steht es weiter vorn): Zelt mit der Fortschritts-Tafel, Lagerfeuer,
   // das Auto (Jeep mit Anhänger: Expedition beenden) und der Wagen als 6 kleine Gitterkäfige (je ein Tier, siehe CAGES);
   // wer nicht mehr hineinpasst, wartet im Sammelgehege. Man kommt vor dem Zelt an, rechts daneben geht es weiter

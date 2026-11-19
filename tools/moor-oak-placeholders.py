@@ -3,7 +3,8 @@ Platzhalter für Moor und Eichenhain im Süden des Walds (bis echte Bilder da si
 Wald-Platzhalter (tools/sprite_draw.py), mit dem endgültigen Dateinamen in allen Auflösungen; Vorlagen zum Nachmalen
 in Wald-Sprites/Neu.
 Moor: Birke, Wollgras, Holzsteg (über den Tümpeln), knorrige Moorbäume im Wasser, Moorboden und dunkles Moorwasser.
-Eichenhain: große Eiche, Laubhaufen (Versteck der Igel), Pilzkreis, Laubboden und Schlamm der Wildschwein-Suhle.
+Eichenhain: große Eiche, Laubhaufen (Versteck der Igel), Eicheln (locken Igel und Wildschweine), Pilzkreis,\nBoden und Schlammloch des Wildschweingeheges im Tierpark, Laubboden und Schlamm der
+Wildschwein-Suhle.
 Boden und Wasser sind umgefärbte Kacheln des Waldbodens (fgrass), des Wassers und des Schlamms der Savanne.
 ONLY=name: nur dieses eine Bild."""
 import os, math, random
@@ -140,6 +141,7 @@ def bogtree(name, leaves, seed):
     OLD = (104, 88, 70, 255)
     LICHEN = (196, 206, 176, 255)
     MOSSY = (104, 132, 58, 255)
+    rings(p, front=False)  # hintere Hälfte der Wellenringe: der Stamm steht davor
     # Wurzelbögen (hinten), die Enden tauchen ins Wasser
     for x0, x1, h in [(24, 40, 9), (56, 74, 10), (32, 46, 6), (60, 68, 5)]:
         p.line([(x0, 107), (x0 + (x1 - x0) * 0.3, 106 - h), (x0 + (x1 - x0) * 0.7, 105 - h * 0.8), (x1, 104)], WET, 3, ol=OUTLINE)
@@ -175,13 +177,22 @@ def bogtree(name, leaves, seed):
             x, y = xa + (xb - xa) * t, ya + (yb - ya) * t
             n = r.uniform(5, 10)
             p.line([(x, y + 1), (x + r.uniform(-1.5, 1.5), y + n * 0.6), (x + r.uniform(-1, 1), y + n)], LICHEN, 0.9, ol=dark(LICHEN, 0.6))
-    # Wasser am Fuß: dunkler Saum und helle Wellenringe
-    p.ell(48, 106, 16, 3.2, (40, 56, 52, 150), ol=False)
+    # Wellenringe vorne (die hintere Hälfte ist schon vor dem Stamm gezeichnet, siehe oben)
+    rings(p, front=True)
+    p.save(name)
+
+
+# Wasser am Fuß des Moorbaums: dunkler Saum und helle Wellenringe um den Stamm; front: vordere Hälfte (vor dem Stamm,
+# nach ihm gezeichnet), sonst die hintere Hälfte samt Saum (vor dem Stamm gezeichnet, er verdeckt sie teilweise)
+def rings(p, front):
+    if not front:
+        p.ell(48, 106, 16, 3.2, (40, 56, 52, 150), ol=False)
     for rx, ry, a in [(18, 4, 200), (25, 6, 120)]:
         box = [(48 - rx) * 8, (106 - ry) * 8, (48 + rx) * 8, (106 + ry) * 8]
-        p.d.arc(box, 0, 180, fill=(200, 214, 210, a), width=8)
-        p.d.arc(box, 200, 340, fill=(200, 214, 210, a // 2), width=6)
-    p.save(name)
+        if front:
+            p.d.arc(box, 0, 180, fill=(200, 214, 210, a), width=8)
+        else:
+            p.d.arc(box, 180, 360, fill=(200, 214, 210, a * 3 // 4), width=7)
 
 
 # Wollgras: grüne Halme mit weißen Wattebäuschen. Fuß bei (20, 25)
@@ -250,6 +261,59 @@ def leafpile():
     p.save('forest_leafpile')
 
 
+# Eicheln (aus einer Eiche geschüttelt; neben einen Laubhaufen gelegt locken sie den Igel, im Eichenhain die Wildschweine):
+# ein Häufchen Eicheln mit Hütchen auf einem Eichenblatt. Mitte bei (32, 40)
+def acorns():
+    p = Pic(64, 64)
+    p.shadow(32, 46, 20, 5)
+    leaf = (176, 118, 52, 255)
+    p.poly([(10, 44), (14, 39), (19, 40), (24, 35), (30, 37), (35, 32), (41, 35), (46, 33), (50, 38), (56, 44), (48, 48), (38, 51), (26, 51), (16, 49)], leaf, ol=OUTLINE, ow=0.9)
+    p.line([(12, 44), (54, 43)], dark(leaf, 0.7), 0.6, ol=False)
+    NUT = (190, 136, 62, 255)
+    CAP = (122, 86, 46, 255)
+    for x, y in [(21, 42), (41, 42), (31, 45), (26, 35), (37, 35), (32, 28)]:
+        p.ell(x, y + 0.8, 4.4, 5.6, NUT, ol=OUTLINE, ow=0.8)  # Eichel
+        p.ell(x - 1.4, y + 0.2, 1.4, 2.4, light(NUT, 0.3), ol=False)
+        p.ell(x, y - 3.4, 5, 2.6, CAP, ol=OUTLINE, ow=0.7)  # Hütchen
+        for dx in (-2.5, 0, 2.5):
+            p.ell(x + dx, y - 3.6, 0.8, 0.6, light(CAP, 0.2), ol=False)
+        p.line([(x, y - 5.6), (x + 0.6, y - 7.4)], CAP, 0.6, ol=OUTLINE)
+    p.save('acorns')
+
+
+# Schlammloch im Gehege (zum Suhlen der Wildschweine im Tierpark): flacher, weicher Schlammfleck über gut drei Kacheln,
+# in der Mitte dunkel und nass mit hellen Glanzflecken, am Rand ausgefranst. Liegt flach auf dem Boden (Mitte der Kachel).
+def wallow():
+    from PIL import ImageFilter
+    w, h, k = 224, 112, 6
+    r = random.Random(77)
+    mask = Image.new('L', (w * k, h * k))
+    d = ImageDraw.Draw(mask)
+    for _ in range(16):
+        cx, cy = r.uniform(0.3, 0.7) * w, r.uniform(0.38, 0.62) * h
+        rx, ry = r.uniform(28, 50), r.uniform(13, 22)
+        d.ellipse([(cx - rx) * k, (cy - ry) * k, (cx + rx) * k, (cy + ry) * k], fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(k * 3))
+    m = np.asarray(mask).astype(float) / 255
+    a = np.clip((m - 0.25) * 2.2, 0, 1)  # Deckkraft: weicher Rand
+    wet = np.clip((m - 0.6) * 3, 0, 1)  # nass in der Mitte
+    yy, xx = np.mgrid[0:h * k, 0:w * k]
+    noise = np.zeros_like(m)
+    for _ in range(220):
+        x0, y0, rr = r.uniform(0, w * k), r.uniform(0, h * k), r.uniform(1.5, 4) * k
+        noise += np.exp(-(((xx - x0) ** 2) + ((yy - y0) ** 2) * 3) / (rr * rr)) * r.choice((-1, 1))
+    dry = np.array((118, 88, 58), float)
+    mud = np.array((78, 56, 36), float)
+    col = dry[None, None] * (1 - wet[..., None]) + mud[None, None] * wet[..., None]
+    col = np.clip(col * (1 + 0.12 * np.clip(noise, -1, 1)[..., None]), 0, 255)
+    im = Image.fromarray(np.dstack([col, a * 245]).astype(np.uint8), 'RGBA')
+    dd = ImageDraw.Draw(im)
+    for _ in range(9):  # Glanz auf dem nassen Schlamm
+        x, y = r.uniform(0.34, 0.66) * w * k, r.uniform(0.4, 0.6) * h * k
+        dd.ellipse([x - 5 * k, y - 1.2 * k, x + 5 * k, y + 1.2 * k], fill=(150, 130, 110, 120))
+    sprite_draw.save_all(im, 'wallow', w, h)
+
+
 # Pilzkreis: kleine rote Fliegenpilze im Ring, liegt flach um die Kachelmitte (32, 22)
 def toadstools():
     p = Pic(64, 40)
@@ -316,7 +380,7 @@ def recolor(src, dst, target, detail=1.0, keep=0.0, flecks=None, seed=0):
     print(dst)
 
 
-for make in [birch, oak, cottongrass, leafpile, toadstools, boardwalk]:
+for make in [birch, oak, cottongrass, leafpile, toadstools, boardwalk, acorns, wallow]:
     make()
 bogtree('forest_bogtree', True, 31)
 bogtree('forest_bogtree2', False, 37)
@@ -328,4 +392,8 @@ for i in range(3):
     # Laubboden: braun mit bunten Blättern
     recolor(f'fgrass{i}', f'forest_leaves{i}', (150, 112, 62), detail=1.0, keep=0.1, flecks=LEAVES, seed=60 + i)
 recolor('water', 'forest_moor_water', (56, 78, 72), detail=1.2)  # dunkles, stilles Moorwasser
+# Boden im Wildschweingehege (Tierpark): durchwühlte Erde, dunkle Schlammflecken, nur noch ein paar grüne Büschel
+for i in range(3):
+    recolor(f'fgrass{i}', f'boar_ground{i}', (116, 88, 60), detail=1.25, keep=0.08,
+            flecks=[((84, 60, 40, 255), 6 + i, 2.2), ((140, 108, 74, 255), 5, 1.6), ((96, 128, 58, 255), 2 + i % 2, 1.3)], seed=90 + i)
 recolor('mud', 'forest_mud', (104, 76, 50), detail=1.1)  # Suhle

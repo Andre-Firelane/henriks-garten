@@ -17,16 +17,17 @@ const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) 
 // (FIRST_*), dazu die Pakete des Startgebiets; danach lädt im Hintergrund Welt für Welt der Rest (GROUP_ORDER). Fährt man
 // in ein Gebiet, dessen Pakete noch fehlen, rücken sie nach vorn und das Spiel wartet mit der Ladeanzeige nur auf sie
 // (levelGroups, whenGroupsLoaded). Events mit Tieren aus einem Paket warten ebenso (EVENT_GROUPS).
-// Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs und Eichhörnchen nur das Grundbild, das der Tierpark zeigt),
+// Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs, Eichhörnchen, Elch, Wildschwein, Igel und Biber nur das Grundbild, das
+// der Tierpark zeigt, z. B. auf den Gehegeschildern),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|fishbag|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 // Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
 // der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
 // mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket (Bauernhof,
 // Reittier der Wiese ...) kommt ins Paket misc
 const GROUPS = {
-  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver', 'elk'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
+  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver', 'elk', 'hedgehog', 'boar'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hedgehog|boar|piglet|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$|oak$|leafpile$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark, die Laubhaufen in der Igel-Voliere: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
   savanna: {
     species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
     keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
@@ -136,6 +137,9 @@ const PIXEL_ART = [
   'forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3',
   // Moor und Eichenhain (Platzhalter aus tools/moor-oak-placeholders.py): Birke, Wollgras, Eiche, Laubhaufen, Pilzkreis, Steg, Böden, Moorwasser, Suhle
   'forest_birch', 'forest_cottongrass', 'forest_oak', 'forest_leafpile', 'forest_toadstools', 'forest_boardwalk', 'forest_moor0', 'forest_moor1', 'forest_moor2', 'forest_leaves0', 'forest_leaves1', 'forest_leaves2', 'forest_moor_water', 'forest_mud', 'forest_bogtree', 'forest_bogtree2',
+  'acorns', // Eicheln (Werkzeug im Wald: aus der Eiche geschüttelt, locken Igel und Wildschweine)
+  'wallow', // Schlammloch im Gehege (Tierpark), zum Suhlen der Wildschweine
+  'boar_ground0', 'boar_ground1', 'boar_ground2', // durchwühlter Boden im Wildschweingehege
   // Futterstrauch für Tapir und Okapi (Dschungel, tools/leaf-bush.py): voll, abgeerntet, der Blätterzweig in der Hand
   'leaf_bush', 'leaf_bush_bare', 'leaf_branch',
   'sgrass0', 'sgrass1', 'sgrass2', 'savanna_path', 'acacia', 'boulder', 'dry_bush', 'tuft',
@@ -735,11 +739,15 @@ export default class BootScene extends Phaser.Scene {
     // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus
     // tools/static-sheet.py; der Tapir im Wasser: nur Kopf und Rücken (wie das Nilpferd)
     for (const k of ['tapir', 'tapir2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 88 });
-    for (const k of ['tapir_water', 'tapir2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 44 });
+    for (const k of ['tapir_water', 'tapir2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 64 }); // ganze Breite, Wasserkante schräg
     for (const k of ['okapi', 'okapi2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 104 });
-    // Elch (Wald, Moor) und der seltene Geisterelch: Standbilder aus tools/static-sheet.py; im Wasser nur der obere Teil
+    // Elch (Wald, Moor; grau) und der seltene rotbraune Elch: Standbilder aus tools/static-sheet.py; im Wasser nur der obere Teil
     for (const k of ['elk', 'elk2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 128, frameHeight: 128 });
-    for (const k of ['elk_water', 'elk2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 128, frameHeight: 80 });
+    for (const k of ['elk_water', 'elk2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 128, frameHeight: 112 }); // Wasserkante schräg (Iso-Winkel)
+    for (const k of ['hedgehog', 'hedgehog2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 64 }); // Igel und Apfel-Igel (Wald)
+    // Wildschwein (Wald), sauber und nach dem Suhlen schlammig; die Bache (seltene Variante boar2) sieht genauso aus, ihr laufen Frischlinge hinterher
+    for (const [k, f] of [['boar', 'boar'], ['boar2', 'boar'], ['boar_mud', 'boar_mud'], ['boar2_mud', 'boar_mud']]) load.spritesheet(k, `assets/${f}.png`, { frameWidth: 104, frameHeight: 96 });
+    load.spritesheet('piglet', 'assets/piglet.png', { frameWidth: 48, frameHeight: 40 });
     for (const k of ['anteater_eat', 'anteater2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
     load.spritesheet('beaver', 'assets/beaver.png', { frameWidth: 80, frameHeight: 60 }); // Biber (Wald, aus Sprites/Biber.webp)
     load.image('beaver_swim', 'assets/beaver_swim.png'); // ... schwimmt (aus dem Biber-Sprite, tools/beaver-swim.py)

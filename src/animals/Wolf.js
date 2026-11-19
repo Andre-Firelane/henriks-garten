@@ -44,6 +44,7 @@ export default class Wolf extends Animal {
 
   // von catchAnimal (Herde): die anderen rennen vor Schreck davon
   scatter() {
+    if (this.pack && this.pack.night.opts.leave) this.pack.caught = true; // (Expedition: das Rudel zieht danach fort)
     this.pack?.spook();
   }
 
@@ -165,6 +166,12 @@ class Pack {
     this.time -= dt;
     if (this.running) {
       if (this.time > 0) return;
+      // einer ist gefangen (Expedition): die anderen sind fort
+      if (this.caught) {
+        for (const w of this.members) this.scene.despawn(w);
+        this.members = [];
+        return;
+      }
       // neue Lichtung, die Wölfe sind schon dort
       const tile = this.night.clearing();
       this.placeAt(tile);
@@ -192,9 +199,13 @@ class Pack {
 }
 
 // Steuerung der Wolfsnacht im Wald: Dunkelheit mit Laternenlicht, Rudel, Spuren, Geheul
+// opts (Expedition, kleine Map): packs() – so viele Rudel sollen unterwegs sein (eins je Wolf auf der Tierliste);
+// size: so viele Wölfe je Rudel; leave: ein Rudel, aus dem man einen gefangen hat, zieht danach fort (es zählt als eine
+// Einheit, siehe unitOf)
 export class WolfNight {
-  constructor(scene) {
+  constructor(scene, opts = {}) {
     this.scene = scene;
+    this.opts = opts;
     this.packs = [];
     this.tracks = [];
     this.signs = new Map();
@@ -204,7 +215,12 @@ export class WolfNight {
     this.glow = scene.add.image(0, 0, glowTexture(scene)).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffc860).setAlpha(0.45).setScale(1.6).setDepth(NIGHT_DEPTH + 1);
     // im Wald gibt es währenddessen keine anderen Tiere
     for (const a of [...scene.animals]) if (a.state === 'wild' && a.species !== 'wolf') scene.despawn(a);
-    for (let i = 0; i < PACKS; i++) this.addPack();
+    for (let i = 0; i < this.packTarget(); i++) this.addPack();
+  }
+
+  // so viele Rudel sollen unterwegs sein (ohne die, aus denen schon einer gefangen ist)
+  packTarget() {
+    return this.opts.packs ? this.opts.packs() : PACKS;
   }
 
   // freie Lichtung weit weg vom Spieler und von den anderen Rudeln, nicht im Gehege, nicht am Kartenrand, rundherum frei
@@ -234,7 +250,7 @@ export class WolfNight {
   addPack() {
     const pack = new Pack(this, this.clearing());
     this.packs.push(pack);
-    const n = Phaser.Math.Between(...PACK_SIZE);
+    const n = Phaser.Math.Between(...(this.opts.size ?? PACK_SIZE));
     for (let i = 0; i < n; i++) {
       const at = packSpot(pack);
       const w = this.scene.createAnimal('wolf', at.x, at.y);
@@ -312,15 +328,16 @@ export class WolfNight {
         t.setAlpha(d < TRACK_SEE ? 1 - (d / TRACK_SEE) * 0.6 : 0.12);
       }
     }
-    // gefangene oder leere Rudel ersetzen
+    // gefangene oder leere Rudel ersetzen (Expedition: nur so viele, wie noch zu fangen sind)
     for (const pack of [...this.packs]) {
       if (pack.members.length) continue;
       for (const t of pack.trackSprites) t.destroy();
       this.signs.get(pack)?.destroy();
       this.signs.delete(pack);
       this.packs.splice(this.packs.indexOf(pack), 1);
-      this.addPack();
+      if (!this.opts.packs) this.addPack();
     }
+    while (this.opts.packs && this.packs.filter((k) => !k.caught).length < this.packTarget()) this.addPack();
     // andere Tiere (z. B. ein Reiher, der doch noch einfliegt) gibt es in dieser Nacht nicht
     for (const a of [...this.scene.animals]) if (a.state === 'wild' && a.species !== 'wolf') this.scene.despawn(a);
   }

@@ -184,7 +184,7 @@ export default class ForestLife {
 
   update(dt) {
     this.time += dt;
-    const night = isActive('wolves');
+    const night = isActive('wolves') || !!this.scene.wolfNight; // (Expedition: Wolfsnacht der Event-Karte)
     this.updateFoam(dt);
     for (const b of this.bees) this.updateBee(b, dt, night);
     for (const b of this.birds) this.updateBird(b, dt, night);

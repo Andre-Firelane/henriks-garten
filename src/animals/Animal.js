@@ -688,6 +688,40 @@ export const SPECIES = {
     shadowW: 46,
     catchWith: ['lasso'],
   },
+  // Igel (Wald): sitzt versteckt in einem Laubhaufen, der ab und zu raschelt; Nüsse daneben locken ihn heraus, dann mit
+  // dem Kescher oder durch Berühren (siehe Hedgehog.js). Bisher nur Standbilder
+  hedgehog: {
+    texture: 'hedgehog',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 60 / 64,
+    speed: 14,
+    restChance: 0.5,
+    restTime: [1, 3],
+    walkTime: [1, 2],
+    stepRate: 14,
+    hop: 0.6,
+    footW: 6,
+    shadowW: 22,
+    catchWith: ['net', 'touch'],
+  },
+  // Wildschwein (Wald, Eichenhain): scheu, suhlt sich im Schlamm; frisst es hingelegte Eicheln, fängt man es mit dem Lasso
+  // (siehe Boar.js). Bisher nur Standbilder (sauber und schlammig)
+  boar: {
+    texture: 'boar',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 92 / 96,
+    speed: 20,
+    restChance: 0.45,
+    restTime: [1.5, 4],
+    walkTime: [1.5, 3],
+    stepRate: 9,
+    hop: 1,
+    footW: 10,
+    shadowW: 38,
+    fleeDist: 110, // weiter als das Lasso reicht: man fängt es nur beim Fressen
+    fleeSpeed: 72,
+    catchWith: ['lasso'],
+  },
   // Okapi (Dschungel): scheu, rennt beim ersten Mal weg, wird mit jedem Mal mutiger (siehe Okapi.js); mit einem
   // Blätterzweig gefüttert, läuft es mit. Bisher nur Standbilder
   okapi: {
@@ -1106,7 +1140,9 @@ export const SKINS = {
   octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },
   tapir: { id: 'tapir2', name: tr('Schabrackentapir', 'Malayan tapir'), male: true, wild: 0.1, baby: 0.03 },
   okapi: { id: 'okapi2', name: tr('Streifen-Okapi', 'striped okapi'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
-  elk: { id: 'elk2', name: tr('Geisterelch', 'ghost moose'), male: true, wild: 0.1, baby: 0.03 }, // grau, im Nebel kaum zu sehen
+  elk: { id: 'elk2', name: tr('Rotbrauner Elch', 'chestnut moose'), male: true, wild: 0.1, baby: 0.03 }, // rotbraunes Fell (der normale Elch ist grau)
+  hedgehog: { id: 'hedgehog2', name: tr('Apfel-Igel', 'apple hedgehog'), male: true, wild: 0.1, baby: 0.03 }, // trägt einen Apfel auf den Stacheln
+  boar: { id: 'boar2', name: tr('Bache mit Frischlingen', 'wild sow with piglets'), male: false, wild: 0.12, baby: 0.03 }, // dasselbe Bild, dazu laufen Frischlinge hinterher (Boar.js)
   tanuki: { id: 'tanuki2', name: tr('Fuchs-Tanuki', 'fox tanuki'), male: true, wild: 0.1, baby: 0.03 },
   yak: { id: 'yak2', name: tr('Gefleckter Yak', 'spotted yak'), male: true, wild: 0.1, baby: 0.03 },
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js

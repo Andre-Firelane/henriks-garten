@@ -329,6 +329,7 @@ export const LEVELS = {
       { area: { tx0: 22, tx1: 38, ty0: 46, ty1: 62 }, soft: 3, ground: ['forest_leaves0', 'forest_leaves1', 'forest_leaves2'], noMoss: true },
     ],
     groundKeys: { '≈': 'forest_mud' }, // Schlamm der Wildschwein-Suhle
+    boarArea: { tx0: 23, tx1: 38, ty0: 44, ty1: 61 }, // hier streifen die Wildschweine (Eichenhain, siehe Boar.js)
     noMudShore: true, // ... ohne Kiesrand
     // Frösche erscheinen und Reiher landen meist im Moor (Anteil), sonst irgendwo am Wasser
     prefer: { area: { tx0: 1, tx1: 21, ty0: 39, ty1: 62 }, frog: 0.8, heron: 0.75 },
@@ -349,7 +350,7 @@ export const LEVELS = {
     ambientZone: { sound: 'ambient_moor', area: { tx0: 1, tx1: 20, ty0: 39, ty1: 62 }, fade: 7 },
     toolSpots: [],
     exits: [], // nur mit dem Auto
-    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 1.6, elk: 0.7 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
+    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 1.6, elk: 0.7, hedgehog: 1.2, boar: 0.9 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
     // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
     // im Moor (except) läuft er in stille Tümpel aus
     flow: { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40, except: { tx0: 0, tx1: 21, ty0: 46, ty1: 63 } },
@@ -959,27 +960,27 @@ const PARK_ROWS = [
       'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v...........y...........3                 ',
       '22222222222222222222222################################b.R.........A.......v..3                 ',
       '222k2DDk2222.^^^^^^^^^^#............###.......#MMMMMMM.b33333333333333333333333                 ',
-      '2D22kD222DD2.;.n......;#..y.y.v.....###..%....#N.C...N.b                                        ',
+      '2D22kD222DD2.;.n....ɫ.;#..y.y.v.....###..%....#N.C...N.b                                        ',
       '2kD2222k22k2.;.P...ww.;#.D.y......v.###..~~...#N....CN.b                                        ',
       '22k2k22k2D22k;.....ww.G#...Av..A.A..###..~~~..#N.....N.b                                        ',
-      'DkD222k2k2k2.;...m....G#.......y....###...~~..#MMMGMMM.b                                        ',
+      'DkD222k2k2k2.;ɫ..m....G#.......y....###...~~..#MMMGMMM.b                                        ',
       '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b                                        ',
       '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b                                        ',
       'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b                                        ',
-      'D22DD2222222.;*...;....#.NZ...z.sN..###Fb.b....g..g..b#b                                        ',
+      'D22DD2222222.;*..ɫ;....#.NZ...z.sN..###Fb.b....g..g..b#b                                        ',
       'kD222D222222m;..P.;....#.N...VYV.N..###---------------#b                                        ',
       'D2222D2mk....^^^^^^kkn.#.N.......N..###|.............|#b                                        ',
       'k2D2222.################.NVt.....N..###|.............|#b                                        ',
-      '2kk2kk2.------GG------.#.Ndix....N..###|....T........|#b                                        ',
-      '222D222k|..........k.|.#.Ns.....ZN..###|.............|#b                                        ',
-      'D2D2kD2.|....D.......|k#.MMMMGGMMM.####|..@..........|#b                                        ',
-      '22k2DD2.|.&..........|m#bg.#####.fb####|...f......T..|#b                                        ',
-      '2kkk222.|.P..........|.#..f#####g..####G.............|#X                                        ',
-      '2222kD2.|.m......D..n|k################G.............|.b                                        ',
-      '2222kk2.|n...........|.###############W|.........f...|.b                                        ',
-      '22kDD22.|...D........|.##........######|.............|.b                                        ',
-      '2222222.|......m.....|k#.........######|.............|.b                                        ',
-      ' 2mm...n--------------F#.........######---------------.b                                        ',
+      '2-------------GG------.#.Ndix....N..###|....T........|#b                                        ',
+      '2|..k...|..........k.|.#.Ns.....ZN..###|.............|#b                                        ',
+      'D|..Ø...|....D.......|k#.MMMMGGMMM.####|..@..........|#b                                        ',
+      '2|......|.&..........|m#bg.#####.fb####|...f......T..|#b                                        ',
+      '2|.n....|.P..........|.#..f#####g..####G.............|#X                                        ',
+      '2|...ʬ..|.m......D..n|k################G.............|.b                                        ',
+      '2|......|n...........|.###############W|.........f...|.b                                        ',
+      '2|.m..L.|...D........|.##........######|.............|.b                                        ',
+      '2|......|......m.....|k#.........######|.............|.b                                        ',
+      ' ---G-----------------F#.........######---------------.b                                        ',
       ' X######################......n.....###.....ff.b.b...g.b                                        ',
       ' 2----G----#{{{{{{{{{{.#.......n.n..###.b..gf.T.....bTbb                                        ',
       ' 2|.n.....|#}.%.....m}.#....m.m...m.########g^^^^^^^^^^b                                        ',
@@ -1050,12 +1051,15 @@ const PARK_PENS = [
       { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
       { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Mehr Platz mit Felsenhöhle', 'More room with a rock den'), basic: [[56, 17, '.'], [57, 17, '.'], [56, 18, '.'], [57, 18, '.'], [58, 18, ']'], [56, 19, '.'], [57, 19, '.'], [58, 19, ']'], [56, 20, '.'], [57, 20, '.'], [58, 20, ']'], [56, 21, '.'], [57, 21, '.'], [58, 21, ']'], [56, 22, '.'], [57, 22, '.'], [58, 22, ']'], [56, 23, '.'], [57, 23, '.'], [63, 19, '.']] },
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
-      { id: 'deerpark', name: tr('Hirsch- und Elchgehege', 'Deer and Moose Park'), species: ['deer', 'elk'], // Elche vorerst hier (eigenes Elchmoor kommt noch)
-        world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
+      { id: 'deerpark', name: tr('Hirsch- und Elchgehege', 'Deer and Moose Park'), species: ['deer', 'elk'], // Rehe und Elche wohnen zusammen
+        world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, quota: { deer: [6, 9], elk: [2, 3] }, upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
+      // Wildschweingehege links neben dem Reh-Gehege: durchwühlter Boden, Eiche und ein großes Schlammloch zum Suhlen (siehe Boar.js)
+      { id: 'boarpen', name: tr('Wildschweingehege', 'Wild Boar Enclosure'), species: ['boar'], world: 'forest', ground: ['boar_ground0', 'boar_ground1', 'boar_ground2'], seed: { tx: 4, ty: 40 }, slots: [4, 6], upgrade: tr('Kratzbaum und Schlammnest', 'Scratching post and mud nest'), basic: [] },
       { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
       { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish', 'beaver'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9], beaver: [3, 5] }, upgrade: tr('Mehr Platz für die Biber und ein größerer Teich mit Schilf, Pilzen und Farn', 'More room for the beavers and a bigger pond with reeds, mushrooms and ferns'), basic: [[18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.'], [12, 54, '{'], [13, 54, '{'], [14, 54, '{'], [15, 54, '{'], [16, 54, '{'], [17, 54, '{'], [18, 54, '{'], [19, 54, '{'], [20, 54, '{'], [21, 54, '{']] }, // vor dem Ausbau: Innenzaun in Zeile 54 (der Ausbau bringt zwei Reihen mehr für die Biber)
       { id: 'wolves', name: tr('Wolfswald', 'Wolf Woods'), species: ['wolf'], gate: 'tall', world: 'forest', unlock: 'wolves', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 6, ty: 30 }, slots: [6, 9], upgrade: tr('Heulfelsen', 'Howling rock'), basic: [[5, 28, '.']] },
-      { id: 'forestaviary', name: tr('Eichhörnchen-Voliere', 'Squirrel Aviary'), species: ['squirrel'], netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 25 }, slots: [5, 8], upgrade: tr('Zweiter Flügel mit Nistkasten', 'Second wing with a nest box'), basic: [[14, 32, ':'], [16, 33, '<'], [14, 30, '^'], [15, 30, '^'], [16, 30, '^'], [17, 30, '^']] },
+      { id: 'forestaviary', name: tr('Eichhörnchen- und Igel-Voliere', 'Squirrel and Hedgehog Aviary'), species: ['squirrel', 'hedgehog'], // Igel vorerst hier
+        netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 25 }, slots: [5, 8], upgrade: tr('Zweiter Flügel mit Nistkasten', 'Second wing with a nest box'), basic: [[14, 32, ':'], [16, 33, '<'], [14, 30, '^'], [15, 30, '^'], [16, 30, '^'], [17, 30, '^']] },
       { id: 'cats', name: tr('Katzenhaus', 'Cat House'), species: ['cat'], gate: 'glass', world: 'meadow', seed: { tx: 50, ty: 26 }, slots: [4, 6], upgrade: tr('Zweiter Kratzbaum', 'Second cat tree'), basic: [[52, 26, ':']] },
       { id: 'pasture', name: tr('Weide', 'Pasture'), species: ['sheep', 'mole'], world: 'meadow', seed: { tx: 40, ty: 34 }, quota: { sheep: [10, 14], mole: [3, 5] }, upgrade: tr('Mehr Weide mit Heu-Unterstand', 'More pasture with a hay shelter'), basic: [[42, 38, ':'], [41, 39, '<'], [49, 34, '|'], [49, 35, '|'], [49, 36, '|'], [49, 37, '|'], [49, 38, '|'], [49, 39, '|'], [49, 40, '|'], [49, 41, '|'], [49, 42, '|'], [49, 43, '|'], [49, 44, '|']] },
       { id: 'aviary', name: tr('Reiher-Voliere', 'Heron Aviary'), species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 47, ty: 55 }, slots: [6, 9], upgrade: tr('Zweiter Flügel mit Nistkasten und Wasserstelle', 'Second wing with a nest box and a water hole'), basic: [[50, 49, ';'], [50, 50, ';'], [50, 51, ';'], [50, 52, ';'], [50, 53, ';'], [50, 54, ';'], [50, 55, ';'], [50, 56, ';'], [50, 57, ';'], [51, 54, '.'], [51, 55, '.']] }, // vor dem Ausbau: Netz zwischen den Flügeln

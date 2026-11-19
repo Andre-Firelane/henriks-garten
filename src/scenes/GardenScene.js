@@ -107,6 +107,8 @@ import Hippo from '../animals/Hippo.js';
 import Tapir from '../animals/Tapir.js';
 import Okapi from '../animals/Okapi.js';
 import Elk from '../animals/Elk.js';
+import Hedgehog, { leafPiles } from '../animals/Hedgehog.js';
+import Boar from '../animals/Boar.js';
 import Tanuki from '../animals/Tanuki.js';
 import Yak, { BRUSHES_NEEDED } from '../animals/Yak.js';
 import SnowLeopard from '../animals/SnowLeopard.js';
@@ -171,6 +173,7 @@ import BrushTool from '../tools/BrushTool.js';
 import LeafTool from '../tools/LeafTool.js';
 import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
 import LanternTool, { LANTERN_GLOW, GLOW_DEPTH } from '../tools/LanternTool.js';
+import AcornTool from '../tools/AcornTool.js';
 import { lanternLight } from '../world/MoorFog.js';
 import BallTool from '../tools/BallTool.js';
 import TreatTool from '../tools/TreatTool.js';
@@ -203,7 +206,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'elk', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -238,6 +241,8 @@ const CATCH_TIPS = {
   butterfly: tr('Auf der Wiese bei den Blumen. Im Flug sind sie scheu – sitzt einer auf einer Blüte, schleich dich an und nimm den Kescher! Im Tierpark flattern sie frei herum.', 'On the meadow near the flowers. In flight they are shy – when one sits on a blossom, sneak up and use the net! In your zoo they flutter around freely.'),
   hippo: tr('Nur bei Starkregen in der Savanne. Im Wasser siehst du nur Augen und Ohren – warte, bis es zum Grasen ans Ufer kommt, und fang es mit dem Lasso, bevor es zurück ins Wasser trottet.', 'Only during heavy rain in the savanna. In the water you only see eyes and ears – wait until it comes ashore to graze and catch it with the lasso before it trots back into the water.'),
   tapir: tr('Im Dschungel am Fluss. Meist grast er lange am Ufer – kommst du mit leeren Händen, trottet er zurück ins Wasser. Brich am Futterstrauch einen Blätterzweig ab: Mit dem Zweig in der Hand bleibt er stehen, und du kannst ihn füttern.', 'In the jungle by the river. It usually grazes on the bank for a long time – if you come empty-handed, it trots back into the water. Break a leafy branch off a fodder bush: with the branch in your hand it stays put and you can feed it.'),
+  hedgehog: tr('Im Wald, vor allem im Eichenhain. Er versteckt sich in einem Laubhaufen – raschelt einer, sitzt ein Igel darin. Schüttel Eicheln aus einer großen Eiche und leg sie direkt daneben: Dann kommt er heraus und frisst. Jetzt mit dem Kescher fangen oder einfach berühren!', 'In the forest, mostly in the oak grove. It hides in a leaf pile – if one rustles, a hedgehog is inside. Shake acorns from a big oak and put them right next to it: it comes out and eats. Now catch it with the net or just touch it!'),
+  boar: tr('Im Eichenhain. Es ist scheu und rennt weg, wenn du zu nah kommst. Schüttel Eicheln aus einer großen Eiche und leg sie hin: Das Wildschwein trottet herbei und wühlt danach – jetzt das Lasso! Mit Glück ist es eine Bache, dann laufen ihr die Frischlinge hinterher.', 'In the oak grove. It is shy and runs away if you get too close. Shake acorns from a big oak and put them down: the wild boar trots over and roots for them – now the lasso! With luck it is a sow, and her piglets trot along behind her.'),
   elk: tr('Im Moor im Wald. Im Nebel siehst du nur seinen Schatten im Wasser. Hol die Moorlaterne aus der Hütte und stell sie ans Ufer – dann watet er neugierig ins Licht. Jetzt siehst du ihn: schnell das Lasso!', 'In the moor in the forest. In the fog you only see its shadow in the water. Get the moor lantern from the hut and put it down at the shore – it wades curiously into the light. Now you can see it: quick, the lasso!'),
   okapi: tr('Im Dschungel. Es ist scheu und rennt erst ein Stück weg – aber es ist auch neugierig: Lauf ihm nach, mit jedem Mal wird es mutiger und bleibt irgendwann stehen. Dann füttere es mit einem Blätterzweig vom Futterstrauch.', 'In the jungle. It is shy and first runs off a little way – but it is curious too: follow it, every time it gets braver until it stays put. Then feed it a leafy branch from a fodder bush.'),
   hyena: tr('Nur in der Trockenzeit in der Savanne, am Elefantenfriedhof oben rechts. Hörst du sie dort kichern, streu Knochen aus der Hütte – dann kommen sie. Solange sie fressen, fängst du sie mit dem Lasso.', 'Only in the dry season in the savanna, at the elephant graveyard in the top right. When you hear them giggle there, scatter bones from the hut – then they come. While they eat, catch them with the lasso.'),
@@ -337,6 +342,8 @@ const ANIMAL_INFO = {
   butterfly: tr(['Schmetterling', 'Keine Spuren – ein Schmetterling flattert und landet nur auf Blüten.'], ['Butterfly', 'No tracks – a butterfly flutters and only lands on blossoms.']),
   hippo: tr(['Nilpferd', 'Vier dicke Zehen an jedem Fuß – im Schlamm am Wasserloch sieht man die runden Abdrücke.'], ['Hippo', 'Four thick toes on each foot – you can see the round prints in the mud at the waterhole.']),
   tapir: tr(['Flachlandtapir', 'Seine kurze Nase ist ein kleiner Rüssel: damit pflückt er Blätter und Früchte. Bei Gefahr taucht er unter und läuft sogar über den Grund des Flusses.'], ['Lowland tapir', 'Its short nose is a little trunk: it uses it to pick leaves and fruit. When in danger, it dives and even walks along the bottom of the river.']),
+  boar: tr(['Wildschwein', 'Paarhufer mit zwei Afterklauen hinten, die man im weichen Boden mit abgedrückt sieht. Wo Wildschweine nach Eicheln gewühlt haben, sieht der Waldboden umgepflügt aus.'], ['Wild boar', 'Even-toed hoofs with two dewclaws behind them that show up in soft ground. Where wild boars have rooted for acorns, the forest floor looks ploughed.']),
+  hedgehog: tr(['Igel', 'Fünf Zehen mit kleinen Krallen, die Spur sieht aus wie winzige Hände. Nachts trippelt er weit herum und schnüffelt nach Käfern und Würmern.'], ['Hedgehog', 'Five toes with small claws – the tracks look like tiny hands. At night it trots far and wide, sniffing for beetles and worms.']),
   elk: tr(['Elch', 'Paarhufer mit breiten, spreizbaren Hufen – wie Schneeschuhe tragen sie ihn über Moor und Schlamm, ohne einzusinken.'], ['Moose', 'Even-toed hoofs that spread wide – like snowshoes they carry it over bog and mud without sinking in.']),
   okapi: tr(['Okapi', 'Es sieht aus wie ein Zebra, ist aber der einzige Verwandte der Giraffe – mit seiner langen blauen Zunge kann es sich sogar die Ohren putzen.'], ['Okapi', 'It looks like a zebra, but it is the only relative of the giraffe – with its long blue tongue it can even clean its own ears.']),
   hyena: tr(['Hyäne', 'Vier Zehen mit stumpfen Krallen, die Vorderpfoten größer als die hinteren.'], ['Hyena', 'Four toes with blunt claws, the front paws larger than the back ones.']),
@@ -386,6 +393,9 @@ const ANIMAL_INFO = {
 // Falle: wie lange es dauert, bis ein Tier hineingeht, und aus welcher Umgebung Tiere kommen
 const TRAP_TIME = [10, 90]; // Sekunden (zufällig)
 const TRAP_RETRY = [10, 30]; // war kein Tier in der Nähe, nach so vielen Sekunden erneut versuchen
+const TRAP_TIME_SMALL = [6, 18]; // ... auf den kleinen Maps (Expedition, hinter Durchgängen) schnappt sie schneller zu
+const TRAP_RETRY_SMALL = [4, 8];
+const smallMap = () => !!LEVEL.expedition && !LEVEL.camp;
 const TRAP_RADIUS = 360; // etwa 8 Kacheln
 const TRAP_PICKUP_DIST = 24;
 const HAND_DIST = 18; // so nah muss man an den "Hände frei"-Platz (wie bei Werkzeugen)
@@ -477,7 +487,7 @@ const WILD_SILENT = [
   'howler', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
 ];
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
-const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
+const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig', boar: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -548,6 +558,15 @@ const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
 const REEF_GROUP = [2, 5]; // ... die anderen in Gruppen dieser Größe (eine Art)
 const MAX_TANUKIS = 2; // so viele Tanukis sind höchstens gleichzeitig verkleidet
 const MAX_ELKS = 2; // so viele Elche stehen höchstens gleichzeitig im Moor
+const MAX_HEDGEHOGS = 3; // so viele Igel sitzen höchstens gleichzeitig in den Laubhaufen
+const NUT_PLACE = 60; // so nah an einem Laubhaufen muss man die Eicheln ablegen, damit sie für den Igel sind
+const MAX_BOARS = 2; // so viele Wildschweine (bzw. Bachen) streifen höchstens gleichzeitig durch den Eichenhain
+const OAK_SHAKE_DIST = 72; // so nah (Höhe doppelt gezählt) an einer Eiche kann man sie schütteln (auch wenn daneben ein Busch oder Laubhaufen steht)
+const OAK_HINT_DIST = 260; // so nah muss Henrik an einer Eiche sein, damit über ihr die Eichel-Blase erscheint ...
+const OAK_HINT_UP = 118; // ... so hoch über ihrem Fuß (über der Krone)
+const LANTERN_TAKE = 34; // so nah (Höhe doppelt gezählt) muss Henrik an die abgestellte Laterne, um sie aufzuheben ...
+const LANTERN_ARM = 70; // ... nachdem er sich einmal so weit entfernt hat ...
+const LANTERN_COOLDOWN = 2000; // ... und frühestens so lange (ms) nach dem Abstellen
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
 const MAX_JAGUARS = 1; // so viele Jaguare schlafen höchstens gleichzeitig in den Urwaldbäumen
 const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
@@ -712,6 +731,13 @@ const TOOLS = {
     catches: ['yak'],
     hint: tr(`Bürste den ${animalIcon('yak')} dreimal, während er am Salzstein leckt`, `Brush the ${animalIcon('yak')} three times while it licks the salt`),
   },
+  // Eicheln (Wald): aus einer großen Eiche geschüttelt; neben einen Laubhaufen gelegt locken sie den Igel heraus, sonst die
+  // Wildschweine (siehe AcornTool.js). Kommen nicht ins Regal
+  acorns: {
+    create: (scene, player) => new AcornTool(scene, player),
+    name: tr('Eicheln', 'Acorns'),
+    hint: tr(`Schüttel sie aus einer großen Eiche. Neben einen raschelnden Laubhaufen gelegt kommt der ${animalIcon('hedgehog')} heraus, sonst trottet ein ${animalIcon('boar')} herbei`, `Shake them from a big oak. Put next to a rustling leaf pile, the ${animalIcon('hedgehog')} comes out – otherwise a ${animalIcon('boar')} trots over`),
+  },
   // Moorlaterne (Wald): leuchtet den Moornebel weg; abgestellt lockt sie die Elche ins Licht (siehe LanternTool.js)
   lantern: {
     create: (scene, player) => new LanternTool(scene, player),
@@ -734,7 +760,7 @@ const TOOLS = {
 };
 
 // Köder: locken diese Tiere an (gefangen werden sie dann mit dem Lasso oder sie folgen von selbst)
-const TOOL_LURES = { lantern: ['elk'], ball: ['tiger'], banana: ['howler'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
+const TOOL_LURES = { acorns: ['hedgehog', 'boar'], lantern: ['elk'], ball: ['tiger'], banana: ['howler'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
 // alle Tierarten, die man mit diesem Werkzeug fängt oder lockt (null: mit leeren Händen, also durch Berühren)
 // (aus den Tierarten selbst, catchWith in Animal.js – dazu, was das Werkzeug selbst aufzählt)
 const toolAnimals = (id) => {
@@ -1214,7 +1240,9 @@ export default class GardenScene extends Phaser.Scene {
       this.spawnAnimals(arrive);
     }
     // Biber am Fluss: Damm, Stöcke und die Kolonie an den angenagten Bäumen (wilde Biber werden nicht gespeichert)
-    this.beaverDam = LEVEL.beavers ? new BeaverDam(this, LEVEL.beavers) : null;
+    // (Expedition: nur, wenn Biber auf der Tierliste stehen; dann so viele, wie noch frei sind)
+    const beavers = this.expMap ? (LEVEL.beavers && expRun()?.left?.beaver ? { ...LEVEL.beavers, count: () => expRun()?.left?.beaver ?? 0 } : null) : LEVEL.beavers;
+    this.beaverDam = beavers ? new BeaverDam(this, beavers) : null;
     this.beaverDam?.fill(true);
     // Yak-Herde auf der Hochebene: Steinhaufen, Salzstein und die Herde (wilde Yaks werden nicht gespeichert)
     // (Expedition: so viele Yaks, wie auf der Tierliste noch frei sind)
@@ -1223,6 +1251,8 @@ export default class GardenScene extends Phaser.Scene {
     this.yakHerd?.fill(true);
     // Futtersträucher, wo Tapire oder Okapis leben (Dschungel, Expeditions-Maps, Maps hinter den Durchgängen)
     this._leafTiles = null;
+    this.oaks = null; // Eichen zum Schütteln: je Map neu suchen (siehe oakNear)
+    this.nearOak = null;
     this.leafBushes = this.leafBushTiles().length ? new LeafBushes(this, this.leafBushTiles()) : null;
     this.nearBush = null;
     this.stashedTool = null;
@@ -1297,6 +1327,9 @@ export default class GardenScene extends Phaser.Scene {
     this.yakHintEl = document.getElementById('yak-hint');
     this.yakHintEl.classList.remove('show');
     this.yakHintFor = null;
+    this.oakHintEl = document.getElementById('oak-hint');
+    this.oakHintEl.classList.remove('show');
+    this.oakHintFor = null;
     this.encounterEl.classList.remove('show');
     this.encounterAnimal = null;
     this.encounterTimer = 0;
@@ -1463,6 +1496,14 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearDam && this.toolId === 'stick' && !this.leaving) {
         this.fixDam(); // am Biberdamm: Stock ins Loch
+        return;
+      }
+      if (this.nearOak && !this.leaving) {
+        this.shakeOak(this.nearOak); // an der Eiche: Eicheln herunterschütteln
+        return;
+      }
+      if (this.nearLantern && !this.leaving) {
+        this.equipTool('lantern'); // abgestellte Moorlaterne wieder aufheben (das Werkzeug in der Hand kommt zurück in die Kiste)
         return;
       }
       if (this.nearStick && this.toolId !== 'stick' && !this.leaving) {
@@ -2020,6 +2061,10 @@ export default class GardenScene extends Phaser.Scene {
           ? new Okapi(this, x, y)
         : species === 'elk'
           ? new Elk(this, x, y)
+        : species === 'hedgehog'
+          ? new Hedgehog(this, x, y)
+        : species === 'boar'
+          ? new Boar(this, x, y)
         : species === 'tanuki'
           ? new Tanuki(this, x, y)
         : species === 'yak'
@@ -2203,6 +2248,23 @@ export default class GardenScene extends Phaser.Scene {
       a.placeInWater();
       a.unplaced = false;
       return this.finishSpawn([a], false);
+    }
+    // Wildschweine streifen durch den Eichenhain (höchstens MAX_BOARS gleichzeitig, siehe Boar.js)
+    if (species === 'boar') {
+      if (!this.expMap && this.animals.filter((a) => a.species === 'boar' && a.state === 'wild').length >= MAX_BOARS) return group;
+      const tile = this.tileIn(LEVEL.boarArea, taken);
+      if (!tile) return group;
+      taken.push(tile);
+      const p = tileToWorld(tile.tx, tile.ty);
+      return this.finishSpawn([this.createAnimal('boar', p.x, p.y)], fadeIn);
+    }
+    // Igel sitzen versteckt in den Laubhaufen (höchstens MAX_HEDGEHOGS gleichzeitig, siehe Hedgehog.js)
+    if (species === 'hedgehog') {
+      if (!this.expMap && this.animals.filter((a) => a.species === 'hedgehog' && a.state === 'wild').length >= MAX_HEDGEHOGS) return group;
+      const [a] = this.finishSpawn([this.createAnimal('hedgehog', 0, 0)], false);
+      if (a.hideSomewhere()) return [a];
+      this.despawn(a);
+      return group;
     }
     // Tanukis stehen verkleidet neben Steinlaternen (höchstens MAX_TANUKIS gleichzeitig); erst die Variante würfeln
     // (finishSpawn), dann verkleiden: der Schwanz hat die Farbe des Fells
@@ -3436,6 +3498,16 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/salttool.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Salzstein aufheben', 'Pick up the salt lick')}</span></div>`;
       return;
     }
+    if (this.nearOak) {
+      setTouchTool(null, 'assets/acorns.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/acorns.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Eicheln schütteln', 'Shake down acorns')}</span></div>`;
+      return;
+    }
+    if (this.nearLantern) {
+      setTouchTool(null, 'assets/lantern.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/lantern.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Laterne aufheben', 'Pick up the lantern')}</span></div>`;
+      return;
+    }
     if (this.nearStick && this.toolId !== 'stick') {
       setTouchTool(null, 'assets/forest_stick.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/forest_stick.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Stock aufheben', 'Pick up the stick')}</span></div>`;
@@ -3891,7 +3963,7 @@ export default class GardenScene extends Phaser.Scene {
       x = p.x;
       y = p.y;
     }
-    const t = { id: game.nextTrapId++, level: LEVEL_ID, x, y, timer: Phaser.Math.FloatBetween(...TRAP_TIME), caught: false, armed: false };
+    const t = { id: game.nextTrapId++, level: LEVEL_ID, x, y, timer: Phaser.Math.FloatBetween(...(smallMap() ? TRAP_TIME_SMALL : TRAP_TIME)), caught: false, armed: false };
     game.traps.push(t);
     this.traps.set(t.id, new Trap(this, x, y));
     this.tool.destroy();
@@ -4009,7 +4081,7 @@ export default class GardenScene extends Phaser.Scene {
       return d < TRAP_RADIUS ? [{ a, w: kind.trapWeight * (1 - d / TRAP_RADIUS) ** 2 }] : [];
     });
     if (!candidates.length) {
-      t.timer = Phaser.Math.FloatBetween(...TRAP_RETRY);
+      t.timer = Phaser.Math.FloatBetween(...(here && smallMap() ? TRAP_RETRY_SMALL : TRAP_RETRY));
       return;
     }
     let r = Math.random() * candidates.reduce((s, c) => s + c.w, 0);
@@ -4223,6 +4295,42 @@ export default class GardenScene extends Phaser.Scene {
     const z = this.scale.zoom;
     el.style.left = `${(target.x - cam.worldView.x) * cam.zoom * z}px`;
     el.style.top = `${(target.y - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
+  // Eichenhain: über der nächsten großen Eiche schwebt eine Blase mit Eicheln – dort kann man sie herunterschütteln. Nur
+  // solange man noch nicht beide Tiere gefangen hat, die man mit Eicheln lockt (Igel und Wildschwein), und nicht, wenn
+  // Henrik schon Eicheln in der Hand hat. Antippen zeigt den Fang-Tipp
+  updateOakHint() {
+    const el = this.oakHintEl;
+    const p = this.player;
+    let what = null;
+    if (LEVEL.boarArea && !this.leaving && this.toolId !== 'acorns' && !(caughtBefore('boar') && caughtBefore('hedgehog'))) {
+      let best = OAK_HINT_DIST;
+      for (const o of this.oakList()) {
+        if (o.tx >= MAP_W - 1 || o.ty >= MAP_H - 1) continue; // nicht am Kartenrand (dort kommt man nicht hin)
+        const d = Math.hypot(o.x - p.x, (o.y - p.y) * 2);
+        if (d < best) {
+          best = d;
+          what = o;
+        }
+      }
+    }
+    if (what !== this.oakHintFor) {
+      this.oakHintFor = what;
+      if (what) {
+        el.innerHTML = '<img src="assets/acorns.png" alt="">';
+        el.onclick = (e) => {
+          e.stopPropagation();
+          this.showCatchTip(caughtBefore('boar') ? 'hedgehog' : 'boar');
+        };
+      }
+      el.classList.toggle('show', !!what);
+    }
+    if (!what) return;
+    const cam = this.cameras.main;
+    const z = this.scale.zoom;
+    el.style.left = `${(what.x - cam.worldView.x) * cam.zoom * z}px`;
+    el.style.top = `${(what.y - OAK_HINT_UP - cam.worldView.y) * cam.zoom * z}px`;
   }
 
   // großen Stock aufheben: das getragene Werkzeug steckt Henrik so lange ein (es kommt nach dem Damm zurück)
@@ -5105,6 +5213,87 @@ export default class GardenScene extends Phaser.Scene {
     this.updateToolbar();
   }
 
+  // Eicheln vor sich ablegen: direkt neben einem Laubhaufen für den Igel (danach der Kescher, siehe Hedgehog.js), sonst für
+  // die Wildschweine (danach das Lasso, siehe Boar.js)
+  placeAcorns() {
+    const p = this.player;
+    const x = p.x + p.faceX * 16;
+    const y = p.y + p.faceY * 8;
+    const pile = leafPiles(this).some((l) => Math.hypot(x - l.x, (y - l.y) * 2) < NUT_PLACE);
+    const acorns = new Pickup(this, x, y, 'acorns', 'acorns', false);
+    acorns.temporary = true; // wird nicht gespeichert
+    acorns.forHedgehog = pile; // (dann wühlen keine Wildschweine darin)
+    this.pickups.push(acorns);
+    this.acornsAt = this.time.now;
+    this.tool.destroy(); // die Eicheln liegen jetzt am Boden (nicht zurück in die Kiste)
+    this.tool = null;
+    this.toolId = null;
+    this.equipTool(pile ? 'net' : 'lasso');
+  }
+
+  // An einer großen Eiche schütteln: die Krone wackelt, Eicheln prasseln herunter, Henrik hat eine Handvoll in der Hand
+  shakeOak(oak) {
+    this.oakShakeAt = this.time.now;
+    const img = this.sway.plants.get(`${oak.tx},${oak.ty}`)?.img;
+    if (img) {
+      this.tweens.killTweensOf(img);
+      this.tweens.add({ targets: img, angle: { from: -2.5, to: 2.5 }, duration: 90, yoyo: true, repeat: 3, onComplete: () => img.setAngle(0) });
+    }
+    for (let i = 0; i < 9; i++) {
+      const sx = oak.x + Phaser.Math.Between(-34, 34), sy = oak.y - Phaser.Math.Between(50, 90);
+      const nut = this.add.ellipse(sx, sy, 3.2, 4, 0xb48042).setStrokeStyle(0.8, 0x5a3c1e).setDepth(oak.y + 2);
+      this.tweens.add({ targets: nut, y: oak.y + Phaser.Math.Between(-6, 12), x: sx + Phaser.Math.Between(-6, 6), delay: Phaser.Math.Between(0, 250), duration: Phaser.Math.Between(380, 520), ease: 'Quad.easeIn', onComplete: () => this.tweens.add({ targets: nut, alpha: 0, delay: 300, duration: 300, onComplete: () => nut.destroy() }) });
+    }
+    if (this.cache.audio.exists('whoosh')) this.sound.play('whoosh', { volume: 0.25, rate: 0.7 });
+    this.time.delayedCall(450, () => this.equipTool('acorns'));
+  }
+
+  // alle großen Eichen der Karte (einmal je Map)
+  oakList() {
+    if (!this.oaks) {
+      this.oaks = [];
+      for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) if (charAt(tx, ty) === 'Ø') this.oaks.push({ tx, ty, ...tileToWorld(tx, ty) });
+    }
+    return this.oaks;
+  }
+
+  // die nächste große Eiche, an der Henrik gerade schütteln kann (oder null) – jede Eiche, in jedem Gebiet
+  oakNear(p) {
+    const oaks = this.oakList();
+    if (!oaks.length || this.toolId === 'acorns' || this.time.now - (this.oakShakeAt ?? -1e9) < 1500 || this.time.now - (this.acornsAt ?? -1e9) < 2000) return null;
+    // fängt Henrik gerade ein Tier, das an Eicheln frisst, geht der Wurf vor
+    if (this.animals.some((a) => (a.species === 'boar' || a.species === 'hedgehog') && a.canBeCaughtNow() && Math.hypot(a.x - p.x, (a.y - p.y) * 2) < 200)) return null;
+    let best = null;
+    let bestD = OAK_SHAKE_DIST;
+    for (const o of oaks) {
+      const d = Math.hypot(o.x - p.x, (o.y - p.y) * 2);
+      if (d < bestD) {
+        best = o;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  // freie Kachel in einem Rechteck (z. B. dem Eichenhain für die Wildschweine), mit Abstand zu "taken"
+  tileIn(a, taken) {
+    if (!a) return null;
+    for (let i = 0; i < 60; i++) {
+      const tx = Phaser.Math.Between(a.tx0, a.tx1), ty = Phaser.Math.Between(a.ty0, a.ty1);
+      if (isBlocked(tx, ty) || charAt(tx, ty) !== '.') continue;
+      if (taken.some((t) => Math.max(Math.abs(t.tx - tx), Math.abs(t.ty - ty)) < 3)) continue;
+      return { tx, ty };
+    }
+    return null;
+  }
+
+  // ein Igel oder Wildschwein hat die Eicheln aufgefressen
+  eatAcorns(nuts) {
+    nuts.collected = true;
+    this.tweens.killTweensOf(nuts.sprite);
+    this.tweens.add({ targets: [nuts.sprite, nuts.shadow], alpha: 0, duration: 400, onComplete: () => { nuts.sprite.destroy(); nuts.shadow.destroy(); } });
+  }
+
   // Moorlaterne vor sich abstellen: sie leuchtet dort weiter (Nebel weg, lockt die Elche, siehe Elk.js); danach das Lasso
   placeLantern() {
     const p = this.player;
@@ -5116,7 +5305,7 @@ export default class GardenScene extends Phaser.Scene {
       this.add.image(x, y, 'lantern').setOrigin(0.5, 0.92).setScale(0.42).setDepth(y),
       this.add.image(x, y - 14, glowTexture(this)).setBlendMode(Phaser.BlendModes.ADD).setTint(LANTERN_GLOW).setScale(1.3).setDepth(GLOW_DEPTH),
     ];
-    this.lantern = { x, y, imgs };
+    this.lantern = { x, y, imgs, placedAt: this.time.now };
     this.tool.destroy(); // die Laterne steht jetzt am Boden (nicht zurück in die Kiste) ...
     this.tool = null;
     this.toolId = null;
@@ -5159,9 +5348,10 @@ export default class GardenScene extends Phaser.Scene {
 
   // Wolfsnacht im Wald: beginnt bzw. endet mit dem Event (auch wenn man schon im Wald ist)
   updateWolfNight(dt) {
-    const on = LEVEL_ID === 'forest' && isActive('wolves');
+    const exp = this.expWolfNight(); // Expedition: Event-Karte (ein kleines Rudel je Wolf auf der Tierliste)
+    const on = (LEVEL_ID === 'forest' && isActive('wolves')) || exp;
     if (on && !this.wolfNight) {
-      this.wolfNight = new WolfNight(this);
+      this.wolfNight = new WolfNight(this, exp ? { packs: () => expRun()?.left?.wolf ?? 0, size: EXP_GROUP, leave: true } : {});
       this.startAmbient(); // Wald bei Nacht
     }
     if (!on && this.wolfNight) {
@@ -5596,6 +5786,10 @@ export default class GardenScene extends Phaser.Scene {
     if (home.howler) lines.push(tr(`${animalIcon('howler')} Brüllaffen sitzen unsichtbar oben in den Bäumen – wo die Krone raschelt, leg eine Banane unter den Baum.`, `${animalIcon('howler')} Howler monkeys sit unseen high up in the trees – where a crown rustles, put a banana at the foot of the tree.`));
     if (this.expFireflies()) lines.push(tr(`✨ Glühwürmchen-Abend! Fang mit dem Glas aus der Kiste 3 Glühwürmchen – das leuchtende Glas lockt die ${animalIcon('redpanda')} aus den Kirschbäumen.`, `✨ Firefly evening! Catch 3 fireflies with the jar from the chest – the glowing jar lures the ${animalIcon('redpanda')} down from the cherry trees.`));
     if (home.yak) lines.push(tr(`🧂 Die ${animalIcon('yak')} grasen am Steinhaufen – such den Salzstein und leg ihn darauf.`, `🧂 The ${animalIcon('yak')} graze by the cairn – find the salt lick and put it on top.`));
+    if (this.expWolfNight()) lines.push(tr(`🐺 Wolfsnacht! Folge den leuchtenden Spuren zu den ${animalIcon('wolf')}. Heulen sie, darfst du laufen – schauen sie sich um, bleib stehen!`, `🐺 Wolf Night! Follow the glowing tracks to the ${animalIcon('wolf')}. While they howl you may walk – when they look around, stand still!`));
+    if (home.elk) lines.push(tr(`🏮 Die ${animalIcon('elk')} stehen im Nebel über dem Moorwasser – stell die Laterne aus der Kiste ans Ufer, dann kommen sie ins Licht.`, `🏮 The ${animalIcon('elk')} stand in the fog over the bog water – put the lantern from the chest by the shore and they come into the light.`));
+    if (home.hedgehog || home.boar) lines.push(tr('🌰 Schüttel Eicheln aus einer großen Eiche – damit lockst du Igel aus den Laubhaufen und Wildschweine zum Fressen.', '🌰 Shake acorns from a big oak – they lure hedgehogs out of the leaf piles and wild boars to feed.'));
+    if (home.beaver && LEVEL.beavers) lines.push(tr(`🪵 Im Biberdamm ist ein Loch – steck einen großen Stock hinein, dann kommt ein ${animalIcon('beaver')} mit.`, `🪵 There is a hole in the beaver dam – push a big stick into it and a ${animalIcon('beaver')} comes along.`));
     if (home.snake || home.tarantula) lines.push(tr('🌿 Schlangen und Vogelspinnen verstecken sich im Dickicht – wo es raschelt, schlag es frei.', '🌿 Snakes and tarantulas hide in the thicket – where it rustles, cut it away.'));
     return lines.map((l) => `<br><small>${l}</small>`).join('');
   }
@@ -5611,9 +5805,9 @@ export default class GardenScene extends Phaser.Scene {
     const need = new Set(['net', 'lasso']);
     for (const sp of species) {
       for (const t of SPECIES[sp]?.catchWith ?? []) if (TOOLS[t] && !CARRIED.includes(t)) need.add(t); // (den Blätterzweig gibt es am Strauch)
-      for (const [t, list] of Object.entries(TOOL_LURES)) if (list.includes(sp) && TOOLS[t] && t !== 'glowjar') need.add(t); // (das leuchtende Glas entsteht erst aus dem Glas)
+      for (const [t, list] of Object.entries(TOOL_LURES)) if (list.includes(sp) && TOOLS[t] && t !== 'glowjar' && t !== 'acorns') need.add(t); // (das leuchtende Glas entsteht erst aus dem Glas, Eicheln schüttelt man aus den Eichen)
     }
-    const order = ['net', 'lasso', 'rod', 'drum', 'food', 'banana', 'bone', 'ball', 'koifood', 'fireflyjar'];
+    const order = ['net', 'lasso', 'trap', 'lantern', 'rod', 'drum', 'food', 'banana', 'bone', 'ball', 'koifood', 'fireflyjar'];
     return [...need].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
   }
 
@@ -5747,6 +5941,11 @@ export default class GardenScene extends Phaser.Scene {
   // läuft auf dieser Map das Event der Event-Karte? (Große Wanderung auf der Gnu-Furt)
   expEvent() {
     return !!(this.expMap && LEVEL.migration && expRun()?.event === LEVEL_ID);
+  }
+
+  // ... bzw. die Wolfsnacht (Wald: Waldwiese, Felsenschlucht)
+  expWolfNight() {
+    return !!(this.expMap && LEVEL.wolfNight && expRun()?.event === LEVEL_ID);
   }
 
   // Ist hier gerade Glühwürmchen-Abend? Im Bambuswald und hinter seinen Durchgängen (Maps mit Kirschbäumen) beim Event,
@@ -6151,6 +6350,9 @@ export default class GardenScene extends Phaser.Scene {
     if (c.kind === 'event' && LEVELS[c.map]?.fireflies) {
       return { icon: animalIcon('redpanda', 3), title: tr('Glühwürmchen-Abend', 'Firefly Evening'), text: tr('Es wird Abend, Glühwürmchen schweben umher – rote Pandas sitzen in den Kirschbäumen!', 'Evening falls and fireflies drift about – red pandas sit in the cherry trees!') + where, color: '#7a5ad0', tag: tr('Event', 'Event') };
     }
+    if (c.kind === 'event' && LEVELS[c.map]?.wolfNight) {
+      return { icon: animalIcon('wolf', 3), title: tr('Wolfsnacht', 'Wolf Night'), text: tr('Es wird Nacht im Wald – Wolfsrudel ruhen auf den Lichtungen. Folge ihren leuchtenden Spuren!', 'Night falls in the forest – wolf packs rest in the clearings. Follow their glowing tracks!') + where, color: '#3a4a8a', tag: tr('Event', 'Event') };
+    }
     if (c.kind === 'event') {
       return { icon: animalIcon('gnu', 3), title: tr('Große Wanderung', 'Great Migration'), text: tr('Eine riesige Gnu-Herde zieht vorbei – fang ein Gnu!', 'A huge herd of wildebeest passes by – catch one!') + where, color: '#d07a2a', tag: tr('Event', 'Event') };
     }
@@ -6244,7 +6446,7 @@ export default class GardenScene extends Phaser.Scene {
   ambientKey() {
     if ((LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent?.()) return 'ambient_migration';
     if (this.fireflyEvening?.()) return 'ambient_forest_night'; // Glühwürmchen-Abend: Abendgeräusche
-    return LEVEL_ID === 'forest' && isActive('wolves') ? 'ambient_forest_night' : LEVEL.ambient;
+    return (LEVEL_ID === 'forest' && isActive('wolves')) || this.expWolfNight() ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
   // Level verlassen: Stand merken, folgende Tiere mitnehmen. Jedes Level hat seine eigenen Werkzeuge:
@@ -6684,6 +6886,28 @@ export default class GardenScene extends Phaser.Scene {
         this.updateToolbar();
       }
     }
+    // an einer großen Eiche (überall, wo eine steht): die Aktionstaste schüttelt Eicheln herunter
+    if (this.oakList().length) {
+      const oak = this.oakNear(p0);
+      if (oak !== this.nearOak) {
+        this.nearOak = oak;
+        this.updateToolbar();
+      }
+    }
+    // abgestellte Moorlaterne: erst nach einer kurzen Pause und wenn Henrik einmal weggegangen ist (sonst nähme der nächste
+    // Lassowurf sie gleich wieder auf), dann nah dran mit der Aktionstaste aufheben
+    if (this.lantern) {
+      const d = Math.hypot(p0.x - this.lantern.x, (p0.y - this.lantern.y) * 2);
+      if (d > LANTERN_ARM && this.time.now > this.lantern.placedAt + LANTERN_COOLDOWN) this.lantern.armed = true;
+      const near = !!this.lantern.armed && d < LANTERN_TAKE;
+      if (near !== !!this.nearLantern) {
+        this.nearLantern = near;
+        this.updateToolbar();
+      }
+    } else if (this.nearLantern) {
+      this.nearLantern = false;
+      this.updateToolbar();
+    }
     // Yak-Herde: Salzstein aufheben, auf den Steinhaufen legen, das leckende Yak bürsten
     if (this.yakHerd) {
       this.yakHerd.update(dt);
@@ -6786,6 +7010,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateEncounter(dt);
     this.updateBeaverHint();
     this.updateYakHint();
+    this.updateOakHint();
     this.checkWrongHome(dt);
 
     // Tiere, die zuhause angekommen sind, folgen nicht mehr

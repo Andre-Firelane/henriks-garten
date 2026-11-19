@@ -14,7 +14,7 @@ export const HD = [
   'forest_anemones', 'forest_violets', 'forest_cave', 'forest_stand', 'forest_bat0', 'forest_bat1', 'forest_bird', 'forest_bird_fly0', 'forest_bird_fly1', 'forest_log_bridge', 'forest_river_rock', 'forest_foam0', 'forest_foam1', 'forest_bridge', 'forest_bridge_front', 'forest_moss0', 'forest_moss1',
   'forest_cliff', 'forest_waterfall',
   'forest_beaver_dam', 'forest_beaver_dam_hole', 'forest_stick', 'forest_gnawed_tree', 'forest_beaver_lodge', 'forest_dark_soil',
-  'forest_birch', 'forest_cottongrass', 'forest_oak', 'forest_leafpile', 'forest_toadstools', 'forest_boardwalk', 'forest_moor0', 'forest_moor1', 'forest_moor2', 'forest_leaves0', 'forest_leaves1', 'forest_leaves2', 'forest_moor_water', 'forest_mud', 'forest_bogtree', 'forest_bogtree2',
+  'forest_birch', 'forest_cottongrass', 'forest_oak', 'forest_leafpile', 'forest_toadstools', 'forest_boardwalk', 'forest_moor0', 'forest_moor1', 'forest_moor2', 'forest_leaves0', 'forest_leaves1', 'forest_leaves2', 'forest_moor_water', 'forest_mud', 'forest_bogtree', 'forest_bogtree2', 'acorns', 'wallow', 'boar_ground0', 'boar_ground1', 'boar_ground2',
   'hutwall_forest_x', 'hutwall_forest_y', 'post_hutwall_forest', 'gate_door_forest_x', 'gate_door_forest_y', 'hutroof_forest',
   'hut_desk_forest', 'hut_chair_forest', 'hut_plant_forest', 'hut_shelf_forest', 'trap',
   // Wiese

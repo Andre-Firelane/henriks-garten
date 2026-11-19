@@ -44,5 +44,19 @@ export const SPECIES_RULES = {
     yak: { needs: 'plateau', seasons: ['normal', 'snow'], units: [2, 3] },
     snowleopard: { needs: 'rocks', seasons: ['normal', 'snow'], units: [1, 1] }, // selten: höchstens einer
   },
+  // Wald: Reh und Fuchs überall; Merkmale sind Zutaten (eine Map kann Moor und Eichen zugleich haben). Wölfe kommen nur mit
+  // der Event-Karte Wolfsnacht (wolfNight in expeditionMaps.js), Biber über den Damm (BeaverDam.js)
+  forest: {
+    deer: { units: [1, 2] },
+    fox: { units: [1, 1] },
+    squirrel: { seasons: ['normal', 'rain'], units: [1, 2] },
+    boar: { needs: 'oaks', units: [1, 1] }, // frisst Eicheln aus den Eichen (dann mit dem Lasso)
+    hedgehog: { needs: 'leaves', seasons: ['normal', 'fog'], units: [1, 2] }, // versteckt in Laubhaufen
+    elk: { needs: 'moor', seasons: ['normal', 'fog'], units: [1, 1] }, // im Moorwasser, nur im Licht der Laterne
+    frog: { needs: 'water', seasons: ['normal', 'rain'], units: [1, 2] },
+    fish: { needs: 'river', seasons: ['normal', 'rain'], units: [1, 2] }, // Forellen im Bach
+    heron: { needs: 'water', seasons: ['rain'], units: [1, 1] },
+    beaver: { needs: 'dam', units: [1, 1] }, // nur auf Maps mit Biberdamm (beavers): Stock ins Loch, dann kommt einer mit
+  },
 };
-export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'], asia: ['normal', 'snow', 'fog'] };
+export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'], asia: ['normal', 'snow', 'fog'], forest: ['normal', 'rain', 'fog'] };

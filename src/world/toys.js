@@ -51,6 +51,7 @@ export const PEN_TOYS = {
   hyenas: ['bone_pile', 'bone_pile'],
   warthogs: ['scratch_post', 'mud_nest'],
   deerpark: ['salt_lick', 'feeding_rack'],
+  boarpen: ['scratch_post', 'mud_nest'], // wie bei den Warzenschweinen
   foxden: ['log_tunnel', 'jute_ball'],
   forestpond: ['woodpile', 'log_tunnel'],
   wolves: ['log_tunnel', 'bone_pile'],
@@ -84,6 +85,7 @@ export const TOY_PLAY = {
   okapi: { toy: 'salt_lick', action: 'eat', time: [4, 8], every: [10, 20] },
   yak: { toy: 'salt_lick', action: 'eat', time: [5, 9], every: [12, 24] },
   warthog: { toy: 'scratch_post', action: 'rub', time: [3, 6], every: [8, 16] },
+  boar: { toy: 'scratch_post', action: 'rub', time: [3, 6], every: [8, 16] }, // Wildschwein scheuert sich wie das Warzenschwein
   sheep: { toy: 'scratch_post', action: 'rub', time: [2, 4], every: [15, 30] },
   panda: { toy: 'slide', action: 'slide', lift: 46, time: [4, 4], every: [10, 20] },
 };

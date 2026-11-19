@@ -16,6 +16,8 @@ export const APPEAL = {
   squirrel: 1.5,
   deer: 2,
   elk: 5, // groß und selten zu sehen
+  hedgehog: 3.5,
+  boar: 4,
   koi: 2,
   heron: 2.5,
   fox: 3,

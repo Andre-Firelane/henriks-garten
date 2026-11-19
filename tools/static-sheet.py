@@ -4,7 +4,10 @@ Ansicht HÖHE Pixel hoch ist (höchstens so breit wie der Rahmen), mittig, Füß
 Aufruf: python tools/static-sheet.py <frameW> <frameH> <Höhe> <Fuß> <Ziel> v0.png v1.png v2.png v3.png
   (Reihenfolge unten-rechts, unten-links, oben-rechts, oben-links)
   --wasser <frameW> <frameH> <Wasserlinie> <Anteil> <Ziel>  (vor den Ansichten): dazu ein Bild "im Wasser" wie
-  hippo_water: nur der obere Anteil der Figur um den Kopf herum, unten an der Wasserlinie abgeschnitten.
+  hippo_water: nur der obere Anteil der Figur um den Kopf herum, unten an der Wasserlinie abgeschnitten. Ist es so breit
+  wie der Rahmen (Elch), bleibt die ganze Breite: abgeschnitten wird dann nur unten.
+  --schraeg <Steigung> (nach --wasser): bei voller Breite schneidet die Wasserkante schräg im Iso-Winkel (0.5), wie der Körper
+  in der Ansicht steht; das Wasser-Bild muss dann unter der Wasserlinie Platz für das tiefere vordere Ende haben.
 Danach python tools/make-webp.py .
 
 So entstanden (V = "Tiersprites Test/views", A = public/assets):
@@ -17,7 +20,12 @@ So entstanden (V = "Tiersprites Test/views", A = public/assets):
   python tools/cutout-views.py Sprites/Yak.webp $V/yak 1 4 schatten,loecher,alle   (ebenso Yak2; _v3 = _v2 gespiegelt)
   python tools/static-sheet.py 112 104 92 100 $A/yak.png $V/yak_v0.png ... _v3.png   (ebenso yak2)
   python tools/cutout-views.py Sprites/Schneeleopard.webp $V/snowleopard 1 4 schatten,loecher,alle
-  python tools/static-sheet.py 88 80 64 76 $A/snowleopard.png $V/snowleopard_v0.png ... _v3.png"""
+  python tools/static-sheet.py 88 80 64 76 $A/snowleopard.png $V/snowleopard_v0.png ... _v3.png
+  python tools/cutout-views.py Sprites/Elch.webp $V/elk 1 2 schatten,loecher,alle   (ebenso Elch2.webp -> elk2: grau ist normal, braun selten; zwei Ansichten,
+    gespiegelt zu vier: _d0 = _v0 gespiegelt, _d1 = _v0, _d2 = _v1, _d3 = _v1 gespiegelt; Reste vom weißen Hintergrund weg)
+  python tools/static-sheet.py 128 128 112 124 $A/elk.png --wasser 128 112 72 0.6 $A/elk_water.png --schraeg 0.5 $V/elk_d0.png ... _d3.png
+  python tools/cutout-views.py Sprites/Igel.webp $V/hedgehog 1 4 schatten,loecher,alle   (ebenso Igel2 -> hedgehog2)
+  python tools/static-sheet.py 80 64 50 60 $A/hedgehog.png $V/hedgehog_v0.png _v3 _v2 _v1   (Apfel-Igel: Höhe 56 wegen des Apfels)"""
 import sys
 import numpy as np
 from PIL import Image
@@ -29,6 +37,12 @@ water = None
 if args[0] == '--wasser':
     water = (int(args[1]), int(args[2]), int(args[3]), float(args[4]), args[5])
     args = args[6:]
+SLANT = 0.0
+if args[0] == '--schraeg':  # Wasserkante schräg im Iso-Winkel (nur bei voller Breite, siehe unten)
+    SLANT = float(args[1])
+    args = args[2:]
+# Richtung der schrägen Kante je Ansicht (unten-rechts, unten-links, oben-rechts, oben-links): +1 vorne rechts tiefer
+SLANT_DIR = [1, -1, -1, 1]
 views = [Image.open(p).convert('RGBA') for p in args]
 k = TH / views[0].height
 k = min(k, *[(FW - 2) / v.width for v in views])
@@ -53,6 +67,22 @@ if water:
         # Kopf: Mitte der Pixel in den obersten Zeilen (Ohren), das Fenster ist so breit wie der Rahmen
         head = a[top:top + max(3, round((cut - top) * 0.35))]
         cx = np.where(head.any(0))[0].mean()
+        if WW >= FW:  # so breit wie der Rahmen (Elch): seitlich nichts abschneiden, nur unten an der Wasserlinie
+            # --schraeg: die Kante folgt dem Körper, der schräg in der Iso-Ansicht steht (das vordere Ende taucht tiefer
+            # ein), leicht nach unten gewölbt wie der vordere Rand eines Ovals; die Mitte bleibt auf der Wasserlinie
+            cols = np.where(a.any(0))[0]
+            cx, hw = (cols.min() + cols.max()) / 2, max(1, (cols.max() - cols.min()) / 2)
+            xs = np.arange(s.width)
+            u = np.clip((xs - cx) / hw, -1, 1)
+            edge = cut + SLANT_DIR[i % 4] * SLANT * (xs - cx) + SLANT * 0.12 * hw * (1 - u * u) if SLANT else np.full(s.width, float(cut))
+            arr = np.array(s)
+            ys = np.arange(s.height)[:, None]
+            keep = np.clip(edge[None, :] - ys + 0.5, 0, 1)  # eine Zeile weicher Übergang
+            arr[..., 3] = (arr[..., 3] * keep).astype(np.uint8)
+            bottom = int(np.ceil(edge.max())) + 1
+            part = Image.fromarray(arr).crop((0, top, s.width, min(s.height, bottom)))
+            res.alpha_composite(part, (i * WW + round((WW - s.width) / 2), LINE - (cut - top)))
+            continue
         x0 = round(cx - (WW - 4) / 2)
         part = s.crop((x0, top, x0 + WW - 4, cut))
         res.alpha_composite(part, (i * WW + 2, LINE - part.height))

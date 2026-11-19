@@ -18,6 +18,16 @@ export default class Sway {
     this.onTouch = null; // (plant) => {}: eine Pflanze wurde angestoßen (z. B. Pusteblume, siehe MeadowLife)
   }
 
+  // eine Pflanze von selbst anstoßen (z. B. ein Laubhaufen, in dem ein Igel raschelt, siehe Hedgehog.js); gibt das Bild zurück
+  shake(tx, ty) {
+    const plant = this.plants.get(`${tx},${ty}`);
+    if (!plant) return null;
+    plant.t = 0;
+    plant.dir = Math.random() < 0.5 ? -1 : 1;
+    this.active.add(plant);
+    return plant.img;
+  }
+
   update(dt) {
     const p = this.scene.player;
     const moved = this.last ? p.x - this.last.x : 0;

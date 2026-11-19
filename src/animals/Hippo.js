@@ -7,6 +7,7 @@ import Animal from './Animal.js';
 import Crocodile from './Crocodile.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { KOI_WATER, SHORE_TILES, charAt } from '../world/map.js';
+import { drawWaterFoam, waterEdge } from './waterFoam.js';
 
 const WATER_ORIGIN_Y = 40 / 44; // Wasserlinie im Bild "hippo_water"
 const HIPPO_SCALE = 0.65; // etwas größer als die anderen Tiere (0.5), an Land und im Wasser
@@ -23,9 +24,8 @@ const CATCH_GAP = 24; // so weit muss es vom Wasser weg sein, damit man es fange
 const BACK_TIMEOUT = 8; // kommt es nicht zum Ufer zurück, springt es trotzdem ins Wasser
 const CALL_EVERY = [15, 30]; // so oft grunzt es (Sekunden) ...
 const CALL_VOLUME = 0.45; // ... ganz nah so laut
-const WATER_LINE = 40; // Zeile der Wasserlinie im Wasser-Bild (Bildhöhe 44)
-const FOAM_STEP = 4; // Schaumkante: etwa alle so viele Pixel (im Bild) ein Schaumbläschen
-const waterSpan = new Map(); // je Bild und Blickrichtung: wie breit der Körper an der Wasserlinie ist
+const FOAM_STEP = 5; // Schaumkante: etwa alle so viele Pixel (im Bild) ein Schaumbläschen ...
+const FOAM_SIZE = 0.7; // ... so groß (der Kopf ist kleiner als der Elch)
 
 export default class Hippo extends Crocodile {
   // species: Tiere, die sich genauso verhalten (Tapir, siehe Tapir.js); die Zeiten und die Größe kommen von times()
@@ -202,61 +202,20 @@ export default class Hippo extends Crocodile {
   }
 
   useWaterLook() {
-    this.sprite.stop().setFlipX(false).setTexture(this.waterTexture(), 0).setOrigin(0.5, WATER_ORIGIN_Y).setScale(this.times().scale);
+    this.sprite.stop().setFlipX(false).setTexture(this.waterTexture(), 0).setOrigin(0.5, this.waterOriginY()).setScale(this.times().scale);
     this.shadow.setVisible(false);
   }
 
-  // links und rechts, wo der Körper die Wasserlinie schneidet (in Bildpixeln von der Mitte aus); einmal je Bild ermittelt
-  waterSpan() {
-    const key = this.sprite.texture.key;
-    const frame = this.sprite.frame.name;
-    const id = `${key}:${frame}`;
-    if (!waterSpan.has(id)) {
-      const w = this.sprite.frame.width;
-      const solid = (x) => (this.scene.textures.getPixelAlpha(x, WATER_LINE - 1, key, frame) ?? 0) > 64;
-      let l = 0;
-      while (l < w && !solid(l)) l++;
-      let r = w - 1;
-      while (r > l && !solid(r)) r--;
-      waterSpan.set(id, l < r ? { l: l - w / 2, r: r + 1 - w / 2 } : { l: -12, r: 12 });
-    }
-    return waterSpan.get(id);
+  // Wasserlinie im Wasser-Bild (Anteil der Bildhöhe); der Tapir hat ein höheres Bild (schräge Kante, siehe Tapir.js)
+  waterOriginY() {
+    return WATER_ORIGIN_Y;
   }
 
-  // schaumige Kante, wo der Körper aus dem Wasser schaut (sonst wirkt der gerade Bildrand abgehackt): eine Reihe
-  // heller, leicht wabernder Bläschen über der Schnittkante
+  // schaumige Kante, wo der Körper aus dem Wasser schaut (sonst wirkt der Bildrand abgehackt): helle, leicht wabernde
+  // Bläschen entlang der schrägen Schnittkante (siehe waterFoam.js)
   drawFoam() {
     this.foam ??= this.scene.add.graphics();
-    const g = this.foam.clear();
-    const { l, r } = this.waterSpan();
-    const t = this.scene.time.now / 1000;
-    const w = r - l;
-    // Bläschen ungleich groß und unregelmäßig verteilt, zu den Enden hin kleiner; dunklerer Schatten darunter, weiß darüber
-    const n = Math.max(4, Math.round((w + 6) / FOAM_STEP));
-    const bubbles = [];
-    for (let i = 0; i <= n; i++) {
-      const u = i / n;
-      const taper = 0.45 + 0.55 * Math.sin(Math.PI * u);
-      const x = l - 3 + u * (w + 6) + Math.sin(i * 5.3) * 1.4 + Math.sin(t * 1.3 + i * 2.1) * 0.7;
-      const y = -0.5 + Math.sin(i * 7.1) * 0.6 + Math.sin(t * 2.4 + i * 1.7) * 0.4;
-      const rad = (1.2 + Math.abs(Math.sin(i * 3.7)) * 1.1 + Math.sin(t * 3.1 + i * 2.3) * 0.25) * taper;
-      bubbles.push([x, y, rad]);
-    }
-    g.fillStyle(0x9fc4cc, 0.3);
-    for (const [x, y, rad] of bubbles) g.fillEllipse(x, y + 0.9, rad * 2.4, rad * 1.6);
-    g.fillStyle(0xffffff, 0.55);
-    for (const [x, y, rad] of bubbles) g.fillEllipse(x, y, rad * 2.2, rad * 1.4);
-    g.fillStyle(0xffffff, 0.6);
-    for (const [x, y, rad] of bubbles) g.fillEllipse(x - rad * 0.3, y - rad * 0.25, rad * 1.1, rad * 0.7); // Glanz
-    // ein paar lose Spritzer daneben, die langsam auf- und abtauchen
-    for (let k = 0; k < 4; k++) {
-      const a = Math.sin(t * 0.9 + k * 2.6);
-      if (a < 0) continue;
-      const side = k % 2 ? r + 3 + k : l - 3 - k;
-      g.fillStyle(0xffffff, 0.45 * a).fillEllipse(side + Math.sin(t + k) * 1.5, 1.5 + (k % 3), 2.2, 1.4);
-    }
-    g.setPosition(this.sprite.x, this.sprite.y).setScale(this.sprite.scaleX).setDepth(this.sprite.depth + 0.01);
-    g.setAlpha(this.sprite.alpha).setVisible(this.sprite.visible);
+    drawWaterFoam(this.foam, this.scene, this.sprite, waterEdge(this.scene, this.sprite, this.waterOriginY(), FOAM_STEP), { size: FOAM_SIZE });
   }
 
   destroy() {

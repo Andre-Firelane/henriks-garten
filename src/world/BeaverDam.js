@@ -68,7 +68,8 @@ export default class BeaverDam {
   // Kolonie auffüllen; first: beim Betreten sitzen sie schon an ihren Bäumen, später kommen neue aus der Burg
   fill(first = false) {
     const have = this.wild().length;
-    for (let i = have; i < Math.min(this.cfg.count, this.spots.length); i++) {
+    const count = typeof this.cfg.count === 'function' ? this.cfg.count() : this.cfg.count; // (Expedition: nach der Tierliste)
+    for (let i = have; i < Math.min(count, this.spots.length); i++) {
       const spot = this.freeSpot(null, true);
       if (!spot) return;
       const from = first || !this.lodge ? spot : { x: this.lodge.x + 10, y: this.lodge.y + 6 };

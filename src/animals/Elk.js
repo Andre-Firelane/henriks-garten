@@ -8,8 +8,9 @@ import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { LEVEL, MAP_W, MAP_H, charAt } from '../world/map.js';
+import { drawWaterFoam, waterEdge } from './waterFoam.js';
 
-const WATER_ORIGIN_Y = 72 / 80; // Wasserlinie im Bild "elk_water"
+const WATER_ORIGIN_Y = 72 / 112; // Wasserlinie (Mitte der schrägen Kante) im Bild "elk_water"
 const WADE_SPEED = 9; // gemächliches Waten
 const LURE_SPEED = 14; // zur Laterne etwas zügiger
 const LURE_RANGE = 360; // so weit weg (Welt-Pixel, Höhe doppelt gezählt) bemerkt er eine abgestellte Laterne
@@ -19,6 +20,7 @@ const SHADE = 0x46524d; // Farbe des Schemens im Nebel (dunkles Graugrün) ...
 const SHADE_ALPHA = 0.32; // ... und wie deutlich er zu sehen ist
 const SHADE_DEPTH = 99921.5; // über dem Moornebel (99920) und den aufsteigenden Schwaden
 const CATCH_LIGHT = 0.6; // so hell muss es um ihn sein, damit man ihn fangen kann
+const FOAM_STEP = 7; // Schaumkante: etwa alle so viele Bildpixel ein Bläschen
 const CALL_EVERY = [25, 50]; // so oft grunzt er aus dem Nebel (Sekunden) ...
 const CALL_VOLUME = 0.4; // ... ganz nah so laut
 
@@ -59,7 +61,7 @@ export default class Elk extends Animal {
     this.unplaced = true; // erst beim ersten Bild in einen Tümpel (die Szene setzt die Position nach dem Erzeugen)
     this.lit = 0;
     this.ghost = scene.add.image(x, y, 'elk_water', 0).setTintFill(SHADE).setDepth(SHADE_DEPTH).setAlpha(0);
-    this.ripple = scene.add.graphics();
+    this.foam = scene.add.graphics(); // Schaum an der Wasserkante
   }
 
   // irgendwo im Moorwasser (lieber dort, wo ringsum Wasser ist: dann steht er nicht halb im Ufer), nicht neben einem
@@ -165,7 +167,7 @@ export default class Elk extends Animal {
   render(moving) {
     if (this.state !== 'wild') {
       this.ghost.setVisible(false);
-      this.ripple.clear();
+      this.foam.clear();
       if (this.sprite.texture.key.endsWith('_water')) this.sprite.setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
       this.sprite.setAlpha(1);
       this.shadow.setVisible(this.state !== 'trapped');
@@ -183,27 +185,20 @@ export default class Elk extends Animal {
     this.sprite.setAlpha(this.lit);
     const shade = SHADE_ALPHA * (1 - this.lit) * (this.sprite.visible ? 1 : 0);
     this.ghost.setTexture(key, frame).setOrigin(0.5, WATER_ORIGIN_Y).setPosition(this.x, this.y).setScale(this.sprite.scaleX).setAlpha(shade).setVisible(shade > 0.01);
-    this.drawRipples(moving);
+    this.drawFoam();
   }
 
-  // Wellenringe ums Bein im Wasser (deutlicher, wenn er watet)
-  drawRipples(moving) {
-    const g = this.ripple.clear();
-    if (this.lit < 0.05) return;
-    const t = this.scene.time.now / 1000;
-    for (let i = 0; i < 2; i++) {
-      const k = (t * (moving ? 0.8 : 0.4) + i * 0.5) % 1;
-      g.lineStyle(1.2, 0xe8f0ec, (1 - k) * 0.55 * this.lit);
-      g.strokeEllipse(this.x, this.y + 1, 30 + k * 26, 8 + k * 7);
-    }
-    g.setDepth(this.y + 0.01);
+  // schaumige Kante, wo der Körper aus dem Wasser schaut (siehe waterFoam.js)
+  drawFoam() {
+    if (this.lit < 0.05) return this.foam.clear();
+    drawWaterFoam(this.foam, this.scene, this.sprite, waterEdge(this.scene, this.sprite, WATER_ORIGIN_Y, FOAM_STEP));
   }
 
   catch() {
     super.catch();
     this.sprite.setTexture(this.baseTexture(), this.kind.frames.downRight).setOrigin(0.5, this.kind.originY).setAlpha(1);
     this.ghost.setVisible(false);
-    this.ripple.clear();
+    this.foam.clear();
   }
 
   restore(state) {
@@ -214,7 +209,7 @@ export default class Elk extends Animal {
 
   destroy() {
     this.ghost.destroy();
-    this.ripple.destroy();
+    this.foam.destroy();
     super.destroy();
   }
 }

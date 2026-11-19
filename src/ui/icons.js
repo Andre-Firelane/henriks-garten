@@ -96,6 +96,10 @@ const SHEETS = {
   okapi2: [80, 104, 4, 0],
   elk: [128, 128, 4, 0],
   elk2: [128, 128, 4, 0],
+  hedgehog: [80, 64, 4, 0],
+  hedgehog2: [80, 64, 4, 0],
+  boar: [104, 96, 4, 0],
+  boar2: [120, 96, 1, 0, 'boar2_icon'], // Bache mit Frischlingen (eigenes Bild nur für die Anzeige; im Spiel dasselbe Bild wie das Wildschwein)
   redpanda: [72, 72, 4, 0],
   tanuki: [72, 72, 4, 0],
   tanuki2: [72, 72, 4, 0],

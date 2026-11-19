@@ -1,6 +1,6 @@
 // Tapir (Dschungel): lebt wie das Nilpferd im Fluss (von ihm sieht man dort nur Kopf und Rücken, "tapir_water"),
 // bleibt aber viel länger an Land und grast am Ufer. Kommt Henrik mit leeren Händen oder einem Werkzeug näher, trottet
-// er zurück ins Wasser. Hält Henrik einen Blätterzweig vom Futterstrauch (siehe LeafBushes.js), bleibt er stehen –
+// er zurück ins Wasser. Im Wasser ganze Breite, die Wasserkante schräg im Iso-Winkel (wie beim Elch). Hält Henrik einen Blätterzweig vom Futterstrauch (siehe LeafBushes.js), bleibt er stehen –
 // dann füttert man ihn, und er läuft mit (GardenScene.feedLeaves). Im Gehege wechselt er wie das Nilpferd zwischen
 // Teich und Ufer, ist aber länger an Land.
 import Phaser from 'phaser';
@@ -32,6 +32,11 @@ export default class Tapir extends Hippo {
     this.x = p.x;
     this.y = p.y;
     this.drift = null;
+  }
+
+  // Wasser-Bild höher als beim Nilpferd: die schräge Kante (tools/static-sheet.py --schraeg) reicht vorne tiefer hinab
+  waterOriginY() {
+    return 40 / 64;
   }
 
   penTimes() {

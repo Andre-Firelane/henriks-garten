@@ -7,11 +7,11 @@ import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { worldToTile } from '../world/iso.js';
 import { charAt } from '../world/map.js';
+import { drawWaterFoam, waterEdge } from './waterFoam.js';
 
 const GNAW_TIME = [6, 14]; // so lange nagt er an einem Baum
 const CHIP_EVERY = [0.4, 1.1]; // so oft fliegt ein Span
 const MOVE_SPEED = 24; // zum nächsten Baum (gemütlich)
-const RIPPLE_EVERY = 0.5; // beim Schwimmen: Wellenringe
 // Knabber-Animation: Mitte des Bibers (das Holz liegt rechts davor) und seine Füße; die Nutria (beaver2) sitzt weiter rechts
 const GNAW_ORIGIN = { beaver_gnaw: [45 / 96, 69 / 72], beaver2_gnaw: [51 / 96, 69 / 72] };
 const SWIM_ORIGIN_Y = 44 / 60; // Bild "beaver_swim" (Wasserlinie, siehe tools/beaver-swim.py)
@@ -30,7 +30,6 @@ export default class Beaver extends Animal {
     this.spot = null;
     this.timer = 0;
     this.chipTime = 0;
-    this.rippleTime = 0;
   }
 
   // fangen geht nur über den Damm (er kommt dann von selbst)
@@ -102,13 +101,6 @@ export default class Beaver extends Animal {
     this.y += (dy / d) * step;
     if (Math.abs(dx) > d * 0.3) this.faceX = Math.sign(dx);
     if (Math.abs(dy) > d * 0.3) this.faceY = Math.sign(dy);
-    if (inWater(this.x, this.y)) {
-      this.rippleTime -= dt;
-      if (this.rippleTime <= 0) {
-        this.rippleTime = RIPPLE_EVERY;
-        this.ripple();
-      }
-    }
     return true;
   }
 
@@ -130,8 +122,12 @@ export default class Beaver extends Animal {
       this.sprite.setFlipX(this.faceX < 0);
       this.shadow.setVisible(false);
       this.placeSprite(false);
+      // Schaum an der schrägen Wasserkante (wie bei Elch und Tapir, siehe waterFoam.js)
+      this.foam ??= this.scene.add.graphics();
+      drawWaterFoam(this.foam, this.scene, this.sprite, waterEdge(this.scene, this.sprite, SWIM_ORIGIN_Y, 5), { size: 0.6 });
       return;
     }
+    this.foam?.clear();
     if (OWN_LOOKS.includes(this.sprite.texture.key)) {
       this.sprite.stop();
       this.sprite.setFlipX(false);
@@ -153,8 +149,8 @@ export default class Beaver extends Animal {
     scene.tweens.add({ targets: c, alpha: 0, delay: 1400, duration: 500, onComplete: () => c.destroy() });
   }
 
-  ripple() {
-    const r = this.scene.add.ellipse(this.x, this.y + 1, 14, 5).setStrokeStyle(1, 0xffffff, 0.7).setDepth(this.y - 1);
-    this.scene.tweens.add({ targets: r, scale: 2, alpha: 0, duration: 800, ease: 'Quad.easeOut', onComplete: () => r.destroy() });
+  destroy() {
+    this.foam?.destroy();
+    super.destroy();
   }
 }

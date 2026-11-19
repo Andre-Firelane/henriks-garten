@@ -27,12 +27,13 @@ export const MORE_UNITS = 1; // Bonus "Mehr Tiere": so viele Tiere mehr je Art a
 // Boni, die es als Karte gibt (vorhandene Kisten-Boni; sie gelten bis zum Ende des Runs)
 export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWagon', 'heartRain'];
 // Tiere, die nicht beim Betreten dastehen, sondern auf ihre Weise kommen (Geier fliegen heran, Hyänen kommen zu Knochen)
-export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen)
+export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht)
 // Anteil der Kartenarten
-const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend)
+const KINDS = { animal: 0.45, rare: 0.15, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend, Wolfsnacht)
 // Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnu aus der Großen Wanderung, rote Pandas in
-// den Kirschbäumen am Glühwürmchen-Abend)
-export const MAP_EVENTS = { migration: { species: 'gnu', units: 1 }, fireflies: { species: 'redpanda', units: 2 } };
+// den Kirschbäumen am Glühwürmchen-Abend, Wolfsrudel in der Wolfsnacht). alone: in dieser Nacht gibt es nur diese Tiere
+// (wie bei der Wolfsnacht im Wald), das Wetter bleibt normal
+export const MAP_EVENTS = { migration: { species: 'gnu', units: 1 }, fireflies: { species: 'redpanda', units: 2 }, wolfNight: { species: 'wolf', units: 2, alone: true } };
 export const mapEvent = (map) => Object.keys(MAP_EVENTS).find((k) => LEVELS[map]?.[k]) ?? null;
 
 // --- Tiere und Wetter einer Map (werden vor jeder Map neu gewürfelt) ---
@@ -65,7 +66,11 @@ export function planMap(map, biome, must = null) {
   const specials = Object.keys(rules).filter((sp) => rules[sp].needs && !COMMON_FEATURES.includes(rules[sp].needs) && fits(sp));
   if (must && rules[must] && fits(must)) add(must);
   else if (specials.length && Math.random() < SPECIAL_CHANCE) add(pick(specials));
-  else seasons = [pick(all)];
+  else {
+    // nur ein Wetter, bei dem überhaupt eine Art dieser Map vorkommt (sonst bliebe z. B. die Stupa-Weide bei Nebel leer)
+    const possible = all.filter((x) => Object.keys(rules).some((sp) => fits(sp) && allowed(sp).includes(x)));
+    seasons = [pick(possible.length ? possible : all)];
+  }
   const n = SPECIES_PER_MAP[0] + Math.floor(Math.random() * (SPECIES_PER_MAP[1] - SPECIES_PER_MAP[0] + 1));
   while (Object.keys(home).length < n) {
     const pool = Object.keys(rules).filter((sp) => !home[sp] && fits(sp) && allowed(sp).some((x) => seasons.includes(x)));
@@ -140,7 +145,10 @@ export function rollRunCards(n) {
       const species = pick(rares);
       cards.push({ map, plan, kind, species, skin: rareSkinFor(species, r.biome, season).id });
     } else if (kind === 'bonus') cards.push({ map, plan, kind, id: pick(freeBoni) });
-    else cards.push({ map, plan, kind }); // Kiste oder Event
+    else if (kind === 'event' && MAP_EVENTS[mapEvent(map)].alone) {
+      const ev = MAP_EVENTS[mapEvent(map)];
+      cards.push({ map, plan: { home: { [ev.species]: ev.units }, season: 'normal' }, kind }); // (nur die Tiere des Events)
+    } else cards.push({ map, plan, kind }); // Kiste oder Event
   }
   return cards;
 }
@@ -165,7 +173,7 @@ export function takeRunCard(card) {
   // (rote Pandas in den Kirschbäumen)
   r.event = card.kind === 'event' ? card.map : null;
   const ev = r.event && MAP_EVENTS[mapEvent(r.event)];
-  if (ev) left[ev.species] = (left[ev.species] ?? 0) + ev.units;
+  if (ev && !ev.alone) left[ev.species] = (left[ev.species] ?? 0) + ev.units; // (alone: stehen schon in der Tierliste der Karte)
   // seltene Variante: das erste Tier dieser Art auf der Map wird sie (Versprechen wie aus der Kiste, siehe Animal.rollSkin)
   game.rarePromise = card.kind === 'rare' ? { level: card.map, species: card.species, skin: card.skin } : null;
   return card.map;
