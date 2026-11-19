@@ -303,7 +303,7 @@ export const LEVELS = {
       'Dk.ẉẉ~ǒ~Ŝ~~~.........~~~....m....Ø....DØ',
       'PD...%~~Ŝ~~%ẉẉẉ..ẉɊ.~~~.......ɫ...ɫ...DD',
       'D...ẉẉ%~Ŝ~........ẉ~~~.............ọ...D',
-      'D.ẉ.ẉnɊ..ẉ.ẉ..%~~~~~~...Ø...Ø..........P',
+      'D.ẉ.ẉnɊ..ẉ.ẉ..%~~~~~~.e.Ø...Ø..........P',
       'PD............~~~~~~..................kP',
       'Ɋ...ẉ........ŜŜŜŜŜŜŜŜ.ɫ....ɫ.........m.Ø',
       'P.....Ɋ....ẉĿ.~~~~~~.........≈≈≈≈≈....kD',
@@ -330,6 +330,8 @@ export const LEVELS = {
     ],
     groundKeys: { '≈': 'forest_mud' }, // Schlamm der Wildschwein-Suhle
     noMudShore: true, // ... ohne Kiesrand
+    // Frösche erscheinen und Reiher landen meist im Moor (Anteil), sonst irgendwo am Wasser
+    prefer: { area: { tx0: 1, tx1: 21, ty0: 39, ty1: 62 }, frog: 0.8, heron: 0.75 },
     // Nebel über dem Moor (siehe MoorFog.js)
     moorFog: { tx0: 1, tx1: 20, ty0: 39, ty1: 62 },
     path: 'forest_path',
@@ -338,13 +340,16 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 25, ty0: 11, tx1: 29, ty1: 14, style: 'forest' },
     chests: [
-      { tx: 27, ty: 15, tools: ['net', 'lasso', 'trap'] },
+      { tx: 27, ty: 15, tools: ['net', 'lasso', 'trap', 'lantern'] }, // Moorlaterne für die Elche im Nebel
+      { tx: 22, ty: 48, tools: ['net', 'lasso', 'trap', 'lantern'] }, // Kiste im Süden zwischen Moor und Eichenhain (an der Flussmündung)
     ],
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
     ambient: 'ambient_forest_river', // Waldgeräusche mit leisem Flussrauschen darunter (tools/prepare-sounds.js)
+    // je näher man dem Moor kommt, desto mehr Moorgeräusche (siehe updateZoneAmbient in GardenScene.js)
+    ambientZone: { sound: 'ambient_moor', area: { tx0: 1, tx1: 20, ty0: 39, ty1: 62 }, fade: 7 },
     toolSpots: [],
     exits: [], // nur mit dem Auto
-    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 1.6 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss
+    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 1.6, elk: 0.7 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
     // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
     // im Moor (except) läuft er in stille Tümpel aus
     flow: { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40, except: { tx0: 0, tx1: 21, ty0: 46, ty1: 63 } },
@@ -1045,7 +1050,8 @@ const PARK_PENS = [
       { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
       { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Mehr Platz mit Felsenhöhle', 'More room with a rock den'), basic: [[56, 17, '.'], [57, 17, '.'], [56, 18, '.'], [57, 18, '.'], [58, 18, ']'], [56, 19, '.'], [57, 19, '.'], [58, 19, ']'], [56, 20, '.'], [57, 20, '.'], [58, 20, ']'], [56, 21, '.'], [57, 21, '.'], [58, 21, ']'], [56, 22, '.'], [57, 22, '.'], [58, 22, ']'], [56, 23, '.'], [57, 23, '.'], [63, 19, '.']] },
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
-      { id: 'deerpark', name: tr('Hirschgehege', 'Deer Park'), species: ['deer'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
+      { id: 'deerpark', name: tr('Hirsch- und Elchgehege', 'Deer and Moose Park'), species: ['deer', 'elk'], // Elche vorerst hier (eigenes Elchmoor kommt noch)
+        world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, slots: [6, 9], upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
       { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
       { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish', 'beaver'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9], beaver: [3, 5] }, upgrade: tr('Mehr Platz für die Biber und ein größerer Teich mit Schilf, Pilzen und Farn', 'More room for the beavers and a bigger pond with reeds, mushrooms and ferns'), basic: [[18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.'], [12, 54, '{'], [13, 54, '{'], [14, 54, '{'], [15, 54, '{'], [16, 54, '{'], [17, 54, '{'], [18, 54, '{'], [19, 54, '{'], [20, 54, '{'], [21, 54, '{']] }, // vor dem Ausbau: Innenzaun in Zeile 54 (der Ausbau bringt zwei Reihen mehr für die Biber)
       { id: 'wolves', name: tr('Wolfswald', 'Wolf Woods'), species: ['wolf'], gate: 'tall', world: 'forest', unlock: 'wolves', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 6, ty: 30 }, slots: [6, 9], upgrade: tr('Heulfelsen', 'Howling rock'), basic: [[5, 28, '.']] },

@@ -672,6 +672,22 @@ export const SPECIES = {
     fleeSpeed: 40, // ... langsamer als Henrik
     catchWith: ['leaves'],
   },
+  // Elch (Wald, Moor): steht wild immer im Moorwasser, im Nebel nur als Schemen zu sehen; im Licht der Moorlaterne wird er
+  // sichtbar und lässt sich mit dem Lasso fangen (siehe Elk.js). Bisher nur Standbilder
+  elk: {
+    texture: 'elk',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 124 / 128,
+    speed: 18,
+    restChance: 0.55,
+    restTime: [2, 5],
+    walkTime: [1.5, 3],
+    stepRate: 6,
+    hop: 1,
+    footW: 12,
+    shadowW: 46,
+    catchWith: ['lasso'],
+  },
   // Okapi (Dschungel): scheu, rennt beim ersten Mal weg, wird mit jedem Mal mutiger (siehe Okapi.js); mit einem
   // Blätterzweig gefüttert, läuft es mit. Bisher nur Standbilder
   okapi: {
@@ -1090,6 +1106,7 @@ export const SKINS = {
   octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },
   tapir: { id: 'tapir2', name: tr('Schabrackentapir', 'Malayan tapir'), male: true, wild: 0.1, baby: 0.03 },
   okapi: { id: 'okapi2', name: tr('Streifen-Okapi', 'striped okapi'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
+  elk: { id: 'elk2', name: tr('Geisterelch', 'ghost moose'), male: true, wild: 0.1, baby: 0.03 }, // grau, im Nebel kaum zu sehen
   tanuki: { id: 'tanuki2', name: tr('Fuchs-Tanuki', 'fox tanuki'), male: true, wild: 0.1, baby: 0.03 },
   yak: { id: 'yak2', name: tr('Gefleckter Yak', 'spotted yak'), male: true, wild: 0.1, baby: 0.03 },
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js

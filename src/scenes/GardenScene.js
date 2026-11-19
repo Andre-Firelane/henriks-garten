@@ -106,6 +106,7 @@ import Gnu, { Migration } from '../animals/Gnu.js';
 import Hippo from '../animals/Hippo.js';
 import Tapir from '../animals/Tapir.js';
 import Okapi from '../animals/Okapi.js';
+import Elk from '../animals/Elk.js';
 import Tanuki from '../animals/Tanuki.js';
 import Yak, { BRUSHES_NEEDED } from '../animals/Yak.js';
 import SnowLeopard from '../animals/SnowLeopard.js';
@@ -169,6 +170,8 @@ import SaltTool from '../tools/SaltTool.js';
 import BrushTool from '../tools/BrushTool.js';
 import LeafTool from '../tools/LeafTool.js';
 import FireflyJar, { GlowJar, JAR_FULL } from '../tools/FireflyJar.js';
+import LanternTool, { LANTERN_GLOW, GLOW_DEPTH } from '../tools/LanternTool.js';
+import { lanternLight } from '../world/MoorFog.js';
 import BallTool from '../tools/BallTool.js';
 import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
@@ -200,7 +203,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'elk', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -235,6 +238,7 @@ const CATCH_TIPS = {
   butterfly: tr('Auf der Wiese bei den Blumen. Im Flug sind sie scheu – sitzt einer auf einer Blüte, schleich dich an und nimm den Kescher! Im Tierpark flattern sie frei herum.', 'On the meadow near the flowers. In flight they are shy – when one sits on a blossom, sneak up and use the net! In your zoo they flutter around freely.'),
   hippo: tr('Nur bei Starkregen in der Savanne. Im Wasser siehst du nur Augen und Ohren – warte, bis es zum Grasen ans Ufer kommt, und fang es mit dem Lasso, bevor es zurück ins Wasser trottet.', 'Only during heavy rain in the savanna. In the water you only see eyes and ears – wait until it comes ashore to graze and catch it with the lasso before it trots back into the water.'),
   tapir: tr('Im Dschungel am Fluss. Meist grast er lange am Ufer – kommst du mit leeren Händen, trottet er zurück ins Wasser. Brich am Futterstrauch einen Blätterzweig ab: Mit dem Zweig in der Hand bleibt er stehen, und du kannst ihn füttern.', 'In the jungle by the river. It usually grazes on the bank for a long time – if you come empty-handed, it trots back into the water. Break a leafy branch off a fodder bush: with the branch in your hand it stays put and you can feed it.'),
+  elk: tr('Im Moor im Wald. Im Nebel siehst du nur seinen Schatten im Wasser. Hol die Moorlaterne aus der Hütte und stell sie ans Ufer – dann watet er neugierig ins Licht. Jetzt siehst du ihn: schnell das Lasso!', 'In the moor in the forest. In the fog you only see its shadow in the water. Get the moor lantern from the hut and put it down at the shore – it wades curiously into the light. Now you can see it: quick, the lasso!'),
   okapi: tr('Im Dschungel. Es ist scheu und rennt erst ein Stück weg – aber es ist auch neugierig: Lauf ihm nach, mit jedem Mal wird es mutiger und bleibt irgendwann stehen. Dann füttere es mit einem Blätterzweig vom Futterstrauch.', 'In the jungle. It is shy and first runs off a little way – but it is curious too: follow it, every time it gets braver until it stays put. Then feed it a leafy branch from a fodder bush.'),
   hyena: tr('Nur in der Trockenzeit in der Savanne, am Elefantenfriedhof oben rechts. Hörst du sie dort kichern, streu Knochen aus der Hütte – dann kommen sie. Solange sie fressen, fängst du sie mit dem Lasso.', 'Only in the dry season in the savanna, at the elephant graveyard in the top right. When you hear them giggle there, scatter bones from the hut – then they come. While they eat, catch them with the lasso.'),
   warthog: tr('Nur in der Trockenzeit in der Savanne. Kommst du näher, flitzt es in sein Erdloch. Warte mit dem Lasso in etwas Abstand davor – irgendwann schaut es kurz heraus.', 'Only in the dry season in the savanna. If you get closer, it dashes into its burrow. Wait with the lasso a little way off – sooner or later it pops out for a moment.'),
@@ -333,6 +337,7 @@ const ANIMAL_INFO = {
   butterfly: tr(['Schmetterling', 'Keine Spuren – ein Schmetterling flattert und landet nur auf Blüten.'], ['Butterfly', 'No tracks – a butterfly flutters and only lands on blossoms.']),
   hippo: tr(['Nilpferd', 'Vier dicke Zehen an jedem Fuß – im Schlamm am Wasserloch sieht man die runden Abdrücke.'], ['Hippo', 'Four thick toes on each foot – you can see the round prints in the mud at the waterhole.']),
   tapir: tr(['Flachlandtapir', 'Seine kurze Nase ist ein kleiner Rüssel: damit pflückt er Blätter und Früchte. Bei Gefahr taucht er unter und läuft sogar über den Grund des Flusses.'], ['Lowland tapir', 'Its short nose is a little trunk: it uses it to pick leaves and fruit. When in danger, it dives and even walks along the bottom of the river.']),
+  elk: tr(['Elch', 'Paarhufer mit breiten, spreizbaren Hufen – wie Schneeschuhe tragen sie ihn über Moor und Schlamm, ohne einzusinken.'], ['Moose', 'Even-toed hoofs that spread wide – like snowshoes they carry it over bog and mud without sinking in.']),
   okapi: tr(['Okapi', 'Es sieht aus wie ein Zebra, ist aber der einzige Verwandte der Giraffe – mit seiner langen blauen Zunge kann es sich sogar die Ohren putzen.'], ['Okapi', 'It looks like a zebra, but it is the only relative of the giraffe – with its long blue tongue it can even clean its own ears.']),
   hyena: tr(['Hyäne', 'Vier Zehen mit stumpfen Krallen, die Vorderpfoten größer als die hinteren.'], ['Hyena', 'Four toes with blunt claws, the front paws larger than the back ones.']),
   warthog: tr(['Warzenschwein', 'Zweigeteilte Hufe wie beim Schwein – die Spur führt meist zu einem Erdloch.'], ['Warthog', 'Split hooves like a pig – the trail usually leads to a burrow.']),
@@ -486,6 +491,9 @@ const RUSTLE_HEAR = 300; // ... und so weit (Welt-Pixel) hört man es noch
 const SPRAY_EVERY = 70; // so oft (ms) steigt am Fuß des Wasserfalls ein Wölkchen Sprühnebel auf
 const WATERFALL_VOLUME = 0.6; // Rauschen des Wasserfalls (Dschungel), ganz nah ...
 const WATERFALL_HEAR = 520; // ... und so weit (Welt-Pixel) hört man es noch
+const ZONE_VOLUME = 0.55; // Geräusch einer Zone (Moor, Hochebene), mittendrin
+const ZONE_KEEP = 0.2; // ... so viel bleibt dort vom normalen Hintergrundgeräusch
+const ZONE_SNOW = 'ambient_ice'; // auf der Hochebene (snowline): die Geräusche der Eiswelt
 
 // Das laufende Hintergrundgeräusch überdauert Levelwechsel (die Szene startet dabei neu)
 let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor seinen Augen)
@@ -539,6 +547,7 @@ const AQUA_FISH = ['reeffish', 'seahorse', 'octopus']; // nur diese verdrängen 
 const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
 const REEF_GROUP = [2, 5]; // ... die anderen in Gruppen dieser Größe (eine Art)
 const MAX_TANUKIS = 2; // so viele Tanukis sind höchstens gleichzeitig verkleidet
+const MAX_ELKS = 2; // so viele Elche stehen höchstens gleichzeitig im Moor
 const MAX_TIGERS = 2; // so viele Tiger streifen höchstens gleichzeitig durch den Bambus
 const MAX_JAGUARS = 1; // so viele Jaguare schlafen höchstens gleichzeitig in den Urwaldbäumen
 const TIGER_LURE_DIST = 150; // so nah muss man mit dem Ball an einem Tiger-Schemen stehen (aber nicht zu nah, siehe Tiger.js)
@@ -703,6 +712,12 @@ const TOOLS = {
     catches: ['yak'],
     hint: tr(`Bürste den ${animalIcon('yak')} dreimal, während er am Salzstein leckt`, `Brush the ${animalIcon('yak')} three times while it licks the salt`),
   },
+  // Moorlaterne (Wald): leuchtet den Moornebel weg; abgestellt lockt sie die Elche ins Licht (siehe LanternTool.js)
+  lantern: {
+    create: (scene, player) => new LanternTool(scene, player),
+    name: tr('Moorlaterne', 'Moor lantern'),
+    hint: tr(`Stell sie am Moor ab – dann watet der ${animalIcon('elk')} ins Licht, und du siehst ihn`, `Put it down by the moor – the ${animalIcon('elk')} wades into the light, and you can see it`),
+  },
   // Blätterzweig vom Futterstrauch (Dschungel): kommt nicht ins Regal, man bricht ihn am Strauch ab (siehe LeafBushes.js)
   leaves: {
     create: (scene, player) => new LeafTool(scene, player),
@@ -719,7 +734,7 @@ const TOOLS = {
 };
 
 // Köder: locken diese Tiere an (gefangen werden sie dann mit dem Lasso oder sie folgen von selbst)
-const TOOL_LURES = { ball: ['tiger'], banana: ['howler'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
+const TOOL_LURES = { lantern: ['elk'], ball: ['tiger'], banana: ['howler'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
 // alle Tierarten, die man mit diesem Werkzeug fängt oder lockt (null: mit leeren Händen, also durch Berühren)
 // (aus den Tierarten selbst, catchWith in Animal.js – dazu, was das Werkzeug selbst aufzählt)
 const toolAnimals = (id) => {
@@ -1086,6 +1101,7 @@ export default class GardenScene extends Phaser.Scene {
     this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
+    this.lantern = null; // abgestellte Moorlaterne (siehe placeLantern)
     this.hyenaPack = LEVEL.hyenas ? new HyenaPack(this, LEVEL.hyenas) : null; // Trockenzeit: das versteckte Hyänenrudel
     this.waterfallSun = LEVEL.waterfallSun && this.waterfalls.length ? new WaterfallSun(this, this.waterfalls[0]) : null; // Dschungel: ab und zu Sonne am Wasserfall (Leguane)
     this.seasonTimer = 1;
@@ -1278,6 +1294,9 @@ export default class GardenScene extends Phaser.Scene {
     this.beaverHintEl = document.getElementById('beaver-hint');
     this.beaverHintEl.classList.remove('show');
     this.beaverHintFor = null;
+    this.yakHintEl = document.getElementById('yak-hint');
+    this.yakHintEl.classList.remove('show');
+    this.yakHintFor = null;
     this.encounterEl.classList.remove('show');
     this.encounterAnimal = null;
     this.encounterTimer = 0;
@@ -1999,6 +2018,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Tapir(this, this.animals)
         : species === 'okapi'
           ? new Okapi(this, x, y)
+        : species === 'elk'
+          ? new Elk(this, x, y)
         : species === 'tanuki'
           ? new Tanuki(this, x, y)
         : species === 'yak'
@@ -2175,6 +2196,14 @@ export default class GardenScene extends Phaser.Scene {
       this.despawn(a);
       return group;
     }
+    // Elche stehen im Moorwasser (höchstens MAX_ELKS gleichzeitig), im Nebel nur als Schemen (siehe Elk.js)
+    if (species === 'elk') {
+      if (!this.expMap && this.animals.filter((a) => a.species === 'elk' && a.state === 'wild').length >= MAX_ELKS) return group;
+      const a = this.createAnimal('elk', 0, 0);
+      a.placeInWater();
+      a.unplaced = false;
+      return this.finishSpawn([a], false);
+    }
     // Tanukis stehen verkleidet neben Steinlaternen (höchstens MAX_TANUKIS gleichzeitig); erst die Variante würfeln
     // (finishSpawn), dann verkleiden: der Schwanz hat die Farbe des Fells
     if (species === 'tanuki') {
@@ -2220,6 +2249,7 @@ export default class GardenScene extends Phaser.Scene {
     } else {
       // Frösche meistens nah am Wasser, Giraffen meistens nah an Bäumen
       const tile =
+        (species === 'frog' && Math.random() < (LEVEL.prefer?.frog ?? 0) && this.tileFrom(this.preferredShore(), taken)) || // im Wald meist im Moor
         (species === 'frog' && Math.random() < FROG_NEAR_WATER && this.tileFrom(NEAR_WATER, taken)) ||
         (species === 'penguin' && LEVEL.iceHoles && Math.random() < PENGUIN_AT_HOLES && this.tileFrom(this.holeTiles(), taken)) || // nachts meist an den Eislöchern
         (species === 'penguin' && this.tileFrom(NEAR_WATER, taken)) || // Pinguine immer am Wasser
@@ -2415,7 +2445,9 @@ export default class GardenScene extends Phaser.Scene {
     const land = (rarePromiseHere()?.species === species || Math.random() < landChance) && NEAR_WATER.length > 0;
     let to;
     if (land) {
-      const t = Phaser.Utils.Array.GetRandom(NEAR_WATER);
+      // bevorzugtes Gebiet (LEVEL.prefer, im Wald das Moor): dort landen die meisten
+      const moor = Math.random() < (LEVEL.prefer?.[species] ?? 0) ? this.preferredShore() : [];
+      const t = Phaser.Utils.Array.GetRandom(moor.length ? moor : NEAR_WATER);
       to = tileToWorld(t.tx, t.ty);
     } else {
       to = this.mapEdgePoint(angle + Math.PI + Phaser.Math.FloatBetween(-0.6, 0.6)); // quer hinüber
@@ -2437,6 +2469,12 @@ export default class GardenScene extends Phaser.Scene {
     const bird = this.createAnimal('vulture', from.x, from.y);
     bird.rollSkin('wild'); // selten ein Ohrengeier
     bird.startCircle(from, { x: t.x, y: t.y + 3 }); // knapp vor dem Stamm, damit er vor dem Baum gezeichnet wird
+  }
+
+  // Uferkacheln im bevorzugten Gebiet (LEVEL.prefer.area, im Wald das Moor)
+  preferredShore() {
+    const a = LEVEL.prefer?.area;
+    return a ? NEAR_WATER.filter(({ tx, ty }) => tx >= a.tx0 && tx <= a.tx1 && ty >= a.ty0 && ty <= a.ty1) : [];
   }
 
   // Trockenzeit: freie Kacheln am letzten Wasserloch (dort tauchen Zebras und Antilopen auf)
@@ -3525,6 +3563,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Werkzeug in die Hand nehmen (ein getragenes kommt zurück an die Hütte)
   equipTool(id) {
+    if (id === 'lantern') this.removeLantern(); // es gibt nur eine Laterne
     if (CARRIED.includes(this.toolId)) this.stashedTool = null; // Stock bzw. Zweig weg, neues Werkzeug: das eingesteckte bleibt in der Kiste
     if (this.tool) {
       this.tool.destroy();
@@ -4090,7 +4129,7 @@ export default class GardenScene extends Phaser.Scene {
             this.markNew(`seen:${best.species}`);
           }
           const tools = [...new Set([...SPECIES[best.species].catchWith.map((t) => CATCH_TOOLS[t][0]), ...Object.keys(TOOL_LURES).filter((id) => TOOL_LURES[id].includes(best.species) && id !== 'glowjar').map((id) => TOOLS[id].image ?? id)])];
-          el.innerHTML = `${tools.slice(0, 3).map((t) => `<img src="assets/${t}.png" alt="">`).join('')}<span class="enc-q">?</span>`;
+          el.innerHTML = `${tools.slice(0, 3).map((t) => `<img src="assets/${t}.png" alt="">`).join('')}`;
           el.onclick = (e) => {
             e.stopPropagation();
             this.showCatchTip(best.species);
@@ -4138,6 +4177,43 @@ export default class GardenScene extends Phaser.Scene {
         el.onclick = (e) => {
           e.stopPropagation();
           this.showCatchTip('beaver');
+        };
+      }
+      el.classList.toggle('show', !!what);
+    }
+    if (!target) return;
+    const cam = this.cameras.main;
+    const z = this.scale.zoom;
+    el.style.left = `${(target.x - cam.worldView.x) * cam.zoom * z}px`;
+    el.style.top = `${(target.y - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
+  // Yak-Herde: Hinweisblase mit einem Yak über dem Salzstein, wenn er in der Nähe liegt; trägt Henrik ihn, zeigt sie
+  // stattdessen mit dem Salzstein auf den Steinhaufen. Antippen zeigt den Fang-Tipp
+  updateYakHint() {
+    const el = this.yakHintEl;
+    const herd = this.yakHerd;
+    const p = this.player;
+    let target = null;
+    let what = null;
+    if (herd && !herd.onCairn && !this.leaving) {
+      if (this.toolId === 'salt') {
+        if (Math.hypot(p.x - herd.cairn.x, (p.y - herd.cairn.y) * 2) < BEAVER_HINT_DIST * 1.6) {
+          target = { x: herd.cairn.x, y: herd.cairn.y - 46 };
+          what = 'cairn';
+        }
+      } else if (herd.salt && Math.hypot(p.x - herd.salt.x, (p.y - herd.salt.y) * 2) < BEAVER_HINT_DIST) {
+        target = { x: herd.salt.x, y: herd.salt.y - 20 };
+        what = herd.salt;
+      }
+    }
+    if (what !== this.yakHintFor) {
+      this.yakHintFor = what;
+      if (what) {
+        el.innerHTML = what === 'cairn' ? '<img src="assets/salt_stone.png" alt="">' : animalIcon('yak', 1.6);
+        el.onclick = (e) => {
+          e.stopPropagation();
+          this.showCatchTip('yak');
         };
       }
       el.classList.toggle('show', !!what);
@@ -4643,6 +4719,57 @@ export default class GardenScene extends Phaser.Scene {
     this.waterfallSound.setVolume(WATERFALL_VOLUME * k * k);
   }
 
+  // Zone mit eigenem Hintergrundgeräusch: Moor im Wald (LEVEL.ambientZone), Hochebene im Bambuswald (LEVEL.snowline,
+  // dort die Eiswelt-Geräusche). Je näher man ihr kommt, desto lauter ihr Geräusch und desto leiser das normale
+  zoneAmbient() {
+    if (LEVEL.ambientZone) return LEVEL.ambientZone;
+    if (LEVEL.snowline && LEVEL.ambient !== ZONE_SNOW) return { sound: ZONE_SNOW, snowline: LEVEL.snowline };
+    return null;
+  }
+
+  // wie sehr man in der Zone ist (0 bis 1)
+  zoneMix(zone) {
+    const { tx, ty } = worldToTile(this.player.x, this.player.y);
+    if (zone.snowline) {
+      const { full, band } = zone.snowline;
+      return Phaser.Math.Clamp((full + band - ty) / band, 0, 1);
+    }
+    const a = zone.area;
+    const d = Math.hypot(Math.max(a.tx0 - tx, 0, tx - a.tx1), Math.max(a.ty0 - ty, 0, ty - a.ty1));
+    return Phaser.Math.Clamp(1 - d / zone.fade, 0, 1);
+  }
+
+  updateZoneAmbient() {
+    const zone = this.zoneAmbient();
+    if (!zone || this.leaving || this.resting) return;
+    const key = zone.sound;
+    if (!this.cache.audio.exists(key)) {
+      if (this.zoneLoading) return;
+      this.zoneLoading = true;
+      this.load.audio(key, `assets/sounds/${key}.mp3`);
+      this.load.start();
+      return;
+    }
+    if (!this.zoneSound) {
+      this.zoneSound = this.sound.add(key, { loop: true, volume: 0 });
+      this.zoneSound.play();
+      this.zoneLevel = this.zoneMix(zone);
+      this.events.once('shutdown', () => {
+        this.zoneSound?.destroy();
+        this.zoneSound = null;
+      });
+    }
+    // sanft nachziehen (kein Sprung beim Betreten oder an einer Kachelgrenze)
+    const k = this.zoneMix(zone);
+    this.zoneLevel += (k - this.zoneLevel) * Math.min(1, this.game.loop.delta / 800);
+    const z = this.zoneLevel;
+    this.zoneSound.setVolume(ZONE_VOLUME * z);
+    // das normale Geräusch leiser (nicht, solange es gerade ein- oder ausgeblendet wird)
+    if (ambient && ambient.key === this.ambientKey() && !this.tweens.isTweening(ambient)) {
+      ambient.setVolume(this.ambientVolume(ambient.key, z));
+    }
+  }
+
   // Im Bett ausruhen: Henrik schläft ein und wacht in der nächsten Wetterphase des Gebiets wieder auf (Savanne, Dschungel)
   rest() {
     if (!SEASON_LEVELS.includes(LEVEL_ID)) return this.showToast(tr('💤 Du ruhst dich kurz aus.', '💤 You take a short rest.'));
@@ -4976,6 +5103,42 @@ export default class GardenScene extends Phaser.Scene {
     this.tool = null;
     this.toolId = null;
     this.updateToolbar();
+  }
+
+  // Moorlaterne vor sich abstellen: sie leuchtet dort weiter (Nebel weg, lockt die Elche, siehe Elk.js); danach das Lasso
+  placeLantern() {
+    const p = this.player;
+    const x = p.x + p.faceX * 16;
+    const y = p.y + p.faceY * 8;
+    this.removeLantern();
+    const imgs = [
+      this.add.ellipse(x, y + 1, 60, 20, LANTERN_GLOW, 0.22).setBlendMode(Phaser.BlendModes.ADD).setDepth(-98000), // Lichtschein am Boden
+      this.add.image(x, y, 'lantern').setOrigin(0.5, 0.92).setScale(0.42).setDepth(y),
+      this.add.image(x, y - 14, glowTexture(this)).setBlendMode(Phaser.BlendModes.ADD).setTint(LANTERN_GLOW).setScale(1.3).setDepth(GLOW_DEPTH),
+    ];
+    this.lantern = { x, y, imgs };
+    this.tool.destroy(); // die Laterne steht jetzt am Boden (nicht zurück in die Kiste) ...
+    this.tool = null;
+    this.toolId = null;
+    this.equipTool('lasso'); // ... und Henrik hat gleich das Lasso für den Elch in der Hand
+  }
+
+  removeLantern() {
+    for (const img of this.lantern?.imgs ?? []) img.destroy();
+    this.lantern = null;
+  }
+
+  // wo die Moorlaterne gerade leuchtet: in Henriks Hand und/oder abgestellt
+  lanternLights() {
+    const l = [];
+    if (this.toolId === 'lantern') l.push({ x: this.player.x, y: this.player.y });
+    if (this.lantern) l.push(this.lantern);
+    return l;
+  }
+
+  // so hell ist es hier von der Moorlaterne (0..1)
+  lightAt(x, y) {
+    return lanternLight(this.lanternLights(), x, y);
   }
 
   // Große Wanderung in der Savanne: der Gnu-Strom zieht, solange das Event läuft
@@ -6048,7 +6211,12 @@ export default class GardenScene extends Phaser.Scene {
       ambient.destroy();
       ambient = null;
     }
-    if (!key || ambient) return;
+    if (!key) return;
+    if (ambient) {
+      // läuft schon (gleiches Geräusch im neuen Gebiet): auf die hier passende Lautstärke (z. B. aus dem Moor kommend)
+      if (!this.leaving) this.tweens.add({ targets: ambient, volume: this.ambientVolume(key), duration: AMBIENT_FADE });
+      return;
+    }
     if (!this.cache.audio.exists(key)) {
       this.load.audio(key, `assets/sounds/${key}.mp3`);
       this.load.once('complete', () => {
@@ -6060,7 +6228,16 @@ export default class GardenScene extends Phaser.Scene {
     ambient = this.sound.add(key, { loop: true, volume: 0 });
     ambient.play();
     // Lautstärke je Gebiet (ambientVolume in levels.js), sonst die normale
-    this.tweens.add({ targets: ambient, volume: AMBIENT_VOLUMES[key] ?? LEVEL.ambientVolume ?? AMBIENT_VOLUME, duration: AMBIENT_FADE });
+    this.tweens.add({ targets: ambient, volume: this.ambientVolume(key), duration: AMBIENT_FADE });
+  }
+
+  // Lautstärke des Hintergrundgeräuschs: je Gebiet (ambientVolume in levels.js), sonst die normale; in einer Zone mit
+  // eigenem Geräusch (Moor, Hochebene) leiser
+  ambientVolume(key, mix = null) {
+    const base = AMBIENT_VOLUMES[key] ?? LEVEL.ambientVolume ?? AMBIENT_VOLUME;
+    const zone = this.zoneAmbient();
+    const z = mix ?? (zone && this.player ? this.zoneMix(zone) : 0);
+    return base * (1 - (1 - ZONE_KEEP) * z);
   }
 
   // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
@@ -6573,6 +6750,7 @@ export default class GardenScene extends Phaser.Scene {
       this.updateToolbar();
     }
     this.updateWaterfallSound();
+    this.updateZoneAmbient();
     this.waterfallSun?.update(dt);
     this.visitors?.update(dt);
     this.wheel?.update(dt);
@@ -6607,6 +6785,7 @@ export default class GardenScene extends Phaser.Scene {
     this.mavi.update(dt);
     this.updateEncounter(dt);
     this.updateBeaverHint();
+    this.updateYakHint();
     this.checkWrongHome(dt);
 
     // Tiere, die zuhause angekommen sind, folgen nicht mehr

@@ -26,7 +26,7 @@ const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sh
 // mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket (Bauernhof,
 // Reittier der Wiese ...) kommt ins Paket misc
 const GROUPS = {
-  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
+  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver', 'elk'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
   savanna: {
     species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
     keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
@@ -548,6 +548,7 @@ const ANIMAL_SOUNDS = {
   tapir: 'animal_tapir.wav', // Fiepen (beim Fangen und ab und zu aus dem Wasser)
   tanuki: 'animal_tanuki.wav',
   yak: 'animal_yak.wav', // Grunzen
+  elk: 'animal_elk.wav', // tiefes Grunzen (beim Fangen und ab und zu aus dem Nebel)
   gibbon: 'animal_gibbon.wav', // Rufe (beim Springen von Baum zu Baum und beim Fangen)
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
   toucan: 'animal_toucan.wav', // Tukan-Ruf (beim Losfliegen und beim Fangen)
@@ -736,6 +737,9 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['tapir', 'tapir2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 88 });
     for (const k of ['tapir_water', 'tapir2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 44 });
     for (const k of ['okapi', 'okapi2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 104 });
+    // Elch (Wald, Moor) und der seltene Geisterelch: Standbilder aus tools/static-sheet.py; im Wasser nur der obere Teil
+    for (const k of ['elk', 'elk2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 128, frameHeight: 128 });
+    for (const k of ['elk_water', 'elk2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 128, frameHeight: 80 });
     for (const k of ['anteater_eat', 'anteater2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 88, frameHeight: 80 });
     load.spritesheet('beaver', 'assets/beaver.png', { frameWidth: 80, frameHeight: 60 }); // Biber (Wald, aus Sprites/Biber.webp)
     load.image('beaver_swim', 'assets/beaver_swim.png'); // ... schwimmt (aus dem Biber-Sprite, tools/beaver-swim.py)

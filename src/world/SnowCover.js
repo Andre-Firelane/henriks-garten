@@ -5,10 +5,11 @@
 // Ein Bild in geringer Auflösung (weich vergrößert), einmal beim Betreten gemalt, gleich über dem Boden und unter allem
 // anderen. Auf dem Weg liegt weniger Schnee, damit man ihn noch sieht; heiße Quellen und Wasser bleiben frei.
 // Außerdem hinterlässt Henrik im Schnee Fußspuren (wie in der Eiswelt), umso deutlicher, je dichter der Schnee liegt.
+import Phaser from 'phaser';
 import { TILE_W, TILE_H, worldToTile } from './iso.js';
 import { LEVEL, MAP_W, MAP_H, buildingAt, charAt } from './map.js';
 
-const RES = 0.25; // Bildpunkte je Weltpixel (weich vergrößert)
+const RES = 0.5; // Bildpunkte je Weltpixel (weich vergrößert; gröber wirkt der Schnee auf dem Handy pixelig)
 const DEPTH = -99995; // über dem gebackenen Boden (-100000), unter Wegzeichen, Schatten und Dingen
 const SNOW = [242, 246, 250];
 const THIN = [214, 224, 236]; // dünner Schnee etwas bläulich
@@ -93,6 +94,7 @@ export default class SnowCover {
     }
     ctx.putImageData(img, 0, 0);
     tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
     this.image = scene.add.image(x0, y0, key).setOrigin(0).setScale(1 / RES).setDepth(DEPTH);
   }
 

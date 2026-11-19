@@ -5,8 +5,9 @@
 //   Bank über das Moor zieht und mal eine Lücke aufgeht.
 // - aufsteigende Schwaden: über dem Wasser in Henriks Nähe steigen immer wieder einzelne Fahnen auf, werden größer
 //   und verblassen.
-// Der Nebel liegt über allem auf der Karte (auch über Bäumen und Tieren). Um Henrik lichtet er sich (clear), damit man
-// sich selbst noch sieht; die Moorlaterne kann diesen Kreis später vergrößern. Er ist immer da (kein Wetter).
+// Der Nebel liegt über allem auf der Karte (auch über Bäumen und Tieren). Um Henrik lichtet er sich ein wenig (clear),
+// damit man sich selbst noch sieht; im Licht der Moorlaterne (in der Hand oder abgestellt, siehe lanternLights in
+// GardenScene) verschwindet er in einem großen Kreis fast ganz. Er ist immer da (kein Wetter).
 import Phaser from 'phaser';
 import { glowTexture } from './Fireflies.js';
 import { tileToWorld } from './iso.js';
@@ -29,6 +30,19 @@ const RISE_ALPHA = 0.3;
 const CLEAR = 70; // so weit um Henrik ist der Nebel ganz dünn ...
 const CLEAR_FADE = 120; // ... und wird über diese Strecke wieder dicht
 const THIN = 0.2; // so viel Nebel bleibt in Henriks Nähe übrig
+export const LANTERN_R = 140; // so weit (Welt-Pixel, Höhe doppelt gezählt) leuchtet die Moorlaterne den Nebel ganz weg ...
+export const LANTERN_FADE = 70; // ... und über diese Strecke wird er wieder dicht
+const LANTERN_THIN = 0.08; // so viel Nebel bleibt im Laternenlicht übrig
+
+// Helligkeit der Moorlaterne an einem Punkt (0 dunkel, 1 im vollen Licht); lights: [{ x, y }]
+export function lanternLight(lights, x, y) {
+  let best = 0;
+  for (const l of lights) {
+    const d = Math.hypot(x - l.x, (y - l.y) * 2);
+    best = Math.max(best, 1 - Math.min(1, Math.max(0, (d - LANTERN_R) / LANTERN_FADE)));
+  }
+  return best;
+}
 
 const isWater = (tx, ty) => '~Ŝǒ'.includes(charAt(tx, ty) ?? ' ');
 
@@ -46,6 +60,7 @@ export default class MoorFog {
     this.area = area;
     this.clear = CLEAR; // die Moorlaterne kann ihn vergrößern
     this.time = 0;
+    this.lights = [];
     this.tex = glowTexture(scene);
     this.puffs = [];
     this.water = [];
@@ -86,15 +101,18 @@ export default class MoorFog {
     return { img, x: t.x + Phaser.Math.Between(-20, 20), y: t.y, age: age * life, life, rise: Phaser.Math.FloatBetween(...RISE), drift: Phaser.Math.FloatBetween(-6, 6), size: Phaser.Math.FloatBetween(1.2, 2.2) };
   }
 
-  // so dünn ist der Nebel an dieser Stelle wegen Henrik (THIN ganz nah, 1 weit weg)
+  // so dünn ist der Nebel an dieser Stelle wegen Henrik und der Laterne (fast nichts im Licht, 1 weit weg)
   nearHenrik(x, y) {
     const pl = this.scene.player;
     const d = Math.hypot(x - pl.x, (y - pl.y) * 2);
-    return THIN + (1 - THIN) * Phaser.Math.Clamp((d - this.clear) / CLEAR_FADE, 0, 1);
+    const own = THIN + (1 - THIN) * Phaser.Math.Clamp((d - this.clear) / CLEAR_FADE, 0, 1);
+    const lit = lanternLight(this.lights, x, y);
+    return Math.min(own, 1 - lit * (1 - LANTERN_THIN));
   }
 
   update(dt) {
     this.time += dt;
+    this.lights = this.scene.lanternLights?.() ?? [];
     const cam = this.scene.cameras.main.worldView;
     const inView = (x, y) => x > cam.x - 220 && x < cam.right + 220 && y > cam.y - 140 && y < cam.bottom + 140;
     for (const f of this.puffs) {

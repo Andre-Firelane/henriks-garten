@@ -56,12 +56,15 @@ export default class Macaque extends Animal {
   }
 
   // gleich in der Quelle (beim Erscheinen)
+  // (ohne Quelle, etwa im Käfig oder Sammelgehege der Expedition: kein Bad, er läuft herum)
   placeInSpring() {
     const p = this.bathSpot();
-    if (p) {
-      this.x = p.x;
-      this.y = p.y;
+    if (!p) {
+      this.phase = 'walk';
+      return;
     }
+    this.x = p.x;
+    this.y = p.y;
     this.phase = 'bath';
   }
 

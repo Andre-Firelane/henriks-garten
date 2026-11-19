@@ -28,6 +28,7 @@ const SOUNDS = [
   ['Sounds/Tapir.mp3', 'public/assets/sounds/animal_tapir.wav', 0.5, 1.0, 0.8], // erstes Fiepen des Tapirs (beim Fangen und ab und zu aus dem Wasser)
   ['Sounds/Tanuki.mp3', 'public/assets/sounds/animal_tanuki.wav', 1.15, 1.0, 0.8], // ein Ruf des Tanukis (ohne das leise Gemurmel am Anfang)
   ['Sounds/Yak.mp3', 'public/assets/sounds/animal_yak.wav', 0.45, 2.6, 0.8], // erstes Grunzen des Yaks
+  ['Sounds/Elch.mp3', 'public/assets/sounds/animal_elk.wav', 2.25, 1.15, 0.8], // erstes Grunzen des Elchs (ohne die Stille davor und das lange Röhren danach)
   ['Sounds/Ara.mp3', 'public/assets/sounds/animal_macaw.wav', 1.08, 0.85, 0.8], // erster Ruf des Aras (beim Losfliegen und Fangen)
   ['Sounds/Gorilla.mp3', 'public/assets/sounds/gorilla_beat.wav', 0.08, 0.35, 0.8], // ein Schlag auf die Brust (Trommel-Duell, siehe DrumTool.js)
   ['Sounds/Tukan.mp3', 'public/assets/sounds/animal_toucan.wav', 0.35, 1.0, 0.8], // die ersten beiden Rufe des Tukans (Starkregen; beim Losfliegen und Fangen)

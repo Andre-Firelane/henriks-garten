@@ -15,6 +15,7 @@ export const APPEAL = {
   mole: 1.5,
   squirrel: 1.5,
   deer: 2,
+  elk: 5, // groß und selten zu sehen
   koi: 2,
   heron: 2.5,
   fox: 3,
