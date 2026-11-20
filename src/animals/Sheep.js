@@ -1,26 +1,14 @@
-// Schaf: läuft gemütlich herum und senkt in regelmäßigen Abständen den Kopf zum Grasen – draußen wie auf der Weide.
-// Am Fangen ändert das nichts.
+// Schaf und die anderen Hoftiere (Kuh, Schwein, Ziege): laufen gemütlich herum und senken in regelmäßigen Abständen den
+// Kopf zum Grasen – draußen wie im Streichelzoo. Am Fangen ändert das nichts.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
-import { isActive } from '../world/events.js';
 
 const GRAZE_EVERY = [6, 12]; // Sekunden zwischen zwei Grasepausen
 const GRAZE_TIME = [3, 6]; // so lange grast es
-// Bauernhof-Event: freie Schafe sehen reihum aus wie Kuh, Schwein oder Ziege (verhalten sich aber weiter wie Schafe).
-// Wer so gefangen wird, behält das Aussehen für immer; nach dem Event sind die freien wieder Schafe.
-const FARM_LOOKS = ['cow', 'pig', 'goat'];
-// Animationen der Bauernhof-Tiere (Videos); das Schwein steht im Standbild
-const FARM_ANIMS = {
-  cow: { walkDown: 'farm_cow_walk', walkUp: 'farm_cow_walk_back', idleDown: 'farm_cow_idle', idleUp: 'farm_cow_idle_back' },
-  pig: { walkDown: 'farm_pig_walk', walkUp: 'farm_pig_walk_back' },
-  goat: { walkDown: 'farm_goat_walk', walkUp: 'farm_goat_walk_back', idleDown: 'farm_goat_idle', idleUp: 'farm_goat_idle_back' },
-};
-const ALL_ANIM_KEYS = Object.values(FARM_ANIMS).flatMap((a) => Object.values(a));
-let farmCounter = 0;
 
 export default class Sheep extends Animal {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'sheep');
+  constructor(scene, x, y, species = 'sheep') {
+    super(scene, x, y, species);
     this.grazing = false;
     this.grazeTime = Phaser.Math.FloatBetween(1, GRAZE_EVERY[1]); // nicht alle gleichzeitig
   }
@@ -47,6 +35,12 @@ export default class Sheep extends Animal {
     return super.updateFree(dt, player);
   }
 
+  // beim Streicheln nicht grasen (siehe Animal.petStill)
+  petStill() {
+    this.grazing = false;
+    super.petStill();
+  }
+
   startFeed() {
     this.grazing = false;
   }
@@ -60,37 +54,21 @@ export default class Sheep extends Animal {
     super.catch();
   }
 
-  // Bauernhof-Event: welches Tier das Schaf spielt (oder null). Gefangene behalten es, freie nur während des Events
-  farmLook() {
-    if (this.state !== 'wild') return this.farm ?? null; // gefangen, in der Falle oder im Gehege: bleibt, wie es ist
-    if (!isActive('farm')) return (this.farm = null);
-    this.farm ??= FARM_LOOKS[farmCounter++ % FARM_LOOKS.length];
-    return this.farm;
-  }
-
-  // als Bauernhof-Tier dessen Bild und Animationen
-  baseTexture() {
-    const farm = this.farmLook();
-    return farm ? `farm_${farm}` : super.baseTexture();
-  }
-
-  animSet() {
-    const farm = this.farmLook();
-    return farm ? FARM_ANIMS[farm] : super.animSet();
-  }
-
   // beim Grasen das Standbild
   animKey(moving) {
     return this.grazing ? null : super.animKey(moving);
   }
 
+  // Grasen: das Fress-Bild (mit Skin dessen, z. B. sheep2_eat), sonst das Bild der Art
+  grazeTexture() {
+    return this.eatTexture() ?? `${this.baseTexture()}_eat`;
+  }
+
   render(moving) {
-    const farm = this.farmLook();
-    // mit Skin (gefleckter Widder) dessen Bilder: sheep2, sheep2_eat
-    const key = farm ? `farm_${farm}${this.grazing ? '_eat' : ''}` : this.grazing ? this.eatTexture() ?? 'sheep_eat' : super.baseTexture();
+    const key = this.grazing ? this.grazeTexture() : this.baseTexture();
     // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)
     const skinAnims = Object.values(this.kind.skinAnims ?? {}).flatMap((s) => Object.values(s));
-    const allAnims = [...Object.values(this.kind.anims), ...skinAnims, ...ALL_ANIM_KEYS];
+    const allAnims = [...Object.values(this.kind.anims ?? {}), ...skinAnims];
     const onAnim = !this.grazing && Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);
     if (this.sprite.texture.key !== key && !onAnim) {
       const fromAnim = allAnims.includes(this.sprite.texture.key);

@@ -209,6 +209,23 @@ Schon vorhanden und nur zu verwenden:
 
 Noch offen: Futterkrippe für die Lichtung (Ausbau), vielleicht `&` (hay_rack) aus dem alten Rehgehege.
 
+## Änderung: offener Bereich, kein Gehegeausbau (20.11.2026)
+
+- **Der Wildpark ist kein Gehege**, sondern ein offener Bereich (`open: true`). `enclosureAt` und `inPen` übergehen ihn:
+  Besucher gehen hinein, man darf dort später Deko setzen, der E-Roller hält nicht an. Nur die Tiere selbst bleiben
+  mit `homeAt` (Animal.enclosureFullyAt) an seine Fläche gebunden. Schild, Plätze und Einliefern bleiben wie bei einem
+  Gehege (das Schild gibt es für die Info und später für das Benennen der Tiere).
+- **Aussichtsplätze der Besucher:** Wegkacheln im Wildpark, neben denen höchstens 2 Kacheln weit freie Wiese liegt;
+  man schaut auf die nächste solche Kachel (visitors.js). Getestet: Besucher gehen hinein und bleiben am Ring und am
+  Eingangsweg stehen.
+- **Gehegeausbau abgeschaltet** (`PEN_UPGRADES = false` in map.js): alle Gehege gelten als ausgebaut (volle Plätze,
+  Ausstattung, Spielzeug). Kein Reiter am Computer, keine Aktion am Gehegeschild, keine Ausbau-Aufgabe mehr im
+  Tutorial (nach dem Wald geht es mit Mavi gleich zur Bude). Die Deko soll den Ausbau ersetzen. Das Dickicht (`basic`)
+  und die Ausbau-Texte bleiben in levels.js stehen, wirken aber nicht.
+- **Spielzeug des Wildparks** an einem festen Platz auf der Lichtung (`toysAt`): nur die Futterraufe (ohne Salzleckstein).
+- **Bilder:** Holunder, Hasel, Baumstumpf, bemooster Stamm und Felsbrocken laden mit dem Grundpaket (vorher nur mit dem
+  Wald-Paket; im Tierpark fehlten sie, wenn man früh hinkam).
+
 ## Umsetzung (20.11.2026)
 
 - **Karte:** PARK_ROWS Spalten 0–23, Zeilen 23–59 nach der Skizze. Der gesperrte Wolfswald ist ein eingezäuntes Stück Wald,
@@ -221,7 +238,7 @@ Noch offen: Futterkrippe für die Lichtung (Ausbau), vielleicht `&` (hay_rack) a
   - Biberbach (`forestpond`, Id vom alten Teich).
   - Wildschwein, Fuchs, Voliere, Wolfswald: Ids und Plätze wie bisher.
 - **Ausbau:** Vor dem Ausbau Dickicht in Wildpark, Wildschwein, Fuchs, Biberbach und Voliere (`basic`), der Ausbau
-  lichtet es („Dickicht lichten“). Am Teich bringt der Ausbau Schilf.
+  lichtet es („Dickicht lichten“). Am Teich bringt der Ausbau Schilf. (Inzwischen abgeschaltet, siehe oben.)
 - **Neue Kartenzeichen:** `ȸ` und `ȹ` sind Wild- bzw. Holzzaun über dem Bach.
 - **Wege:** Die Bodenzone des Waldes hat `path: 'forest_path'`. Besucher laufen auf allen Wegen (`isWalkway`), auch über
   Brücken.
@@ -232,8 +249,6 @@ Noch offen: Futterkrippe für die Lichtung (Ausbau), vielleicht `&` (hay_rack) a
 ## Noch offen
 
 - Echtes Bild für den Torbogen (Vorlage in Wald-Sprites/Neu, Tafel ohne Schrift).
-- Futterkrippe auf der Lichtung (der Ausbau des Wildparks stellt sein Spielzeug irgendwo mittig auf).
-- Dickicht in den Gehegen der anderen Welten, falls es Andre im Wald gefällt.
 
 ## Schritte
 

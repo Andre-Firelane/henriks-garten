@@ -13,7 +13,7 @@ export function newStory(locks = true) {
 // umbenannte Aufgaben (alt → neu) und neue, die als erledigt gelten, wenn eine frühere schon erledigt ist (sonst würde
 // syncStory Spielstände, die schon weiter sind, auf die neue Aufgabe zurückwerfen)
 const STEP_RENAMES = { icecream: 'babies' };
-const DONE_WITH = { stands: 'upgrade' };
+const DONE_WITH = { stands: 'upgrade' }; // (upgrade: die frühere Ausbau-Aufgabe; gibt es nicht mehr, syncStory springt zur nächsten)
 
 // beim Laden: die aktive Aufgabe steht auch mit Namen im Spielstand (id) – kommen Aufgaben dazu oder fallen weg, stimmt so
 // die Nummer wieder (eine weggefallene: die erste danach, die noch nicht erledigt ist)

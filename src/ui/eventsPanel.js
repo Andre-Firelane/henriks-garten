@@ -1,5 +1,5 @@
-// Hauptrechner im Haupthaus: drei Reiter – "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown),
-// "Gehege" (gegen Herzen ausbauen: mehr Plätze und neue Ausstattung) und "Buden" (auf einem freien Bauplatz bauen).
+// Hauptrechner im Haupthaus: Reiter "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown), "Gehege" (gegen
+// Herzen ausbauen: mehr Plätze und neue Ausstattung; vorerst abgeschaltet) und "Buden" (auf einem freien Bauplatz bauen).
 // Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Tablet: Reiter und Kacheln antippen.
 // Laptop: Q/Tab wechselt den Reiter, A/D wählt, E/Enter/Leertaste bestätigt, Esc schließt.
 import { formatTime } from '../world/events.js';
@@ -7,15 +7,17 @@ import { animalIcons } from './icons.js';
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
 import { shopDef } from '../world/shops.js';
+import { PEN_UPGRADES } from '../world/map.js';
 
 let panel = null;
 let state = null;
 let openedAt = 0;
 let timer = null;
 const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nichts tun
+// (den Reiter für den Gehegeausbau nur, solange es ihn gibt, siehe PEN_UPGRADES in map.js)
 const TABS = [
   ['events', 'Events'],
-  ['pens', tr('Gehege ausbauen', 'Upgrade enclosures')],
+  ...(PEN_UPGRADES ? [['pens', tr('Gehege ausbauen', 'Upgrade enclosures')]] : []),
   ['build', tr('Buden bauen', 'Build stands')],
 ];
 

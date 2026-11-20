@@ -35,6 +35,12 @@ const PEACOCK_WATCH_TIME = [2.5, 4];
 const PEACOCK_HEART_CHANCE = 0.6;
 // Bewunderungsherzen: jeder Besucher gibt beim Stehenbleiben vor einem Gehege mit Tieren genau ein Herz
 // (mehr Herzen gibt es nur durch mehr Besucher, also durch mehr und seltenere Tiere)
+// Streichelzoo (petting in levels.js): der Besucher geht durchs Tor hinein, sucht sich ein Tier aus, das gerade frei ist,
+// geht hin und streichelt es (das Tier bleibt stehen und schaut ihn an). Jedes Streicheln bringt ein Herz; er streichelt
+// PETS Tiere nacheinander, also doppelt so viele Herzen wie beim Anschauen
+const PETS = 2;
+const PET_TIME = [4, 6.5]; // Sekunden Streicheln
+const PET_GAP = 15; // so weit (Pixel) steht er neben dem Tier
 
 export class Visitor {
   constructor(scene, crowd, x, y, look) {
@@ -94,6 +100,7 @@ export class Visitor {
         this.phase = 'walk';
       }
     } else if (this.phase === 'walk' || this.phase === 'leave') {
+      if (this.goal === 'pet' && !this.crowd.canKeepPetting(this, this.petAnimal)) return this.crowd.petNext(this);
       const target = this.route[0];
       if (!target) {
         if (this.phase === 'leave') return this.crowd.remove(this);
@@ -134,6 +141,23 @@ export class Visitor {
       if (this.timer <= 0) {
         if (Math.random() < FEED_CHANCE) this.crowd.feed(this);
         this.next();
+      }
+    } else if (this.phase === 'pet') {
+      // im Streichelzoo: streicheln, nach der halben Zeit ein Herz, dann zum nächsten Tier
+      const a = this.petAnimal;
+      if (!this.crowd.canKeepPetting(this, a)) return this.crowd.petNext(this);
+      this.timer -= dt;
+      this.faceX = Math.sign(a.x - this.x) || this.faceX;
+      this.faceY = Math.sign(a.y - this.y) || this.faceY;
+      this.stroke = (this.stroke ?? 0) + dt;
+      if (this.heartPending && this.timer <= this.heartAt) {
+        this.heartPending = false;
+        for (let i = 0; i < this.petHearts; i++) this.scene.time.delayedCall(250 * i, () => !this.gone && this.popHeart());
+        this.scene.addHearts(this.petHearts, a.species);
+      }
+      if (this.timer <= 0) {
+        this.petsLeft--;
+        this.crowd.petNext(this);
       }
     } else if (this.phase === 'queue') {
       // am Riesenrad angestellt: warten, bis unten eine Gondel frei ist (siehe FerrisWheel); zu lange, dann weiter
@@ -227,6 +251,23 @@ export class Visitor {
 
   // am Ziel angekommen: an der Bude bzw. am Riesenrad anstellen oder am Gehege stehen bleiben und schauen
   arrive() {
+    if (this.goal === 'petenter') {
+      // am Tor des Streichelzoos: jetzt ein Tier aussuchen
+      this.goal = null;
+      if (!this.crowd.goPet(this)) this.next();
+      return;
+    }
+    if (this.goal === 'pet') {
+      this.goal = null;
+      this.phase = 'pet';
+      this.timer = Phaser.Math.FloatBetween(...PET_TIME);
+      this.heartAt = this.timer / 2;
+      this.heartPending = true;
+      // während der Tierbabys: ein Baby zu streicheln bringt mehr Herzen (wie an den anderen Gehegen)
+      const bonus = Math.floor(BABY_BONUS) + (Math.random() < BABY_BONUS % 1 ? 1 : 0);
+      this.petHearts = 1 + (this.petAnimal?.baby ? bonus : 0);
+      return;
+    }
     if (this.goal === 'ride') {
       this.goal = null;
       this.phase = 'queue';
@@ -274,7 +315,9 @@ export class Visitor {
     const phase = this.walkTime * 9;
     const hop = moving ? Math.abs(Math.sin(phase)) * 2 : 0;
     this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
-    this.sprite.setAngle(moving ? Math.sin(phase) * 2 : 0);
+    // beim Streicheln sanft vor- und zurückneigen
+    const stroke = this.phase === 'pet' ? Math.sin((this.stroke ?? 0) * 5) * 3 * this.faceX : 0;
+    this.sprite.setAngle(moving ? Math.sin(phase) * 2 : stroke);
     this.shadow.setPosition(this.x, this.y);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
@@ -342,7 +385,7 @@ export class VisitorCrowd {
 
   // Gehege mit Tieren und freiem Platz, gewichtet nach Anziehung (nicht das, an dem er gerade war)
   pickPen(except) {
-    const options = ENCLOSURES.map((e) => ({ e, w: penScore(this.scene.animals, e), spots: (this.grid.spots.get(e) ?? []).filter((s) => !s.taken) }))
+    const options = ENCLOSURES.map((e) => ({ e, w: penScore(this.scene.animals, e), spots: e.petting ? this.petEntries(e) : (this.grid.spots.get(e) ?? []).filter((s) => !s.taken) }))
       .filter((o) => o.w > 0 && o.spots.length && o.e !== except);
     if (!options.length) return null;
     let r = Math.random() * options.reduce((s, o) => s + o.w, 0);
@@ -355,6 +398,7 @@ export class VisitorCrowd {
     const from = v.tile;
     const o = this.pickPen(v.pen);
     if (!o) return false;
+    if (o.e.petting) return this.sendToPetting(v, o.e);
     // der nächste freie Platz an diesem Gehege
     const free = new Set(o.spots.map((s) => s.tx + ',' + s.ty));
     const route = findRoute(this.grid, from, (tx, ty) => free.has(tx + ',' + ty));
@@ -379,6 +423,82 @@ export class VisitorCrowd {
   release(v) {
     if (v.spot) v.spot.taken = null;
     v.spot = null;
+    if (v.petAnimal?.petted === v) v.petAnimal.petted = null;
+    v.petAnimal = null;
+    if (v.goal === 'pet' || v.goal === 'petenter') v.goal = null;
+  }
+
+  // --- Streichelzoo ---
+
+  // Tiere, die ein Besucher gerade streicheln darf: im Gehege, frei (kein anderer Besucher, kein Futter, kein
+  // Spielzeug) und am Boden (keine Katze oben auf dem Kratzbaum)
+  pettable(e) {
+    const inside = this.grid.pets?.get(e)?.inside;
+    if (!inside) return [];
+    return this.scene.animals.filter((a) => {
+      if (a.state !== 'penned' || a.enclosure !== e || a.petted || a.feed || a.play || a.tree || a.jumping || a.sleeping || !a.sprite?.active) return false;
+      const t = worldToTile(a.x, a.y);
+      return inside.has(t.tx + ',' + t.ty);
+    });
+  }
+
+  // für pickPen: ein Eintrag je freiem Tier, abzüglich der Besucher, die schon auf dem Weg hinein sind
+  petEntries(e) {
+    const busy = this.visitors.filter((v) => v.pen === e && v.goal === 'petenter').length;
+    return this.pettable(e).slice(busy);
+  }
+
+  // zum Tor des Streichelzoos laufen; dort sucht er sich ein Tier aus (arrive, goal 'petenter')
+  sendToPetting(v, e) {
+    const pet = this.grid.pets.get(e);
+    const gates = new Set(pet.gates.map((g) => g.tx + ',' + g.ty));
+    const route = findRoute(this.grid, v.tile, (tx, ty) => gates.has(tx + ',' + ty));
+    if (!route) return false;
+    v.pen = e;
+    v.petsLeft = PETS;
+    v.goal = 'petenter';
+    v.phase = 'walk';
+    v.setRoute(route);
+    return true;
+  }
+
+  // ein freies Tier im Streichelzoo aussuchen (eins der nächsten) und hingehen; false, wenn keins frei ist
+  goPet(v) {
+    const e = v.pen;
+    const pet = this.grid.pets.get(e);
+    if (!pet) return false;
+    const free = this.pettable(e).sort((a, b) => Math.hypot(a.x - v.x, a.y - v.y) - Math.hypot(b.x - v.x, b.y - v.y));
+    for (const a of free.slice(0, 4)) {
+      const at = worldToTile(a.x, a.y);
+      const route = findRoute(this.grid, v.tile, (tx, ty) => pet.inside.has(tx + ',' + ty) && Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= 1);
+      if (!route) continue;
+      // neben dem Tier stehen, auf der Seite, von der er kommt
+      const side = v.x < a.x ? -1 : 1;
+      a.petted = v;
+      v.petAnimal = a;
+      v.goal = 'pet';
+      v.phase = 'walk';
+      v.setRoute(route, { x: a.x + side * PET_GAP, y: a.y + 3 });
+      return true;
+    }
+    return false;
+  }
+
+  // darf er das Tier weiter streicheln bzw. weiter dorthin gehen?
+  canKeepPetting(v, a) {
+    return !!a && a.petted === v && a.state === 'penned' && a.enclosure === v.pen && !!a.sprite?.active;
+  }
+
+  // fertig mit einem Tier (oder es ist weg): das nächste, sonst weiter zum nächsten Gehege
+  petNext(v) {
+    const a = v.petAnimal;
+    if (a?.petted === v) a.petted = null;
+    v.petAnimal = null;
+    v.goal = null;
+    v.phase = 'walk';
+    v.route = [];
+    if (v.petsLeft > 0 && this.goPet(v)) return;
+    v.next();
   }
 
   // Buden dieses Abschnitts, zu denen Besucher gehen können: die festen und (solange das Event läuft) der Eiswagen
@@ -482,6 +602,13 @@ export class VisitorCrowd {
   // Schafe mögen" seltsam, solange der Park noch fast leer ist). Fehlt einer, taucht er sanft an einem freien Platz auf
   ensureAt(e, n = 1) {
     if (this.visitors.filter((v) => v.pen === e && v.phase !== 'leave').length >= n) return;
+    if (e.petting) {
+      const v = this.placePetting(e, false);
+      if (!v) return;
+      v.sprite.setAlpha(0);
+      this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
+      return;
+    }
     const spots = (this.grid.spots.get(e) ?? []).filter((s) => !s.taken);
     if (!spots.length) return;
     const v = this.placeAtPen({ e, spots }, false);
@@ -493,6 +620,7 @@ export class VisitorCrowd {
   // gehen gleichzeitig weiter). Gibt den Besucher zurück
   placeAtPen(o = this.pickPen(null), partial = true) {
     if (!o) return null;
+    if (o.e.petting) return this.placePetting(o.e, partial);
     const spot = Phaser.Utils.Array.GetRandom(o.spots);
     const p = this.standPoint(spot);
     const v = new Visitor(this.scene, this, p.x, p.y, this.pickLook());
@@ -508,6 +636,26 @@ export class VisitorCrowd {
     v.heartsLeft = Math.round(v.heartsLeft * k);
     v.heartAt = v.timer * 0.75;
     v.heartStep = v.heartAt / Math.max(1, v.heartsLeft);
+    return v;
+  }
+
+  // Besucher direkt neben ein freies Tier im Streichelzoo stellen, er streichelt schon (partial: schon eine Weile)
+  placePetting(e, partial) {
+    const a = Phaser.Utils.Array.GetRandom(this.pettable(e));
+    if (!a) return null;
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const v = new Visitor(this.scene, this, a.x + side * PET_GAP, a.y + 3, this.pickLook());
+    this.visitors.push(v);
+    v.pen = e;
+    v.petsLeft = partial ? Phaser.Math.Between(1, PETS) : PETS;
+    a.petted = v;
+    v.petAnimal = a;
+    v.goal = 'pet';
+    v.arrive();
+    if (partial) {
+      v.timer *= Math.random();
+      v.heartPending = v.timer > v.heartAt;
+    }
     return v;
   }
 

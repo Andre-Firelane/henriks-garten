@@ -5,8 +5,9 @@ Stand: 20.11.2026, noch nicht umgesetzt.
 ## Ziel
 
 Man gestaltet den Tierpark selbst, als Cozy-Mechanik vor allem für Erwachsene. Henrik kann trotzdem leicht mitmachen.
-Die Herzen der Besucher bekommen über den Deko-Laden eine dauerhafte Verwendung. Bisher fließen sie fast nur in den
-Gehegeausbau und in Events.
+Die Herzen der Besucher bekommen über den Deko-Laden eine dauerhafte Verwendung. Bisher flossen sie fast nur in den
+Gehegeausbau und in Events. Der Gehegeausbau ist seit dem 20.11.2026 abgeschaltet (`PEN_UPGRADES` in map.js, alle Gehege
+gelten als ausgebaut); die Deko ersetzt ihn.
 
 ## Grundsätze
 
@@ -25,7 +26,8 @@ Busch aus `OBJECTS`.
 - **Erlaubt:** Rasen und freie Flächen im Tierpark
 - **Nicht erlaubt:**
   - auf Wegen (`PATH_CHARS`)
-  - in Gehegen (deren Ausstattung bleibt beim Gehegeausbau)
+  - in Gehegen (deren Ausstattung bleibt, wie sie ist). Offene Bereiche (`open`, z. B. der Wildpark) zählen nicht als
+    Gehege: Dort darf man Deko setzen, die Lichtung ist dafür gedacht (siehe plan-wildpark.md).
   - auf Bauplätzen
   - direkt vor Toren, Gehegeschildern, Buden, dem Futterautomaten, dem Computer und dem Auto
   - auf Kacheln, auf denen schon etwas steht
@@ -76,7 +78,7 @@ Hat jeder Spielstand von Anfang an, auch ältere beim Laden. Zum Beispiel:
 - Im Laden gibt es die **allgemeine Deko** in beliebiger Menge: Bänke, Blumenbeete, Laternen, Büsche, Hecken, kleine
   Bäume, Wegsteine, Brunnen.
 - Preise je nach Größe, zum Beispiel klein 5, mittel 15 und groß 40 Herzen. Das muss noch auf die Herzen-Einnahmen
-  abgestimmt werden (Herzregen = 50, jeder Gehegeausbau 10 mehr).
+  abgestimmt werden (Herzregen = 50; der Gehegeausbau, früher 40 Herzen und jeder weitere 10 mehr, fällt weg).
 - **Gefundenes wird kaufbar:** Hat man ein Teil aus einer Kiste oder einer Expedition einmal bekommen, steht es danach
   auch im Laden. Wer zum Beispiel einmal Bambus aus der Bambuswald-Expedition hat, kann sich dann eine ganze Reihe
   kaufen und muss nicht zehnmal auf Expedition. So bleiben Kisten und Expeditionen besonders, und der Laden wächst mit.
@@ -125,7 +127,7 @@ decor: {
 },
 ```
 
-- Beim Laden wird jede gesetzte Deko geprüft. Steht sie durch einen späteren Umbau (zum Beispiel Gehegeausbau,
+- Beim Laden wird jede gesetzte Deko geprüft. Steht sie durch einen späteren Umbau (zum Beispiel
   neuer Weg) an einer nicht mehr erlaubten Stelle, wandert sie zurück in die Deko-Taste.
 - Alle Texte zweisprachig über `tr()`.
 

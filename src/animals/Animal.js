@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { inPen, isGate, enclosureAt, accepts, bridgeLift, raiseAt, objectAt, biomeOf, LEVEL, LEVEL_ID } from '../world/map.js';
+import { inPen, isGate, homeAt, accepts, bridgeLift, raiseAt, objectAt, biomeOf, LEVEL, LEVEL_ID } from '../world/map.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { TOY_PLAY } from '../world/toys.js';
+import { TOY_PLAY, TOYS } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
@@ -26,6 +26,53 @@ export const SPECIES = {
     footW: 9,
     shadowW: 30,
     catchWith: ['touch', 'lasso'], // womit man es fangen kann: 'touch' (berühren), 'net' (Kescher), 'lasso', 'trap' (Falle)
+  },
+  // Hoftiere der Wiese und des Streichelzoos: grasen wie das Schaf (Sheep.js), Fress-Bild ist farm_<Art>_eat.
+  // Früher nur Verkleidungen der Schafe beim Bauernhof-Event (alte Spielstände ziehen um, siehe migratePettingZoo)
+  cow: {
+    texture: 'farm_cow',
+    anims: { walkDown: 'farm_cow_walk', walkUp: 'farm_cow_walk_back', idleDown: 'farm_cow_idle', idleUp: 'farm_cow_idle_back' },
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 20, // gemächlich
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1.5, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 11,
+    shadowW: 36,
+    catchWith: ['touch', 'lasso'],
+  },
+  pig: {
+    texture: 'farm_pig',
+    anims: { walkDown: 'farm_pig_walk', walkUp: 'farm_pig_walk_back' }, // steht im Standbild
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 26,
+    restChance: 0.4,
+    restTime: [1, 3],
+    walkTime: [1, 3],
+    stepRate: 10,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 30,
+    catchWith: ['touch', 'lasso'],
+  },
+  goat: {
+    texture: 'farm_goat',
+    anims: { walkDown: 'farm_goat_walk', walkUp: 'farm_goat_walk_back', idleDown: 'farm_goat_idle', idleUp: 'farm_goat_idle_back' },
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 84 / 88,
+    speed: 32, // etwas flinker als das Schaf
+    restChance: 0.4,
+    restTime: [0.8, 2.5],
+    walkTime: [1, 2.5],
+    stepRate: 11,
+    hop: 2,
+    footW: 8,
+    shadowW: 28,
+    catchWith: ['touch', 'lasso'],
   },
   cat: {
     texture: 'cat',
@@ -291,23 +338,6 @@ export const SPECIES = {
     hop: 4,
     footW: 5,
     shadowW: 18,
-    catchWith: ['touch', 'net'],
-  },
-  // Maulwürfe leben unter der Erde und tauchen kurz im Hügel auf (siehe Mole.js);
-  // frames/originY gelten für den laufenden Maulwurf, nachdem man ihn gefangen hat
-  mole: {
-    texture: 'mole',
-    moundTexture: 'mole_mound',
-    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 48 / 52,
-    speed: 20,
-    restChance: 0.5,
-    restTime: [1, 3],
-    walkTime: [1, 2],
-    stepRate: 10,
-    hop: 1,
-    footW: 6,
-    shadowW: 20,
     catchWith: ['touch', 'net'],
   },
   // Fischreiher fliegen über die Karte und landen manchmal am Wasser (siehe Heron.js);
@@ -1076,6 +1106,11 @@ export function isCatchable(kind) {
 
 const FOLLOW_SPEED = 100; // beim Hinterherlaufen schneller als der Spieler, damit es aufholt
 const FOLLOW_SLACK = 0.5; // so viele Pixel darf es beim Folgen hinter seinem Platz zurückbleiben, ohne nachzurücken
+const ZONE_TILE = 45; // eine Kachel im Maß der Leine (Abstand mit doppeltem y, wie in pickWander)
+const TOY_SPOTS = [[-18, 9], [18, 9], [0, 13], [-18, -9], [18, -9]]; // freier Platz vor einem Spielzeug (von dort springt, frisst, klettert es)
+// ... und rund um ein großes mit mehreren Plätzen (Heuhäuschen), in zufälliger Reihenfolge besetzt
+const SEAT_RING = [[-28, 10], [28, 10], [0, 18], [-28, -10], [28, -10], [-44, 2], [44, 2], [-14, 20], [14, 20]];
+const ZONE_PULL = 0.7; // so oft läuft ein Tier außerhalb seines Lieblingsorts dorthin zurück (sonst irgendwohin)
 export const FOLLOW_GAP = 34; // Abstand zwischen den Tieren auf der Spur des Spielers
 export const CATCH_DIST = 22; // so nah muss der Spieler ran, um es zu fangen
 const FOOT_H = 3;
@@ -1169,9 +1204,7 @@ const TINT_CSS = {
   [TINT.sky]: 'sepia(0.8) saturate(2.5) hue-rotate(170deg)',
   [TINT.lilac]: 'sepia(0.8) saturate(2.5) hue-rotate(220deg)',
 };
-const PLACEHOLDER_SKINS = {
-  mole: [TINT.gold, tr('goldener Maulwurf', 'golden mole'), 'm'],
-};
+const PLACEHOLDER_SKINS = {};
 for (const [species, [tint, name, g]] of Object.entries(PLACEHOLDER_SKINS)) {
   if (SKINS[species]) continue;
   SKINS[species] = { id: `${species}_r`, name, male: g === 'm', neuter: g === 'n', wild: 0.1, baby: 0.03, tint, css: TINT_CSS[tint], placeholder: true };
@@ -1233,14 +1266,23 @@ export default class Animal {
       this.dirY = 0;
       this.wanderTime = Phaser.Math.FloatBetween(...restTime);
     } else {
-      // an der Leine (z. B. Zebras am letzten Wasserloch in der Trockenzeit): zu weit weg, dann zurück
-      const l = this.state === 'wild' && this.leash;
-      const away = l && Math.hypot(this.x - l.x, (this.y - l.y) * 2) > l.r;
+      // an der Leine (z. B. Zebras am letzten Wasserloch in der Trockenzeit): zu weit weg, dann zurück.
+      // Im Gehege mit Lieblingsorten (zones, z. B. Giraffen im Akazienhain der Safari): meistens zurück, ab und zu nicht
+      const l = this.state === 'wild' ? this.leash : this.state === 'penned' ? this.zoneLeash() : null;
+      const away = l && Math.hypot(this.x - l.x, (this.y - l.y) * 2) > l.r && (!l.loose || Math.random() < ZONE_PULL);
       const angle = away ? Math.atan2(l.y - this.y, l.x - this.x) + Phaser.Math.FloatBetween(-0.5, 0.5) : Math.random() * Math.PI * 2;
       this.dirX = Math.cos(angle);
       this.dirY = Math.sin(angle);
       this.wanderTime = Phaser.Math.FloatBetween(...walkTime);
     }
+  }
+
+  // Lieblingsort im Gehege (zones in levels.js, Mitte und Radius in Kacheln) als Leine in Welt-Pixeln, oder null
+  zoneLeash() {
+    const z = this.enclosure?.zones?.[this.species];
+    if (!z) return null;
+    const p = tileToWorld(z.tx, z.ty);
+    return { x: p.x, y: p.y, r: z.r * ZONE_TILE, loose: true };
   }
 
   update(dt, player) {
@@ -1272,6 +1314,8 @@ export default class Animal {
         moving = this.move((dx / d) * step, (dy / d) * step);
       }
       if (this.arrivedHome()) this.enterPen();
+    } else if (this.petted) {
+      this.petStill(); // Streichelzoo: ein Besucher streichelt es (siehe Visitor.js), es bleibt stehen
     } else if (this.feed) {
       moving = this.updateFeed(dt); // im Tierpark: zum Futter laufen und fressen
     } else {
@@ -1285,6 +1329,13 @@ export default class Animal {
     const v = dt > 0 ? Math.hypot(this.x - x0, this.y - y0) / dt : 0;
     this.moveSpeed = (this.moveSpeed ?? v) + (v - (this.moveSpeed ?? v)) * Math.min(1, dt * 8);
     this.render(moving);
+  }
+
+  // Streichelzoo: stehen bleiben und zum Besucher schauen, der es streichelt (petted)
+  petStill() {
+    const v = this.petted;
+    if (Math.abs(v.x - this.x) > 1) this.faceX = v.x < this.x ? -1 : 1;
+    this.faceY = v.y < this.y ? -1 : 1;
   }
 
   // Verhalten, solange das Tier nicht folgt (wild oder im Gehege); gibt zurück, ob es sich bewegt
@@ -1308,14 +1359,21 @@ export default class Animal {
       this.toyWait = (this.toyWait ?? Phaser.Math.FloatBetween(2, how.every[1])) - dt;
       if (this.toyWait > 0) return null;
       this.toyWait = Phaser.Math.FloatBetween(...how.every);
-      const taken = new Set(this.scene.animals.filter((a) => a !== this && a.play).map((a) => a.play.key));
+      // jedes Spielzeug hat einen Platz, große (seats, z. B. das Heuhäuschen der Safari) mehrere rundherum
+      const seats = TOYS[how.toy]?.seats ?? 1;
+      const others = this.scene.animals.filter((a) => a !== this && a.play);
+      const used = (key) => others.filter((a) => a.play.key === key);
       const toys = this.enclosure.tiles
-        .filter(({ tx, ty }) => objectAt(tx, ty)?.toy === how.toy && !taken.has(`${tx},${ty}`))
+        .filter(({ tx, ty }) => objectAt(tx, ty)?.toy === how.toy && used(`${tx},${ty}`).length < seats)
         .map(({ tx, ty }) => ({ key: `${tx},${ty}`, ...tileToWorld(tx, ty) }))
         .sort((p, q) => Math.hypot(p.x - this.x, p.y - this.y) - Math.hypot(q.x - this.x, q.y - this.y));
       for (const t of toys) {
         // freier Platz vor dem Spielzeug (von dort springt, frisst, klettert es)
-        const spot = [[-18, 9], [18, 9], [0, 13], [-18, -9], [18, -9]].map(([dx, dy]) => ({ x: t.x + dx, y: t.y + dy })).find((p) => !this.blocked(p.x, p.y));
+        const ring = seats > 1 ? Phaser.Utils.Array.Shuffle([...SEAT_RING]) : TOY_SPOTS;
+        const near = used(t.key).map((a) => a.play.spot);
+        const spot = ring
+          .map(([dx, dy]) => ({ x: t.x + dx, y: t.y + dy }))
+          .find((p) => !this.blocked(p.x, p.y) && !near.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < 10));
         if (spot) {
           // Zeit zum Hinlaufen: nach Entfernung und Tempo (langsame Tiere wie der Panda brauchen länger)
           const time = Math.min(45, (Math.hypot(spot.x - this.x, spot.y - this.y) / this.kind.speed) * 2.5 + 4);
@@ -1576,7 +1634,7 @@ export default class Animal {
     return true;
   }
 
-  // Darf der Spawner es gerade entfernen? (Fische, Eichhörnchen und Maulwürfe nur, wenn man sie nicht sieht)
+  // Darf der Spawner es gerade entfernen? (Fische und Eichhörnchen nur, wenn man sie nicht sieht)
   canDespawn() {
     return true;
   }
@@ -1719,8 +1777,8 @@ export default class Animal {
   // Das Gehege, in dem das Tier mit allen Füßen steht (oder null)
   enclosureFullyAt(x, y) {
     const tiles = footTiles(x, y, this.kind.footW, FOOT_H);
-    const enclosure = enclosureAt(tiles[0].tx, tiles[0].ty);
-    return enclosure && tiles.every(({ tx, ty }) => enclosureAt(tx, ty) === enclosure) ? enclosure : null;
+    const enclosure = homeAt(tiles[0].tx, tiles[0].ty); // (auch offene Bereiche wie der Wildpark)
+    return enclosure && tiles.every(({ tx, ty }) => homeAt(tx, ty) === enclosure) ? enclosure : null;
   }
 
   // Bewegt das Tier; gibt zurück, ob es sich bewegt hat
@@ -1780,7 +1838,7 @@ export default class Animal {
     this.state = state;
     if (state === 'penned') {
       const { tx, ty } = worldToTile(this.x, this.y);
-      this.enclosure = enclosureAt(tx, ty);
+      this.enclosure = homeAt(tx, ty);
       this.pickWander();
     }
   }

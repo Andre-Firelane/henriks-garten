@@ -1,6 +1,6 @@
 // Besucher im Tierpark: wie sehr die Tiere Besucher anlocken, das Wegnetz, auf dem sie laufen, und die Plätze
 // vor den Gehegen, an denen sie stehen bleiben und schauen.
-import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, isUpgraded, MAP_W, buildings, isWalkway, isBlockedPoint, penQuotas, quotaKey } from './map.js';
+import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, isUpgraded, MAP_W, buildings, isWalkway, isBlocked, isBlockedPoint, penQuotas, quotaKey } from './map.js';
 import { tileToWorld } from './iso.js';
 import { WHEEL_VISITORS, hasWheel, shopsIn } from './shops.js';
 import { TOY_BONUS } from './toys.js';
@@ -12,7 +12,6 @@ export const APPEAL = {
   cat: 1.2,
   frog: 1.2,
   fish: 1.2,
-  mole: 1.5,
   squirrel: 1.5,
   deer: 2,
   elk: 5, // groß und selten zu sehen
@@ -176,6 +175,15 @@ export function buildPathGrid() {
       walk.add(key(tx, ty));
     }
   }
+  // Streichelzoo (petting, z. B. die Hoftiere und das Katzenhaus darin): Besucher gehen durchs Tor hinein und laufen dort
+  // auch über das Gras zu den Tieren. Eingang: die Torkacheln, dort suchen sie sich ein Tier aus (siehe VisitorCrowd)
+  const pets = new Map();
+  for (const e of ENCLOSURES.filter((p) => p.petting)) {
+    const inside = e.tiles.filter(({ tx, ty }) => !isBlocked(tx, ty) && !isBlockedPoint(tileToWorld(tx, ty).x, tileToWorld(tx, ty).y));
+    for (const t of [...inside, ...e.gates]) walk.add(key(t.tx, t.ty));
+    pets.set(e, { gates: e.gates.map(({ tx, ty }) => ({ tx, ty })), inside: new Set(inside.map((t) => key(t.tx, t.ty))) });
+  }
+  const petAll = new Set([...pets.values()].flatMap((p) => [...p.inside, ...p.gates.map((g) => key(g.tx, g.ty))])); // dort steht niemand und schaut in ein anderes Gehege
   const exits = EXITS.map(({ tx, ty }) => ({ tx, ty })).filter((t) => walk.has(key(t.tx, t.ty)));
   // Aussichtsplätze: Wegkacheln höchstens 2 Kacheln von der Innenfläche des Geheges (also direkt am Zaun); gibt es dort
   // weniger als MIN_SPOTS (z. B. bei runden Gehegen etwas abseits vom Weg), auch weiter weg bis 5 Kacheln.
@@ -183,10 +191,32 @@ export function buildPathGrid() {
   const MIN_SPOTS = 6;
   const spots = new Map();
   for (const e of ENCLOSURES) {
+    if (e.petting) continue; // Streichelzoo: keine Aussichtsplätze, die Besucher gehen zu den Tieren (pets)
+    // offener Bereich (z. B. der Wildpark, die Wege führen mitten hindurch): Plätze auf den Wegen darin, neben denen freie
+    // Wiese liegt (dort laufen die Tiere); man schaut auf die nächste solche Kachel, nicht auf den Weg.
+    // lookOver (Safari): auch von Wegen außerhalb, über den Zaun hinweg (Vorplatz, Fußweg zum Wasserloch)
+    if (e.open) {
+      const meadow = e.tiles.filter(({ tx, ty }) => !walk.has(key(tx, ty)) && !isBlockedPoint(tileToWorld(tx, ty).x, tileToWorld(tx, ty).y));
+      const list = [];
+      for (const k of walk) {
+        if ((!e.tileSet.has(k) && !e.lookOver) || petAll.has(k)) continue;
+        const [tx, ty] = k.split(',').map(Number);
+        let best = null;
+        for (const t of meadow) {
+          if (Math.max(Math.abs(t.tx - tx), Math.abs(t.ty - ty)) > 2) continue;
+          const d = Math.hypot(t.tx - tx, t.ty - ty);
+          if (!best || d < best.d) best = { d, t };
+        }
+        if (best) list.push({ tx, ty, look: best.t, taken: null });
+      }
+      if (list.length) spots.set(e, list);
+      continue;
+    }
     let fewest = null;
     for (const r of [2, 3, 4, 5]) {
       const list = [];
       for (const k of walk) {
+        if (petAll.has(k)) continue;
         const [tx, ty] = k.split(',').map(Number);
         let near = null;
         for (let dy = -r; dy <= r && !near; dy++) for (let dx = -r; dx <= r && !near; dx++) if (e.tileSet.has(key(tx + dx, ty + dy))) near = { tx: tx + dx, ty: ty + dy };
@@ -243,7 +273,7 @@ export function buildPathGrid() {
     }
     wheel = wheel.sort((a, b) => a.d - b.d).slice(0, 6);
   }
-  return { walk, exits, spots, ice, shops, wheel };
+  return { walk, exits, spots, pets, petAll, ice, shops, wheel };
 }
 
 // Obergrenze der Besucher in einem Tierpark-Abschnitt: mit dem Riesenrad kommen mehr

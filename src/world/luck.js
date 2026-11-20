@@ -207,7 +207,7 @@ export function rollCards({ rare, boni, charms }, n) {
     const pool = pools[kind];
     let pick;
     if (kind === 'rare') {
-      // je häufiger die Art im Gebiet, desto öfter ihre Karte (ein seltenes Schaf eher als ein seltener Maulwurf)
+      // je häufiger die Art im Gebiet, desto öfter ihre Karte (ein seltenes Schaf eher als eine seltene Katze)
       let q = Math.random() * pool.reduce((s, c) => s + c.share, 0);
       pick = pool.find((c) => (q -= c.share) <= 0) ?? pool[0];
       cards.push({ kind, species: pick.species, skin: pick.skin, tier: tierOf(pick.share) });

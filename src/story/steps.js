@@ -163,26 +163,10 @@ export const STEPS = [
     already: [tr('Rehe und Eichhörnchen hast du ja schon – du bist richtig gut!', 'You already have deer and squirrels – you’re really good at this!')],
     outro: [
       tr('Klasse! Fahr mit deinen Tieren zurück in den Tierpark.', 'Brilliant! Drive back to the zoo with your animals.'),
-      tr('Ich warte dort am Schafgehege auf dich – ich habe noch etwas vor!', 'I’ll wait for you at the sheep enclosure – I’ve got something planned!'),
+      tr('Ich warte dort vor dem Haupthaus auf dich – ich habe noch etwas vor!', 'I’ll wait for you in front of the main building – I’ve got something planned!'),
     ],
     reward: 20,
-    unlocks: ['park2'], // die Savanne erst nach dem Gehege-Ausbau (sonst fährt man zu früh hin)
-  },
-  {
-    id: 'upgrade',
-    at: { level: 'park', spot: 'sign' },
-    goal: tr('Bau ein Gehege aus (am Gehegeschild oder am Computer)', 'Upgrade an enclosure (at its sign or at the computer)'),
-    done: (game) => game.upgrades >= 1,
-    intro: [
-      tr('Unsere Gehege werden langsam voll. Mit Herzen kannst du sie ausbauen!', 'Our enclosures are filling up. You can upgrade them with hearts!'),
-      tr('Stell dich vor ein Gehegeschild und drück die Aktionstaste – dann bekommt es mehr Platz und neue Ausstattung.', 'Stand in front of an enclosure sign and press the action button – then it gets more space and new equipment.'),
-    ],
-    already: [tr('Du hast ja schon ein Gehege ausgebaut. Sieht toll aus!', 'You’ve already upgraded an enclosure. It looks great!')],
-    outro: [
-      tr('Gut gemacht! Das Gehege ist jetzt größer und hat Spielzeug – es passen mehr Tiere hinein, und die Besucher lieben es.', 'Well done! The enclosure is bigger now and has toys – more animals fit inside, and the visitors love it.'),
-      tr('Komm mit, ich zeig dir noch was! Ich warte vor dem Haupthaus auf dich.', 'Come along, I’ve got something else to show you! I’ll wait for you in front of the main building.'),
-    ],
-    reward: 20,
+    unlocks: ['park2'], // (Mavi schickt einen erst nach der Bude in die Savanne)
   },
   {
     id: 'stands',

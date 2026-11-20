@@ -25,9 +25,9 @@ const VISITORS_AT_PEN = 2; // so viele Besucher stehen bei der Besucher-Aufgabe 
 const SETTLE = 1200; // so lange nach dem Aufbau des Gebiets fängt sie noch nicht von selbst an (die Kamera blendet ein)
 
 // Aufgaben, die im Tierpark erledigt werden (egal, in welchem Abschnitt Mavi steht)
-const PARK_TASKS = ['visitors', 'babies', 'event', 'upgrade', 'stands'];
+const PARK_TASKS = ['visitors', 'babies', 'event', 'stands'];
 // Aufgaben, bei denen der Pfeil auf etwas zeigt, wenn man dort ist
-const POINT = { babies: 'computer', event: 'computer', upgrade: 'sign', stands: 'build' };
+const POINT = { babies: 'computer', event: 'computer', stands: 'build' };
 
 export default class Mavi {
   constructor(scene) {
@@ -56,7 +56,6 @@ export default class Mavi {
 
   // Platz der aktiven Aufgabe in diesem Gebiet (oder null, wenn sie woanders ist); ohne Aufgabe steht sie vor dem Haupthaus
   spot() {
-    if (this.near) return this.near; // kommt gerade zu einem herüber (Abschluss des Gehege-Ausbaus)
     const step = activeStep();
     const at = !step ? { level: 'park', spot: 'start' } : [step.at, step.also].find((a) => a?.level === LEVEL_ID);
     if (!at || at.level !== LEVEL_ID) return null;
@@ -245,17 +244,7 @@ export default class Mavi {
     saveNow();
     this.pending = [...(heard || s.talk ? [] : s.already ?? []), ...(s.outro ?? [])];
     this.walkHint = s.id === 'welcome'; // nach der Begrüßung: zeigen, wie man läuft
-    // Gehege ausgebaut (meist nach dem Neuaufbau des Tierparks, irgendwo am ausgebauten Gehege oder am Computer): Mavi kommt
-    // zu einem herüber und lobt einen dort, statt nur am Rand zu sprechen und gleich zur Savanne weiterzuziehen
-    if (s.id === 'upgrade' && isPark(LEVEL_ID) && this.pending.length) {
-      const p = worldToTile(this.scene.player.x, this.scene.player.y);
-      this.near = this.freeTile({ tx: p.tx + 1, ty: p.ty - 1 }); // rechts neben einem (nicht davor)
-      this.place();
-      this.talkFrom = this.scene.time.now + 800; // erst sprechen, wenn sie eingeblendet ist
-      this.scene.time.delayedCall(800, () => this.pending && !isSpeaking() && this.sayOutro());
-      return this.updateArrow();
-    }
-    // ist sie zu sehen, aber nicht gleich neben einem (z. B. nach dem Neuaufbau beim Gehege-Ausbau): ihr Satz wartet, bis man
+    // ist sie zu sehen, aber nicht gleich neben einem: ihr Satz wartet, bis man
     // bei ihr ist (sie winkt so lange); sonst sagt sie ihn gleich (ist sie nicht zu sehen: am Rand)
     if (this.sprite && this.pending.length && this.onScreen() && this.distance() >= TALK_DIST * 2) return this.updateArrow();
     this.sayOutro();
@@ -266,7 +255,6 @@ export default class Mavi {
     const lines = this.pending ?? [];
     this.pending = null;
     this.speak(lines, () => {
-      this.near = null;
       if (this.walkHint) {
         this.walkHint = false;
         this.scene.time.delayedCall(250, () => !this.scene.leaving && showWalkHint());

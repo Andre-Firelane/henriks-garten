@@ -20,18 +20,21 @@ const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) 
 // Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs, Eichhörnchen, Elch, Wildschwein, Igel und Biber nur das Grundbild, das
 // der Tierpark zeigt, z. B. auf den Gehegeschildern),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|mole|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 // Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
 // der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
-// mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket (Bauernhof,
-// Reittier der Wiese ...) kommt ins Paket misc
+// mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket
+// (Reittier der Wiese ...) kommt ins Paket misc
 const GROUPS = {
-  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver', 'elk', 'hedgehog', 'boar'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hedgehog|boar|piglet|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$|oak$|leafpile$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark, die Laubhaufen in der Igel-Voliere: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
+  // Hoftiere der Wiese und des Streichelzoos (Kuh, Schwein, Ziege). Ihre Töne bleiben in misc: Wildschwein und
+  // Warzenschwein grunzen wie das Schwein
+  farm: { species: ['cow', 'pig', 'goat'], keys: /^farm_/ },
+  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver', 'elk', 'hedgehog', 'boar'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hedgehog|boar|piglet|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$|oak$|leafpile$|elder$|hazel$|stump$|mossy_log$|boulder2?$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark, die Laubhaufen in der Igel-Voliere, Holunder, Hasel, Baumstumpf, bemooster Stamm und Felsbrocken im Wildpark: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
   savanna: {
     species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
     keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
-    art: /savanna|^sgrass|^sdry|^(acacia_bare|mud|den_sand|boulder)$/,
+    art: /savanna|^safari_|^sgrass|^sdry|^(acacia_bare|mud|den_sand|boulder)$/,
   },
   asia: {
     species: ['panda', 'redpanda', 'macaque', 'tiger', 'orangutan', 'peacock', 'tanuki', 'yak', 'snowleopard'],
@@ -55,11 +58,11 @@ const GROUPS = {
   },
 };
 // in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
-const GROUP_ORDER = ['misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
+const GROUP_ORDER = ['farm', 'misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
 // Pakete je Gebiet (dazu kommen die der Tiere, die dort stehen oder einem folgen, siehe levelGroups)
-const LEVEL_GROUPS = { park: [], meadow: [], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], reptiles: ['jungle'], aquarium: ['reef'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle'] };
-// Events mit Bildern aus einem Paket (Flamingos fliegen auch über Wiese und Wald; Bauernhof und Reittier auf der Wiese)
-export const EVENT_GROUPS = { flamingo: ['savanna'], farm: ['misc'], ride: ['misc'] };
+const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], reptiles: ['jungle'], aquarium: ['reef'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle'] };
+// Events mit Bildern aus einem Paket (Flamingos fliegen auch über Wiese und Wald; Reittier auf der Wiese)
+export const EVENT_GROUPS = { flamingo: ['savanna'], ride: ['misc'] };
 const SPECIES_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, { species = [] }]) => species.map((s) => [s, group])));
 const REST_DELAY = 2000; // so lange nach dem Spielstart, bis der Hintergrund lädt (erst einmal das Bild aufbauen)
 
@@ -76,7 +79,7 @@ export const groupsLoaded = (groups) => groups.every((g) => loaded.has(g));
 export function levelGroups(level) {
   const groups = new Set(LEVEL_GROUPS[level] ?? LEVEL_GROUPS[LEVELS[level]?.expedition] ?? GROUP_ORDER); // Expedition: wie ihre Welt
   for (const a of [...(game.levels[level]?.animals ?? []), ...game.followers]) {
-    const group = a.farm ? 'misc' : SPECIES_GROUP[a.species];
+    const group = SPECIES_GROUP[a.species];
     if (group) groups.add(group);
   }
   for (const [id, gs] of Object.entries(EVENT_GROUPS)) if (isActive(id)) gs.forEach((g) => groups.add(g));
@@ -119,7 +122,7 @@ const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : ITEMS
 
 // Pixel-Art-Grafiken aus tools/make-sprites.js
 const PIXEL_ART = [
-  ...Object.keys(TOYS).map(toyKey), // Spielzeug der zweiten Ausbaustufe (src/world/toys.js)
+  ...Object.entries(TOYS).filter(([, t]) => !t.key).map(([id]) => toyKey(id)), // Spielzeug der zweiten Ausbaustufe (src/world/toys.js; mit key: ein vorhandenes Bild)
   'grass0', 'grass1', 'grass2', 'path', 'soil', 'water',
   'tree', 'bush', 'rock', 'flowers_red', 'flowers_yellow', 'fence_x', 'fence_y', 'gate_x', 'sign_fish', 'fishpond0', 'fishpond1',
   // Wiese (Platzhalter aus tools/meadow-placeholders.py): Weide, Felder, Blumen, Hof, Windmühle, Steg, Seerosen, Enten, Bienen
@@ -185,6 +188,7 @@ const PIXEL_ART = [
   'tire_swing', 'toy_ball', // Spielzeug im Pandagehege
   'climb_tree', // Kletterbaum im Affengehege
   'hay_shelter', 'hay_rack', 'reeds', 'fountain', 'nest_box', 'lion_rock', // Ausstattung ausgebauter Gehege
+  'safari_jeep_front', 'safari_jeep_back', // Besucherautos der Safari (tools/safari-jeep-cut.py, Paket savanna)
   'build_stakes', 'build_planks', // Baustelle vor dem Ausbau
   // Aquarium: Fassade im Tierpark, Halle und Wassertanks, Böden, Deko im Tank
   'reptile_facade', 'hutwall_reptiles_x', 'hutwall_reptiles_y', 'post_hutwall_reptiles', 'hutwall_terrarium_x', 'hutwall_terrarium_y',
@@ -230,8 +234,6 @@ const CAT_SLEEP_FRAME = { frameWidth: 56, frameHeight: 60 };
 const DEER_FRAME = { frameWidth: 72, frameHeight: 96 };
 const STAG_FRAME = { frameWidth: 80, frameHeight: 112 };
 const FROG_FRAME = { frameWidth: 56, frameHeight: 52 };
-const MOLE_FRAME = { frameWidth: 56, frameHeight: 52 };
-const MOLE_MOUND_FRAME = { frameWidth: 64, frameHeight: 52 };
 const HERON_FRAME = { frameWidth: 88, frameHeight: 108 };
 const HERON_FLY_FRAME = { frameWidth: 96, frameHeight: 92 };
 const FISH_FRAME = { frameWidth: 84, frameHeight: 64 };
@@ -391,7 +393,7 @@ const VIDEO_ANIMS = {
   seal_walk: [96, 80, 20], // Robbe robbt an Land (Eiswelt)
   seal_walk_back: [96, 72, 21],
   seal_swim_idle: [72, 88, 25], // ... und wippt aufgetaucht im Wasser, während sie Henrik anschaut
-  // Bauernhof-Event: Kuh, Schwein, Ziege
+  // Hoftiere: Kuh, Schwein, Ziege
   farm_cow_walk: [96, 88, 29],
   farm_cow_walk_back: [96, 88, 21],
   farm_cow_idle: [96, 88, 54],
@@ -591,7 +593,7 @@ const ANIMAL_SOUNDS = {
   panda: 'animal_panda.wav',
   macaque: 'animal_macaque.wav',
   peacock: 'animal_peacock.wav', // schallt ab und zu durchs ganze Gebiet
-  cow: 'animal_cow.wav', // Bauernhof-Event
+  cow: 'animal_cow.wav',
   pig: 'animal_pig.wav',
   goat: 'animal_goat.wav',
   fish: 'animal_fish.wav',
@@ -707,7 +709,7 @@ export default class BootScene extends Phaser.Scene {
     for (const key of ['sheep2', 'sheep2_eat']) load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME); // gefleckter Widder (selten)
     // Lauf- und Stehanimation (Test), von vorne und hinten
     for (const key of ['sheep_walk', 'sheep_walk_back', 'sheep_idle', 'sheep_idle_back']) load.spritesheet(key, `assets/${key}.png`, SHEEP_FRAME);
-    // Bauernhof-Event: Schafe sehen aus wie Kuh, Schwein oder Ziege (Platzhalter, gleiches Format wie das Schaf)
+    // Hoftiere: Kuh, Schwein und Ziege (gleiches Format wie das Schaf)
     for (const k of ['cow', 'pig', 'goat']) {
       const frame = k === 'cow' ? { frameWidth: 96, frameHeight: 88 } : SHEEP_FRAME; // die Kuh ist breiter
       load.spritesheet(`farm_${k}`, `assets/farm_${k}.png`, frame);
@@ -770,8 +772,6 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('frog2_hop_back', 'assets/frog2_hop_back.png', { frameWidth: 56, frameHeight: 78 });
     load.spritesheet('frog_idle_back', 'assets/frog_idle_back.png', { frameWidth: 56, frameHeight: 78 });
     load.spritesheet('frog2', 'assets/frog2.png', FROG_FRAME); // seltener blauer Frosch
-    load.spritesheet('mole', 'assets/mole.png', MOLE_FRAME);
-    load.spritesheet('mole_mound', 'assets/mole_mound.png', MOLE_MOUND_FRAME);
     load.spritesheet('heron', 'assets/heron.png', HERON_FRAME);
     load.spritesheet('heron_fly', 'assets/heron_fly.png', HERON_FLY_FRAME);
     load.spritesheet('heron2', 'assets/heron2.png', HERON_FRAME); // Storch (selten)

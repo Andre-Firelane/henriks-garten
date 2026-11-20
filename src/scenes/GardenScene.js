@@ -50,6 +50,7 @@ import { raiseAt,
   hasSlots,
   quotaKey,
   isUpgraded,
+  PEN_UPGRADES,
   upgradeCost,
   bridgeArch,
   slotsShown,
@@ -58,13 +59,12 @@ import { raiseAt,
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
-import { save, saveHandlers, writeSave } from '../save.js';
+import { FARM_SPECIES, save, saveHandlers, writeSave } from '../save.js';
 import Player from '../player/Player.js';
 import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, skinInfo } from '../animals/Animal.js';
 import Fish from '../animals/Fish.js';
 import Squirrel from '../animals/Squirrel.js';
 import Frog from '../animals/Frog.js';
-import Mole from '../animals/Mole.js';
 import Heron from '../animals/Heron.js';
 import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
@@ -137,6 +137,7 @@ import YakHerd from '../world/YakHerd.js';
 import LeafBushes from '../world/LeafBushes.js';
 import { coveredAt } from '../world/expeditionMaps.js';
 import SavannaLife from '../world/SavannaLife.js';
+import SafariCars from '../world/SafariCars.js';
 import Jar from '../tools/Jar.js';
 import ScissorsTool from '../tools/ScissorsTool.js';
 import RodTool from '../tools/RodTool.js';
@@ -214,7 +215,7 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'mole', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cow', 'goat', 'pig', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -266,7 +267,6 @@ const CATCH_TIPS = {
   ray: tr('Schwimm neben ihm her – nicht zu nah, sonst erschrickt er, und nicht zu weit weg. Ist die Herzchen-Leiste voll, schwimmt er dir hinterher.', 'Swim alongside it – not too close or it gets scared, and not too far away. When the heart bar is full, it swims after you.'),
   turtle: tr('Selten. Hat sich in einem alten Fischernetz verheddert – hol die Schere aus dem Sack, schwimm hin und schneide sie frei: dreimal, dann ist sie frei!', 'Rare. It is tangled in an old fishing net – get the scissors from the bag, swim over and cut it free: three cuts and it is free!'),
   octopus: tr('Getarnt fast unsichtbar am Meeresboden. Kommst du näher, schwimmt sie weg – keschere sie schnell, sonst verschwindet sie in einer Tintenwolke!', 'Camouflaged and almost invisible on the sea floor. When you come closer, it swims away – net it quickly, or it vanishes in a cloud of ink!'),
-  mole: tr('Nur wenn er aus seinem Hügel schaut.', 'Only when it peeks out of its molehill.'),
   squirrel: tr('Nur wenn es vom Baum herunterkommt – halte etwas Abstand.', 'Only when it comes down from the tree – keep a little distance.'),
   heron: tr('Nur wenn er am Wasser gelandet ist.', 'Only when it has landed by the water.'),
   flamingo: tr('Nur beim Flamingo-Flug – und nur, wenn er gelandet ist.', 'Only during the Flamingo Flight – and only when it has landed.'),
@@ -350,7 +350,9 @@ const noParkHome = (species) => !houseOf(species) && !PARK_LEVELS.some((level) =
 // Für die Schilder an den Gehegetoren: Name und was man an der Fußspur erkennt (zum Lernen)
 const ANIMAL_INFO = {
   sheep: tr(['Schaf', 'Paarhufer: Jeder Fuß hat zwei Hufhälften.'], ['Sheep', 'Even-toed hoofs: each foot has two hoof halves.']),
-  mole: tr(['Maulwurf', 'Breite Grabhände mit fünf kräftigen Krallen.'], ['Mole', 'Wide digging hands with five strong claws.']),
+  cow: tr(['Kuh', 'Paarhufer mit großen, runden Hufhälften. Eine Kuh frisst am Tag einen ganzen Berg Gras.'], ['Cow', 'Even-toed with big, round hoof halves. A cow eats a whole mountain of grass every day.']),
+  pig: tr(['Schwein', 'Paarhufer: Es läuft auf zwei Zehen, zwei kleine Afterklauen sitzen weiter hinten.'], ['Pig', 'Even-toed: it walks on two toes, with two small dewclaws further back.']),
+  goat: tr(['Ziege', 'Paarhufer mit harten, kantigen Hufen – damit klettert sie sicher über Felsen.'], ['Goat', 'Even-toed with hard, edged hoofs – they help it climb safely over rocks.']),
   cat: tr(['Katze', 'Vier Zehen und ein großer Ballen. Die Krallen bleiben beim Laufen eingezogen.'], ['Cat', 'Four toes and a big pad. The claws stay pulled in while walking.']),
   frog: tr(['Frosch', 'Lange, dünne Finger mit runden Haftscheiben an den Spitzen.'], ['Frog', 'Long, thin fingers with round sticky pads at the tips.']),
   fish: tr(['Fisch', 'Hat keine Füße – Fische schwimmen mit ihren Flossen.'], ['Fish', 'No feet – fish swim with their fins.']),
@@ -642,13 +644,13 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: tr('Kescher', 'Net'),
-    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'mole', 'squirrel', 'heron', 'meerkat', 'peacock', 'butterfly', 'vulture', 'snake', 'tarantula', 'macaw', 'toucan', 'iguana'],
+    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'squirrel', 'heron', 'meerkat', 'peacock', 'butterfly', 'vulture', 'snake', 'tarantula', 'macaw', 'toucan', 'iguana'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)}`, `Catches ${animalIcons(list)}`),
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'heron', 'tiger', 'howler', 'anteater', 'jaguar', 'penguin'],
+    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'cow', 'goat', 'pig', 'heron', 'tiger', 'howler', 'anteater', 'jaguar', 'penguin'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -1090,14 +1092,21 @@ export default class GardenScene extends Phaser.Scene {
     this.drawSea();
     this.drawDarkRooms();
 
-    // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor
-    this.enclosureSigns = ENCLOSURES.filter((e) => e.sign).map((e) => {
-      const { x, y } = tileToWorld(e.sign.tx, e.sign.ty);
-      // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt
-      let front = Math.max(y, ...e.gates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
+    // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor. Dazu weitere Tafeln eines Bereichs (signs, z. B. an
+    // den Haltebuchten der Safari): nur mit den Tieren dieser Zone (only) und ihrem Namen, auf einem eigenen Pfosten
+    const signDefs = ENCLOSURES.flatMap((e) => [
+      ...(e.sign ? [{ e, at: e.sign, only: null, name: null }] : []),
+      ...(e.signs ?? []).map((s) => ({ e, at: s.spot, only: s.species, name: s.name })),
+    ]);
+    this.enclosureSigns = signDefs.map(({ e, at, only, name }) => {
+      const { x, y } = tileToWorld(at.tx, at.ty);
+      // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt (nur Tore in der Nähe: die Safari hat
+      // Tore weit weg, vor denen das Schild sonst über allem läge)
+      const nearGates = e.gates.filter((g) => Math.abs(g.tx - at.tx) + Math.abs(g.ty - at.ty) <= 6);
+      let front = Math.max(y, ...nearGates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
       if (e.dark) front = DARK_DEPTH + 20; // im dunklen Raum über der Abdunklung, damit man es lesen kann
       // signOnRoof: das Schild sitzt oben auf dem Dach des Gebäudes (z. B. Katzenhaus), damit man es von weitem sieht
-      const house = e.signOnRoof ? buildingAt(e.tiles[0].tx, e.tiles[0].ty) : null;
+      const house = e.signOnRoof && !only ? buildingAt(e.tiles[0].tx, e.tiles[0].ty) : null;
       let sx = x, sy = y;
       // Tor in einer Hauswand (Katzenhaus): das Schild hängt an der Wand neben der Tür, vor dem (durchsichtigen) Dach
       const wall = !house && e.gates[0] && buildingAt(e.gates[0].tx, e.gates[0].ty);
@@ -1110,28 +1119,31 @@ export default class GardenScene extends Phaser.Scene {
       }
       // ohne Zaun (Teich ohne Zaun) oder mit eigenem Platz abseits vom Zaun (signAt, z. B. im Wildpark an der Weggabelung):
       // das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
-      const onFence = e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty));
+      const onFence = only ? !!fenceAxisAt(at.tx, at.ty) : e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty));
+      // mitten an einem Zaun (nicht neben einem Tor, z. B. die Schilder am Fußweg der Safari): vor dem nächsten Zaunpfosten
+      // zeichnen, sonst verdeckt er die Zahl darunter
+      if (onFence && (only || e.signAt)) front = Math.max(front, y + TILE_H / 2 + 2);
       if (!onFence && !house && !e.signOnGlass) {
         this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
       }
       const board = this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
-      // im Tierpark: Schild antippen öffnet den Ausbau dieses Geheges (nur wenn man davorsteht)
-      if (hasSlots(e) && isPark(LEVEL_ID)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.penAtSign() === e && this.openEventsPanel(e.id));
+      // im Tierpark: Schild antippen öffnet den Ausbau dieses Geheges (nur wenn man davorsteht; nur mit Gehegeausbau)
+      if (PEN_UPGRADES && hasSlots(e) && isPark(LEVEL_ID)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.penAtSign() === e && this.openEventsPanel(e.id));
       // Tierbilder nebeneinander auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
-      const list = e.species ?? [];
+      const list = only ?? e.species ?? [];
       const step = SIGN_INNER_W / list.length;
       list.forEach((s, i) => {
         const icon = this.add.image(sx - SIGN_INNER_W / 2 + step * (i + 0.5), sy - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
         icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
       });
       // Plätze: "4 / 6", voll mit Stern; in gemeinsamen Gehegen eine kleine Zeile je Tierart mit ihrem Bild
-      const counts = penQuotas(e).map(({ key }, i) => {
+      const counts = penQuotas(e).filter(({ key }) => !only || only.includes(key)).map(({ key }, i) => {
         const text = this.add.text(sx + (key ? 9 : 0), sy + 2 + i * (key ? 15 : 0), '', { fontFamily: 'Trebuchet MS, Arial', fontSize: key ? '9px' : '10px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: key ? 3 : 4, y: 1 }, resolution: 4 }).setOrigin(0.5, 0).setDepth(front + 0.2);
         const icon = key ? this.add.image(sx, text.y + 5, SPECIES[key].texture, key === 'fish' ? 1 : 0) : null;
         icon?.setScale(Math.min(15 / icon.height, 17 / icon.width)).setDepth(front + 0.3);
         return { key, text, icon };
       });
-      return { x, y, enclosure: e, counts };
+      return { x, y, enclosure: e, counts, only, name };
     });
     this.updatePenSigns();
     this.wrongHomeTimer = 0;
@@ -1215,6 +1227,7 @@ export default class GardenScene extends Phaser.Scene {
     this.forestLife = LEVEL.bats || LEVEL.bees || LEVEL.birds || LEVEL.moss ? new ForestLife(this) : null; // Schaum, Moos, Bienen, Vögel, Fledermäuse (Wald)
     this.moorFog = LEVEL.moorFog ? new MoorFog(this) : null; // Nebel über dem Moor (Wald)
     this.savannaLife = LEVEL.flies || LEVEL.gravePatch ? new SavannaLife(this) : null; // Friedhofsboden, Fliegen- und Mückenschwärme (Savanne)
+    this.safariCars = LEVEL.safariCars ? new SafariCars(this, LEVEL.safariCars) : null; // Besucherautos auf der Piste der Safari (Tierpark)
     this.coldHintIn = 0;
     this.nearBoat = null;
     if (!this.boat?.riding) this.unstickPlayer();
@@ -1252,7 +1265,6 @@ export default class GardenScene extends Phaser.Scene {
         // pending: aus einem anderen Tierpark-Abschnitt hergeschickt, noch ohne Platz (siehe sendToSection): kommt unten ins Gehege
         const a = s.pending ? this.createAnimal(s.species, start.x, start.y, s.variant) : this.createAnimal(s.species, s.x, s.y, s.variant);
         if (s.pending) a.origin = s.origin;
-        a.farm = s.farm ?? null; // Bauernhof-Event: gefangene Kuh, Schwein oder Ziege bleibt es
         a.skin = s.skin ?? null; // seltener Skin (Katze 2)
         a.penSince = s.since ?? 0;
         a.restore(s.state);
@@ -1315,10 +1327,9 @@ export default class GardenScene extends Phaser.Scene {
     this.followers = [];
     // im Expeditions-Camp laufen sie nicht mehr mit: sie kommen in den Wagen (siehe expArriveCamp)
     const campArrivals = this.expCamp ? game.followers.map((a) => ({ ...a })) : [];
-    for (const { species, variant, origin, farm, skin } of this.expCamp ? [] : game.followers) {
+    for (const { species, variant, origin, skin } of this.expCamp ? [] : game.followers) {
       if (!SPECIES[species]) continue;
       const a = this.createAnimal(species, start.x, start.y, variant);
-      a.farm = farm ?? null;
       a.skin = skin ?? null;
       a.restore('following');
       a.origin = origin;
@@ -1500,7 +1511,7 @@ export default class GardenScene extends Phaser.Scene {
         this.openEventsPanel(null, this.nearSlot.slot.id); // am Bauplatz: Bude aussuchen
         return;
       }
-      const pen = this.penAtSign();
+      const pen = PEN_UPGRADES && this.penAtSign();
       if (pen && !this.tool && !this.leaving) {
         this.openEventsPanel(pen.id); // am Gehegeschild: Ausbau dieses Geheges
         return;
@@ -2156,9 +2167,7 @@ export default class GardenScene extends Phaser.Scene {
           ? new Squirrel(this, this.animals)
           : species === 'frog'
             ? new Frog(this, x, y)
-            : species === 'mole'
-              ? new Mole(this, this.animals)
-              : species === 'heron' || species === 'flamingo'
+            : species === 'heron' || species === 'flamingo'
                 ? new Heron(this, x, y, species)
                 : species === 'antelope'
                   ? new Antelope(this, x, y, this.animals)
@@ -2184,8 +2193,8 @@ export default class GardenScene extends Phaser.Scene {
                             ? new Cat(this, x, y, this.animals)
                             : species === 'fox'
                               ? new Fox(this, x, y)
-                              : species === 'sheep'
-                                ? new Sheep(this, x, y)
+                              : species === 'sheep' || species === 'cow' || species === 'pig' || species === 'goat'
+                                ? new Sheep(this, x, y, species)
                                 : new Animal(this, x, y, species);
     a.x = x;
     a.y = y;
@@ -2238,11 +2247,17 @@ export default class GardenScene extends Phaser.Scene {
   pickSpecies(pool) {
     const entries = Object.entries(pool.weights);
     let r = Math.random() * entries.reduce((s, [, w]) => s + w, 0);
-    return (entries.find(([, w]) => (r -= w) <= 0) ?? entries[0])[0];
+    const species = (entries.find(([, w]) => (r -= w) <= 0) ?? entries[0])[0];
+    // Hoftiere außerhalb des Events: nicht, solange Mavis Aufgaben auf der Wiese laufen (dort soll man Schafe fangen)
+    if (FARM_SPECIES.includes(species) && !isActive('farm') && activeStep()?.at.level === 'meadow') return 'sheep';
+    // Bauernhof-Event: statt der Schafe kommen reihum Kühe, Schweine und Ziegen auf die Wiese (nur beim normalen Spawner,
+    // nicht für Mavis Schaf-Aufgabe, die echte Schafe braucht)
+    if (species === 'sheep' && LEVEL_ID === 'meadow' && isActive('farm') && spawnPools(LEVEL).includes(pool)) return FARM_SPECIES[(this.farmTurn = ((this.farmTurn ?? -1) + 1) % FARM_SPECIES.length)];
+    return species;
   }
 
-  // Ein zufälliges wildes Tier erzeugen. Fische, Eichhörnchen und Maulwürfe suchen sich ihre Plätze selbst
-  // (Wasser, Baum, Wiese), alle anderen kommen auf eine freie Kachel mit Abstand zu "taken" (siehe randomFreeTile).
+  // Ein zufälliges wildes Tier erzeugen. Fische und Eichhörnchen suchen sich ihre Plätze selbst
+  // (Wasser, Baum), alle anderen kommen auf eine freie Kachel mit Abstand zu "taken" (siehe randomFreeTile).
   // Gibt die neuen Tiere zurück (meist eins, Antilopen kommen in kleinen Gruppen).
   spawnOne(taken, fadeIn = false, pool = LEVEL.spawn) {
     if (this.wolfNight) return []; // Wolfsnacht: im Wald nur die Wolfsrudel (siehe Wolf.js)
@@ -2350,7 +2365,7 @@ export default class GardenScene extends Phaser.Scene {
       }
       return this.finishSpawn(group, fadeIn);
     }
-    if (species === 'fish' || species === 'koi' || species === 'crocodile' || species === 'hippo' || species === 'tapir' || species === 'squirrel' || species === 'mole' || species === 'seahorse') {
+    if (species === 'fish' || species === 'koi' || species === 'crocodile' || species === 'hippo' || species === 'tapir' || species === 'squirrel' || species === 'seahorse') {
       const a = this.createAnimal(species, 0, 0);
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
       if (species === 'koi') a.placeRandom(); // irgendwo in den Koi-Teich
@@ -2619,11 +2634,11 @@ export default class GardenScene extends Phaser.Scene {
     return this.mapEdgePoint(away + Phaser.Math.FloatBetween(-0.8, 0.8));
   }
 
-  // Ruf eines Tiers (beim Bauernhof-Event muhen, grunzen und meckern die Schafe)
+  // Ruf eines Tiers
   callOf(a) {
     // seltene Variante mit eigenem Ton (der Gibbon ruft anders als der Brüllaffe)
-    if (!a.farm && a.skin && this.cache.audio.exists(`animal_${a.skin}`)) return `animal_${a.skin}`;
-    const key = a.farm ? `animal_${a.farm}` : `animal_${a.species}`;
+    if (a.skin && this.cache.audio.exists(`animal_${a.skin}`)) return `animal_${a.skin}`;
+    const key = `animal_${a.species}`;
     // ohne eigenen Ton: ein ähnlicher (der Tiger brüllt wie der Löwe)
     return this.cache.audio.exists(key) ? key : CALL_FALLBACK[a.species] ?? key;
   }
@@ -2877,7 +2892,7 @@ export default class GardenScene extends Phaser.Scene {
     // für Mavis Event-Aufgabe (ganz am Ende): nicht der Eiswagen und nicht die Tierbabys aus ihrer eigenen Aufgabe
     if (!free && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true;
     this.mavi?.check();
-    if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf der Wiese werden aus den Schafen Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! On the meadow the sheep turn into cows, pigs and goats – catch them!'));
+    if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf die Wiese kommen viele Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! Lots of cows, pigs and goats are coming to the meadow – catch them!'));
     if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
     if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
     if (id === 'fireflies') this.showToast(tr('✨ Glühwürmchen-Abend! Im Bambuswald wird es Abend – in der Hütte liegt ein Glas für die Glühwürmchen.', '✨ Firefly Evening! It is getting dark in the bamboo forest – there is a jar for the fireflies in the hut.'));
@@ -3007,7 +3022,6 @@ export default class GardenScene extends Phaser.Scene {
   spawnBabies(pop) {
     for (const { enclosure, species, parent } of babyPlan(this.animals.filter((a) => a.state === 'penned'))) {
       const a = this.createAnimal(species, parent.x, parent.y);
-      a.farm = parent.farm ?? null; // Kalb, Ferkel oder Zicklein
       a.rollSkin('baby'); // seltene Skins bei Babys nur ganz selten
       a.makeBaby();
       // an die nächste Stelle im Gehege, an der es ganz hineinpasst (nicht halb im Zaun, wenn die Eltern am Rand stehen)
@@ -3063,7 +3077,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // E-Roller: steht in jedem Tierpark-Abschnitt an seinem Platz (scooterSpot); man steigt auf und fährt schneller durch den
-  // Park. Im Haupthaus und in Gehegen steigt man von selbst ab, der Roller bleibt davor stehen. Durch einen Ausgang (anderer
+  // Park, auch durch die Gehege. Im Haupthaus steigt man von selbst ab, der Roller bleibt davor stehen. Durch einen Ausgang (anderer
   // Abschnitt, Aquarium, Reptilienhaus) und beim Neuaufbau nach einem Ausbau fährt man weiter: game.scooterRiding merkt es
   // sich, zurück im Tierpark sitzt Henrik gleich wieder auf dem Roller (getOnScooter(true)). Mit dem Auto reist man zu Fuß.
   drawScooter() {
@@ -3117,12 +3131,12 @@ export default class GardenScene extends Phaser.Scene {
     this.updateToolbar();
   }
 
-  // jedes Bild: in der Nähe des Rollers die Aktionstaste zum Aufsteigen; beim Fahren in Gebäude oder Gehege von selbst ab
+  // jedes Bild: in der Nähe des Rollers die Aktionstaste zum Aufsteigen; beim Fahren in ein Gebäude von selbst ab (in Gehege darf man mit dem Roller)
   updateScooter() {
     if (!this.scooter) return;
     if (this.driving) {
       const { tx, ty } = worldToTile(this.player.x, this.player.y);
-      if (buildingAt(tx, ty) || enclosureAt(tx, ty)) this.getOffScooter(this.scooterSafe); // (durch Ausgänge fährt man weiter)
+      if (buildingAt(tx, ty)) this.getOffScooter(this.scooterSafe); // (durch Ausgänge und in Gehege fährt man weiter)
       else this.scooterSafe = { x: this.player.x, y: this.player.y };
       return;
     }
@@ -3483,7 +3497,7 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/icecream.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${label}</span></div>`;
       return;
     }
-    const pen = !this.tool && this.penAtSign();
+    const pen = PEN_UPGRADES && !this.tool && this.penAtSign();
     if (pen) {
       const done = isUpgraded(pen);
       setTouchTool(null, 'assets/esign_board.png');
@@ -4644,7 +4658,7 @@ export default class GardenScene extends Phaser.Scene {
         }
       }
       const p = tileToWorld(Phaser.Math.FloatBetween(t.tx0 - 0.3, t.tx1 + 0.3), Phaser.Math.FloatBetween(t.ty0 - 0.3, t.ty1 + 0.3));
-      saved.animals.push({ species: a.species, variant: a.variant, farm: null, skin: a.skin ?? null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
+      saved.animals.push({ species: a.species, variant: a.variant, skin: a.skin ?? null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
       this.followers.splice(this.followers.indexOf(a), 1);
       this.animals.splice(this.animals.indexOf(a), 1);
       a.destroy();
@@ -4669,7 +4683,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!sent.length) return '';
     const saved = (game.levels[level] ??= { animals: [], pickups: [] });
     for (const a of sent) {
-      saved.animals.push({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: Date.now(), state: 'penned', pending: true, origin: a.origin });
+      saved.animals.push({ species: a.species, variant: a.variant, skin: a.skin ?? null, since: Date.now(), state: 'penned', pending: true, origin: a.origin });
       this.followers.splice(this.followers.indexOf(a), 1);
       this.animals.splice(this.animals.indexOf(a), 1);
       a.destroy();
@@ -5493,11 +5507,11 @@ export default class GardenScene extends Phaser.Scene {
     for (const { key, cap } of penQuotas(e)) while (penCount(this.animals, e, key) > cap) {
       const inside = this.animals.filter((a) => a.state === 'penned' && a.enclosure === e && !a.baby && (key === null || quotaKey(a.species) === key));
       const looks = {};
-      // seltene Varianten bleiben bevorzugt: zuerst zieht ein normales Tier aus, dann ein Bauernhof-Tier, zuletzt ein Skin
-      const rarity = (a) => (a.isRare() ? 2 : a.farm ? 1 : 0);
+      // seltene Varianten bleiben bevorzugt: zuerst zieht ein normales Tier aus, zuletzt ein Skin
+      const rarity = (a) => (a.isRare() ? 1 : 0);
       const least = Math.min(...inside.map(rarity));
       const pool = inside.filter((a) => rarity(a) === least);
-      const look = (a) => a.farm ?? a.skin ?? a.variant ?? a.species;
+      const look = (a) => a.skin ?? a.variant ?? a.species;
       // in gemeinsamen Gehegen (Zebra und Giraffe, Reh und Hirsch ...) zieht die Art aus, von der es am meisten gibt;
       // bei Gleichstand die, die gerade dazugekommen ist – so verdrängt ein neues Zebra keine Giraffe
       const newest = {};
@@ -5708,21 +5722,7 @@ export default class GardenScene extends Phaser.Scene {
       game.unlocked.push('wolves');
       this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} ${tr('Dein erster Wolf! Im Tierpark ist im Wald-Bereich ganz links am Rand ein Wolfswald entstanden.', 'Your first wolf! In your zoo, Wolf Woods have appeared at the far left edge of the forest area.')}`));
     }
-    // die ersten Tiere der Wetterphasen der Savanne: ihr Gehege entsteht rechts am Savannen-Weg im Tierpark
-    const SEASON_PEN = {
-      vulture: tr('Dein erster Geier! Im Tierpark ist rechts am Savannen-Weg eine Geier-Voliere entstanden.', 'Your first vulture! In your zoo, a vulture aviary has appeared on the right of the savanna path.'),
-      hyena: tr('Deine erste Hyäne! Im Tierpark ist rechts am Savannen-Weg ein Hyänengehege entstanden.', 'Your first hyena! In your zoo, a hyena enclosure has appeared on the right of the savanna path.'),
-      warthog: tr('Dein erstes Warzenschwein! Im Tierpark ist rechts am Savannen-Weg ein Warzenschwein-Gehege entstanden.', 'Your first warthog! In your zoo, a warthog enclosure has appeared on the right of the savanna path.'),
-    };
-    if (SEASON_PEN[animal.species] && !game.unlocked.includes(animal.species)) {
-      game.unlocked.push(animal.species);
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon(animal.species, 3.2)} ${SEASON_PEN[animal.species]}`));
-    }
-    // das erste Gnu: im Tierpark entsteht nördlich vom Löwengehege die Gnu-Steppe
-    if (animal.species === 'gnu' && !game.unlocked.includes('gnu')) {
-      game.unlocked.push('gnu');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('gnu', 3.2)} ${tr('Dein erstes Gnu! Im Tierpark ist oben bei den Löwen eine Gnu-Steppe entstanden.', 'Your first wildebeest! In your zoo, Wildebeest Plains have appeared up by the lions.')}`));
-    }
+    // (Geier, Hyänen, Warzenschweine und Gnus haben in der Safari von Anfang an ihren Platz, siehe docs/plan-safari.md)
     // die erste Qualle: im Aquarium öffnet sich der dunkle Quallenraum
     if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
       game.unlocked.push('jellyfish');
@@ -5749,7 +5749,7 @@ export default class GardenScene extends Phaser.Scene {
     // für die Statistik nur einmal je Tier: ein Panda, der zum Bambus abhaut und wieder angelockt wird, zählt nicht doppelt
     if (!animal.counted) {
       animal.counted = true;
-      countCatch(animal.farm ?? animal.species);
+      countCatch(animal.species);
     }
     if (!caughtBefore(animal.species)) {
       game.caughtSpecies.push(animal.species);
@@ -6154,7 +6154,6 @@ export default class GardenScene extends Phaser.Scene {
     const put = (d, e) => {
       if (!e || !SPECIES[d.species]) return;
       const a = this.createAnimal(d.species, 0, 0, d.variant);
-      a.farm = d.farm ?? null;
       a.skin = d.skin ?? null;
       a.origin = d.origin;
       if (isWaterAnimal(d.species)) a.campBag = true; // Fische: im Tank im Käfig (wie an Land), kein Wasser
@@ -6596,7 +6595,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Geschenk erst nach dem Tutorial, im Hauptabschnitt (Schafgehege, Computer), und wenn beide Events gerade startbar sind
   giftReady() {
-    if (game.parkReturns < 2 || !storyAt('upgrade') || LEVEL_ID !== 'park') return false;
+    if (game.parkReturns < 2 || !storyAt('stands') || LEVEL_ID !== 'park') return false;
     if (eventState('babies').state !== 'ready' || eventState('ride').state !== 'ready') return false;
     return babyPlan(this.animals.filter((a) => a.state === 'penned')).length > 0 || this.aquariumBabyPair();
   }
@@ -6661,12 +6660,12 @@ export default class GardenScene extends Phaser.Scene {
     game.levels[LEVEL_ID] = {
       animals: this.animals
         .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
-        .map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
+        .map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
       season: LEVEL.season, // Wetterphase: wechselt sie bis zum nächsten Besuch, ziehen die wilden Tiere weiter
     };
-    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, farm: a.farm ?? null, skin: a.skin ?? null, origin: a.origin }));
+    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, origin: a.origin }));
     game.tool = CARRIED.includes(this.toolId) ? this.stashedTool : this.toolId; // beim Neuaufbau bleibt das Werkzeug in der Hand (beim Verlassen ist es schon zurückgelegt)
   }
 
@@ -6725,27 +6724,33 @@ export default class GardenScene extends Phaser.Scene {
       this.signPanel.classList.remove('show');
       return;
     }
-    this.signPanel.innerHTML = this.enclosureInfo(sign.enclosure);
+    this.signPanel.innerHTML = this.enclosureInfo(sign.enclosure, sign);
     this.signPanel.scrollTop = 0;
     this.signPanel.classList.add('show');
   }
 
-  enclosureInfo(enclosure) {
-    const rows = enclosure.species.map((s) => {
+  // sign: Tafel mit nur einem Teil der Tiere (Haltebucht der Safari): nur diese, mit dem Namen der Zone
+  enclosureInfo(enclosure, sign = null) {
+    const only = sign?.only ?? null;
+    const rows = (only ?? enclosure.species).map((s) => {
       const [name, text] = ANIMAL_INFO[s] ?? [s, ''];
       return `<div class="print-row">${animalIcon(s)}<span><b>${name}</b>${text}</span></div>`;
     });
     const places = penQuotas(enclosure)
+      .filter(({ key }) => !only || only.includes(key))
       .map(({ key, cap }) => `${key ? animalIcon(key) + ' ' : ''}<b>${penCount(this.animals, enclosure, key)} / ${cap}</b>`)
       .join(' · ');
     const slots = hasSlots(enclosure)
       ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: ${places}${isFull(this.animals, enclosure) ? ' ⭐' : ''}${
-          isUpgraded(enclosure)
-            ? tr(' · ausgebaut', ' · upgraded')
-            : tr(` · Ausbau: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, Spielzeug: ${toysText(enclosure)}` : ''} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, toys: ${toysText(enclosure)}` : ''} (${ACTION_KEY} or tap the sign)`)
+          !PEN_UPGRADES
+            ? '' // (Gehegeausbau abgeschaltet)
+            : isUpgraded(enclosure)
+              ? tr(' · ausgebaut', ' · upgraded')
+              : tr(` · Ausbau: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, Spielzeug: ${toysText(enclosure)}` : ''} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, toys: ${toysText(enclosure)}` : ''} (${ACTION_KEY} or tap the sign)`)
         }</div>`
       : '';
-    return `<b>${enclosure.name} · ${tr('Hier wohnen', 'Who lives here')}:</b>${rows.join('')}${slots}`;
+    const title = sign?.name ? `${sign.name} (${enclosure.name})` : enclosure.name;
+    return `<b>${title} · ${tr('Hier wohnen', 'Who lives here')}:</b>${rows.join('')}${slots}`;
   }
 
   // Läuft man mit einem Tier in ein Gehege, das nicht zu ihm passt: kurzer Hinweis
@@ -6766,9 +6771,12 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Spieler und folgende Tiere öffnen das Tor; ist der Eingang frei, schließt es sich wieder
+  // Spieler und folgende Tiere öffnen das Tor; ist der Eingang frei, schließt es sich wieder. Auch Besucher, die in den
+  // Streichelzoo gehen (die anderen laufen nie durch Tore)
   updateGate(dt) {
-    const walkers = [this.player, ...this.followers];
+    const inZoo = (v) => { const t = v.tile; return this.visitors.grid.petAll?.has(t.tx + ',' + t.ty); };
+    const petting = (this.visitors?.visitors ?? []).filter((v) => v.goal === 'petenter' || inZoo(v));
+    const walkers = [this.player, ...this.followers, ...(this.safariCars?.walkers() ?? []), ...petting]; // (auch die Autos der Safari)
     for (const group of this.gateGroups) {
       // Abstand in Kachel-Proportionen (Kacheln sind halb so hoch wie breit)
       const near = walkers.some((w) => group.sprites.some((g) => Math.hypot(w.x - g.x, (w.y - g.y) * 2) < GATE_OPEN_DIST));
@@ -6801,6 +6809,7 @@ export default class GardenScene extends Phaser.Scene {
     this.forestLife?.update(dt);
     this.moorFog?.update(dt);
     this.savannaLife?.update(dt);
+    this.safariCars?.update(dt);
     // Gorilla-Trommelduell: der Tier-Zähler oben läge über den Trommelpunkten – solange es läuft, ist er ausgeblendet
     const duel = this.tool instanceof DrumTool && !!this.tool.duel;
     if (duel !== this.counterDuelHidden) {

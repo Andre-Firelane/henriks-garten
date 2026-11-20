@@ -12,6 +12,7 @@ export const game = {
   parkIncome: null, // so viele Herzen bringt jeder Tierpark-Abschnitt pro Minute, solange man woanders ist: { park: {...}, ... } (beim Verlassen gemerkt)
   parkSplit: true, // der Tierpark ist in drei Abschnitte geteilt (ältere Spielstände ziehen beim Laden um, siehe splitPark in save.js)
   wildpark: true, // der Wald im Tierpark ist der Wildpark (ältere Spielstände ziehen beim Laden um, siehe migrateWildpark in save.js)
+  pettingZoo: true, // Streichelzoo: keine Maulwürfe mehr, Kuh, Schwein und Ziege sind eigene Arten (siehe migratePettingZoo in save.js)
   events: {},
   unlocked: [],
   scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
@@ -49,6 +50,7 @@ export function resetGame() {
   game.parkIncome = null;
   game.parkSplit = true;
   game.wildpark = true;
+  game.pettingZoo = true;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};

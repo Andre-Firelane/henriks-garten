@@ -9,15 +9,16 @@ import { storyAt } from '../story/story.js';
 import { sideHere, sideOverrides } from './sideMaps.js';
 import { PEN_TOYS, TOYS, toyKey } from './toys.js';
 
-// leere Bauplätze (Buden, Riesenrad) erst ab Mavis Ausbau-Aufgabe zeigen – vorher lenken sie nur ab
-export const slotsShown = () => storyAt('upgrade');
+// leere Bauplätze (Buden, Riesenrad) erst ab Mavis Buden-Aufgabe zeigen – vorher lenken sie nur ab
+export const slotsShown = () => storyAt('stands');
 
 // ≈: ausgetrocknetes Wasserloch (Schlamm, Savanne in der Trockenzeit; dort steckt der Lungenfisch)
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
 // ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar); ȸ ȹ: Zaun über einem Bach (Wildpark im Tierpark)
 // ŝ ĉ ṗ ķ ẋ: Sonnenblumen, Mais, Kürbisse, Kohl und Vogelscheuche auf dem Acker (Wiese)
-const GROUND = { 'ȸ': 'water', 'ȹ': 'water', '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
+// ≠: Sandpiste der Safari im Tierpark (dort fahren die Besucherautos; kein Weg für Fußgänger, die Tiere laufen darüber)
+const GROUND = { '≠': 'savanna_path', 'ȸ': 'water', 'ȹ': 'water', '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -252,7 +253,7 @@ export const OBJECTS = {
   ȹ: { key: 'fence_x', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'x' } },
 };
 // Spielzeug und Deko ausgebauter Gehege (ⓐ …, siehe src/world/toys.js)
-for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
+for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: t.key ?? toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
 
 export let LEVEL_ID;
 export let LEVEL;
@@ -283,7 +284,6 @@ export let CAR_BODY = null;
 export let CAR_BODIES = []; // alle Autos des Levels (das erste ist CAR_BODY; dazu LEVEL.extraCars)
 const CAR_HALF_WIDTH = 10; // so weit neben dieser Strecke ist es noch fest (mal Größe des Autos; dazu kommen die Füße der Figur)
 export let BRIDGES; // Bogenbrücken: { axis: 'x' | 'y', at: feste Spalte bzw. Zeile, from, to: erste und letzte Kachel }
-export let MOLE_SPOTS; // Wiesenstellen, an denen Maulwürfe auftauchen (freies Gras, kein Gehege)
 export let SQUIRREL_TREES; // Bäume, auf denen Eichhörnchen wohnen können: { tx, ty, ground: { tx, ty } }
 let ROWS;
 
@@ -374,7 +374,15 @@ export function setLevel(id) {
   for (const e of LEVEL.enclosures ?? []) {
     if (!PEN_TOYS[e.id] || !isUpgraded(e) || !e.seed || e.free || e.pond) continue;
     if (e.unlock && !game.unlocked.includes(e.unlock)) continue;
-    ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id]);
+    // toysAt: feste Plätze (z. B. im Wildpark auf der Lichtung, sonst landen sie in einer abgelegenen Ecke)
+    if (e.toysAt) {
+      const rows = ROWS.map((r) => [...r]);
+      PEN_TOYS[e.id].forEach((id, i) => {
+        const at = e.toysAt[i];
+        if (at) rows[at.ty][at.tx] = TOYS[id].char;
+      });
+      ROWS = rows.map((r) => r.join(''));
+    } else ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id]);
   }
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
@@ -439,7 +447,7 @@ export function setLevel(id) {
     const g = right ? gates[gates.length - 1] : gates[0];
     const d = right ? 1 : -1;
     // ohne Tor (Teich ohne Zaun): eigener Platz fürs Schild (signAt, auf einem Pfosten)
-    const sign = e.signAt ?? (e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null);
+    const sign = e.noSign ? null : e.signAt ?? (e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null);
     return { ...e, area: a, tiles, tileSet, gates, sign };
   });
   FISHPOND_TILES = tilesWith('o');
@@ -520,9 +528,6 @@ export function setLevel(id) {
       if (w) (pen ? PEN_SHORE_TILES : SHORE_TILES).push({ tx, ty, water: { tx: tx + w[0], ty: ty + w[1] } });
     }
   }
-  MOLE_SPOTS = tilesWith('.').filter(
-    ({ tx, ty }) => tx > 1 && ty > 1 && tx < MAP_W - 2 && ty < MAP_H - 2 && !inPen(tx, ty) && !isBlocked(tx, ty),
-  );
   // Bäume im Inneren mit einem freien Platz davor (bevorzugt vorne, damit man das Eichhörnchen sieht)
   SQUIRREL_TREES = [...tilesWith('P'), ...tilesWith('D'), ...tilesWith('T')].flatMap(({ tx, ty }) => {
     if (tx < 2 || ty < 2 || tx > MAP_W - 3 || ty > MAP_H - 3) return [];
@@ -552,8 +557,12 @@ export function charAt(tx, ty) {
 }
 
 // Gehegeausbau: ist das Gehege ausgebaut? Wie viele Tiere passen hinein (ohne Babys)?
+// Der Gehegeausbau ist vorerst abgeschaltet (PEN_UPGRADES): alle Gehege gelten von Anfang an als ausgebaut (mehr Plätze,
+// Ausstattung, Spielzeug), am Computer und am Gehegeschild gibt es keinen Ausbau. Die frei setzbare Deko soll ihn
+// ersetzen (docs/plan-deko.md). Die Angaben dazu (slots/quota vorher, basic, upgrade) bleiben in levels.js stehen.
+export const PEN_UPGRADES = false;
 export function isUpgraded(e) {
-  return !!game.penLevel[e.id];
+  return !PEN_UPGRADES || !!game.penLevel[e.id];
 }
 
 // Spielzeug in ein Gehege stellen (rows: Kartenzeilen, seed: eine Kachel im Gehege, list: Spielzeug-Namen). Nur auf Gras
@@ -603,8 +612,7 @@ function placeToys(rows, seed, list) {
   }
   return grid.map((r) => r.join(''));
 }
-// Tierarten, die sich ein Kontingent teilen (der Hirsch ist die seltene Variante des Rehs; Kuh, Schwein und Ziege
-// sind ohnehin Schafe)
+// Tierarten, die sich ein Kontingent teilen
 const QUOTA_OF = {}; // Tierart → Art, deren Plätze sie mitbenutzt (bisher keine)
 export const quotaKey = (species) => QUOTA_OF[species] ?? species;
 // Kontingente eines Geheges: in gemeinsamen Gehegen je Tierart eigene Plätze (quota: { Art: [vorher, ausgebaut] }),
@@ -625,8 +633,15 @@ export function upgradeCost() {
   return 40 + 10 * game.upgrades;
 }
 
-// Das Gehege, zu dessen Innenfläche diese Kachel gehört (oder null)
+// Das Gehege, zu dessen Innenfläche diese Kachel gehört (oder null). Offene Bereiche (open, z. B. der Wildpark: Rehe
+// und Elche laufen dort frei) zählen nicht als Gehege: Besucher, Deko, E-Roller usw. behandeln sie wie den übrigen Park.
 export function enclosureAt(tx, ty) {
+  const key = tx + ',' + ty;
+  return ENCLOSURES.find((e) => !e.open && e.tileSet.has(key)) ?? null;
+}
+
+// Zuhause der Tiere an dieser Kachel: wie enclosureAt, aber samt offener Bereiche (dort bleiben ihre Tiere drin)
+export function homeAt(tx, ty) {
   const key = tx + ',' + ty;
   return ENCLOSURES.find((e) => e.tileSet.has(key)) ?? null;
 }
@@ -730,7 +745,7 @@ function floodPen(seed) {
       if (c === 'G' || OBJECTS[c]?.fence) continue;
       seen.add(key);
       todo.push(n);
-      if (tiles.length > 600) throw new Error(`Gehege bei ${seed.tx},${seed.ty} ist nicht geschlossen`);
+      if (tiles.length > 2000) throw new Error(`Gehege bei ${seed.tx},${seed.ty} ist nicht geschlossen`); // (die Safari hat rund 900 Kacheln)
     }
   }
   return tiles;

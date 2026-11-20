@@ -96,6 +96,7 @@ export function loadSave() {
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
   if (!s.game.story) migrateStory(); // Spielstand von vor Mavi: alles bleibt offen
+  if (!s.game.pettingZoo) migratePettingZoo();
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
@@ -132,6 +133,51 @@ function splitPark() {
 function migrateWildpark() {
   game.wildpark = true;
   if (game.penLevel.forestpond && !game.penLevel.clearingpond) game.penLevel.clearingpond = game.penLevel.forestpond;
+}
+
+// Streichelzoo (siehe docs/plan-streichelzoo.md): Maulwürfe gibt es nicht mehr, sie verschwinden aus Gehegen, Begleitern,
+// Expedition und allen Listen. Schafe, die beim alten Bauernhof-Event als Kuh, Schwein oder Ziege gefangen wurden
+// (farm), sind jetzt echte Kühe, Schweine und Ziegen
+export const FARM_SPECIES = ['cow', 'pig', 'goat'];
+const GONE_SPECIES = ['mole'];
+export function farmToSpecies(d) {
+  if (d && FARM_SPECIES.includes(d.farm)) d.species = d.farm;
+  if (d) delete d.farm;
+  return d;
+}
+function migratePettingZoo() {
+  game.pettingZoo = true;
+  const keep = (list) => (list ?? []).filter((a) => !GONE_SPECIES.includes(a.species)).map(farmToSpecies);
+  const farmed = new Set();
+  const note = (list) => list.forEach((a) => FARM_SPECIES.includes(a.farm) && farmed.add(a.farm));
+  for (const lvl of Object.values(game.levels)) {
+    note(lvl.animals ?? []);
+    lvl.animals = keep(lvl.animals);
+  }
+  note(game.followers);
+  game.followers = keep(game.followers);
+  const exp = game.expedition;
+  if (exp) {
+    note([...(exp.wagon ?? []), ...(exp.stay ?? [])]);
+    exp.wagon = keep(exp.wagon);
+    exp.stay = keep(exp.stay);
+    for (const s of GONE_SPECIES) delete exp.left?.[s];
+    for (const s of GONE_SPECIES) delete exp.home?.[s];
+  }
+  for (const s of FARM_SPECIES) if (game.catches?.[s]) farmed.add(s); // gefangen, aber vielleicht schon ausgewildert
+  const drop = (list) => (list ? list.filter((s) => !GONE_SPECIES.includes(s)) : list);
+  game.caughtSpecies = [...new Set([...drop(game.caughtSpecies), ...farmed])];
+  game.seenSpecies = [...new Set([...drop(game.seenSpecies ?? []), ...farmed])];
+  game.tipsSeen = drop(game.tipsSeen);
+  for (const k of Object.keys(game.caughtIn ?? {})) game.caughtIn[k] = drop(game.caughtIn[k]);
+  game.caughtIn ??= {};
+  if (farmed.size) game.caughtIn.meadow = [...new Set([...(game.caughtIn.meadow ?? []), ...farmed])];
+  if (Array.isArray(game.bookNew)) game.bookNew = game.bookNew.filter((e) => !GONE_SPECIES.some((s) => e.endsWith(`:${s}`)));
+  for (const s of GONE_SPECIES) {
+    delete game.catches?.[s];
+    delete game.heartsBy?.[s];
+  }
+  if (GONE_SPECIES.includes(game.rarePromise?.species)) game.rarePromise = null;
 }
 
 // Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik

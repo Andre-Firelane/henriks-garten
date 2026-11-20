@@ -36,22 +36,19 @@ export const TOYS = {
   yarn_ball: { char: 'ⓧ', originY: 20 / 24, solid: false, name: tr('Wollknäuel', 'Ball of yarn'), from: 'draw', color: null },
   hay_bale: { char: 'ⓨ', originY: 36 / 40, solid: true, hitbox: 10, name: tr('Heuballen', 'Hay bale'), from: 'draw', color: null },
   feeding_rack: { char: 'ⓩ', originY: 52 / 64, solid: true, hitbox: 10, name: tr('Futterraufe', 'Feeding rack'), from: 'hay_rack', color: null },
+  // key: vorhandenes Bild statt eines eigenen toy_…-Bilds; seats: so viele Tiere fressen dort zugleich (sie versammeln sich darum)
+  hay_house: { char: 'Ⓗ', key: 'hay_shelter', originY: 96 / 112, solid: true, hitbox: 14, name: tr('Heuhäuschen', 'Hay hut'), seats: 5 },
 };
 export const toyKey = (id) => `toy_${id}`;
 
 // Spielzeug je Gehege (in dieser Reihenfolge aufgestellt, so viele, wie Platz haben; derselbe Name zweimal = zwei davon)
 export const PEN_TOYS = {
-  crocodile: ['sun_rock', 'sun_rock'],
   lion: ['prey_sack', 'bone_pile'],
   meerkat: ['lookout', 'lookout'],
-  savanna: ['giraffe_feeder', 'salt_lick', 'giraffe_feeder'],
-  gnus: ['salt_lick', 'hay_bale'],
-  hippos: ['melons', 'melons'],
-  vultures: ['dead_tree', 'bone_pile'],
-  hyenas: ['bone_pile', 'bone_pile'],
-  warthogs: ['scratch_post', 'mud_nest'],
-  deerpark: ['salt_lick', 'feeding_rack'],
-  boarpen: ['scratch_post', 'mud_nest'], // wie bei den Warzenschweinen
+  safari: ['giraffe_feeder', 'hay_house', 'hay_bale'], // Safari: feste Plätze (toysAt in levels.js): im Akazienhain, das Heuhäuschen an der Piste bei der Grasebene, im Süden
+  hyenas: ['bone_pile', 'bone_pile'], // Elefantenfriedhof
+  deerpark: ['feeding_rack'], // Wildpark: nur die Futterraufe auf der Lichtung (ein Salzleckstein sah dort komisch aus)
+  boarpen: ['scratch_post', 'mud_nest'],
   foxden: ['log_tunnel', 'jute_ball'],
   forestpond: ['woodpile', 'log_tunnel'],
   wolves: ['log_tunnel', 'bone_pile'],
@@ -87,7 +84,14 @@ export const TOY_PLAY = {
   warthog: { toy: 'scratch_post', action: 'rub', time: [3, 6], every: [8, 16] },
   boar: { toy: 'scratch_post', action: 'rub', time: [3, 6], every: [8, 16] }, // Wildschwein scheuert sich wie das Warzenschwein
   sheep: { toy: 'scratch_post', action: 'rub', time: [2, 4], every: [15, 30] },
+  goat: { toy: 'scratch_post', action: 'rub', time: [2, 4], every: [15, 30] }, // Streichelzoo: Ziege und Schwein scheuern sich, die Kuh leckt am Salzstein
+  pig: { toy: 'scratch_post', action: 'rub', time: [3, 5], every: [12, 24] },
+  cow: { toy: 'salt_lick', action: 'eat', time: [5, 9], every: [12, 24] },
   panda: { toy: 'slide', action: 'slide', lift: 46, time: [4, 4], every: [10, 20] },
+  // Safari: am Heuhäuschen an der Piste versammeln sich Zebras, Gnus und Antilopen zum Fressen
+  zebra: { toy: 'hay_house', action: 'eat', time: [8, 16], every: [15, 35] },
+  gnu: { toy: 'hay_house', action: 'eat', time: [8, 16], every: [15, 35] },
+  antelope: { toy: 'hay_house', action: 'eat', time: [6, 12], every: [20, 40] },
 };
 
 // Beschreibung für die Tafel: "Wollknäuel, Katzenkörbchen"

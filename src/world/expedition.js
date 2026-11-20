@@ -110,7 +110,7 @@ export function startRun(biome) {
     counted: 0, // so viele davon zählen schon in der Statistik (siehe expArriveCamp)
     visited: [], // gespielte Maps
     boni: [], // Boni bis zum Ende des Runs
-    wagon: [], // Tiere im Wagen: { species, variant, farm, skin, origin }
+    wagon: [], // Tiere im Wagen: { species, variant, skin, origin }
     stay: [], // Tiere im Camp, die (noch) nicht im Wagen sind
     left: {}, // laufende Map: so viele Fang-Einheiten je Art sind noch frei
     map: null, // laufende Map

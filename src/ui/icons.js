@@ -4,7 +4,7 @@ const SHEETS = {
   // Bildbreite, Bildhöhe, Anzahl Bilder im Sheet (je Zeile), welches Bild gezeigt wird (und die Datei, falls sie anders heißt,
   // und die Zahl der Zeilen bei Rastern)
   sheep: [80, 88, 4, 0],
-  cow: [96, 88, 4, 0, 'farm_cow'], // Bauernhof-Event: gefangene Schafe als Kuh, Schwein oder Ziege
+  cow: [96, 88, 4, 0, 'farm_cow'], // Hoftiere im Streichelzoo (Bilder heißen farm_<Art>)
   pig: [80, 88, 4, 0, 'farm_pig'],
   goat: [80, 88, 4, 0, 'farm_goat'],
   cat: [72, 80, 4, 0],
@@ -17,7 +17,6 @@ const SHEETS = {
   fox: [72, 72, 4, 0],
   beaver: [80, 60, 4, 0],
   frog: [56, 52, 4, 0],
-  mole: [56, 52, 4, 0],
   heron: [88, 108, 4, 0],
   flamingo: [88, 108, 4, 0],
   panda: [88, 96, 4, 0],

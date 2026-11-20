@@ -34,8 +34,8 @@ export const EVENTS = [
   {
     id: 'farm',
     name: tr('Bauernhof', 'Farm'),
-    text: tr('5 Minuten lang sind die Schafe auf der Wiese Kühe, Schweine und Ziegen. Gefangene bleiben es!', 'For 5 minutes the sheep on the meadow are cows, pigs and goats. The ones you catch stay that way!'),
-    cost: 100,
+    text: tr('5 Minuten lang kommen statt der Schafe Kühe, Schweine und Ziegen auf die Wiese. Fang sie für den Streichelzoo!', 'For 5 minutes cows, pigs and goats come to the meadow instead of sheep. Catch them for the petting zoo!'),
+    cost: 50, // Hoftiere gibt es auch ohne Event (selten), darum günstiger
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
@@ -137,7 +137,7 @@ export function formatTime(ms) {
 
 // Tierbabys: in jedem Gehege auf je 2 größere Tiere einer Familie ein Baby. Reh und Hirsch sind eine Familie,
 // ihr Baby ist ein Rehkitz. Auch Flamingos (graue Küken), Katzen, Erdmännchen, Eichhörnchen, Frösche und Wölfe bekommen Babys,
-// im Aquarium Seepferdchen, Schildkröten, Rochen, Kraken und Quallen; Maulwürfe, Reiher, Fische und Koi nicht.
+// im Aquarium Seepferdchen, Schildkröten, Rochen, Kraken und Quallen; Reiher, Fische und Koi nicht.
 const BABY_OF = { macaque: 'macaque', panda: 'panda', tiger: 'tiger', orangutan: 'orangutan', peacock: 'peacock', flamingo: 'flamingo', cat: 'cat', sheep: 'sheep', deer: 'deer', antelope: 'antelope', zebra: 'zebra', giraffe: 'giraffe', lion: 'lion', fox: 'fox', meerkat: 'meerkat', squirrel: 'squirrel', frog: 'frog', wolf: 'wolf', redpanda: 'redpanda',
   tanuki: 'tanuki', yak: 'yak', snowleopard: 'snowleopard',
   // im Aquarium (Fische und Koi bekommen keine Babys)
