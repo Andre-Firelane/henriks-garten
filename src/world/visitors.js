@@ -1,6 +1,6 @@
 // Besucher im Tierpark: wie sehr die Tiere Besucher anlocken, das Wegnetz, auf dem sie laufen, und die Plätze
 // vor den Gehegen, an denen sie stehen bleiben und schauen.
-import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, isUpgraded, MAP_W, buildings, groundAt, isBlockedPoint, penQuotas, quotaKey } from './map.js';
+import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, isUpgraded, MAP_W, buildings, isWalkway, isBlockedPoint, penQuotas, quotaKey } from './map.js';
 import { tileToWorld } from './iso.js';
 import { WHEEL_VISITORS, hasWheel, shopsIn } from './shops.js';
 import { TOY_BONUS } from './toys.js';
@@ -163,12 +163,14 @@ const key = (tx, ty) => tx + ',' + ty;
 // Wegnetz: alle begehbaren Wegkacheln, ohne Gehegetore und Gebäudetüren (dort gehen nur Tiere bzw. der Spieler durch).
 // Gebäude nur, wenn Besucher hinein dürfen (visitors: true, z. B. die Aquarium-Halle)
 export function buildPathGrid() {
-  const doors = new Set(GATE_TILES.map((g) => key(g.tx, g.ty)));
+  // (Tore eines Geheges mit visitors: true sind Eingänge, durch die auch Besucher gehen, z. B. das große Tor des Wildparks)
+  const open = new Set(ENCLOSURES.filter((e) => e.visitors).flatMap((e) => e.gates.map((g) => key(g.tx, g.ty))));
+  const doors = new Set(GATE_TILES.map((g) => key(g.tx, g.ty)).filter((k) => !open.has(k)));
   const inBuilding = (tx, ty) => buildings().some((h) => !h.visitors && tx >= h.tx0 && tx <= h.tx1 && ty >= h.ty0 && ty <= h.ty1);
   const walk = new Set();
   for (let ty = 0; ty < MAP_H; ty++) {
     for (let tx = 0; tx < MAP_W; tx++) {
-      if (groundAt(tx, ty) !== LEVEL.path || doors.has(key(tx, ty)) || inBuilding(tx, ty)) continue;
+      if (!isWalkway(tx, ty) || doors.has(key(tx, ty)) || inBuilding(tx, ty)) continue;
       const p = tileToWorld(tx, ty);
       if (isBlockedPoint(p.x, p.y)) continue; // Wegweiser, Auto, Futterautomat ...
       walk.add(key(tx, ty));

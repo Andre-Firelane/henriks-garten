@@ -164,6 +164,7 @@ const PIXEL_ART = [
   'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn',
   // Tierpark
   'park_path', 'signpost_post',
+  'wildpark_arch', // Torbogen über dem Eingang des Wildparks (Platzhalter aus tools/wildpark-placeholders.py)
   // begehbare Hütten
   'hutwall_meadow_x', 'hutwall_meadow_y', 'post_hutwall_meadow', 'gate_door_meadow_x', 'gate_door_meadow_y', 'hutroof_meadow',
   'hutwall_forest_x', 'hutwall_forest_y', 'post_hutwall_forest', 'gate_door_forest_x', 'gate_door_forest_y', 'hutroof_forest',

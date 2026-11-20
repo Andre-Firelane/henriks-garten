@@ -193,6 +193,14 @@ import { activeId, activeStep, countStoryCatch, isUnlocked, skipStory, storyAt }
 import Mavi from '../npc/Mavi.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
 
+// Torbogen über dem Tor des Wildparks (Bild 128 x 176, siehe drawArches): Fußpunkt, Mitte der Tafel über dem Fußpunkt,
+// nutzbare Breite der Tafel und ihre Steigung (1 Pixel höher je 2 Pixel nach rechts)
+const ARCH_H = 176;
+const ARCH_FOOT = 156;
+const ARCH_BOARD = 112;
+const ARCH_BOARD_W = 70;
+const ARCH_SLOPE = -0.5;
+
 // Ganzzahliger Zoom hält die Pixel-Art scharf: etwa 360 Welt-Pixel Bildhöhe
 const VIEW_H = 360;
 // auf dem Handy näher heran (der Bildschirm ist klein): etwa 310 Welt-Pixel, in Viertelschritten (die meisten Bilder
@@ -1100,8 +1108,10 @@ export default class GardenScene extends Phaser.Scene {
         sy = c.y - 78; // über dem First
         front = tileToWorld(house.tx1, house.ty1).y + TILE_H + 2; // vor dem Dach
       }
-      // ohne Zaun (Teich ohne Zaun): das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
-      if (!e.gates.length && !house && !e.signOnGlass) {
+      // ohne Zaun (Teich ohne Zaun) oder mit eigenem Platz abseits vom Zaun (signAt, z. B. im Wildpark an der Weggabelung):
+      // das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
+      const onFence = e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty));
+      if (!onFence && !house && !e.signOnGlass) {
         this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
       }
       const board = this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
@@ -1433,6 +1443,7 @@ export default class GardenScene extends Phaser.Scene {
     this.startAmbient();
     this.startSteam();
     this.drawBridges();
+    this.drawArches();
 
     // ESC (oder der Menü-Knopf oben rechts) öffnet das Menü: speichern, zurück zum Startbildschirm
     this.input.keyboard.on('keydown-ESC', () => this.openGameMenu());
@@ -1681,6 +1692,30 @@ export default class GardenScene extends Phaser.Scene {
       };
       rail(0, -4); // hinten: hinter allem, was auf der Brücke steht
       rail(1, 2); // vorne: vor allem auf der Brücke, hinter allem davor
+    }
+  }
+
+  // Torbögen über einem Tor (z. B. Eingang des Wildparks im Tierpark): LEVEL.arches = [{ key, tx, ty, label }], tx/ty ist
+  // die Mitte der Toröffnung (bei zwei Torkacheln entlang ty also ty + 0.5 zwischen ihnen). Das Bild (tools/
+  // wildpark-placeholders.py) hat seinen Fußpunkt ARCH_FOOT Pixel unter der Oberkante und eine leere schräge Tafel
+  // ARCH_BOARD Pixel darüber; den Namen schreibt das Spiel darauf, schräg wie auf den Wegweisern (signLabel).
+  // Tiefe: wie der vordere Pfosten, also vor allem in der Toröffnung und dahinter, hinter allem davor.
+  drawArches() {
+    for (const a of LEVEL.arches ?? []) {
+      const { x, y } = tileToWorld(a.tx, a.ty);
+      const img = this.add.image(x, y, a.key);
+      img.setOrigin(0.5, ARCH_FOOT / ARCH_H);
+      const depth = tileToWorld(a.tx, a.ty + 1).y;
+      img.setDepth(depth);
+      if (!a.label) continue;
+      // so groß wie möglich, aber höchstens so breit wie die Tafel (waagrecht gemessen)
+      let text = null;
+      for (const k of [1.4, 1.2, 1, 0.85]) {
+        text?.destroy();
+        text = this.signLabel(a.label, k, ARCH_SLOPE);
+        if (text.texture.customData.width <= ARCH_BOARD_W) break;
+      }
+      text.setPosition(x, y - ARCH_BOARD).setDepth(depth + 0.01);
     }
   }
 

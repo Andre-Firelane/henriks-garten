@@ -27,7 +27,7 @@ export const HD = [
   // Tierpark (auch in Asien, Savanne und Dschungel)
   'acacia', 'acacia_bare', 'agrass0', 'agrass1', 'agrass2', 'aquarium_facade', 'asia_water0', 'asia_water1', 'asia_water2', 'bamboo',
   'boulder', 'build_planks', 'build_stakes', 'cat_tree', 'chain_x', 'chain_y', 'cherry_tree', 'climb_tree', 'den', 'den_sand', 'dry_bush',
-  'feeder', 'fence_x', 'fence_y', 'fishpond0', 'fishpond1', 'floor_office', 'fountain', 'gate_chain_x', 'gate_chain_y',
+  'feeder', 'fence_x', 'fence_y', 'wildpark_arch', 'fishpond0', 'fishpond1', 'floor_office', 'fountain', 'gate_chain_x', 'gate_chain_y',
   'gate_door_office_x', 'gate_door_office_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x',
   'gate_net_y', 'gate_tall_x', 'gate_tall_y', 'gate_x', 'gate_y', 'hammock', 'hay_rack', 'hay_shelter', 'heliconia', 'hibiscus', 'leaf_bush', 'leaf_bush_bare', 'leaf_branch',
   'hotspring', 'hutroof_cathouse', 'hutroof_office', 'hutwall_cathouse_x', 'hutwall_cathouse_y', 'hutwall_office_x', 'hutwall_office_y',

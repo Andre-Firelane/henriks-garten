@@ -15,9 +15,9 @@ export const slotsShown = () => storyAt('upgrade');
 // ≈: ausgetrocknetes Wasserloch (Schlamm, Savanne in der Trockenzeit; dort steckt der Lungenfisch)
 // w: Teich in der Voliere (sieht aus wie Wasser, ist aber kein wilder Teich mit Fischen); ',' Holzboden;
 // h: heiße Quelle (Asien); B, E: Bogenbrücke über den Teich (darunter Wasser); Ŝ: Bootssteg (Dschungel, darunter Wasser)
-// ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar)
+// ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar); ȸ ȹ: Zaun über einem Bach (Wildpark im Tierpark)
 // ŝ ĉ ṗ ķ ẋ: Sonnenblumen, Mais, Kürbisse, Kohl und Vogelscheuche auf dem Acker (Wiese)
-const GROUND = { '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
+const GROUND = { 'ȸ': 'water', 'ȹ': 'water', '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -247,6 +247,9 @@ export const OBJECTS = {
   // hoher Wildzaun (Savanne), Bild 80 Pixel hoch
   '[': { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
   ']': { key: 'tall_y', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'y' } },
+  // dieselben Zäune über einem Bach (darunter Wasser, siehe GROUND): ȸ Wildzaun, ȹ Holzzaun, beide entlang tx
+  ȸ: { key: 'tall_x', originY: 60 / 80, solid: true, fence: { kind: 'tall', axis: 'x' } },
+  ȹ: { key: 'fence_x', originY: 44 / 64, solid: true, fence: { kind: 'wood', axis: 'x' } },
 };
 // Spielzeug und Deko ausgebauter Gehege (ⓐ …, siehe src/world/toys.js)
 for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
@@ -406,13 +409,20 @@ export function setLevel(id) {
   // Ältere Level haben noch ein einziges Gehege (pen) für alle Tiere
   const all = LEVEL.enclosures ?? (LEVEL.pen ? [{ id: 'pen', name: tr('Gehege', 'Enclosure'), area: LEVEL.pen, species: null }] : []);
   const list = all.filter((e) => (!e.unlock || game.unlocked.includes(e.unlock)) && (!e.when || e.when(game))); // noch nicht gebaute Gehege fehlen
+  const claimed = new Set();
   ENCLOSURES = list.map((e) => {
     // Kacheln der Innenfläche: entweder ein Rechteck (area) oder alles, was vom Startpunkt (seed) aus erreichbar ist,
     // ohne über Zaun, Wand oder Tor zu gehen. So sind auch L-Formen und unregelmäßige Gehege möglich.
     // free: freilaufende Tiere (z. B. Pfauen) – ein "Gehege" ohne Fläche, Zaun und Schild, nur zum Zählen
     // pond: Teich ohne Zaun (Koi) – das Gehege ist das zusammenhängende Wasser samt Brücke ab dem Startpunkt
-    const tiles = e.free ? [] : e.pond ? floodChars(e.seed, 'oE') : e.seed ? floodPen(e.seed) : rectTiles(e.area);
+    // shore (Teich ohne Zaun): dazu das Ufer so viele Kacheln breit, ohne Wege (dort hüpfen z. B. die Frösche)
+    let tiles = e.free ? [] : e.pond ? floodChars(e.seed, 'oE') : e.seed ? floodPen(e.seed) : rectTiles(e.area);
+    if (e.pond && e.shore) tiles = withShore(tiles, e.shore);
+    // jede Kachel gehört nur einem Gehege: das zuerst genannte behält sie (z. B. der Teich auf der Lichtung im Wildpark,
+    // dessen Fläche sonst auch zum Wildpark zählen würde)
+    tiles = tiles.filter(({ tx, ty }) => !claimed.has(tx + ',' + ty));
     const tileSet = new Set(tiles.map(({ tx, ty }) => tx + ',' + ty));
+    for (const k of tileSet) claimed.add(k);
     const a = e.area ?? (e.free ? { tx0: 0, tx1: 0, ty0: 0, ty1: 0 } : {
       tx0: Math.min(...tiles.map((t) => t.tx)),
       tx1: Math.max(...tiles.map((t) => t.tx)),
@@ -420,8 +430,9 @@ export function setLevel(id) {
       ty1: Math.max(...tiles.map((t) => t.ty)),
     });
     // Tore liegen im Zaun direkt neben der Innenfläche
+    // (gateTiles: nur diese, z. B. das große Tor des Wildparks, nicht die Tore der Gehege darin)
     const gates = GATE_TILES.filter(({ tx, ty }) =>
-      [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => tileSet.has(tx + dx + ',' + (ty + dy))),
+      e.gateTiles ? e.gateTiles.some((g) => g.tx === tx && g.ty === ty) : [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => tileSet.has(tx + dx + ',' + (ty + dy))),
     );
     // Schild hängt am Zaunstück direkt vor dem ersten Torflügel (signSide: 'right' = hinter dem letzten)
     const right = e.signSide === 'right';
@@ -647,6 +658,29 @@ function floodRows(rows, seed) {
 }
 
 // zusammenhängende Kacheln aus diesen Zeichen ab seed (z. B. das Wasser eines Teichs ohne Zaun)
+// Teich samt Ufer: alle Kacheln bis zu n Schritte vom Wasser, ohne Wege, Zäune und Tore
+function withShore(water, n) {
+  const seen = new Set(water.map(({ tx, ty }) => tx + ',' + ty));
+  const tiles = [...water];
+  let ring = water;
+  for (let i = 0; i < n; i++) {
+    const next = [];
+    for (const t of ring) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const m = { tx: t.tx + dx, ty: t.ty + dy };
+        const key = m.tx + ',' + m.ty;
+        const c = charAt(m.tx, m.ty);
+        if (seen.has(key) || c === undefined || c === ' ' || PATH_CHARS.includes(c) || OBJECTS[c]?.fence || OBJECTS[c]?.bridge) continue;
+        seen.add(key);
+        next.push(m);
+      }
+    }
+    tiles.push(...next);
+    ring = next;
+  }
+  return tiles;
+}
+
 function floodChars(seed, chars) {
   const seen = new Set([seed.tx + ',' + seed.ty]);
   const tiles = [];
@@ -758,6 +792,14 @@ export function exitAt(tx, ty) {
   return EXITS.find((e) => e.tx === tx && e.ty === ty) ?? null;
 }
 
+// Kachel des Wegnetzes (für die Besucher): Weg des Gebiets oder einer Bodenzone, oder eine Brücke (nicht der Baumstamm)
+export function isWalkway(tx, ty) {
+  const g = groundAt(tx, ty);
+  if (g === LEVEL.path || (g && g === groundZoneAt(tx, ty, true)?.path)) return true;
+  const o = OBJECTS[charAt(tx, ty)];
+  return !!(o?.bridge && !o.log);
+}
+
 export function groundAt(tx, ty) {
   const c = charAt(tx, ty);
   let house = buildingAt(tx, ty);
@@ -768,9 +810,10 @@ export function groundAt(tx, ty) {
   }
   if (house?.pathFloor && PATH_CHARS.includes(c)) return house.pathFloor; // eigener Weg im Gebäude (Mosaik im Aquarium)
   if (house) return HUT_FLOOR[house.style] ?? 'planks'; // die ganze Hütte hat Holzboden, auch unter Wänden und Tür
-  if (PATH_CHARS.includes(c)) return LEVEL.path;
+  // Bodenzone mit eigenem Weg (z. B. Waldweg im Wildpark des Tierparks), sonst der Weg des Gebiets
+  if (PATH_CHARS.includes(c)) return groundZoneAt(tx, ty, true)?.path ?? LEVEL.path;
   // ein Wegweiser mitten auf dem Weg (rundum Weg) steht auf Pflaster statt auf einer einzelnen Graskachel
-  if (c === 'W' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => PATH_CHARS.includes(charAt(tx + dx, ty + dy)))) return LEVEL.path;
+  if (c === 'W' && [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([dx, dy]) => PATH_CHARS.includes(charAt(tx + dx, ty + dy)))) return groundZoneAt(tx, ty, true)?.path ?? LEVEL.path;
   const g = GROUND[c];
   if (g && LEVEL.groundKeys?.[c]) return LEVEL.groundKeys[c]; // eigenes Bild des Gebiets (z. B. Schlamm der Suhle im Wald)
   // eigenes Teichwasser des Gehege, der Bodenzone bzw. des Gebiets (z. B. Koi-Teich mit Seerosen, Moorwasser), fest pro Kachel verteilt

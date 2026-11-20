@@ -91,6 +91,7 @@ export function loadSave() {
   delete game.events.icecream; // das Eiswagen-Event gibt es nicht mehr (feste Eisstände als Bude schon)
   migrateSkinSpecies();
   if (!s.game.parkSplit) splitPark();
+  if (!s.game.wildpark) migrateWildpark();
   if (!s.game.caughtSpecies) migrateCaught();
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
@@ -122,6 +123,15 @@ function splitPark() {
   for (const a of old.animals ?? []) move('animals', a);
   for (const p of old.pickups ?? []) move('pickups', p);
   Object.assign(game.levels, levels);
+}
+
+// Früher lebten Frösche, Fische und Biber in einem gemeinsamen Teich (Gehege forestpond), jetzt ist forestpond der
+// Biberbach und Fische und Frösche haben den Teich auf der Lichtung (clearingpond, siehe Wildpark in levels.js). War der
+// alte Teich ausgebaut, gilt das auch für den neuen, damit beim Umzug kein Tier über die Plätze fällt. Die Tiere selbst
+// ziehen beim Betreten des Tierparks in ihr neues Gehege (Tiere, die nicht mehr passen, setzt GardenScene neu ein).
+function migrateWildpark() {
+  game.wildpark = true;
+  if (game.penLevel.forestpond && !game.penLevel.clearingpond) game.penLevel.clearingpond = game.penLevel.forestpond;
 }
 
 // Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik

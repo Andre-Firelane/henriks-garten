@@ -966,43 +966,43 @@ const PARK_ROWS = [
       'b..T..f.K.g.3.}y.ooo.}..|y.y..|.#..............y#...y.............R...........3                 ',
       '.K..g.b..T..3.}......}..-------.#..R.....vy..y..#....A..y........v.........A..3                 ',
       'f.g..f..g.f.3.{{{{{{{{..y...y..y#v...........R..#v....v...........y...........3                 ',
-      '22222222222222222222222################################b.R.........A.......v..3                 ',
-      '222k2DDk2222.^^^^^^^^^^#............###.......#MMMMMMM.b33333333333333333333333                 ',
-      '2D22kD222DD2.;.n....ɫ.;#..y.y.v.....###..%....#N.C...N.b                                        ',
-      '2kD2222k22k2.;.P...ww.;#.D.y......v.###..~~...#N....CN.b                                        ',
-      '22k2k22k2D22k;.....ww.G#...Av..A.A..###..~~~..#N.....N.b                                        ',
-      'DkD222k2k2k2.;ɫ..m....G#.......y....###...~~..#MMMGMMM.b                                        ',
-      '222D2k2k2k22.;....^^^^^#......y.....###....%..#####g...b                                        ',
-      '222k2Dk22222.;.P..;..kk#b.........b.###b.....bb...####.b                                        ',
-      'k2D22k2k2D22.;....;....#.MMMMMMMMM..###.g.....b..b...##b                                        ',
-      'D22DD2222222.;*..ɫ;....#.NZ...z.sN..###Fb.b....g..g..b#b                                        ',
-      'kD222D222222m;..P.;....#.N...VYV.N..###---------------#b                                        ',
-      'D2222D2mk....^^^^^^kkn.#.N.......N..###|.............|#b                                        ',
-      'k2D2222.################.NVt.....N..###|.............|#b                                        ',
-      '2-------------GG------.#.Ndix....N..###|....T........|#b                                        ',
-      '2|..k...|..........k.|.#.Ns.....ZN..###|.............|#b                                        ',
-      'D|..Ø...|....D.......|k#.MMMMGGMMM.####|..@..........|#b                                        ',
-      '2|......|.&..........|m#bg.#####.fb####|...f......T..|#b                                        ',
-      '2|.n....|.P..........|.#..f#####g..####G.............|#X                                        ',
-      '2|...ʬ..|.m......D..n|k################G.............|.b                                        ',
-      '2|......|n...........|.###############W|.........f...|.b                                        ',
-      '2|.m..L.|...D........|.##........######|.............|.b                                        ',
-      '2|......|......m.....|k#.........######|.............|.b                                        ',
-      ' ---G-----------------F#.........######---------------.b                                        ',
-      ' X######################......n.....###.....ff.b.b...g.b                                        ',
-      ' 2----G----#{{{{{{{{{{.#.......n.n..###.b..gf.T.....bTbb                                        ',
-      ' 2|.n.....|#}.%.....m}.#....m.m...m.########g^^^^^^^^^^b                                        ',
-      ' 2|..n....|#}..oo...ƀ}.#..D.........###..f.#.;........;b                                        ',
-      ' 2|.mU.n..|#}.oooom..}.#............###g.g.#.;........;b                                        ',
-      ' 2|n......|#G.ooooƄ..}.#......mm..q.###....#g;........;b                                        ',
-      ' 2|.......|#}mnooo..ƀ}.#.m.P..0K.K..###g..g#.;....b...;b                                        ',
-      ' 2---------#}....%..k}n#............###...b##G........;b                                        ',
-      ' 2222222.k.#}........}.#....n.q..l..###.bb.#.G.....*..;b                                        ',
-      '       2m..#}......kn}.#..n.q.......###..T.##;...w.w..;b                                        ',
-      '       2mm.#{{{{{{{{{{.#....ll......###..fb.#;........;b                                        ',
-      '       2.n.#############...q.qq.....###b.b..#;........;b                                        ',
-      '       2.k.n..k......nk#...........####..f..#^^^^^^^^^^b                                        ',
-      '22222222222222222222222################################b    55555555555555555555               5',
+      '[[[[[[[[[[[[[[[[[[[[[[]################################b.R.........A.......v..3                 ',
+      '222k2DDk222]P;^^^^^^^;]#............###.......#MMMMMMM.b33333333333333333333333                 ',
+      '2D22kD222DD]P;.......;]#..y.y.v.....###..%....#N.C...N.b                                        ',
+      '2kD2222k22k]D;.P...ɫ.;]#.D.y......v.###..~~...#N....CN.b                                        ',
+      '22k2k22k2D2]D;.......;]#...Av..A.A..###..~~~..#N.....N.b                                        ',
+      'DkD222k2k2k]D;L...ww.;]#.......y....###...~~..#MMMGMMM.b                                        ',
+      '222D2k2k2k2]P;....ww.;]#......y.....###....%..#####g...b                                        ',
+      '222k2Dk2222]n;.ɫ.....;]#b.........b.###b.....bb...####.b                                        ',
+      'k2D22k2k2D2]D;......*;]#.MMMMMMMMM..###.g.....b..b...##b                                        ',
+      'D22DD222222]ḩ;^^^G^^^;]#.NZ...z.sN..###Fb.b....g..g..b#b                                        ',
+      'kD222D22222]P..D.#.2DP]#.N...VYV.N..###---------------#b                                        ',
+      '[[[[[[[[[[[[.....#.1P.]#.N.......N..###|.............|#b                                        ',
+      ']ḩmkP..###########..Ț.]#.NVt.....N..###|.............|#b                                        ',
+      ']|----|#........#..DPD]#.Ndix....N..###|....T........|#b                                        ',
+      ']|...k|#........#..D..]#.Ns.....ZN..###|.............|#b                                        ',
+      ']|.Ø..|#g...ƃ...#....n]#.MMMMGGMMM.####|..@..........|#b                                        ',
+      ']|....|#..%...f.#.ḫ1..]#bg.#####.fb####|...f......T..|#b                                        ',
+      ']|n...|#.ooo....#F....]#..f#####g..####G.............|#X                                        ',
+      ']|....G#.oooo...######G################G.............|.b                                        ',
+      ']|.ʬ..|#ƃ.ooo%..######G###############W|.........f...|.b                                        ',
+      ']|....|#...ooo..#.....]##........######|.............|.b                                        ',
+      ']|m...|#.n...oo.#.P2nḩ]#.........######|.............|.b                                        ',
+      ']|..L.|#f.....~~#.D.D.]#.........######---------------.b                                        ',
+      ']|----|#....g..~B.PP1D]#......n.....###.....ff.b.b...g.b                                        ',
+      '].PD...#........B~2Ɍ..]#.......n.n..###.b..gf.T.....bTbb                                        ',
+      ']ḫ.D.############~kP.n]#....m.m...m.########g^^^^^^^^^^b                                        ',
+      ']|---G--|...|-G--ȹȹ-|P]#..D.........###..f.#.;........;b                                        ',
+      ']|......|..P|....ww.|.]#............###g.g.#.;........;b                                        ',
+      ']|n....m|P..|.ƀ.%wwn|n]#......mm..q.###....#g;........;b                                        ',
+      ']|......|..k|m...ww.|P]#.m.P..0K.K..###g..g#.;....b...;b                                        ',
+      ']|..U...|P.ḫ|..Ƅwww.|P]#............###...b##G........;b                                        ',
+      ']|......|D1.|...www.|D]#....n.q..l..###.bb.#.G.....*..;b                                        ',
+      ']|k...n.|1..|%...wwƀ|P]#..n.q.......###..T.##;...w.w..;b                                        ',
+      ']|.D....|.P.|....ww.|.]#....ll......###..fb.#;........;b                                        ',
+      ']|------|P..|----ȹȹ-|.]#...q.qq.....###b.b..#;........;b                                        ',
+      ']P..DḫP.n..ḫ..PDP~~ḩ.ḫ]#...........####..f..#^^^^^^^^^^b                                        ',
+      '][[[[[[[[[[[[[[[[ȸȸ[[[]################################b    55555555555555555555               5',
       '            5..................q......#................bbbbb5J[[[[[[[[[[[[[[[Jḟ.               5',
       '            T.^^^^^^^^^^^...K..r......I.K..[[[[[[[[[[[[[[[[b5ľ]n...........ľ]Jľ.               5',
       '            5.;.........;.............#....]...Q..........]b5ľ]..J......J...]..ľ               5',
@@ -1059,15 +1059,25 @@ const PARK_PENS = [
       { id: 'vultures', name: tr('Geier-Voliere', 'Vulture Aviary'), species: ['vulture'], netRoof: true, gate: 'net', world: 'savanna', unlock: 'vulture', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 7 }, slots: [3, 5], upgrade: tr('Zweiter Baum', 'Second tree'), basic: [[72, 10, '.']] },
       { id: 'hyenas', name: tr('Hyänengehege', 'Hyena Enclosure'), species: ['hyena'], gate: 'tall', world: 'savanna', unlock: 'hyena', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 59, ty: 18 }, slots: [4, 6], upgrade: tr('Mehr Platz mit Felsenhöhle', 'More room with a rock den'), basic: [[56, 17, '.'], [57, 17, '.'], [56, 18, '.'], [57, 18, '.'], [58, 18, ']'], [56, 19, '.'], [57, 19, '.'], [58, 19, ']'], [56, 20, '.'], [57, 20, '.'], [58, 20, ']'], [56, 21, '.'], [57, 21, '.'], [58, 21, ']'], [56, 22, '.'], [57, 22, '.'], [58, 22, ']'], [56, 23, '.'], [57, 23, '.'], [63, 19, '.']] },
       { id: 'warthogs', name: tr('Warzenschwein-Gehege', 'Warthog Enclosure'), species: ['warthog'], gate: 'tall', world: 'savanna', unlock: 'warthog', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 69, ty: 18 }, slots: [3, 5], upgrade: tr('Zweites Erdloch', 'Second burrow'), basic: [[72, 21, '.']] },
-      { id: 'deerpark', name: tr('Hirsch- und Elchgehege', 'Deer and Moose Park'), species: ['deer', 'elk'], // Rehe und Elche wohnen zusammen
-        world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 40 }, quota: { deer: [6, 9], elk: [2, 3] }, upgrade: tr('Mehr Wald mit Futterkrippe', 'More forest with a feeding rack'), basic: [[12, 37, '|'], [12, 38, '|'], [12, 39, '|'], [12, 40, '|'], [12, 41, '|'], [12, 42, '|'], [12, 43, '|'], [12, 44, '|'], [10, 39, '.']] },
-      // Wildschweingehege links neben dem Reh-Gehege: durchwühlter Boden, Eiche und ein großes Schlammloch zum Suhlen (siehe Boar.js)
-      { id: 'boarpen', name: tr('Wildschweingehege', 'Wild Boar Enclosure'), species: ['boar'], world: 'forest', ground: ['boar_ground0', 'boar_ground1', 'boar_ground2'], seed: { tx: 4, ty: 40 }, slots: [4, 6], upgrade: tr('Kratzbaum und Schlammnest', 'Scratching post and mud nest'), basic: [] },
-      { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 5, ty: 48 }, slots: [3, 5], upgrade: tr('Fuchshöhle', 'Fox cave'), basic: [[5, 50, ':']] },
-      { id: 'forestpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish', 'beaver'], gate: 'chain', signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 48 }, quota: { frog: [6, 9], fish: [6, 9], beaver: [3, 5] }, upgrade: tr('Mehr Platz für die Biber und ein größerer Teich mit Schilf, Pilzen und Farn', 'More room for the beavers and a bigger pond with reeds, mushrooms and ferns'), basic: [[18, 50, '.'], [13, 52, '.'], [14, 52, '.'], [15, 49, '.'], [16, 49, '.'], [12, 54, '{'], [13, 54, '{'], [14, 54, '{'], [15, 54, '{'], [16, 54, '{'], [17, 54, '{'], [18, 54, '{'], [19, 54, '{'], [20, 54, '{'], [21, 54, '{']] }, // vor dem Ausbau: Innenzaun in Zeile 54 (der Ausbau bringt zwei Reihen mehr für die Biber)
+      // Wildpark (siehe docs/plan-wildpark.md): ein großer Wald hinter dem Wildzaun mit Tor und Torbogen (arches). Rehe und
+      // Elche laufen darin frei herum, auch über die Wege; die übrigen Waldtiere haben eigene Gehege darin. Besucher gehen
+      // durch das große Tor (visitors) und bleiben auf den Wegen. Vor dem Ausbau ist Dickicht in den Gehegen (basic), der
+      // Ausbau lichtet es.
+      // Teich auf der Lichtung (ohne Zaun): Fische im Wasser, Frösche am Ufer (shore). Steht vor dem Wildpark, damit Wasser
+      // und Ufer zum Teich zählen und nicht zum Wildpark.
+      { id: 'clearingpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish'], pond: true, shore: 1, signAt: { tx: 8, ty: 39 }, signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 10, ty: 41 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: tr('Schilf am Teich', 'Reeds by the pond'), basic: [[10, 39, '.'], [13, 42, '.']] },
+      { id: 'deerpark', name: tr('Wildpark', 'Wildlife Park'), species: ['deer', 'elk'], // Rehe und Elche laufen frei herum
+        gate: 'tall', gateTiles: [{ tx: 22, ty: 41 }, { tx: 22, ty: 42 }], visitors: true, signAt: { tx: 18, ty: 40 }, // Schild neben dem Futterautomaten an der Weggabelung hinter dem Tor
+        world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 18, ty: 41 }, quota: { deer: [6, 9], elk: [2, 3] }, upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[17, 36, '5'], [18, 36, 'D'], [17, 37, 'ḩ'], [18, 37, 'D'], [20, 37, 'D'], [21, 37, '5'], [17, 38, '5'], [18, 38, 'ḩ'], [19, 38, 'D'], [20, 38, 'ḩ'], [21, 38, 'k'], [17, 39, 'k'], [20, 39, 'D'], [21, 39, 'ḩ'], [17, 43, '5'], [18, 43, 'ḫ'], [19, 43, 'ḩ'], [20, 43, 'D'], [21, 43, 'k'], [17, 44, 'k'], [20, 44, '5'], [17, 45, 'k'], [19, 45, 'k'], [21, 45, 'k']] },
+      // Wildschwein an der Lichtung: durchwühlter Boden, Eiche und ein großes Schlammloch zum Suhlen (siehe Boar.js)
+      { id: 'boarpen', name: tr('Wildschweingehege', 'Wild Boar Enclosure'), species: ['boar'], world: 'forest', ground: ['boar_ground0', 'boar_ground1', 'boar_ground2'], seed: { tx: 3, ty: 40 }, slots: [4, 6], upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[2, 44, 'ḩ'], [3, 44, 'D'], [4, 44, 'ḫ'], [5, 44, 'ḫ'], [2, 45, 'k'], [3, 45, 'ḩ'], [5, 45, '5']] },
+      { id: 'foxden', name: tr('Fuchsbau', 'Fox Den'), species: ['fox'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 3, ty: 51 }, slots: [3, 5], upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[3, 55, '5'], [4, 55, 'ḫ'], [5, 55, 'ḫ'], [6, 55, 'ḩ'], [7, 55, 'ḫ'], [2, 56, 'k'], [4, 56, 'ḩ'], [5, 56, 'k'], [6, 56, 'D'], [7, 56, 'ḩ']] },
+      // Biber am Bach: der Bach kommt unten durch den Außenzaun, fließt durch das Gehege und weiter in den Teich auf der Lichtung
+      // (die Id stammt noch vom alten Teich mit Fröschen, Fischen und Bibern, damit dessen Ausbau erhalten bleibt)
+      { id: 'forestpond', name: tr('Biberbach', 'Beaver Brook'), species: ['beaver'], world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 15, ty: 51 }, slots: [3, 5], upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[13, 54, 'k'], [14, 54, 'k'], [15, 54, 'k'], [14, 55, 'k'], [15, 55, 'k'], [16, 55, 'ḩ'], [13, 56, 'k'], [14, 56, 'D'], [15, 56, '5'], [16, 56, 'k']] },
       { id: 'wolves', name: tr('Wolfswald', 'Wolf Woods'), species: ['wolf'], gate: 'tall', world: 'forest', unlock: 'wolves', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 6, ty: 30 }, slots: [6, 9], upgrade: tr('Heulfelsen', 'Howling rock'), basic: [[5, 28, '.']] },
       { id: 'forestaviary', name: tr('Eichhörnchen- und Igel-Voliere', 'Squirrel and Hedgehog Aviary'), species: ['squirrel', 'hedgehog'], // Igel vorerst hier
-        netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 14, ty: 25 }, slots: [5, 8], upgrade: tr('Zweiter Flügel mit Nistkasten', 'Second wing with a nest box'), basic: [[14, 32, ':'], [16, 33, '<'], [14, 30, '^'], [15, 30, '^'], [16, 30, '^'], [17, 30, '^']] },
+        netRoof: true, gate: 'net', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 16, ty: 28 }, slots: [5, 8], upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[14, 25, '5'], [15, 25, 'ḩ'], [16, 25, 'D'], [17, 25, 'k'], [14, 26, 'ḩ'], [16, 26, 'k'], [17, 26, 'ḫ'], [14, 27, 'k'], [15, 27, '5'], [16, 27, 'k'], [17, 27, 'ḫ']] },
       { id: 'cats', name: tr('Katzenhaus', 'Cat House'), species: ['cat'], gate: 'glass', world: 'meadow', seed: { tx: 50, ty: 26 }, slots: [4, 6], upgrade: tr('Zweiter Kratzbaum', 'Second cat tree'), basic: [[52, 26, ':']] },
       { id: 'pasture', name: tr('Weide', 'Pasture'), species: ['sheep', 'mole'], world: 'meadow', seed: { tx: 40, ty: 34 }, quota: { sheep: [10, 14], mole: [3, 5] }, upgrade: tr('Mehr Weide mit Heu-Unterstand', 'More pasture with a hay shelter'), basic: [[42, 38, ':'], [41, 39, '<'], [49, 34, '|'], [49, 35, '|'], [49, 36, '|'], [49, 37, '|'], [49, 38, '|'], [49, 39, '|'], [49, 40, '|'], [49, 41, '|'], [49, 42, '|'], [49, 43, '|'], [49, 44, '|']] },
       { id: 'aviary', name: tr('Reiher-Voliere', 'Heron Aviary'), species: ['heron'], netRoof: true, gate: 'net', world: 'meadow', seed: { tx: 47, ty: 55 }, slots: [6, 9], upgrade: tr('Zweiter Flügel mit Nistkasten und Wasserstelle', 'Second wing with a nest box and a water hole'), basic: [[50, 49, ';'], [50, 50, ';'], [50, 51, ';'], [50, 52, ';'], [50, 53, ';'], [50, 54, ';'], [50, 55, ';'], [50, 56, ';'], [50, 57, ';'], [51, 54, '.'], [51, 55, '.']] }, // vor dem Ausbau: Netz zwischen den Flügeln
@@ -1167,17 +1177,20 @@ LEVELS.park = parkSection('park', {
   edits: [
     [0, 22, edgeRow(0, '2'.repeat(23) + '4'.repeat(33), [32, 48])],
     [0, 60, edgeRow(0, '2'.repeat(23) + '4'.repeat(33), [38])],
-    [1, 46, '2'], // früher der Ausgang in den Wald
     [55, 40, 'b'], // ... und auf die Wiese
   ],
   name: tr('Tierpark', 'Zoo'),
   part: { name: tr('Zentrum', 'Center'), icon: 'hero' }, // Feld im Tierpark-Schild der Weltkarte
+  // Torbogen über dem großen Tor des Wildparks (Mitte zwischen den beiden Torkacheln), Name je nach Sprache
+  arches: [{ key: 'wildpark_arch', tx: 22, ty: 41.5, label: tr('Wildpark', 'Wildlife Park') }],
+  bridgeStyle: 'wood', // Holzbrücke über den Bach im Wildpark
   // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
   car: { tx: 34, ty: 44, texture: 'car_zoo', frame: 0, scale: 1.26 },
   map: { x: 20, y: 33, icon: 'hero' }, // der Tierpark ist das Zuhause der Spielfigur (in Nordamerika, dort ist Platz für das große Schild)
   start: { tx: 29, ty: 40 }, // Spielstart: auf dem Vorplatz vor dem Haupthaus
   // Randstreifen: Boden der Welt, deren Gehege dort stehen (Zäune, Füller und Zwischenräume)
-  grounds: [{ area: { tx0: 0, tx1: 22, ty0: 22, ty1: 60 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'] }],
+  // (im Wildpark Waldweg statt Pflaster)
+  grounds: [{ area: { tx0: 0, tx1: 22, ty0: 22, ty1: 60 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'], path: 'forest_path' }],
   // große Bilder jenseits des Kartenrands (ganz hinten): der dunkle Wald hinter dem Wolfswald; Kachel und ihr Punkt im Bild
   backdrops: [{ key: 'wolf_forest_edge', tx: 0, ty: 29, ox: 560, oy: 400 }],
   // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
@@ -1193,13 +1206,13 @@ LEVELS.park = parkSection('park', {
   // keine Bäume und Büsche). Zum Wiederaufnehmen diese Zeile einschalten und die Bilder in BootScene wieder laden.
   // wheelSlot: { id: 'wheel', tx: 29, ty: 25, clear: { tx0: 25, tx1: 34, ty0: 24, ty1: 29 } },
   computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
-  feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 22, ty: 45, world: 'forest' }],
+  feeders: [{ tx: 39, ty: 32, world: 'meadow' }, { tx: 17, ty: 40, world: 'forest' }],
   // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
   signScale: 1.25,
   sections: [
     { label: tr('Savanne', 'Savanna'), tx: 40, ty: 22 },
     { label: tr('Aquarium', 'Aquarium'), tx: 40, ty: 22, like: tr('Savanne', 'Savanna') }, // der Weg dorthin führt durch die Savanne
-    { label: tr('Wald', 'Forest'), tx: 12, ty: 46 },
+    { label: tr('Wald', 'Forest'), tx: 12, ty: 41 },
     { label: tr('Wiese', 'Meadow'), tx: 46, ty: 41 },
     { label: tr('Bambuswald', 'Bamboo Forest'), tx: 38, ty: 60 },
     { label: tr('Dschungel', 'Jungle'), tx: 38, ty: 60, like: tr('Bambuswald', 'Bamboo Forest') }, // der Weg dorthin führt durch den Bambuswald
