@@ -185,7 +185,7 @@ import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
-import { countCatch, countEvent, countPromo, sessionLoaded } from '../sessions.js';
+import { countCatch, countChestPick, countEvent, countExpCard, countExpStep, countPromo, sessionLoaded } from '../sessions.js';
 import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
@@ -313,8 +313,19 @@ const CONTROLS = `<h3>${tr('Steuerung', 'Controls')}</h3>
     ])}</div>
   </div>`;
 
-// freilaufende Tiere im Tierpark (Pfauen): so viele dürfen es höchstens sein (für die Übersicht), sonst null
-const freeCap = (species) => parkPens().find((e) => e.free && e.species?.includes(species))?.slots[0] ?? null;
+// Plätze für diese Art im Tierpark (für das Tierbuch, "1 / 4"): alle gebauten Gehege, die sie aufnehmen (mit Ausbau; in
+// gemeinsamen Gehegen mit Kontingent nur ihre Plätze), auch freilaufend (Pfauen) und in den Becken der Häuser; ohne Platz null
+const penCapFor = (species) => {
+  let cap = 0;
+  for (const e of parkPens()) {
+    if (!e.species?.includes(species)) continue;
+    const key = e.quota ? quotaKey(species) : null;
+    cap += penQuotas(e).find((q) => q.key === key)?.cap ?? 0;
+  }
+  const house = houseOf(species);
+  if (house && isUnlocked(house)) for (const t of houseTanks(house)) if (t.e.species?.includes(species)) cap += t.capFor(species);
+  return cap || null;
+};
 // alle Gehege des Tierparks (aus allen Abschnitten, wie in levels.js beschrieben), samt Abschnitt (level); noch nicht
 // gebaute fehlen
 const parkPens = () => PARK_LEVELS.flatMap((level) => LEVELS[level].enclosures.filter((e) => !e.unlock || game.unlocked.includes(e.unlock)).map((e) => ({ ...e, level })));
@@ -1261,7 +1272,7 @@ export default class GardenScene extends Phaser.Scene {
     this.ensureStorySheep(false);
     this.ensureStoryAnimals(false);
     this.spawnTimer = Phaser.Math.FloatBetween(...SPAWN_INTERVAL);
-    this.heronTimer = LEVEL.herons ? Phaser.Math.FloatBetween(5, LEVEL.herons.every[0]) : Infinity;
+    this.heronTimer = LEVEL.herons ? Phaser.Math.FloatBetween(LEVEL.expedition ? 2 : 5, Math.max(LEVEL.expedition ? 4 : 5, LEVEL.herons.every[0])) : Infinity; // (kleine Maps: bald nach dem Ankommen)
     this.flamingoTimer = Phaser.Math.FloatBetween(2, FLAMINGO_EVERY[0]);
 
     // Ausgelegte Fallen in diesem Level (gefangene Tiere stehen schon als 'trapped' in der Tierliste)
@@ -2496,7 +2507,15 @@ export default class GardenScene extends Phaser.Scene {
     if (this.heronTimer > 0) return;
     const { every, landChance } = LEVEL.herons;
     this.heronTimer = Phaser.Math.FloatBetween(...every);
-    if (this.expMap && !this.expWants('heron')) return; // Expedition: nur so viele, wie noch zu fangen sind
+    if (this.expMap && !this.expWants('heron')) {
+      this.heronTimer = 2; // Expedition: nur so viele, wie noch zu fangen sind – ist einer weggeflogen, kommt bald der nächste
+      return;
+    }
+    // kleine Map hinter einem Durchgang: immer nur einer zur Zeit, ist er weg, kommt bald der nächste
+    if (LEVEL.side && this.animals.some((a) => a.species === 'heron' && a.state === 'wild' && !a.gone)) {
+      this.heronTimer = 2;
+      return;
+    }
     this.flyIn('heron', landChance);
   }
 
@@ -3322,7 +3341,7 @@ export default class GardenScene extends Phaser.Scene {
       const fresh = this.bookFresh.has(`caught:${s}`) ? tr('Neu gefangen!', 'Newly caught!') : this.bookFresh.has(`seen:${s}`) ? tr('Neuer Tipp!', 'New tip!') : '';
       return { fresh, html: `<div class="card${n ? ' has' : ''}${known ? '' : ' unknown'}${fresh ? ' new' : ''}" data-worlds="${worlds.map((w) => w.level).join(' ')}">
         ${fresh ? `<span class="new-badge">${fresh}</span>` : ''}
-        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">${known ? `${tr('Zuhause', 'At home')}: <span class="num">${n}${freeCap(s) ? ` / ${freeCap(s)}` : ''}</span>` : tr('noch nicht gefangen', 'not caught yet')}</span></div></div>
+        <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">${known ? `${tr('Zuhause', 'At home')}: <span class="num">${n}${penCapFor(s) ? ` / ${penCapFor(s)}` : ''}</span>` : tr('noch nicht gefangen', 'not caught yet')}</span></div></div>
         <div class="where">${places.join(', ')}</div>
         <div class="tools">${tools}</div>
         <div class="tip">${seen ? CATCH_TIPS[s] ?? '' : `<span class="tip-locked">${tr('Begegne dem Tier draußen – dann steht hier, wie du es fängst.', 'Meet this animal in the wild – then you will find out here how to catch it.')}</span>`}</div>
@@ -4691,12 +4710,24 @@ export default class GardenScene extends Phaser.Scene {
       // Anziehung wie im Haus selbst: Summe je Becken, volle Becken zählen mehr
       st.timer = 5;
       const tanks = houseTanks(level);
-      st.penned = saved.filter((s) => s.state === 'penned');
-      st.rate = (maxVisitors(tanks.reduce((sum, t) => {
+      st.penned = saved.filter((s) => s.state === 'penned' && !s.baby);
+      // Tierbaby-Event (im Aquarium): je 2 Tiere einer Familie in einem Becken ein Baby – das lockt wie im Tierpark mehr
+      // Besucher an, und die geben mehr (siehe parkIncomeRates)
+      const babyTime = eventsIn(level).some((e) => e.id === 'babies');
+      let babies = 0;
+      const score = tanks.reduce((sum, t) => {
         const list = st.penned.filter((s) => tankOf(tanks, s) === t);
+        if (babyTime) {
+          const fam = {};
+          for (const a of list) if (babyFamily(a.species)) fam[babyFamily(a.species)] = (fam[babyFamily(a.species)] ?? 0) + 1;
+          babies += Object.values(fam).reduce((n, k) => n + Math.floor(k / 2), 0);
+        }
         const score = list.reduce((s, a) => s + appeal(a), 0);
         return sum + (list.length >= t.cap ? score * FULL_BONUS : score);
-      }, 0), HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
+      }, 0);
+      st.rate = babies
+        ? (maxVisitors(score + babies * BABY_APPEAL, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS)) / 60
+        : (maxVisitors(score, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
     }
     st.hearts += st.rate * dt;
     if (st.hearts < 1) return;
@@ -6055,6 +6086,10 @@ export default class GardenScene extends Phaser.Scene {
     r.stay = [...stay, ...release]; // (ausgewildert wird erst bei der Heimfahrt, siehe expGoHome)
     this.expWagonNote = null;
     this.expPlaceCampAnimals();
+    // für die Statistik: geschaffte Maps (je Map nur einmal, auch wenn das Camp neu aufgebaut wird)
+    // (Runs aus älteren Spielständen haben noch keinen Zähler: nur die letzte Map zählt)
+    r.counted ??= Math.max(0, r.step - 1);
+    for (; r.counted < r.step; r.counted++) countExpStep(r.biome);
     const released = '';
     const later = (ms, fn) => this.time.delayedCall(ms, fn);
     if (isFinalCamp() && !r.finalChest) {
@@ -6370,6 +6405,7 @@ export default class GardenScene extends Phaser.Scene {
   expTake(card) {
     const r = expRun();
     if (card.kind === 'bonus' && card.id === 'heartRain') this.addHearts(HEART_RAIN);
+    countExpCard(card.kind === 'bonus' ? card.id : card.kind); // für die Statistik
     const map = takeRunCard(card);
     this.leaveLevel({ to: map, arrive: LEVELS[map].start, label: LEVELS[map].name });
   }
@@ -6389,7 +6425,8 @@ export default class GardenScene extends Phaser.Scene {
       ? { icon: iconImg('bonus_heartRain'), title: tr('Schatz', 'Treasure'), text: tr(`${FINAL_HEARTS} Herzen für deinen Zoo.`, `${FINAL_HEARTS} hearts for your zoo.`), color: '#e0a820', tag: tr('Belohnung', 'Reward') }
       : this.luck.view(c));
     const take = (c) => {
-      if (c.kind !== 'treasure') return this.luck.take(c);
+      if (c.kind !== 'treasure') return this.luck.take(c); // (zählt dort für die Statistik)
+      countChestPick('treasure');
       this.addHearts(FINAL_HEARTS);
       this.showToast(`${iconImg('bonus_heartRain')} ${tr(`<b>Schatz!</b> <span class="heart">♥</span> ${FINAL_HEARTS} für deinen Zoo.`, `<b>Treasure!</b> <span class="heart">♥</span> ${FINAL_HEARTS} for your zoo.`)}`);
     };
@@ -6729,6 +6766,12 @@ export default class GardenScene extends Phaser.Scene {
     this.forestLife?.update(dt);
     this.moorFog?.update(dt);
     this.savannaLife?.update(dt);
+    // Gorilla-Trommelduell: der Tier-Zähler oben läge über den Trommelpunkten – solange es läuft, ist er ausgeblendet
+    const duel = this.tool instanceof DrumTool && !!this.tool.duel;
+    if (duel !== this.counterDuelHidden) {
+      this.counterDuelHidden = duel;
+      document.getElementById('exp-counter')?.classList.toggle('duel', duel);
+    }
 
     // Übergang in ein anderes Level?
     const { tx, ty } = worldToTile(this.player.x, this.player.y);

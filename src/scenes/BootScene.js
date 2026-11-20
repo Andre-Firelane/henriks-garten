@@ -1003,7 +1003,8 @@ export default class BootScene extends Phaser.Scene {
     for (const key of Object.keys(SAVANNA_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
     // Eiswelt: Henrik macht schnellere Schritte, sonst gleitet er vor dem hellen Schnee sichtbar über den Boden
-    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30 };
+    // Elch: große, ruhige Schritte – langsamer als im Video, sonst trippelt er
+    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30, elk_walk: 15, elk_walk_back: 15 };
     const VIDEO_YOYO = ['heron2_flap']; // auch vor und zurück (nicht nur Stehen)
     for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? (VIDEO_HALF.includes(key) ? 12 : 24), repeat: -1, yoyo: key.includes('_idle') || VIDEO_YOYO.includes(key) });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)

@@ -20,6 +20,7 @@ import {
 import { RUN_BONI, addUnit, moreUnitsNow, runBonusTag } from './expedition.js';
 import { coveredAt } from './expeditionMaps.js';
 import { sideRecord } from './sideMaps.js';
+import { countChestPick } from '../sessions.js';
 
 const NEAR = 40; // so nah muss man an der Kiste stehen (wie an der Werkzeug-Kiste)
 const CROWN_MARK = 96; // Fernglas: so hoch über dem Stammfuß steht das Bild eines Tiers in der Baumkrone
@@ -212,6 +213,7 @@ export default class Luck {
 
   take(card) {
     const s = this.scene;
+    countChestPick(card.kind === 'rare' ? 'rare' : card.id); // für die Statistik
     if (card.kind === 'rare') this.spawnRare(card.species, card.skin);
     else if (card.kind === 'bonus') this.applyBonus(card.id);
     else {

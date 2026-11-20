@@ -3,7 +3,8 @@
 // gespeichert – so lässt sich niemand wiedererkennen. Gezählt wird nur die Zeit, in der das Spiel zu sehen ist.
 // Dazu kommt, welche Tiere in der Runde gefangen und welche Events gestartet wurden (nur die Anzahl je Art), und welche
 // Tafeln im Tierpark gezeigt bzw. was dort gewählt wurde (promos). Außerdem, wie lange das Laden gedauert hat (bzw. nach
-// wie vielen Sekunden jemand beim Laden aufgegeben hat) und wie weit man in Mavis Geschichte kam.
+// wie vielen Sekunden jemand beim Laden aufgegeben hat) und wie weit man in Mavis Geschichte kam. Dazu die Expeditionen
+// (geschaffte Maps je Gebiet, gewählte Karten vor den Maps) und was aus Kisten gewählt wurde.
 // Die Spieldauer zählt erst ab dem Ende des Ladens.
 import { lang } from './i18n.js';
 import { game } from './state.js';
@@ -11,7 +12,7 @@ import { game } from './state.js';
 const API = '/api/session';
 const UPDATE_EVERY = 2 * 60 * 1000; // so oft geht die Spieldauer zwischendurch raus (falls der Browser die Seite einfach wegwirft)
 
-let session = null; // { id, startedAt, loadedAt, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl }, promos: { Tafel: Anzahl } }
+let session = null; // { id, startedAt, loadedAt, played: bisher gespielte Millisekunden, visibleSince, catches: { Tierart: Anzahl }, events: { Event: Anzahl }, promos: { Tafel: Anzahl }, exp: { Gebiet: Maps }, cards: { Karte: Anzahl }, chests: { Karte: Anzahl } }
 
 function device() {
   const ua = navigator.userAgent;
@@ -53,7 +54,7 @@ function progress() {
 function update(beacon) {
   if (!session) return;
   const load = Math.round(((session.loadedAt ?? Date.now()) - session.startedAt) / 1000);
-  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), tut: TUTORIAL_VERSION, catches: session.catches, events: session.events, promos: session.promos }, beacon);
+  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), tut: TUTORIAL_VERSION, catches: session.catches, events: session.events, promos: session.promos, exp: session.exp, cards: session.cards, chests: session.chests }, beacon);
 }
 
 function count(map, key) {
@@ -75,9 +76,25 @@ export function countPromo(id) {
   if (session) count(session.promos, id);
 }
 
+// Expedition: eine Map geschafft (im nächsten Camp angekommen); biome wie expedition in den Maps ('savanna', 'forest' ...)
+export function countExpStep(biome) {
+  if (session) count(session.exp, biome);
+}
+
+// Expedition: Karte vor der nächsten Map gewählt – 'animal', 'rare', 'chest', 'event' oder bei Boni deren Id ('binoculars' ...)
+export function countExpCard(key) {
+  if (session) count(session.cards, key);
+}
+
+// Kiste (auch die Abschlusskiste der Expedition): gewählte Karte – Bonus- bzw. Glücksbringer-Id, 'rare' (seltenes Tier)
+// oder 'treasure' (Schatz)
+export function countChestPick(key) {
+  if (session) count(session.chests, key);
+}
+
 // neue Runde vom Startbildschirm aus; kind: 'continue', 'new' oder 'test'. Die Spieldauer läuft erst ab sessionLoaded
 export function startSession(kind) {
-  session = { id: randomId(), startedAt: Date.now(), loadedAt: null, played: 0, visibleSince: null, catches: {}, events: {}, promos: {} };
+  session = { id: randomId(), startedAt: Date.now(), loadedAt: null, played: 0, visibleSince: null, catches: {}, events: {}, promos: {}, exp: {}, cards: {}, chests: {} };
   send({ type: 'start', id: session.id, kind, lang, device: device() });
 }
 

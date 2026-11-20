@@ -41,6 +41,7 @@ export const mapEvent = (map) => Object.keys(MAP_EVENTS).find((k) => LEVELS[map]
 export { SPECIES_RULES, BIOME_SEASONS } from './speciesRules.js';
 import { SPECIES_RULES, BIOME_SEASONS } from './speciesRules.js';
 const SPECIES_PER_MAP = [2, 3];
+const MIN_UNITS = 4; // so viele Tiere (Fang-Einheiten) hat jede Map mindestens
 // Seltene Merkmale (Wasserfall, Lichtung, Fluss, Dickicht, Elefantenfriedhof): auf ihren Maps kommt meist (SPECIAL_CHANCE)
 // eine Art, die es braucht; Wasser hat jede Savannen-Map, das zählt nicht als selten
 const SPECIAL_CHANCE = 0.6;
@@ -77,6 +78,25 @@ export function planMap(map, biome, must = null) {
     if (!pool.length) break;
     add(pick(pool));
   }
+  // mindestens MIN_UNITS Tiere: erst Arten bis zu ihrer Höchstzahl auffüllen, dann noch eine passende Art dazu, zuletzt von
+  // den Arten mehr, die es öfter gibt (nicht die Einzelgänger wie Schneeleopard oder Jaguar, außer es geht nicht anders)
+  const total = () => Object.values(home).reduce((sum, k) => sum + k, 0);
+  while (total() < MIN_UNITS) {
+    const below = Object.keys(home).filter((sp) => home[sp] < rules[sp].units[1]);
+    if (below.length) {
+      home[pick(below)]++;
+      continue;
+    }
+    const pool = Object.keys(rules).filter((sp) => !home[sp] && fits(sp) && allowed(sp).some((x) => seasons.includes(x)));
+    if (pool.length) {
+      add(pick(pool));
+      continue;
+    }
+    const many = Object.keys(home).filter((sp) => rules[sp].units[1] > 1);
+    const list = many.length ? many : Object.keys(home);
+    if (!list.length) break;
+    home[pick(list)]++;
+  }
   return { home, season: pick(seasons.length ? seasons : all) };
 }
 
@@ -87,6 +107,7 @@ export function startRun(biome) {
   game.expedition = {
     biome,
     step: 0, // so viele Maps sind schon gespielt (bzw. die gerade laufende mitgezählt)
+    counted: 0, // so viele davon zählen schon in der Statistik (siehe expArriveCamp)
     visited: [], // gespielte Maps
     boni: [], // Boni bis zum Ende des Runs
     wagon: [], // Tiere im Wagen: { species, variant, farm, skin, origin }

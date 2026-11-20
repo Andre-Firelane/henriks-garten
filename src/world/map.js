@@ -451,7 +451,10 @@ export function setLevel(id) {
     }
   }
   NEAR_PATH = new Set(NEAR_PATH_TILES.map(({ tx, ty }) => tx + ',' + ty));
-  JUNGLE_TREES = tilesWith('J').filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty) && !crownHidden(tx, ty));
+  const crownTrees = tilesWith('J').filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty));
+  // (gibt es kaum Bäume mit ganz freier Krone, reicht es, wenn kein anderer Urwaldbaum davorsteht)
+  const clear = crownTrees.filter(({ tx, ty }) => !crownHidden(tx, ty, true));
+  JUNGLE_TREES = clear.length >= 3 ? clear : crownTrees.filter(({ tx, ty }) => !crownHidden(tx, ty));
   TIGER_ZONE = ['Q', 'q']
     .flatMap(tilesWith)
     .filter(({ tx, ty }) => tx > 0 && ty > 0 && tx < MAP_W - 1 && ty < MAP_H - 1 && !inPen(tx, ty))
@@ -663,11 +666,17 @@ function floodChars(seed, chars) {
 }
 
 // Steht ein Urwaldbaum so davor (etwas weiter unten auf dem Bildschirm, fast genau darunter), dass seine Krone die Krone
-// dieses Baums verdeckt? Dann sähe man einen Orang-Utan darin nicht
-function crownHidden(tx, ty) {
-  for (let dx = 0; dx <= 5; dx++) for (let dy = 0; dy <= 5; dy++) {
-    if (dx + dy < 2 || dx + dy > 7 || Math.abs(dx - dy) > 1) continue;
-    if (charAt(tx + dx, ty + dy) === 'J') return true;
+// dieses Baums verdeckt? Dann sähe man einen Orang-Utan darin nicht. strict: auch direkt benachbarte Bäume und andere hohe
+// Dinge (Bambus, Eichen, Kiefern …) zählen – auf den kleinen Maps stehen Bäume und Bambushaine zufällig verstreut, oft dicht
+// beieinander. CROWN_COVER: bis zu welcher Summe dx + dy ein Objekt davor die Krone (gut 100 Pixel hoch) noch verdeckt
+const CROWN_COVER = { J: 7, Q: 3, Ø: 3, A: 3, Ǎ: 3, Ʋ: 3, P: 2, D: 2, ǒ: 2, Ħ: 3 };
+function crownHidden(tx, ty, strict = false) {
+  for (let dx = -1; dx <= 7; dx++) for (let dy = -1; dy <= 7; dy++) {
+    const sum = dx + dy;
+    if (sum < (strict ? 1 : 2) || Math.abs(dx - dy) > 1) continue;
+    const c = charAt(tx + dx, ty + dy);
+    if (c === 'J' && sum <= 7) return true;
+    if (strict && sum <= (CROWN_COVER[c] ?? 0)) return true;
   }
   return false;
 }

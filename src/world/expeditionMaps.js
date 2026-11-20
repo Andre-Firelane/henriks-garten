@@ -378,7 +378,7 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   return g.map((r) => r.join(''));
 }
 // (Reiher fliegen nur heran, wenn welche auf der Tierliste stehen, siehe expWants in GardenScene)
-const map = (def) => withRoute({ ...SAVANNA, ...LOOK.normal, looks: LOOK, expedition: 'savanna', ...(def.camp ? {} : { herons: { every: [10, 20], landChance: 1 } }), ...def });
+const map = (def) => withRoute({ ...SAVANNA, ...LOOK.normal, looks: LOOK, expedition: 'savanna', ...(def.camp ? {} : { herons: { every: [5, 10], landChance: 1 } }), ...def });
 
 // Teich in eine gezeichnete Map legen: Ellipse [Mitte tx, Mitte ty, Halbachse x, Halbachse y]; nur auf freiem Boden
 function withPond(rows, [cx, cy, rx, ry]) {
@@ -776,7 +776,7 @@ const MOOR_GROUND = (area) => ({ area, soft: 3, ground: ['forest_moor0', 'forest
 const LEAF_GROUND = (area) => ({ area, soft: 3, ground: ['forest_leaves0', 'forest_leaves1', 'forest_leaves2'], noMoss: true });
 // Moor: Nebel darüber (MoorFog.js, dort stehen die Elche), Moorgeräusche, Frösche und Reiher bevorzugt dort
 const moor = (area) => ({ moorFog: area, prefer: { area, frog: 0.8, heron: 0.75 }, ambientZone: { sound: 'ambient_moor', area, fade: 7 } });
-const HERONS_F = { herons: { every: [10, 20], landChance: 1 } };
+const HERONS_F = { herons: { every: [5, 10], landChance: 1 } };
 
 // Biberdamm: große Stöcke auf freiem Boden 2 bis 4 Kacheln vom Wasser, verteilt (der Damm selbst: dam, siehe BeaverDam.js)
 function sticksAt(rows, n = 4) {
@@ -1274,7 +1274,7 @@ export const EXPEDITION_LEVELS = {
     rows: makeRows({ seed: 53, ponds: [[7, 5, 3, 2], [19, 6, 3.5, 2.2], [8, 21, 3, 2], [20, 21, 4.5, 2.6], [14, 9, 2, 1.4]], scatter: { A: 4, Ƙ: 3, y: 14 }, grass: 8 }),
     ...EDGE,
     tools: ['net', 'lasso', 'food'],
-    herons: { every: [8, 16], landChance: 1 },
+    herons: { every: [5, 10], landChance: 1 },
   }),
 
   // Letztes Wasserloch (Trockenzeit): Schlamm ringsum, in der Mitte ein kleines Wasserloch; Zebras und Antilopen drängen

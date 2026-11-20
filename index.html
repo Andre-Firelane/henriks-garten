@@ -645,6 +645,8 @@
         font: bold 18px "Trebuchet MS", Arial, sans-serif; font-size: 24px; /* unter den Meldungen oben (#toast), groß genug fürs Tablet */
       }
       #exp-counter.show { display: flex; }
+      #exp-counter { transition: opacity 0.3s; }
+      #exp-counter.duel { opacity: 0; } /* während des Gorilla-Trommelduells (verdeckt sonst die Trommelpunkte) */
       #exp-counter .animal { filter: brightness(0) invert(0.92) opacity(0.85); }
       #exp-counter .animal-box { align-items: center; }
       #exp-counter.done { font-size: 18px; background: rgba(40, 110, 40, 0.85); animation: exp-done 1.2s ease-in-out infinite; }

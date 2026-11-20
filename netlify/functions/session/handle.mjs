@@ -3,12 +3,13 @@
 // Die Tierbilder kommen aus den Spritesheets des Spiels (src/ui/icons.js, Bilder unter /assets).
 //
 // POST { type: 'start', id, kind, lang, device }  neue Runde
-// POST { type: 'update', id, seconds, load, loaded, step, tut, catches, events, promos }  Spieldauer bisher (ab dem Ende des
+// POST { type: 'update', id, seconds, load, loaded, step, tut, catches, events, promos, exp, cards, chests }  Spieldauer bisher (ab dem Ende des
 //                                                  Ladens; kommt mehrmals, die größte zählt), Ladezeit in Sekunden (loaded: fertig
 //                                                  geladen, sonst so lange wurde bis zum Aufgeben geladen), Fortschritt (siehe
 //                                                  progress in src/sessions.js; tut: Fassung des Tutorials) und gefangene Tiere, gestartete Events bzw.
-//                                                  Tafeln im Tierpark der Runde: { Art: Anzahl }
-// GET  ?key=<SESSIONS_KEY>                         Tabelle; &format=csv für Excel
+//                                                  Tafeln im Tierpark der Runde: { Art: Anzahl }; exp: geschaffte Expeditions-Maps
+//                                                  je Gebiet, cards: gewählte Karten vor den Maps, chests: gewählte Kistenkarten
+// GET  ?key=<SESSIONS_KEY>                         Tabelle; &format=csv für Excel; &range=today|7d|all (Zeitraum, ohne: heute)
 import { animalIcon } from '../../../src/ui/icons.js';
 
 const KINDS = { continue: 'Weiterspielen', new: 'Neues Spiel', test: 'Test-Spiel' };
@@ -16,7 +17,7 @@ const DEVICES = { tablet: 'Tablet', phone: 'Handy', pc: 'PC' };
 const LANGS = ['de', 'en'];
 const ID = /^[\w-]{8,40}$/;
 const MAX_SECONDS = 24 * 60 * 60;
-const KEY = /^[a-z0-9]{1,20}$/;
+const KEY = /^[a-zA-Z0-9]{1,24}$/; // (Boni und Glücksbringer heißen z. B. moreAnimals)
 // Events mit Symbol und Namen (Ids wie in src/world/events.js)
 const EVENTS = {
   babies: ['🍼', 'Tierbabys'],
@@ -40,6 +41,21 @@ const PROMOS = {
   worldsmap: 'Welten durchgeblättert',
   surprise: 'Überraschungs-Flamingos',
 };
+// Expeditionen: Gebiete (expedition in src/world/expeditionMaps.js)
+const EXP_BIOMES = { savanna: 'Savanne', jungle: 'Dschungel', asia: 'Bambuswald', forest: 'Wald' };
+// Bilder unter /assets (wie im Spiel): Boni und Glücksbringer (src/world/luck.js), Kiste
+const img = (file) => `<img class="pic" src="assets/${file}.png" alt="">`;
+const BONI = { moreAnimals: 'Mehr Tiere', ride: 'Reittier', toolsEverywhere: 'Werkzeug überall', stands: 'Hochstand', binoculars: 'Fernglas', bigWagon: 'Größerer Wagen', bigCatch: 'Großes Lasso', heartRain: 'Herzregen', eventCall: 'Event-Ruf' };
+const CHARMS = { cheapReroll: 'Glückswürfel', swift: 'Flinke Schuhe', rareLuck: 'Sternschnuppe', chestRadar: 'Kisten-Kompass', campfire: 'Lagerfeuer', longEvents: 'Festtags-Glocke', clover: 'Kleeblatt', hourglass: 'Sanduhr', piggy: 'Sparschwein', bigCage: 'Großer Käfig', bait: 'Köder', teddy: 'Stoffteddy' };
+// Karten: Symbol und Name (Expeditionskarten: Art der Karte bzw. die Id des Bonus; Kistenkarten: Bonus, Glücksbringer,
+// seltenes Tier oder der Schatz der Abschlusskiste)
+function cardInfo(id) {
+  if (BONI[id]) return [img(`bonus_${id}`), `Bonus: ${BONI[id]}`];
+  if (CHARMS[id]) return [img(`charm_${id}`), `Glücksbringer: ${CHARMS[id]}`];
+  return { animal: ['🐾', 'Tier'], rare: ['✨', 'Seltenes Tier'], chest: [img('treasure_chest0'), 'Kiste'], event: ['🎉', 'Event'], treasure: ['💰', 'Schatz'] }[id] ?? [esc(id), id];
+}
+const cardName = (id) => cardInfo(id)[1];
+
 // Fortschritt (step, siehe progress in src/sessions.js): die Aufgabe in Mavis Geschichte (src/story/steps.js), danach fertig.
 // tut: Fassung des Tutorials (TUTORIAL_VERSION in sessions.js). Runden ohne tut stammen noch vom alten Mini-Tutorial mit den
 // Starter-Aufgaben, die der Fassung 2 (erste Geschichte mit Mavi, kurz online) zählen nur mit Nummer
@@ -107,12 +123,18 @@ async function record(req, store) {
     s.catches = merge(s.catches, msg.catches);
     s.events = merge(s.events, msg.events);
     s.promos = merge(s.promos, msg.promos);
+    s.exp = merge(s.exp, msg.exp);
+    s.cards = merge(s.cards, msg.cards);
+    s.chests = merge(s.chests, msg.chests);
     s.last = new Date().toISOString();
     await store.setJSON(msg.id, s);
     return new Response(null, { status: 204 });
   }
   return new Response(null, { status: 400 });
 }
+
+// Zeiträume für den Filter oben auf der Seite (days: so viele Kalendertage bis heute)
+const RANGES = { today: { name: 'Heute', days: 1 }, '7d': { name: 'Letzte 7 Tage', days: 7 }, all: { name: 'Gesamte Zeit' } };
 
 const berlin = (iso, opts) => new Date(iso).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', ...opts });
 const minutes = (sec) => (sec < 60 ? `${sec} s` : `${Math.round(sec / 60)} min`);
@@ -136,6 +158,8 @@ function catchTag(species, n) {
   return `<span class="tag" title="${esc(species)}">${icon}<b>${n}</b></span>`;
 }
 const eventTag = (id, n) => `<span class="tag" title="${esc(EVENTS[id]?.[1] ?? id)}">${EVENTS[id]?.[0] ?? esc(id)}<b>${n}</b></span>`;
+const expTag = (id, n) => `<span class="tag">${esc(EXP_BIOMES[id] ?? id)}<b>${n}</b></span>`;
+const cardTag = (id, n) => `<span class="tag" title="${esc(cardName(id))}">${cardInfo(id)[0]}<b>${n}</b></span>`;
 const promoTag = (id, n) => `<span class="tag">${esc(PROMOS[id] ?? id)}<b>${n}</b></span>`;
 const tags = (map, tag) => sorted(map).map(([k, n]) => tag(k, n)).join('') || '<span class="none">–</span>';
 
@@ -146,7 +170,12 @@ async function show(req, store, secret) {
   const { blobs } = await store.list();
   const all = (await Promise.all(blobs.map((b) => store.get(b.key, { type: 'json' })))).filter(Boolean);
   all.sort((a, b) => (a.start < b.start ? 1 : -1)); // neueste zuerst
-  const rows = all.map((s) => ({
+  // Zeitraum (Kalendertage in Berlin): heute, die letzten 7 Tage (heute mitgezählt) oder alles
+  const range = RANGES[url.searchParams.get('range')] ? url.searchParams.get('range') : 'today';
+  const dayKey = (d) => new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Europe/Berlin' }); // JJJJ-MM-TT
+  const from = range === 'all' ? '' : dayKey(Date.now() - (RANGES[range].days - 1) * 24 * 60 * 60 * 1000);
+  const inRange = all.filter((s) => dayKey(s.start) >= from);
+  const rows = inRange.map((s) => ({
     day: berlin(s.start, { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }),
     time: berlin(s.start, { hour: '2-digit', minute: '2-digit' }),
     device: DEVICES[s.device] ?? s.device,
@@ -156,6 +185,9 @@ async function show(req, store, secret) {
     catches: s.catches ?? {},
     events: s.events ?? {},
     promos: s.promos ?? {},
+    exp: s.exp ?? {},
+    cards: s.cards ?? {},
+    chests: s.chests ?? {},
     load: s.load ?? null, // ältere Runden haben keine Ladezeit
     loaded: !!s.loaded,
     step: s.step ?? null,
@@ -164,10 +196,10 @@ async function show(req, store, secret) {
   const loadText = (r) => (r.load == null ? '–' : r.loaded ? `${r.load} s` : `abgebrochen nach ${r.load} s`);
 
   if (url.searchParams.get('format') === 'csv') {
-    const list = (map) => sorted(map).map(([k, n]) => `${k} ${n}`).join(', ');
+    const list = (map, name = (k) => k) => sorted(map).map(([k, n]) => `${name(k)} ${n}`).join(', ');
     const lines = [
-      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Laden;Fortschritt;Gefangen;Events;Tafeln',
-      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r), list(r.catches), list(r.events), list(r.promos)].join(';')),
+      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Laden;Fortschritt;Gefangen;Events;Tafeln;Expeditions-Maps;Expeditions-Karten;Kisten',
+      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r), list(r.catches), list(r.events), list(r.promos), list(r.exp, (k) => EXP_BIOMES[k] ?? k), list(r.cards, cardName), list(r.chests, cardName)].join(';')),
     ];
     return new Response('﻿' + lines.join('\r\n'), {
       headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="spielrunden.csv"' },
@@ -179,6 +211,9 @@ async function show(req, store, secret) {
   const caught = sum(real.map((r) => r.catches));
   const started = sum(real.map((r) => r.events));
   const shown = sum(real.map((r) => r.promos));
+  const expMaps = sum(real.map((r) => r.exp));
+  const expCards = sum(real.map((r) => r.cards));
+  const chestPicks = sum(real.map((r) => r.chests));
   // Laden je Gerät (nur Runden, die schon die Ladezeit melden): Median der Ladezeit, wie viele beim Laden aufgegeben haben
   const median = (xs) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : null);
   const loading = Object.values(DEVICES).map((device) => {
@@ -204,13 +239,18 @@ async function show(req, store, secret) {
   td.tags { white-space: normal; min-width: 160px; font-size: 13px; }
   .tag { display: inline-flex; align-items: flex-end; gap: 2px; margin: 2px 10px 2px 0; }
   .tag b { font-size: 0.85em; }
+  .pic { width: 24px; height: 24px; object-fit: contain; }
   .animal { display: inline-block; background-repeat: no-repeat; }
   .none { color: #8a7a6a; }
   a { color: #6b4224; }
+  .filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+  .filter a { padding: 4px 12px; border-radius: 14px; background: #fff8e6; text-decoration: none; }
+  .filter a.on { background: #6b4224; color: #fff8e6; font-weight: bold; }
 </style></head><body>
 <h1>Spielrunden · My Little Zoo</h1>
+<div class="filter">${Object.entries(RANGES).map(([id, r]) => `<a${id === range ? ' class="on"' : ''} href="/api/session?key=${encodeURIComponent(secret)}&amp;range=${id}">${r.name}</a>`).join('')}</div>
 <p><b>${real.length}</b> Runden (ohne Test-Spiele) · gesamt <b>${minutes(played)}</b> gespielt ·
-<a href="/api/session?key=${encodeURIComponent(secret)}&amp;format=csv">als CSV für Excel</a></p>
+<a href="/api/session?key=${encodeURIComponent(secret)}&amp;range=${range}&amp;format=csv">als CSV für Excel</a></p>
 <h2>Laden</h2>
 <div class="box">${loading || '<span class="none">noch keine Daten</span>'}</div>
 <h2>Fortschritt neuer Spiele im Tutorial mit Mavi (${fresh.length} Runden)</h2>
@@ -221,9 +261,15 @@ async function show(req, store, secret) {
 <div class="box">${tags(started, eventTag)}</div>
 <h2>Tafeln im Tierpark und Überraschungen</h2>
 <div class="box">${tags(shown, promoTag)}</div>
+<h2>Geschaffte Expeditions-Maps (${total(expMaps)})</h2>
+<div class="box">${tags(expMaps, expTag)}</div>
+<h2>Gewählte Karten in Expeditionen (${total(expCards)})</h2>
+<div class="box">${tags(expCards, cardTag)}</div>
+<h2>Gewählt aus Kisten (${total(chestPicks)})</h2>
+<div class="box">${tags(chestPicks, cardTag)}</div>
 <h2>Runden</h2>
-<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th></tr>
-${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td></tr>`).join('\n')}
+<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th><th>Expeditions-Maps</th><th>Expeditions-Karten</th><th>Kisten</th></tr>
+${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td><td class="tags">${tags(r.exp, expTag)}</td><td class="tags">${tags(r.cards, cardTag)}</td><td class="tags">${tags(r.chests, cardTag)}</td></tr>`).join('\n')}
 </table></div></body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

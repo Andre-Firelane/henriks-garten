@@ -684,6 +684,7 @@ export const SPECIES = {
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 124 / 128,
     speed: 18,
+    animMax: 1.4, // folgt er Henrik, läuft er viel schneller als sein Grundtempo – die Beine sollen trotzdem nicht wirbeln
     restChance: 0.55,
     restTime: [2, 5],
     walkTime: [1.5, 3],
