@@ -30,10 +30,10 @@ export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWa
 export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht)
 // Anteil der Kartenarten
 const KINDS = { animal: 0.45, rare: 0.2, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend, Wolfsnacht)
-// Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnu aus der Großen Wanderung, rote Pandas in
-// den Kirschbäumen am Glühwürmchen-Abend, Wolfsrudel in der Wolfsnacht). alone: in dieser Nacht gibt es nur diese Tiere
-// (wie bei der Wolfsnacht im Wald), das Wetter bleibt normal
-export const MAP_EVENTS = { migration: { species: 'gnu', units: 1 }, fireflies: { species: 'redpanda', units: 2 }, wolfNight: { species: 'wolf', units: 2, alone: true } };
+// Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnus aus der Großen Wanderung, rote Pandas in
+// den Kirschbäumen am Glühwürmchen-Abend, Wolfsrudel in der Wolfsnacht). Immer mindestens 4 (Gnus, Pandas bzw. Rudel);
+// alone: auf der Map gibt es dann nur diese Tiere, das Wetter bleibt normal
+export const MAP_EVENTS = { migration: { species: 'gnu', units: 4, alone: true }, fireflies: { species: 'redpanda', units: 4, alone: true }, wolfNight: { species: 'wolf', units: 4, alone: true } };
 export const mapEvent = (map) => Object.keys(MAP_EVENTS).find((k) => LEVELS[map]?.[k]) ?? null;
 
 // --- Tiere und Wetter einer Map (werden vor jeder Map neu gewürfelt) ---
