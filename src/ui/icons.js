@@ -113,6 +113,9 @@ const SHEETS = {
   butterfly: [64, 64, 3, 0, 'butterfly', 12], // Schmetterlinge: der orange steht für alle (Raster: 3 Bilder je Zeile, 12 Zeilen)
 };
 
+// gibt es für diesen Schlüssel (Tierart oder Skin) ein eigenes Bild?
+export const hasAnimalIcon = (key) => !!SHEETS[key];
+
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)
 export function animalIcon(species, size = 2.6) {
   const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];

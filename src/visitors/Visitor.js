@@ -6,10 +6,15 @@ import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
+import { tr } from '../i18n.js';
+import { animalIcon } from '../ui/icons.js';
+import { isPark } from '../world/levels.js';
+import { MAX_WISH_WALKERS, WISH_CHANCE, WISH_TALK_DIST, openWishes, thanksLine, wishLine, wishSlotFree } from '../world/wishes.js';
 import { MAX_BUYS, RIDE_CHANCE, SHOP_CHANCE, WHEEL, shopDef } from '../world/shops.js';
 import { LEVEL, LEVEL_ID } from '../world/map.js';
 import { BABY_BONUS, HOUSE_VISITORS, parkCap, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
+const FRIEND_SAY_CHANCE = 0.6; // so oft nennt ein Besucher den Tierfreund beim Namen
 const LOOKS = 8; // Besucher-Bilder visitor1 ... visitor8
 const FRAMES = { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 };
 const ORIGIN_Y = 112 / 116;
@@ -41,6 +46,15 @@ const PEACOCK_HEART_CHANCE = 0.6;
 const PETS = 2;
 const PET_TIME = [4, 6.5]; // Sekunden Streicheln
 const PET_GAP = 15; // so weit (Pixel) steht er neben dem Tier
+// Besucherwünsche (src/world/wishes.js): angesprochen bleibt er kurz stehen und erzählt; beim großen Moment am Gehege
+// springt er vor Freude, es regnet Herzen, dann schaut er noch eine Weile wie jeder Besucher
+const WISH_CHAT_TIME = 3; // Sekunden stehen bleiben beim Ansprechen
+const WISH_EXTRA_VISITS = 2; // Wunsch-Besucher bleiben etwas länger im Park (damit man sie findet)
+const CHEER_TIME = 4; // Sekunden Freude am Zaun
+const CHEER_JUMPS = 4; // so viele Freudensprünge
+const CHEER_JUMP_H = 9; // so hoch (Pixel)
+const HEART_RAIN = 14; // so viele Herzen regnen herab
+const THANK_MARGIN = 40; // so weit außerhalb des Bildes taucht der Besucher auf
 
 export class Visitor {
   constructor(scene, crowd, x, y, look) {
@@ -63,6 +77,9 @@ export class Visitor {
     this.had = new Set(); // Sorten, die er schon gekauft hat
     this.bought = 0;
     this.shop = null; // Bude, zu der er gerade geht bzw. an der er wartet
+    this.wish = null; // Wunsch-Besucher: diese Tierart wünscht er sich (noch nicht angesprochen)
+    this.wishEl = null; // ... die Blase dazu (HTML über dem Bild)
+    this.chatTimer = 0; // angesprochen: so lange bleibt er noch stehen
     this.shadow = scene.add.ellipse(x, y, 22, 7, 0x14320a, 0.3);
     this.sprite = scene.add.sprite(x, y, `visitor${look}`, FRAMES.downRight).setOrigin(0.5, ORIGIN_Y).setScale(0.5);
   }
@@ -82,8 +99,34 @@ export class Visitor {
   }
 
   update(dt) {
-    if (this.phase === 'ride') return; // sitzt im Riesenrad (die Gondel zeigt ihn)
+    if (this.phase === 'ride') return this.placeWish(); // sitzt im Riesenrad (die Gondel zeigt ihn)
     let moving = false;
+    if (this.chatTimer > 0) {
+      // angesprochen: stehen bleiben und Henrik anschauen
+      this.chatTimer -= dt;
+      const p = this.scene.player;
+      this.faceX = Math.sign(p.x - this.x) || this.faceX;
+      this.faceY = Math.sign(p.y - this.y) || this.faceY;
+      this.render(false);
+      return;
+    }
+    if (this.phase === 'cheer') {
+      // großer Moment am Gehege: Freudensprünge, dann schaut er wie jeder Besucher
+      this.timer -= dt;
+      this.cheerT = (this.cheerT ?? 0) + dt;
+      this.faceTowardsPen();
+      if (this.timer <= 0) {
+        this.phase = 'walk';
+        this.cheerT = 0;
+        if (this.pen?.petting) {
+          this.petsLeft = 2;
+          if (!this.crowd.goPet(this)) this.next();
+        } else if (this.spot) this.arrive();
+        else this.next();
+      }
+      this.render(false);
+      return;
+    }
     if (this.phase === 'walk') this.lookForPeacock(dt);
     if (this.phase === 'watch') {
       // vor einem freilaufenden Pfau: kurz schauen, dann weiter
@@ -187,6 +230,72 @@ export class Visitor {
     }
     this.walkTime += moving ? dt : 0;
     this.render(moving);
+    this.placeWish();
+  }
+
+  // --- Besucherwünsche ---
+
+  // er wünscht sich diese Tierart: Blase mit dem Tier und einem Herz über dem Kopf
+  setWish(species) {
+    this.clearWish();
+    this.wish = species;
+    this.wishEl = document.createElement('div');
+    this.wishEl.className = 'wish-bubble';
+    this.wishEl.innerHTML = `${animalIcon(species, 1.8)}<span class="wish-heart">♥</span>`;
+    document.body.append(this.wishEl);
+  }
+
+  clearWish() {
+    this.wishEl?.remove();
+    this.wishEl = null;
+    this.wish = null;
+  }
+
+  // Blase mitführen; versteckt, solange schon genug Wünsche angenommen sind (oder er im Riesenrad sitzt)
+  placeWish() {
+    const el = this.wishEl;
+    if (!el) return;
+    const show = wishSlotFree() && this.phase !== 'ride' && this.chatTimer <= 0;
+    if (show !== el.classList.contains('show')) el.classList.toggle('show', show);
+    if (!show) return;
+    const cam = this.scene.cameras.main;
+    const z = this.scene.scale.zoom;
+    el.style.left = `${(this.x - cam.worldView.x) * cam.zoom * z}px`;
+    el.style.top = `${(this.y - 58 - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
+  // angesprochen: er erzählt von seinem Wunsch und bleibt kurz stehen
+  tellWish() {
+    const species = this.wish;
+    this.clearWish();
+    this.chatTimer = WISH_CHAT_TIME;
+    this.say(wishLine(species));
+    return species;
+  }
+
+  // großer Moment am Gehege: springen, Herzregen, "Ein Fuchs! Danke!"
+  cheer(species) {
+    this.phase = 'cheer';
+    this.timer = CHEER_TIME;
+    this.cheerT = 0;
+    this.faceTowardsPen();
+    this.say(thanksLine(species));
+    this.heartRain();
+  }
+
+  heartRain() {
+    for (let i = 0; i < HEART_RAIN; i++) {
+      this.scene.time.delayedCall(i * 130, () => {
+        if (this.gone) return;
+        const x = this.x + Phaser.Math.Between(-34, 34);
+        const y = this.y - Phaser.Math.Between(70, 95);
+        const heart = this.scene.add
+          .text(x, y, '♥', { fontFamily: 'Arial', fontSize: `${Phaser.Math.Between(12, 18)}px`, color: '#ff6fa8', stroke: '#ffffff', strokeThickness: 3 })
+          .setOrigin(0.5)
+          .setDepth(100000);
+        this.scene.tweens.add({ targets: heart, y: y + Phaser.Math.Between(40, 60), x: x + Phaser.Math.Between(-8, 8), alpha: { from: 1, to: 0 }, duration: 1300, ease: 'Sine.easeIn', onComplete: () => heart.destroy() });
+      });
+    }
   }
 
   // unterwegs: steht ein freilaufender Pfau in der Nähe, den er noch nicht angeschaut hat? Dann stehen bleiben
@@ -251,6 +360,13 @@ export class Visitor {
 
   // am Ziel angekommen: an der Bude bzw. am Riesenrad anstellen oder am Gehege stehen bleiben und schauen
   arrive() {
+    if (this.goal === 'thank') {
+      // Wunsch erfüllt: am Zaun freuen (die Herzen gibt die Szene, siehe wishThanked)
+      this.goal = null;
+      this.cheer(this.thanks);
+      this.crowd.thanked(this);
+      return;
+    }
     if (this.goal === 'petenter') {
       // am Tor des Streichelzoos: jetzt ein Tier aussuchen
       this.goal = null;
@@ -291,6 +407,13 @@ export class Visitor {
     this.heartsLeft = score > 0 ? 1 + (babies ? bonus : 0) : 0;
     this.heartStep = (this.timer * 0.75) / Math.max(1, this.heartsLeft);
     this.heartAt = this.timer * 0.75;
+    // Tierfreund ab Stufe 3 (siehe src/world/friends.js): die Besucher kennen ihn, rufen seinen Namen und geben ein Herz mehr
+    const friend = this.scene.friendIn?.(this.pen);
+    if (friend && friend.level >= 3 && score > 0) {
+      this.heartsLeft++;
+      this.heartStep = (this.timer * 0.75) / this.heartsLeft;
+      if (Math.random() < FRIEND_SAY_CHANCE) this.scene.time.delayedCall(Phaser.Math.Between(400, 1600), () => !this.gone && this.say(tr(`Guck mal, da ist ${friend.bond.name}!`, `Look, there’s ${friend.bond.name}!`)));
+    }
     this.faceTowardsPen();
   }
 
@@ -313,7 +436,10 @@ export class Visitor {
   render(moving) {
     this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? FRAMES.downLeft : FRAMES.downRight) : this.faceX > 0 ? FRAMES.upRight : FRAMES.upLeft);
     const phase = this.walkTime * 9;
-    const hop = moving ? Math.abs(Math.sin(phase)) * 2 : 0;
+    let hop = moving ? Math.abs(Math.sin(phase)) * 2 : 0;
+    // Freudensprünge (in der ersten Hälfte der Freude)
+    const jumpT = this.phase === 'cheer' ? this.cheerT : 0;
+    if (jumpT > 0 && jumpT < CHEER_JUMPS * 0.5) hop = Math.abs(Math.sin((jumpT / 0.5) * Math.PI)) * CHEER_JUMP_H;
     this.sprite.setPosition(this.x, this.y - hop + SPRITE_SINK);
     // beim Streicheln sanft vor- und zurückneigen
     const stroke = this.phase === 'pet' ? Math.sin((this.stroke ?? 0) * 5) * 3 * this.faceX : 0;
@@ -323,6 +449,15 @@ export class Visitor {
     this.shadow.setDepth(this.y - 0.5);
     // Snack in der Hand: vorne seitlich auf Handhöhe, von hinten gesehen hinter dem Körper
     if (this.itemSprite) this.itemSprite.setPosition(this.x + this.faceX * 8, this.y - hop - 14).setDepth(this.y + (this.faceY > 0 ? 0.2 : -0.2));
+  }
+
+  // kurze Sprechblase über dem Kopf (Tierfreunde ab Stufe 3)
+  say(text) {
+    const bubble = this.scene.add
+      .text(this.x, this.y - 56, text, { fontFamily: 'Trebuchet MS, Arial', fontSize: '10px', fontStyle: 'bold', color: '#2b1d14', backgroundColor: '#fff8e6', padding: { x: 5, y: 3 }, resolution: 4 })
+      .setOrigin(0.5, 1)
+      .setDepth(100000);
+    this.scene.tweens.add({ targets: bubble, y: bubble.y - 6, alpha: { from: 1, to: 0 }, delay: 2600, duration: 600, onComplete: () => bubble.destroy() });
   }
 
   // Bewunderungsherz über dem Kopf (rosa, wie im Zähler oben)
@@ -336,6 +471,7 @@ export class Visitor {
 
   destroy() {
     this.gone = true;
+    this.clearWish();
     this.sprite.destroy();
     this.shadow.destroy();
     this.itemSprite?.destroy();
@@ -350,6 +486,8 @@ export class VisitorCrowd {
     this.visitors = [];
     this.lastFed = new Map(); // Gehege -> Spielzeit des letzten Fütterns
     this.time = 0;
+    this.thanking = null; // Art, deren Wunsch-Besucher gerade zum Gehege läuft (immer nur einer)
+    scene.events.once('shutdown', () => this.visitors.forEach((v) => v.clearWish())); // Blasen sind HTML
     this.updateScore();
     this.arrivalTimer = Phaser.Math.FloatBetween(0.3, 1) * arrivalInterval(this.score);
     // beim Ankommen ist der Park nicht leer: ein Teil der Besucher steht schon an den Gehegen
@@ -360,6 +498,7 @@ export class VisitorCrowd {
     this.score = parkScore(this.scene.animals);
     this.max = maxVisitors(this.score, HOUSE_VISITORS[LEVEL_ID] ?? parkCap(LEVEL_ID)); // in Aquarium und Reptilienhaus eigene Obergrenze, mit Riesenrad mehr
     this.scoreTimer = SCORE_EVERY;
+    this.pruneWishes();
     // sind neue Tiere eingezogen, kommt der nächste Besucher entsprechend früher
     this.arrivalTimer = Math.min(this.arrivalTimer ?? Infinity, arrivalInterval(this.score));
   }
@@ -594,6 +733,7 @@ export class VisitorCrowd {
     this.visitors.push(v);
     v.sprite.setAlpha(0);
     this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
+    this.maybeWish(v);
     if (this.maybeShop(v)) return; // erst zu einer Bude
     if (!this.sendToPen(v)) this.remove(v);
   }
@@ -630,6 +770,7 @@ export class VisitorCrowd {
     v.pen = o.e;
     v.arrive();
     if (!partial) return v;
+    this.maybeWish(v);
     // nicht alle gleichzeitig weitergehen; Herzen nur noch für die restliche Zeit
     const k = Math.random();
     v.timer *= k;
@@ -659,6 +800,120 @@ export class VisitorCrowd {
     return v;
   }
 
+  // --- Besucherwünsche (src/world/wishes.js) ---
+
+  // ab und zu ist ein Besucher ein Wunsch-Besucher (nur im Tierpark, solange noch ein Wunsch angenommen werden kann)
+  maybeWish(v) {
+    if (!isPark(LEVEL_ID) || !wishSlotFree() || Math.random() > WISH_CHANCE) return;
+    const walkers = this.visitors.filter((u) => u.wish);
+    if (walkers.length >= MAX_WISH_WALKERS) return;
+    const taken = new Set([...walkers.map((u) => u.wish), ...openWishes().map((w) => w.species)]);
+    const species = this.scene.pickWish?.(taken);
+    if (!species) return;
+    v.setWish(species);
+    v.visitsLeft += WISH_EXTRA_VISITS;
+  }
+
+  // Wünsche, die inzwischen erfüllt sind (das Tier ist schon da), lösen sich auf
+  pruneWishes() {
+    for (const v of this.visitors) if (v.wish && !this.scene.wishValid?.(v.wish)) v.clearWish();
+  }
+
+  // Wunsch-Besucher, den Henrik gerade ansprechen kann (der nächste)
+  wishNear(p) {
+    if (!wishSlotFree()) return null;
+    let best = null;
+    let bestD = WISH_TALK_DIST;
+    for (const v of this.visitors) {
+      if (!v.wish || v.gone || v.phase === 'ride') continue;
+      const d = Math.hypot(v.x - p.x, (v.y - p.y) * 2);
+      if (d < bestD) {
+        best = v;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  // angesprochen: der Wunsch wird angenommen (Wunschkarte), sein Aussehen gemerkt
+  acceptWish(v) {
+    if (!v?.wish || !wishSlotFree()) return null;
+    const species = v.tellWish();
+    openWishes().push({ species, look: v.look, done: false });
+    return species;
+  }
+
+  // großer Moment: Henrik ist am Gehege e mit der gewünschten Art. Der Besucher (mit gemerktem Aussehen) taucht knapp
+  // außerhalb des Bildes auf dem Weg auf, läuft zum Zaun und freut sich. Gibt zurück, ob es geklappt hat
+  thank(wish, e, near) {
+    if (this.thanking) return false;
+    const grid = this.grid;
+    // Ziel: ein Platz am Zaun (der freie nächste bei Henrik), im Streichelzoo das Tor; sonst ein Weg nahe beim Tier
+    const p0 = this.scene.player;
+    const dist = (t) => {
+      const p = tileToWorld(t.tx, t.ty);
+      return Math.hypot(p.x - p0.x, (p.y - p0.y) * 2);
+    };
+    let spot = null;
+    let targets;
+    if (e.petting) targets = grid.pets.get(e)?.gates ?? [];
+    else {
+      const spots = grid.spots.get(e) ?? [];
+      targets = spots.filter((s) => !s.taken);
+      if (!targets.length) targets = spots;
+    }
+    if (!targets.length) {
+      const at = worldToTile(near.x, near.y);
+      targets = [...grid.walk].map((k) => k.split(',').map(Number)).filter(([tx, ty]) => Math.max(Math.abs(tx - at.tx), Math.abs(ty - at.ty)) <= 4).map(([tx, ty]) => ({ tx, ty }));
+    }
+    if (!targets.length) return false;
+    const target = [...targets].sort((a, b) => dist(a) - dist(b))[0];
+    if (!e.petting && grid.spots.get(e)?.includes(target) && !target.taken) spot = target;
+    // vom Ziel aus rückwärts bis zur ersten Wegkachel außerhalb des Bildes
+    const view = this.scene.cameras.main.worldView;
+    const outside = (tx, ty) => {
+      const p = tileToWorld(tx, ty);
+      return p.x < view.x - THANK_MARGIN || p.x > view.right + THANK_MARGIN || p.y < view.y - THANK_MARGIN || p.y - 60 > view.bottom + THANK_MARGIN;
+    };
+    let route = findRoute(grid, target, outside);
+    let fade = false;
+    if (route) route = [...route.reverse(), { tx: target.tx, ty: target.ty }]; // erste Kachel: außerhalb des Bildes
+    else {
+      // ganz kleiner Bereich (alles im Bild): vom nächsten Ausgang, sonst direkt am Ziel, sanft eingeblendet
+      const exits = new Set(grid.exits.map((t) => t.tx + ',' + t.ty));
+      const back = grid.exits.length ? findRoute(grid, target, (tx, ty) => exits.has(tx + ',' + ty)) : null;
+      route = back ? [...back.reverse(), { tx: target.tx, ty: target.ty }] : [];
+      fade = true;
+    }
+    const start = route.length > 1 ? route[0] : target;
+    const sp = tileToWorld(start.tx, start.ty);
+    const v = new Visitor(this.scene, this, sp.x, sp.y, wish.look);
+    this.visitors.push(v);
+    if (fade) {
+      v.sprite.setAlpha(0);
+      this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
+    }
+    v.pen = e;
+    v.thanks = wish.species;
+    v.goal = 'thank';
+    v.phase = 'walk';
+    v.visitsLeft = 1; // nach diesem Gehege geht er
+    if (spot) {
+      spot.taken = v;
+      v.spot = spot;
+    }
+    v.setRoute(route.length > 1 ? route.slice(1) : [], spot ? this.standPoint(spot) : null);
+    this.thanking = wish.species;
+    return true;
+  }
+
+  // der Wunsch-Besucher hat sich gefreut (bzw. ist vorher verschwunden: done false, dann kommt er beim nächsten Mal)
+  thanked(v, done = true) {
+    if (done) this.scene.wishThanked?.(v.thanks);
+    v.thanks = null;
+    this.thanking = null;
+  }
+
   // Futter ins Gehege werfen, wenn dort gerade Tiere fressen können (nicht zu oft dasselbe Gehege)
   feed(v) {
     const e = v.pen;
@@ -669,6 +924,8 @@ export class VisitorCrowd {
   }
 
   remove(v) {
+    v.clearWish();
+    if (v.thanks) this.thanked(v, false);
     this.release(v);
     if (v.phase === 'ride') this.scene.wheel?.drop(v);
     this.visitors.splice(this.visitors.indexOf(v), 1);

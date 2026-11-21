@@ -37,6 +37,11 @@ export const game = {
   campfireAt: 0, // wann zuletzt am Lagerfeuer gesessen
   sides: {}, // Durchgänge der großen Maps: { 'savanna:north': { map, season, chest } } (siehe src/world/sideMaps.js)
   side: null, // gerade hinter einem Durchgang: { parent, passage, key, map, season, canoe, back }
+  friends: {}, // Tierfreunde: benanntes Tier je Gehege und Tierart { 'pasture:sheep': uid } (siehe src/world/friends.js)
+  bonds: {}, // ... und ihre Bindung je Tier: { uid: { name, species, points, pettedAt, since } }
+  nextAnimalId: 1, // nächste freie feste Nummer für ein Tier
+  wishes: { open: [] }, // Besucherwünsche: angenommene Wünsche { species, look, done } (siehe src/world/wishes.js)
+  feedUnlocked: [], // Sorten im Futterhaus (erst, wenn man sie draußen kennengelernt hat)
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
 };
 
@@ -76,4 +81,9 @@ export function resetGame() {
   game.bookNew = [];
   game.parkReturns = 0;
   game.promos = [];
+  game.friends = {};
+  game.bonds = {};
+  game.nextAnimalId = 1;
+  game.feedUnlocked = [];
+  game.wishes = { open: [] };
 }

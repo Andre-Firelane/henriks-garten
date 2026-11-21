@@ -25,9 +25,9 @@ const VISITORS_AT_PEN = 2; // so viele Besucher stehen bei der Besucher-Aufgabe 
 const SETTLE = 1200; // so lange nach dem Aufbau des Gebiets fängt sie noch nicht von selbst an (die Kamera blendet ein)
 
 // Aufgaben, die im Tierpark erledigt werden (egal, in welchem Abschnitt Mavi steht)
-const PARK_TASKS = ['visitors', 'babies', 'event', 'stands'];
+const PARK_TASKS = ['visitors', 'babies', 'event', 'stands', 'friend'];
 // Aufgaben, bei denen der Pfeil auf etwas zeigt, wenn man dort ist
-const POINT = { babies: 'computer', event: 'computer', stands: 'build' };
+const POINT = { babies: 'computer', event: 'computer', stands: 'build', friend: 'sign' };
 
 export default class Mavi {
   constructor(scene) {

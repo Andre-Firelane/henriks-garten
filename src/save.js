@@ -97,6 +97,11 @@ export function loadSave() {
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
   if (!s.game.story) migrateStory(); // Spielstand von vor Mavi: alles bleibt offen
   if (!s.game.pettingZoo) migratePettingZoo();
+  if (!Array.isArray(s.game.feedUnlocked)) game.feedUnlocked = null; // Futterhaus: Sorten aus den gefangenen Tieren ableiten (ensureFeedState in src/world/friends.js)
+  if (!s.game.friends) game.friends = {}; // (ältere Spielstände: noch keine Tierfreunde)
+  if (!s.game.bonds) game.bonds = {};
+  if (!s.game.nextAnimalId) game.nextAnimalId = 1;
+  if (!Array.isArray(game.wishes?.open)) game.wishes = { open: [] }; // (ältere Spielstände: noch keine Besucherwünsche)
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;

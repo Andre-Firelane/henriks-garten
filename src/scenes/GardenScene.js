@@ -30,6 +30,7 @@ import { raiseAt,
   objectAt,
   charAt,
   fenceAxisAt,
+  isGate,
   isBlocked,
   isBlockedPoint,
   isFishpond,
@@ -58,7 +59,7 @@ import { raiseAt,
 } from '../world/map.js';
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
-import { tr } from '../i18n.js';
+import { tr, locale } from '../i18n.js';
 import { FARM_SPECIES, save, saveHandlers, writeSave } from '../save.js';
 import Player from '../player/Player.js';
 import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, skinInfo } from '../animals/Animal.js';
@@ -179,8 +180,10 @@ import { lanternLight } from '../world/MoorFog.js';
 import BallTool from '../tools/BallTool.js';
 import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
-import { animalIcon, animalIconFit, animalIconSquare, animalIcons } from '../ui/icons.js';
-import { touchHandlers, setTouchTool, IS_PHONE } from '../ui/touch.js';
+import { animalIcon, animalIconFit, animalIconSquare, animalIcons, hasAnimalIcon } from '../ui/icons.js';
+import { touchHandlers, setTouchTool, IS_PHONE, isTouch } from '../ui/touch.js';
+import { ensureFriendState, animalUid, bondOf, isFriend, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, FRIEND_LEVELS, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts } from '../world/friends.js';
+import HandFoodTool from '../tools/HandFoodTool.js';
 import { closeWalkHint } from '../ui/walkHint.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
@@ -191,6 +194,7 @@ import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
 import { activeId, activeStep, countStoryCatch, isUnlocked, skipStory, storyAt } from '../story/story.js';
+import { THANK_DIST, WISH_HEARTS, canWish, ensureWishes, openWishes } from '../world/wishes.js';
 import Mavi from '../npc/Mavi.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
 
@@ -219,6 +223,12 @@ const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', '
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
+const FRIEND_PET_DIST = 80; // so nah muss man am Tierfreund sein, um ihn (über den Zaun) zu streicheln
+const FRIEND_CALL_DIST = 260; // ab Stufe 2: so nah, dann kommt der Tierfreund zum Zaun
+const FRIEND_STAY_DIST = 340; // ... und so lange bleibt er dort
+const FRIEND_TAG_DEPTH = 90000; // Namensschilder der Tierfreunde über allem in der Welt (die Herzen der Besucher liegen bei 100000)
+const FRIEND_BAR_DIST = 180; // so nah, dann zeigt ein Balken über dem Tierfreund, wie weit es bis zur nächsten Stufe ist
+const NAME_MAX = 14; // so lang darf der Name eines Tierfreunds sein
 const TOAST_MS = 6000; // so lange steht eine Meldung (Animation toast in index.html)
 const TOAST_MIN_W = 260; // so breit (CSS-Pixel) muss der Platz neben dem Abzeichen oben links sein, sonst kommen Meldungen darunter
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
@@ -296,6 +306,64 @@ const CATCH_TIPS = {
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
   howler: tr('Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso! Mit etwas Glück ist es ein seltener Gibbon.', 'It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso! With a bit of luck it is a rare gibbon.'),
   macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
+};
+
+// Kurzfassung der Fang-Tipps für die Meldung draußen (Handy: lange Texte verdecken das Bild und sind zu schnell weg).
+// Nur der Kern, was zu tun ist – die ausführliche Fassung steht im Tierbuch
+const CATCH_TIPS_SHORT = {
+  fish: tr('Keschern, wenn er nach den Luftblasen auftaucht.', 'Net it when it comes up after the bubbles.'),
+  koi: tr('Fischfutter ins Wasser streuen, dann keschern.', 'Scatter fish food, then net them.'),
+  reeffish: tr('Hinterherschwimmen – du bist schneller!', 'Swim after them – you are faster!'),
+  seahorse: tr('Steigen Bläschen auf, schnell keschern!', 'When bubbles rise, net it quickly!'),
+  butterfly: tr('Sitzt er auf einer Blüte: anschleichen, keschern!', 'When it sits on a flower: sneak up, net it!'),
+  hippo: tr('Grast es am Ufer: schnell das Lasso!', 'When it grazes ashore: quick, the lasso!'),
+  tapir: tr('Mit einem Blätterzweig füttern.', 'Feed it a leafy branch.'),
+  hedgehog: tr('Eicheln neben den raschelnden Laubhaufen legen.', 'Put acorns next to the rustling leaf pile.'),
+  boar: tr('Eicheln hinlegen, dann das Lasso!', 'Put down acorns, then the lasso!'),
+  elk: tr('Moorlaterne ans Ufer stellen, dann das Lasso!', 'Put the moor lantern at the shore, then the lasso!'),
+  okapi: tr('Nachlaufen, bis es stehen bleibt, dann füttern.', 'Follow it until it stops, then feed it.'),
+  hyena: tr('Knochen streuen, beim Fressen das Lasso!', 'Scatter bones, lasso them while they eat!'),
+  warthog: tr('Mit Abstand am Erdloch warten, dann das Lasso!', 'Wait a bit away from the burrow, then the lasso!'),
+  vulture: tr('Sitzt er in der Akazie: keschern!', 'When it sits in the acacia: net it!'),
+  snowleopard: tr('Folge den Pfotenspuren zum Felsen.', 'Follow the paw prints to the rock.'),
+  yak: tr('Salzstein auf den Steinhaufen, dann 3× bürsten.', 'Salt lick on the cairn, then brush it 3×.'),
+  tanuki: tr('Wackelnde Verkleidung berühren, dann ihn!', 'Touch the wobbling disguise, then touch it!'),
+  redpanda: tr('Leuchtendes Glas vor den Kirschbaum stellen.', 'Put the glowing jar by the cherry tree.'),
+  gnu: tr('Lasso, wenn eins aus der Staubwolke läuft!', 'Lasso one that runs out of the dust!'),
+  wolf: tr('Laufen beim Heulen, stehen bei 👀!', 'Walk while they howl, freeze at 👀!'),
+  jellyfish: tr('Mit dem Quallenglas, wenn sie sinkt!', 'Use the jar while it sinks!'),
+  ray: tr('Neben ihm herschwimmen, nicht zu nah.', 'Swim alongside, not too close.'),
+  turtle: tr('Mit der Schere 3× das Netz schneiden.', 'Cut the net 3× with the scissors.'),
+  octopus: tr('Schnell keschern, bevor die Tinte kommt!', 'Net it fast, before the ink!'),
+  squirrel: tr('Wenn es unten ist – mit Abstand.', 'When it is down – keep your distance.'),
+  heron: tr('Nur wenn er am Wasser gelandet ist.', 'Only when it has landed by the water.'),
+  flamingo: tr('Nur wenn er gelandet ist.', 'Only when it has landed.'),
+  deer: tr('Aus der Ferne mit dem Lasso.', 'Lasso it from a distance.'),
+  fox: tr('Nur mit der Falle.', 'Only with the trap.'),
+  beaver: tr('Stock ins Loch im Damm stecken.', 'Put a stick into the hole in the dam.'),
+  antelope: tr('Lasso – die Herde rennt dann weg.', 'Lasso – then the herd runs off.'),
+  zebra: tr('Beim Trinken flieht es nicht.', 'While drinking it doesn’t flee.'),
+  meerkat: tr('Von hinten anschleichen!', 'Sneak up from behind!'),
+  lion: tr('Kraulen bei Zzz, sonst stehen bleiben!', 'Pet it at Zzz, otherwise stand still!'),
+  crocodile: tr('Lasso, wenn der Kopf auftaucht.', 'Lasso it when its head comes up.'),
+  giraffe: tr('Mit Grünfutter füttern.', 'Feed it leafy greens.'),
+  panda: tr('Grünfutter – und weg vom Bambus!', 'Leafy greens – and away from bamboo!'),
+  peacock: tr('Warte, bis er ein Rad schlägt.', 'Wait until it fans its tail.'),
+  orangutan: tr('Ohne Werkzeug 3× zurückwinken.', 'Wave back 3× without a tool.'),
+  tiger: tr('Ball hinrollen, weggehen, dann das Lasso!', 'Roll the ball, walk away, then the lasso!'),
+  gorilla: tr('Mit der Trommel genauso oft nachtrommeln.', 'Drum back as often as it does.'),
+  jaguar: tr('Seine Route merken und mit dem Lasso lauern.', 'Learn its route, wait with the lasso.'),
+  iguana: tr('Bei Sonne mit Abstand keschern.', 'In the sun, net them from a distance.'),
+  toucan: tr('Im Tiefflug überm Fluss keschern.', 'Net it as it swoops over the river.'),
+  macaw: tr('Im Tiefflug überm Fluss keschern.', 'Net them as they swoop over the river.'),
+  snake: tr('Dickicht weghacken, dann keschern!', 'Cut the thicket, then net it!'),
+  piranha: tr('Angeln – bei „!“ schnell drücken!', 'Fish – press quickly at “!”!'),
+  tarantula: tr('Dickicht weghacken, dann keschern!', 'Cut the thicket, then net it!'),
+  seal: tr('Zuwerfen, was sie sich wünscht.', 'Throw it what it wishes for.'),
+  penguin: tr('Lasso aus etwas Abstand!', 'Lasso it from a little distance!'),
+  anteater: tr('Lasso – beim Ameisenschlecken berühren.', 'Lasso – touch it while it licks ants.'),
+  howler: tr('Banane unter seinen Baum, dann das Lasso!', 'Banana under its tree, then the lasso!'),
+  macaque: tr('Warte, bis er herausspringt – Lasso!', 'Wait until it jumps out – lasso!'),
 };
 
 // Steuerung aus dem Menü, getrennt für PC und Tablet/Handy
@@ -781,6 +849,17 @@ const TOOLS = {
   },
 };
 
+// Futter aus dem Futterhaus (je Sorte ein Werkzeug, siehe FEED_SORTS in src/world/friends.js): kommt nicht ins Regal
+for (const [k, f] of Object.entries(FEED_SORTS)) {
+  TOOLS[`treat_${k}`] = {
+    create: (scene, player) => new HandFoodTool(scene, player, k, f.image),
+    name: f.name,
+    image: f.image,
+    hint: tr('Füttere damit deinen Tierfreund am Zaun aus der Hand', 'Feed your animal friend at the fence from your hand'),
+  };
+}
+const isTreat = (id) => !!id?.startsWith('treat_');
+
 // Köder: locken diese Tiere an (gefangen werden sie dann mit dem Lasso oder sie folgen von selbst)
 const TOOL_LURES = { acorns: ['hedgehog', 'boar'], lantern: ['elk'], ball: ['tiger'], banana: ['howler'], bone: ['hyena'], koifood: ['koi'], fireflyjar: ['redpanda'], glowjar: ['redpanda'] };
 // alle Tierarten, die man mit diesem Werkzeug fängt oder lockt (null: mit leeren Händen, also durch Berühren)
@@ -1092,57 +1171,59 @@ export default class GardenScene extends Phaser.Scene {
     this.drawSea();
     this.drawDarkRooms();
 
-    // Schilder mit den Bildern der erlaubten Tiere, am Zaun neben dem Tor. Dazu weitere Tafeln eines Bereichs (signs, z. B. an
-    // den Haltebuchten der Safari): nur mit den Tieren dieser Zone (only) und ihrem Namen, auf einem eigenen Pfosten
-    const signDefs = ENCLOSURES.flatMap((e) => [
-      ...(e.sign ? [{ e, at: e.sign, only: null, name: null }] : []),
-      ...(e.signs ?? []).map((s) => ({ e, at: s.spot, only: s.species, name: s.name })),
-    ]);
-    this.enclosureSigns = signDefs.map(({ e, at, only, name }) => {
-      const { x, y } = tileToWorld(at.tx, at.ty);
+    // Je Tierart ein Schild mit ihrem Bild, am Zaun neben dem Tor (gemeinsame Gehege: mehrere Schilder nebeneinander, siehe
+    // signSpots). Dazu weitere Tafeln eines Bereichs (signs, z. B. an den Haltebuchten der Safari) auf einem eigenen Platz
+    const signDefs = ENCLOSURES.flatMap((e) => {
+      const list = e.species ?? [];
+      const own = !e.sign ? [] : list.length > 1
+        ? this.signSpots(e, list.length).map((s, i) => ({ e, at: s.at, shift: s.shift, fence: s.fence, only: [list[i]], name: null }))
+        : [{ e, at: e.sign, shift: 0, only: list.length ? list : null, name: null }];
+      return [...own, ...(e.signs ?? []).map((s) => ({ e, at: s.spot, shift: 0, only: s.species, name: s.name, extra: true }))];
+    });
+    this.enclosureSigns = signDefs.map(({ e, at, shift, fence, only, name, extra }) => {
+      const at0 = tileToWorld(at.tx, at.ty);
+      const x = at0.x + shift; // (Schilder nebeneinander auf einem Platz: seitlich verschoben)
+      const y = at0.y;
       // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt (nur Tore in der Nähe: die Safari hat
       // Tore weit weg, vor denen das Schild sonst über allem läge)
       const nearGates = e.gates.filter((g) => Math.abs(g.tx - at.tx) + Math.abs(g.ty - at.ty) <= 6);
       let front = Math.max(y, ...nearGates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
       if (e.dark) front = DARK_DEPTH + 20; // im dunklen Raum über der Abdunklung, damit man es lesen kann
       // signOnRoof: das Schild sitzt oben auf dem Dach des Gebäudes (z. B. Katzenhaus), damit man es von weitem sieht
-      const house = e.signOnRoof && !only ? buildingAt(e.tiles[0].tx, e.tiles[0].ty) : null;
+      const house = e.signOnRoof && !extra ? buildingAt(e.tiles[0].tx, e.tiles[0].ty) : null;
       let sx = x, sy = y;
       // Tor in einer Hauswand (Katzenhaus): das Schild hängt an der Wand neben der Tür, vor dem (durchsichtigen) Dach
       const wall = !house && e.gates[0] && buildingAt(e.gates[0].tx, e.gates[0].ty);
       if (wall) front = tileToWorld(wall.tx1, wall.ty1).y + TILE_H + 2;
       if (house) {
         const c = tileToWorld((house.tx0 + house.tx1) / 2, (house.ty0 + house.ty1) / 2);
-        sx = c.x;
+        sx = c.x + shift;
         sy = c.y - 78; // über dem First
         front = tileToWorld(house.tx1, house.ty1).y + TILE_H + 2; // vor dem Dach
       }
       // ohne Zaun (Teich ohne Zaun) oder mit eigenem Platz abseits vom Zaun (signAt, z. B. im Wildpark an der Weggabelung):
       // das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
-      const onFence = only ? !!fenceAxisAt(at.tx, at.ty) : e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty));
-      // mitten an einem Zaun (nicht neben einem Tor, z. B. die Schilder am Fußweg der Safari): vor dem nächsten Zaunpfosten
-      // zeichnen, sonst verdeckt er die Zahl darunter
-      if (onFence && (only || e.signAt)) front = Math.max(front, y + TILE_H / 2 + 2);
+      const onFence = fence ?? (only && extra ? !!fenceAxisAt(at.tx, at.ty) : e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty)));
+      // mitten an einem Zaun (nicht neben einem Tor, z. B. die Schilder am Fußweg der Safari oder das zweite Schild eines
+      // gemeinsamen Geheges): vor dem nächsten Zaunpfosten zeichnen, sonst verdeckt er die Zahl darunter
+      if (onFence && (extra || fence || e.signAt)) front = Math.max(front, y + TILE_H / 2 + 2);
       if (!onFence && !house && !e.signOnGlass) {
         this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
       }
-      const board = this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
-      // im Tierpark: Schild antippen öffnet den Ausbau dieses Geheges (nur wenn man davorsteht; nur mit Gehegeausbau)
-      if (PEN_UPGRADES && hasSlots(e) && isPark(LEVEL_ID)) board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.penAtSign() === e && this.openEventsPanel(e.id));
-      // Tierbilder nebeneinander auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
+      this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
+      // das Bild der Tierart auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
       const list = only ?? e.species ?? [];
       const step = SIGN_INNER_W / list.length;
       list.forEach((s, i) => {
         const icon = this.add.image(sx - SIGN_INNER_W / 2 + step * (i + 0.5), sy - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
         icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
       });
-      // Plätze: "4 / 6", voll mit Stern; in gemeinsamen Gehegen eine kleine Zeile je Tierart mit ihrem Bild
-      const counts = penQuotas(e).filter(({ key }) => !only || only.includes(key)).map(({ key }, i) => {
-        const text = this.add.text(sx + (key ? 9 : 0), sy + 2 + i * (key ? 15 : 0), '', { fontFamily: 'Trebuchet MS, Arial', fontSize: key ? '9px' : '10px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: key ? 3 : 4, y: 1 }, resolution: 4 }).setOrigin(0.5, 0).setDepth(front + 0.2);
-        const icon = key ? this.add.image(sx, text.y + 5, SPECIES[key].texture, key === 'fish' ? 1 : 0) : null;
-        icon?.setScale(Math.min(15 / icon.height, 17 / icon.width)).setDepth(front + 0.3);
-        return { key, text, icon };
-      });
+      // Plätze dieser Tierart: "4 / 6", voll mit Stern (teilen sich mehrere Arten die Plätze, steht auf jedem Schild die Summe)
+      const quotas = penQuotas(e);
+      const quota = (list.length && quotas.find(({ key }) => key === quotaKey(list[0]))) || quotas.find(({ key }) => key === null);
+      const counts = quota
+        ? [{ key: quota.key, text: this.add.text(sx, sy + 2, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '8px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 0).setDepth(front + 0.2) }]
+        : [];
       return { x, y, enclosure: e, counts, only, name };
     });
     this.updatePenSigns();
@@ -1150,6 +1231,13 @@ export default class GardenScene extends Phaser.Scene {
     // Netzdach über Gehegen wie der Voliere
     for (const e of ENCLOSURES) if (e.netRoof) this.drawNetRoof(e);
     this.shownSign = null; // welches Schild die Tafel gerade zeigt
+    // Tierfreunde (src/world/friends.js): Namensschilder über den benannten Tieren
+    ensureFriendState();
+    ensureFeedState(game.caughtSpecies);
+    this.friendTags = new Map(); // Tier → Namensschild
+    this.friendBars = new Map(); // Tier → Fortschrittsbalken (bis zur nächsten Stufe)
+    this.friendVisitTimer = 0;
+    this.nearFriend = null;
 
 
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
@@ -1266,6 +1354,7 @@ export default class GardenScene extends Phaser.Scene {
         const a = s.pending ? this.createAnimal(s.species, start.x, start.y, s.variant) : this.createAnimal(s.species, s.x, s.y, s.variant);
         if (s.pending) a.origin = s.origin;
         a.skin = s.skin ?? null; // seltener Skin (Katze 2)
+        a.uid = s.uid ?? null; // feste Nummer (benannte Tiere, siehe src/world/friends.js)
         a.penSince = s.since ?? 0;
         a.restore(s.state);
         a.life = s.life ?? Phaser.Math.FloatBetween(...LIFETIME);
@@ -1327,10 +1416,11 @@ export default class GardenScene extends Phaser.Scene {
     this.followers = [];
     // im Expeditions-Camp laufen sie nicht mehr mit: sie kommen in den Wagen (siehe expArriveCamp)
     const campArrivals = this.expCamp ? game.followers.map((a) => ({ ...a })) : [];
-    for (const { species, variant, origin, skin } of this.expCamp ? [] : game.followers) {
+    for (const { species, variant, origin, skin, uid } of this.expCamp ? [] : game.followers) {
       if (!SPECIES[species]) continue;
       const a = this.createAnimal(species, start.x, start.y, variant);
       a.skin = skin ?? null;
+      a.uid = uid ?? null;
       a.restore('following');
       a.origin = origin;
       this.followers.push(a);
@@ -1353,6 +1443,14 @@ export default class GardenScene extends Phaser.Scene {
     this.hud = document.getElementById('hud');
     this.questCard = document.getElementById('quest-card');
     this.questTab = document.getElementById('quest-tab');
+    this.wishCards = document.getElementById('wish-cards'); // Besucherwünsche unter Mavis Aufgabe (siehe src/world/wishes.js)
+    this.wishCards.onclick = () => {
+      lastBookTab = 'quests';
+      this.showJournal();
+    };
+    this.wishTimer = 0;
+    this.nearWish = null;
+    ensureWishes();
     this.encounterEl = document.getElementById('encounter');
     this.beaverHintEl = document.getElementById('beaver-hint');
     this.beaverHintEl.classList.remove('show');
@@ -1483,8 +1581,7 @@ export default class GardenScene extends Phaser.Scene {
         return;
       }
       if (this.nearFeeder && !this.leaving && this.toolId !== 'parkfood') {
-        this.equipTool('parkfood'); // am Futterautomaten: Futter holen
-        this.showToast(tr('Futter genommen! Wirf es am Zaun ins Gehege – dann kommen die Tiere.', 'Got food! Throw it over the fence into an enclosure – the animals will come.'));
+        this.openFeeder(); // am Futterautomaten: Futterhaus (Futtersack oder Futter für die Tierfreunde)
         return;
       }
       if (this.nearComputer && !this.leaving) {
@@ -1509,6 +1606,19 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearSlot && !this.tool && !this.leaving) {
         this.openEventsPanel(null, this.nearSlot.slot.id); // am Bauplatz: Bude aussuchen
+        return;
+      }
+      if (this.nearWish && !this.leaving) {
+        this.talkToWisher(this.nearWish); // Wunsch-Besucher ansprechen: sein Wunsch kommt als Wunschkarte
+        return;
+      }
+      if (this.nearFriend && !this.leaving) {
+        if (isTreat(this.toolId)) this.feedFriend(this.nearFriend); // am Zaun beim Tierfreund: mit Futter in der Hand füttern,
+        else this.petFriend(this.nearFriend); // sonst streicheln
+        return;
+      }
+      if (this.shownSign && this.toolId !== 'parkfood' && !this.leaving) {
+        this.openSign(); // am Gehegeschild: Tafel mit den Tieren öffnen (mit Futter in der Hand wirft man weiter)
         return;
       }
       const pen = PEN_UPGRADES && this.penAtSign();
@@ -1598,7 +1708,9 @@ export default class GardenScene extends Phaser.Scene {
     // Cheat zum Testen: L gibt 50 Bewunderungsherzen
     this.input.keyboard.on('keydown-L', () => {
       this.addHearts(50);
-      this.showToast('Cheat: <span class="heart">♥</span> +50');
+      for (const b of Object.values(game.bonds ?? {})) b.pettedAt = b.fedAt = 0; // Tierfreunde: Streicheln und Füttern gehen wieder
+      if (this.shownSign && !this.signOpen) this.showSignPanel(this.shownSign);
+      this.showToast('Cheat: <span class="heart">♥</span> +50 · Tierfreunde wieder bereit');
     });
     document.getElementById('btn-swap').onclick = (e) => {
       e.stopPropagation();
@@ -2634,6 +2746,322 @@ export default class GardenScene extends Phaser.Scene {
     return this.mapEdgePoint(away + Phaser.Math.FloatBetween(-0.8, 0.8));
   }
 
+  // ---- Tierfreunde (siehe src/world/friends.js und docs/plan-freundschaft.md) ----
+
+  // benannte Tiere in diesem Abschnitt (nur in den Gehegen des Tierparks; Aquarium und Reptilienhaus vorerst nicht)
+  friendsHere() {
+    if (!isPark(LEVEL_ID)) return [];
+    return this.animals.filter((a) => a.state === 'penned' && isFriend(a));
+  }
+
+  // Namensschild über jedem Tierfreund (Name und ein Herz je Stufe, auf Stufe 3 golden); ab Stufe 2 kommt er zum Zaun,
+  // wenn Henrik in der Nähe ist, und läuft ihm am Zaun entlang nach
+  updateFriends(dt) {
+    const friends = this.friendsHere();
+    for (const [a, tag] of this.friendTags) {
+      if (friends.includes(a)) continue;
+      tag.destroy();
+      this.friendBars.get(a)?.destroy();
+      this.friendBars.delete(a);
+      this.friendTags.delete(a);
+      a.visit = null;
+    }
+    for (const a of friends) {
+      const bond = bondOf(a);
+      const level = friendLevel(bond.points);
+      let tag = this.friendTags.get(a);
+      if (!tag) {
+        tag = this.add.text(0, 0, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '9px', fontStyle: 'bold', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 1);
+        this.friendTags.set(a, tag);
+      }
+      const label = `${bond.name} ${levelHearts(level)}`;
+      if (tag.text !== label) {
+        tag.setText(label);
+        const gold = level >= FRIEND_LEVELS.length;
+        tag.setColor(gold ? '#3c2814' : '#fff8e6').setBackgroundColor(gold ? '#ffd966' : '#3c2814f0');
+      }
+      const spr = a.sprite;
+      // immer obenauf (vor Zäunen, Schildern und Bäumen), damit man Namen und Balken lesen kann
+      tag.setPosition(spr.x, spr.y - spr.displayHeight * spr.originY + 4).setDepth(FRIEND_TAG_DEPTH + spr.depth / 1e4).setVisible(spr.visible);
+      // Fortschritt bis zur nächsten Stufe: Balken über dem Namensschild, nur wenn Henrik nah dran ist
+      let bar = this.friendBars.get(a);
+      if (!bar) {
+        bar = this.add.graphics();
+        this.friendBars.set(a, bar);
+      }
+      const near = spr.visible && Math.hypot(this.player.x - a.x, (this.player.y - a.y) * 2) < FRIEND_BAR_DIST;
+      bar.setVisible(near);
+      if (near) {
+        const { frac, level, max } = levelProgress(bond.points);
+        const w = Math.max(30, tag.width);
+        const x = Math.round(spr.x - w / 2);
+        const y = Math.round(tag.y - tag.height - 6);
+        bar.clear().setDepth(FRIEND_TAG_DEPTH + spr.depth / 1e4);
+        bar.fillStyle(0x3c2814, 0.85).fillRoundedRect(x - 1, y - 1, w + 2, 6, 3);
+        if (frac > 0) bar.fillStyle(level >= max ? 0xffd966 : 0xff6fa8, 1).fillRoundedRect(x, y, Math.max(4, w * frac), 4, 2);
+      }
+    }
+    this.friendVisitTimer -= dt;
+    if (this.friendVisitTimer > 0) return;
+    this.friendVisitTimer = 0.4;
+    const p = this.player;
+    const { tx, ty } = worldToTile(p.x, p.y);
+    for (const a of friends) {
+      const level = friendLevel(bondOf(a).points);
+      if (level < 2 || a.baby) continue;
+      const d = Math.hypot(p.x - a.x, (p.y - a.y) * 2);
+      if (d > (a.visit ? FRIEND_STAY_DIST : FRIEND_CALL_DIST)) {
+        if (a.visit) {
+          a.visit = null;
+          a.pickWander();
+        }
+        continue;
+      }
+      if (a.feed || a.petted) continue;
+      // im offenen Bereich (Streichelzoo) kommt es zu Henrik selbst, sonst an die Stelle am Zaun, die ihm am nächsten ist
+      const inside = a.enclosure.tileSet.has(tx + ',' + ty);
+      const spot = inside ? this.besidePlayer(a) : this.penSpotNear(a.enclosure, p);
+      if (!spot) continue;
+      if (!a.visit || Math.hypot(spot.x - a.visit.spot.x, spot.y - a.visit.spot.y) > 12) a.visit = { spot };
+    }
+  }
+
+  // Platz knapp neben Henrik, auf der Seite des Tiers
+  besidePlayer(a) {
+    const p = this.player;
+    const d = Math.hypot(a.x - p.x, a.y - p.y) || 1;
+    return { x: p.x + ((a.x - p.x) / d) * 30, y: p.y + ((a.y - p.y) / d) * 15 };
+  }
+
+  // die Kachel im Gehege, die diesem Punkt am nächsten ist (als Weltpunkt)
+  penSpotNear(e, pt) {
+    let best = null;
+    let bd = Infinity;
+    for (const t of e.tiles) {
+      const w = tileToWorld(t.tx, t.ty);
+      const d = Math.hypot(w.x - pt.x, (w.y - pt.y) * 2);
+      if (d < bd) {
+        bd = d;
+        best = w;
+      }
+    }
+    return best;
+  }
+
+  // Tierfreund, den man gerade streicheln kann (nah genug, ohne Futter in der Hand); steht man näher am Gehegeschild,
+  // öffnet die Aktionstaste lieber die Tafel
+  friendToPet() {
+    if (this.toolId === 'parkfood' || this.leaving) return null;
+    const p = this.player;
+    const dist = (o) => Math.hypot(p.x - o.x, (p.y - o.y) * 2);
+    let best = null;
+    for (const a of this.friendsHere()) if (dist(a) < FRIEND_PET_DIST && (!best || dist(a) < dist(best))) best = a;
+    if (best && this.shownSign && dist(this.shownSign) < dist(best)) return null;
+    return best;
+  }
+
+  // streicheln: das Tier bleibt stehen, dreht sich zu Henrik, sackt kurz zusammen, ein Herz steigt auf. Alle 20 Minuten
+  // (echte Zeit) einmal; kommt man zu früh, dreht es sich kurz weg – ohne Abzug
+  petFriend(a) {
+    const bond = bondOf(a);
+    if (!bond) return;
+    const p = this.player;
+    if (!canPet(bond)) {
+      a.faceX = p.x < a.x ? 1 : -1; // schaut weg
+      this.time.delayedCall(900, () => a.sprite?.active && (a.faceX = p.x < a.x ? -1 : 1));
+      this.showToast(tr(`${bond.name} möchte gerade nicht gestreichelt werden. Versuch es später noch einmal.`, `${bond.name} doesn’t want to be petted right now. Try again later.`));
+      return;
+    }
+    const before = friendLevel(bond.points);
+    bond.points += PET_POINTS;
+    bond.pettedAt = Date.now();
+    // stehen bleiben und zu Henrik schauen (wie beim Streicheln durch Besucher im Streichelzoo)
+    const hold = { x: p.x, y: p.y };
+    a.petted = hold;
+    this.time.delayedCall(1800, () => a.petted === hold && (a.petted = null));
+    p.faceX = a.x < p.x ? -1 : 1;
+    if (!this.tweens.isTweening(a.sprite)) {
+      const { scaleX, scaleY } = a.sprite;
+      this.tweens.add({ targets: a.sprite, scaleX: scaleX * 1.12, scaleY: scaleY * 0.86, duration: 170, yoyo: true, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => a.sprite.setScale(scaleX, scaleY) });
+    }
+    this.friendHeart(a);
+    const up = this.friendLevelUp(a, bond, before);
+    if (up) this.showToast(up);
+    this.updateQuestCard();
+    this.updateToolbar();
+  }
+
+  // Aufstieg in eine neue Stufe: der Ruf des Tiers; gibt den Text für die Meldung zurück (was die Stufe bringt), sonst ''
+  friendLevelUp(a, bond, before) {
+    const level = friendLevel(bond.points);
+    if (level <= before) return '';
+    if (this.cache.audio.exists(this.callOf(a))) this.sound.play(this.callOf(a), { volume: 0.5 });
+    return `${tr(`${bond.name} und du seid jetzt Freunde der Stufe ${level}!`, `${bond.name} and you are now level ${level} friends!`)}<br><small>${levelText(bond.name, level) ?? ''}</small>`;
+  }
+
+  // Freudenhüpfer: n kleine Sprünge (Höhe jumpLift, siehe render in Animal.js)
+  friendHop(a, n) {
+    a.jumpLift = 0;
+    this.tweens.add({ targets: a, jumpLift: 9, duration: 150, yoyo: true, repeat: n - 1, ease: 'Sine.easeOut', onComplete: () => (a.jumpLift = 0) });
+  }
+
+  // aus der Hand füttern (Futter aus dem Futterhaus): passendes Futter 1 Punkt, Lieblingsfutter 3 Punkte. Alle 20 Minuten
+  // (echte Zeit) einmal; zu früh oder Futter, das es nicht frisst: es dreht sich kurz weg, das Futter bleibt in der Hand
+  feedFriend(a, sort = this.tool?.sort) {
+    a ??= this.nearFriend;
+    if (!a) {
+      this.showToast(tr('Geh damit zu deinem Tierfreund an den Zaun und füttere ihn aus der Hand.', 'Take it to your animal friend at the fence and feed it from your hand.'));
+      return;
+    }
+    const bond = bondOf(a);
+    const p = this.player;
+    const turnAway = () => {
+      a.faceX = p.x < a.x ? 1 : -1;
+      this.time.delayedCall(900, () => a.sprite?.active && (a.faceX = p.x < a.x ? -1 : 1));
+    };
+    const food = FEED_SORTS[sort];
+    if (!(SPECIES_FOOD[a.species] ?? []).includes(sort)) {
+      turnAway();
+      this.showToast(tr(`${bond.name} mag kein ${food.name}.`, `${bond.name} doesn’t like ${food.name.toLowerCase()}.`));
+      return;
+    }
+    if (!canFeed(bond)) {
+      turnAway();
+      this.showToast(tr(`${bond.name} ist satt. Versuch es später noch einmal.`, `${bond.name} is full. Try again later.`));
+      return;
+    }
+    // Futter ist weg (neues gibt es im Futterhaus)
+    this.tool.destroy();
+    this.tool = null;
+    this.toolId = null;
+    const before = friendLevel(bond.points);
+    const favorite = favoriteOf(bond) === sort;
+    bond.points += favorite ? FAVORITE_POINTS : FEED_POINTS;
+    bond.fedAt = Date.now();
+    const hold = { x: p.x, y: p.y };
+    a.petted = hold;
+    this.time.delayedCall(2200, () => a.petted === hold && (a.petted = null));
+    p.faceX = a.x < p.x ? -1 : 1;
+    let said;
+    if (favorite) {
+      // Lieblingsfutter: 2–3 Freudenhüpfer, viele Herzen und der Ruf des Tiers
+      const first = !bond.favoriteKnown;
+      bond.favoriteKnown = true;
+      this.friendHop(a, Phaser.Math.Between(2, 3));
+      for (let i = 0; i < 5; i++) this.time.delayedCall(140 * i, () => a.sprite?.active && this.friendHeart(a, Phaser.Math.Between(-14, 14)));
+      if (this.cache.audio.exists(this.callOf(a))) this.sound.play(this.callOf(a), { volume: 0.6 });
+      said = first
+        ? tr(`${bond.name} liebt ${food.name}! Das ist das Lieblingsfutter.`, `${bond.name} loves ${food.name.toLowerCase()}! That’s the favorite food.`)
+        : tr(`Mmh, ${food.name}! ${bond.name} ist überglücklich.`, `Yum, ${food.name.toLowerCase()}! ${bond.name} is overjoyed.`);
+    } else {
+      this.friendHop(a, 1);
+      this.friendHeart(a);
+      said = tr(`${bond.name} frisst ${food.name} aus deiner Hand.`, `${bond.name} eats ${food.name.toLowerCase()} from your hand.`);
+    }
+    // eine Meldung: was passiert ist, darunter ein Aufstieg in die nächste Stufe
+    const up = this.friendLevelUp(a, bond, before);
+    this.showToast(up ? `${said}<br>${up}` : said);
+    this.updateQuestCard();
+    this.updateToolbar();
+  }
+
+  // Futterhaus (am Futterautomaten): Futtersack zum Werfen ins Gehege, dazu die Sorten zum Füttern aus der Hand. Eine Sorte
+  // liegt hier erst, wenn man sie draußen einmal in der Hand hatte (die anderen als Schatten); was kein Tierfreund frisst,
+  // ist ausgegraut. Das Spiel pausiert, solange die Tafel offen ist (Pfeile wählen, E/Enter nimmt, Esc schließt)
+  openFeeder() {
+    if (this.feederOpen || this.leaving) return;
+    this.feederOpen = true;
+    this.scene.pause();
+    const wanted = wantedSorts();
+    const known = game.feedUnlocked ?? [];
+    this.feederItems = [
+      { id: 'parkfood', image: 'parkfood', name: tr('Futtersack', 'Food sack'), note: tr('zum Werfen ins Gehege', 'to throw into an enclosure'), ok: true },
+      ...Object.entries(FEED_SORTS).map(([k, f]) => ({
+        id: `treat_${k}`,
+        image: f.image,
+        name: known.includes(k) ? f.name : '?',
+        locked: !known.includes(k),
+        ok: known.includes(k) && wanted.has(k),
+        note: !known.includes(k) ? tr('erst draußen finden', 'find it outside first') : wanted.has(k) ? tr('für deine Tierfreunde', 'for your animal friends') : tr('frisst keiner deiner Freunde', 'none of your friends eats it'),
+      })),
+    ];
+    this.feederPick = 0;
+    const box = document.getElementById('feeder');
+    const draw = () => {
+      box.innerHTML = `<b class="feeder-title">${tr('Futterhaus', 'Food house')}</b>
+        <div class="feeder-items">${this.feederItems
+          .map((it, i) => `<button type="button" class="feeder-item${it.ok ? '' : ' off'}${it.locked ? ' locked' : ''}${i === this.feederPick ? ' picked' : ''}" data-item="${i}"><img src="assets/${it.image}.png" alt=""><b>${it.name}</b><small>${it.note}</small></button>`)
+          .join('')}</div>
+        ${Object.keys(game.friends ?? {}).length ? '' : `<small class="feeder-hint">${tr('Gib erst an einem Gehegeschild einem Tier einen Namen – dann kannst du es hier mit Futter verwöhnen.', 'First give an animal a name at an enclosure sign – then you can treat it with food from here.')}</small>`}
+        <div class="sign-close"><button type="button" data-close>${tr('Schließen', 'Close')}</button></div>`;
+    };
+    const take = (i) => {
+      const it = this.feederItems[i];
+      if (!it?.ok) return;
+      this.closeFeeder();
+      this.equipTool(it.id);
+      if (it.id === 'parkfood') this.showToast(tr('Futter genommen! Wirf es am Zaun ins Gehege – dann kommen die Tiere.', 'Got food! Throw it over the fence into an enclosure – the animals will come.'));
+      else this.showToast(tr(`${it.name} genommen. Geh zu deinem Tierfreund an den Zaun und füttere ihn (${ACTION_KEY}).`, `You took ${it.name.toLowerCase()}. Go to your animal friend at the fence and feed it (${ACTION_KEY}).`));
+    };
+    draw();
+    box.classList.add('show');
+    document.body.classList.add('sign-open');
+    box.onclick = (ev) => {
+      if (ev.target.closest('[data-close]')) return this.closeFeeder();
+      const btn = ev.target.closest('[data-item]');
+      if (btn) take(Number(btn.dataset.item));
+    };
+    this.feederKeys = (ev) => {
+      const k = ev.key;
+      const moves = { ArrowLeft: -1, a: -1, A: -1, ArrowUp: -1, w: -1, W: -1, ArrowRight: 1, d: 1, D: 1, ArrowDown: 1, s: 1, S: 1 };
+      if (k in moves) {
+        this.feederPick = (this.feederPick + moves[k] + this.feederItems.length) % this.feederItems.length;
+        draw();
+      } else if (k === 'Enter' || k === ' ' || k.toUpperCase() === ACTION_KEY) {
+        if (!ev.repeat) take(this.feederPick);
+      } else if (k === 'Escape' || k === 'Backspace') {
+        this.closeFeeder();
+      } else return;
+      ev.preventDefault();
+      ev.stopPropagation();
+    };
+    setTimeout(() => this.feederOpen && document.addEventListener('keydown', this.feederKeys, true), 0);
+    this.events.once('shutdown', () => this.feederKeys && document.removeEventListener('keydown', this.feederKeys, true));
+  }
+
+  closeFeeder() {
+    if (!this.feederOpen) return;
+    document.removeEventListener('keydown', this.feederKeys, true);
+    this.feederKeys = null;
+    this.feederOpen = false;
+    document.getElementById('feeder').classList.remove('show');
+    document.body.classList.remove('sign-open');
+    this.scene.resume();
+  }
+
+
+  // ein Herz steigt über dem Tier auf
+  friendHeart(a, dx = 0) {
+    const spr = a.sprite;
+    const h = this.add
+      .text(spr.x + dx, spr.y - spr.displayHeight * spr.originY - 6, '♥', { fontFamily: 'Arial', fontSize: '18px', color: '#ff6fa8', stroke: '#ffffff', strokeThickness: 3 })
+      .setOrigin(0.5)
+      .setDepth(spr.depth + 1);
+    this.tweens.add({ targets: h, y: h.y - 26, alpha: 0, duration: 1200, ease: 'Sine.easeOut', onComplete: () => h.destroy() });
+  }
+
+  // für die Besucher (ab Stufe 3): der Tierfreund mit der höchsten Stufe in diesem Gehege, oder null
+  friendIn(pen) {
+    let best = null;
+    for (const a of this.friendsHere()) {
+      if (a.enclosure !== pen) continue;
+      const level = friendLevel(bondOf(a).points);
+      if (!best || level > best.level) best = { animal: a, bond: bondOf(a), level };
+    }
+    return best;
+  }
+
+
   // Ruf eines Tiers
   callOf(a) {
     // seltene Variante mit eigenem Ton (der Gibbon ruft anders als der Brüllaffe)
@@ -2791,6 +3219,10 @@ export default class GardenScene extends Phaser.Scene {
     if (this.eventBanner.classList.contains('show')) y = this.eventBanner.getBoundingClientRect().bottom + 6;
     this.questCard.style.top = `${Math.round(y)}px`;
     this.questTab.style.top = `${Math.round(y)}px`;
+    if (this.wishCards) {
+      const below = this.questCard.classList.contains('show') ? this.questCard.getBoundingClientRect().bottom + 6 : y;
+      this.wishCards.style.top = `${Math.round(below)}px`;
+    }
   }
 
   // Neues fürs Tierbuch merken: 'caught:<Art>' (neu gefangen), 'seen:<Art>' (Fang-Tipp freigeschaltet), 'quest:<Id>'
@@ -2827,7 +3259,8 @@ export default class GardenScene extends Phaser.Scene {
     } catch {}
     this.questCard.classList.toggle('show', !!q);
     this.questCard.classList.toggle('folded', folded);
-    this.questTab.classList.toggle('show', !!q && folded);
+    const wishes = this.updateWishCards(folded);
+    this.questTab.classList.toggle('show', (!!q || wishes) && folded);
     if (q) {
       const n = STEPS.indexOf(q) + 1;
       const html = `<b>${tr('Mavis Aufgabe', 'Mavi’s task')} ${n} / ${STEPS.length}</b><span>${q.goal}${q.progress?.(game) ?? ''}</span>${q.reward ? `<span class="quest-reward"><span class="heart">♥</span> ${q.reward}</span>` : ''}<button class="quest-fold" aria-label="${tr('Einklappen', 'Collapse')}">◀</button>`;
@@ -2835,11 +3268,117 @@ export default class GardenScene extends Phaser.Scene {
       if (folded && this.questCardStep && this.questCardStep !== q.id) this.questTab.classList.add('new');
       this.questCardStep = q.id;
       if (this.questCard.innerHTML !== html) this.questCard.innerHTML = html;
-      this.questTab.innerHTML = `${tr('Aufgabe', 'Task')}<span class="quest-fold">▶</span>`;
     }
+    if (q || wishes) this.questTab.innerHTML = `${tr('Aufgabe', 'Task')}<span class="quest-fold">▶</span>`;
     this.layoutHudStack();
-    // eingeklappt: der Knopf ist so hoch wie die Karte (sie bleibt dafür unsichtbar daneben im Layout)
-    if (q) this.questTab.style.height = `${this.questCard.offsetHeight}px`;
+    // eingeklappt: der Knopf ist so hoch wie die Karten (sie bleiben dafür unsichtbar daneben im Layout)
+    if (q || wishes) {
+      const top = (q ? this.questCard : this.wishCards).getBoundingClientRect().top;
+      const bottom = (wishes ? this.wishCards : this.questCard).getBoundingClientRect().bottom;
+      this.questTab.style.height = `${Math.round(bottom - top)}px`;
+    }
+  }
+
+  // --- Besucherwünsche (siehe src/world/wishes.js und docs/plan-wuensche.md) ---
+
+  // darf sich ein Besucher diese Art wünschen? Noch nicht im Tierpark, aus einer freigeschalteten Welt, mit einem
+  // Gehege im (freigeschalteten) Tierpark; keine Event-Tiere
+  wishValid(s, home = this.homeCounts()) {
+    if (!canWish(s) || EVENT_SPECIES[s] || !SPECIES_ORDER.includes(s)) return false;
+    if ((home[s] ?? 0) > 0) return false;
+    const house = houseOf(s);
+    const pen = house ? isUnlocked(house) : PARK_LEVELS.some((l) => isUnlocked(l) && LEVELS[l].enclosures.some((e) => e.species?.includes(s)));
+    return pen && worldsOf(s).some((w) => isUnlocked(w.level));
+  }
+
+  // zufällige Art für einen neuen Wunsch-Besucher (nicht in taken: schon gewünscht bzw. angenommen)
+  pickWish(taken) {
+    const home = this.homeCounts();
+    const list = SPECIES_ORDER.filter((s) => !taken.has(s) && this.wishValid(s, home));
+    return list.length ? Phaser.Utils.Array.GetRandom(list) : null;
+  }
+
+  // Wunsch-Besucher angesprochen
+  talkToWisher(v) {
+    const species = this.visitors?.acceptWish(v);
+    if (!species) return;
+    this.nearWish = null;
+    this.updateToolbar();
+    this.updateQuestCard();
+  }
+
+  // Gehege, in dem die Art lebt (für die Wunschkarte)
+  wishPenName(s) {
+    const a = this.animals.find((x) => x.species === s && x.state === 'penned' && x.enclosure?.name);
+    if (a) return a.enclosure.name;
+    const house = houseOf(s);
+    if (house) return LEVELS[house].enclosures.find((e) => e.species?.includes(s))?.name ?? LEVELS[house].name;
+    return parkPenFor(s)?.name ?? '';
+  }
+
+  // jede Sekunde: erfüllte Wünsche erkennen; ist Henrik an einem Gehege mit einer gewünschten (erfüllten) Art, kommt
+  // der Besucher herbei
+  updateWishes(dt) {
+    this.wishTimer -= dt;
+    if (this.wishTimer > 0) return;
+    this.wishTimer = 1;
+    const open = openWishes();
+    if (!open.length) return;
+    const home = this.homeCounts();
+    let changed = false;
+    for (const w of open) {
+      if (w.done || !(home[w.species] > 0)) continue;
+      w.done = true;
+      changed = true;
+      this.showToast(`${animalIcon(w.species, 2.2)} ${tr('Wunsch erfüllt! Schau am Gehege vorbei.', 'Wish come true! Visit the enclosure.')}`);
+    }
+    if (changed) this.updateQuestCard();
+    const crowd = this.visitors;
+    if (!crowd || crowd.thanking || this.leaving || isSpeaking()) return;
+    const p = this.player;
+    for (const w of open) {
+      if (!w.done) continue;
+      const a = this.animals.find((x) => x.species === w.species && x.state === 'penned' && !x.baby && ENCLOSURES.includes(x.enclosure) && Math.hypot(x.x - p.x, (x.y - p.y) * 2) < THANK_DIST);
+      if (a && crowd.thank(w, a.enclosure, a)) return;
+    }
+  }
+
+  // der Besucher freut sich am Gehege: Herzen, Wunschkarte weg
+  wishThanked(s) {
+    const open = openWishes();
+    const i = open.findIndex((w) => w.species === s && w.done);
+    if (i < 0) return;
+    open.splice(i, 1);
+    this.addHearts(WISH_HEARTS, s);
+    this.updateQuestCard();
+    // die Tafel erst nach den Freudensprüngen (sonst verdeckt sie den Besucher)
+    this.time.delayedCall(2600, () => {
+      const box = document.getElementById('success');
+      box.innerHTML = `${tr('<b>Wunsch erfüllt!</b>', '<b>Wish come true!</b>')}<span>${animalIcon(s, 2.6)}</span><span><span class="heart">♥</span> +${WISH_HEARTS}</span>`;
+      box.classList.remove('show');
+      void box.offsetWidth; // Animation neu starten
+      box.classList.add('show');
+    });
+  }
+
+  // Wunschkarten unter Mavis Aufgabe; gibt zurück, ob welche da sind
+  updateWishCards(folded) {
+    const el = this.wishCards;
+    if (!el) return false;
+    const open = openWishes();
+    el.classList.toggle('show', open.length > 0);
+    el.classList.toggle('folded', folded);
+    const html = open
+      .map((w) => {
+        const [name] = ANIMAL_INFO[w.species] ?? [w.species];
+        const icon = animalIcon(w.species, 1.6);
+        if (w.done) return `<div class="wish-card done"><b>${tr('Wunsch erfüllt!', 'Wish come true!')}</b><span class="wish-line">${icon}<span>${tr('Schau am Gehege vorbei', 'Visit the enclosure')}: ${this.wishPenName(w.species)}</span></span></div>`;
+        const places = worldsOf(w.species).filter((x) => isUnlocked(x.level)).map((x) => LEVELS[x.level].name).join(', ');
+        return `<div class="wish-card"><b>${tr('Besucherwunsch', 'Visitor’s wish')}</b><span class="wish-line">${icon}<span>${name}${places ? ` · ${places}` : ''}</span><span class="quest-reward"><span class="heart">♥</span> ${WISH_HEARTS}</span></span></div>`;
+      })
+      .join('');
+    if (el.innerHTML !== html) el.innerHTML = html;
+    return open.length > 0;
   }
 
   foldQuestCard(fold) {
@@ -3294,19 +3833,47 @@ export default class GardenScene extends Phaser.Scene {
     box.classList.add('show');
   }
 
+  // Plätze für n Schilder eines gemeinsamen Geheges (je Tierart eins): am Zaun neben dem Tor alle 2 Kacheln eins, erst vom
+  // Tor weg (wie das eine Schild sonst), dann auf der anderen Seite des Tors. Reicht der Zaun dafür nicht (Ecke) oder
+  // steht das Schild auf einem eigenen Platz (signAt: Pfosten, Scheibe), hängen sie dort nebeneinander.
+  // Gibt [{ at: Kachel, shift: seitlicher Versatz in Pixeln, fence: hängt am Zaun }] zurück
+  signSpots(e, n) {
+    const row = () => Array.from({ length: n }, (_, i) => ({ at: e.sign, shift: (i - (n - 1) / 2) * 50, fence: undefined }));
+    const d = e.signSide === 'right' ? 1 : -1;
+    const g0 = d > 0 ? e.gates.at(-1) : e.gates[0]; // das Tor, neben dem das Schild sonst hängt (siehe map.js)
+    if (e.signAt || !g0 || buildingAt(g0.tx, g0.ty)) return row();
+    const axis = g0.vertical ? 'y' : 'x';
+    const along = (t, k) => (axis === 'y' ? { tx: t.tx, ty: t.ty + k } : { tx: t.tx + k, ty: t.ty });
+    const fenceHere = (t) => fenceAxisAt(t.tx, t.ty) === axis && !isGate(t.tx, t.ty);
+    // vom Startplatz in Richtung dir: Plätze, solange der Zaun durchgeht
+    const side = (start, dir) => {
+      const out = [];
+      for (let k = 0; out.length < n; k++) {
+        const t = along(start, dir * 2 * k);
+        if (!fenceHere(t) || (k > 0 && !fenceHere(along(start, dir * (2 * k - 1))))) break;
+        out.push(t);
+      }
+      return out;
+    };
+    let end = g0; // anderes Ende des Tors (Doppeltor)
+    while (isGate(along(end, -d).tx, along(end, -d).ty)) end = along(end, -d);
+    const spots = [...side(e.sign, d), ...side(along(end, -d), -d)].slice(0, n);
+    return spots.length < n ? row() : spots.map((at) => ({ at, shift: 0, fence: true }));
+  }
+
   // Platz-Zähler an den Gehegeschildern
   updatePenSigns() {
     if (!this.animals) return; // beim Aufbau sind die Tiere noch nicht da (danach jede halbe Sekunde)
-    for (const { enclosure: e, counts } of this.enclosureSigns ?? []) {
-      const quotas = penQuotas(e);
-      for (const c of counts) {
+    for (const sign of this.enclosureSigns ?? []) {
+      const quotas = penQuotas(sign.enclosure);
+      for (const c of sign.counts) {
         const cap = quotas.find((q) => q.key === c.key)?.cap ?? 0;
-        const n = penCount(this.animals, e, c.key);
+        const n = penCount(this.animals, sign.enclosure, c.key);
         const full = n >= cap;
         const text = `${n} / ${cap}${full ? ' ⭐' : ''}`;
         if (c.text.text === text) continue;
         c.text.setText(text).setColor(full ? '#ffd966' : '#fff8e6');
-        c.icon?.setX(c.text.x - c.text.width / 2 - 8); // Tierbild links neben der Zahl
+        if (sign === this.shownSign) this.showSignPanel(sign); // Tafel offen: Liste der Tiere auffrischen
       }
     }
   }
@@ -3391,6 +3958,7 @@ export default class GardenScene extends Phaser.Scene {
       return { fresh, html: `<div class="card${n ? ' has' : ''}${known ? '' : ' unknown'}${fresh ? ' new' : ''}" data-worlds="${worlds.map((w) => w.level).join(' ')}">
         ${fresh ? `<span class="new-badge">${fresh}</span>` : ''}
         <div class="head">${animalIcon(s, 3.2)}<div><b>${name}</b><span class="home">${known ? `${tr('Zuhause', 'At home')}: <span class="num">${n}${penCapFor(s) ? ` / ${penCapFor(s)}` : ''}</span>` : tr('noch nicht gefangen', 'not caught yet')}</span></div></div>
+        ${this.bookFriends(s)}
         <div class="where">${places.join(', ')}</div>
         <div class="tools">${tools}</div>
         <div class="tip">${seen ? CATCH_TIPS[s] ?? '' : `<span class="tip-locked">${tr('Begegne dem Tier draußen – dann steht hier, wie du es fängst.', 'Meet this animal in the wild – then you will find out here how to catch it.')}</span>`}</div>
@@ -3402,6 +3970,15 @@ export default class GardenScene extends Phaser.Scene {
     return `<h2>${tr(`<span class="num">${found}</span> von ${SPECIES_ORDER.length} Arten gefangen · <span class="num">${total}</span> Tiere zuhause`, `<span class="num">${found}</span> of ${SPECIES_ORDER.length} species caught · <span class="num">${total}</span> animals at home`)}</h2>
       <div class="book-chips">${chips}</div>
       <div class="cards">${[...cards.filter((c) => c.fresh), ...cards.filter((c) => !c.fresh)].map((c) => c.html).join('')}</div>`;
+  }
+
+  // Tierbuch: Tierfreunde dieser Art auf der höchsten Stufe (goldenes Namensschild), mit dem Tag, seit dem sie Freunde sind
+  bookFriends(species) {
+    const best = Object.values(game.bonds ?? {}).filter((b) => b.species === species && b.name && friendLevel(b.points) >= FRIEND_LEVELS.length);
+    if (!best.length) return '';
+    const day = (t) => new Date(t).toLocaleDateString(locale, { day: 'numeric', month: 'long' });
+    const likes = (b) => (b.favoriteKnown && FEED_SORTS[b.favorite] ? tr(`, mag ${FEED_SORTS[b.favorite].name}`, `, loves ${FEED_SORTS[b.favorite].name.toLowerCase()}`) : '');
+    return `<div class="book-friends">${best.map((b) => tr(`♥ <b>${b.name}</b>, seit ${day(b.since)} bei dir${likes(b)}`, `♥ <b>${b.name}</b>, with you since ${day(b.since)}${likes(b)}`)).join('<br>')}</div>`;
   }
 
   // Reiter "Fangen": die Fangarten kurz erklärt, seltene Varianten und welches Werkzeug welche Tiere fängt
@@ -3420,7 +3997,7 @@ export default class GardenScene extends Phaser.Scene {
       ['<span class="way-icon">🍀</span>', tr('<b>Glücksbringer:</b> Du kannst 2 gleichzeitig tragen (Knopf „Glücksbringer“ oben rechts oder Taste G). Wechseln geht nur im Tierpark.', '<b>Lucky charms:</b> You can wear 2 at a time (“Lucky Charms” button at the top right or key G). You can only switch them in the zoo.')],
     ];
     const icons = (list) => list.map((s) => `<span class="chest-animal${caughtBefore(s) ? '' : ' unknown'}">${animalIconSquare(s, 2.2)}</span>`).join('');
-    const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar' && id !== 'stick' && id !== 'salt')].map((id) => {
+    const toolRows = [null, ...Object.keys(TOOLS).filter((id) => id !== 'parkfood' && id !== 'glowjar' && id !== 'stick' && id !== 'salt' && !isTreat(id))].map((id) => {
       const list = toolAnimals(id).filter((s) => SPECIES_ORDER.includes(s));
       if (!list.length) return '';
       return `<div class="tool-row">${img(id ? TOOLS[id].image ?? id : 'hand')}<b>${id ? TOOLS[id].name : tr('Hände frei', 'Empty hands')}</b><span class="tool-animals">${icons(list)}</span></div>`;
@@ -3441,7 +4018,14 @@ export default class GardenScene extends Phaser.Scene {
     });
     const later = STEPS.length - at - 1;
     if (later > 0) rows.push(`<div class="quest-row"><span class="quest-check">⬜</span><span>${tr(`… und noch ${later} weitere – Mavi verrät sie nach und nach`, `… and ${later} more – Mavi will reveal them one by one`)}</span></div>`);
-    return `<h2>${tr(`Mavis Aufgaben · ${Math.min(at, STEPS.length)} / ${STEPS.length}`, `Mavi’s tasks · ${Math.min(at, STEPS.length)} / ${STEPS.length}`)}</h2>
+    const wishes = openWishes().map((w) => {
+      const [name] = ANIMAL_INFO[w.species] ?? [w.species];
+      const pen = this.wishPenName(w.species);
+      const text = w.done ? tr(`${name}: erfüllt! Schau am Gehege vorbei: ${pen}`, `${name}: done! Visit the enclosure: ${pen}`) : `${name} · ${worldsOf(w.species).filter((x) => isUnlocked(x.level)).map((x) => LEVELS[x.level].name).join(', ')}`;
+      return `<div class="quest-row${w.done ? ' done' : ''}"><span class="quest-check">${animalIcon(w.species, 1.6)}</span><span>${text}</span><span class="quest-reward"><span class="heart">♥</span> ${WISH_HEARTS}</span></div>`;
+    });
+    const wishHtml = wishes.length ? `<h2>${tr('Besucherwünsche', 'Visitors’ wishes')}</h2><div class="quest-list">${wishes.join('')}</div>` : '';
+    return `${wishHtml}<h2>${tr(`Mavis Aufgaben · ${Math.min(at, STEPS.length)} / ${STEPS.length}`, `Mavi’s tasks · ${Math.min(at, STEPS.length)} / ${STEPS.length}`)}</h2>
       <div class="quest-list">${rows.join('')}</div>`;
   }
 
@@ -3483,7 +4067,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (this.nearFeeder && this.toolId !== 'parkfood') {
       setTouchTool(null, 'assets/feeder.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Futter holen', 'Get food')}</span></div>`;
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/feeder.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Futterhaus', 'Food house')}</span></div>`;
       return;
     }
     if (this.nearScooter && !this.driving) {
@@ -3495,6 +4079,25 @@ export default class GardenScene extends Phaser.Scene {
       setTouchTool(null, 'assets/icecream.png');
       const label = this.nearSlot.wheel ? tr('Riesenrad bauen', 'Build the Ferris wheel') : tr('Bude bauen', 'Build a stand');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/icecream.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${label}</span></div>`;
+      return;
+    }
+    if (this.nearWish) {
+      setTouchTool(null, 'assets/hand.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/hand.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Ansprechen', 'Talk')}</span></div>`;
+      return;
+    }
+    if (this.nearFriend) {
+      setTouchTool(null, 'assets/hand.png');
+      const who = bondOf(this.nearFriend).name;
+      const feed = isTreat(this.toolId);
+      const img = feed ? `assets/${TOOLS[this.toolId].image}.png` : 'assets/hand.png';
+      if (feed) setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${feed ? tr(`${who} füttern`, `Feed ${who}`) : tr(`${who} streicheln`, `Pet ${who}`)}</span></div>`;
+      return;
+    }
+    if (this.shownSign && this.toolId !== 'parkfood') {
+      setTouchTool(null, 'assets/esign_board.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Tiere ansehen', 'See the animals')}</span></div>`;
       return;
     }
     const pen = PEN_UPGRADES && !this.tool && this.penAtSign();
@@ -3713,6 +4316,8 @@ export default class GardenScene extends Phaser.Scene {
     this.tool = TOOLS[id].create(this, this.player);
     this.toolId = id;
     this.updateToolbar();
+    const sort = unlockFeedFor(id); // diese Futtersorte draußen in der Hand: ab jetzt liegt sie auch im Futterhaus
+    if (sort) this.time.delayedCall(TOAST_MS + 300, () => this.showToast(tr(`Neu im Futterhaus im Tierpark: ${FEED_SORTS[sort].name}.`, `New in the food house at the zoo: ${FEED_SORTS[sort].name.toLowerCase()}.`)));
   }
 
   // Getragene Falle vor dem Spieler auslegen
@@ -4516,7 +5121,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   showCatchTip(species) {
-    this.showToast(`${animalIcon(species, 3.2)} ${CATCH_TIPS[species]}`);
+    this.showToast(`${animalIcon(species, 3.2)} ${CATCH_TIPS_SHORT[species] ?? CATCH_TIPS[species]}`);
   }
 
   // Weltkarte öffnen (am Auto): das Spiel pausiert, bis man losfährt oder die Karte schließt
@@ -4683,7 +5288,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!sent.length) return '';
     const saved = (game.levels[level] ??= { animals: [], pickups: [] });
     for (const a of sent) {
-      saved.animals.push({ species: a.species, variant: a.variant, skin: a.skin ?? null, since: Date.now(), state: 'penned', pending: true, origin: a.origin });
+      saved.animals.push({ species: a.species, variant: a.variant, skin: a.skin ?? null, ...(a.uid != null ? { uid: a.uid } : {}), since: Date.now(), state: 'penned', pending: true, origin: a.origin });
       this.followers.splice(this.followers.indexOf(a), 1);
       this.animals.splice(this.animals.indexOf(a), 1);
       a.destroy();
@@ -5715,18 +6320,18 @@ export default class GardenScene extends Phaser.Scene {
     // der erste Flamingo: im Tierpark entsteht das Flamingo-Gehege
     if (animal.species === 'flamingo' && !game.unlocked.includes('flamingo')) {
       game.unlocked.push('flamingo');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} ${tr('Dein erster Flamingo! Im Tierpark wurde gegenüber vom Haupthaus ein Flamingo-Gehege gebaut.', 'Your first flamingo! A flamingo enclosure was built in your zoo, across from the main building.')}`));
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('flamingo', 3.2)} ${tr('Erster Flamingo! Neues Gehege gegenüber vom Haupthaus.', 'First flamingo! New enclosure across from the main building.')}`));
     }
     // der erste Wolf: im Tierpark entsteht am Waldrand der Wolfswald
     if (animal.species === 'wolf' && !game.unlocked.includes('wolves')) {
       game.unlocked.push('wolves');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} ${tr('Dein erster Wolf! Im Tierpark ist im Wald-Bereich ganz links am Rand ein Wolfswald entstanden.', 'Your first wolf! In your zoo, Wolf Woods have appeared at the far left edge of the forest area.')}`));
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('wolf', 3.2)} ${tr('Erster Wolf! Neuer Wolfswald im Wald-Bereich ganz links.', 'First wolf! New Wolf Woods at the far left of the forest area.')}`));
     }
     // (Geier, Hyänen, Warzenschweine und Gnus haben in der Safari von Anfang an ihren Platz, siehe docs/plan-safari.md)
     // die erste Qualle: im Aquarium öffnet sich der dunkle Quallenraum
     if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
       game.unlocked.push('jellyfish');
-      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('jellyfish', 3.2)} ${tr('Deine erste Qualle! Im Aquarium hat sich in Raum 2 unten rechts der Durchgang zum dunklen Quallenraum geöffnet.', 'Your first jellyfish! In the aquarium, the passage to the dark jellyfish room has opened in room 2, bottom right.')}`));
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('jellyfish', 3.2)} ${tr('Erste Qualle! Im Aquarium ist der Quallenraum offen (Raum 2, unten rechts).', 'First jellyfish! The jellyfish room is open (aquarium room 2, bottom right).')}`));
     } // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = !isPark(LEVEL_ID) && this.parkPenFull(animal.species, animal.origin);
@@ -6660,12 +7265,12 @@ export default class GardenScene extends Phaser.Scene {
     game.levels[LEVEL_ID] = {
       animals: this.animals
         .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
-        .map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
+        .map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, ...(a.uid != null ? { uid: a.uid } : {}), since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
       season: LEVEL.season, // Wetterphase: wechselt sie bis zum nächsten Besuch, ziehen die wilden Tiere weiter
     };
-    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, origin: a.origin }));
+    game.followers = this.followers.map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, origin: a.origin, ...(a.uid != null ? { uid: a.uid } : {}) }));
     game.tool = CARRIED.includes(this.toolId) ? this.stashedTool : this.toolId; // beim Neuaufbau bleibt das Werkzeug in der Hand (beim Verlassen ist es schon zurückgelegt)
   }
 
@@ -6712,45 +7317,253 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Tafel unten rechts: an einem Gehege-Schild die erlaubten Tiere
+  // Tafel am Gehegeschild (die einzige: sie erscheint, sobald man davorsteht): erst das Tier, dann die Tiere dieser Art
+  // im Gehege. Mehrere Schilder nah beieinander (gemeinsame Gehege): das nächste zählt
   updateSign() {
     const p = this.player;
-    const near = (s) => Math.hypot(p.x - s.x, (p.y - s.y) * 2) < SIGN_DIST;
-    const sign = this.enclosureSigns.find(near) ?? null; // nur die Gehegeschilder (an Wegweisern keine Tafel)
+    const dist = (s) => Math.hypot(p.x - s.x, (p.y - s.y) * 2);
+    let sign = null; // nur die Gehegeschilder (an Wegweisern keine Tafel)
+    for (const s of this.enclosureSigns) if (dist(s) < SIGN_DIST && (!sign || dist(s) < dist(sign))) sign = s;
     if (sign === this.shownSign) return;
     this.shownSign = sign;
-    this.updateToolbar(); // am Gehegeschild: "Gehege ausbauen"
+    this.updateToolbar();
     if (!sign) {
       this.signPanel.classList.remove('show');
       return;
     }
-    this.signPanel.innerHTML = this.enclosureInfo(sign.enclosure, sign);
+    this.showSignPanel(sign);
     this.signPanel.scrollTop = 0;
     this.signPanel.classList.add('show');
   }
 
-  // sign: Tafel mit nur einem Teil der Tiere (Haltebucht der Safari): nur diese, mit dem Namen der Zone
-  enclosureInfo(enclosure, sign = null) {
-    const only = sign?.only ?? null;
-    const rows = (only ?? enclosure.species).map((s) => {
-      const [name, text] = ANIMAL_INFO[s] ?? [s, ''];
-      return `<div class="print-row">${animalIcon(s)}<span><b>${name}</b>${text}</span></div>`;
-    });
-    const places = penQuotas(enclosure)
-      .filter(({ key }) => !only || only.includes(key))
-      .map(({ key, cap }) => `${key ? animalIcon(key) + ' ' : ''}<b>${penCount(this.animals, enclosure, key)} / ${cap}</b>`)
-      .join(' · ');
-    const slots = hasSlots(enclosure)
-      ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: ${places}${isFull(this.animals, enclosure) ? ' ⭐' : ''}${
-          !PEN_UPGRADES
-            ? '' // (Gehegeausbau abgeschaltet)
-            : isUpgraded(enclosure)
-              ? tr(' · ausgebaut', ' · upgraded')
-              : tr(` · Ausbau: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, Spielzeug: ${toysText(enclosure)}` : ''} (${ACTION_KEY} oder Schild antippen)`, ` · Upgrade: ${enclosure.upgrade}${PEN_TOYS[enclosure.id] ? `, toys: ${toysText(enclosure)}` : ''} (${ACTION_KEY} or tap the sign)`)
-        }</div>`
+  // Zwei Zustände derselben Tafel: kompakt (man steht davor: nur die Tierart) und offen (Aktionstaste oder Tafel antippen:
+  // groß in der Mitte, das Spiel pausiert, darunter die Tiere dieser Art zum Aussuchen). In der offenen Tafel gibt man
+  // einem Tier einen Namen (signView: Namen eingeben bzw. Rückfrage, wenn hier schon ein anderes Tier der Freund ist)
+  showSignPanel(sign) {
+    const open = this.signOpen === sign;
+    this.signAnimals = this.signResidents(sign);
+    const view = open ? this.signView : null;
+    this.signPanel.innerHTML = view ? this.friendView(sign, view) : this.enclosureInfo(sign.enclosure, sign, this.signAnimals, open);
+    if (open && !view) this.pickResident(this.signPick ?? 0, false);
+    if (view?.mode === 'name' && !isTouch()) this.signPanel.querySelector('.name-input')?.focus(); // am Tablet erst beim Antippen (sonst springt die Tastatur auf)
+    this.signPanel.onclick = (ev) => {
+      if (!this.signOpen) return this.openSign(); // kompakt: antippen öffnet die Tafel
+      const t = ev.target;
+      if (t.closest('[data-close]')) return this.closeSign();
+      if (t.closest('[data-back]')) return this.setSignView(null);
+      if (t.closest('[data-yes]')) return this.setSignView({ mode: 'name', animal: this.signView.animal, name: randomName(this.signView.animal.species) });
+      if (t.closest('[data-dice]')) {
+        const input = this.signPanel.querySelector('.name-input');
+        input.value = randomName(this.signView.animal.species, input.value.trim());
+        return;
+      }
+      if (t.closest('[data-ok]')) return this.finishNaming();
+      const btn = t.closest('[data-resident]');
+      if (btn) this.chooseResident(Number(btn.dataset.resident));
+    };
+  }
+
+  setSignView(view) {
+    this.signView = view;
+    if (this.signOpen) this.showSignPanel(this.signOpen);
+  }
+
+  // Tafel am Gehegeschild öffnen: das Spiel pausiert, die Tasten steuern die Auswahl (Pfeile/WASD wählen ein Tier,
+  // E/Enter/Leertaste nimmt es, Esc schließt). Beim Namen-Eingeben gehen die Tasten ins Eingabefeld
+  openSign() {
+    const sign = this.shownSign;
+    if (!sign || this.signOpen || this.leaving) return;
+    this.signOpen = sign;
+    this.signPick = 0;
+    this.signView = null;
+    this.scene.pause();
+    this.showSignPanel(sign);
+    this.signPanel.scrollTop = 0;
+    this.signPanel.classList.add('open');
+    document.body.classList.add('sign-open');
+    this.signKeys = (ev) => {
+      const k = ev.key;
+      if (this.signView) {
+        // Namen eingeben bzw. Rückfrage: Enter bestätigt, Esc geht zurück zur Liste; alles andere tippt (das Spiel bekommt
+        // die Taste nicht, sonst würde es z. B. W, A, S, D und Leertaste abfangen)
+        if (k === 'Enter') this.signView.mode === 'name' ? this.finishNaming() : this.setSignView({ mode: 'name', animal: this.signView.animal, name: randomName(this.signView.animal.species) });
+        else if (k === 'Escape') this.setSignView(null);
+        else return ev.stopPropagation();
+        ev.preventDefault();
+        ev.stopPropagation();
+        return;
+      }
+      const n = this.signAnimals.length;
+      const cols = this.residentColumns();
+      const moves = { ArrowLeft: -1, a: -1, A: -1, ArrowRight: 1, d: 1, D: 1, ArrowUp: -cols, w: -cols, W: -cols, ArrowDown: cols, s: cols, S: cols };
+      if (k in moves) {
+        if (n) this.pickResident(Math.max(0, Math.min(n - 1, this.signPick + moves[k])));
+      } else if (k === 'Enter' || k === ' ' || k.toUpperCase() === ACTION_KEY) {
+        if (!ev.repeat) this.chooseResident(this.signPick);
+      } else if (k === 'Escape' || k === 'Backspace') {
+        this.closeSign();
+      } else return;
+      ev.preventDefault();
+      ev.stopPropagation();
+    };
+    // (erst nach diesem Tastendruck lauschen, sonst wählt dasselbe E gleich das erste Tier)
+    setTimeout(() => this.signOpen === sign && document.addEventListener('keydown', this.signKeys, true), 0);
+    this.events.once('shutdown', () => this.signKeys && document.removeEventListener('keydown', this.signKeys, true));
+  }
+
+  closeSign() {
+    if (!this.signOpen) return;
+    document.removeEventListener('keydown', this.signKeys, true);
+    this.signKeys = null;
+    this.signOpen = null;
+    this.signView = null;
+    this.signPanel.classList.remove('open');
+    document.body.classList.remove('sign-open');
+    this.scene.resume();
+    if (this.shownSign) this.showSignPanel(this.shownSign); // wieder kompakt
+  }
+
+  // so viele Tier-Kacheln stehen in einer Zeile (für Pfeil hoch/runter)
+  residentColumns() {
+    const tiles = [...this.signPanel.querySelectorAll('.resident')];
+    return Math.max(1, tiles.filter((t) => t.offsetTop === tiles[0]?.offsetTop).length);
+  }
+
+  pickResident(i, scroll = true) {
+    this.signPick = Math.max(0, Math.min(i, this.signAnimals.length - 1));
+    this.signPanel.querySelectorAll('.resident').forEach((t, j) => t.classList.toggle('picked', j === this.signPick));
+    if (scroll) this.signPanel.querySelector('.resident.picked')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  // ein Tier in der Liste gewählt: ihm einen Namen geben (bzw. den Namen ändern). Ist hier schon ein anderes Tier dieser Art
+  // der Freund, erst nachfragen (dessen Bindung bleibt gespeichert)
+  chooseResident(i) {
+    const a = this.signAnimals?.[i];
+    if (!a) return;
+    this.pickResident(i, false);
+    if (!isPark(LEVEL_ID)) {
+      this.showToast(tr('Hier im Haus kannst du noch keine Tierfreunde finden – probier es draußen im Tierpark.', 'You can’t make animal friends in here yet – try outside in the zoo.'));
+      return;
+    }
+    const current = this.friendOfSign(this.signOpen);
+    if (current && current !== a) return this.setSignView({ mode: 'swap', animal: a, old: current });
+    this.setSignView({ mode: 'name', animal: a, name: bondOf(a)?.name ?? randomName(a.species) });
+  }
+
+  // der Tierfreund dieser Tierart in diesem Gehege (falls er noch da ist)
+  friendOfSign(sign) {
+    const kind = (sign.only ?? sign.enclosure.species ?? [])[0];
+    const uid = kind && game.friends[friendKey(sign.enclosure, kind)];
+    return uid != null ? this.animals.find((a) => a.uid === uid && a.enclosure === sign.enclosure) ?? null : null;
+  }
+
+  // Name übernehmen: das Tier bekommt eine feste Nummer und ist ab jetzt der Freund dieser Tierart im Gehege
+  finishNaming() {
+    const view = this.signView;
+    if (view?.mode !== 'name') return;
+    const a = view.animal;
+    const typed = (this.signPanel.querySelector('.name-input')?.value ?? '').trim().slice(0, NAME_MAX);
+    const name = typed || view.name || randomName(a.species);
+    const uid = animalUid(a);
+    const fresh = !game.bonds[uid];
+    game.bonds[uid] ??= { species: a.species, points: 0, pettedAt: 0, since: Date.now() };
+    game.bonds[uid].name = name;
+    favoriteOf(game.bonds[uid]); // Lieblingsfutter (zufällig aus dem, was die Art frisst)
+    game.friends[friendKey(a.enclosure, a.species)] = uid;
+    this.signView = null;
+    this.showSignPanel(this.signOpen);
+    this.updateQuestCard(); // Mavis Aufgabe zum Tierfreund: Fortschritt gleich zeigen
+    this.showToast(fresh
+      ? tr(`${name} ist jetzt dein Freund! Komm an den Zaun und streichle ${name} (${ACTION_KEY}).`, `${name} is your friend now! Come to the fence and pet ${name} (${ACTION_KEY}).`)
+      : tr(`Dein Freund heißt jetzt ${name}.`, `Your friend is now called ${name}.`));
+  }
+
+  // Ansicht in der offenen Tafel: Namen eingeben (mit Würfel für einen Vorschlag) oder Rückfrage beim Wechsel
+  friendView(sign, view) {
+    const a = view.animal;
+    const redraw = () => this.signOpen === sign && this.showSignPanel(sign);
+    const kind = ANIMAL_INFO[a.species]?.[0] ?? a.species;
+    const pic = `<span class="resident-pic big">${this.residentPortrait(a, 4, redraw)}</span>`;
+    if (view.mode === 'swap') {
+      const old = bondOf(view.old).name;
+      return `<div class="sign-head">${pic}<span><b>${tr('Anderes Tier wählen?', 'Choose another animal?')}</b><small>${kind}</small></span></div>
+        <p class="sign-text">${tr(`${old} ist hier schon dein Freund. Möchtest du lieber dieses Tier? Die Freundschaft mit ${old} bleibt gespeichert – wählst du ${old} später wieder, geht es dort weiter.`, `${old} is already your friend here. Would you rather choose this animal? Your friendship with ${old} is kept – if you choose ${old} again later, it continues where it left off.`)}</p>
+        <div class="sign-close"><button type="button" data-back>${tr('Nein', 'No')}</button><button type="button" data-yes>${tr('Ja', 'Yes')}</button></div>`;
+    }
+    const bond = bondOf(a);
+    const value = String(view.name ?? '').replace(/"/g, '&quot;');
+    return `<div class="sign-head">${pic}<span><b>${bond ? tr('Neuer Name?', 'New name?') : tr('Wie soll es heißen?', 'What should it be called?')}</b><small>${kind}</small></span></div>
+      <div class="name-row"><input class="name-input" type="text" maxlength="${NAME_MAX}" value="${value}" autocomplete="off" spellcheck="false"><button type="button" class="dice" data-dice aria-label="${tr('Namen würfeln', 'Roll a name')}" title="${tr('Namen würfeln', 'Roll a name')}">🎲</button></div>
+      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}</button></div>`;
+  }
+
+  // Bild eines Tiers auf seinen sichtbaren Teil zugeschnitten (seltene Varianten mit eigenem Bild bzw. eingefärbt)
+  residentPortrait(a, size, redraw) {
+    const own = a.skin && hasAnimalIcon(a.skin) ? a.skin : a.species;
+    const css = own === a.species && a.skin ? skinInfo(a.species, a.skin)?.css : null;
+    const icon = animalIconFit(own, size, redraw);
+    return css ? `<span style="filter:${css}">${icon}</span>` : icon;
+  }
+
+  // Tiere dieser Tierart(en) im Gehege des Schilds: der Tierfreund zuerst, dann die Großen, seltene Varianten vorn
+  signResidents(sign) {
+    const kinds = sign.only ?? sign.enclosure.species ?? [];
+    return this.animals
+      .filter((a) => a.state === 'penned' && a.enclosure === sign.enclosure && (!kinds.length || kinds.includes(a.species)))
+      .sort((a, b) => isFriend(b) - isFriend(a) || !!a.baby - !!b.baby || !!b.skin - !!a.skin);
+  }
+
+  // Inhalt der Tafel: Bild, Name und Wissen zur Tierart, ihre Plätze, darunter die Tiere, die hier wohnen (zum Antippen)
+  enclosureInfo(enclosure, sign, residents = [], open = false) {
+    const kinds = sign.only ?? enclosure.species ?? [];
+    // Bilder auf ihren sichtbaren Teil zugeschnitten (alle gleich groß); den Zuschnitt misst das Bild beim ersten Mal aus
+    const redraw = () => this.shownSign === sign && this.showSignPanel(sign);
+    const head = kinds
+      .map((s) => {
+        const [name, text] = ANIMAL_INFO[s] ?? [s, ''];
+        return `<div class="sign-head">${animalIconFit(s, 3, redraw)}<span><b>${name}</b><small>${sign.name ? `${sign.name} · ` : ''}${enclosure.name}</small></span></div>${text ? `<p class="sign-text">${text}</p>` : ''}`;
+      })
+      .join('') || `<b>${sign.name ?? enclosure.name}</b>`;
+    const c = sign.counts[0];
+    const slots = c ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: <b>${c.text.text}</b></div>` : '';
+    // der Tierfreund hier: Name, Stufe, und ob er sich gerade über Besuch freut (Streicheln geht wieder)
+    const friend = isPark(LEVEL_ID) ? this.friendOfSign(sign) : null;
+    const fb = friend && bondOf(friend);
+    const eats = fb && SPECIES_FOOD[fb.species];
+    const ready = fb && canPet(fb) && (!eats || canFeed(fb));
+    const fav = fb?.favoriteKnown && FEED_SORTS[fb.favorite] ? `<div class="sign-friend">${tr('Lieblingsfutter', 'Favorite food')}: <b>${FEED_SORTS[fb.favorite].name}</b></div>` : '';
+    const pr = fb && levelProgress(fb.points);
+    const next = pr && pr.level < pr.max
+      ? tr(`Noch ${pr.need} ${pr.need === 1 ? 'Punkt' : 'Punkte'} bis Stufe ${pr.level + 1}: ${levelText(fb.name, pr.level + 1)}`, `${pr.need} more ${pr.need === 1 ? 'point' : 'points'} to level ${pr.level + 1}: ${levelText(fb.name, pr.level + 1)}`)
+      : tr('Höchste Stufe erreicht!', 'Highest level reached!');
+    const progress = pr
+      ? `<div class="friend-progress"><span class="friend-level">${tr(`Stufe ${pr.level} von ${pr.max}`, `Level ${pr.level} of ${pr.max}`)}</span><span class="friend-bar${pr.level >= pr.max ? ' max' : ''}"><i style="width:${Math.round(pr.frac * 100)}%"></i></span></div><small class="friend-next">${next}</small>`
       : '';
-    const title = sign?.name ? `${sign.name} (${enclosure.name})` : enclosure.name;
-    return `<b>${title} · ${tr('Hier wohnen', 'Who lives here')}:</b>${rows.join('')}${slots}`;
+    const friendLine = fb
+      ? `<div class="sign-friend">${tr('Dein Freund', 'Your friend')}: <b>${fb.name}</b> <span class="hearts">${levelHearts(friendLevel(fb.points))}</span>${ready ? ` · ${tr(`${fb.name} freut sich über Besuch`, `${fb.name} would love a visit`)}` : ''}</div>${progress}${fav}`
+      : '';
+    // kompakt: nur der Hinweis, wie man die Tafel öffnet
+    if (!open) {
+      const how = isTouch() ? tr('Antippen', 'Tap') : `${ACTION_KEY} / Enter`;
+      const what = isPark(LEVEL_ID) && residents.length && !fb ? tr('Freund aussuchen', 'Pick a friend') : tr(`Hier wohnen: ${residents.length}`, `Living here: ${residents.length}`);
+      return `${head}${slots}${friendLine}<div class="sign-more">${what} · <b>${how}</b></div>`;
+    }
+    const close = `<div class="sign-close"><button type="button" data-close>${tr('Schließen', 'Close')}</button></div>`;
+    const hint = isPark(LEVEL_ID) && residents.length ? `<small class="sign-hint">${fb ? tr('Tippe ein Tier an, um es umzubenennen oder ein anderes zu wählen.', 'Tap an animal to rename it or choose another one.') : tr('Tippe ein Tier an und gib ihm einen Namen – dann ist es dein Freund.', 'Tap an animal and give it a name – then it is your friend.')}</small>` : '';
+    const list = residents.length
+      ? `<div class="sign-sub">${tr('Hier wohnen', 'Living here')}</div>${hint}<div class="sign-residents">${residents
+          .map((a, i) => {
+            // Beschriftung: der Name (benannte Tiere), der Name der Variante (seltene Tiere, Fischarten) oder der Tierart
+            const bond = bondOf(a);
+            const raw = bond?.name || (a.skin && skinInfo(a.species, a.skin)?.name) || (ANIMAL_INFO[a.species]?.[0] ?? a.species);
+            const label = raw[0].toUpperCase() + raw.slice(1);
+            const rare = a.skin && !skinInfo(a.species, a.skin)?.common;
+            const cls = `${a.baby ? ' baby' : ''}${rare ? ' rare' : ''}${isFriend(a) ? ' friend' : ''}`;
+            return `<button type="button" class="resident${cls}" data-resident="${i}"><span class="resident-pic">${this.residentPortrait(a, 3, redraw)}</span><small>${label}</small></button>`;
+          })
+          .join('')}</div>`
+      : `<div class="sign-sub">${tr('Hier wohnt noch niemand.', 'Nobody lives here yet.')}</div>`;
+    return head + slots + friendLine + list + close;
   }
 
   // Läuft man mit einem Tier in ein Gehege, das nicht zu ihm passt: kurzer Hinweis
@@ -6950,6 +7763,20 @@ export default class GardenScene extends Phaser.Scene {
       this.nearCar = near;
       this.updateToolbar();
     }
+    // Tierfreunde: Namensschilder, zum Zaun kommen, und ob man gerade einen streicheln kann
+    this.updateFriends(dt);
+    const friend = this.friendToPet();
+    if (friend !== this.nearFriend) {
+      this.nearFriend = friend;
+      this.updateToolbar();
+    }
+    // Besucherwünsche: Wunsch-Besucher in der Nähe, erfüllte Wünsche und der große Moment am Gehege
+    const wisher = this.leaving ? null : (this.visitors?.wishNear(this.player) ?? null);
+    if (wisher !== this.nearWish) {
+      this.nearWish = wisher;
+      this.updateToolbar();
+    }
+    this.updateWishes(dt);
     // am Gehegeschild oder im Gehege: die Werkzeugleiste zeigt "Gehege ausbauen"
     const penHere = this.penAtSign();
     if (penHere !== this.penHere) {

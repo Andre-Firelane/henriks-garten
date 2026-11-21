@@ -13,7 +13,9 @@ export function newStory(locks = true) {
 // umbenannte Aufgaben (alt → neu) und neue, die als erledigt gelten, wenn eine frühere schon erledigt ist (sonst würde
 // syncStory Spielstände, die schon weiter sind, auf die neue Aufgabe zurückwerfen)
 const STEP_RENAMES = { icecream: 'babies' };
-const DONE_WITH = { stands: 'upgrade' }; // (upgrade: die frühere Ausbau-Aufgabe; gibt es nicht mehr, syncStory springt zur nächsten)
+// (upgrade: die frühere Ausbau-Aufgabe; gibt es nicht mehr, syncStory springt zur nächsten. friend: der Tierfreund kam an ihre
+// Stelle; wer die Bude schon gebaut hat und nicht gerade bei dieser Aufgabe ist, muss nicht zurück)
+const DONE_WITH = { stands: 'upgrade', friend: 'stands' };
 
 // beim Laden: die aktive Aufgabe steht auch mit Namen im Spielstand (id) – kommen Aufgaben dazu oder fallen weg, stimmt so
 // die Nummer wieder (eine weggefallene: die erste danach, die noch nicht erledigt ist)
@@ -21,7 +23,7 @@ export function syncStory() {
   const s = game.story;
   s.done = s.done.map((id) => STEP_RENAMES[id] ?? id);
   if (STEP_RENAMES[s.id]) s.id = STEP_RENAMES[s.id];
-  for (const [id, after] of Object.entries(DONE_WITH)) if (s.done.includes(after) && !s.done.includes(id)) s.done.push(id);
+  for (const [id, after] of Object.entries(DONE_WITH)) if (s.done.includes(after) && !s.done.includes(id) && s.id !== id) s.done.push(id);
   if (s.id === undefined) return (s.id = STEPS[s.step]?.id ?? null);
   if (s.id === null) return (s.step = STEPS.length); // alles geschafft
   let i = STEPS.findIndex((t) => t.id === s.id);

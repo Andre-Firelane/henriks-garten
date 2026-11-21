@@ -2746,9 +2746,7 @@ function enclosureSign(kinds) {
   o.rect(5, 12, 86, 3, hex('#c8935a'));
   o.rect(10, 18, 76, 45, hex('#e8c48a'));
   for (const x of [9, 85]) o.rect(x, 14, 3, 3, hex('#5e5a54')); // Nägel
-  // Schnüre, an denen es am Zaun hängt
-  o.line(18, 12, 26, 0, hex('#6a5a4a'));
-  o.line(78, 12, 70, 0, hex('#6a5a4a'));
+  // (ohne Schnüre: die Tafel ist direkt am Zaun bzw. Pfosten befestigt)
   o.outline(INK);
   const step = 76 / kinds.length;
   const size = kinds.length === 1 ? 1 : kinds.length === 2 ? 0.82 : 0.6;

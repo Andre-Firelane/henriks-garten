@@ -1318,6 +1318,8 @@ export default class Animal {
       this.petStill(); // Streichelzoo: ein Besucher streichelt es (siehe Visitor.js), es bleibt stehen
     } else if (this.feed) {
       moving = this.updateFeed(dt); // im Tierpark: zum Futter laufen und fressen
+    } else if (this.visit) {
+      moving = this.updateVisit(dt, player); // Tierfreund: zum Zaun, an dem Henrik steht (siehe src/world/friends.js)
     } else {
       const play = this.updateToy(dt); // im Gehege mit Spielzeug (zweite Ausbaustufe): ab und zu damit spielen
       moving = play ?? this.updateFree(dt, player);
@@ -1626,6 +1628,26 @@ export default class Animal {
     return false;
   }
 
+  // Tierfreund (ab Stufe 2): zum Platz am Zaun laufen, der Henrik am nächsten ist (visit.spot setzt die Szene), dort stehen
+  // bleiben und zu ihm schauen. Kommt es nicht weiter (Hindernis), bleibt es eben stehen, wo es ist
+  updateVisit(dt, player) {
+    const v = this.visit;
+    const dx = v.spot.x - this.x;
+    const dy = v.spot.y - this.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 4 && !v.stuck) {
+      const step = Math.min(d, this.kind.speed * 1.2 * dt);
+      const angle = Math.atan2(dy, dx);
+      for (const turn of [0, 0.5, -0.5, 1, -1]) {
+        if (this.move(Math.cos(angle + turn) * step, Math.sin(angle + turn) * step)) return true;
+      }
+      v.stuck = true;
+    }
+    if (Math.abs(player.x - this.x) > 2) this.faceX = player.x < this.x ? -1 : 1;
+    this.faceY = player.y < this.y ? -1 : 1;
+    return false;
+  }
+
   // Ist ein folgendes Tier an seinem Ziel angekommen? Nur in einem Gehege, das diese Tierart aufnimmt.
   arrivedHome() {
     const enclosure = this.enclosureFullyAt(this.x, this.y);
@@ -1732,7 +1754,8 @@ export default class Animal {
     // auf einer Bogenbrücke etwas höher; im Terrarium auf einem Sockel um dessen Höhe
     const lift = bridgeLift(this.x, this.y) + (this.state === 'penned' ? raiseAt(...Object.values(worldToTile(this.x, this.y))) : 0);
     const toy = this.toyLift ?? 0; // auf dem Spielzeug (Wachposten, Rutsche): höher, der Schatten bleibt am Boden
-    this.sprite.setPosition(this.x, this.y - hop - lift - toy + SPRITE_SINK);
+    const jump = this.jumpLift ?? 0; // Freudenhüpfer eines Tierfreunds (siehe friendHop in GardenScene)
+    this.sprite.setPosition(this.x, this.y - hop - lift - toy - jump + SPRITE_SINK);
     this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : this.toyAngle ?? 0);
     this.shadow.setPosition(this.x, this.y - lift);
     this.sprite.setDepth(this.y);

@@ -1,6 +1,34 @@
 # Plan: Freundschaft mit Tieren im Tierpark
 
-Stand: 20.11.2026, noch nicht umgesetzt.
+Stand: 21.11.2026. Schritt 1 und Schritt 2 sind gebaut (noch nicht committet).
+
+Abweichungen beim Bau von Schritt 2:
+- Nur die 7 vorhandenen Sorten (Grünfutter, Blätterzweig, Eicheln, Bananen, Knochen, Fisch, Fischfutter). Möhren und
+  Beeren fehlen, dafür braucht es erst Bilder.
+- Eine Sorte gilt als kennengelernt, sobald Henrik das passende Werkzeug draußen in der Hand hat. Ältere Spielstände
+  bekommen die Sorten der Tiere, die schon gefangen wurden (z. B. Giraffe → Grünfutter).
+- Noch nicht kennengelernte Sorten stehen als Schatten im Futterhaus („erst draußen finden“). Ausgegraut ist, was
+  keiner der Tierfreunde frisst.
+- Einige Arten haben nur eine passende Sorte (z. B. Katze: Fisch), Erdmännchen und Ameisenbär gar keine (nur streicheln).
+- Cheat L in Testspielen setzt zusätzlich alle Pausen der Tierfreunde zurück.
+- Code: FEED_SORTS, SPECIES_FOOD in src/world/friends.js, src/tools/HandFoodTool.js, openFeeder/feedFriend in GardenScene.
+
+Danach dazugekommen:
+- Fortschrittsbalken über dem Namensschild (wenn Henrik nah dran ist) und auf der Schildtafel „Stufe 2 von 5“, dazu
+  „Noch 5 Punkte bis Stufe 3: …“.
+- Mavis Aufgabe „friend“ (steps.js) an der Stelle der früheren Ausbau-Aufgabe, nach der Bude und vor der Savanne:
+  einem Tier einen Namen geben und es streicheln. Sie schaltet jetzt die Savanne frei. Spielstände, die schon weiter
+  sind, überspringen sie (DONE_WITH in story.js).
+- **Nur noch 3 Stufen** (statt 5, die Tabelle unten ist veraltet): Stufe 1 ab 0 Punkten (Name), Stufe 2 ab 4 (kommt zum
+  Zaun und läuft dort mit; im Gehege läuft es Henrik nach), Stufe 3 ab 10 (Besucher rufen den Namen und geben ein Herz
+  mehr, goldenes Namensschild, Eintrag im Tierbuch).
+
+Abweichungen beim Bau von Schritt 1:
+- **Ein Freund je Tierart und Gehege** statt einem je Gehege (jede Tierart hat jetzt ihr eigenes Schild).
+- Streicheln geht mit jedem Werkzeug in der Hand, nur nicht mit Futter aus dem Automaten (das wirft man weiter).
+- Henriks Hand wackelt beim Streicheln noch nicht; das Tier reagiert (stehen bleiben, zusammensacken, Herz).
+- Im offenen Streichelzoo kommt der Freund ab Stufe 2 direkt zu Henrik statt an den Zaun.
+- Code: src/world/friends.js, dazu die Abschnitte „Tierfreunde“ in GardenScene und updateVisit in Animal.js.
 
 ## Ziel
 
@@ -20,9 +48,10 @@ Gehege einen Namen, streichelt es und füttert es mit seinem Lieblingsfutter. So
 ## Benennen
 
 - **1 benanntes Tier pro Gehege.** Damit wird es nicht zu voll.
-- Das geschieht am **Gehegeschild**, nicht am Tier. Steht Henrik am Schild, erscheint die Tafel (`updateSign` in
-  GardenScene). Mit der Aktionstaste öffnet man dort heute den Gehegeausbau. Neu kommt dort ein zweiter Knopf
-  dazu: **„Freund benennen“**.
+- Das geschieht am **Gehegeschild**, nicht am Tier. Jede Tierart hat ihr eigenes Schild. Steht Henrik davor, erscheint
+  die Tafel (`updateSign`/`showSignPanel` in GardenScene): oben das Tier mit Wissen und Plätzen, darunter alle Tiere
+  dieser Art im Gehege als Knöpfe. Ein Knopf ruft heute nur `individualize(a)` auf (Platzhalter-Meldung); dort setzt
+  das Benennen an.
 - Ablauf:
   1. Ein Tier auswählen. Gleiche Tiere stehen nur einmal in der Liste („Schaf“, „Gefleckter Widder“). Welches Schaf es
      wird, ist egal. Seltene Varianten lassen sich so gezielt wählen.

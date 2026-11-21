@@ -57,6 +57,11 @@ const JUNGLE_KINDS = 2;
 const all = (game, list) => Object.entries(list).every(([s, n]) => caught(game, s) >= n);
 const listProgress = (game, list) => Object.entries(list).reduce((n, [s, k]) => n + Math.min(k, caught(game, s)), 0);
 const listTotal = (list) => Object.values(list).reduce((n, k) => n + k, 0);
+// Tierfreund-Aufgabe: 1, wenn ein Tier einen Namen hat, 2, wenn man es auch schon gestreichelt oder gefüttert hat
+const friendSteps = (game) => {
+  const bonds = Object.values(game.bonds ?? {});
+  return bonds.some((b) => b.points > 0) ? 2 : bonds.length ? 1 : 0;
+};
 
 export const STEPS = [
   {
@@ -180,7 +185,27 @@ export const STEPS = [
     already: [tr('Du hast ja schon eine Bude gebaut – lecker!', 'You’ve already built a stand – yummy!')],
     outro: [
       tr('Super! Die Besucher stehen schon an – jeder Verkauf bringt dir Herzen.', 'Great! The visitors are already queueing – every sale brings you hearts.'),
-      tr('Jetzt geht die Reise richtig los: Die Savanne ist offen! Fahr mit dem Auto hin, ich warte dort an der Hütte auf dich.', 'Now the journey really begins: the savanna is open! Drive there by car, I’ll wait for you at the hut.'),
+      tr('Komm mit zum Streichelzoo, ich möchte dir noch etwas Schönes zeigen!', 'Come along to the petting zoo, I’d like to show you something lovely!'),
+    ],
+    reward: 20,
+  },
+  {
+    // Tierfreund (an der Stelle der früheren Ausbau-Aufgabe, siehe DONE_WITH in story.js und src/world/friends.js)
+    id: 'friend',
+    at: { level: 'park', spot: 'sign' },
+    goal: tr('Gib einem Tier am Gehegeschild einen Namen und streichle es', 'Name an animal at an enclosure sign and pet it'),
+    progress: (game) => count(friendSteps(game), 2),
+    done: (game) => friendSteps(game) >= 2,
+    intro: [
+      tr('Hier am Schild siehst du, wer bei uns wohnt. Jede Tierart hat ihr eigenes Schild.', 'This sign shows who lives here. Every kind of animal has its own sign.'),
+      tr('Drück davor die Aktionstaste und such dir ein Tier aus. Gib ihm einen Namen – dann ist es dein Freund!', 'Press the action button in front of it and pick an animal. Give it a name – then it’s your friend!'),
+      tr('Danach geh zu ihm an den Zaun und streichle es.', 'Then go to it at the fence and pet it.'),
+    ],
+    already: [tr('Du hast ja schon einen Tierfreund! Wie schön.', 'You already have an animal friend! How lovely.')],
+    outro: [
+      tr('Schau, wie es sich freut! Je öfter du es besuchst, desto enger wird eure Freundschaft – über dem Namen siehst du, wie weit es noch bis zur nächsten Stufe ist.', 'Look how happy it is! The more often you visit, the closer your friendship gets – above the name you can see how far it is to the next level.'),
+      tr('Im Futterhaus am Futterautomaten gibt es auch Futter für deine Freunde. Probier aus, was dein Freund am liebsten frisst!', 'The food house at the feeder also has food for your friends. Find out what your friend likes best!'),
+      tr('Und jetzt geht die Reise richtig los: Die Savanne ist offen! Fahr mit dem Auto hin, ich warte dort an der Hütte auf dich.', 'And now the journey really begins: the savanna is open! Drive there by car, I’ll wait for you at the hut.'),
     ],
     reward: 20,
     unlocks: ['savanna'],
