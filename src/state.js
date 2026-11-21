@@ -40,6 +40,7 @@ export const game = {
   friends: {}, // Tierfreunde: benanntes Tier je Gehege und Tierart { 'pasture:sheep': uid } (siehe src/world/friends.js)
   bonds: {}, // ... und ihre Bindung je Tier: { uid: { name, species, points, pettedAt, since } }
   nextAnimalId: 1, // nächste freie feste Nummer für ein Tier
+  namings: 0, // so oft wurde schon ein Tier benannt (ab dem zweiten Mal kostet es Herzen, siehe nameCost in friends.js)
   wishes: { open: [] }, // Besucherwünsche: angenommene Wünsche { species, look, done } (siehe src/world/wishes.js)
   feedUnlocked: [], // Sorten im Futterhaus (erst, wenn man sie draußen kennengelernt hat)
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
@@ -84,6 +85,7 @@ export function resetGame() {
   game.friends = {};
   game.bonds = {};
   game.nextAnimalId = 1;
+  game.namings = 0;
   game.feedUnlocked = [];
   game.wishes = { open: [] };
 }

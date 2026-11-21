@@ -86,7 +86,9 @@ Ab Bindungsstufe 2 kommt das Tier von selbst zum Zaun, man muss es also kaum suc
 
 ### Pause statt Tageslimit
 
-- **20 Minuten Pause**, getrennt für Streicheln und Füttern.
+- **5 Minuten Pause**, getrennt für Streicheln und Füttern.
+- **Benennen kostet ab dem zweiten Mal Herzen:** das erste Mal frei, dann 10, 20, 30 … (jeder neue Freund oder neue
+  Name zählt; ein früheres Tier mit seinem alten Namen wieder wählen ist frei).
 - Die Pause läuft in echter Zeit (`Date.now()`) und steht im Spielstand. Sie läuft also auch weiter, wenn das Spiel
   geschlossen ist, und neu laden setzt sie nicht zurück.
 - Kommt man zu früh, dreht sich das Tier kurz weg, und es erscheint eine Meldung. Es gibt keine Bindung, aber auch
@@ -130,7 +132,7 @@ Ab Bindungsstufe 2 kommt das Tier von selbst zum Zaun, man muss es also kaum suc
 | 4 | 24 | folgt Henrik ein Stück am Zaun entlang, wenn er vorbeigeht |
 | 5 | 40 | goldenes Namensschild, Eintrag im Tierbuch („Lotta, seit 20. November bei dir, mag Eicheln“) |
 
-Alle 20 Minuten gibt es höchstens 4 Punkte. Stufe 2 erreicht man also schon beim ersten Besuch, Stufe 5 nach etwa
+Alle 5 Minuten gibt es höchstens 4 Punkte. Stufe 2 erreicht man also schon beim ersten Besuch, Stufe 5 nach etwa
 10 Besuchen.
 
 ## Technik

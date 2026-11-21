@@ -9,7 +9,7 @@ import { tr } from '../i18n.js';
 import { hasAnimalIcon } from '../ui/icons.js';
 
 export const MAX_WISHES = 2; // höchstens so viele angenommene Wünsche gleichzeitig
-export const WISH_HEARTS = 50; // Belohnung, wenn sich der Besucher am Gehege freut
+export const WISH_HEARTS = 30; // Belohnung, wenn sich der Besucher am Gehege freut
 export const WISH_CHANCE = 0.2; // so oft ist ein neu ankommender Besucher ein Wunsch-Besucher
 export const MAX_WISH_WALKERS = 2; // so viele Wunsch-Besucher (noch nicht angesprochen) laufen höchstens gleichzeitig herum
 export const WISH_TALK_DIST = 46; // so nah muss Henrik sein, um ihn anzusprechen (Kachel-Proportionen, y doppelt)

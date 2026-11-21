@@ -182,7 +182,7 @@ import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIconFit, animalIconSquare, animalIcons, hasAnimalIcon } from '../ui/icons.js';
 import { touchHandlers, setTouchTool, IS_PHONE, isTouch } from '../ui/touch.js';
-import { ensureFriendState, animalUid, bondOf, isFriend, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, FRIEND_LEVELS, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts } from '../world/friends.js';
+import { ensureFriendState, animalUid, bondOf, isFriend, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, FRIEND_LEVELS, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts, nameCost } from '../world/friends.js';
 import HandFoodTool from '../tools/HandFoodTool.js';
 import { closeWalkHint } from '../ui/walkHint.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
@@ -624,6 +624,7 @@ const TUT_SHEEP_R = 360; // ... so nah am Auto ...
 const TUT_SHEEP_CHECK = 2; // ... nachgeschaut wird alle paar Sekunden
 const PROMO_DELAY = 1200; // so lange nach der Ankunft im Tierpark, bis eine Tafel aufgeht (maybeShowPromo)
 let lastBookTab = 'animals'; // zuletzt offener Reiter im Tierbuch
+const visitorPics = {}; // Bilder der Besucher für den Aktionsknopf (siehe visitorPortrait)
 const QUEST_FOLD_KEY = 'my-little-zoo-quest-folded'; // Aufgaben-Karte eingeklappt (nur in diesem Browser)
 const AQUARIUM_TOUR = { tx: 3, ty: 16 }; // Ankunft vor der Aquariumtür (park2), wenn Mavi das Aquarium zeigt
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
@@ -2860,7 +2861,7 @@ export default class GardenScene extends Phaser.Scene {
     return best;
   }
 
-  // streicheln: das Tier bleibt stehen, dreht sich zu Henrik, sackt kurz zusammen, ein Herz steigt auf. Alle 20 Minuten
+  // streicheln: das Tier bleibt stehen, dreht sich zu Henrik, sackt kurz zusammen, ein Herz steigt auf. Alle 5 Minuten
   // (echte Zeit) einmal; kommt man zu früh, dreht es sich kurz weg – ohne Abzug
   petFriend(a) {
     const bond = bondOf(a);
@@ -2905,7 +2906,7 @@ export default class GardenScene extends Phaser.Scene {
     this.tweens.add({ targets: a, jumpLift: 9, duration: 150, yoyo: true, repeat: n - 1, ease: 'Sine.easeOut', onComplete: () => (a.jumpLift = 0) });
   }
 
-  // aus der Hand füttern (Futter aus dem Futterhaus): passendes Futter 1 Punkt, Lieblingsfutter 3 Punkte. Alle 20 Minuten
+  // aus der Hand füttern (Futter aus dem Futterhaus): passendes Futter 1 Punkt, Lieblingsfutter 3 Punkte. Alle 5 Minuten
   // (echte Zeit) einmal; zu früh oder Futter, das es nicht frisst: es dreht sich kurz weg, das Futter bleibt in der Hand
   feedFriend(a, sort = this.tool?.sort) {
     a ??= this.nearFriend;
@@ -3296,6 +3297,12 @@ export default class GardenScene extends Phaser.Scene {
     const home = this.homeCounts();
     const list = SPECIES_ORDER.filter((s) => !taken.has(s) && this.wishValid(s, home));
     return list.length ? Phaser.Utils.Array.GetRandom(list) : null;
+  }
+
+  // Bild eines Besuchers (erstes Bild seines Blatts, von vorn) für den Aktionsknopf; einmal je Aussehen erzeugt
+  visitorPortrait(look) {
+    visitorPics[look] ??= this.textures.getBase64(`visitor${look}`, 0);
+    return visitorPics[look];
   }
 
   // Wunsch-Besucher angesprochen
@@ -4082,8 +4089,9 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
     if (this.nearWish) {
-      setTouchTool(null, 'assets/hand.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/hand.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Ansprechen', 'Talk')}</span></div>`;
+      const img = this.visitorPortrait(this.nearWish.look);
+      setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Ansprechen', 'Talk')}</span></div>`;
       return;
     }
     if (this.nearFriend) {
@@ -7464,6 +7472,15 @@ export default class GardenScene extends Phaser.Scene {
     const a = view.animal;
     const typed = (this.signPanel.querySelector('.name-input')?.value ?? '').trim().slice(0, NAME_MAX);
     const name = typed || view.name || randomName(a.species);
+    // neuer Freund oder neuer Name: ab dem zweiten Mal kostet es Herzen (wieder das alte Tier mit seinem Namen: frei)
+    const changed = bondOf(a)?.name !== name;
+    const cost = changed ? nameCost() : 0;
+    if (cost > game.hearts) {
+      this.showToast(tr(`Dafür brauchst du <span class="heart">♥</span> ${cost}.`, `You need <span class="heart">♥</span> ${cost} for that.`));
+      return;
+    }
+    if (cost) this.addHearts(-cost);
+    if (changed) game.namings++;
     const uid = animalUid(a);
     const fresh = !game.bonds[uid];
     game.bonds[uid] ??= { species: a.species, points: 0, pettedAt: 0, since: Date.now() };
@@ -7494,7 +7511,7 @@ export default class GardenScene extends Phaser.Scene {
     const value = String(view.name ?? '').replace(/"/g, '&quot;');
     return `<div class="sign-head">${pic}<span><b>${bond ? tr('Neuer Name?', 'New name?') : tr('Wie soll es heißen?', 'What should it be called?')}</b><small>${kind}</small></span></div>
       <div class="name-row"><input class="name-input" type="text" maxlength="${NAME_MAX}" value="${value}" autocomplete="off" spellcheck="false"><button type="button" class="dice" data-dice aria-label="${tr('Namen würfeln', 'Roll a name')}" title="${tr('Namen würfeln', 'Roll a name')}">🎲</button></div>
-      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}</button></div>`;
+      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}${nameCost() ? ` <span class="heart">♥</span> ${nameCost()}` : ''}</button></div>`;
   }
 
   // Bild eines Tiers auf seinen sichtbaren Teil zugeschnitten (seltene Varianten mit eigenem Bild bzw. eingefärbt)

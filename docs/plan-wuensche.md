@@ -1,7 +1,8 @@
 # Plan: Besucherwünsche im Tierpark
 
 Stand: 21.11.2026, umgesetzt (Schritte 1 und 2, noch nicht committet; Code in src/world/wishes.js, Visitor.js, GardenScene.js). Angepasst: Wunsch-Besucher laufen frei herum, Tierbild mit Herz,
-mehrere gleichzeitig unterwegs, höchstens 2 angenommene Wünsche, 50 Herzen.
+mehrere gleichzeitig unterwegs, höchstens 2 angenommene Wünsche, 30 Herzen. Die Blase bleibt bis zum Schluss über dem
+Besucher (auch nach dem Ansprechen und beim großen Moment), als Erkennungszeichen.
 
 ## Ziel
 
@@ -29,7 +30,8 @@ Bewusst **ohne Stammgäste**: keine Namen, keine wiederkehrenden Figuren.
   Fuchs sehen!“
 - Der Wunsch kommt als **Wunschkarte** zu den Aufgaben, wie Mavis Aufgaben-Karte: „Ein Besucher wünscht sich einen
   Fuchs“, mit dem Hinweis aus dem Tierbuch, wo das Tier lebt.
-- Danach geht der Besucher ohne Blase weiter. Sein Aussehen wird gemerkt.
+- Danach geht der Besucher weiter, die Blase bleibt als Erkennungszeichen (ansprechen kann man ihn nicht mehr). Sein
+  Aussehen wird gemerkt.
 - Sind schon 2 Wünsche angenommen, zeigen Wunsch-Besucher keine Blase mehr, bis wieder ein Platz frei ist.
 - Spricht man ihn nicht an, geht er irgendwann wie jeder Besucher. Es kommen neue nach.
 
@@ -44,7 +46,7 @@ Bewusst **ohne Stammgäste**: keine Namen, keine wiederkehrenden Figuren.
   mit dem gemerkten Aussehen. Man sieht ihn ein paar Sekunden herbeilaufen.
 - Er geht zum Zaun und freut sich: mehrere Freudensprünge (Tween), Herzregen und die Sprechblase
   „Ein Fuchs! Danke!“.
-- **Belohnung:** 50 Herzen.
+- **Belohnung:** 30 Herzen.
 - Danach schaut er noch eine Weile und geht dann wie ein normaler Besucher.
 - Die Wunschkarte verschwindet.
 

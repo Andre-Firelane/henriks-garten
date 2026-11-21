@@ -235,10 +235,12 @@ export class Visitor {
 
   // --- Besucherwünsche ---
 
-  // er wünscht sich diese Tierart: Blase mit dem Tier und einem Herz über dem Kopf
-  setWish(species) {
+  // er wünscht sich diese Tierart: Blase mit dem Tier und einem Herz über dem Kopf. accepted: der Wunsch ist schon
+  // angenommen (die Blase bleibt bis zum Schluss als Erkennungszeichen, ansprechen kann man ihn nicht mehr)
+  setWish(species, accepted = false) {
     this.clearWish();
     this.wish = species;
+    this.wishAccepted = accepted;
     this.wishEl = document.createElement('div');
     this.wishEl.className = 'wish-bubble';
     this.wishEl.innerHTML = `${animalIcon(species, 1.8)}<span class="wish-heart">♥</span>`;
@@ -249,13 +251,20 @@ export class Visitor {
     this.wishEl?.remove();
     this.wishEl = null;
     this.wish = null;
+    this.wishAccepted = false;
   }
 
-  // Blase mitführen; versteckt, solange schon genug Wünsche angenommen sind (oder er im Riesenrad sitzt)
+  // noch nicht angesprochener Wunsch (dafür gilt die Obergrenze der angenommenen Wünsche)
+  get wishOpen() {
+    return !!this.wish && !this.wishAccepted;
+  }
+
+  // Blase mitführen; noch nicht angesprochene sind versteckt, solange schon genug Wünsche angenommen sind (und alle,
+  // während er im Riesenrad sitzt)
   placeWish() {
     const el = this.wishEl;
     if (!el) return;
-    const show = wishSlotFree() && this.phase !== 'ride' && this.chatTimer <= 0;
+    const show = (this.wishAccepted || wishSlotFree()) && this.phase !== 'ride' && this.chatTimer <= 0;
     if (show !== el.classList.contains('show')) el.classList.toggle('show', show);
     if (!show) return;
     const cam = this.scene.cameras.main;
@@ -264,10 +273,10 @@ export class Visitor {
     el.style.top = `${(this.y - 58 - cam.worldView.y) * cam.zoom * z}px`;
   }
 
-  // angesprochen: er erzählt von seinem Wunsch und bleibt kurz stehen
+  // angesprochen: er erzählt von seinem Wunsch und bleibt kurz stehen; die Blase bleibt
   tellWish() {
     const species = this.wish;
-    this.clearWish();
+    this.wishAccepted = true;
     this.chatTimer = WISH_CHAT_TIME;
     this.say(wishLine(species));
     return species;
@@ -805,7 +814,7 @@ export class VisitorCrowd {
   // ab und zu ist ein Besucher ein Wunsch-Besucher (nur im Tierpark, solange noch ein Wunsch angenommen werden kann)
   maybeWish(v) {
     if (!isPark(LEVEL_ID) || !wishSlotFree() || Math.random() > WISH_CHANCE) return;
-    const walkers = this.visitors.filter((u) => u.wish);
+    const walkers = this.visitors.filter((u) => u.wishOpen);
     if (walkers.length >= MAX_WISH_WALKERS) return;
     const taken = new Set([...walkers.map((u) => u.wish), ...openWishes().map((w) => w.species)]);
     const species = this.scene.pickWish?.(taken);
@@ -816,7 +825,7 @@ export class VisitorCrowd {
 
   // Wünsche, die inzwischen erfüllt sind (das Tier ist schon da), lösen sich auf
   pruneWishes() {
-    for (const v of this.visitors) if (v.wish && !this.scene.wishValid?.(v.wish)) v.clearWish();
+    for (const v of this.visitors) if (v.wishOpen && !this.scene.wishValid?.(v.wish)) v.clearWish();
   }
 
   // Wunsch-Besucher, den Henrik gerade ansprechen kann (der nächste)
@@ -825,7 +834,7 @@ export class VisitorCrowd {
     let best = null;
     let bestD = WISH_TALK_DIST;
     for (const v of this.visitors) {
-      if (!v.wish || v.gone || v.phase === 'ride') continue;
+      if (!v.wishOpen || v.gone || v.phase === 'ride') continue;
       const d = Math.hypot(v.x - p.x, (v.y - p.y) * 2);
       if (d < bestD) {
         best = v;
@@ -895,6 +904,7 @@ export class VisitorCrowd {
     }
     v.pen = e;
     v.thanks = wish.species;
+    v.setWish(wish.species, true); // wiederzuerkennen an seiner Blase
     v.goal = 'thank';
     v.phase = 'walk';
     v.visitsLeft = 1; // nach diesem Gehege geht er

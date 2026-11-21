@@ -16,7 +16,7 @@ import { tr } from '../i18n.js';
 export const FRIEND_LEVELS = [0, 4, 10];
 export const PET_POINTS = 1;
 // Pause nach dem Streicheln (echte Zeit: läuft auch weiter, wenn das Spiel zu ist, und neu laden setzt sie nicht zurück)
-export const PET_PAUSE = 20 * 60 * 1000;
+export const PET_PAUSE = 5 * 60 * 1000;
 
 export function friendLevel(points) {
   let level = 1;
@@ -31,6 +31,14 @@ export function ensureFriendState() {
   game.friends ??= {};
   game.bonds ??= {};
   game.nextAnimalId ??= 1;
+  game.namings ??= Object.keys(game.bonds).length; // (ältere Spielstände: jeder bisherige Freund zählt als ein Benennen)
+}
+
+// Benennen: das erste Mal ist frei, danach kostet jedes Benennen (neuer Freund oder neuer Name) NAME_STEP Herzen mehr
+export const NAME_STEP = 10;
+export function nameCost() {
+  ensureFriendState();
+  return game.namings * NAME_STEP;
 }
 
 // feste Nummer eines Tiers (bekommt es erst, wenn man es braucht: beim Benennen)

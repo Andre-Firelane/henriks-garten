@@ -101,6 +101,7 @@ export function loadSave() {
   if (!s.game.friends) game.friends = {}; // (ältere Spielstände: noch keine Tierfreunde)
   if (!s.game.bonds) game.bonds = {};
   if (!s.game.nextAnimalId) game.nextAnimalId = 1;
+  if (s.game.namings == null) game.namings = Object.keys(game.bonds).length; // jeder bisherige Freund zählt als ein Benennen
   if (!Array.isArray(game.wishes?.open)) game.wishes = { open: [] }; // (ältere Spielstände: noch keine Besucherwünsche)
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
