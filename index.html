@@ -891,13 +891,23 @@
       body.touch #decor-bar .key { display: none; }
       /* Tablet und Handy: oben unter den Knöpfen beginnen, damit der Aktionsknopf unten rechts frei bleibt */
       body.touch #decor-bar { top: 80px; transform: none; max-height: calc(100vh - 240px); }
-      /* Handy: schmaler, nur Bild und Anzahl */
+      /* Handy: quer am unteren Rand zwischen Joystick-Ecke (links unten frei) und Aktionsknopf, nur Bild und Anzahl;
+         Drehen links, Fertig rechts, die Teile dazwischen wischt man seitlich */
       @media (max-height: 500px), (max-width: 600px) {
-        #decor-bar { right: 6px; padding: 5px; gap: 4px; max-height: calc(100vh - 170px); }
+        #decor-bar, body.touch #decor-bar {
+          top: auto; bottom: 8px; left: 30%; right: 150px; transform: none; max-height: none;
+          flex-direction: row; align-items: center; padding: 5px; gap: 5px;
+        }
         #decor-bar .decor-title, #decor-bar .name { display: none; }
-        #decor-bar .decor-item { width: 52px; } #decor-bar .decor-item img { height: 28px; max-width: 44px; }
-        #decor-bar .decor-done { font-size: 12px; padding: 8px 2px; }
-        #decor-bar .decor-turn { width: 50px; height: 50px; font-size: 9px; } #decor-bar .decor-turn .turn-icon { font-size: 20px; }
+        #decor-bar .decor-items { flex-direction: row; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; gap: 5px; }
+        #decor-bar .decor-item { width: 50px; } #decor-bar .decor-item img { height: 28px; max-width: 42px; }
+        #decor-bar .decor-done { flex: none; font-size: 12px; padding: 10px 8px; }
+        #decor-bar .decor-empty { width: auto; flex: none; max-width: 90px; }
+        #decor-bar .decor-turn { position: static; flex: none; width: 46px; height: 46px; font-size: 9px; } #decor-bar .decor-turn .turn-icon { font-size: 20px; }
+      }
+      /* Handy hochkant: über dem Aktionsknopf, über die ganze Breite */
+      @media (max-width: 600px) and (orientation: portrait) {
+        #decor-bar, body.touch #decor-bar { left: 8px; right: 8px; bottom: 150px; }
       }
       #btn-campfire:disabled { opacity: 0.6; cursor: default; }
       /* Handy: nur das Symbol (sonst ragt der Knopf in die Meldungen oben in der Mitte) */
