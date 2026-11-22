@@ -8,6 +8,8 @@ import { currentSeason, firstSeason } from './season.js';
 import { storyAt } from '../story/story.js';
 import { sideHere, sideOverrides } from './sideMaps.js';
 import { PEN_TOYS, TOYS, toyKey } from './toys.js';
+import { DECOR, decorByChar, decorTiles, giveDecor, designablePen, ensureDecor } from './decor.js';
+import { slotsIn } from './shops.js';
 
 // leere Bauplätze (Buden, Riesenrad) erst ab Mavis Buden-Aufgabe zeigen – vorher lenken sie nur ab
 export const slotsShown = () => storyAt('stands');
@@ -254,6 +256,9 @@ export const OBJECTS = {
 };
 // Spielzeug und Deko ausgebauter Gehege (ⓐ …, siehe src/world/toys.js)
 for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: t.key ?? toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
+// selbst gesetzte Deko im Tierpark (❶ …, siehe src/world/decor.js)
+// (große Deko über 2×2 Kacheln: unsichtbar, ihr Bild zeichnet die Szene in der Mitte der Grundfläche; die übrigen Kacheln: V)
+for (const [id, d] of Object.entries(DECOR)) OBJECTS[d.char] = { key: d.key, originY: d.originY, solid: d.solid, hitbox: d.hitbox, sway: d.sway, floor: d.floor, decor: id, invisible: !!d.size };
 
 export let LEVEL_ID;
 export let LEVEL;
@@ -337,7 +342,14 @@ export function setLevel(id) {
   const put = (tx, ty, c) => (ROWS = ROWS.map((row, y) => (y === ty ? row.slice(0, tx) + c + row.slice(tx + 1) : row)));
   const shown = slotsShown();
   for (const s of LEVEL.buildSlots ?? []) if (game.builds?.[s.id] || shown) put(s.tx, s.ty, game.builds?.[s.id] ? 'V' : ':');
+  // umgestellte Buden: fest; passt ihr Platz nicht mehr (Umbau), kommen sie in die Deko-Taste
+  for (const s of slotsIn(id).filter((t) => t.moved)) {
+    if (ROWS[s.ty]?.[s.tx] === '.') put(s.tx, s.ty, 'V');
+    else game.booths[s.id] = { level: id, stored: true };
+  }
   // Riesenrad: Wiese freiräumen; gebaut sind die 2×2 Kacheln fest, sonst Baupflöcke
+  // Deko-Laden: seine Kacheln sind fest (sein Bild zeichnet GardenScene)
+  for (const t of decoShopTiles()) put(t.tx, t.ty, 'V');
   const w = LEVEL.wheelSlot;
   if (w && (game.builds?.[w.id] || shown)) {
     for (let ty = w.clear.ty0; ty <= w.clear.ty1; ty++) for (let tx = w.clear.tx0; tx <= w.clear.tx1; tx++) put(tx, ty, '.');
@@ -371,6 +383,7 @@ export function setLevel(id) {
     ROWS = rows.map((r) => r.join(''));
   }
   // ausgebaute Gehege: Spielzeug und Deko auf freie Kacheln im Gehege (noch nicht gebaute Gehege ausgenommen)
+  DECOR_RETURNED = 0;
   for (const e of LEVEL.enclosures ?? []) {
     if (!PEN_TOYS[e.id] || !isUpgraded(e) || !e.seed || e.free || e.pond) continue;
     if (e.unlock && !game.unlocked.includes(e.unlock)) continue;
@@ -382,7 +395,35 @@ export function setLevel(id) {
         if (at) rows[at.ty][at.tx] = TOYS[id].char;
       });
       ROWS = rows.map((r) => r.join(''));
+    } else if (designablePen(e)) {
+      // gestaltbares Gehege: Spielzeug dort, wo es gespeichert ist (man kann es umstellen); beim ersten Mal wie bisher
+      // verteilt und gemerkt. Passt ein Platz nicht mehr (Umbau), kommt das Spielzeug in die Deko-Taste
+      ensureDecor(); // (neues Spiel: die Deko-Daten gibt es erst ab hier)
+      const saved = game.decor.toys[e.id];
+      if (saved) {
+        game.decor.toys[e.id] = saved.filter((t) => {
+          const ok = !!TOYS[t.id] && ROWS[t.ty]?.[t.tx] === '.';
+          if (ok) ROWS[t.ty] = ROWS[t.ty].slice(0, t.tx) + TOYS[t.id].char + ROWS[t.ty].slice(t.tx + 1);
+          else returnToy(t);
+          return ok;
+        });
+      } else {
+        const out = [];
+        ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id], out);
+        game.decor.toys[e.id] = out;
+      }
     } else ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id]);
+  }
+  // selbst gesetzte Deko (nur Tierpark): nur auf Rasen; was dort nicht mehr passt (z. B. nach einem Umbau), wandert zurück
+  // in die Deko-Taste (DECOR_RETURNED zählt mit, die Szene zeigt einen Hinweis)
+  if (game.decor?.placed?.[id]?.length) {
+    game.decor.placed[id] = game.decor.placed[id].filter((d) => {
+      const tiles = DECOR[d.id] ? decorTiles(d) : [];
+      const ok = tiles.length > 0 && tiles.every((t) => ROWS[t.ty]?.[t.tx] === '.' && !reservedAt(t.tx, t.ty));
+      if (ok) tiles.forEach((t, i) => (ROWS[t.ty] = ROWS[t.ty].slice(0, t.tx) + (i ? 'V' : DECOR[d.id].char) + ROWS[t.ty].slice(t.tx + 1)));
+      else returnDecor(d);
+      return ok;
+    });
   }
   MAP_W = Math.max(...ROWS.map((r) => r.length));
   MAP_H = ROWS.length;
@@ -450,6 +491,16 @@ export function setLevel(id) {
     const sign = e.noSign ? null : e.signAt ?? (e.species && g ? (g.vertical ? { tx: g.tx, ty: g.ty + d } : { tx: g.tx + d, ty: g.ty }) : null);
     return { ...e, area: a, tiles, tileSet, gates, sign };
   });
+  // Deko in einem Gehege, das keine Deko erlaubt (z. B. ein später freigeschaltetes Gehege): zurück in die Deko-Taste
+  if (game.decor?.placed?.[id]?.length) {
+    game.decor.placed[id] = game.decor.placed[id].filter((d) => {
+      const pens = decorTiles(d).map((t) => anyPenAt(t.tx, t.ty));
+      if (pens.every((pen) => !pen || pen.decor || (designablePen(pen) && DECOR[d.id]?.pen))) return true;
+      decorTiles(d).forEach((t) => setTileChar(t.tx, t.ty, '.'));
+      returnDecor(d);
+      return false;
+    });
+  }
   FISHPOND_TILES = tilesWith('o');
   // Wasser in den wilden Teichen direkt am begehbaren Ufer, damit man sie mit dem Kescher erreicht
   KOI_WATER = tilesWith('~').filter(({ tx, ty }) => !inPen(tx, ty));
@@ -552,6 +603,67 @@ function freeTilesNear(chars) {
   return tiles;
 }
 
+// Kacheln des Deko-Ladens (LEVEL.decoShop: w×h ab tx/ty)
+export function decoShopTiles() {
+  const d = LEVEL.decoShop;
+  const out = [];
+  if (d) for (let dy = 0; dy < (d.h ?? 1); dy++) for (let dx = 0; dx < (d.w ?? 1); dx++) out.push({ tx: d.tx + dx, ty: d.ty + dy });
+  return out;
+}
+
+// Deko: zurück in die Deko-Taste (beim Aufbau der Karte, wenn sie nicht mehr passt)
+export let DECOR_RETURNED = 0;
+function returnDecor(d) {
+  if (DECOR[d.id]) giveDecor(d.id);
+  DECOR_RETURNED++;
+}
+function returnToy(t) {
+  if (TOYS[t.id]) giveDecor('toy:' + t.id);
+  DECOR_RETURNED++;
+}
+
+// Fläche eines Geheges, das erst später entsteht (unlocks, noch nicht freigeschaltet): dort darf keine Deko stehen.
+// Reserviert ist das Rechteck um alle Kacheln, die sich beim Freischalten ändern (das Kartenstück selbst reicht oft über
+// Wege und Rasen, die bleiben, wie sie sind)
+const unlockBoxes = new WeakMap();
+function unlockBox(u) {
+  if (unlockBoxes.has(u)) return unlockBoxes.get(u);
+  let box = null;
+  u.rows.forEach((r, dy) => [...r].forEach((c, dx) => {
+    const tx = u.tx + dx;
+    const ty = u.ty + dy;
+    if (c === charAt(tx, ty) || charAt(tx, ty) === ' ') return;
+    box = box
+      ? { tx0: Math.min(box.tx0, tx), tx1: Math.max(box.tx1, tx), ty0: Math.min(box.ty0, ty), ty1: Math.max(box.ty1, ty) }
+      : { tx0: tx, tx1: tx, ty0: ty, ty1: ty };
+  }));
+  unlockBoxes.set(u, box);
+  return box;
+}
+const openUnlocks = () => (LEVEL.unlocks ?? []).filter((u) => !game.unlocked.includes(u.id)).map(unlockBox).filter(Boolean);
+export function reservedAt(tx, ty) {
+  return openUnlocks().some((b) => tx >= b.tx0 && tx <= b.tx1 && ty >= b.ty0 && ty <= b.ty1);
+}
+// alle Kacheln dieser Flächen (zum Einfärben im Setzen-Modus)
+export function reservedTiles() {
+  const out = [];
+  for (const b of openUnlocks()) for (let ty = b.ty0; ty <= b.ty1; ty++) for (let tx = b.tx0; tx <= b.tx1; tx++) if (charAt(tx, ty) !== ' ') out.push({ tx, ty });
+  return out;
+}
+
+// Gehege an dieser Kachel, auch offene Bereiche (Wildpark, Safari, Streichelzoo), die enclosureAt nicht zählt
+export function anyPenAt(tx, ty) {
+  const key = tx + ',' + ty;
+  return ENCLOSURES.find((e) => e.tileSet.has(key)) ?? null;
+}
+
+// Deko live setzen bzw. wegnehmen (ohne die Karte neu aufzubauen): das Zeichen der Kachel tauschen
+export function setTileChar(tx, ty, c) {
+  if (!ROWS[ty] || tx < 0 || tx >= ROWS[ty].length) return;
+  ROWS[ty] = ROWS[ty].slice(0, tx) + c + ROWS[ty].slice(tx + 1);
+}
+export { decorByChar };
+
 export function charAt(tx, ty) {
   return ROWS[ty]?.[tx] ?? '.';
 }
@@ -568,7 +680,8 @@ export function isUpgraded(e) {
 // Spielzeug in ein Gehege stellen (rows: Kartenzeilen, seed: eine Kachel im Gehege, list: Spielzeug-Namen). Nur auf Gras
 // (.), dessen Nachbarn alle im Gehege liegen (nicht am Zaun oder Tor), das erste möglichst mittig, jedes weitere mit
 // möglichst viel Abstand zu den anderen. Gibt die neuen Zeilen zurück.
-function placeToys(rows, seed, list) {
+// out: dort landen die Plätze { id, tx, ty } (gestaltbare Gehege merken sie sich)
+function placeToys(rows, seed, list, out = null) {
   const grid = rows.map((r) => [...r]);
   const inside = new Set([seed.tx + ',' + seed.ty]);
   const todo = [seed];
@@ -609,6 +722,7 @@ function placeToys(rows, seed, list) {
     if (!best) break;
     picked.push(best);
     grid[best[1]][best[0]] = TOYS[id].char;
+    out?.push({ id, tx: best[0], ty: best[1] });
   }
   return grid.map((r) => r.join(''));
 }

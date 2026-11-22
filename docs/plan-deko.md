@@ -1,6 +1,6 @@
 # Plan: Deko im Tierpark frei setzen
 
-Stand: 20.11.2026, noch nicht umgesetzt.
+Stand: 22.11.2026. Schritte 1–5 und 7 sind umgesetzt (Setzen und Aufheben, Deko-Laden, Kollision, Gehege gestalten, Kisten, Buden umsetzen); von Schritt 6 die Abschlusskiste.
 
 ## Ziel
 
@@ -12,7 +12,7 @@ gelten als ausgebaut); die Deko ersetzt ihn.
 ## Grundsätze
 
 - **Nur im Tierpark**, in allen drei Abschnitten. Nicht in Aquarium und Reptilienhaus, nicht in der Wildnis.
-- **Deko-Laden im Haupthaus** gegen Herzen. Dazu kommen eine Grundausstattung, besondere Teile aus Kisten und Deko der
+- **Deko-Laden** (eigener Stand im Tierpark-Zentrum) gegen Herzen. Dazu kommen eine Grundausstattung, besondere Teile aus Kisten und Deko der
   Welten aus Expeditionen (siehe „Woher die Deko kommt“).
 - **Kein Tragen.** Man holt nichts an einer Kiste ab und läuft nicht hin und her.
 - **Raster statt pixelgenau:** Deko rastet auf Kacheln ein.
@@ -29,6 +29,9 @@ Busch aus `OBJECTS`.
   - in Gehegen (deren Ausstattung bleibt, wie sie ist). Offene Bereiche (`open`, z. B. der Wildpark) zählen nicht als
     Gehege: Dort darf man Deko setzen, die Lichtung ist dafür gedacht (siehe plan-wildpark.md).
   - auf Bauplätzen
+  - auf **reservierten Flächen** künftiger Gehege (Wolfswald, Flamingos und jedes spätere Gehege, das per `unlocks`
+    über die Karte gelegt wird). Reserviert ist das Rechteck um alle Kacheln, die sich beim Freischalten ändern. Sie
+    sind nur im Setzen-Modus sichtbar (leicht orange eingefärbt), im normalen Spiel bleibt die Überraschung. Steht beim Freischalten doch Deko im Weg, wandert sie zurück in die Deko-Taste (kurzer Hinweis).
   - direkt vor Toren, Gehegeschildern, Buden, dem Futterautomaten, dem Computer und dem Auto
   - auf Kacheln, auf denen schon etwas steht
 
@@ -43,17 +46,27 @@ Busch aus `OBJECTS`.
 
 ## Bedienung
 
-1. **Deko-Taste**: Sie ist überall im Tierpark da, neben den anderen Knöpfen (am PC eine eigene Taste).
-2. Sie öffnet ein Auswahlfeld im Stil der Werkzeugkiste (`openToolChest` in ui/toolChest.js) mit allen Deko-Teilen,
-   die man besitzt, jeweils mit Anzahl („Laterne ×3“). Gesetzte Teile zählen nicht mit.
-3. Nach der Auswahl ist Henrik im **Setzen-Modus**:
-   - Auf der Kachel vor ihm erscheint eine durchsichtige Vorschau. Grün heißt „passt“, rot heißt „geht hier nicht“.
-   - Mit der Aktionstaste wird das Teil gesetzt.
-   - **Das Teil bleibt ausgewählt**, solange man noch welche hat. So setzt man eine Reihe schnell hintereinander.
-   - Erneutes Drücken der Deko-Taste oder „Fertig“ im Auswahlfeld beendet den Modus.
-4. **Aufheben**: Mit leerer Hand an einer gesetzten Deko und der Aktionstaste wandert sie sofort zurück in die
-   Deko-Taste.
-5. Später vielleicht: Im Setzen-Modus eine Kachel in der Nähe antippen, dann landet die Deko dort. Das wird erst nach
+1. **Deko-Taste**: Sie ist überall im Tierpark da, oben rechts neben „Glücksbringer“ (am PC die Taste B). Sie schaltet
+   den **Setzen-Modus** direkt an und aus, ohne Auswahlfenster dazwischen.
+2. Im Setzen-Modus sieht man deutlich, dass er an ist:
+   - ein grüner Rahmen ums ganze Bild, die Deko-Taste leuchtet grün;
+   - rechts eine feste Leiste mit allen Deko-Teilen, die man besitzt (Bild, Anzahl), „Aufheben“ und einem grünen
+     „Fertig“. Am PC wählt man auch mit 1–9, 0 ist Aufheben, Esc ist Fertig. Auf Tablet und Handy beginnt die Leiste
+     oben unter den Knöpfen (der Aktionsknopf bleibt frei), auf dem Handy nur Bild und Anzahl;
+   - auf der Karte ist jede Kachel, auf die man bauen darf, leicht grün mit feinem Raster; die Flächen künftiger
+     Gehege sind orange gestreift.
+3. Auf der Kachel vor Henrik erscheint eine durchsichtige Vorschau, grün heißt „passt“, rot heißt „geht hier nicht“.
+   Mit der Aktionstaste wird das Teil gesetzt, und **es bleibt ausgewählt**, solange man noch welche hat. So setzt man
+   eine Reihe schnell hintereinander.
+4. **Drehen**: runder Knopf links neben der Leiste (am PC R). Die Bilder gibt es nur aus einer Blickrichtung, deshalb
+   wird das Teil gespiegelt; so zeigt eine Bank in die andere Schrägrichtung. Gespeichert als `flip`, beim Umstellen
+   bleibt die Drehung erhalten. Echte vier Richtungen bräuchten je Teil vier Bilder.
+5. **Aufheben**: nur im Setzen-Modus (sonst hebt man beim Vorbeilaufen aus Versehen etwas auf). Steht vor Henrik
+   eine gesetzte Deko, leuchtet sie gelb, und die Aktionstaste (am Tablet der Aktionsknopf) legt sie zurück in die
+   Deko-Taste. Danach ist sie gleich ausgewählt, so stellt man sie schnell um. Im Auswahlfeld gibt es dafür auch
+   „Aufheben“ (nichts ausgewählt). Nichts geht verloren (kein Verkaufen, kein Wegwerfen). Später vielleicht „Alles
+   einsammeln“ je Abschnitt.
+6. Später vielleicht: Im Setzen-Modus eine Kachel in der Nähe antippen, dann landet die Deko dort. Das wird erst nach
    dem Ausprobieren entschieden.
 
 Der Setzen-Modus darf andere Aktionen am selben Ort nicht schlucken. Steht Henrik zum Beispiel an einem Gehegeschild,
@@ -63,40 +76,53 @@ gilt die Aktionstaste wie bisher dem Schild, und die Vorschau ist rot.
 
 ### 1. Grundausstattung
 
-Hat jeder Spielstand von Anfang an, auch ältere beim Laden. Zum Beispiel:
+Hat jeder Spielstand von Anfang an, auch ältere beim Laden (`STARTER` in src/world/decor.js):
 - 2 Bänke
-- 4 Blumenbeete (rot und gelb)
-- 3 Laternen
+- 4 Blumenbeete (je 2 rote und gelbe)
+- 3 Laternen (vorerst die Steinlaterne aus dem Bambuswald, eine eigene Parklaterne kommt mit den neuen Bildern)
 - 2 Büsche
 - 1 kleiner Baum
-- 6 Wegsteine
+- Wegsteine kommen erst mit den neuen Bildern (Schritt 8), es gibt noch keins
 
-### 2. Deko-Laden im Haupthaus
+### 2. Deko-Laden (umgesetzt 21.11.2026)
 
-- Er steht im Haupthaus des Tierparks, neben dem Computer. Mit der Aktionstaste öffnet sich ein Auswahlfeld im Stil
-  der Werkzeugkiste, jedes Teil mit Bild und Preis in Herzen. Gekaufte Teile landen sofort in der Deko-Taste.
-- Im Laden gibt es die **allgemeine Deko** in beliebiger Menge: Bänke, Blumenbeete, Laternen, Büsche, Hecken, kleine
-  Bäume, Wegsteine, Brunnen.
-- Preise je nach Größe, zum Beispiel klein 5, mittel 15 und groß 40 Herzen. Das muss noch auf die Herzen-Einnahmen
-  abgestimmt werden (Herzregen = 50; der Gehegeausbau, früher 40 Herzen und jeder weitere 10 mehr, fällt weg).
+- Ein **eigener Marktstand** im Tierpark-Zentrum, oben am Haupthaus an der Ecke links neben dem E-Roller (Rasenstück
+  links vom Weg zur Tür), auf 2×2 Kacheln, damit man sofort sieht, dass es ihn gibt. Der linke Bauplatz für Buden, der
+  dort lag, ist dafür nach unten an den Hauptweg gezogen (wo der Stand zuerst stand); eine dort gebaute Bude zieht mit. Bild von Andre (Sprites/Dekoladen.webp,
+  freigestellt und verkleinert mit tools/deco-stand.py); das Schild am Stand zeigt Laterne, Blumen und Bank.
+- Davor zeigt die Werkzeugleiste „Deko-Laden“; Aktionstaste oder Antippen öffnet eine Tafel wie am Computer: jedes Teil
+  mit Bild, Preis, „Du hast … · aufgestellt …“ und „Kaufen“. **Die Tafel bleibt beim Kaufen offen**, so kauft man
+  schnell mehrere. Gekauftes liegt sofort in der Deko-Taste. Ist die Deko-Taste leer, verweist die Leiste auf den Laden.
+- Im Laden gibt es die **allgemeine Deko** in beliebiger Menge (sortiert nach Preis, `cost` in src/world/decor.js):
+  Blumen in fünf Farben 5, Busch 10, Bank 15, Laterne 15, Baum 25, Kirschbaum 30, Brunnen 50 Herzen. Das Sparschwein
+  (Glücksbringer) macht sie billiger wie alles im Tierpark. Hecken und Wegsteine fehlen noch (keine Bilder).
+- Die Preise sind ein erster Wurf; sie müssen noch auf die Herzen-Einnahmen abgestimmt werden (Herzregen = 50,
+  Wunsch erfüllt = 30).
 - **Gefundenes wird kaufbar:** Hat man ein Teil aus einer Kiste oder einer Expedition einmal bekommen, steht es danach
-  auch im Laden. Wer zum Beispiel einmal Bambus aus der Bambuswald-Expedition hat, kann sich dann eine ganze Reihe
-  kaufen und muss nicht zehnmal auf Expedition. So bleiben Kisten und Expeditionen besonders, und der Laden wächst mit.
+  auch im Laden (`game.decor.shop`, kommt mit Schritt 5 und 6).
 
-### 3. Kisten in der Wildnis: besondere Deko
+### 3. Kisten in der Wildnis: besondere Deko (umgesetzt 22.11.2026)
 
-- Neue Kartenart **„Deko“** neben dem seltenen Tier, dem Bonus und dem Glücksbringer (`kind: 'deco'`, siehe luck.js).
-- Darin gibt es Teile, die nicht von Anfang an im Laden stehen, zum Beispiel Pavillon, Blumenbogen, Vogelhäuschen,
-  Laternenkette und goldener Brunnen.
-- Eine Karte bringt 1–3 Stück, große Teile seltener und einzeln.
-- Für die Welten ohne Expedition (Wiese, Eiswelt, Riff) gibt es in deren Kisten zusätzlich Deko der eigenen Welt.
-  Das gilt nur, bis sie eine Expedition haben.
+- Neue Kartenart **„Deko“** (grün) neben dem seltenen Tier, dem Bonus und dem Glücksbringer (`kind: 'deco'` in luck.js,
+  Gewicht 0,3 neben 0,45 / 0,4 / 0,15). Nicht auf Expeditionen (die bekommen eigene Deko, Schritt 6).
+- **Baupläne** (Andre, 22.11.2026): Eine Deko-Karte bringt nicht das Teil, sondern seinen **Bauplan**. Ab dann steht es
+  im Deko-Laden und lässt sich dort kaufen, so oft man will (`learnBlueprint` in decor.js, `game.decor.shop`). Einen
+  Bauplan, den man schon hat, gibt es in keiner Kiste mehr. Gilt auch für die Abschlusskiste der Expeditionen.
+- **Besondere Deko** (`special`, aus allen Kisten, vorerst aus vorhandenen Bildern): Vogelhäuschen, Ziehbrunnen,
+  Bienenkorb, Trauerweide. Pavillon, Blumenbogen, Laternenkette und goldener Brunnen kommen mit neuen Bildern.
+- **Deko der Welt** (`world`) in den Welten ohne Expedition, solange sie keine haben:
+  Wiese: Sonnenblumen, Kürbisse, Vogelscheuche, Heuballen; Eiswelt: Eisblock, Eisstein; Riff: Koralle, Seestern.
+- Ihre Bilder lädt der Tierpark mit (levelGroups in BootScene: Pakete der Deko, die man hat oder die dort steht).
 
 ### 4. Expeditionen: Deko der Welt
 
 - Neue Wegkarte **„Deko“** bei der Wahl zwischen den Maps (`KINDS` in expedition.js), mit Deko der Welt der
   Expedition.
-- Die **Abschlusskiste** am Ende einer Expedition enthält immer ein Deko-Teil der Welt, gern ein großes oder seltenes.
+- **Abschlusskiste** (Andre, 22.11.2026, umgesetzt): Deko erst, wenn man alle Glücksbringer schon hat. Die Kiste zeigt
+  zuerst Glücksbringer, die man noch nicht hat; ist Platz, kommt der Schatz (100 Herzen) dazu, und die übrigen Plätze
+  füllen Baupläne der Deko dieser Welt auf (`finalChestDecor`): Wald: Farn, Fliegenpilze, Moosstamm, Felsbrocken;
+  Savanne: Termitenhügel, Akazie, Knochen, Felsen; Bambuswald: Bambus, Sonnenstein, Hohes Gras; Dschungel: Hibiskus,
+  Helikonie, Blattpflanze. Das Teil steht danach im Deko-Laden.
 
 ### Mögliche Deko je Welt (Bilder fast alle schon vorhanden)
 
@@ -112,6 +138,43 @@ Hat jeder Spielstand von Anfang an, auch ältere beim Laden. Zum Beispiel:
 
 Viele davon gibt es als Objekte der Wildnis-Maps schon. Neue Bilder braucht es vor allem für allgemeine Teile wie
 Bank, Brunnen, Pavillon und Blumenbogen.
+
+## Gehege gestalten (umgesetzt 22.11.2026)
+
+Ersetzt den abgeschalteten Gehegeausbau: den eigenen Tieren ein hübsches Zuhause bauen. Henrik geht dazu ins Gehege
+(durchs Tor) und setzt wie draußen auf die Kachel vor sich.
+
+- **Gestaltbar** (`designablePen` in src/world/decor.js): alle richtigen Gehege mit Tieren. Nicht: Teiche, frei laufende
+  Tiere, offene Bereiche (Safari: Jeeps; Streichelzoo: Besucher gehen hinein; der Wildpark erlaubt Deko wie draußen),
+  Streichelgehege (Katzenhaus) und Gehege mit festen Spielzeug-Plätzen (`toysAt`).
+- **Spielzeug wird beweglich:** Die Plätze des Spielzeugs stehen jetzt im Spielstand (`game.decor.toys`, beim ersten
+  Aufbau wie bisher verteilt). Im Setzen-Modus hebt man es auf; es liegt dann als eigenes Teil in der Deko-Taste und
+  passt nur in Gehege, zu denen es gehört (`PEN_TOYS`), z. B. der Wachposten nur zu den Erdmännchen. So finden die Tiere
+  es weiter (sie suchen ihr Spielzeug auf den Kacheln ihres Geheges).
+- **Deko im Gehege:** nur Natur (`pen: true`: Blumen, Busch, Baum, Kirschbaum), keine Bank, Laterne oder Brunnen.
+  Höchstens eine je 10 Kacheln des Geheges, mindestens 2 (`penDecorMax`); ist es voll, steht „Das Gehege ist voll“.
+  Später kommt die Deko der Welten dazu (Termitenhügel bei den Erdmännchen, Bambus beim roten Panda …).
+- **Schutz:** nicht auf Wasser, nicht neben Tor und Schild, feste Deko darf nichts abschneiden (dieselbe
+  Erreichbarkeitsprüfung wie draußen, sie läuft durch die Tore auch ins Gehege).
+- **Tierfreund:** Stellt man etwas in sein Gehege, steigt über ihm ein Herz auf. Nur ein Effekt, keine Herzen fürs
+  Konto (sonst lohnte sich Hin- und Herstellen).
+- Das Overlay hängt vom gewählten Teil ab: mit Spielzeug sind nur die Kacheln seines Geheges grün.
+
+## Buden umsetzen (umgesetzt 22.11.2026)
+
+- Im Setzen-Modus leuchtet eine gebaute Bude vor Henrik gelb; die Aktionstaste hebt sie auf. Sie liegt dann in der
+  Deko-Taste (ganz vorne in der Leiste) und ist gleich ausgewählt; ihr **Bauplatz ist wieder frei** (die Pflöcke stehen
+  wieder da, man kann dort eine andere Bude bauen). Drehen geht auch bei Buden.
+- Setzen nur **im selben Abschnitt**, nur draußen (nicht in Gehegen), **direkt am Weg** (eine Wegkachel daneben, dort
+  stellen sich die Besucher an) und mit **mindestens 3 Kacheln Abstand** zu anderen Buden und zum Deko-Laden. Die Leiste
+  unten sagt, was nicht passt: „Nur direkt am Weg“, „Zu nah an einer anderen Bude“, „Diese Bude steht hier schon“.
+- Höchstzahl: jede Sorte einmal je Abschnitt (also höchstens 5); eine aufgehobene Bude zählt mit.
+- Die Besucher berechnen Wege und Plätze vor den Buden beim Aufbau eines Abschnitts. Deshalb baut sich der Abschnitt
+  nach dem Aufheben und nach dem Setzen kurz neu auf („Die Bude wird umgestellt …“), und der Setzen-Modus geht danach
+  weiter. An der umgestellten Bude kauft gleich jemand ein.
+- Gespeichert in `game.booths` ({ Id: { level, tx, ty, flip } } bzw. { level, stored }); eine umgestellte Bude zählt wie
+  ein Bauplatz (`slotsIn` in shops.js). Passt ihr Platz nach einem Umbau nicht mehr, kommt sie in die Deko-Taste.
+- Das Riesenrad bleibt fest.
 
 ## Speichern
 
@@ -133,13 +196,21 @@ decor: {
 
 ## Umsetzung in Schritten
 
-1. **Setzen und Aufheben** mit Deko-Taste, Vorschau, erlaubtem Boden und Speichern, nur mit der Grundausstattung und
-   vorhandenen Bildern.
-2. **Deko-Laden** im Haupthaus mit Herzen-Preisen.
-3. **Kollision** großer Deko mit der Erreichbarkeitsprüfung.
-4. **Kisten**: Deko-Karte und besondere Deko, Gefundenes wird im Laden kaufbar.
-5. **Expeditionen**: Deko-Wegkarte, Abschlusskiste, Deko der Welten.
-6. **Neue Bilder** für Bank, Brunnen, Pavillon, Blumenbogen und Co.
+1. ✔ **Setzen und Aufheben** mit Deko-Taste, Vorschau, erlaubtem Boden, reservierten Flächen und Speichern, nur mit
+   der Grundausstattung und vorhandenen Bildern. Die Erreichbarkeitsprüfung für feste Deko (eigentlich Schritt 3) ist
+   schon dabei, sonst könnte eine Bank einen Weg versperren.
+2. ✔ **Deko-Laden** als Stand im Zentrum mit Herzen-Preisen.
+3. ✔ **Kollision** großer Deko mit der Erreichbarkeitsprüfung (kam schon mit Schritt 1).
+4. ✔ **Gehege gestalten**.
+5. ✔ **Kisten**: Deko-Karte und besondere Deko, Gefundenes wird im Laden kaufbar.
+6. **Expeditionen**: ✔ Abschlusskiste (Deko erst ohne offene Glücksbringer); offen: Deko-Wegkarte.
+7. ✔ **Buden umsetzen**.
+8. ✔ **Neue Bilder**: Blumenbogen, Lampionpfosten, Pavillon (2×2 Kacheln, `size: 2`), Schneemann und Anker von Andre
+   (scenario-assets (7), verarbeitet mit tools/decor-sprites.py); Wegsteine (Grundausstattung, ältere Spielstände
+   bekommen 6 dazu) noch Platzhalter (tools/decor-placeholders.py, zum Überarbeiten in Claude-Sprites/Deko).
+   Die fünf gibt es nur als Bauplan aus Kisten, danach im Laden.
+   **Vorerst nicht im Sortiment** (Andre, 22.11.2026): Parklaterne (die Laterne bleibt die Steinlaterne), Hecke und
+   goldener Brunnen; ihre Platzhalter bleiben in Claude-Sprites/Deko.
 
 Jeder Schritt wird auf dem Testport geprüft. Der Tablet-Server bleibt unberührt, und es wird erst nach „GO“
 committet.

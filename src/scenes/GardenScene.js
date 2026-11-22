@@ -56,7 +56,10 @@ import { raiseAt,
   bridgeArch,
   slotsShown,
   biomeOf,
+  DECOR_RETURNED,
 } from '../world/map.js';
+import DecorMode from '../world/DecorMode.js';
+import { DECOR, ensureDecor, giveDecor, placedIn, shopDecor, finalChestDecor } from '../world/decor.js';
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
 import { tr, locale } from '../i18n.js';
@@ -87,7 +90,7 @@ import Fox from '../animals/Fox.js';
 import Sheep from '../animals/Sheep.js';
 import Koi from '../animals/Koi.js';
 import { afterPaint, hideLoading, setLoadingBackground, setLoadingProgress, showLoading } from '../ui/loading.js';
-import { EVENT_GROUPS, groupsLoaded, levelGroups, whenGroupsLoaded } from './BootScene.js';
+import { EVENT_GROUPS, groupOfKey, groupsLoaded, levelGroups, whenGroupsLoaded } from './BootScene.js';
 import ReefFish from '../animals/ReefFish.js';
 import Piranha from '../animals/Piranha.js';
 import Iguana from '../animals/Iguana.js';
@@ -156,7 +159,7 @@ import { CALLED_UNITS, RUN_LENGTH, planMap, wagonCageCount, cageSize, fitsWagon,
 import { isWagonOpen, openChoice, openConfirm, openWagon } from '../ui/wagon.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen, openLuckPicker } from '../ui/luckPicker.js';
-import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, sourceDef, wheelSlot } from '../world/shops.js';
+import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, slotsIn, sourceDef, wheelSlot } from '../world/shops.js';
 import FerrisWheel from '../world/FerrisWheel.js';
 import { PEN_TOYS, toysText } from '../world/toys.js';
 import Crocodile from '../animals/Crocodile.js';
@@ -189,7 +192,7 @@ import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
-import { countCatch, countChestPick, countEvent, countExpCard, countExpStep, countPromo, sessionLoaded } from '../sessions.js';
+import { countCatch, countChestPick, countEvent, countExpCard, countExpStep, countPark, countPromo, sessionLoaded } from '../sessions.js';
 import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
@@ -940,6 +943,7 @@ export default class GardenScene extends Phaser.Scene {
     const ground = []; // Bodenkacheln [x, y, Bild]: werden unten in wenige große Flächen gemalt (schneller auf dem Tablet)
     const thicketImages = new Map();
     const swayPlants = new Map(); // Pflanzen, die sich wiegen, wenn man hindurchläuft (siehe Sway.js)
+    this.decorImages = new Map(); // selbst gesetzte Deko: "tx,ty" → Bild (siehe DecorMode.js)
     this.crownImages = new Map();
     this.waterfalls = [];
     // fließender Fluss (LEVEL.flow): seine Wasserkacheln sind eigene Bilder, deren Bild reihum wechselt (siehe animateFlow)
@@ -1050,6 +1054,7 @@ export default class GardenScene extends Phaser.Scene {
           const shift = obj.depthAlways ?? (buildingAt(tx, ty) || obj.styled ? obj.depthShift ?? 0 : 0);
           const img = this.add.image(x, y - raiseAt(tx, ty), key).setOrigin(obj.originX ?? 0.5, obj.originY).setDepth(obj.depthFixed ?? (obj.floor ? -99990 : y + shift));
           if (obj.thicket) thicketImages.set(`${tx},${ty}`, img);
+          if (obj.decor || obj.toy) this.decorImages.set(`${tx},${ty}`, img); // (Spielzeug lässt sich in Gehegen umstellen)
           if (obj.sway) swayPlants.set(`${tx},${ty}`, { img, deg: obj.sway, obj });
           if (charAt(tx, ty) === 'J') this.crownImages.set(`${tx},${ty}`, img); // Urwaldbäume: die Krone raschelt (Brüllaffen) // Dickicht: das Bild wechselt, wenn es geschlagen wird und nachwächst
           if (obj.waterfall) {
@@ -1187,7 +1192,11 @@ export default class GardenScene extends Phaser.Scene {
       const y = at0.y;
       // immer vor dem Tor (und dem Zaun) zeichnen, damit nichts das Schild verdeckt (nur Tore in der Nähe: die Safari hat
       // Tore weit weg, vor denen das Schild sonst über allem läge)
-      const nearGates = e.gates.filter((g) => Math.abs(g.tx - at.tx) + Math.abs(g.ty - at.ty) <= 6);
+      // ohne Zaun (Teich ohne Zaun) oder mit eigenem Platz abseits vom Zaun (signAt, z. B. im Wildpark an der Weggabelung):
+      // das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
+      const onFence = fence ?? (only && extra ? !!fenceAxisAt(at.tx, at.ty) : e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty)));
+      // ein Schild auf eigenem Pfosten steht für sich: Tiefe nach seinem Fuß, damit die Spielfigur davor über ihm liegt
+      const nearGates = onFence || e.signOnGlass ? e.gates.filter((g) => Math.abs(g.tx - at.tx) + Math.abs(g.ty - at.ty) <= 6) : [];
       let front = Math.max(y, ...nearGates.map((g) => tileToWorld(g.tx, g.ty).y)) + 2;
       if (e.dark) front = DARK_DEPTH + 20; // im dunklen Raum über der Abdunklung, damit man es lesen kann
       // signOnRoof: das Schild sitzt oben auf dem Dach des Gebäudes (z. B. Katzenhaus), damit man es von weitem sieht
@@ -1202,9 +1211,6 @@ export default class GardenScene extends Phaser.Scene {
         sy = c.y - 78; // über dem First
         front = tileToWorld(house.tx1, house.ty1).y + TILE_H + 2; // vor dem Dach
       }
-      // ohne Zaun (Teich ohne Zaun) oder mit eigenem Platz abseits vom Zaun (signAt, z. B. im Wildpark an der Weggabelung):
-      // das Schild steht auf einem eigenen Holzpfosten (an den Wassertanks hängt es an der Scheibe)
-      const onFence = fence ?? (only && extra ? !!fenceAxisAt(at.tx, at.ty) : e.gates.length && !(e.signAt && !fenceAxisAt(e.signAt.tx, e.signAt.ty)));
       // mitten an einem Zaun (nicht neben einem Tor, z. B. die Schilder am Fußweg der Safari oder das zweite Schild eines
       // gemeinsamen Geheges): vor dem nächsten Zaunpfosten zeichnen, sonst verdeckt er die Zahl darunter
       if (onFence && (extra || fence || e.signAt)) front = Math.max(front, y + TILE_H / 2 + 2);
@@ -1248,6 +1254,7 @@ export default class GardenScene extends Phaser.Scene {
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
     this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
+    this.drawDecoShop(); // Deko-Laden (Tierpark-Zentrum)
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
     this.lantern = null; // abgestellte Moorlaterne (siehe placeLantern)
@@ -1509,6 +1516,28 @@ export default class GardenScene extends Phaser.Scene {
       e.stopPropagation();
       this.luck.campfire();
     };
+    // Deko-Taste (nur im Tierpark): Deko aussuchen, setzen und aufheben (siehe src/world/DecorMode.js)
+    // große Deko (2×2 Kacheln, z. B. der Pavillon): die Karte zeichnet sie nicht selbst (unsichtbares Zeichen)
+    for (const d of placedIn(LEVEL_ID)) if (DECOR[d.id]?.size) this.drawDecor(d.tx, d.ty);
+    this.decor = new DecorMode(this);
+    const decorBtn = document.getElementById('btn-decor');
+    // Steinlaterne als Bild (wie das Kleeblatt am Glücksbringer-Knopf); auf dem Handy nur das Bild
+    decorBtn.innerHTML = `${iconImg('hd/stone_lantern').replace('class="luck-img"', 'class="decor-icon"')}<span class="btn-label">${tr('Deko', 'Decor')}</span>`;
+    decorBtn.setAttribute('aria-label', tr('Deko', 'Decor'));
+    decorBtn.classList.toggle('show', this.decor.enabled);
+    decorBtn.classList.remove('on');
+    decorBtn.onclick = (e) => {
+      e.stopPropagation();
+      this.decor.toggle();
+    };
+    // nach dem Umstellen einer Bude: Setzen-Modus weiter (mit Blickrichtung), und dort kauft gleich jemand ein
+    if (data.decorResume) {
+      if (data.decorResume.face) Object.assign(this.player, { faceX: data.decorResume.face.x, faceY: data.decorResume.face.y });
+      this.decor.flip = !!data.decorResume.flip;
+      this.decor.start(data.decorResume.sel);
+    }
+    if (data.boothMoved) this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.boothMoved));
+    if (DECOR_RETURNED) this.time.delayedCall(600, () => this.showToast(tr(`${DECOR_RETURNED}× Deko ist zurück in der Deko-Taste.`, `${DECOR_RETURNED}× decor is back in the decor button.`)));
     this.signPanel.classList.remove('show');
     this.updateHud();
     this.updateToolbar();
@@ -1556,7 +1585,7 @@ export default class GardenScene extends Phaser.Scene {
     this.drawArches();
 
     // ESC (oder der Menü-Knopf oben rechts) öffnet das Menü: speichern, zurück zum Startbildschirm
-    this.input.keyboard.on('keydown-ESC', () => this.openGameMenu());
+    this.input.keyboard.on('keydown-ESC', (e) => e?.timeStamp !== this.decor?.escAt && this.openGameMenu()); // (Esc im Setzen-Modus beendet nur ihn)
     saveHandlers.snapshot = () => this.saveGame();
     // Werkzeug einsetzen (wenn man eins hat): E, Enter oder der Aktionsknopf auf dem Tablet
     const useTool = (event) => {
@@ -1607,6 +1636,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearSlot && !this.tool && !this.leaving) {
         this.openEventsPanel(null, this.nearSlot.slot.id); // am Bauplatz: Bude aussuchen
+        return;
+      }
+      if (this.nearDecoShop && !this.leaving) {
+        this.openDecoShop(); // am Deko-Laden: Deko kaufen
         return;
       }
       if (this.nearWish && !this.leaving) {
@@ -1675,6 +1708,8 @@ export default class GardenScene extends Phaser.Scene {
         this.showToast(tr('✂️ Das Netz ist zu fest – hol die Schere aus dem Sack am Anker.', '✂️ The net is too strong – get the scissors from the bag at the anchor.')); // mit der Schere schneidet der Werkzeug-Einsatz
         return;
       }
+      // Setzen-Modus (Deko-Taste): Deko setzen bzw. aufheben statt Werkzeug oder Absteigen
+      if (this.decor?.on && !this.leaving && this.decor.act()) return;
       // auf dem E-Roller: jede andere Aktion (oben) und das Werkzeug haben Vorrang, sonst steigt man ab
       if (this.driving && !this.tool && !this.leaving) {
         this.getOffScooter();
@@ -1700,6 +1735,8 @@ export default class GardenScene extends Phaser.Scene {
     // Glücksbringer ansehen bzw. (im Tierpark) wechseln: Taste G; Lagerfeuer (Glücksbringer): Taste F
     this.input.keyboard.on('keydown-G', () => this.showCharms());
     this.input.keyboard.on('keydown-F', () => this.luck.campfire());
+    // Deko-Taste: B
+    this.input.keyboard.on('keydown-B', () => this.decor?.toggle());
     // Cheat zum Testen: K stellt in dieser Welt sofort neue Kisten auf
     this.input.keyboard.on('keydown-K', () => {
       if (!this.luck.enabled) return;
@@ -3356,6 +3393,7 @@ export default class GardenScene extends Phaser.Scene {
     const i = open.findIndex((w) => w.species === s && w.done);
     if (i < 0) return;
     open.splice(i, 1);
+    countPark('wishes'); // für die Statistik
     this.addHearts(WISH_HEARTS, s);
     this.updateQuestCard();
     // die Tafel erst nach den Freudensprüngen (sonst verdeckt sie den Besucher)
@@ -3595,6 +3633,113 @@ export default class GardenScene extends Phaser.Scene {
     this.babiesOn = false;
   }
 
+  // Setzen-Modus: eine Bude wurde aufgehoben bzw. umgestellt – den Abschnitt neu aufbauen (die Besucher berechnen Wege und
+  // Plätze vor den Buden beim Aufbau); danach geht der Setzen-Modus weiter (resume: { sel, flip }), und an einer
+  // umgestellten Bude (booth) kauft gleich jemand ein
+  rebuildForDecor(resume, booth = null) {
+    this.saveLevelState();
+    const arrive = worldToTile(this.player.x, this.player.y);
+    const face = { x: this.player.faceX, y: this.player.faceY };
+    this.leaving = true;
+    this.cameras.main.fadeOut(200);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      showLoading(tr('Die Bude wird umgestellt …', 'Moving the stand …'));
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, decorResume: { ...resume, face }, boothMoved: booth }));
+    });
+  }
+
+  // Deko-Laden: großer Marktstand (w×h Kacheln, Bild aus tools/deco-stand.py: Fußpunkt = Mitte der Grundfläche); davor
+  // öffnet die Aktionstaste (oder Antippen) den Laden
+  drawDecoShop() {
+    this.decoShop = null;
+    const at = LEVEL.decoShop;
+    if (!at) return;
+    const { x, y } = tileToWorld(at.tx + ((at.w ?? 1) - 1) / 2, at.ty + ((at.h ?? 1) - 1) / 2);
+    const front = tileToWorld(at.tx + (at.w ?? 1) - 1, at.ty + (at.h ?? 1) - 1).y; // vorderste Kachel: davor steht man vor dem Stand
+    const img = this.add.image(x, y, 'deco_stand').setOrigin(0.501, 0.778).setDepth(front);
+    img.setInteractive({ useHandCursor: true, pixelPerfect: false }).on('pointerdown', () => this.nearDecoShop && this.openDecoShop());
+    this.decoShop = { x, y };
+  }
+
+  // Deko-Laden: Tafel mit allen Teilen und Preisen; kaufen, ohne dass sie zugeht
+  openDecoShop() {
+    if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
+    this.scene.pause();
+    openEvents(
+      () => ({ hearts: game.hearts, deco: this.decoOffers() }),
+      (_tab, id) => this.buyDecor(id),
+      () => this.scene.resume(),
+      { tab: 'deco', single: true, title: tr('Deko-Laden', 'Decor Shop') },
+    );
+  }
+
+  // Angebot des Deko-Ladens: Teile mit Preis und wie viele man schon hat
+  decoOffers() {
+    const owned = ensureDecor().owned;
+    return shopDecor().map((id) => {
+      const def = DECOR[id];
+      const placed = PARK_LEVELS.reduce((n, l) => n + placedIn(l).filter((d) => d.id === id).length, 0);
+      return {
+        id,
+        name: def.name,
+        image: def.key,
+        cost: price(def.cost),
+        text: tr(`Du hast ${owned[id] ?? 0} · aufgestellt ${placed}`, `You have ${owned[id] ?? 0} · placed ${placed}`),
+        blocked: game.hearts < price(def.cost) ? tr('zu wenig Herzen', 'not enough hearts') : null,
+      };
+    });
+  }
+
+  // Bild einer Deko, das noch nicht geladen ist (aus dem Paket einer anderen Welt, z. B. der Schneemann): kurz laden, dann
+  // weiter (then)
+  ensureDecorArt(key, then = () => {}) {
+    if (!key || this.textures.exists(key)) return then();
+    const group = groupOfKey(key);
+    if (!group || groupsLoaded([group])) return then();
+    this.afterGroupsLoaded([group], then);
+  }
+
+  buyDecor(id) {
+    const def = DECOR[id];
+    if (!def || game.hearts < price(def.cost)) return;
+    game.hearts -= price(def.cost);
+    giveDecor(id, 1);
+    this.updateHud();
+    if (this.decor?.on) this.decor.renderBar();
+  }
+
+  // selbst gesetzte Deko (DecorMode): Bild an dieser Kachel zeichnen bzw. wieder wegnehmen (die Karte selbst ändert DecorMode)
+  drawDecor(tx, ty) {
+    const obj = objectAt(tx, ty);
+    if (!obj?.decor && !obj?.toy) return null;
+    // große Deko (2×2 Kacheln): in der Mitte der Grundfläche, Tiefe der vordersten Kachel
+    const n = (obj.decor && DECOR[obj.decor].size) || 1;
+    const { x, y } = tileToWorld(tx + (n - 1) / 2, ty + (n - 1) / 2);
+    const depth = obj.floor ? -99990 : tileToWorld(tx + n - 1, ty + n - 1).y;
+    const img = this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(depth);
+    this.decorImages.set(`${tx},${ty}`, img);
+    if (obj.sway) this.sway.plants.set(`${tx},${ty}`, { img, deg: obj.sway, obj });
+    return img;
+  }
+
+  removeDecor(tx, ty) {
+    const k = `${tx},${ty}`;
+    const img = this.decorImages.get(k);
+    if (!img) return;
+    this.decorImages.delete(k);
+    const plant = this.sway.plants.get(k);
+    if (plant) this.sway.active.delete(plant);
+    this.sway.plants.delete(k);
+    this.cullables = this.cullables.filter((o) => o !== img);
+    this.tweens.add({ targets: img, alpha: 0, scale: img.scale * 0.6, duration: 180, onComplete: () => img.destroy() });
+  }
+
+  // Setzen-Modus: steht Henrik an etwas, dem die Aktionstaste gilt (Schild, Futterhaus, Tierfreund …)? Dann ist die
+  // Vorschau rot, und die Taste bleibt bei der anderen Aktion
+  decorBusy() {
+    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearDecoShop || this.nearWish || this.nearFriend || this.shownSign || this.nearCar || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
+  }
+
   // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
   drawShops() {
     this.shopSlots = [];
@@ -3607,7 +3752,7 @@ export default class GardenScene extends Phaser.Scene {
       this.shopSlots.push({ slot: w, x, y, kind: null, wheel: true });
       this.drawSlotSign(w, x, y, 'wheel_ring');
     }
-    for (const slot of LEVEL.buildSlots ?? []) {
+    for (const slot of slotsIn(LEVEL_ID)) {
       const { x, y } = tileToWorld(slot.tx, slot.ty);
       const kind = builtOn(slot.id);
       if (!kind && !slotsShown()) continue; // vor Mavis Ausbau-Aufgabe noch keine leeren Bauplätze
@@ -3617,8 +3762,9 @@ export default class GardenScene extends Phaser.Scene {
         continue;
       }
       const def = shopDef(kind);
-      this.add.image(x, y, def.stand).setOrigin(0.5, 100 / 128).setScale(0.7).setDepth(y);
-      this.add.sprite(x + 8, y - 10, def.seller, 1).setOrigin(0.5, 112 / 116).setScale(0.5).setDepth(y - 6);
+      const stand = this.add.image(x, y, def.stand).setOrigin(0.5, 100 / 128).setScale(0.7).setDepth(y).setFlipX(!!slot.flip);
+      this.add.sprite(x + (slot.flip ? -8 : 8), y - 10, def.seller, 1).setOrigin(0.5, 112 / 116).setScale(0.5).setDepth(y - 6).setFlipX(!!slot.flip);
+      this.decorImages?.set(`${slot.tx},${slot.ty}`, stand); // (im Setzen-Modus leuchtet sie zum Aufheben auf)
     }
   }
 
@@ -4082,6 +4228,11 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${this.driving ? tr('Absteigen', 'Get off') : tr('Aufsteigen', 'Get on')}</span></div>`;
       return;
     }
+    if (this.nearDecoShop) {
+      setTouchTool(null, 'assets/deco_stand.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/deco_stand.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Deko-Laden', 'Decor shop')}</span></div>`;
+      return;
+    }
     if (this.nearSlot && !this.tool) {
       setTouchTool(null, 'assets/icecream.png');
       const label = this.nearSlot.wheel ? tr('Riesenrad bauen', 'Build the Ferris wheel') : tr('Bude bauen', 'Build a stand');
@@ -4219,6 +4370,13 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/worldmap.jpg" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Schnellreise', 'Fast travel')}</span></div>`;
       return;
     }
+    // Setzen-Modus (Deko-Taste): was die Aktionstaste mit der Kachel vor Henrik macht
+    const decor = this.decor?.toolbar();
+    if (decor) {
+      setTouchTool(null, decor.image);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${decor.image}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${decor.label}</span></div>`;
+      return;
+    }
     // auf dem E-Roller: Absteigen erst, wenn sonst nichts zu tun ist (und kein Werkzeug in der Hand)
     if (this.driving && !this.toolId) {
       setTouchTool(null, 'assets/scooter_icon.png');
@@ -4247,7 +4405,7 @@ export default class GardenScene extends Phaser.Scene {
     // zwischen dem Abzeichen oben links und den Knöpfen oben rechts, damit die Meldung nichts davon verdeckt.
     // Ist dort zu wenig Platz (Handy hochkant), kommt sie darunter über die ganze Breite
     const hud = this.hud.getBoundingClientRect();
-    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full, #btn-charms, #btn-campfire')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
+    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full, #btn-charms, #btn-campfire, #btn-decor')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
     const left = hud.right + 10;
     const right = Math.min(window.innerWidth - 10, ...buttons.map((r) => r.left - 10));
     if (right - left >= TOAST_MIN_W) {
@@ -7058,7 +7216,8 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // nach der letzten Map: die große Abschlusskiste – Glücksbringer, die man noch nicht hat; gibt es weniger als Karten
-  // (oder keine mehr), kommt ein Schatz mit FINAL_HEARTS Herzen dazu (eine große Belohnung, die immer wirkt)
+  // (oder keine mehr), kommt ein Schatz mit FINAL_HEARTS Herzen dazu (eine große Belohnung, die immer wirkt), und die
+  // übrigen Plätze füllt Deko der Welt dieser Expedition auf (erst dann – solange es Glücksbringer gibt, keine Deko)
   expFinalChest(then) {
     const r = expRun();
     r.finalChest = true;
@@ -7066,7 +7225,8 @@ export default class GardenScene extends Phaser.Scene {
       const charms = Object.keys(CHARMS).filter((id) => !ownsCharm(id));
       const cards = rollCards({ rare: [], boni: [], charms }, cardCount());
       if (cards.length < cardCount()) cards.push({ kind: 'treasure' });
-      return cards;
+      const deco = rollCards({ rare: [], boni: [], charms: [], deco: finalChestDecor(biomeOf()) }, cardCount() - cards.length); // (Baupläne)
+      return [...cards, ...deco];
     };
     const view = (c) => (c.kind === 'treasure'
       ? { icon: iconImg('bonus_heartRain'), title: tr('Schatz', 'Treasure'), text: tr(`${FINAL_HEARTS} Herzen für deinen Zoo.`, `${FINAL_HEARTS} hearts for your zoo.`), color: '#e0a820', tag: tr('Belohnung', 'Reward') }
@@ -7480,7 +7640,10 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
     if (cost) this.addHearts(-cost);
-    if (changed) game.namings++;
+    if (changed) {
+      game.namings++;
+      countPark('named'); // für die Statistik
+    }
     const uid = animalUid(a);
     const fresh = !game.bonds[uid];
     game.bonds[uid] ??= { species: a.species, points: 0, pettedAt: 0, since: Date.now() };
@@ -7706,6 +7869,12 @@ export default class GardenScene extends Phaser.Scene {
       this.nearComputer = computer;
       this.updateToolbar();
     }
+    // am Deko-Laden: die Aktionstaste öffnet ihn
+    const decoShop = !!this.decoShop && Math.hypot(this.player.x - this.decoShop.x, (this.player.y - this.decoShop.y) * 2) < CHEST_DIST * 2.4; // (am E-Roller daneben gilt die Taste dem Roller)
+    if (decoShop !== !!this.nearDecoShop) {
+      this.nearDecoShop = decoShop;
+      this.updateToolbar();
+    }
     // an einem leeren Bauplatz: die Aktionstaste öffnet den Buden-Katalog
     const slot = this.shopSlots?.find((s) => !s.kind && Math.hypot(this.player.x - s.x, (this.player.y - s.y) * 2) < CHEST_DIST * 1.8) ?? null;
     if (slot !== this.nearSlot) {
@@ -7794,6 +7963,7 @@ export default class GardenScene extends Phaser.Scene {
       this.updateToolbar();
     }
     this.updateWishes(dt);
+    this.decor?.update(); // Setzen-Modus: Vorschau auf der Kachel vor Henrik
     // am Gehegeschild oder im Gehege: die Werkzeugleiste zeigt "Gehege ausbauen"
     const penHere = this.penAtSign();
     if (penHere !== this.penHere) {

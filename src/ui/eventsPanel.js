@@ -1,6 +1,7 @@
 // Hauptrechner im Haupthaus: Reiter "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown), "Gehege" (gegen
 // Herzen ausbauen: mehr Plätze und neue Ausstattung; vorerst abgeschaltet) und "Buden" (auf einem freien Bauplatz bauen).
-// Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Tablet: Reiter und Kacheln antippen.
+// Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Dieselbe Tafel ist auch der Deko-Laden (tab 'deco', nur am
+// Deko-Stand im Tierpark): kaufen, die Tafel bleibt dabei offen. Tablet: Reiter und Kacheln antippen.
 // Laptop: Q/Tab wechselt den Reiter, A/D wählt, E/Enter/Leertaste bestätigt, Esc schließt.
 import { formatTime } from '../world/events.js';
 import { animalIcons } from './icons.js';
@@ -97,6 +98,7 @@ function shopThumb(def) {
 }
 
 function thumb(item) {
+  if (item.image) return `<div class="ev-thumb deco-thumb"><img src="assets/${item.image}.png" alt=""></div>`; // Deko: ihr Bild
   if (item.species) return `<div class="ev-thumb pen-thumb">${animalIcons(item.species, 3.4)}</div>`; // Gehege: seine Tiere
   const shop = state?.tab === 'build' ? shopDef(item.id) : null;
   const parts = (shop ? shopThumb(shop) : THUMBS[item.id] ?? [])
@@ -139,6 +141,10 @@ function status(item) {
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
     return [`<span class="ev-status go">${tr('Ausbauen', 'Upgrade')}</span>`, true];
   }
+  if (state.tab === 'deco') {
+    if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
+    return [`<span class="ev-status go">${tr('Kaufen', 'Buy')}</span>`, true];
+  }
   if (state.tab === 'build') {
     if (item.done) return [`<span class="ev-status on">${tr('gebaut', 'built')} ✓</span>`, false];
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
@@ -162,12 +168,14 @@ function render() {
   state.list = list;
   state.selected = Math.min(state.selected, Math.max(0, list.length - 1));
   const tabs = state.single
-    ? `<span class="ev-tab on">${state.title ?? TABS.find(([id]) => id === state.tab)[1]}</span>` // nur dieses Gehege bzw. dieser Bauplatz: keine Reiter
+    ? `<span class="ev-tab on">${state.title ?? TABS.find(([id]) => id === state.tab)?.[1] ?? ''}</span>` // nur dieses Gehege bzw. dieser Bauplatz: keine Reiter
     : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
   const hint = state.note ?? (state.tab === 'pens'
     ? tr('Ein ausgebautes Gehege hat mehr Plätze, neue Ausstattung und Spielzeug – die Tiere freuen sich, und es kommen mehr Besucher.', 'An upgraded enclosure has more spaces, new equipment and toys – the animals are happy and more visitors come.')
     : state.tab === 'build'
       ? tr('Die Besucher kaufen an den Buden ein – jeder Verkauf bringt Herzen. Jede Sorte gibt es einmal pro Bereich.', 'Visitors buy snacks at the stands – every sale brings hearts. Each kind once per area.')
+      : state.tab === 'deco'
+        ? tr('Gekaufte Deko liegt gleich in der Deko-Taste.', 'Bought decor goes straight into the decor button.')
       : tr('Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.', 'Tap an event – or choose with <b>A</b>/<b>D</b> and start it with <b>E</b>.'));
   panel.innerHTML = `<div class="chest-box ev-box">${CLOSE_BUTTON}
       <div class="ev-tabs">${tabs}</div>
@@ -246,6 +254,14 @@ function pick(i) {
   const it = state.list[i];
   if (!it || !status(it)[1]) return; // gesperrte Kachel: nichts tun
   const { onPick, tab } = state;
+  if (tab === 'deco') {
+    // Deko-Laden: kaufen, die Tafel bleibt offen (man kauft oft mehrere)
+    onPick(tab, it.id);
+    state.selected = i;
+    render();
+    panel.querySelector(`.ev-item[data-i="${i}"]`)?.classList.add('bought');
+    return;
+  }
   close(false);
   onPick(tab, it.id);
 }

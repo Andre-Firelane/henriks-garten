@@ -17,6 +17,7 @@ export const game = {
   unlocked: [],
   scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
   builds: {}, // gebaute Buden: { Bauplatz-Id: Buden-Art } (siehe src/world/shops.js)
+  booths: {}, // umgestellte Buden: { Id: { level, tx, ty, flip } } bzw. { level, stored } (siehe src/world/shops.js)
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
   story: newStory(), // Geschichte mit Mavi: aktive Aufgabe, freigeschaltete Gebiete (siehe src/story/story.js)
   catches: {}, // so oft wurde jede Tierart schon gefangen (für Mavis Aufgaben)
@@ -41,6 +42,7 @@ export const game = {
   bonds: {}, // ... und ihre Bindung je Tier: { uid: { name, species, points, pettedAt, since } }
   nextAnimalId: 1, // nächste freie feste Nummer für ein Tier
   namings: 0, // so oft wurde schon ein Tier benannt (ab dem zweiten Mal kostet es Herzen, siehe nameCost in friends.js)
+  decor: null, // Deko im Tierpark: { owned, shop, placed } (siehe src/world/decor.js; fehlt sie, gibt es die Grundausstattung)
   wishes: { open: [] }, // Besucherwünsche: angenommene Wünsche { species, look, done } (siehe src/world/wishes.js)
   feedUnlocked: [], // Sorten im Futterhaus (erst, wenn man sie draußen kennengelernt hat)
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
@@ -61,6 +63,7 @@ export function resetGame() {
   game.unlocked = [];
   game.penLevel = {};
   game.builds = {};
+  game.booths = {};
   game.scooterRiding = false;
   game.upgrades = 0;
   game.chests = {};
@@ -88,4 +91,5 @@ export function resetGame() {
   game.namings = 0;
   game.feedUnlocked = [];
   game.wishes = { open: [] };
+  game.decor = null;
 }

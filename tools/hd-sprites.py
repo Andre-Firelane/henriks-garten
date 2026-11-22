@@ -290,11 +290,11 @@ PARK_OBJS = {
 PARK_OBJS = {k: park(n) for k, n in PARK_OBJS.items()} | {k: park2(n) for k, n in {
     'jungle_plant': 4, 'jungle_tree': 5, 'lion_rock': 6, 'nest_box': 9, 'office_armchair': 12, 'office_chair': 13, 'office_desk': 14,
     'office_plant_monstera': 15, 'office_plant_strelitzia': 16, 'office_rug': 17, 'office_sofa': 18, 'office_table': 19, 'parkfood': 21,
-    'peacock_perch': 22, 'reeds': 23, 'stone_lantern': 28, 'sun_rock': 29, 'tall_grass': 30, 'tire_swing': 33, 'torii': 34, 'toy_ball': 35,
+    'peacock_perch': 22, 'stone_lantern': 28, 'sun_rock': 29, 'tall_grass': 30, 'tire_swing': 33, 'torii': 34, 'toy_ball': 35,
     'tuft': 36}.items()} | {'icecream': f'{A}/Icecream Pink.png'}
 # Zäune, Tore, Wände genau in die alte Form strecken (sonst passen die Pfosten nicht aneinander); _x = Nummer, _y = Nummer + 1
 PARK_SIDES = {'chain': 15, 'fence': 23, 'gate_chain': 29, 'gate_door_office': 31, 'gate_glass': 33, 'gate_glassflap': 35, 'gate_net': 37,
-              'gate_tall': 39, 'gate': 41, 'hutwall_cathouse': 51, 'hutwall_office': 53}
+              'gate': 41, 'hutwall_cathouse': 51, 'hutwall_office': 53}
 PARK_SIDES = {k: (park(n), park(n + 1)) for k, n in PARK_SIDES.items()} | {k: (park2(n), park2(n + 1)) for k, n in {'mesh': 7, 'net': 10, 'tall': 31}.items()}
 # Dächer und Gebäude: die vier Ecken auf die alten Ecken ziehen; sie sind schon groß, deshalb ein kleinerer Faktor
 PARK_BIG = {'hutroof_cathouse': (park(49), 2), 'hutroof_office': (park(50), 2), 'aquarium_facade': (park(6), 1), 'reptile_facade': (park2(24), 1)}
@@ -639,5 +639,9 @@ for k, n in {'hutwall_aquarium': 7, 'hutwall_tank': 9}.items():
         (glass(im, 90) if k == 'hutwall_tank' else im).save(f'{OUT}/{k}_{side}.png')  # Beckenscheiben durchsichtig wie vorher
 import subprocess
 subprocess.run([sys.executable, os.path.join(ROOT, 'tools/park-path.py'), f'{OUT}/park_path.png'], check=True)
+# hohes Tor: gezeichnet statt in die alte Pixelform gezogen (der Riegel bekam Treppenstufen), siehe tools/gate-tall.py
+subprocess.run([sys.executable, os.path.join(ROOT, 'tools/gate-tall.py')], check=True, cwd=ROOT)  # schreibt public/assets, hd/, hd2/
+# Schilf: gezeichnet statt aus der KI-Vorlage (park2(23) war eckig), siehe tools/reeds.py
+subprocess.run([sys.executable, os.path.join(ROOT, 'tools/reeds.py')], check=True, cwd=ROOT)  # schreibt public/assets, hd/, hd2/
 print('ok', len(os.listdir(OUT)))
 subprocess.run([sys.executable, os.path.join(ROOT, 'tools/hd-phone.py')], check=True, cwd=ROOT)  # Handy-Fassung (hd2/)

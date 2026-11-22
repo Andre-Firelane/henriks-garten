@@ -983,7 +983,7 @@ const PARK_ROWS = [
       ']|...k|#........#..D..]#.Ns.....ZN..###|..............|b',
       ']|.Ø..|#g...ƃ...#....n]#.MMMMGGMMM.####|..@...........|b',
       ']|....|#..%...f.#.ḫ1..]#bg.#####.fb####G...f......T...|b',
-      ']|n...|#.ooo....#F....]#..f#####g..####G..............|X',
+      ']|n...|#.ooo...F#.....]#..f#####g..####G..............|X',
       ']|....G#.oooo...######G################|..............|b',
       ']|.ʬ..|#ƃ.ooo%..######G###############W|.........f....|b',
       ']|....|#...ooo..#.....]##........######|F.............|b',
@@ -1079,7 +1079,7 @@ const PARK_PENS = [
       // und Ufer zum Teich zählen und nicht zum Wildpark.
       { id: 'clearingpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish'], pond: true, shore: 1, signAt: { tx: 8, ty: 39 }, signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 10, ty: 41 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: tr('Schilf am Teich', 'Reeds by the pond'), basic: [[10, 39, '.'], [13, 42, '.']] },
       { id: 'deerpark', name: tr('Wildpark', 'Wildlife Park'), species: ['deer', 'elk'], // Rehe und Elche laufen frei herum
-        open: true, gate: 'tall', gateTiles: [{ tx: 22, ty: 41 }, { tx: 22, ty: 42 }], visitors: true, signAt: { tx: 18, ty: 40 }, toysAt: [{ tx: 9, ty: 37 }], // Schild neben dem Futterautomaten an der Weggabelung hinter dem Tor; Futterraufe auf der Lichtung
+        open: true, decor: true, gate: 'tall', gateTiles: [{ tx: 22, ty: 41 }, { tx: 22, ty: 42 }], visitors: true, signAt: { tx: 18, ty: 40 }, toysAt: [{ tx: 9, ty: 37 }], // Schild an der Weggabelung hinter dem Tor, der Futterautomat gegenüber auf der anderen Seite des Waldwegs; Futterraufe auf der Lichtung
         world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 18, ty: 41 }, quota: { deer: [6, 9], elk: [2, 3] }, upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[17, 36, '5'], [18, 36, 'D'], [17, 37, 'ḩ'], [18, 37, 'D'], [20, 37, 'D'], [21, 37, '5'], [17, 38, '5'], [18, 38, 'ḩ'], [19, 38, 'D'], [20, 38, 'ḩ'], [21, 38, 'k'], [17, 39, 'k'], [20, 39, 'D'], [21, 39, 'ḩ'], [17, 43, '5'], [18, 43, 'ḫ'], [19, 43, 'ḩ'], [20, 43, 'D'], [21, 43, 'k'], [17, 44, 'k'], [20, 44, '5'], [17, 45, 'k'], [19, 45, 'k'], [21, 45, 'k']] },
       // Wildschwein an der Lichtung: durchwühlter Boden, Eiche und ein großes Schlammloch zum Suhlen (siehe Boar.js)
       { id: 'boarpen', name: tr('Wildschweingehege', 'Wild Boar Enclosure'), species: ['boar'], world: 'forest', ground: ['boar_ground0', 'boar_ground1', 'boar_ground2'], seed: { tx: 3, ty: 40 }, slots: [4, 6], upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[2, 44, 'ḩ'], [3, 44, 'D'], [4, 44, 'ḫ'], [5, 44, 'ḫ'], [2, 45, 'k'], [3, 45, 'ḩ'], [5, 45, '5']] },
@@ -1206,16 +1206,19 @@ LEVELS.park = parkSection('park', {
   buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
   // Eisstand-Event: der Eiswagen steht mitten im Park unterhalb des Hauptwegs (die Plätze oberhalb sind für feste Buden)
   iceStand: { tx: 26, ty: 44 },
-  // Bauplätze für feste Buden (siehe src/world/shops.js): vor dem Haupthaus oberhalb des Hauptwegs, links und rechts vom
-  // Weg zur Tür – die Besucher stellen sich davor auf den Weg und sehen die Bude von vorne
-  buildSlots: [{ id: 'center1', tx: 25, ty: 40 }, { id: 'center2', tx: 33, ty: 40 }],
+  // Deko-Laden: Stand oben am Haupthaus an der Ecke links neben dem E-Roller (auf dem Rasenstück links vom Weg zur Tür);
+  // er bedeckt w×h Kacheln ab tx/ty
+  decoShop: { tx: 24, ty: 39, w: 2, h: 2 },
+  // Bauplätze für feste Buden (siehe src/world/shops.js): rechts vor dem Haupthaus oberhalb des Hauptwegs und links
+  // unterhalb des Hauptwegs (dort stand früher der Deko-Laden) – die Besucher stellen sich davor auf den Weg
+  buildSlots: [{ id: 'center1', tx: 25, ty: 43 }, { id: 'center2', tx: 33, ty: 40 }],
   scooterSpot: { tx: 27, ty: 39 }, // E-Roller: abgestellt an der Hauswand links neben der Tür des Haupthauses
   // Riesenrad (vorerst gestrichen – es passte nicht zur isometrischen Ansicht; der Code in src/world/FerrisWheel.js bleibt):
   // großer Bauplatz auf der Wiese über dem Haupthaus, am Weg zur Savanne (2×2 Kacheln ab tx/ty; clear: dort stehen dann
   // keine Bäume und Büsche). Zum Wiederaufnehmen diese Zeile einschalten und die Bilder in BootScene wieder laden.
   // wheelSlot: { id: 'wheel', tx: 29, ty: 25, clear: { tx0: 25, tx1: 34, ty0: 24, ty1: 29 } },
   computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
-  feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 17, ty: 40, world: 'forest' }],
+  feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 15, ty: 40, world: 'forest' }],
   // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
   signScale: 1.25,
   sections: [

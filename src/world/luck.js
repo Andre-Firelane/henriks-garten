@@ -82,7 +82,7 @@ export const TIERS = {
 export const tierOf = (share) => (share >= 0.2 ? 'common' : share >= 0.08 ? 'uncommon' : 'rare');
 
 // Anteil der Kartenarten je Platz
-const CARD_KIND = { rare: 0.45, bonus: 0.4, charm: 0.15 };
+const CARD_KIND = { rare: 0.45, bonus: 0.4, charm: 0.15, deco: 0.3 };
 
 export function luckState() {
   game.chests ??= {};
@@ -195,9 +195,11 @@ export function chestOpened(level = LEVEL_ID, now = Date.now()) {
 
 // --- Karten ---
 // rare: [{ species, skin, share }] (Arten des Gebiets mit seltenem Skin), boni/charms: ids, die hier in Frage kommen.
+// deco: ids der Deko, deren Bauplan hier aus einer Kiste kommen kann (siehe chestDecor in decor.js).
 // Gibt n Karten zurück, keine doppelt: { kind: 'rare', species, skin, tier } | { kind: 'bonus', id } | { kind: 'charm', id }
-export function rollCards({ rare, boni, charms }, n) {
-  const pools = { rare: [...rare], bonus: [...boni], charm: [...charms] };
+// | { kind: 'deco', id }
+export function rollCards({ rare, boni, charms, deco = [] }, n) {
+  const pools = { rare: [...rare], bonus: [...boni], charm: [...charms], deco: [...deco] };
   const cards = [];
   for (let i = 0; i < n; i++) {
     const kinds = Object.entries(CARD_KIND).filter(([k]) => pools[k].length);

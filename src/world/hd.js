@@ -35,7 +35,8 @@ export const HD = [
   'jungle_plant', 'jungle_tree', 'lion_rock', 'mesh_x', 'mesh_y', 'nest_box', 'net_x', 'net_y', 'office_armchair', 'office_chair',
   'office_desk', 'office_plant_monstera', 'office_plant_strelitzia', 'office_rug', 'office_sofa', 'office_table', 'park_path', 'parkfood',
   'peacock_perch', 'reeds', 'reptile_facade', 'sgrass0', 'sgrass1', 'sgrass2', 'stone_lantern', 'sun_rock', 'tall_grass', 'tall_x',
-  'tall_y', 'tire_swing', 'torii', 'toy_ball', 'tuft',
+  'tall_y', 'tire_swing', 'torii', 'toy_ball', 'tuft', 'deco_stand',
+  'stepping_stones', 'flower_arch', 'lantern_post', 'pavilion', 'snowman', 'anchor',
   // Savanne
   'savanna_tallgrass', 'savanna_tallgrass_rain', 'savanna_tallgrass_dry', 'savanna_bush', 'savanna_bush_rain', 'savanna_shrub_rain',
   'savanna_kopje', 'savanna_termite', 'savanna_skull', 'savanna_ribs', 'savanna_pelvis', 'savanna_bones',

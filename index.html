@@ -258,6 +258,11 @@
         position: relative; width: 180px; height: 96px; overflow: hidden; border-radius: 10px; border: 2px solid #a8743f;
         background: linear-gradient(#bfe4f0 0 30%, #8cc65a 30% 100%);
       }
+      /* Deko-Laden: Bild des Teils auf der Kachel; kurzes Hüpfen nach dem Kauf */
+      .deco-thumb { display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; box-sizing: border-box; }
+      .deco-thumb img { max-height: 80px; max-width: 120px; object-fit: contain; }
+      .ev-item.bought { animation: deco-bought 0.4s ease-out; }
+      @keyframes deco-bought { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
       .ev-sprite { position: absolute; transform-origin: bottom left; image-rendering: auto; }
       .ev-love { position: absolute; color: #ff6fa8; font-size: 22px; text-shadow: 0 0 3px #fff; }
       .ev-love.small { font-size: 15px; }
@@ -839,6 +844,61 @@
       #btn-charms, #btn-campfire.show { display: flex; align-items: center; gap: 6px; }
       #btn-charms .charms-icon, #btn-campfire .charms-icon { font-size: 24px; line-height: 1; }
       #btn-campfire { display: none; }
+      /* Deko-Taste (nur im Tierpark, nur Text); leuchtet, solange der Setzen-Modus an ist */
+      #btn-decor {
+        display: none; height: 52px; padding: 0 12px; border-radius: 12px; cursor: pointer;
+        font: bold 15px/1.1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
+      }
+      #btn-decor.show { display: flex; align-items: center; gap: 6px; }
+      #btn-decor .decor-icon { height: 34px; width: auto; }
+      #btn-decor.on { background: #3fae4a; border-color: #ffd84a; }
+      @media (max-width: 900px), (max-height: 500px) { #btn-decor { font-size: 12px; padding: 0 10px; } #btn-decor .btn-label { display: none; } }
+      /* Setzen-Modus: grüner Rahmen ums Bild und rechts die Leiste mit den Deko-Teilen */
+      #decor-frame { display: none; position: fixed; inset: 0; z-index: 3; pointer-events: none; border: 4px solid rgba(95, 208, 90, 0.85); box-shadow: inset 0 0 36px rgba(95, 208, 90, 0.35); }
+      #decor-frame.show { display: block; }
+      #decor-bar {
+        display: none; position: fixed; right: 12px; top: 50%; transform: translateY(-50%); z-index: 6;
+        flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; max-height: calc(100vh - 220px);
+        background: rgba(60, 40, 20, 0.82); border: 2px solid #2b1d14; border-radius: 14px;
+        font: bold 12px/1.1 "Trebuchet MS", Arial, sans-serif;
+      }
+      #decor-bar.show { display: flex; }
+      #decor-bar .decor-title { color: #fff8e6; text-align: center; font-size: 14px; }
+      /* Drehen: runder Knopf links neben der Leiste */
+      #decor-bar .decor-turn {
+        position: absolute; top: 0; right: calc(100% + 8px); width: 64px; height: 64px; border-radius: 50%; cursor: pointer;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0;
+        background: rgba(60, 40, 20, 0.82); border: 2px solid #2b1d14; color: #fff8e6; font: bold 11px/1 "Trebuchet MS", Arial, sans-serif;
+      }
+      #decor-bar .decor-turn .turn-icon { font-size: 26px; line-height: 1; transition: transform 0.2s; }
+      #decor-bar .decor-turn.on { background: #3fae4a; border-color: #ffd84a; }
+      #decor-bar .decor-turn.on .turn-icon { transform: scaleX(-1); }
+      #decor-bar .decor-turn.off { opacity: 0.45; cursor: default; }
+      #decor-bar .decor-turn .key { position: absolute; top: 6px; right: 10px; }
+      #decor-bar .decor-empty { width: 78px; color: #fff8e6; font-size: 11px; font-weight: normal; text-align: center; }
+      #decor-bar .decor-items { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; }
+      #decor-bar .decor-item {
+        position: relative; width: 78px; flex: none; padding: 4px 4px 3px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+        background: #f3e2c0; border: 2px solid #8a5a30; border-radius: 10px; color: #3c2814; font: inherit;
+      }
+      #decor-bar .decor-item img { height: 38px; max-width: 64px; object-fit: contain; }
+      #decor-bar .decor-item.sel { background: #ffe9a8; border-color: #ffd84a; box-shadow: 0 0 0 2px #ffd84a; }
+      #decor-bar .n { position: absolute; top: 2px; right: 4px; padding: 0 4px; border-radius: 8px; background: #3c2814; color: #fff8e6; font-size: 11px; }
+      #decor-bar .key { position: absolute; top: 3px; left: 5px; font-size: 10px; opacity: 0.55; }
+      #decor-bar .decor-done { position: relative; padding: 10px 4px; cursor: pointer; border-radius: 10px; border: 2px solid #2b1d14; background: #3fae4a; color: #fff; font: bold 15px/1 "Trebuchet MS", Arial, sans-serif; }
+      #decor-bar .decor-done .key { position: static; display: block; margin-top: 3px; font-size: 10px; }
+      body.touch #decor-bar .key { display: none; }
+      /* Tablet und Handy: oben unter den Knöpfen beginnen, damit der Aktionsknopf unten rechts frei bleibt */
+      body.touch #decor-bar { top: 80px; transform: none; max-height: calc(100vh - 240px); }
+      /* Handy: schmaler, nur Bild und Anzahl */
+      @media (max-height: 500px), (max-width: 600px) {
+        #decor-bar { right: 6px; padding: 5px; gap: 4px; max-height: calc(100vh - 170px); }
+        #decor-bar .decor-title, #decor-bar .name { display: none; }
+        #decor-bar .decor-item { width: 52px; } #decor-bar .decor-item img { height: 28px; max-width: 44px; }
+        #decor-bar .decor-done { font-size: 12px; padding: 8px 2px; }
+        #decor-bar .decor-turn { width: 50px; height: 50px; font-size: 9px; } #decor-bar .decor-turn .turn-icon { font-size: 20px; }
+      }
       #btn-campfire:disabled { opacity: 0.6; cursor: default; }
       /* Handy: nur das Symbol (sonst ragt der Knopf in die Meldungen oben in der Mitte) */
       @media (max-width: 900px), (max-height: 500px) { #btn-charms, #btn-campfire { font-size: 12px; padding: 0 10px; } #btn-charms .btn-label, #btn-campfire .btn-label { display: none; } }
@@ -1107,7 +1167,9 @@
     <button id="btn-action" aria-label="Aktion"></button>
     <button id="btn-book" aria-label="Tierbuch"><span class="book-icon">📖</span><span class="book-label">Tierbuch</span></button>
     <button id="btn-menu" aria-label="Menü">☰</button>
-    <div id="luck-btns"><button id="btn-campfire">Lagerfeuer</button><button id="btn-charms">Glücksbringer</button></div>
+    <div id="decor-bar"></div>
+    <div id="decor-frame"></div>
+    <div id="luck-btns"><button id="btn-decor">Deko</button><button id="btn-campfire">Lagerfeuer</button><button id="btn-charms">Glücksbringer</button></div>
     <button id="btn-full" aria-label="Vollbild">⛶</button>
     <button id="btn-swap" aria-label="Werkzeug wechseln">🧰</button>
     <script>

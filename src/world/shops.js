@@ -1,6 +1,9 @@
 // Feste Buden im Tierpark: auf freien Bauplätzen (buildSlots in levels.js) gegen Herzen gebaut. Besucher kaufen dort
 // etwas (jede Sorte nur einmal, höchstens MAX_BUYS Sachen) und tragen es eine Weile in der Hand; jeder Kauf bringt Herzen.
 // Gebaut ist, was in game.builds steht: { Bauplatz-Id: Buden-Art }.
+// Buden umstellen (Setzen-Modus der Deko-Taste): eine aufgehobene Bude bekommt eine eigene Id (game.booths:
+// { Id: { level, tx, ty, flip } } bzw. { level, stored: true }, solange sie in der Deko-Taste liegt); ihr Bauplatz ist dann
+// wieder frei. Eine umgestellte Bude zählt wie ein Bauplatz (slotsIn). Jede Sorte bleibt einmal je Abschnitt.
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { LEVELS, PARK_LEVELS } from './levels.js';
@@ -33,8 +36,36 @@ export const SHOP_CHANCE = 0.4;
 // solange man woanders ist: so oft kauft jeder Besucher pro Minute an jeder Bude seines Abschnitts
 export const AWAY_BUYS_PER_VISITOR_MINUTE = 0.25;
 
-// Bauplätze eines Tierpark-Abschnitts (in Kacheln des Abschnitts)
-export const slotsIn = (level) => LEVELS[level]?.buildSlots ?? [];
+// Bauplätze eines Tierpark-Abschnitts (in Kacheln des Abschnitts) und die dorthin umgestellten Buden (moved)
+export const slotsIn = (level) => [
+  ...(LEVELS[level]?.buildSlots ?? []),
+  ...Object.entries(game.booths ?? {}).filter(([, b]) => b.level === level && !b.stored).map(([id, b]) => ({ id, tx: b.tx, ty: b.ty, flip: b.flip, moved: true })),
+];
+// aufgehobene Buden dieses Abschnitts (liegen in der Deko-Taste): [{ id, kind }]
+export const storedBooths = (level) => Object.entries(game.booths ?? {}).filter(([id, b]) => b.level === level && b.stored && builtOn(id)).map(([id]) => ({ id, kind: builtOn(id) }));
+
+// Bude aufheben: vom Bauplatz bzw. Platz weg in die Deko-Taste; gibt die Id zurück, unter der sie jetzt liegt
+export function pickUpBooth(level, slotId) {
+  const kind = builtOn(slotId);
+  if (!kind) return null;
+  game.booths ??= {};
+  if (game.booths[slotId]) {
+    game.booths[slotId] = { level, stored: true };
+    return slotId;
+  }
+  let n = 1;
+  while (game.booths['booth' + n] || game.builds['booth' + n]) n++;
+  const id = 'booth' + n;
+  delete game.builds[slotId]; // der Bauplatz ist wieder frei
+  game.builds[id] = kind;
+  game.booths[id] = { level, stored: true };
+  return id;
+}
+
+// Bude an diese Kachel stellen
+export function placeBooth(id, level, tx, ty, flip = false) {
+  game.booths[id] = { level, tx, ty, ...(flip ? { flip: true } : {}) };
+}
 // alle Bauplätze mit ihrem Abschnitt
 export const allSlots = () => PARK_LEVELS.flatMap((level) => slotsIn(level).map((s) => ({ ...s, level })));
 // Buden-Art auf diesem Bauplatz (oder null)
@@ -42,7 +73,7 @@ export const builtOn = (slotId) => game.builds?.[slotId] ?? null;
 // gebaute Buden eines Abschnitts: [{ slot, kind }]
 export const shopsIn = (level) => slotsIn(level).filter((s) => builtOn(s.id)).map((slot) => ({ slot, kind: builtOn(slot.id) }));
 // steht diese Sorte in diesem Abschnitt schon?
-export const hasShop = (level, kind) => shopsIn(level).some((s) => s.kind === kind);
+export const hasShop = (level, kind) => shopsIn(level).some((s) => s.kind === kind) || storedBooths(level).some((s) => s.kind === kind);
 // Bauplatz des Riesenrads (mit seinem Abschnitt) bzw. ob es in diesem Abschnitt steht
 export const wheelSlot = () => PARK_LEVELS.map((level) => LEVELS[level]?.wheelSlot && { ...LEVELS[level].wheelSlot, level }).find(Boolean) ?? null;
 export const hasWheel = (level) => !!LEVELS[level]?.wheelSlot && builtOn(LEVELS[level].wheelSlot.id) === WHEEL.id;

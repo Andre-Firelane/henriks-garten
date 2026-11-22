@@ -7,7 +7,8 @@ import { HD, HD_DIR, hdFactor, shrinkTexture } from '../world/hd.js';
 import { TOYS, toyKey } from '../world/toys.js';
 import { game } from '../state.js';
 import { isActive } from '../world/events.js';
-import { LEVELS } from '../world/levels.js';
+import { LEVELS, isPark } from '../world/levels.js';
+import { itemDef } from '../world/decor.js';
 
 // Handy und Tablet (Touch): WebP-Fassung statt PNG (etwa ein Viertel so groß, siehe tools/make-webp.py); der PC lädt PNG
 const USE_WEBP = matchMedia('(pointer: coarse)').matches;
@@ -83,6 +84,15 @@ export function levelGroups(level) {
     if (group) groups.add(group);
   }
   for (const [id, gs] of Object.entries(EVENT_GROUPS)) if (isActive(id)) gs.forEach((g) => groups.add(g));
+  // Tierpark: Bilder der Deko, die man hat bzw. die hier steht (z. B. Koralle aus dem Riff, Eisblock aus der Eiswelt)
+  if (isPark(level) && game.decor) {
+    const ids = [...Object.keys(game.decor.owned ?? {}), ...(game.decor.placed?.[level] ?? []).map((d) => d.id)];
+    for (const id of ids) {
+      const key = itemDef(id)?.key;
+      const group = key && groupOf(key);
+      if (group && group !== 'misc') groups.add(group);
+    }
+  }
   return [...groups];
 }
 
@@ -117,6 +127,9 @@ function groupOf(key, sound = false) {
   for (const [group, def] of Object.entries(GROUPS)) if ((art ? def.art : def.keys)?.test(name)) return group;
   return 'misc';
 }
+
+// Paket eines Bilds (z. B. für Deko aus einer anderen Welt, siehe ensureDecorArt in GardenScene)
+export const groupOfKey = (key) => groupOf(key);
 
 const isFirstAsset = (key, sound) => (sound ? FIRST_SOUNDS.includes(key) : ITEMS.includes(key) || FIRST_SHEETS.test(key) || (PIXEL_ART.includes(key) && groupOf(key) === 'misc'));
 
@@ -167,6 +180,9 @@ const PIXEL_ART = [
   'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn',
   // Tierpark
   'park_path', 'signpost_post',
+  'deco_stand', // Deko-Laden (aus Sprites/Dekoladen.webp, tools/deco-stand.py)
+  // neue Deko (Bilder von Andre aus tools/decor-sprites.py; Wegsteine noch Platzhalter aus tools/decor-placeholders.py)
+  'stepping_stones', 'flower_arch', 'lantern_post', 'pavilion', 'snowman', 'anchor',
   'wildpark_arch', // Torbogen über dem Eingang des Wildparks (Platzhalter aus tools/wildpark-placeholders.py)
   // begehbare Hütten
   'hutwall_meadow_x', 'hutwall_meadow_y', 'post_hutwall_meadow', 'gate_door_meadow_x', 'gate_door_meadow_y', 'hutroof_meadow',
