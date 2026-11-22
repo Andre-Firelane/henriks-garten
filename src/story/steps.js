@@ -176,13 +176,13 @@ export const STEPS = [
   {
     id: 'stands',
     at: { level: 'park', spot: 'build' },
-    goal: tr('Bau eine Bude auf einem Bauplatz', 'Build a stand on a building plot'),
-    done: (game) => Object.keys(game.builds ?? {}).length >= 1,
+    goal: tr('Stell eine Bude an einen Weg', 'Put a stand next to a path'),
+    done: (game) => Object.values(game.booths ?? {}).some((b) => !b.stored),
     intro: [
-      tr('Siehst du die Baupflöcke? Hier ist Platz für eine Bude!', 'See the building stakes? There’s room for a stand here!'),
-      tr('Stell dich davor und drück die Aktionstaste. Wie wäre es mit einem Eisstand?', 'Stand in front of them and press the action button. How about an ice cream stand?'),
+      tr('Zeit für eine Bude! Einen Eisstand hast du schon – drück oben auf „Bauen“.', 'Time for a stand! You already have an ice cream stand – press “Build” at the top.'),
+      tr('Stell ihn direkt an einen Weg, dort kaufen die Besucher ein. Mehr Buden gibt es unter „Bestellen“.', 'Put it right next to a path – that’s where visitors buy. More stands are under “Order”.'),
     ],
-    already: [tr('Du hast ja schon eine Bude gebaut – lecker!', 'You’ve already built a stand – yummy!')],
+    already: [tr('Du hast ja schon eine Bude – lecker!', 'You’ve already got a stand – yummy!')],
     outro: [
       tr('Super! Die Besucher stehen schon an – jeder Verkauf bringt dir Herzen.', 'Great! The visitors are already queueing – every sale brings you hearts.'),
       tr('Komm mit zum Streichelzoo, ich möchte dir noch etwas Schönes zeigen!', 'Come along to the petting zoo, I’d like to show you something lovely!'),

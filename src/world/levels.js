@@ -1206,12 +1206,9 @@ LEVELS.park = parkSection('park', {
   buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
   // Eisstand-Event: der Eiswagen steht mitten im Park unterhalb des Hauptwegs (die Plätze oberhalb sind für feste Buden)
   iceStand: { tx: 26, ty: 44 },
-  // Deko-Laden: Stand oben am Haupthaus an der Ecke links neben dem E-Roller (auf dem Rasenstück links vom Weg zur Tür);
-  // er bedeckt w×h Kacheln ab tx/ty
-  decoShop: { tx: 24, ty: 39, w: 2, h: 2 },
-  // Bauplätze für feste Buden (siehe src/world/shops.js): rechts vor dem Haupthaus oberhalb des Hauptwegs und links
-  // unterhalb des Hauptwegs (dort stand früher der Deko-Laden) – die Besucher stellen sich davor auf den Weg
-  buildSlots: [{ id: 'center1', tx: 25, ty: 43 }, { id: 'center2', tx: 33, ty: 40 }],
+  // frühere feste Bauplätze für Buden (nur noch für alte Spielstände und Mavis Platz bei der Buden-Aufgabe; Buden setzt
+  // man jetzt frei, siehe src/world/shops.js)
+  legacySlots: [{ id: 'center1', tx: 25, ty: 43 }, { id: 'center2', tx: 33, ty: 40 }],
   scooterSpot: { tx: 27, ty: 39 }, // E-Roller: abgestellt an der Hauswand links neben der Tür des Haupthauses
   // Riesenrad (vorerst gestrichen – es passte nicht zur isometrischen Ansicht; der Code in src/world/FerrisWheel.js bleibt):
   // großer Bauplatz auf der Wiese über dem Haupthaus, am Weg zur Savanne (2×2 Kacheln ab tx/ty; clear: dort stehen dann
@@ -1268,7 +1265,7 @@ LEVELS.park2 = parkSection('park2', {
   },
   // Vorplatz: links, wo früher der Krokodilteich war, bleibt Platz für ein späteres Café (Spalten 14–18, Zeilen 17–21)
   scooterSpot: { tx: 31, ty: 16 }, // E-Roller: an der Kreuzung neben der Ecke des Erdmännchen-Zauns
-  buildSlots: [{ id: 'savanna1', tx: 34, ty: 17 }, { id: 'savanna2', tx: 38, ty: 16 }], // beim Auto: links oben an der Kreuzung und rechts oben auf der freien Sandfläche zwischen Anhänger und Weg
+  legacySlots: [{ id: 'savanna1', tx: 34, ty: 17 }, { id: 'savanna2', tx: 38, ty: 16 }], // beim Auto: links oben an der Kreuzung und rechts oben auf der freien Sandfläche zwischen Anhänger und Weg
   sections: [
     { label: tr('Aquarium', 'Aquarium'), tx: 8, ty: 15 },
     { label: tr('Zentrum', 'Center'), tx: 32, ty: 24 },
@@ -1292,7 +1289,7 @@ LEVELS.park3 = parkSection('park3', {
   car: { tx: 38.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26 },
   start: { tx: 38, ty: 60 },
   scooterSpot: { tx: 33, ty: 78 }, // E-Roller: im Gras links an der Kreuzung beim Auto
-  buildSlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // an der Hauptkreuzung: im Kirschgarten und neben dem Auto
+  legacySlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // an der Hauptkreuzung: im Kirschgarten und neben dem Auto
   grounds: [
     { area: { tx0: 12, tx1: 35, ty0: 83, ty1: 97 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Tanuki-, Yak- und Schneeleoparden-Gehege
     { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)

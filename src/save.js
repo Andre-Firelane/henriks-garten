@@ -4,7 +4,7 @@
 import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
 import { migrateStory, syncStory } from './story/story.js';
-import { SHOP_IDS } from './world/shops.js';
+import { SHOP_IDS, migrateLegacySlots } from './world/shops.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -97,6 +97,7 @@ export function loadSave() {
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
   if (!s.game.story) migrateStory(); // Spielstand von vor Mavi: alles bleibt offen
   if (!s.game.pettingZoo) migratePettingZoo();
+  migrateLegacySlots(); // Buden auf den früheren festen Bauplätzen: bleiben stehen, jetzt frei umstellbar
   if (!Array.isArray(s.game.feedUnlocked)) game.feedUnlocked = null; // Futterhaus: Sorten aus den gefangenen Tieren ableiten (ensureFeedState in src/world/friends.js)
   if (!s.game.friends) game.friends = {}; // (ältere Spielstände: noch keine Tierfreunde)
   if (!s.game.bonds) game.bonds = {};

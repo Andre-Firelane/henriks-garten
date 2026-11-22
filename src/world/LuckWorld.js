@@ -22,7 +22,8 @@ import { coveredAt } from './expeditionMaps.js';
 import { sideRecord } from './sideMaps.js';
 import { countChestPick } from '../sessions.js';
 import { LEVELS } from './levels.js';
-import { DECOR, chestDecor, learnBlueprint } from './decor.js';
+import { DECOR, chestDecor, learnBlueprint, boothBlueprints } from './decor.js';
+import { shopDef } from './shops.js';
 
 const NEAR = 40; // so nah muss man an der Kiste stehen (wie an der Werkzeug-Kiste)
 const CROWN_MARK = 96; // Fernglas: so hoch über dem Stammfuß steht das Bild eines Tiers in der Baumkrone
@@ -190,7 +191,8 @@ export default class Luck {
     const charms = Object.keys(CHARMS).filter((id) => !ownsCharm(id));
     // Baupläne für Deko im Tierpark (nicht auf Expeditionen): besondere Deko, in Welten ohne Expedition auch ihre eigene
     const world = biomeOf();
-    const deco = inExpedition() ? [] : chestDecor(world, !Object.values(LEVELS).some((l) => l.expedition === world));
+    // (dazu die Baupläne der Buden, die es erst aus Kisten gibt)
+    const deco = inExpedition() ? [] : [...chestDecor(world, !Object.values(LEVELS).some((l) => l.expedition === world)), ...boothBlueprints()];
     return rollCards({ rare, boni, charms, deco }, cardCount());
   }
 
@@ -212,9 +214,13 @@ export default class Luck {
       const text = inExpedition() && c.id === 'moreAnimals' ? tr('Auf jeder Map ein Tier mehr – und ein Platz mehr in jedem Käfig.', 'One more animal on every map – and one more spot in every cage.') : b.text;
       return { icon: b.icon, title: b.name, text, color: CARD_COLOR.bonus, tag: b.instant ? tr('sofort', 'right now') : inExpedition() ? runBonusTag() : tr(`${minutes} Minuten`, `${minutes} minutes`) };
     }
+    if (c.kind === 'deco' && c.id.startsWith('stand:')) {
+      const b = shopDef(c.id.slice(6));
+      return { icon: iconImg(b.stand), title: b.name, text: tr('Bauplan für eine Bude: ab jetzt bestellbar.', 'Blueprint for a stand: you can order it now.'), color: CARD_COLOR.deco, tag: tr('Bauplan', 'Blueprint') };
+    }
     if (c.kind === 'deco') {
       const d = DECOR[c.id];
-      return { icon: iconImg(d.key), title: d.name, text: tr('Bauplan: ab jetzt im Deko-Laden zu kaufen.', 'Blueprint: from now on in the decor shop.'), color: CARD_COLOR.deco, tag: tr('Bauplan', 'Blueprint') };
+      return { icon: iconImg(d.key), title: d.name, text: tr('Bauplan: ab jetzt bestellbar.', 'Blueprint: you can order it now.'), color: CARD_COLOR.deco, tag: tr('Bauplan', 'Blueprint') };
     }
     const ch = CHARMS[c.id];
     return { icon: ch.icon, title: ch.name, text: ch.scope ? `${ch.text}<br><i>${CHARM_SCOPE[ch.scope]}</i>` : ch.text, color: CARD_COLOR.charm, tag: tr('Glücksbringer', 'Lucky charm') };
@@ -227,7 +233,8 @@ export default class Luck {
     else if (card.kind === 'bonus') this.applyBonus(card.id);
     else if (card.kind === 'deco') {
       learnBlueprint(card.id);
-      s.showToast(tr(`Bauplan: <b>${DECOR[card.id].name}</b>. Jetzt im Deko-Laden zu kaufen.`, `Blueprint: <b>${DECOR[card.id].name}</b>. Now in the decor shop.`));
+      const name = card.id.startsWith('stand:') ? shopDef(card.id.slice(6)).name : DECOR[card.id].name;
+      s.showToast(tr(`Bauplan: <b>${name}</b>. Jetzt unter „Bauen“ bestellbar.`, `Blueprint: <b>${name}</b>. Now available under “Build”.`));
     } else {
       giveCharm(card.id);
       this.updateCampfireButton(); // vor der Meldung: sie richtet sich nach den sichtbaren Knöpfen oben rechts

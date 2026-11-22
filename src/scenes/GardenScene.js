@@ -65,7 +65,7 @@ import { game } from '../state.js';
 import { tr, locale } from '../i18n.js';
 import { FARM_SPECIES, save, saveHandlers, writeSave } from '../save.js';
 import Player from '../player/Player.js';
-import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, skinInfo } from '../animals/Animal.js';
+import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, skinInfo, SKINS } from '../animals/Animal.js';
 import Fish from '../animals/Fish.js';
 import Squirrel from '../animals/Squirrel.js';
 import Frog from '../animals/Frog.js';
@@ -159,6 +159,8 @@ import { CALLED_UNITS, RUN_LENGTH, planMap, wagonCageCount, cageSize, fitsWagon,
 import { isWagonOpen, openChoice, openConfirm, openWagon } from '../ui/wagon.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen, openLuckPicker } from '../ui/luckPicker.js';
+import { MAX_BOOTHS, boothCount, boothKnown, orderBooth, storedBooths } from '../world/shops.js';
+import { activeId as storyActiveId } from '../story/story.js';
 import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, slotsIn, sourceDef, wheelSlot } from '../world/shops.js';
 import FerrisWheel from '../world/FerrisWheel.js';
 import { PEN_TOYS, toysText } from '../world/toys.js';
@@ -197,7 +199,7 @@ import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
 import { activeId, activeStep, countStoryCatch, isUnlocked, skipStory, storyAt } from '../story/story.js';
-import { THANK_DIST, WISH_HEARTS, canWish, ensureWishes, openWishes } from '../world/wishes.js';
+import { RARE_WISH_CHANCE, THANK_DIST, canWish, canWishSkin, ensureWishes, openWishes, wishHearts, wishIcon, wishKey, wishName } from '../world/wishes.js';
 import Mavi from '../npc/Mavi.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
 
@@ -539,6 +541,7 @@ const SMALL_DEVICE = Math.min(screen.width, screen.height) < 600 || (navigator.d
 const GROUND_HD_CHUNKS = SMALL_DEVICE ? 16 : 40;
 const TOOL_SWITCH_LOCK = 2500; // Millisekunden nach dem Aufheben, in denen man nicht gleich wieder tauscht oder ablegt
 const TRAP_REARM_DIST = 90; // so weit muss man sich von einer ausgelegten Falle entfernen, bevor man sie wieder aufheben kann
+const TUT_POINTER = '<span class="chest-pointer tut-pointer">▼</span>'; // roter Pfeil in Tafeln (Tutorial, wie im Regal)
 const MARKER_MARGIN = 34; // Abstand der Fallen-Hinweise vom Bildschirmrand (CSS-Pixel)
 
 // Spawner: wilde Tiere leben eine Weile, dann verschwinden sie, und neue kommen nach (siehe spawn in levels.js)
@@ -1254,7 +1257,6 @@ export default class GardenScene extends Phaser.Scene {
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
     this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
-    this.drawDecoShop(); // Deko-Laden (Tierpark-Zentrum)
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
     this.lantern = null; // abgestellte Moorlaterne (siehe placeLantern)
@@ -1521,9 +1523,9 @@ export default class GardenScene extends Phaser.Scene {
     for (const d of placedIn(LEVEL_ID)) if (DECOR[d.id]?.size) this.drawDecor(d.tx, d.ty);
     this.decor = new DecorMode(this);
     const decorBtn = document.getElementById('btn-decor');
-    // Steinlaterne als Bild (wie das Kleeblatt am Glücksbringer-Knopf); auf dem Handy nur das Bild
-    decorBtn.innerHTML = `${iconImg('hd/stone_lantern').replace('class="luck-img"', 'class="decor-icon"')}<span class="btn-label">${tr('Deko', 'Decor')}</span>`;
-    decorBtn.setAttribute('aria-label', tr('Deko', 'Decor'));
+    // Eisstand als Bild (public/assets/icon_build.png, eng zugeschnitten aus hd/icecream_stand; wie das Kleeblatt am Glücksbringer-Knopf); auf dem Handy nur das Bild
+    decorBtn.innerHTML = `${iconImg('icon_build').replace('class="luck-img"', 'class="decor-icon"')}<span class="btn-label">${tr('Bauen', 'Build')}</span>`;
+    decorBtn.setAttribute('aria-label', tr('Bauen', 'Build'));
     decorBtn.classList.toggle('show', this.decor.enabled);
     decorBtn.classList.remove('on');
     decorBtn.onclick = (e) => {
@@ -1537,7 +1539,9 @@ export default class GardenScene extends Phaser.Scene {
       this.decor.start(data.decorResume.sel);
     }
     if (data.boothMoved) this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.boothMoved));
-    if (DECOR_RETURNED) this.time.delayedCall(600, () => this.showToast(tr(`${DECOR_RETURNED}× Deko ist zurück in der Deko-Taste.`, `${DECOR_RETURNED}× decor is back in the decor button.`)));
+    this.lastBuildHint = undefined;
+    this.updateBuildHint();
+    if (DECOR_RETURNED) this.time.delayedCall(600, () => this.showToast(tr(`${DECOR_RETURNED}× Deko ist zurück in der Bauen-Leiste.`, `${DECOR_RETURNED}× decor is back in the build bar.`)));
     this.signPanel.classList.remove('show');
     this.updateHud();
     this.updateToolbar();
@@ -1636,10 +1640,6 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearSlot && !this.tool && !this.leaving) {
         this.openEventsPanel(null, this.nearSlot.slot.id); // am Bauplatz: Bude aussuchen
-        return;
-      }
-      if (this.nearDecoShop && !this.leaving) {
-        this.openDecoShop(); // am Deko-Laden: Deko kaufen
         return;
       }
       if (this.nearWish && !this.leaving) {
@@ -2786,6 +2786,31 @@ export default class GardenScene extends Phaser.Scene {
 
   // ---- Tierfreunde (siehe src/world/friends.js und docs/plan-freundschaft.md) ----
 
+  // Mavis Tierfreund-Aufgabe läuft (Einführung gehört): 'name' – noch kein Tier benannt (rote Pfeile durch die Tafel am
+  // Schild), 'pet' – benannt, aber noch nicht gestreichelt (Pfeil auf den Schließen-Knopf und dann auf das Tier); sonst null
+  friendTutorial() {
+    if (activeStep()?.id !== 'friend' || !game.story.heard || !isPark(LEVEL_ID)) return null;
+    const bonds = Object.values(game.bonds ?? {});
+    if (bonds.some((b) => b.points > 0)) return null;
+    return bonds.length ? 'pet' : 'name';
+  }
+
+  // der benannte, noch nie gestreichelte Tierfreund in diesem Abschnitt, der Henrik am nächsten ist
+  tutorialFriend() {
+    const p = this.player;
+    let best = null;
+    let bd = Infinity;
+    for (const a of this.friendsHere()) {
+      if (bondOf(a).points > 0 || !a.sprite?.active) continue;
+      const d = Math.hypot(a.x - p.x, (a.y - p.y) * 2);
+      if (d < bd) {
+        bd = d;
+        best = a;
+      }
+    }
+    return best;
+  }
+
   // benannte Tiere in diesem Abschnitt (nur in den Gehegen des Tierparks; Aquarium und Reptilienhaus vorerst nicht)
   friendsHere() {
     if (!isPark(LEVEL_ID)) return [];
@@ -3321,8 +3346,15 @@ export default class GardenScene extends Phaser.Scene {
 
   // darf sich ein Besucher diese Art wünschen? Noch nicht im Tierpark, aus einer freigeschalteten Welt, mit einem
   // Gehege im (freigeschalteten) Tierpark; keine Event-Tiere
-  wishValid(s, home = this.homeCounts()) {
+  // Seltene Variante (skin): die Art lebt schon im Tierpark, die Variante noch nicht, und sie kommt in einer
+  // freigeschalteten Welt vor
+  wishValid(s, home = this.homeCounts(), skin = null) {
     if (!canWish(s) || EVENT_SPECIES[s] || !SPECIES_ORDER.includes(s)) return false;
+    if (skin) {
+      const sk = skinInfo(s, skin);
+      if (!canWishSkin(s, sk) || !(sk.wild > 0) || !((home[s] ?? 0) > 0) || this.homeSkins().has(skin)) return false;
+      return sk.level ? isUnlocked(sk.level) && worldsOf(s).some((w) => w.level === sk.level) : worldsOf(s).some((w) => isUnlocked(w.level));
+    }
     if ((home[s] ?? 0) > 0) return false;
     const house = houseOf(s);
     const pen = house ? isUnlocked(house) : PARK_LEVELS.some((l) => isUnlocked(l) && LEVELS[l].enclosures.some((e) => e.species?.includes(s)));
@@ -3330,10 +3362,24 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // zufällige Art für einen neuen Wunsch-Besucher (nicht in taken: schon gewünscht bzw. angenommen)
+  // gibt { species, skin } zurück (skin nur bei einer seltenen Variante)
   pickWish(taken) {
     const home = this.homeCounts();
-    const list = SPECIES_ORDER.filter((s) => !taken.has(s) && this.wishValid(s, home));
-    return list.length ? Phaser.Utils.Array.GetRandom(list) : null;
+    const rare = SPECIES_ORDER.flatMap((s) => [SKINS[s] ?? []].flat().filter((sk) => !taken.has(wishKey(s, sk.id)) && this.wishValid(s, home, sk.id)).map((sk) => ({ species: s, skin: sk.id })));
+    if (rare.length && Math.random() < RARE_WISH_CHANCE) return Phaser.Utils.Array.GetRandom(rare);
+    const list = SPECIES_ORDER.filter((s) => !taken.has(s) && this.wishValid(s, home)).map((s) => ({ species: s, skin: null }));
+    if (list.length) return Phaser.Utils.Array.GetRandom(list);
+    return rare.length ? Phaser.Utils.Array.GetRandom(rare) : null;
+  }
+
+  // seltene Varianten, die im Tierpark (und seinen Häusern) im Gehege leben
+  homeSkins() {
+    const skins = new Set();
+    for (const a of this.animals) if (a.skin && a.state === 'penned' && !LEVEL.camp) skins.add(a.skin);
+    for (const [id, saved] of Object.entries(game.levels)) {
+      if (id !== LEVEL_ID) for (const x of saved.animals) if (x.skin && x.state === 'penned') skins.add(x.skin);
+    }
+    return skins;
   }
 
   // Bild eines Besuchers (erstes Bild seines Blatts, von vorn) für den Aktionsknopf; einmal je Aussehen erzeugt
@@ -3369,12 +3415,13 @@ export default class GardenScene extends Phaser.Scene {
     const open = openWishes();
     if (!open.length) return;
     const home = this.homeCounts();
+    const skins = this.homeSkins();
     let changed = false;
     for (const w of open) {
-      if (w.done || !(home[w.species] > 0)) continue;
+      if (w.done || !(w.skin ? skins.has(w.skin) : home[w.species] > 0)) continue;
       w.done = true;
       changed = true;
-      this.showToast(`${animalIcon(w.species, 2.2)} ${tr('Wunsch erfüllt! Schau am Gehege vorbei.', 'Wish come true! Visit the enclosure.')}`);
+      this.showToast(`${wishIcon(w.species, w.skin, 2.2)} ${tr('Wunsch erfüllt! Schau am Gehege vorbei.', 'Wish come true! Visit the enclosure.')}`);
     }
     if (changed) this.updateQuestCard();
     const crowd = this.visitors;
@@ -3382,24 +3429,26 @@ export default class GardenScene extends Phaser.Scene {
     const p = this.player;
     for (const w of open) {
       if (!w.done) continue;
-      const a = this.animals.find((x) => x.species === w.species && x.state === 'penned' && !x.baby && ENCLOSURES.includes(x.enclosure) && Math.hypot(x.x - p.x, (x.y - p.y) * 2) < THANK_DIST);
+      const a = this.animals.find((x) => x.species === w.species && (!w.skin || x.skin === w.skin) && x.state === 'penned' && !x.baby && ENCLOSURES.includes(x.enclosure) && Math.hypot(x.x - p.x, (x.y - p.y) * 2) < THANK_DIST);
       if (a && crowd.thank(w, a.enclosure, a)) return;
     }
   }
 
   // der Besucher freut sich am Gehege: Herzen, Wunschkarte weg
-  wishThanked(s) {
+  wishThanked(wish) {
     const open = openWishes();
-    const i = open.findIndex((w) => w.species === s && w.done);
+    const i = open.findIndex((w) => w === wish || (w.species === wish.species && (w.skin ?? null) === (wish.skin ?? null) && w.done));
     if (i < 0) return;
-    open.splice(i, 1);
+    const [w] = open.splice(i, 1);
+    const s = w.species;
+    const hearts = wishHearts(w);
     countPark('wishes'); // für die Statistik
-    this.addHearts(WISH_HEARTS, s);
+    this.addHearts(hearts, s);
     this.updateQuestCard();
     // die Tafel erst nach den Freudensprüngen (sonst verdeckt sie den Besucher)
     this.time.delayedCall(2600, () => {
       const box = document.getElementById('success');
-      box.innerHTML = `${tr('<b>Wunsch erfüllt!</b>', '<b>Wish come true!</b>')}<span>${animalIcon(s, 2.6)}</span><span><span class="heart">♥</span> +${WISH_HEARTS}</span>`;
+      box.innerHTML = `${tr('<b>Wunsch erfüllt!</b>', '<b>Wish come true!</b>')}<span>${wishIcon(s, w.skin, 2.6)}</span><span><span class="heart">♥</span> +${hearts}</span>`;
       box.classList.remove('show');
       void box.offsetWidth; // Animation neu starten
       box.classList.add('show');
@@ -3415,11 +3464,11 @@ export default class GardenScene extends Phaser.Scene {
     el.classList.toggle('folded', folded);
     const html = open
       .map((w) => {
-        const [name] = ANIMAL_INFO[w.species] ?? [w.species];
-        const icon = animalIcon(w.species, 1.6);
+        const name = wishName(w.species, w.skin, (ANIMAL_INFO[w.species] ?? [w.species])[0]);
+        const icon = wishIcon(w.species, w.skin, 1.6);
         if (w.done) return `<div class="wish-card done"><b>${tr('Wunsch erfüllt!', 'Wish come true!')}</b><span class="wish-line">${icon}<span>${tr('Schau am Gehege vorbei', 'Visit the enclosure')}: ${this.wishPenName(w.species)}</span></span></div>`;
         const places = worldsOf(w.species).filter((x) => isUnlocked(x.level)).map((x) => LEVELS[x.level].name).join(', ');
-        return `<div class="wish-card"><b>${tr('Besucherwunsch', 'Visitor’s wish')}</b><span class="wish-line">${icon}<span>${name}${places ? ` · ${places}` : ''}</span><span class="quest-reward"><span class="heart">♥</span> ${WISH_HEARTS}</span></span></div>`;
+        return `<div class="wish-card"><b>${tr('Besucherwunsch', 'Visitor’s wish')}</b><span class="wish-line">${icon}<span>${name}${places ? ` · ${places}` : ''}</span><span class="quest-reward"><span class="heart">♥</span> ${wishHearts(w)}</span></span></div>`;
       })
       .join('');
     if (el.innerHTML !== html) el.innerHTML = html;
@@ -3648,32 +3697,94 @@ export default class GardenScene extends Phaser.Scene {
     });
   }
 
-  // Deko-Laden: großer Marktstand (w×h Kacheln, Bild aus tools/deco-stand.py: Fußpunkt = Mitte der Grundfläche); davor
-  // öffnet die Aktionstaste (oder Antippen) den Laden
-  drawDecoShop() {
-    this.decoShop = null;
-    const at = LEVEL.decoShop;
-    if (!at) return;
-    const { x, y } = tileToWorld(at.tx + ((at.w ?? 1) - 1) / 2, at.ty + ((at.h ?? 1) - 1) / 2);
-    const front = tileToWorld(at.tx + (at.w ?? 1) - 1, at.ty + (at.h ?? 1) - 1).y; // vorderste Kachel: davor steht man vor dem Stand
-    const img = this.add.image(x, y, 'deco_stand').setOrigin(0.501, 0.778).setDepth(front);
-    img.setInteractive({ useHandCursor: true, pixelPerfect: false }).on('pointerdown', () => this.nearDecoShop && this.openDecoShop());
-    this.decoShop = { x, y };
-  }
-
-  // Deko-Laden: Tafel mit allen Teilen und Preisen; kaufen, ohne dass sie zugeht
-  openDecoShop() {
+  // Katalog der Bauen-Taste („Bestellen“): eine Liste, erst die Buden, dann die Deko (Zwischenüberschriften, keine Reiter);
+  // die Tafel bleibt beim Bestellen offen. Mavis Buden-Aufgabe: ein Pfeil zeigt auf den Eisstand
+  openCatalog() {
     if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
+    const tut = storyActiveId() === 'stands' && game.story.heard;
     this.scene.pause();
     openEvents(
-      () => ({ hearts: game.hearts, deco: this.decoOffers() }),
-      (_tab, id) => this.buyDecor(id),
-      () => this.scene.resume(),
-      { tab: 'deco', single: true, title: tr('Deko-Laden', 'Decor Shop') },
+      () => ({
+        hearts: game.hearts,
+        shop: [
+          { head: true, name: tr('Buden', 'Stands') },
+          ...this.boothOffers().map((o) => ({ ...o, id: 'stand:' + o.id })),
+          { head: true, name: tr('Deko', 'Decor') },
+          ...this.decoOffers(),
+        ],
+      }),
+      (_t, id) => (id.startsWith('stand:') ? this.buyBooth(id.slice(6)) : this.buyDecor(id)),
+      () => {
+        this.scene.resume();
+        this.decor?.renderBar();
+        this.updateBuildHint();
+      },
+      {
+        tab: 'shop',
+        single: true,
+        title: tr('Bestellen', 'Order'),
+        point: tut && !storedBooths(LEVEL_ID).length ? 'stand:icecream' : null,
+        hint: tut && !storedBooths(LEVEL_ID).length ? tr('Bestell eine Bude – dann stellst du sie an einen Weg.', 'Order a stand – then put it next to a path.') : null,
+        hintTab: 'shop',
+      },
     );
   }
 
-  // Angebot des Deko-Ladens: Teile mit Preis und wie viele man schon hat
+  // Buden im Katalog: Preis, Herzen je Verkauf; gesperrt, wenn sie hier schon steht, der Abschnitt voll ist oder der
+  // Bauplan noch fehlt (Zuckerwatte und Brezeln: aus Kisten)
+  boothOffers() {
+    return SHOPS.filter((def) => boothKnown(def.id)).map((def) => ({
+      id: def.id,
+      name: def.name,
+      image: def.stand,
+      cost: price(def.cost),
+      text: tr(`Jeder Verkauf bringt ${def.hearts} Herzen.`, `Every sale brings ${def.hearts} hearts.`),
+      blocked: storedBooths(LEVEL_ID).some((b) => b.kind === def.id)
+        ? tr('liegt in der Bauen-Leiste', 'in your build bar')
+        : hasShop(LEVEL_ID, def.id)
+        ? tr('steht hier schon', 'already in this area')
+        : boothCount(LEVEL_ID) >= MAX_BOOTHS
+          ? tr(`höchstens ${MAX_BOOTHS} Buden hier`, `at most ${MAX_BOOTHS} stands here`)
+          : game.hearts < price(def.cost)
+            ? tr('zu wenig Herzen', 'not enough hearts')
+            : null,
+    }));
+  }
+
+  // Bude bestellen: Herzen ab, sie liegt in der Bauen-Leiste (Reiter Buden, gleich ausgewählt)
+  buyBooth(kind) {
+    const def = shopDef(kind);
+    if (!def || hasShop(LEVEL_ID, kind) || boothCount(LEVEL_ID) >= MAX_BOOTHS || game.hearts < price(def.cost)) return;
+    game.hearts -= price(def.cost);
+    const id = orderBooth(LEVEL_ID, kind);
+    this.updateHud();
+    if (this.decor?.on) this.decor.choose('booth:' + id);
+    this.updateBuildHint();
+  }
+
+  // Mavis Buden-Aufgabe: wo ist man gerade? 'open' (Bauen-Taste drücken), 'order' (bestellen), 'place' (Bude an einen Weg
+  // stellen) oder null (keine Aufgabe). Den Eisstand gibt es schon in der Grundausstattung: dann gleich 'place'
+  buildHintStage() {
+    if (storyActiveId() !== 'stands' || !game.story.heard || LEVEL_ID !== 'park' || Object.values(game.booths ?? {}).some((b) => !b.stored)) return null;
+    if (!this.decor?.on) return 'open';
+    return storedBooths(LEVEL_ID).length ? 'place' : 'order';
+  }
+
+  // die passenden Knöpfe pulsieren (Bauen-Taste, „Bestellen“, beim Setzen die Bude in der Leiste), und Mavis Pfeil zeigt
+  // beim Setzen auf einen guten Platz
+  updateBuildHint() {
+    const stage = this.buildHintStage();
+    document.getElementById('btn-decor')?.classList.toggle('tut', stage === 'open');
+    document.querySelector('#decor-bar [data-id="@order"]')?.classList.toggle('tut', stage === 'order');
+    const booth = this.decor?.booths()[0];
+    document.querySelectorAll('#decor-bar .decor-item').forEach((el) => el.classList.toggle('tut', stage === 'place' && el.dataset.id === booth && this.decor.sel !== booth));
+    if (stage !== this.lastBuildHint) {
+      this.lastBuildHint = stage;
+      this.mavi?.updateArrow();
+    }
+  }
+
+  // Deko im Katalog: Teile mit Preis und wie viele man schon hat
   decoOffers() {
     const owned = ensureDecor().owned;
     return shopDecor().map((id) => {
@@ -3737,7 +3848,7 @@ export default class GardenScene extends Phaser.Scene {
   // Setzen-Modus: steht Henrik an etwas, dem die Aktionstaste gilt (Schild, Futterhaus, Tierfreund …)? Dann ist die
   // Vorschau rot, und die Taste bleibt bei der anderen Aktion
   decorBusy() {
-    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearDecoShop || this.nearWish || this.nearFriend || this.shownSign || this.nearCar || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
+    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearWish || this.nearFriend || this.shownSign || this.nearCar || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
   }
 
   // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
@@ -3752,18 +3863,17 @@ export default class GardenScene extends Phaser.Scene {
       this.shopSlots.push({ slot: w, x, y, kind: null, wheel: true });
       this.drawSlotSign(w, x, y, 'wheel_ring');
     }
+    // aufgestellte Buden (frei an den Wegen, siehe shops.js); große (size 2) in der Mitte ihrer 2×2 Kacheln
     for (const slot of slotsIn(LEVEL_ID)) {
-      const { x, y } = tileToWorld(slot.tx, slot.ty);
       const kind = builtOn(slot.id);
-      if (!kind && !slotsShown()) continue; // vor Mavis Ausbau-Aufgabe noch keine leeren Bauplätze
-      this.shopSlots.push({ slot, x, y, kind });
-      if (!kind) {
-        this.drawSlotSign(slot, x, y);
-        continue;
-      }
       const def = shopDef(kind);
-      const stand = this.add.image(x, y, def.stand).setOrigin(0.5, 100 / 128).setScale(0.7).setDepth(y).setFlipX(!!slot.flip);
-      this.add.sprite(x + (slot.flip ? -8 : 8), y - 10, def.seller, 1).setOrigin(0.5, 112 / 116).setScale(0.5).setDepth(y - 6).setFlipX(!!slot.flip);
+      if (!def) continue;
+      const n = def.size ?? 1;
+      const { x, y } = tileToWorld(slot.tx + (n - 1) / 2, slot.ty + (n - 1) / 2);
+      const depth = tileToWorld(slot.tx + n - 1, slot.ty + n - 1).y;
+      this.shopSlots.push({ slot, x, y, kind });
+      const stand = this.add.image(x, y, def.stand).setOrigin(0.5, def.originY ?? 100 / 128).setScale(def.scale ?? 0.7).setDepth(depth).setFlipX(!!slot.flip);
+      if (def.seller) this.add.sprite(x + (slot.flip ? -8 : 8), y - 10, def.seller, 1).setOrigin(0.5, 112 / 116).setScale(0.5).setDepth(depth - 6).setFlipX(!!slot.flip);
       this.decorImages?.set(`${slot.tx},${slot.ty}`, stand); // (im Setzen-Modus leuchtet sie zum Aufheben auf)
     }
   }
@@ -4172,10 +4282,10 @@ export default class GardenScene extends Phaser.Scene {
     const later = STEPS.length - at - 1;
     if (later > 0) rows.push(`<div class="quest-row"><span class="quest-check">⬜</span><span>${tr(`… und noch ${later} weitere – Mavi verrät sie nach und nach`, `… and ${later} more – Mavi will reveal them one by one`)}</span></div>`);
     const wishes = openWishes().map((w) => {
-      const [name] = ANIMAL_INFO[w.species] ?? [w.species];
+      const name = wishName(w.species, w.skin, (ANIMAL_INFO[w.species] ?? [w.species])[0]);
       const pen = this.wishPenName(w.species);
       const text = w.done ? tr(`${name}: erfüllt! Schau am Gehege vorbei: ${pen}`, `${name}: done! Visit the enclosure: ${pen}`) : `${name} · ${worldsOf(w.species).filter((x) => isUnlocked(x.level)).map((x) => LEVELS[x.level].name).join(', ')}`;
-      return `<div class="quest-row${w.done ? ' done' : ''}"><span class="quest-check">${animalIcon(w.species, 1.6)}</span><span>${text}</span><span class="quest-reward"><span class="heart">♥</span> ${WISH_HEARTS}</span></div>`;
+      return `<div class="quest-row${w.done ? ' done' : ''}"><span class="quest-check">${wishIcon(w.species, w.skin, 1.6)}</span><span>${text}</span><span class="quest-reward"><span class="heart">♥</span> ${wishHearts(w)}</span></div>`;
     });
     const wishHtml = wishes.length ? `<h2>${tr('Besucherwünsche', 'Visitors’ wishes')}</h2><div class="quest-list">${wishes.join('')}</div>` : '';
     return `${wishHtml}<h2>${tr(`Mavis Aufgaben · ${Math.min(at, STEPS.length)} / ${STEPS.length}`, `Mavi’s tasks · ${Math.min(at, STEPS.length)} / ${STEPS.length}`)}</h2>
@@ -4226,11 +4336,6 @@ export default class GardenScene extends Phaser.Scene {
     if (this.nearScooter && !this.driving) {
       setTouchTool(null, 'assets/scooter_icon.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${this.driving ? tr('Absteigen', 'Get off') : tr('Aufsteigen', 'Get on')}</span></div>`;
-      return;
-    }
-    if (this.nearDecoShop) {
-      setTouchTool(null, 'assets/deco_stand.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/deco_stand.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Deko-Laden', 'Decor shop')}</span></div>`;
       return;
     }
     if (this.nearSlot && !this.tool) {
@@ -4847,10 +4952,20 @@ export default class GardenScene extends Phaser.Scene {
     const W = this.scale.width * z;
     const H = this.scale.height * z;
     const top = Math.max(MARKER_MARGIN, this.hud.getBoundingClientRect().bottom + 26);
+    // links oben stehen Event, Mavis Aufgabe und die Wunschkarten: dort rutscht ein Hinweis darunter
+    let stack = null;
+    for (const el of [this.eventBanner, this.questCard, this.wishCards]) {
+      const r = el?.getBoundingClientRect();
+      if (!r?.width) continue;
+      stack = { right: Math.max(stack?.right ?? 0, r.right), bottom: Math.max(stack?.bottom ?? 0, r.bottom) };
+    }
     // Hinweise auf ausgelegte Fallen nur im Wald (dort gibt es die Falle); woanders keine
     const traps = LEVEL_ID === 'forest' ? game.traps : [];
     // dazu Pfeile zu Schatzkisten (Glücksbringer Kisten-Kompass) und zum seltenen Tier aus einer Kiste
     const luck = this.luck?.markerTargets() ?? [];
+    // und ein roter Hinweis zu Mavis Pfeil (Tutorial), wenn er gerade nicht zu sehen ist
+    const tut = this.mavi?.markerTarget?.();
+    if (tut) luck.push(tut);
     for (const t of [...traps, ...luck]) {
       let target = t;
       if (t.level && t.level !== LEVEL_ID) {
@@ -4872,7 +4987,7 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (!el) {
         el = document.createElement('div');
-        el.className = t.icon ? `marker luck${t.bino ? ' bino' : ''}` : 'marker'; // bino: Fernglas (Tierbild, etwas größer)
+        el.className = t.cls ?? (t.icon ? `marker luck${t.bino ? ' bino' : ''}` : 'marker'); // bino: Fernglas (Tierbild, etwas größer)
         this.markerBox.appendChild(el);
         this.markers.set(t.id, el);
       }
@@ -4894,8 +5009,11 @@ export default class GardenScene extends Phaser.Scene {
       const kx = (dx > 0 ? W - MARKER_MARGIN - W / 2 : MARKER_MARGIN - W / 2) / dx;
       const ky = (dy > 0 ? H - MARKER_MARGIN - H / 2 : top - H / 2) / dy;
       const k = Math.min(kx, ky);
-      el.style.left = `${W / 2 + dx * k}px`;
-      el.style.top = `${H / 2 + dy * k}px`;
+      const mx = W / 2 + dx * k;
+      let my = H / 2 + dy * k;
+      if (stack && mx < stack.right + MARKER_MARGIN && my < stack.bottom + MARKER_MARGIN) my = stack.bottom + MARKER_MARGIN;
+      el.style.left = `${mx}px`;
+      el.style.top = `${my}px`;
       el.querySelector('.pointer').style.transform = `rotate(${Math.atan2(dy, dx)}rad)`;
       el.classList.add('show');
       el.classList.toggle('caught', !!t.caught);
@@ -7600,6 +7718,9 @@ export default class GardenScene extends Phaser.Scene {
   pickResident(i, scroll = true) {
     this.signPick = Math.max(0, Math.min(i, this.signAnimals.length - 1));
     this.signPanel.querySelectorAll('.resident').forEach((t, j) => t.classList.toggle('picked', j === this.signPick));
+    // Tierfreund-Aufgabe: der rote Pfeil zeigt auf das ausgewählte Tier
+    this.signPanel.querySelector('.sign-residents .tut-pointer')?.remove();
+    if (this.friendTutorial() === 'name') this.signPanel.querySelector('.resident.picked')?.insertAdjacentHTML('beforeend', TUT_POINTER);
     if (scroll) this.signPanel.querySelector('.resident.picked')?.scrollIntoView({ block: 'nearest' });
   }
 
@@ -7668,13 +7789,13 @@ export default class GardenScene extends Phaser.Scene {
       const old = bondOf(view.old).name;
       return `<div class="sign-head">${pic}<span><b>${tr('Anderes Tier wählen?', 'Choose another animal?')}</b><small>${kind}</small></span></div>
         <p class="sign-text">${tr(`${old} ist hier schon dein Freund. Möchtest du lieber dieses Tier? Die Freundschaft mit ${old} bleibt gespeichert – wählst du ${old} später wieder, geht es dort weiter.`, `${old} is already your friend here. Would you rather choose this animal? Your friendship with ${old} is kept – if you choose ${old} again later, it continues where it left off.`)}</p>
-        <div class="sign-close"><button type="button" data-back>${tr('Nein', 'No')}</button><button type="button" data-yes>${tr('Ja', 'Yes')}</button></div>`;
+        <div class="sign-close"><button type="button" data-back>${tr('Nein', 'No')}</button><button type="button" data-yes>${tr('Ja', 'Yes')}${this.friendTutorial() === 'name' ? TUT_POINTER : ''}</button></div>`;
     }
     const bond = bondOf(a);
     const value = String(view.name ?? '').replace(/"/g, '&quot;');
     return `<div class="sign-head">${pic}<span><b>${bond ? tr('Neuer Name?', 'New name?') : tr('Wie soll es heißen?', 'What should it be called?')}</b><small>${kind}</small></span></div>
       <div class="name-row"><input class="name-input" type="text" maxlength="${NAME_MAX}" value="${value}" autocomplete="off" spellcheck="false"><button type="button" class="dice" data-dice aria-label="${tr('Namen würfeln', 'Roll a name')}" title="${tr('Namen würfeln', 'Roll a name')}">🎲</button></div>
-      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}${nameCost() ? ` <span class="heart">♥</span> ${nameCost()}` : ''}</button></div>`;
+      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}${nameCost() ? ` <span class="heart">♥</span> ${nameCost()}` : ''}${this.friendTutorial() === 'name' ? TUT_POINTER : ''}</button></div>`;
   }
 
   // Bild eines Tiers auf seinen sichtbaren Teil zugeschnitten (seltene Varianten mit eigenem Bild bzw. eingefärbt)
@@ -7726,9 +7847,9 @@ export default class GardenScene extends Phaser.Scene {
     if (!open) {
       const how = isTouch() ? tr('Antippen', 'Tap') : `${ACTION_KEY} / Enter`;
       const what = isPark(LEVEL_ID) && residents.length && !fb ? tr('Freund aussuchen', 'Pick a friend') : tr(`Hier wohnen: ${residents.length}`, `Living here: ${residents.length}`);
-      return `${head}${slots}${friendLine}<div class="sign-more">${what} · <b>${how}</b></div>`;
+      return `${head}${slots}${friendLine}<div class="sign-more">${what} · <b>${how}${this.friendTutorial() === 'name' ? TUT_POINTER : ''}</b></div>`;
     }
-    const close = `<div class="sign-close"><button type="button" data-close>${tr('Schließen', 'Close')}</button></div>`;
+    const close = `<div class="sign-close"><button type="button" data-close>${tr('Schließen', 'Close')}${this.friendTutorial() === 'pet' ? TUT_POINTER : ''}</button></div>`;
     const hint = isPark(LEVEL_ID) && residents.length ? `<small class="sign-hint">${fb ? tr('Tippe ein Tier an, um es umzubenennen oder ein anderes zu wählen.', 'Tap an animal to rename it or choose another one.') : tr('Tippe ein Tier an und gib ihm einen Namen – dann ist es dein Freund.', 'Tap an animal and give it a name – then it is your friend.')}</small>` : '';
     const list = residents.length
       ? `<div class="sign-sub">${tr('Hier wohnen', 'Living here')}</div>${hint}<div class="sign-residents">${residents
@@ -7867,12 +7988,6 @@ export default class GardenScene extends Phaser.Scene {
     });
     if (computer !== this.nearComputer) {
       this.nearComputer = computer;
-      this.updateToolbar();
-    }
-    // am Deko-Laden: die Aktionstaste öffnet ihn
-    const decoShop = !!this.decoShop && Math.hypot(this.player.x - this.decoShop.x, (this.player.y - this.decoShop.y) * 2) < CHEST_DIST * 2.4; // (am E-Roller daneben gilt die Taste dem Roller)
-    if (decoShop !== !!this.nearDecoShop) {
-      this.nearDecoShop = decoShop;
       this.updateToolbar();
     }
     // an einem leeren Bauplatz: die Aktionstaste öffnet den Buden-Katalog

@@ -46,7 +46,10 @@ Bewusst **ohne Stammgäste**: keine Namen, keine wiederkehrenden Figuren.
   mit dem gemerkten Aussehen. Man sieht ihn ein paar Sekunden herbeilaufen.
 - Er geht zum Zaun und freut sich: mehrere Freudensprünge (Tween), Herzregen und die Sprechblase
   „Ein Fuchs! Danke!“.
-- **Belohnung:** 30 Herzen.
+- **Belohnung:** 30 Herzen, bei einer seltenen Variante 60.
+- **Seltene Wünsche:** Etwa jeder dritte Wunsch (wenn möglich) ist eine seltene Variante einer Art, die schon im
+  Tierpark lebt (z. B. Silberfuchs, gefleckter Widder; nur Varianten mit eigenem Bild). Blase mit goldenem Rand,
+  „Mein größter Wunsch: ein Silberfuchs!“. Erfüllt, sobald die Variante in einem Gehege lebt.
 - Danach schaut er noch eine Weile und geht dann wie ein normaler Besucher.
 - Die Wunschkarte verschwindet.
 

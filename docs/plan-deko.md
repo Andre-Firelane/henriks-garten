@@ -176,6 +176,27 @@ Ersetzt den abgeschalteten Gehegeausbau: den eigenen Tieren ein hübsches Zuhaus
   ein Bauplatz (`slotsIn` in shops.js). Passt ihr Platz nach einem Umbau nicht mehr, kommt sie in die Deko-Taste.
 - Das Riesenrad bleibt fest.
 
+## Umbau: Bauen statt Deko (Andre, 22.11.2026)
+
+- Die Taste heißt **„Bauen“** (Bild: Eisstand, public/assets/icon_build.png). Die Leiste ist eine durchgehende Liste
+  mit Zwischenüberschriften **Buden** und **Deko** (mit dem Spielzeug der Gehege) – keine Reiter, die übersieht man.
+- **Grundausstattung:** ein Eisstand fürs Zentrum liegt von Anfang an in der Leiste (ältere Spielstände bekommen ihn
+  einmal, wenn dort noch keiner steht). Mavis Buden-Aufgabe: „Stell eine Bude an einen Weg“.
+- **Bestellen** statt Laden im Park: In der Bauen-Leiste öffnet „Bestellen“ einen Katalog – eine Liste mit
+  Zwischenüberschriften Buden und Deko, keine Reiter (Preise in Herzen, die Tafel bleibt beim Bestellen offen). Henrik ist der Zoodirektor und bestellt; das Bestellte liegt sofort in
+  der Leiste. Der Marktstand im Park als Laden entfällt.
+- **Buden frei setzen**: Eine bestellte Bude setzt man wie Deko an einen Weg (direkt am Weg, Abstand zu anderen Buden).
+  **Höchstens 3 Buden je Parkabschnitt** (`MAX_BOOTHS` in shops.js), jede Sorte einmal. Die festen Bauplätze entfallen;
+  schon gebaute Buden bleiben, wo sie sind (alte Spielstände ziehen um), und lassen sich umstellen.
+- **Baupläne für Buden:** Zuckerwatte und Brezeln gibt es erst mit Bauplan aus einer Kiste (`blueprint` in shops.js);
+  Eisstand, Popcorn, Limonade und Blumen & Andenken sind von Anfang an bestellbar.
+- **Tutorial** (Mavis Buden-Aufgabe „Bestell eine Bude und stell sie an einen Weg“): erst pulsiert die Bauen-Taste, dann
+  „Bestellen“ (bzw. der Reiter Buden); im Katalog zeigt ein Pfeil auf den Eisstand; liegt die Bude in der Leiste, zeigt
+  Mavis Pfeil auf einen guten Platz (der erste frühere Bauplatz, der frei ist – im Zentrum rechts vor dem Haupthaus; der
+  linke liegt in der Fläche des künftigen Flamingo-Geheges). Erledigt, sobald eine Bude steht.
+- Der **Marktstand** (Andres Bild) wird die sechste Bude **„Blumen & Andenken“** über 2×2 Kacheln: Besucher kaufen dort
+  ein, das bringt Herzen. (Andre findet ihn groß – ausprobieren.)
+
 ## Speichern
 
 ```js

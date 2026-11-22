@@ -6,7 +6,11 @@
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { ENCLOSURES, LEVEL, LEVEL_ID, START, exitAt, isBlocked, nearEnclosure } from '../world/map.js';
+import { ENCLOSURES, LEVEL, LEVEL_ID, START, charAt, exitAt, isBlocked, nearEnclosure, reservedAt } from '../world/map.js';
+
+// Buden-Aufgabe: guter Platz für die erste Bude – der erste frühere Bauplatz, der frei ist (nicht in der Fläche eines
+// künftigen Geheges, nichts darauf)
+const boothSpot = () => (LEVEL.legacySlots ?? []).find((s) => charAt(s.tx, s.ty) === '.' && !reservedAt(s.tx, s.ty)) ?? null;
 import { LEVELS, isPark } from '../world/levels.js';
 import { seaReady } from '../story/steps.js';
 import { activeStep, completeStep, stepDone } from '../story/story.js';
@@ -36,6 +40,8 @@ export default class Mavi {
     this.shadow = null;
     this.arrow = null;
     this.arrowAt = null;
+    this.arrowFollow = null; // Pfeil über einem Tier, das herumläuft (Tierfreund-Aufgabe): liefert jedes Bild die Stelle
+    this.bob = { y: 0 }; // Auf und Ab des Pfeils
     this.checkTimer = 0;
     this.waveTimer = 1;
     this.talkFrom = scene.time.now + SETTLE;
@@ -69,9 +75,9 @@ export default class Mavi {
       // vor dem Schild auf dem Weg, nicht auf dem Zaun: nächste Kachel mit Abstand zu allen Gehegen
       const s = this.scene.sheepSign();
       if (s) return this.freeTile(worldToTile(s.x, s.y), true);
-    } else if (at.spot === 'build' && LEVEL.buildSlots?.length) {
-      // neben dem ersten Bauplatz (auf dem Gras daneben, nicht auf den Pflöcken)
-      const b = LEVEL.buildSlots[0];
+    } else if (at.spot === 'build' && boothSpot()) {
+      // Buden-Aufgabe: neben dem guten Platz für die erste Bude
+      const b = boothSpot();
       return this.freeTile({ tx: b.tx - 1, ty: b.ty + 1 });
     } else if (at.spot === 'aquarium') t = { tx: 4, ty: 15 }; // auf dem Weg neben der Ankunft vor der Tür
     else if (at.spot === 'entry') t = { tx: 9, ty: 16 }; // im Aquarium gleich neben der Tür (nicht hinter den Quallen-Lampen)
@@ -144,6 +150,7 @@ export default class Mavi {
   update(dt) {
     const p = this.scene.player;
     p.frozen = isSpeaking();
+    this.placeArrow();
     if (this.sprite) {
       // schaut zum Spieler (immer nach vorne, nur links oder rechts)
       const right = p.x >= this.sprite.x;
@@ -279,6 +286,7 @@ export default class Mavi {
   updateArrow() {
     const step = activeStep();
     let target = null;
+    let follow = null;
     if (step && !isSpeaking() && !LEVEL.expedition) { // (in der Expedition zeigt das Camp selbst, wohin es geht)
       const goal = this.taskLevel(step);
       if (this.hasNews()) target = this.inOffice() && !this.officeOpen() ? this.scene.officeDoor : { x: this.sprite.x, y: this.sprite.y - this.sprite.displayHeight * this.sprite.originY - ARROW_GAP };
@@ -286,23 +294,65 @@ export default class Mavi {
       else if (POINT[step.id] === 'computer' && game.story.heard) target = this.computerPoint();
       else if (this.needsNet(step)) target = this.scene.chestPoint(); // Wiesen-Aufgabe: zum Regal, dort liegt der Kescher
       else if (POINT[step.id] === 'build' && game.story.heard) {
-        const b = this.scene.shopSlots?.find((s) => !s.kind);
-        if (b) target = { x: b.x, y: b.y - 30 };
+        // Buden-Aufgabe: die Knöpfe zeigt die Bauen-Leiste (updateBuildHint); liegt die bestellte Bude in der Leiste, zeigt
+        // der Pfeil auf einen guten Platz am Hauptweg
+        const b = this.scene.decor?.on && this.scene.buildHintStage?.() === 'place' ? boothSpot() : null;
+        if (b) {
+          const p = tileToWorld(b.tx, b.ty);
+          target = { x: p.x, y: p.y - 30 };
+        }
       } else if (POINT[step.id] === 'sign' && game.story.heard) {
-        const s = this.scene.sheepSign();
-        if (s) target = { x: s.x, y: s.y - 52 };
+        // Tierfreund-Aufgabe: erst zum Schild (Namen geben), danach zum benannten Tier (streicheln)
+        const friend = this.scene.friendTutorial?.() === 'pet' ? this.scene.tutorialFriend?.() : null;
+        if (friend) follow = friend;
+        else {
+          const s = this.scene.sheepSign();
+          if (s) target = { x: s.x, y: s.y - 52 };
+        }
       }
     }
-    if (target && this.arrowAt && Math.hypot(target.x - this.arrowAt.x, target.y - this.arrowAt.y) < 2) return;
+    if (follow) {
+      if (this.arrow && this.arrowFollow === follow) return;
+      target = this.followPoint(follow);
+    } else if (target && this.arrow && !this.arrowFollow && this.arrowAt && Math.hypot(target.x - this.arrowAt.x, target.y - this.arrowAt.y) < 2) return;
     this.arrow?.destroy();
     this.arrow = null;
     this.arrowAt = target;
+    this.arrowFollow = follow;
     if (!target) return;
     this.arrow = this.scene.add
       .text(target.x, target.y, '▼', { fontFamily: 'Arial', fontSize: '22px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 4, resolution: 4 })
       .setOrigin(0.5, 1)
       .setDepth(100001);
-    this.scene.tweens.add({ targets: this.arrow, y: this.arrow.y - 8, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.scene.tweens.killTweensOf(this.bob);
+    this.bob.y = 0;
+    this.scene.tweens.add({ targets: this.bob, y: -8, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  }
+
+  // über dem Tier (über Namensschild und Balken des Tierfreunds)
+  followPoint(a) {
+    const spr = a.sprite;
+    if (!spr?.active) return null;
+    const tag = this.scene.friendTags?.get(a);
+    const top = tag ? tag.y - tag.height - 8 : spr.y - spr.displayHeight * spr.originY;
+    return { x: spr.x, y: top - ARROW_GAP };
+  }
+
+  // jedes Bild: Pfeil an seine Stelle (folgt er einem Tier, mit ihm), dazu das Auf und Ab
+  placeArrow() {
+    if (!this.arrow) return;
+    if (this.arrowFollow) {
+      const t = this.followPoint(this.arrowFollow);
+      if (!t) return this.updateArrow();
+      this.arrowAt = t;
+    }
+    if (this.arrowAt) this.arrow.setPosition(this.arrowAt.x, this.arrowAt.y + this.bob.y);
+  }
+
+  // Ziel des Pfeils für den Hinweis am Bildschirmrand (siehe updateTrapMarkers in GardenScene)
+  markerTarget() {
+    if (!this.arrow || !this.arrowAt) return null;
+    return { id: 'mavi-arrow', x: this.arrowAt.x, y: this.arrowAt.y + 8, cls: 'marker tut' };
   }
 
   // Wiesen-Aufgabe: fehlen noch Schmetterlinge und hat man den Kescher nicht in der Hand, zeigt der Pfeil aufs Regal

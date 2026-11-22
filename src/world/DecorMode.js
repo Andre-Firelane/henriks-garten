@@ -1,4 +1,6 @@
-// Deko-Taste und Setzen-Modus im Tierpark (Plan: docs/plan-deko.md, Daten: src/world/decor.js).
+// Bauen-Taste und Setzen-Modus im Tierpark (Plan: docs/plan-deko.md, Daten: src/world/decor.js und shops.js). Die Leiste
+// ist eine durchgehende Liste mit Zwischenüberschriften (Buden, Deko mit dem Spielzeug der Gehege); „Bestellen“ öffnet den
+// Katalog (GardenScene.openCatalog).
 // Die Deko-Taste (bzw. B) schaltet den Setzen-Modus an und aus. Solange er an ist: rechts eine Leiste mit allen Deko-Teilen,
 // die man besitzt, „Aufheben“ und „Fertig“ (am PC auch 1–9, 0 = Aufheben, Esc = Fertig); ein grüner Rahmen ums Bild; auf
 // der Karte sind alle Kacheln, auf die man bauen darf, leicht grün (Flächen künftiger Gehege orange). Auf der Kachel vor
@@ -16,10 +18,11 @@ import { tr } from '../i18n.js';
 import { game } from '../state.js';
 import { tileToWorld, worldToTile, TILE_W, TILE_H } from './iso.js';
 import { isPark } from './levels.js';
-import { LEVEL, LEVEL_ID, ENCLOSURES, EXITS, GATE_TILES, CAR_BODIES, MAP_W, MAP_H, OBJECTS, charAt, isBlocked, buildingAt, nearSegment, reservedAt, reservedTiles, anyPenAt, setTileChar, decoShopTiles } from './map.js';
+import { LEVEL, LEVEL_ID, ENCLOSURES, EXITS, GATE_TILES, CAR_BODIES, MAP_W, MAP_H, OBJECTS, charAt, isBlocked, buildingAt, nearSegment, reservedAt, reservedTiles, anyPenAt, setTileChar } from './map.js';
 import { countPark } from '../sessions.js';
 import { DECOR, ensureDecor, giveDecor, placedIn, isToy, isBooth, itemDef, designablePen, toyFits, penDecorMax, decorTiles } from './decor.js';
-import { builtOn, pickUpBooth, placeBooth, shopsIn, slotsIn, storedBooths } from './shops.js';
+import { isEventsOpen } from '../ui/eventsPanel.js';
+import { boothTiles, builtOn, pickUpBooth, placeBooth, shopsIn, slotsIn, storedBooths } from './shops.js';
 import { isFriend } from './friends.js';
 
 const OK = 0x5fd05a;
@@ -72,11 +75,19 @@ export default class DecorMode {
     else this.start(this.entries()[0] ?? null);
   }
 
-  // Teile, die man gerade hat (aufgehobene Buden dieses Abschnitts zuerst, dann wie in DECOR, danach Spielzeug)
-  entries() {
+  // Teile, die man gerade hat: Buden dieses Abschnitts (bestellt bzw. aufgehoben) bzw. Deko (wie in DECOR, danach
+  // Spielzeug); ohne Angabe beides, Buden zuerst
+  booths() {
+    return storedBooths(LEVEL_ID).map((b) => 'booth:' + b.id).filter((id) => itemDef(id));
+  }
+
+  decos() {
     const owned = ensureDecor().owned;
-    const booths = storedBooths(LEVEL_ID).map((b) => 'booth:' + b.id).filter((id) => itemDef(id));
-    return [...booths, ...[...Object.keys(DECOR), ...Object.keys(owned).filter(isToy).sort()].filter((id) => owned[id] > 0 && itemDef(id))];
+    return [...Object.keys(DECOR), ...Object.keys(owned).filter(isToy).sort()].filter((id) => owned[id] > 0 && itemDef(id));
+  }
+
+  entries() {
+    return [...this.booths(), ...this.decos()];
   }
 
   // so viele hat man von diesem Teil (eine aufgehobene Bude: 1)
@@ -87,15 +98,21 @@ export default class DecorMode {
 
   // Leiste rechts: Teile mit Anzahl, Aufheben, Fertig (Tasten 1–9, 0, Esc am PC)
   renderBar() {
-    const owned = game.decor.owned;
-    const items = this.entries().map((id, i) => `<button class="decor-item${id === this.sel ? ' sel' : ''}" data-id="${id}">
-        ${i < 9 ? `<span class="key">${i + 1}</span>` : ''}<span class="n">${this.count(id)}</span>
-        <img src="assets/${itemDef(id).key}.png" alt=""><span class="name">${itemDef(id).name}</span></button>`);
-    items.push(`<button class="decor-item${this.sel ? '' : ' sel'}" data-id="@pick"><span class="key">0</span>
-        <img src="assets/hand.png" alt=""><span class="name">${tr('Aufheben', 'Pick up')}</span></button>`);
-    const empty = this.entries().length ? '' : `<div class="decor-empty">${tr('Mehr Deko gibt es am Deko-Laden.', 'Get more decor at the decor shop.')}</div>`;
+    // eine durchgehende Liste: Zwischenüberschrift Buden bzw. Deko (nur, wenn dort etwas liegt), dann Aufheben; die
+    // Zifferntasten zählen über die ganze Liste
+    let i = 0;
+    const item = (id) => `<button class="decor-item${id === this.sel ? ' sel' : ''}" data-id="${id}">
+        ${i < 9 ? `<span class="key">${++i}</span>` : ''}<span class="n">${this.count(id)}</span>
+        <img src="assets/${itemDef(id).key}.png" alt=""><span class="name">${itemDef(id).name}</span></button>`;
+    const section = (title, ids) => (ids.length ? `<div class="decor-head">${title}</div>${ids.map(item).join('')}` : '');
+    const items = section(tr('Buden', 'Stands'), this.booths()) + section(tr('Deko', 'Decor'), this.decos())
+      + `<button class="decor-item${this.sel ? '' : ' sel'}" data-id="@pick"><span class="key">0</span>
+        <img src="assets/hand.png" alt=""><span class="name">${tr('Aufheben', 'Pick up')}</span></button>`;
+    const empty = this.entries().length ? '' : `<div class="decor-empty">${tr('Buden und Deko gibt es unter „Bestellen“.', 'Order stands and decor below.')}</div>`;
     this.bar.innerHTML = `<button class="decor-turn${this.sel ? '' : ' off'}${this.flip ? ' on' : ''}" data-id="@turn"><span class="turn-icon">↻</span>${tr('Drehen', 'Turn')}<span class="key">R</span></button>
-      <div class="decor-title">${tr('Deko', 'Decor')}</div>${empty}<div class="decor-items">${items.join('')}</div>
+      <div class="decor-title">${tr('Bauen', 'Build')}</div>
+      ${empty}<div class="decor-items">${items}</div>
+      <button class="decor-order" data-id="@order">${tr('Bestellen', 'Order')}</button>
       <button class="decor-done" data-id="@done">${tr('Fertig', 'Done')}<span class="key">Esc</span></button>`;
     this.bar.querySelectorAll('[data-id]').forEach((el) => {
       el.onclick = (e) => {
@@ -103,11 +120,14 @@ export default class DecorMode {
         this.choose(el.dataset.id);
       };
     });
+    this.scene.updateBuildHint?.();
   }
 
   choose(id) {
+    id ??= '@pick';
     if (id === '@done') return this.stop();
     if (id === '@turn') return this.turn();
+    if (id === '@order') return this.scene.openCatalog();
     this.sel = id === '@pick' ? null : id;
     this.loadArt();
     this.key = '';
@@ -118,7 +138,7 @@ export default class DecorMode {
 
   // Tasten im Setzen-Modus: 1–9 Teil wählen, 0 Aufheben, Esc Fertig
   keyDown(e) {
-    if (!this.on || e.repeat) return;
+    if (!this.on || e.repeat || isEventsOpen()) return; // (Katalog offen: die Tasten gehören ihm, Esc schließt nur ihn)
     if (e.key === 'Escape') {
       e.preventDefault();
       this.escAt = e.timeStamp; // die Szene öffnet bei diesem Druck nicht das Menü
@@ -165,6 +185,7 @@ export default class DecorMode {
     this.bar.classList.remove('show');
     this.frame.classList.remove('show');
     window.removeEventListener('keydown', this.onKey, true);
+    this.scene.updateBuildHint?.();
     this.scene.saveGame();
     this.scene.updateToolbar();
   }
@@ -237,13 +258,13 @@ export default class DecorMode {
     if (kind === 'no' && why) return { image: img(this.sel), label: why };
     if (kind === 'no' && full) return { image: img(this.sel), label: tr('Das Gehege ist voll', 'The enclosure is full') };
     if (kind === 'no' && this.sel) return { image: img(this.sel), label: tr('Hier geht das nicht', 'Not here') };
-    return { image: 'assets/hand.png', label: tr('Vor eine Deko stellen', 'Stand in front of decor') };
+    return { image: 'assets/hand.png', label: tr('Zum Aufheben davorstellen', 'Stand in front to pick up') };
   }
 
   // Kacheln, die dieses Teil vor Henrik bedecken würde: eine, bei großer Deko (size 2) die 2×2 Kacheln, die von der
   // Kachel vor ihm aus nach hinten (weg von Henrik) und zur Seite reichen. { tx, ty } = kleinstes tx/ty, tiles
   block(tx, ty, id) {
-    const n = (!isToy(id) && !isBooth(id) && DECOR[id]?.size) || 1;
+    const n = (!isToy(id) && (isBooth(id) ? itemDef(id)?.size : DECOR[id]?.size)) || 1;
     if (n === 1) return { tx, ty, tiles: [{ tx, ty }] };
     const [dx, dy] = this.dir ?? [0, 1];
     const tiles = [];
@@ -254,7 +275,7 @@ export default class DecorMode {
   // gesetzte Deko, umstellbares Spielzeug oder eine gebaute Bude an dieser Kachel: { id, tx, ty, list, item } (list: wo es
   // gespeichert ist; Bude: booth = ihr Bauplatz bzw. ihre Id)
   entryAt(tx, ty) {
-    const slot = slotsIn(LEVEL_ID).find((s) => s.tx === tx && s.ty === ty && builtOn(s.id));
+    const slot = slotsIn(LEVEL_ID).find((s) => boothTiles(s).some((t) => t.tx === tx && t.ty === ty));
     if (slot) return { id: 'booth:' + slot.id, tx, ty, booth: slot.id, item: slot };
     const placed = game.decor.placed[LEVEL_ID] ?? [];
     const d = placed.find((p) => decorTiles(p).some((t) => t.tx === tx && t.ty === ty)); // (große Deko: jede ihrer Kacheln)
@@ -274,7 +295,8 @@ export default class DecorMode {
     const def = itemDef(id);
     if (isBooth(id)) {
       // Bude: an den neuen Platz, dann den Abschnitt neu aufbauen (gleich kauft dort jemand ein)
-      placeBooth(def.booth, LEVEL_ID, tx, ty, this.flip);
+      const b = this.block(tx, ty, id);
+      placeBooth(def.booth, LEVEL_ID, b.tx, b.ty, this.flip);
       this.scene.rebuildForDecor({ sel: null }, def.booth);
       return;
     }
@@ -367,15 +389,15 @@ export default class DecorMode {
   }
 
   // Bude: warum geht sie hier nicht? (null: passt) – sie braucht eine Wegkachel direkt daneben (dort stellen sich die
-  // Besucher an), Abstand zu anderen Buden und zum Deko-Laden, und jede Sorte gibt es einmal je Abschnitt
+  // Besucher an), Abstand zu anderen Buden, und jede Sorte gibt es einmal je Abschnitt
   boothProblem(tx, ty, id) {
     const def = itemDef(id);
     if (shopsIn(LEVEL_ID).some((s) => s.kind === def.kind && s.slot.id !== def.booth)) return tr('Diese Bude steht hier schon', 'This stand is already here');
-    let path = false;
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && charAt(tx + dx, ty + dy) === '#') path = true;
+    const tiles = this.block(tx, ty, id).tiles; // (große Bude: alle 2×2 Kacheln)
+    const path = tiles.some((t) => [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => charAt(t.tx + dx, t.ty + dy) === '#'));
     if (!path) return tr('Nur direkt am Weg', 'Only right next to a path');
-    const near = (t) => Math.max(Math.abs(t.tx - tx), Math.abs(t.ty - ty)) < BOOTH_GAP;
-    if (slotsIn(LEVEL_ID).some((s) => s.id !== def.booth && builtOn(s.id) && near(s)) || decoShopTiles().some(near)) return tr('Zu nah an einer anderen Bude', 'Too close to another stand');
+    const near = (o) => tiles.some((t) => Math.max(Math.abs(o.tx - t.tx), Math.abs(o.ty - t.ty)) < BOOTH_GAP);
+    if (slotsIn(LEVEL_ID).some((s) => s.id !== def.booth && boothTiles(s).some(near))) return tr('Zu nah an einer anderen Bude', 'Too close to another stand');
     return null;
   }
 
@@ -439,9 +461,9 @@ export default class DecorMode {
       (e.signs ?? []).forEach((s) => around(s.spot));
     }
     (this.scene.enclosureSigns ?? []).forEach((s) => around(worldToTile(s.x, s.y)));
-    [...(LEVEL.buildSlots ?? []), ...(LEVEL.feeders ?? []), ...(LEVEL.computers ?? []), ...(LEVEL.chests ?? [])].forEach((t) => around(t));
-    slotsIn(LEVEL_ID).filter((s) => s.moved).forEach((t) => around(t)); // umgestellte Buden
-    [LEVEL.scooterSpot, LEVEL.iceStand, LEVEL.start, ...decoShopTiles()].forEach((t) => around(t));
+    [...(LEVEL.feeders ?? []), ...(LEVEL.computers ?? []), ...(LEVEL.chests ?? [])].forEach((t) => around(t));
+    slotsIn(LEVEL_ID).flatMap(boothTiles).forEach((t) => around(t)); // Buden
+    [LEVEL.scooterSpot, LEVEL.start].forEach((t) => around(t)); // (der Eiswagen-Platz iceStand ist frei: das Event gibt es nicht mehr)
     EXITS.forEach((t) => around(t, 2));
     const w = LEVEL.wheelSlot;
     if (w) for (let ty = w.clear.ty0 - 1; ty <= w.clear.ty1 + 1; ty++) for (let tx = w.clear.tx0 - 1; tx <= w.clear.tx1 + 1; tx++) out.add(tx + ',' + ty);

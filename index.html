@@ -122,6 +122,9 @@
       .wish-bubble.show { display: flex; animation: enc-in 0.3s ease-out; }
       .wish-bubble .animal { margin: 0; }
       .wish-bubble .wish-heart { font: bold 15px/1 Arial, sans-serif; color: #ff6fa8; text-shadow: 0 0 2px #fff; margin-top: -10px; }
+      /* Wunsch nach einer seltenen Variante: goldener Rand */
+      .wish-bubble.rare { border-color: #ffc83a; box-shadow: 0 0 6px rgba(255, 200, 58, 0.8); }
+      .wish-bubble.rare::after { border-top-color: #ffc83a; }
       /* Mavi spricht: Blase über ihrem Kopf (Antippen irgendwo blättert weiter) bzw. klein am Rand, wenn sie nicht zu sehen ist */
       #speech-catch { position: fixed; inset: 0; z-index: 12; display: none; }
       #speech-catch.show { display: block; }
@@ -262,6 +265,8 @@
       .deco-thumb { display: flex; align-items: flex-end; justify-content: center; padding-bottom: 8px; box-sizing: border-box; }
       .deco-thumb img { max-height: 80px; max-width: 120px; object-fit: contain; }
       .ev-item.bought { animation: deco-bought 0.4s ease-out; }
+      /* Zwischenüberschrift im Katalog (Buden, Deko): über die ganze Breite */
+      .ev-head { grid-column: 1 / -1; flex-basis: 100%; width: 100%; margin: 6px 0 -2px; padding-bottom: 3px; text-align: left; font: bold 18px/1.2 "Trebuchet MS", Arial, sans-serif; color: #5a3a1c; border-bottom: 2px solid #d4b07a; }
       @keyframes deco-bought { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
       .ev-sprite { position: absolute; transform-origin: bottom left; image-rendering: auto; }
       .ev-love { position: absolute; color: #ff6fa8; font-size: 22px; text-shadow: 0 0 3px #fff; }
@@ -606,6 +611,12 @@
         font: bold 16px "Trebuchet MS", Arial, sans-serif; color: #fff8e6; background: #6b4224; border: 2px solid #3c2814;
         border-radius: 8px; padding: 6px 22px; cursor: pointer;
       }
+      /* Tierfreund-Aufgabe: roter Pfeil über dem, was man als Nächstes antippen soll (Tier, Fertig, Schließen) */
+      #sign .resident, #sign .sign-close button, #sign .sign-more b { position: relative; }
+      #sign .tut-pointer { top: -28px; font-size: 26px; }
+      #sign .sign-more .tut-pointer { top: -26px; }
+      #sign .sign-residents:has(.tut-pointer) { padding-top: 22px; }
+      #sign .resident .tut-pointer { top: -26px; font-size: 24px; }
       @media (max-width: 900px), (max-height: 500px) {
         #sign .sign-residents { grid-template-columns: repeat(auto-fill, 68px); gap: 6px; }
         #sign .resident { width: 68px; }
@@ -725,6 +736,10 @@
       .marker.caught { border-color: #ffd84a; animation: marker-pulse 0.9s ease-in-out infinite; }
       .marker.caught .pointer::after { border-left-color: #ffd84a; }
       @keyframes marker-pulse { 50% { transform: scale(1.18); } }
+      /* Tutorial: roter Hinweis in Richtung von Mavis Pfeil, solange er nicht zu sehen ist */
+      .marker.tut { width: 30px; height: 30px; margin: -18px 0 0 -18px; background: #e8483f; border-color: #fff; animation: marker-pulse 0.9s ease-in-out infinite; }
+      .marker.tut .pointer { margin: -7px 0 0 -6px; }
+      .marker.tut .pointer::after { left: 24px; border-left-color: #e8483f; filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff); }
       /* Kisten-Karten (siehe src/ui/luckPicker.js) und Glücksbringer-Tafel (src/ui/charms.js) */
       #luck, #charms {
         position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center;
@@ -865,6 +880,16 @@
       }
       #decor-bar.show { display: flex; }
       #decor-bar .decor-title { color: #fff8e6; text-align: center; font-size: 14px; }
+      /* Zwischenüberschriften der Liste (Buden, Deko) und „Bestellen“ (Katalog) */
+      #decor-bar .decor-head { flex: none; padding: 4px 2px 0; color: #ffd84a; font-size: 12px; text-align: center; border-top: 1px solid rgba(255, 248, 230, 0.25); }
+      #decor-bar .decor-head:first-child { border-top: none; padding-top: 0; }
+      #decor-bar .decor-order {
+        padding: 9px 4px; cursor: pointer; border-radius: 10px; border: 2px solid #2b1d14;
+        background: #e8b84a; color: #3a2414; font: bold 14px/1 "Trebuchet MS", Arial, sans-serif;
+      }
+      /* Mavis Buden-Aufgabe: der nächste Knopf pulsiert rot */
+      #btn-decor.tut, #decor-bar .tut { animation: tut-pulse 1s ease-in-out infinite; }
+      @keyframes tut-pulse { 0%, 100% { box-shadow: 0 0 0 3px #e8483f; } 50% { box-shadow: 0 0 0 7px rgba(232, 72, 63, 0.35); } }
       /* Drehen: runder Knopf links neben der Leiste */
       #decor-bar .decor-turn {
         position: absolute; top: 0; right: calc(100% + 8px); width: 64px; height: 64px; border-radius: 50%; cursor: pointer;
@@ -902,6 +927,8 @@
         #decor-bar .decor-items { flex-direction: row; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; gap: 5px; }
         #decor-bar .decor-item { width: 50px; } #decor-bar .decor-item img { height: 28px; max-width: 42px; }
         #decor-bar .decor-done { flex: none; font-size: 12px; padding: 10px 8px; }
+        #decor-bar .decor-head { writing-mode: vertical-rl; transform: rotate(180deg); padding: 0 2px; border-top: none; border-right: 1px solid rgba(255, 248, 230, 0.25); font-size: 10px; }
+        #decor-bar .decor-order { flex: none; font-size: 12px; padding: 10px 6px; }
         #decor-bar .decor-empty { width: auto; flex: none; max-width: 90px; }
         #decor-bar .decor-turn { position: static; flex: none; width: 46px; height: 46px; font-size: 9px; } #decor-bar .decor-turn .turn-icon { font-size: 20px; }
       }

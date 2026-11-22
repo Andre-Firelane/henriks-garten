@@ -9,7 +9,7 @@ import { storyAt } from '../story/story.js';
 import { sideHere, sideOverrides } from './sideMaps.js';
 import { PEN_TOYS, TOYS, toyKey } from './toys.js';
 import { DECOR, decorByChar, decorTiles, giveDecor, designablePen, ensureDecor } from './decor.js';
-import { slotsIn } from './shops.js';
+import { slotsIn, boothTiles } from './shops.js';
 
 // leere Bauplätze (Buden, Riesenrad) erst ab Mavis Buden-Aufgabe zeigen – vorher lenken sie nur ab
 export const slotsShown = () => storyAt('stands');
@@ -341,15 +341,14 @@ export function setLevel(id) {
   // Bauplätze für Buden: leer stehen dort Baupflöcke, eine gebaute Bude ist fest (ihr Bild zeichnet GardenScene)
   const put = (tx, ty, c) => (ROWS = ROWS.map((row, y) => (y === ty ? row.slice(0, tx) + c + row.slice(tx + 1) : row)));
   const shown = slotsShown();
-  for (const s of LEVEL.buildSlots ?? []) if (game.builds?.[s.id] || shown) put(s.tx, s.ty, game.builds?.[s.id] ? 'V' : ':');
-  // umgestellte Buden: fest; passt ihr Platz nicht mehr (Umbau), kommen sie in die Deko-Taste
-  for (const s of slotsIn(id).filter((t) => t.moved)) {
-    if (ROWS[s.ty]?.[s.tx] === '.') put(s.tx, s.ty, 'V');
+  // aufgestellte Buden: fest; passt ihr Platz nicht mehr (Umbau), kommen sie in die Bauen-Leiste (Buden von den früheren
+  // Bauplätzen stehen, wo sie immer standen)
+  for (const s of slotsIn(id)) {
+    const tiles = boothTiles(s);
+    if (s.legacy || tiles.every((t) => ROWS[t.ty]?.[t.tx] === '.')) tiles.forEach((t) => put(t.tx, t.ty, 'V'));
     else game.booths[s.id] = { level: id, stored: true };
   }
   // Riesenrad: Wiese freiräumen; gebaut sind die 2×2 Kacheln fest, sonst Baupflöcke
-  // Deko-Laden: seine Kacheln sind fest (sein Bild zeichnet GardenScene)
-  for (const t of decoShopTiles()) put(t.tx, t.ty, 'V');
   const w = LEVEL.wheelSlot;
   if (w && (game.builds?.[w.id] || shown)) {
     for (let ty = w.clear.ty0; ty <= w.clear.ty1; ty++) for (let tx = w.clear.tx0; tx <= w.clear.tx1; tx++) put(tx, ty, '.');
@@ -601,14 +600,6 @@ function freeTilesNear(chars) {
     }
   }
   return tiles;
-}
-
-// Kacheln des Deko-Ladens (LEVEL.decoShop: w×h ab tx/ty)
-export function decoShopTiles() {
-  const d = LEVEL.decoShop;
-  const out = [];
-  if (d) for (let dy = 0; dy < (d.h ?? 1); dy++) for (let dx = 0; dx < (d.w ?? 1); dx++) out.push({ tx: d.tx + dx, ty: d.ty + dy });
-  return out;
 }
 
 // Deko: zurück in die Deko-Taste (beim Aufbau der Karte, wenn sie nicht mehr passt)

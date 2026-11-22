@@ -180,7 +180,7 @@ const PIXEL_ART = [
   'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn',
   // Tierpark
   'park_path', 'signpost_post',
-  'deco_stand', // Deko-Laden (aus Sprites/Dekoladen.webp, tools/deco-stand.py)
+  'deco_stand', // Bude „Blumen & Andenken“ (Marktstand aus Sprites/Dekoladen.webp, tools/deco-stand.py)
   // neue Deko (Bilder von Andre aus tools/decor-sprites.py; Wegsteine noch Platzhalter aus tools/decor-placeholders.py)
   'stepping_stones', 'flower_arch', 'lantern_post', 'pavilion', 'snowman', 'anchor',
   'wildpark_arch', // Torbogen über dem Eingang des Wildparks (Platzhalter aus tools/wildpark-placeholders.py)

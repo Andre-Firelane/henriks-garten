@@ -250,8 +250,10 @@ export function buildPathGrid() {
     for (const k of walk) {
       if (claimed.has(k)) continue;
       const [tx, ty] = k.split(',').map(Number);
-      const d = Math.max(Math.abs(tx - stand.tx), Math.abs(ty - stand.ty));
-      if (d >= 1 && d <= 2) list.push({ tx, ty, d: Math.hypot(tx - stand.tx, ty - stand.ty), taken: null });
+      // (große Buden, size 2: Abstand zu ihren 2×2 Kacheln)
+      const n = stand.size ?? 1;
+      const d = Math.max(Math.max(stand.tx - tx, 0, tx - (stand.tx + n - 1)), Math.max(stand.ty - ty, 0, ty - (stand.ty + n - 1)));
+      if (d >= 1 && d <= 2) list.push({ tx, ty, d: Math.hypot(tx - stand.tx - (n - 1) / 2, ty - stand.ty - (n - 1) / 2), taken: null });
     }
     const best = list.sort((a, b) => a.d - b.d).slice(0, 5);
     for (const s of best) claimed.add(key(s.tx, s.ty));

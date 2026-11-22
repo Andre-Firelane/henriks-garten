@@ -1,9 +1,11 @@
 // Feste Buden im Tierpark: auf freien Bauplätzen (buildSlots in levels.js) gegen Herzen gebaut. Besucher kaufen dort
 // etwas (jede Sorte nur einmal, höchstens MAX_BUYS Sachen) und tragen es eine Weile in der Hand; jeder Kauf bringt Herzen.
 // Gebaut ist, was in game.builds steht: { Bauplatz-Id: Buden-Art }.
-// Buden umstellen (Setzen-Modus der Deko-Taste): eine aufgehobene Bude bekommt eine eigene Id (game.booths:
-// { Id: { level, tx, ty, flip } } bzw. { level, stored: true }, solange sie in der Deko-Taste liegt); ihr Bauplatz ist dann
-// wieder frei. Eine umgestellte Bude zählt wie ein Bauplatz (slotsIn). Jede Sorte bleibt einmal je Abschnitt.
+// Buden (Umbau 22.11.2026, docs/plan-deko.md): man bestellt sie im Katalog der Bauen-Taste und setzt sie frei an einen Weg.
+// game.booths: { Id: { level, tx, ty, flip } } bzw. { level, stored: true }, solange sie in der Bauen-Leiste liegt;
+// game.builds: { Id: Buden-Art }. Höchstens MAX_BOOTHS je Parkabschnitt, jede Sorte einmal. Die früheren festen Bauplätze
+// (legacySlots in levels.js) gibt es nicht mehr; dort gebaute Buden ziehen beim Laden nach game.booths um.
+// blueprint: diese Bude gibt es erst mit Bauplan aus einer Kiste (game.decor.shop: 'stand:<Art>').
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { LEVELS, PARK_LEVELS } from './levels.js';
@@ -13,9 +15,12 @@ export const SHOPS = [
   { id: 'icecream', name: tr('Eisstand', 'Ice Cream Stand'), cost: 40, hearts: 2, icon: '🍦', stand: 'icecream_stand', seller: 'icecream_seller', items: ['icecream', 'icecream2', 'icecream3'] },
   { id: 'popcorn', name: tr('Popcorn', 'Popcorn'), cost: 80, hearts: 2, icon: '🍿', stand: 'popcorn_stand', seller: 'popcorn_seller', items: ['popcorn'] },
   { id: 'lemonade', name: tr('Limonade', 'Lemonade'), cost: 100, hearts: 2, icon: '🍋', stand: 'lemonade_stand', seller: 'lemonade_seller', items: ['lemonade'] },
-  { id: 'cottoncandy', name: tr('Zuckerwatte', 'Cotton Candy'), cost: 120, hearts: 3, icon: '🍭', stand: 'cottoncandy_stand', seller: 'cottoncandy_seller', items: ['cottoncandy'] },
-  { id: 'pretzel', name: tr('Brezeln', 'Pretzels'), cost: 150, hearts: 3, icon: '🥨', stand: 'pretzel_stand', seller: 'pretzel_seller', items: ['pretzel'] },
+  { id: 'cottoncandy', name: tr('Zuckerwatte', 'Cotton Candy'), cost: 120, hearts: 3, icon: '🍭', stand: 'cottoncandy_stand', seller: 'cottoncandy_seller', items: ['cottoncandy'], blueprint: true },
+  { id: 'pretzel', name: tr('Brezeln', 'Pretzels'), cost: 150, hearts: 3, icon: '🥨', stand: 'pretzel_stand', seller: 'pretzel_seller', items: ['pretzel'], blueprint: true },
+  // Marktstand (Andres Bild, tools/deco-stand.py): 2×2 Kacheln, ohne Verkäufer-Figur und ohne Snack in der Hand
+  { id: 'souvenir', name: tr('Blumen & Andenken', 'Flowers & Souvenirs'), cost: 120, hearts: 3, icon: '🌸', stand: 'deco_stand', seller: null, items: [], size: 2, originY: 0.778, scale: 1 },
 ];
+export const MAX_BOOTHS = 3; // so viele Buden höchstens je Parkabschnitt
 export const shopDef = (id) => SHOPS.find((s) => s.id === id) ?? null;
 
 // Riesenrad: ein eigener großer Bauplatz (wheelSlot in levels.js, nur im Zentrum). Besucher fahren eine Runde (Herzen),
@@ -36,30 +41,49 @@ export const SHOP_CHANCE = 0.4;
 // solange man woanders ist: so oft kauft jeder Besucher pro Minute an jeder Bude seines Abschnitts
 export const AWAY_BUYS_PER_VISITOR_MINUTE = 0.25;
 
-// Bauplätze eines Tierpark-Abschnitts (in Kacheln des Abschnitts) und die dorthin umgestellten Buden (moved)
-export const slotsIn = (level) => [
-  ...(LEVELS[level]?.buildSlots ?? []),
-  ...Object.entries(game.booths ?? {}).filter(([, b]) => b.level === level && !b.stored).map(([id, b]) => ({ id, tx: b.tx, ty: b.ty, flip: b.flip, moved: true })),
-];
-// aufgehobene Buden dieses Abschnitts (liegen in der Deko-Taste): [{ id, kind }]
-export const storedBooths = (level) => Object.entries(game.booths ?? {}).filter(([id, b]) => b.level === level && b.stored && builtOn(id)).map(([id]) => ({ id, kind: builtOn(id) }));
-
-// Bude aufheben: vom Bauplatz bzw. Platz weg in die Deko-Taste; gibt die Id zurück, unter der sie jetzt liegt
-export function pickUpBooth(level, slotId) {
-  const kind = builtOn(slotId);
-  if (!kind) return null;
+// aufgestellte Buden eines Tierpark-Abschnitts (in Kacheln des Abschnitts); size: 2 = 2×2 Kacheln ab tx/ty
+export const slotsIn = (level) =>
+  Object.entries(game.booths ?? {})
+    .filter(([id, b]) => b.level === level && !b.stored && game.builds?.[id])
+    .map(([id, b]) => ({ id, tx: b.tx, ty: b.ty, flip: b.flip, legacy: b.legacy, size: shopDef(game.builds[id])?.size ?? 1 }));
+// Kacheln einer aufgestellten Bude
+export function boothTiles(s) {
+  const out = [];
+  for (let dy = 0; dy < (s.size ?? 1); dy++) for (let dx = 0; dx < (s.size ?? 1); dx++) out.push({ tx: s.tx + dx, ty: s.ty + dy });
+  return out;
+}
+// so viele Buden hat dieser Abschnitt (aufgestellte und die in der Leiste)
+export const boothCount = (level) => slotsIn(level).length + storedBooths(level).length;
+// Bauplan einer Bude (blueprint: erst aus einer Kiste)
+export const boothKnown = (kind) => !shopDef(kind)?.blueprint || !!game.decor?.shop?.includes('stand:' + kind);
+// Bude bestellen: liegt dann in der Bauen-Leiste dieses Abschnitts; gibt ihre Id zurück
+export function orderBooth(level, kind) {
   game.booths ??= {};
-  if (game.booths[slotId]) {
-    game.booths[slotId] = { level, stored: true };
-    return slotId;
-  }
   let n = 1;
   while (game.booths['booth' + n] || game.builds['booth' + n]) n++;
   const id = 'booth' + n;
-  delete game.builds[slotId]; // der Bauplatz ist wieder frei
   game.builds[id] = kind;
   game.booths[id] = { level, stored: true };
   return id;
+}
+// alte Spielstände: Buden auf den früheren festen Bauplätzen ziehen nach game.booths (sie bleiben, wo sie sind)
+export function migrateLegacySlots() {
+  game.booths ??= {};
+  for (const level of PARK_LEVELS) {
+    for (const s of LEVELS[level]?.legacySlots ?? []) {
+      if (game.builds?.[s.id] && !game.booths[s.id]) game.booths[s.id] = { level, tx: s.tx, ty: s.ty, legacy: true };
+    }
+  }
+}
+// aufgehobene Buden dieses Abschnitts (liegen in der Deko-Taste): [{ id, kind }]
+export const storedBooths = (level) => Object.entries(game.booths ?? {}).filter(([id, b]) => b.level === level && b.stored && builtOn(id)).map(([id]) => ({ id, kind: builtOn(id) }));
+
+// Bude aufheben: in die Bauen-Leiste; gibt ihre Id zurück
+export function pickUpBooth(level, slotId) {
+  if (!builtOn(slotId)) return null;
+  game.booths ??= {};
+  game.booths[slotId] = { level, stored: true };
+  return slotId;
 }
 
 // Bude an diese Kachel stellen

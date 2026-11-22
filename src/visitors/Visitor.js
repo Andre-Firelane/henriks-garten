@@ -7,9 +7,8 @@ import { ENCLOSURES } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
 import { tr } from '../i18n.js';
-import { animalIcon } from '../ui/icons.js';
 import { isPark } from '../world/levels.js';
-import { MAX_WISH_WALKERS, WISH_CHANCE, WISH_TALK_DIST, openWishes, thanksLine, wishLine, wishSlotFree } from '../world/wishes.js';
+import { MAX_WISH_WALKERS, WISH_CHANCE, WISH_TALK_DIST, openWishes, thanksLine, wishIcon, wishKey, wishLine, wishSlotFree } from '../world/wishes.js';
 import { MAX_BUYS, RIDE_CHANCE, SHOP_CHANCE, WHEEL, shopDef } from '../world/shops.js';
 import { LEVEL, LEVEL_ID } from '../world/map.js';
 import { BABY_BONUS, HOUSE_VISITORS, parkCap, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
@@ -78,6 +77,7 @@ export class Visitor {
     this.bought = 0;
     this.shop = null; // Bude, zu der er gerade geht bzw. an der er wartet
     this.wish = null; // Wunsch-Besucher: diese Tierart wünscht er sich (noch nicht angesprochen)
+    this.wishSkin = null; // ... bzw. diese seltene Variante davon
     this.wishEl = null; // ... die Blase dazu (HTML über dem Bild)
     this.chatTimer = 0; // angesprochen: so lange bleibt er noch stehen
     this.shadow = scene.add.ellipse(x, y, 22, 7, 0x14320a, 0.3);
@@ -237,13 +237,14 @@ export class Visitor {
 
   // er wünscht sich diese Tierart: Blase mit dem Tier und einem Herz über dem Kopf. accepted: der Wunsch ist schon
   // angenommen (die Blase bleibt bis zum Schluss als Erkennungszeichen, ansprechen kann man ihn nicht mehr)
-  setWish(species, accepted = false) {
+  setWish(species, accepted = false, skin = null) {
     this.clearWish();
     this.wish = species;
+    this.wishSkin = skin ?? null;
     this.wishAccepted = accepted;
     this.wishEl = document.createElement('div');
-    this.wishEl.className = 'wish-bubble';
-    this.wishEl.innerHTML = `${animalIcon(species, 1.8)}<span class="wish-heart">♥</span>`;
+    this.wishEl.className = `wish-bubble${skin ? ' rare' : ''}`;
+    this.wishEl.innerHTML = `${wishIcon(species, skin, 1.8)}<span class="wish-heart">♥</span>`;
     document.body.append(this.wishEl);
   }
 
@@ -251,6 +252,7 @@ export class Visitor {
     this.wishEl?.remove();
     this.wishEl = null;
     this.wish = null;
+    this.wishSkin = null;
     this.wishAccepted = false;
   }
 
@@ -278,17 +280,17 @@ export class Visitor {
     const species = this.wish;
     this.wishAccepted = true;
     this.chatTimer = WISH_CHAT_TIME;
-    this.say(wishLine(species));
+    this.say(wishLine(species, this.wishSkin));
     return species;
   }
 
   // großer Moment am Gehege: springen, Herzregen, "Ein Fuchs! Danke!"
-  cheer(species) {
+  cheer(wish) {
     this.phase = 'cheer';
     this.timer = CHEER_TIME;
     this.cheerT = 0;
     this.faceTowardsPen();
-    this.say(thanksLine(species));
+    this.say(thanksLine(wish.species, wish.skin));
     this.heartRain();
   }
 
@@ -332,6 +334,7 @@ export class Visitor {
     this.bought++;
     for (let i = 0; i < def.hearts; i++) this.scene.time.delayedCall(250 * i, () => this.popHeart());
     this.scene.addHearts(def.hearts, kind);
+    if (!def.items?.length) return; // (Blumen & Andenken: nichts in der Hand)
     this.itemSprite?.destroy();
     this.itemSprite = this.scene.add.image(this.x, this.y, Phaser.Utils.Array.GetRandom(def.items)).setScale(0.5).setOrigin(0.5, 1);
     this.itemTime = Phaser.Math.FloatBetween(...EAT_TIME);
@@ -495,7 +498,7 @@ export class VisitorCrowd {
     this.visitors = [];
     this.lastFed = new Map(); // Gehege -> Spielzeit des letzten Fütterns
     this.time = 0;
-    this.thanking = null; // Art, deren Wunsch-Besucher gerade zum Gehege läuft (immer nur einer)
+    this.thanking = null; // Wunsch, dessen Besucher gerade zum Gehege läuft (immer nur einer)
     scene.events.once('shutdown', () => this.visitors.forEach((v) => v.clearWish())); // Blasen sind HTML
     this.updateScore();
     this.arrivalTimer = Phaser.Math.FloatBetween(0.3, 1) * arrivalInterval(this.score);
@@ -816,16 +819,16 @@ export class VisitorCrowd {
     if (!isPark(LEVEL_ID) || !wishSlotFree() || Math.random() > WISH_CHANCE) return;
     const walkers = this.visitors.filter((u) => u.wishOpen);
     if (walkers.length >= MAX_WISH_WALKERS) return;
-    const taken = new Set([...walkers.map((u) => u.wish), ...openWishes().map((w) => w.species)]);
-    const species = this.scene.pickWish?.(taken);
-    if (!species) return;
-    v.setWish(species);
+    const taken = new Set([...walkers.map((u) => wishKey(u.wish, u.wishSkin)), ...openWishes().map((w) => wishKey(w.species, w.skin))]);
+    const wish = this.scene.pickWish?.(taken);
+    if (!wish) return;
+    v.setWish(wish.species, false, wish.skin);
     v.visitsLeft += WISH_EXTRA_VISITS;
   }
 
   // Wünsche, die inzwischen erfüllt sind (das Tier ist schon da), lösen sich auf
   pruneWishes() {
-    for (const v of this.visitors) if (v.wishOpen && !this.scene.wishValid?.(v.wish)) v.clearWish();
+    for (const v of this.visitors) if (v.wishOpen && !this.scene.wishValid?.(v.wish, undefined, v.wishSkin)) v.clearWish();
   }
 
   // Wunsch-Besucher, den Henrik gerade ansprechen kann (der nächste)
@@ -847,8 +850,9 @@ export class VisitorCrowd {
   // angesprochen: der Wunsch wird angenommen (Wunschkarte), sein Aussehen gemerkt
   acceptWish(v) {
     if (!v?.wish || !wishSlotFree()) return null;
+    const skin = v.wishSkin;
     const species = v.tellWish();
-    openWishes().push({ species, look: v.look, done: false });
+    openWishes().push({ species, ...(skin ? { skin } : {}), look: v.look, done: false });
     return species;
   }
 
@@ -903,8 +907,8 @@ export class VisitorCrowd {
       this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
     }
     v.pen = e;
-    v.thanks = wish.species;
-    v.setWish(wish.species, true); // wiederzuerkennen an seiner Blase
+    v.thanks = wish;
+    v.setWish(wish.species, true, wish.skin); // wiederzuerkennen an seiner Blase
     v.goal = 'thank';
     v.phase = 'walk';
     v.visitsLeft = 1; // nach diesem Gehege geht er
@@ -913,7 +917,7 @@ export class VisitorCrowd {
       v.spot = spot;
     }
     v.setRoute(route.length > 1 ? route.slice(1) : [], spot ? this.standPoint(spot) : null);
-    this.thanking = wish.species;
+    this.thanking = wish;
     return true;
   }
 

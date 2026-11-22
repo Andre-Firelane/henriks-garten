@@ -8,13 +8,13 @@
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
 import { TOYS, PEN_TOYS, toyKey } from './toys.js';
-import { shopDef } from './shops.js';
+import { shopDef, SHOPS, MAX_BOOTHS, boothCount, hasShop, orderBooth } from './shops.js';
 
 // Deko-Teile: Zeichen in der Karte, Bild, Fußpunkt im Bild, fest (hitbox: nur der Kern) bzw. wiegt sich (sway), Name.
 // big: große Deko (fest); beim Setzen prüft das Spiel, dass sie keinen Weg versperrt. pen: darf auch in Gehege (Natur).
 // size: 2 = bedeckt 2×2 Kacheln (Pavillon); gespeichert wird die Kachel mit dem kleinsten tx/ty, die Szene zeichnet das Bild
 // in der Mitte der Grundfläche (Fuß im Bild = Mitte der 2×2 Kacheln).
-// cost: Preis im Deko-Laden (Stand im Zentrum des Tierparks); shop: steht von Anfang an im Laden (andere erst, wenn man
+// cost: Preis im Katalog („Bestellen“ in der Bauen-Leiste); shop: steht von Anfang an im Katalog (andere erst, wenn man
 // sie einmal aus einer Kiste oder von einer Expedition bekommen hat, siehe game.decor.shop).
 export const DECOR = {
   bench: { char: '❶', key: 'meadow_bench', originY: 38 / 48, solid: true, hitbox: 10, big: true, name: tr('Bank', 'Bench'), cost: 15, shop: true },
@@ -76,6 +76,12 @@ export function ensureDecor() {
   game.decor.placed ??= {};
   game.decor.shop ??= [];
   game.decor.toys ??= {};
+  // Grundausstattung: ein Eisstand fürs Zentrum (liegt in der Bauen-Leiste; ältere Spielstände bekommen ihn einmal, wenn
+  // dort noch keiner steht)
+  if (!game.decor.starterBooth && game.builds) {
+    game.decor.starterBooth = true;
+    if (!hasShop('park', 'icecream') && boothCount('park') < MAX_BOOTHS) orderBooth('park', 'icecream');
+  }
   // die Wegsteine kamen später zur Grundausstattung: ältere Spielstände bekommen sie einmal dazu
   if (!game.decor.stones) {
     game.decor.stones = true;
@@ -92,7 +98,7 @@ export const isBooth = (id) => typeof id === 'string' && id.startsWith('booth:')
 export function itemDef(id) {
   if (isBooth(id)) {
     const def = shopDef(game.builds?.[id.slice(6)]);
-    return def ? { char: 'V', key: def.stand, originY: 100 / 128, scale: 0.7, solid: true, hitbox: 16, big: true, name: def.name, booth: id.slice(6), kind: def.id } : null;
+    return def ? { char: 'V', key: def.stand, originY: def.originY ?? 100 / 128, scale: def.scale ?? 0.7, solid: true, hitbox: 16, big: true, name: def.name, booth: id.slice(6), kind: def.id, size: def.size } : null;
   }
   if (!isToy(id)) return DECOR[id] ?? null;
   const toy = id.slice(4);
@@ -112,17 +118,19 @@ export const penDecorMax = (e) => Math.max(2, Math.floor((e.tiles?.length ?? 0) 
 // gesetzte Deko in diesem Tierpark-Abschnitt
 export const placedIn = (level) => ensureDecor().placed[level] ?? [];
 
-// Baupläne: Kisten bringen keine Deko, sondern ihren Bauplan – ab dann steht das Teil im Deko-Laden (game.decor.shop).
+// Baupläne: Kisten bringen keine Deko, sondern ihren Bauplan – ab dann steht das Teil im Katalog (game.decor.shop).
 // Ein Bauplan, den man schon hat (oder ein Teil, das ohnehin im Laden steht), kommt in keiner Kiste mehr.
 export const hasBlueprint = (id) => !!DECOR[id]?.shop || ensureDecor().shop.includes(id);
+// Baupläne der Buden, die es erst aus Kisten gibt (blueprint in shops.js) und die man noch nicht hat: 'stand:<Art>'
+export const boothBlueprints = () => SHOPS.filter((d) => d.blueprint).map((d) => 'stand:' + d.id).filter((id) => !hasBlueprint(id));
 // Baupläne für eine Kiste in dieser Welt: die besondere Deko und, in Welten ohne Expedition (noExpedition), ihre eigene
 export const chestDecor = (world, noExpedition) => Object.keys(DECOR).filter((id) => (DECOR[id].special || (noExpedition && DECOR[id].world === world)) && !hasBlueprint(id));
 // Abschlusskiste einer Expedition (nur, wenn es keine Glücksbringer mehr zu holen gibt): Baupläne der Deko ihrer Welt
 export const finalChestDecor = (world) => Object.keys(DECOR).filter((id) => DECOR[id].world === world && !hasBlueprint(id));
 
-// Bauplan gefunden (Kiste): das Teil steht ab jetzt im Laden
+// Bauplan gefunden (Kiste): das Teil steht ab jetzt im Katalog (Buden: 'stand:<Art>')
 export function learnBlueprint(id) {
-  if (DECOR[id] && !hasBlueprint(id)) ensureDecor().shop.push(id);
+  if ((DECOR[id] || id.startsWith('stand:')) && !hasBlueprint(id)) ensureDecor().shop.push(id);
 }
 
 // Kacheln, die eine gesetzte Deko bedeckt (size 2: 2×2 ab tx/ty)
@@ -133,7 +141,7 @@ export function decorTiles(d) {
   return out;
 }
 
-// Teile im Deko-Laden (Reihenfolge nach Preis): die allgemeinen und alles, was man schon einmal gefunden hat
+// Teile im Katalog (Reihenfolge nach Preis): die allgemeinen und alles, was man schon einmal gefunden hat
 export const shopDecor = () => Object.keys(DECOR).filter((id) => DECOR[id].shop || ensureDecor().shop.includes(id)).sort((a, b) => DECOR[a].cost - DECOR[b].cost);
 
 // in die Deko-Taste (bzw. aus ihr heraus)

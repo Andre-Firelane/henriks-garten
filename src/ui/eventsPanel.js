@@ -1,7 +1,7 @@
 // Hauptrechner im Haupthaus: Reiter "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown), "Gehege" (gegen
 // Herzen ausbauen: mehr Plätze und neue Ausstattung; vorerst abgeschaltet) und "Buden" (auf einem freien Bauplatz bauen).
-// Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Dieselbe Tafel ist auch der Deko-Laden (tab 'deco', nur am
-// Deko-Stand im Tierpark): kaufen, die Tafel bleibt dabei offen. Tablet: Reiter und Kacheln antippen.
+// Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Dieselbe Tafel ist auch der Katalog der Bauen-Taste (tabs 'deco' und 'booths', siehe
+// openCatalog in GardenScene): bestellen, die Tafel bleibt dabei offen. Tablet: Reiter und Kacheln antippen.
 // Laptop: Q/Tab wechselt den Reiter, A/D wählt, E/Enter/Leertaste bestätigt, Esc schließt.
 import { formatTime } from '../world/events.js';
 import { animalIcons } from './icons.js';
@@ -19,8 +19,20 @@ const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nicht
 const TABS = [
   ['events', 'Events'],
   ...(PEN_UPGRADES ? [['pens', tr('Gehege ausbauen', 'Upgrade enclosures')]] : []),
-  ['build', tr('Buden bauen', 'Build stands')],
 ];
+// Katalog der Bauen-Taste (tab 'shop': eine Liste mit Zwischenüberschriften { head: true, name }; bestellen, die Tafel
+// bleibt dabei offen)
+const SHOP_TABS = ['shop'];
+// nächster Eintrag in Richtung step, der keine Überschrift ist
+function stepSel(from, step) {
+  const n = state.list.length;
+  let i = from;
+  for (let k = 0; k < n; k++) {
+    i = (i + step + n) % n;
+    if (!state.list[i]?.head) return i;
+  }
+  return from;
+}
 
 export function isEventsOpen() {
   return !!panel?.classList.contains('show');
@@ -120,9 +132,10 @@ function thumb(item) {
 // { tab: 'build', single: true } nur den einen Reiter (am Bauplatz)
 export function openEvents(getInfo, onPick, onClose, opts = {}) {
   panel = document.getElementById('events');
-  state = { getInfo, onPick, onClose, tab: opts.tab ?? 'events', only: opts.only ?? null, single: !!(opts.single || opts.only), title: opts.title ?? null, note: opts.note ?? null, selected: 0, point: opts.point ?? null, tut: opts.hint ?? null };
+  state = { getInfo, onPick, onClose, tabs: opts.tabs ?? TABS, tab: opts.tab ?? 'events', only: opts.only ?? null, single: !!(opts.single || opts.only), title: opts.title ?? null, note: opts.note ?? null, selected: 0, point: opts.point ?? null, tut: opts.hint ?? null, tutTab: opts.hintTab ?? 'events' };
   // Mavis Aufgabe: dieses Event ist vorausgewählt, ein Pfeil zeigt darauf, darunter ihr Hinweis
   if (state.point) state.selected = Math.max(0, items().list.findIndex((it) => it.id === state.point));
+  else state.selected = Math.max(0, items().list.findIndex((it) => !it.head)); // (Überschriften überspringen)
   render();
   panel.classList.add('show');
   openedAt = performance.now();
@@ -141,9 +154,9 @@ function status(item) {
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
     return [`<span class="ev-status go">${tr('Ausbauen', 'Upgrade')}</span>`, true];
   }
-  if (state.tab === 'deco') {
+  if (SHOP_TABS.includes(state.tab)) {
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
-    return [`<span class="ev-status go">${tr('Kaufen', 'Buy')}</span>`, true];
+    return [`<span class="ev-status go">${tr('Bestellen', 'Order')}</span>`, true];
   }
   if (state.tab === 'build') {
     if (item.done) return [`<span class="ev-status on">${tr('gebaut', 'built')} ✓</span>`, false];
@@ -168,28 +181,31 @@ function render() {
   state.list = list;
   state.selected = Math.min(state.selected, Math.max(0, list.length - 1));
   const tabs = state.single
-    ? `<span class="ev-tab on">${state.title ?? TABS.find(([id]) => id === state.tab)?.[1] ?? ''}</span>` // nur dieses Gehege bzw. dieser Bauplatz: keine Reiter
-    : TABS.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
+    ? `<span class="ev-tab on">${state.title ?? state.tabs.find(([id]) => id === state.tab)?.[1] ?? ''}</span>` // nur dieses Gehege bzw. dieser Bauplatz: keine Reiter
+    : state.tabs.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
   const hint = state.note ?? (state.tab === 'pens'
     ? tr('Ein ausgebautes Gehege hat mehr Plätze, neue Ausstattung und Spielzeug – die Tiere freuen sich, und es kommen mehr Besucher.', 'An upgraded enclosure has more spaces, new equipment and toys – the animals are happy and more visitors come.')
     : state.tab === 'build'
       ? tr('Die Besucher kaufen an den Buden ein – jeder Verkauf bringt Herzen. Jede Sorte gibt es einmal pro Bereich.', 'Visitors buy snacks at the stands – every sale brings hearts. Each kind once per area.')
       : state.tab === 'deco'
-        ? tr('Gekaufte Deko liegt gleich in der Deko-Taste.', 'Bought decor goes straight into the decor button.')
+        ? tr('Bestellte Deko liegt gleich in der Bauen-Leiste.', 'Ordered decor goes straight into the build bar.')
+        : state.tab === 'shop'
+          ? tr('Bestelltes liegt gleich in der Bauen-Leiste. Buden stellst du direkt an einen Weg.', 'Orders go straight into the build bar. Put stands right next to a path.')
       : tr('Tippe auf ein Event – oder wähle mit <b>A</b>/<b>D</b> und starte es mit <b>E</b>.', 'Tap an event – or choose with <b>A</b>/<b>D</b> and start it with <b>E</b>.'));
   panel.innerHTML = `<div class="chest-box ev-box">${CLOSE_BUTTON}
       <div class="ev-tabs">${tabs}</div>
       <p class="ev-hearts">${tr('Dein Konto', 'Your hearts')}: <span class="heart">♥</span> <b>${hearts}</b></p>
       <div class="chest-items">${list
-        .map(
-          (it, i) => `<button class="chest-item ev-item" data-i="${i}">
+        .map((it, i) => it.head
+          ? `<div class="ev-head">${it.name}</div>` // Zwischenüberschrift (Katalog)
+          : `<button class="chest-item ev-item" data-i="${i}">
             ${it.id === state.point ? '<span class="chest-pointer">▼</span>' : ''}${thumb(it)}<span class="ev-name">${it.name}</span><small>${it.text}</small>
             ${it.done ? '' : `<span class="ev-cost"><span class="heart">♥</span> ${it.cost}</span>`}<span class="ev-state"></span>
           </button>`,
         )
         .join('')}</div>
-      ${state.tut && state.tab === 'events' ? `<p class="chest-tut">${state.tut}</p>` : ''}
-      <p class="chest-hint">${hint}${state.single ? tr(' <b>Esc</b> schließt.', ' <b>Esc</b> closes.') : tr(' <b>Q</b> wechselt zwischen Events, Gehegen und Buden.', ' <b>Q</b> switches between events, enclosures and stands.')}</p>
+      ${state.tut && state.tab === state.tutTab ? `<p class="chest-tut">${state.tut}</p>` : ''}
+      <p class="chest-hint">${hint}${state.single ? tr(' <b>Esc</b> schließt.', ' <b>Esc</b> closes.') : tr(' <b>Q</b> wechselt den Reiter.', ' <b>Q</b> switches tabs.')}</p>
     </div>`;
   tick();
 }
@@ -199,7 +215,8 @@ function tick() {
   const { hearts, list } = items();
   state.list = list;
   panel.querySelector('.ev-hearts b').textContent = hearts;
-  panel.querySelectorAll('.ev-item').forEach((b, i) => {
+  panel.querySelectorAll('.ev-item').forEach((b) => {
+    const i = Number(b.dataset.i);
     const it = list[i];
     if (!it) return;
     const [html, can] = status(it);
@@ -212,8 +229,8 @@ function tick() {
 }
 
 function switchTab(tab) {
-  const i = TABS.findIndex(([id]) => id === state.tab);
-  state.tab = tab ?? TABS[(i + 1) % TABS.length][0];
+  const i = state.tabs.findIndex(([id]) => id === state.tab);
+  state.tab = tab ?? state.tabs[(i + 1) % state.tabs.length][0];
   state.selected = 0;
   render();
 }
@@ -224,8 +241,8 @@ function onKey(e) {
   const k = e.key.toLowerCase();
   const n = state.list.length;
   if ((k === 'q' || k === 'tab') && !state.single) return switchTab();
-  if (k === 'a' || k === 'arrowleft' || k === 'w' || k === 'arrowup') state.selected = (state.selected + n - 1) % n;
-  else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = (state.selected + 1) % n;
+  if (k === 'a' || k === 'arrowleft' || k === 'w' || k === 'arrowup') state.selected = n ? stepSel(state.selected, -1) : 0;
+  else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = n ? stepSel(state.selected, 1) : 0;
   else if (k === 'e' || k === 'enter' || k === ' ') return pick(state.selected);
   else if (k === 'escape') return close(true);
   tick();
@@ -252,10 +269,10 @@ function onClick(e) {
 
 function pick(i) {
   const it = state.list[i];
-  if (!it || !status(it)[1]) return; // gesperrte Kachel: nichts tun
+  if (!it || it.head || !status(it)[1]) return; // gesperrte Kachel oder Überschrift: nichts tun
   const { onPick, tab } = state;
-  if (tab === 'deco') {
-    // Deko-Laden: kaufen, die Tafel bleibt offen (man kauft oft mehrere)
+  if (SHOP_TABS.includes(tab)) {
+    // Katalog: bestellen, die Tafel bleibt offen (man bestellt oft mehrere)
     onPick(tab, it.id);
     state.selected = i;
     render();
