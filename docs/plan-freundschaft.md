@@ -30,6 +30,20 @@ Abweichungen beim Bau von Schritt 1:
 - Im offenen Streichelzoo kommt der Freund ab Stufe 2 direkt zu Henrik statt an den Zaun.
 - Code: src/world/friends.js, dazu die Abschnitte „Tierfreunde“ in GardenScene und updateVisit in Animal.js.
 
+## Bedürfnisse (gebaut 23.11.2026)
+
+- Über Tieren im Tierpark erscheinen ab und zu kleine Blasen (grüner Rand, wie die Besucherwünsche) mit einer Hand
+  (streicheln) oder einem Futter-Bild (füttern). Höchstens 3 gleichzeitig.
+- **Art ohne Tierfreund in diesem Gehege:** Blase über einem zufälligen Tier (je Art und Gehege höchstens eine, bleibt
+  45 Sekunden). Erfüllt Henrik sie am Zaun (streicheln bzw. passendes Futter aus dem Futterhaus), öffnet sich sofort die
+  Tafel zum Benennen dieses Tiers. **Kostenlos**, und es zählt nicht für den Preis des nächsten Benennens. Danach wird es
+  gestreichelt bzw. gefüttert wie ein Tierfreund. Zurück/Esc schließt die Tafel, das Futter bleibt in der Hand.
+- **Mit Tierfreund:** Blase nur über ihm, sobald seine Pause fürs Streicheln bzw. Füttern vorbei ist. So sieht man,
+  dass es wieder geht. Verschwindet beim Erfüllen.
+- Futter-Blase: Lieblingsfutter nur, wenn es schon entdeckt ist; sonst das Futterhaus.
+- Die Blase ist nur ein Hinweis, sie bringt keinen Punkt extra.
+- Code: updateNeeds, meetNeed und Umgebung im Abschnitt „Tierfreunde“ in GardenScene, CSS .wish-bubble.need in index.html.
+
 ## Ziel
 
 Eine Cozy-Mechanik, mit der man sich an ein einzelnes Tier bindet, für Kinder und Erwachsene. Man gibt einem Tier im

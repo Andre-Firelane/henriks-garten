@@ -237,6 +237,11 @@ const FRIEND_PET_DIST = 80; // so nah muss man am Tierfreund sein, um ihn (über
 const FRIEND_CALL_DIST = 260; // ab Stufe 2: so nah, dann kommt der Tierfreund zum Zaun
 const FRIEND_STAY_DIST = 340; // ... und so lange bleibt er dort
 const FRIEND_TAG_DEPTH = 90000; // Namensschilder der Tierfreunde über allem in der Welt (die Herzen der Besucher liegen bei 100000)
+// Bedürfnisse der Tiere (Blasen mit Hand oder Futter, siehe updateNeeds): höchstens so viele gleichzeitig, so lange
+// bleibt eine stehen (Sekunden), so oft schaut das Spiel nach einer neuen (Sekunden)
+const NEED_MAX = 3;
+const NEED_TIME = 45;
+const NEED_EVERY = [5, 10];
 const FRIEND_BAR_DIST = 180; // so nah, dann zeigt ein Balken über dem Tierfreund, wie weit es bis zur nächsten Stufe ist
 const NAME_MAX = 14; // so lang darf der Name eines Tierfreunds sein
 const TOAST_MS = 6000; // so lange steht eine Meldung (Animation toast in index.html)
@@ -1269,6 +1274,10 @@ export default class GardenScene extends Phaser.Scene {
     this.friendBars = new Map(); // Tier → Fortschrittsbalken (bis zur nächsten Stufe)
     this.friendVisitTimer = 0;
     this.nearFriend = null;
+    this.needs = new Map(); // Tier → Bedürfnis { kind: 'pet' | 'feed', el, left } (Blase über dem Tier)
+    this.needTimer = 3;
+    this.nearNeed = null; // Tier ohne Namen mit Bedürfnis, nah genug zum Erfüllen
+    this.events.once('shutdown', () => this.clearNeeds());
 
 
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
@@ -1678,6 +1687,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearWish && !this.leaving) {
         this.talkToWisher(this.nearWish); // Wunsch-Besucher ansprechen: sein Wunsch kommt als Wunschkarte
+        return;
+      }
+      if (this.nearNeed && !this.leaving) {
+        this.meetNeed(this.nearNeed); // Tier ohne Namen mit Bedürfnis: erfüllen, dann gleich benennen
         return;
       }
       if (this.nearFriend && !this.leaving) {
@@ -2940,6 +2953,137 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // ---- Bedürfnisse: Blasen mit Hand oder Futter über den Tieren im Tierpark ----
+  // Ohne Tierfreund (diese Art in diesem Gehege hat noch keinen Namen): ab und zu über einem Tier; erfüllt Henrik es am
+  // Zaun, öffnet sich gleich die Tafel zum Benennen (kostenlos). Mit Tierfreund: nur über ihm, sobald seine Pause vorbei ist
+  // (zeigt, dass Streicheln bzw. Füttern wieder geht). Die Blase ist nur ein Hinweis, sie bringt nichts extra.
+  updateNeeds(dt) {
+    if (!isPark(LEVEL_ID) || LEVEL.camp) return;
+    const now = Date.now();
+    // Blasen aufräumen: Tier weg, abgelaufen, oder beim Freund die Pause doch nicht vorbei
+    for (const [a, need] of this.needs) {
+      need.left -= dt;
+      const bond = bondOf(a);
+      const gone = !a.sprite?.active || a.state !== 'penned' || need.left <= 0 || a.inCanopy?.();
+      const notReady = isFriend(a) && (need.kind === 'pet' ? !canPet(bond, now) : !canFeed(bond, now));
+      const nowFriendless = !isFriend(a) && need.named; // (der Freund wurde gewechselt)
+      if (gone || notReady || nowFriendless || (!isFriend(a) && this.friendOfAnimal(a))) this.clearNeed(a);
+      else this.placeNeed(a, need);
+    }
+    this.needTimer -= dt;
+    if (this.needTimer > 0) return;
+    this.needTimer = Phaser.Math.FloatBetween(...NEED_EVERY);
+    if (this.needs.size >= NEED_MAX) return;
+    // zuerst die Tierfreunde, deren Pause vorbei ist
+    const ready = this.friendsHere().filter((a) => !this.needs.has(a) && !a.baby && !a.inCanopy?.()).map((a) => {
+      const bond = bondOf(a);
+      const kinds = [canPet(bond, now) && 'pet', (SPECIES_FOOD[a.species] ?? []).length && canFeed(bond, now) && 'feed'].filter(Boolean);
+      return kinds.length ? { a, kind: Phaser.Utils.Array.GetRandom(kinds) } : null;
+    }).filter(Boolean);
+    if (ready.length) {
+      const { a, kind } = Phaser.Utils.Array.GetRandom(ready);
+      return this.addNeed(a, kind, true);
+    }
+    // sonst ab und zu ein Tier einer Art, die in ihrem Gehege noch keinen Freund hat (je Art und Gehege höchstens eine Blase)
+    if (Math.random() > 0.5) return;
+    const taken = new Set([...this.needs.keys()].map((a) => `${a.enclosure?.id}:${a.species}`));
+    const pool = this.animals.filter((a) => a.state === 'penned' && !a.baby && a.sprite?.visible && !a.inCanopy?.() && !isFriend(a)
+      && this.signOfAnimal(a) && !this.friendOfAnimal(a) && !taken.has(`${a.enclosure.id}:${a.species}`));
+    if (!pool.length) return;
+    const a = Phaser.Utils.Array.GetRandom(pool);
+    const eats = (SPECIES_FOOD[a.species] ?? []).length > 0;
+    this.addNeed(a, eats && Math.random() < 0.4 ? 'feed' : 'pet', false);
+  }
+
+  // Gehegeschild für dieses Tier (über die Tafel bekommt es seinen Namen)
+  signOfAnimal(a) {
+    return this.enclosureSigns.find((s) => s.enclosure === a.enclosure && (s.only ?? s.enclosure.species ?? []).includes(a.species)) ?? null;
+  }
+
+  // der Tierfreund seiner Art in seinem Gehege (falls es einen gibt)
+  friendOfAnimal(a) {
+    const sign = this.signOfAnimal(a);
+    return sign ? this.friendOfSign(sign) : null;
+  }
+
+  addNeed(a, kind, named) {
+    const el = document.createElement('div');
+    el.className = 'wish-bubble need';
+    // Futter: beim Freund mit bekanntem Lieblingsfutter dessen Bild, sonst das Futterhaus (dort gibt es das Futter)
+    const bond = named ? bondOf(a) : null;
+    const fav = kind === 'feed' && bond?.favoriteKnown ? FEED_SORTS[favoriteOf(bond)]?.image : null;
+    el.innerHTML = `<img src="assets/${kind === 'pet' ? 'hand' : fav ?? 'feeder'}.png" alt="">`;
+    document.body.append(el);
+    const need = { kind, el, named, left: named ? NEED_TIME * 2 : NEED_TIME };
+    this.needs.set(a, need);
+    this.placeNeed(a, need);
+  }
+
+  // Blase über dem Tier (beim Tierfreund über dem Namensschild) mitführen
+  placeNeed(a, need) {
+    const spr = a.sprite;
+    const show = spr.visible && !this.signOpen;
+    if (show !== need.el.classList.contains('show')) need.el.classList.toggle('show', show);
+    if (!show) return;
+    const cam = this.cameras.main;
+    const z = this.scale.zoom;
+    const top = spr.y - spr.displayHeight * spr.originY + (isFriend(a) ? -24 : 2); // beim Freund über Namensschild und Balken
+    need.el.style.left = `${(spr.x - cam.worldView.x) * cam.zoom * z}px`;
+    need.el.style.top = `${(top - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
+  clearNeed(a) {
+    const need = this.needs.get(a);
+    if (!need) return;
+    need.el.remove();
+    this.needs.delete(a);
+  }
+
+  clearNeeds() {
+    for (const a of [...(this.needs?.keys() ?? [])]) this.clearNeed(a);
+  }
+
+  // Tier ohne Namen mit Bedürfnis, an das Henrik nah genug herangekommen ist (Tierfreunde laufen über nearFriend)
+  needToMeet() {
+    if (this.leaving || this.toolId === 'parkfood' || !this.needs?.size) return null;
+    const p = this.player;
+    const dist = (o) => Math.hypot(p.x - o.x, (p.y - o.y) * 2);
+    let best = null;
+    for (const a of this.needs.keys()) if (!isFriend(a) && dist(a) < FRIEND_PET_DIST && (!best || dist(a) < dist(best))) best = a;
+    return best;
+  }
+
+  // Bedürfnis eines Tiers ohne Namen erfüllen: erst die Tafel zum Benennen (kostenlos), danach streicheln bzw. füttern wie
+  // beim Tierfreund. Falsches oder kein Futter: ein Hinweis, die Blase bleibt
+  meetNeed(a) {
+    const need = this.needs.get(a);
+    const sign = this.signOfAnimal(a);
+    if (!need || !sign) return;
+    const kind = ANIMAL_INFO[a.species]?.[0] ?? '';
+    let then;
+    if (need.kind === 'feed') {
+      const sort = isTreat(this.toolId) ? this.tool?.sort : null;
+      if (!sort) {
+        this.showToast(tr('Hunger! Hol Futter im Futterhaus.', 'Hungry! Get food at the feed house.'));
+        return;
+      }
+      if (!(SPECIES_FOOD[a.species] ?? []).includes(sort)) {
+        this.showToast(tr(`Das frisst es nicht.`, `It doesn’t eat that.`));
+        return;
+      }
+      then = () => this.feedFriend(a, sort);
+    } else {
+      if (isTreat(this.toolId)) {
+        this.showToast(tr(`Es möchte gestreichelt werden.`, `It wants to be petted.`));
+        return;
+      }
+      then = () => this.petFriend(a);
+    }
+    this.clearNeed(a);
+    this.nearNeed = null;
+    this.openSign(sign, { mode: 'name', animal: a, name: randomName(a.species), free: true, then, kind });
+  }
+
   // Platz knapp neben Henrik, auf der Seite des Tiers
   besidePlayer(a) {
     const p = this.player;
@@ -2989,6 +3133,7 @@ export default class GardenScene extends Phaser.Scene {
     const before = friendLevel(bond.points);
     bond.points += PET_POINTS;
     bond.pettedAt = Date.now();
+    this.clearNeed(a);
     // stehen bleiben und zu Henrik schauen (wie beim Streicheln durch Besucher im Streichelzoo)
     const hold = { x: p.x, y: p.y };
     a.petted = hold;
@@ -3052,6 +3197,7 @@ export default class GardenScene extends Phaser.Scene {
     const favorite = favoriteOf(bond) === sort;
     bond.points += favorite ? FAVORITE_POINTS : FEED_POINTS;
     bond.fedAt = Date.now();
+    this.clearNeed(a);
     const hold = { x: p.x, y: p.y };
     a.petted = hold;
     this.time.delayedCall(2200, () => a.petted === hold && (a.petted = null));
@@ -3912,7 +4058,7 @@ export default class GardenScene extends Phaser.Scene {
   // Setzen-Modus: steht Henrik an etwas, dem die Aktionstaste gilt (Schild, Futterhaus, Tierfreund …)? Dann ist die
   // Vorschau rot, und die Taste bleibt bei der anderen Aktion
   decorBusy() {
-    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearWish || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
+    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearWish || this.nearNeed || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
   }
 
   // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
@@ -4419,6 +4565,14 @@ export default class GardenScene extends Phaser.Scene {
       const img = this.visitorPortrait(this.nearWish.look);
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Ansprechen', 'Talk')}</span></div>`;
+      return;
+    }
+    if (this.nearNeed) {
+      const feed = this.needs.get(this.nearNeed)?.kind === 'feed';
+      const img = feed && isTreat(this.toolId) ? `assets/${TOOLS[this.toolId].image}.png` : feed ? 'assets/feeder.png' : 'assets/hand.png';
+      setTouchTool(null, img);
+      const kind = ANIMAL_INFO[this.nearNeed.species]?.[0] ?? '';
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${feed ? tr(`${kind} füttern`, `Feed the ${kind.toLowerCase()}`) : tr(`${kind} streicheln`, `Pet the ${kind.toLowerCase()}`)}</span></div>`;
       return;
     }
     if (this.nearFriend) {
@@ -7774,7 +7928,7 @@ export default class GardenScene extends Phaser.Scene {
       if (!this.signOpen) return this.openSign(); // kompakt: antippen öffnet die Tafel
       const t = ev.target;
       if (t.closest('[data-close]')) return this.closeSign();
-      if (t.closest('[data-back]')) return this.setSignView(null);
+      if (t.closest('[data-back]')) return this.signView?.then ? this.closeSign() : this.setSignView(null);
       if (t.closest('[data-yes]')) return this.setSignView({ mode: 'name', animal: this.signView.animal, name: randomName(this.signView.animal.species) });
       if (t.closest('[data-dice]')) {
         const input = this.signPanel.querySelector('.name-input');
@@ -7794,16 +7948,16 @@ export default class GardenScene extends Phaser.Scene {
 
   // Tafel am Gehegeschild öffnen: das Spiel pausiert, die Tasten steuern die Auswahl (Pfeile/WASD wählen ein Tier,
   // E/Enter/Leertaste nimmt es, Esc schließt). Beim Namen-Eingeben gehen die Tasten ins Eingabefeld
-  openSign() {
-    const sign = this.shownSign;
+  // (sign/view: aus einem erfüllten Bedürfnis gleich zum Benennen dieses Tiers, auch wenn Henrik nicht am Schild steht)
+  openSign(sign = this.shownSign, view = null) {
     if (!sign || this.signOpen || this.leaving) return;
     this.signOpen = sign;
     this.signPick = 0;
-    this.signView = null;
+    this.signView = view;
     this.scene.pause();
     this.showSignPanel(sign);
     this.signPanel.scrollTop = 0;
-    this.signPanel.classList.add('open');
+    this.signPanel.classList.add('open', 'show');
     document.body.classList.add('sign-open');
     this.signKeys = (ev) => {
       const k = ev.key;
@@ -7811,7 +7965,7 @@ export default class GardenScene extends Phaser.Scene {
         // Namen eingeben bzw. Rückfrage: Enter bestätigt, Esc geht zurück zur Liste; alles andere tippt (das Spiel bekommt
         // die Taste nicht, sonst würde es z. B. W, A, S, D und Leertaste abfangen)
         if (k === 'Enter') this.signView.mode === 'name' ? this.finishNaming() : this.setSignView({ mode: 'name', animal: this.signView.animal, name: randomName(this.signView.animal.species) });
-        else if (k === 'Escape') this.setSignView(null);
+        else if (k === 'Escape') this.signView.then ? this.closeSign() : this.setSignView(null);
         else return ev.stopPropagation();
         ev.preventDefault();
         ev.stopPropagation();
@@ -7845,6 +7999,7 @@ export default class GardenScene extends Phaser.Scene {
     document.body.classList.remove('sign-open');
     this.scene.resume();
     if (this.shownSign) this.showSignPanel(this.shownSign); // wieder kompakt
+    else this.signPanel.classList.remove('show'); // (aus einem Bedürfnis geöffnet, Henrik steht nicht am Schild)
   }
 
   // so viele Tier-Kacheln stehen in einer Zeile (für Pfeil hoch/runter)
@@ -7893,14 +8048,14 @@ export default class GardenScene extends Phaser.Scene {
     const name = typed || view.name || randomName(a.species);
     // neuer Freund oder neuer Name: ab dem zweiten Mal kostet es Herzen (wieder das alte Tier mit seinem Namen: frei)
     const changed = bondOf(a)?.name !== name;
-    const cost = changed ? nameCost() : 0;
+    const cost = changed && !view.free ? nameCost() : 0; // aus einem erfüllten Bedürfnis: kostenlos
     if (cost > game.hearts) {
       this.showToast(tr(`Dafür brauchst du <span class="heart">♥</span> ${cost}.`, `You need <span class="heart">♥</span> ${cost} for that.`));
       return;
     }
     if (cost) this.addHearts(-cost);
     if (changed) {
-      game.namings++;
+      if (!view.free) game.namings++; // (kostenlose zählen nicht für den Preis der nächsten)
       countPark('named'); // für die Statistik
     }
     const uid = animalUid(a);
@@ -7909,6 +8064,14 @@ export default class GardenScene extends Phaser.Scene {
     game.bonds[uid].name = name;
     favoriteOf(game.bonds[uid]); // Lieblingsfutter (zufällig aus dem, was die Art frisst)
     game.friends[friendKey(a.enclosure, a.species)] = uid;
+    if (view.then) {
+      // aus einem Bedürfnis: Tafel zu, dann streicheln bzw. füttern wie beim Tierfreund
+      this.closeSign();
+      this.showToast(tr(`${name} ist jetzt dein Freund!`, `${name} is your friend now!`));
+      view.then();
+      this.updateQuestCard();
+      return;
+    }
     this.signView = null;
     this.showSignPanel(this.signOpen);
     this.updateQuestCard(); // Mavis Aufgabe zum Tierfreund: Fortschritt gleich zeigen
@@ -7933,7 +8096,7 @@ export default class GardenScene extends Phaser.Scene {
     const value = String(view.name ?? '').replace(/"/g, '&quot;');
     return `<div class="sign-head">${pic}<span><b>${bond ? tr('Neuer Name?', 'New name?') : tr('Wie soll es heißen?', 'What should it be called?')}</b><small>${kind}</small></span></div>
       <div class="name-row"><input class="name-input" type="text" maxlength="${NAME_MAX}" value="${value}" autocomplete="off" spellcheck="false"><button type="button" class="dice" data-dice aria-label="${tr('Namen würfeln', 'Roll a name')}" title="${tr('Namen würfeln', 'Roll a name')}">🎲</button></div>
-      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}${nameCost() ? ` <span class="heart">♥</span> ${nameCost()}` : ''}${this.friendTutorial() === 'name' ? TUT_POINTER : ''}</button></div>`;
+      <div class="sign-close"><button type="button" data-back>${tr('Zurück', 'Back')}</button><button type="button" data-ok>${tr('Fertig', 'Done')}${nameCost() && !view.free ? ` <span class="heart">♥</span> ${nameCost()}` : ''}${this.friendTutorial() === 'name' ? TUT_POINTER : ''}</button></div>`;
   }
 
   // Bild eines Tiers auf seinen sichtbaren Teil zugeschnitten (seltene Varianten mit eigenem Bild bzw. eingefärbt)
@@ -8212,6 +8375,13 @@ export default class GardenScene extends Phaser.Scene {
     const friend = this.friendToPet();
     if (friend !== this.nearFriend) {
       this.nearFriend = friend;
+      this.updateToolbar();
+    }
+    // Bedürfnisse (Blasen über den Tieren) und ob man gerade eins erfüllen kann
+    this.updateNeeds(dt);
+    const needy = this.needToMeet();
+    if (needy !== this.nearNeed) {
+      this.nearNeed = needy;
       this.updateToolbar();
     }
     // Besucherwünsche: Wunsch-Besucher in der Nähe, erfüllte Wünsche und der große Moment am Gehege
