@@ -3,8 +3,8 @@
 // kräftiges Orange); Gesicht, Ohren, Hufe, Hörner, Flecken, Halsband und Konturen bleiben, wie sie sind. Die Helligkeit
 // jedes Fellpunkts wird auf eine neue Farbskala (Schatten- bis Lichtfarbe) übertragen, so bleibt die Fellstruktur erhalten.
 // Alle Animationen kommen so mit, und es gibt nichts zusätzlich herunterzuladen. Nur natürliche Farben!
-// Erzeugt wird eine Farbe erst, wenn ein Tier sie bekommt (ensureCoat); vorab nur das kleine Bild für Tierbuch und
-// Meldungen (makeCoatIcons). Plan und Seltenheitstabellen: docs/plan-sammeln.md
+// Erzeugt wird eine Farbe erst, wenn ein Tier sie bekommt (ensureCoat), und zwar in kleinen Stücken zwischen den Bildern
+// des Spiels; vorab nur das kleine Bild für Tierbuch und Meldungen (makeCoatIcons). Plan und Seltenheitstabellen: docs/plan-sammeln.md
 import { tr } from '../i18n.js';
 import { registerAnimalIcon } from '../ui/icons.js';
 
@@ -148,8 +148,8 @@ function hsv(r, g, b) {
   return [max / 255, max ? d / max : 0, h];
 }
 
-function pixelsOf(scene, key) {
-  const img = scene.textures.get(key).getSourceImage();
+function pixelsOf(textures, key) {
+  const img = textures.get(key).getSourceImage();
   const canvas = document.createElement('canvas');
   canvas.width = img.width;
   canvas.height = img.height;
@@ -160,10 +160,10 @@ function pixelsOf(scene, key) {
 
 // Helligkeitsbereich des Fells (aus dem Standbild der Vorlage, einmal je Gruppe)
 const ranges = new Map();
-function rangeOf(scene, g) {
+function rangeOf(textures, g) {
   if (g.range === 'wool') return [0.62 * WOOL_LUMA, WOOL_LUMA];
   if (ranges.has(g)) return ranges.get(g);
-  const d = pixelsOf(scene, g.from).data.data;
+  const d = pixelsOf(textures, g.from).data.data;
   const vals = [];
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] < 200) continue;
@@ -178,11 +178,12 @@ function rangeOf(scene, g) {
   return r;
 }
 
-// Bildpunkte (RGBA) umfärben
-function recolor(data, coat, [lo, hi]) {
+// Bildpunkte (RGBA) ab Stelle i umfärben, bis die Zeit um ist (until, performance.now); gibt die nächste Stelle zurück
+function recolorPart(data, coat, [lo, hi], i, until) {
   const { mask, tMax } = coat.g;
   const [shade, light] = coat.ramp;
-  for (let i = 0; i < data.length; i += 4) {
+  for (let n = 0; i < data.length; i += 4) {
+    if (++n % 2048 === 0 && performance.now() > until) return i;
     if (!data[i + 3]) continue;
     const r = data[i], g = data[i + 1], b = data[i + 2];
     const [v, s, h] = hsv(r, g, b);
@@ -194,50 +195,102 @@ function recolor(data, coat, [lo, hi]) {
       data[i + c] = Math.round(data[i + c] * (1 - w) + x * w);
     }
   }
+  return i;
 }
 
-// umgefärbte Fassung eines geladenen Bilds als Canvas
-function coatCanvas(scene, coat, src) {
-  const { canvas, ctx, data } = pixelsOf(scene, src);
-  if (coat.ramp) {
-    recolor(data.data, coat, rangeOf(scene, coat.g));
-    ctx.putImageData(data, 0, 0);
+// ---- Umfärben in kleinen Stücken ----
+// Ein Bild auf einmal umzufärben dauert am Tablet bis zu einer halben Sekunde (Giraffe) und ließe das Spiel hängen. Darum
+// steht jedes Bild in einer Warteschlange und wird zwischen den Bildern des Spiels jeweils nur BUDGET_MS lang bearbeitet.
+// Eine Fellfarbe gilt erst als fertig (coatReady), wenn alle ihre Bilder da sind; bis dahin zeigt das Tier die Grundfarbe.
+// Die fertigen Bilder kommen wie alle anderen erst beim Malen auf die Grafikkarte (lazyGpu, siehe gpuTextures.js).
+const BUDGET_MS = 5;
+const jobs = []; // { textures, anims, coat, src, key, icon } – Bilder der Tiere vor den Bildchen fürs Tierbuch
+const queued = new Set(); // Schlüssel in der Warteschlange
+const pending = new Map(); // Fellfarbe → so viele Bilder fehlen noch
+const started = new Set(); // Fellfarben, die schon ein Tier hatte (bekommen später geladene Vorlagen nachgereicht)
+let pumping = false;
+
+function enqueue(job) {
+  if (queued.has(job.key)) return;
+  queued.add(job.key);
+  if (job.icon) jobs.push(job);
+  else {
+    const firstIcon = jobs.findIndex((j) => j.icon);
+    jobs.splice(firstIcon < 0 ? jobs.length : firstIcon, 0, job);
+    pending.set(job.coat.id, (pending.get(job.coat.id) ?? 0) + 1);
   }
-  return canvas;
+  if (!pumping) {
+    pumping = true;
+    setTimeout(pump, 0);
+  }
 }
 
-// alle Bilder einer Fellfarbe erzeugen (sobald ein Tier sie bekommt; jedes Bild nur einmal). Die Animationen der Vorlage
-// werden mit gleichem Tempo übernommen. Fehlt eine Vorlage noch (wird im Hintergrund geladen), kommt sie beim nächsten Mal
+function pump() {
+  const until = performance.now() + BUDGET_MS;
+  while (jobs.length && performance.now() < until) {
+    const job = jobs[0];
+    if (!job.data) Object.assign(job, pixelsOf(job.textures, job.src), { i: 0, range: job.coat.ramp ? rangeOf(job.textures, job.coat.g) : null });
+    const len = job.data.data.length;
+    job.i = job.coat.ramp ? recolorPart(job.data.data, job.coat, job.range, job.i, until) : len;
+    if (job.i < len) break;
+    jobs.shift();
+    queued.delete(job.key);
+    finish(job);
+  }
+  if (jobs.length) setTimeout(pump, 0);
+  else pumping = false;
+}
+
+function finish(job) {
+  const { textures, anims, coat, src, key, canvas, ctx, data } = job;
+  if (coat.ramp) ctx.putImageData(data, 0, 0);
+  const frame = textures.get(src).get(0);
+  if (job.icon) {
+    // als PNG verpacken läuft im Hintergrund (toBlob), nicht im Spiel
+    canvas.toBlob((blob) => blob && registerAnimalIcon(coat.id, URL.createObjectURL(blob), frame.width, frame.height, Math.round(canvas.width / frame.width)));
+    return;
+  }
+  pending.set(coat.id, pending.get(coat.id) - 1);
+  if (textures.exists(key)) return;
+  canvas.lazyGpu = true;
+  const tex = textures.addSpriteSheet(key, canvas, { frameWidth: frame.width, frameHeight: frame.height });
+  Object.assign(tex.customData, textures.get(src).customData);
+  const anim = anims.get(src);
+  if (anim && !anims.exists(key)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: anim.frameRate, repeat: anim.repeat, yoyo: anim.yoyo });
+}
+
+// alle Bilder einer Fellfarbe in die Warteschlange (sobald ein Tier sie bekommt; jedes Bild nur einmal). Die Animationen
+// der Vorlage werden mit gleichem Tempo übernommen. Fehlt eine Vorlage noch (wird im Hintergrund geladen), kommt sie,
+// sobald sie da ist (makeCoatIcons nach jedem geladenen Paket)
 export function ensureCoat(scene, id) {
   const coat = BY_ID.get(id);
-  if (!coat || !scene?.textures) return;
+  const textures = scene?.textures;
+  if (!coat || !textures) return;
   const { from, sheets } = coat.g;
-  if (!scene.textures.exists(from)) return;
+  if (!textures.exists(from)) return;
+  started.add(id);
   for (const end of sheets) {
     const src = from + end;
     const key = id + end;
-    if (scene.textures.exists(key) || !scene.textures.exists(src)) continue;
-    const frame = scene.textures.get(src).get(0);
-    const tex = scene.textures.addSpriteSheet(key, coatCanvas(scene, coat, src), { frameWidth: frame.width, frameHeight: frame.height });
-    Object.assign(tex.customData, scene.textures.get(src).customData);
-    const anim = scene.anims.get(src);
-    if (anim && !scene.anims.exists(key)) {
-      scene.anims.create({ key, frames: scene.anims.generateFrameNumbers(key), frameRate: anim.frameRate, repeat: anim.repeat, yoyo: anim.yoyo });
-    }
+    if (!textures.exists(key) && textures.exists(src)) enqueue({ textures, anims: scene.anims, coat, src, key });
   }
 }
 
+// sind alle (schon ladbaren) Bilder dieser Fellfarbe fertig?
+export function coatReady(scene, id) {
+  return !pending.get(id) && !!scene?.textures?.exists(id);
+}
+
 // kleine Bilder (Standbild) aller Fellfarben für Tierbuch, Meldungen, Wünsche und Kisten-Karten (BootScene.setupAssets;
-// mehrmals aufgerufen, jede Farbe nur einmal, sobald ihre Vorlage geladen ist)
+// nach jedem geladenen Paket, jede Farbe nur einmal, sobald ihre Vorlage geladen ist). Dabei bekommen schon benutzte
+// Fellfarben ihre eben geladenen Vorlagen (z. B. die Laufbilder des Widders) nachgereicht
 const iconDone = new Set();
 export function makeCoatIcons(scene) {
+  for (const id of started) ensureCoat(scene, id);
   for (const coat of BY_ID.values()) {
     if (iconDone.has(coat.id) || !scene.textures.exists(coat.g.from)) continue;
     iconDone.add(coat.id);
-    const tex = scene.textures.get(coat.g.from);
-    const frame = tex.get(0);
-    const canvas = coatCanvas(scene, coat, coat.g.from);
-    registerAnimalIcon(coat.id, canvas.toDataURL('image/png'), frame.width, frame.height, Math.round(canvas.width / frame.width));
+    enqueue({ textures: scene.textures, anims: scene.anims, coat, src: coat.g.from, key: `icon:${coat.id}`, icon: true });
   }
 }
 

@@ -20,7 +20,9 @@ export const gpu = { bytes: 0, budget: (vram || (touch ? 256 : 1536)) * MB, uplo
 const uploaded = new Set();
 let now = 0;
 
-const isImage = (p) => p instanceof HTMLImageElement || (typeof ImageBitmap !== 'undefined' && p instanceof ImageBitmap);
+// (dazu feste Canvas-Bilder, die das ausdrücklich erlauben: lazyGpu, z. B. die umgefärbten Fellfarben in animals/coats.js;
+// Canvas, die sich ändern wie Texte, bleiben bei Phaser)
+const isImage = (p) => p instanceof HTMLImageElement || (typeof ImageBitmap !== 'undefined' && p instanceof ImageBitmap) || !!p?.lazyGpu;
 
 function upload(w) {
   const gl = w.gl;

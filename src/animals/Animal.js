@@ -6,7 +6,7 @@ import { TOY_PLAY, TOYS } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
-import { COATS, coatAnims, ensureCoat } from './coats.js';
+import { COATS, coatAnims, coatReady, ensureCoat } from './coats.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -1571,10 +1571,10 @@ export default class Animal {
   get texSkin() {
     const id = this._skin;
     const info = id ? skinInfo(this.species, id) : null;
-    if (info?.coat && !this.scene.textures.exists(id)) {
-      // Fellfarbe, deren Vorlage beim Setzen noch nicht geladen war: jetzt umfärben, bis dahin das normale Bild
+    if (info?.coat && !coatReady(this.scene, id)) {
+      // Fellfarbe, deren Bilder noch umgefärbt werden (in kleinen Stücken, coats.js): bis dahin die Grundfarbe
       ensureCoat(this.scene, id);
-      if (!this.scene.textures.exists(id)) return null;
+      return null;
     }
     return info && !info.placeholder ? id : null;
   }
