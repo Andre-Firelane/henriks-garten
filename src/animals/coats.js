@@ -16,9 +16,21 @@ const luma = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 
 // Masken: wie sehr ein Bildpunkt Fell ist (0 bis 1); v Helligkeit, s Sättigung (HSV, 0 bis 1), h Farbton in Grad
 const light = (v, s) => smooth(0.48, 0.64, v) * (1 - smooth(0.24, 0.3, s)); // hell und fast farblos (Wolle, weißes Fell)
+// Schafwolle: wie light, nur dürfen rötliche Schatten (unten am Bauch, vor allem von hinten) etwas kräftiger sein; Ohren und
+// Beine sind noch kräftiger, das Gesicht hat einen anderen Farbton (um 31°)
+const wool = (v, s, h) => {
+  const pink = 1 - smooth(22, 28, h);
+  return smooth(0.48, 0.64, v) * (1 - ((1 - pink) * smooth(0.24, 0.3, s) + pink * smooth(0.3, 0.35, s)));
+};
 // kräftig gefärbt in einem Farbtonbereich (Orange, Braun); sehr dunkle Stellen (Augen, Nase, Hufe) nicht
-const warm = (h0, h1, smin = 0.25, vmin = 0.3) => (v, s, h) =>
-  smooth(smin - 0.06, smin + 0.04, s) * smooth(vmin - 0.08, vmin + 0.05, v) * smooth(h0 - 4, h0 + 2, h) * (1 - smooth(h1 - 2, h1 + 4, h));
+// (Farbtöne über 300° zählen als negativ, so reicht ein Bereich auch über Rot hinweg, z. B. -24 bis 42)
+const warm = (h0, h1, smin = 0.25, vmin = 0.3) => (v, s, h) => {
+  const hd = h > 300 ? h - 360 : h;
+  return smooth(smin - 0.06, smin + 0.04, s) * smooth(vmin - 0.08, vmin + 0.05, v) * smooth(h0 - 4, h0 + 2, hd) * (1 - smooth(h1 - 2, h1 + 4, hd));
+};
+// Reh und Hirsch: nur das kräftige Fell (das blassere rosa Innenohr und die helle Schnauze bleiben), dazu der rotbraune Rand
+// und die dunklen Hufe
+const fawn = warm(-24, 42, 0.42, 0.14);
 const colored = (v, s) => smooth(0.3, 0.45, s) * smooth(0.3, 0.45, v); // alles Farbige (goldene Spinne), nicht die dunklen Konturen
 const allButEyes = (v, s) => (s > 0.45 && v > 0.24 ? 0 : 1); // die pelzige Vogelspinne ganz, nur farbige Augen nicht
 
@@ -39,12 +51,12 @@ const SHEETS = {
 
 // Gruppen gleicher Umfärbung: Vorlage (from), Bilder, Maske, Messung und wie weit über die Lichtfarbe hinaus (tMax)
 const G = {
-  sheep: { from: 'sheep', sheets: SHEETS.sheep, mask: light, range: 'wool', tMax: 1.2 },
-  ram: { from: 'sheep2', sheets: SHEETS.sheep, mask: light, range: 'wool', tMax: 1.2 },
+  sheep: { from: 'sheep', sheets: SHEETS.sheep, mask: wool, range: 'wool', tMax: 1.2 },
+  ram: { from: 'sheep2', sheets: SHEETS.sheep, mask: wool, range: 'wool', tMax: 1.2 },
   cat: { from: 'cat', sheets: SHEETS.cat, mask: warm(14, 44), tMax: 1.15 },
   bellcat: { from: 'cat2', sheets: SHEETS.cat, mask: light, tMax: 1.15 },
-  deer: { from: 'deer', sheets: SHEETS.deer, mask: warm(12, 42), tMax: 1.15 },
-  stag: { from: 'stag', sheets: SHEETS.deer, mask: warm(12, 42), tMax: 1.15 },
+  deer: { from: 'deer', sheets: SHEETS.deer, mask: fawn, tMax: 1.15 },
+  stag: { from: 'stag', sheets: SHEETS.deer, mask: fawn, tMax: 1.15 },
   giraffe: { from: 'giraffe', sheets: SHEETS.giraffe, mask: warm(16, 52, 0.2, 0.3), tMax: 1.15 },
   yak: { from: 'yak2', sheets: SHEETS.yak2, mask: light, tMax: 1.15 },
   snake: { from: 'snake', sheets: SHEETS.snake, mask: warm(2, 42, 0.32, 0.13), tMax: 1.15 }, // auch die dunklen Orangetöne an den Bändern (sonst bleibt ein rotbrauner Saum)

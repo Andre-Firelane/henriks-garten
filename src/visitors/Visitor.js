@@ -282,8 +282,9 @@ export class Visitor {
     if (!show) return;
     const cam = this.scene.cameras.main;
     const z = this.scene.scale.zoom;
-    el.style.left = `${(this.x - cam.worldView.x) * cam.zoom * z}px`;
-    el.style.top = `${(this.y - 58 - cam.worldView.y) * cam.zoom * z}px`;
+    // auf ganze Bildpunkte gerundet, sonst zappelt die Blase beim Laufen und Mitscrollen
+    el.style.left = `${Math.round((this.x - cam.worldView.x) * cam.zoom * z)}px`;
+    el.style.top = `${Math.round((this.y - 58 - cam.worldView.y) * cam.zoom * z)}px`;
   }
 
   // angesprochen: er erzählt von seinem Wunsch und bleibt kurz stehen; die Blase bleibt

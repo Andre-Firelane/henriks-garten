@@ -1817,6 +1817,9 @@ export default class GardenScene extends Phaser.Scene {
       (MAP_W + MAP_H) * (TILE_H / 2) + TILE_H * 4,
     );
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
+    // Blasen über Tieren und Besuchern (HTML) erst setzen, wenn die Kamera für dieses Bild nachgezogen hat; sonst hinken
+    // sie beim Laufen einen Tick hinterher und zappeln
+    cam.on(Phaser.Cameras.Scene2D.Events.FOLLOW_UPDATE, () => this.placeBubbles());
     // Kamera nirgends auf ganze Pixel runden: Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten
     // Pixel ein, das sieht wie Stottern aus (besonders beim Laufen genau nach links und rechts; zuerst in Unterwasserwelt,
     // Eiswelt und Savanne bemerkt, dann auch auf der Wiese und im Tierpark)
@@ -3012,24 +3015,48 @@ export default class GardenScene extends Phaser.Scene {
     // Futter: beim Freund mit bekanntem Lieblingsfutter dessen Bild, sonst das Futterhaus (dort gibt es das Futter)
     const bond = named ? bondOf(a) : null;
     const fav = kind === 'feed' && bond?.favoriteKnown ? FEED_SORTS[favoriteOf(bond)]?.image : null;
-    el.innerHTML = `<img src="assets/${kind === 'pet' ? 'hand' : fav ?? 'feeder'}.png" alt="">`;
+    el.innerHTML = `<img src="${this.needIcon(kind === 'pet' ? 'hand' : fav ?? 'feeder')}" alt="">`;
     document.body.append(el);
     const need = { kind, el, named, left: named ? NEED_TIME * 2 : NEED_TIME };
     this.needs.set(a, need);
     this.placeNeed(a, need);
   }
 
-  // Blase über dem Tier (beim Tierfreund über dem Namensschild) mitführen
+  // Bild für die Blase: aus dem schon geladenen Spielbild (sonst wartet es hinter dem Laden im Hintergrund), einmal gemerkt
+  needIcon(key) {
+    this.needIcons ??= {};
+    if (this.needIcons[key]) return this.needIcons[key];
+    if (!this.textures.exists(key)) return `assets/${key}.png`;
+    const img = this.textures.get(key).getSourceImage();
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return (this.needIcons[key] = c.toDataURL('image/png'));
+  }
+
+  // Blase über dem Tier bzw. neben dem Namensschild des Tierfreunds mitführen
+  // alle HTML-Blasen an die aktuelle Kamera anpassen (Bedürfnisse der Tiere, Wünsche der Besucher)
+  placeBubbles() {
+    for (const [a, need] of this.needs ?? []) if (a.sprite?.active) this.placeNeed(a, need);
+    for (const v of this.visitors?.visitors ?? []) v.placeWish?.();
+  }
+
+  // Tierfreund: rechts neben seinem Namensschild; sonst über dem Kopf (nach dem Tier, nicht nach dem wippenden Bild,
+  // und auf ganze Bildpunkte gerundet, damit die Blase ruhig steht)
   placeNeed(a, need) {
     const spr = a.sprite;
     const show = spr.visible && !this.signOpen;
     if (show !== need.el.classList.contains('show')) need.el.classList.toggle('show', show);
     if (!show) return;
     const cam = this.cameras.main;
-    const z = this.scale.zoom;
-    const top = spr.y - spr.displayHeight * spr.originY + (isFriend(a) ? -24 : 2); // beim Freund über Namensschild und Balken
-    need.el.style.left = `${(spr.x - cam.worldView.x) * cam.zoom * z}px`;
-    need.el.style.top = `${(top - cam.worldView.y) * cam.zoom * z}px`;
+    const k = cam.zoom * this.scale.zoom;
+    const tag = isFriend(a) ? this.friendTags.get(a) : null;
+    need.el.classList.toggle('side', !!tag);
+    const x = tag ? tag.x + tag.width / 2 + 2 : a.x;
+    const y = tag ? tag.y - tag.height / 2 : a.y - spr.displayHeight * spr.originY + 4;
+    need.el.style.left = `${Math.round((x - cam.worldView.x) * k)}px`;
+    need.el.style.top = `${Math.round((y - cam.worldView.y) * k)}px`;
   }
 
   clearNeed(a) {
@@ -3082,6 +3109,29 @@ export default class GardenScene extends Phaser.Scene {
     this.clearNeed(a);
     this.nearNeed = null;
     this.openSign(sign, { mode: 'name', animal: a, name: randomName(a.species), free: true, then, kind });
+  }
+
+  // Henrik hat Futter ins Gehege geworfen und das Tier mit dem Futter-Bedürfnis frisst davon: beim Tierfreund zählt das
+  // wie Füttern (ohne Lieblingsfutter), ein Tier ohne Namen bekommt gleich die Tafel zum Benennen (kostenlos)
+  fedByThrow(a) {
+    if (!this.needs.has(a) || this.signOpen || this.leaving) return;
+    this.clearNeed(a);
+    if (isFriend(a)) return this.creditFeed(a);
+    const sign = this.signOfAnimal(a);
+    if (sign && !this.friendOfAnimal(a)) this.openSign(sign, { mode: 'name', animal: a, name: randomName(a.species), free: true, then: () => this.creditFeed(a) });
+  }
+
+  // gefüttert mit geworfenem Futter: ein Punkt, die Pause fürs Füttern beginnt, ein Herz steigt auf
+  creditFeed(a) {
+    const bond = bondOf(a);
+    if (!bond || !canFeed(bond)) return;
+    const before = friendLevel(bond.points);
+    bond.points += FEED_POINTS;
+    bond.fedAt = Date.now();
+    this.friendHeart(a);
+    const up = this.friendLevelUp(a, bond, before);
+    if (up) this.showToast(up);
+    this.updateQuestCard();
   }
 
   // Platz knapp neben Henrik, auf der Seite des Tiers
@@ -5069,6 +5119,7 @@ export default class GardenScene extends Phaser.Scene {
       if (!free.length) break;
       free.sort((u, v) => Math.hypot(u.x - a.x, u.y - a.y) - Math.hypot(v.x - a.x, v.y - a.y));
       a.eatAt(free.shift(), food, Phaser.Math.FloatBetween(...FEED_TIME));
+      if (from === this.player && a.feed && this.needs?.get(a)?.kind === 'feed') this.time.delayedCall(700, () => this.fedByThrow(a)); // Futter-Bedürfnis erfüllt
     }
     return eaters.length;
   }
@@ -6680,7 +6731,7 @@ export default class GardenScene extends Phaser.Scene {
         newest[look(a)] = Math.max(newest[look(a)] ?? 0, a.penSince ?? 0);
       }
       const most = Object.entries(looks).sort((u, v) => v[1] - u[1] || newest[v[0]] - newest[u[0]])[0][0];
-      const victim = pool.filter((a) => look(a) === most).sort((u, v) => (u.penSince ?? 0) - (v.penSince ?? 0))[0];
+      const victim = pool.filter((a) => String(look(a)) === most).sort((u, v) => (u.penSince ?? 0) - (v.penSince ?? 0))[0]; // (Schlüssel von looks sind Text, Varianten z. B. der Schmetterlinge Zahlen)
       const hearts = releaseHearts(victim.species, victim.skin ?? victim.variant);
       this.addHearts(hearts, victim.species);
       this.released.push({ species: victim.species, hearts });

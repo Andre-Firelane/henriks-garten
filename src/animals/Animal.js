@@ -1341,6 +1341,7 @@ export default class Animal {
     } else if (this.feed) {
       moving = this.updateFeed(dt); // im Tierpark: zum Futter laufen und fressen
     } else if (this.visit) {
+      if (this.play) this.endToy(); // spielt bzw. frisst es gerade an der Raufe: erst aufhören (sonst läuft es mit dem Fress-Bild los)
       moving = this.updateVisit(dt, player); // Tierfreund: zum Zaun, an dem Henrik steht (siehe src/world/friends.js)
     } else {
       const play = this.updateToy(dt); // im Gehege mit Spielzeug (zweite Ausbaustufe): ab und zu damit spielen

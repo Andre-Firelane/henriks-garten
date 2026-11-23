@@ -42,6 +42,10 @@ Abweichungen beim Bau von Schritt 1:
   dass es wieder geht. Verschwindet beim Erfüllen.
 - Futter-Blase: Lieblingsfutter nur, wenn es schon entdeckt ist; sonst das Futterhaus.
 - Die Blase ist nur ein Hinweis, sie bringt keinen Punkt extra.
+- Futter-Bedürfnis: auch erfüllt, wenn Henrik Futter aus dem Futterautomaten ins Gehege wirft und das Tier davon frisst
+  (beim Tierfreund 1 Punkt wie Füttern, ohne Lieblingsfutter; ohne Namen öffnet sich die Tafel).
+- Beim Tierfreund sitzt die Blase rechts neben dem Namensschild, sonst über dem Kopf. Die Bilder kommen aus den schon
+  geladenen Spielbildern (sonst warten sie hinter dem Laden im Hintergrund).
 - Code: updateNeeds, meetNeed und Umgebung im Abschnitt „Tierfreunde“ in GardenScene, CSS .wish-bubble.need in index.html.
 
 ## Ziel
