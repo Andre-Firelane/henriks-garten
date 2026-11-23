@@ -53,7 +53,7 @@ const CALLED = {
 // wie die Glücksbringer-Bilder (die Spiel-Sprites wären dort 3- bis 4-fach vergrößert)
 const CARD_SKINS = new Set([
   'cat2', 'stag', 'antelope2', 'croc_albino', 'tiger2', 'peacock2', 'orangutan2', 'frog2', 'jellyfish2', 'wolf2', 'lion2',
-  'iguana2', 'panther', 'macaw2', 'snake2', 'tarantula2', 'ray2', 'gibbon', 'octopus2', 'sheep2', 'heron2', 'fox2',
+  'iguana2', 'panther', 'macaw2', 'snake2', 'ray2', 'gibbon', 'octopus2', 'sheep2', 'heron2', 'fox2',
   'squirrel2', 'beaver2', 'macaque2', 'anteater2', 'meerkat2', 'vulture2', 'gorilla2', 'hyena2', 'hippo2', 'panda2',
   'penguin2', 'seal2', 'seahorse2', 'toucan2', 'turtle2', 'warthog2', 'tapir2', 'okapi2', 'tanuki2', 'yak2',
 ]);

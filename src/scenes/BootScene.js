@@ -9,6 +9,7 @@ import { game } from '../state.js';
 import { isActive } from '../world/events.js';
 import { LEVELS, isPark } from '../world/levels.js';
 import { itemDef } from '../world/decor.js';
+import { makeCoatIcons } from '../animals/coats.js';
 
 // Handy und Tablet (Touch): WebP-Fassung statt PNG (etwa ein Viertel so groß, siehe tools/make-webp.py); der PC lädt PNG
 const USE_WEBP = matchMedia('(pointer: coarse)').matches;
@@ -1031,5 +1032,8 @@ export default class BootScene extends Phaser.Scene {
     for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {
       anims.create({ key, frames: anims.generateFrameNumbers('gorilla_drum', { start, end }), frameRate: 24, repeat });
     }
+    // Fellfarben (z. B. graue und schwarze Schafe): vorab nur die kleinen Bilder fürs Tierbuch; die Spritesheets entstehen,
+    // sobald ein Tier die Farbe bekommt (ensureCoat in animals/coats.js)
+    makeCoatIcons(this);
   }
 }

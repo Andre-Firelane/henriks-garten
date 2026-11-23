@@ -1068,7 +1068,7 @@ const PARK_PENS = [
       { id: 'jaguars', name: tr('Jaguar-Gehege', 'Jaguar Enclosure'), species: ['jaguar'], gate: 'glass', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 86, ty: 90 }, slots: [4, 4] },
       // Terrarien und Piranha-Becken am unteren Steg (Glaskästen wie früher im Reptilienhaus, buildings beim Abschnitt)
       { id: 'snakes', name: tr('Schlangen-Terrarium', 'Snake Terrarium'), species: ['snake'], world: 'jungle', seed: { tx: 65, ty: 81 }, slots: [4, 4], signAt: { tx: 64.5, ty: 83.6 }, signOnGlass: true },
-      { id: 'tarantulas', name: tr('Vogelspinnen-Terrarium', 'Tarantula Terrarium'), species: ['tarantula'], world: 'jungle', seed: { tx: 71, ty: 81 }, slots: [4, 4], signAt: { tx: 71.5, ty: 83.6 }, signOnGlass: true },
+      { id: 'tarantulas', name: tr('Spinnen-Terrarium', 'Spider Terrarium'), species: ['tarantula'], world: 'jungle', seed: { tx: 71, ty: 81 }, slots: [4, 4], signAt: { tx: 71.5, ty: 83.6 }, signOnGlass: true },
       { id: 'iguanas', name: tr('Leguan-Terrarium', 'Iguana Terrarium'), species: ['iguana'], world: 'jungle', seed: { tx: 79, ty: 81 }, slots: [3, 3], signAt: { tx: 78.5, ty: 83.6 }, signOnGlass: true },
       { id: 'piranhas', name: tr('Piranha-Becken', 'Piranha Tank'), species: ['piranha'], world: 'jungle', seed: { tx: 85, ty: 81 }, slots: [6, 6], signAt: { tx: 85.5, ty: 83.6 }, signOnGlass: true },
       // Schmetterlinge in der Tropenhalle (2/3 aller Schmetterlinge, der Rest im Zentrum): frei, aber nur in der Halle

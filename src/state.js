@@ -15,6 +15,7 @@ export const game = {
   pettingZoo: true, // Streichelzoo: keine Maulwürfe mehr, Kuh, Schwein und Ziege sind eigene Arten (siehe migratePettingZoo in save.js)
   monkeyIsland: true, // Bambuswald: alle Affen auf der Affeninsel (siehe migrateMonkeyIsland in save.js)
   jungleHall: true, // Tropenhalle statt Dschungel-Gehegen und Reptilienhaus (siehe migrateJungleHall in save.js)
+  spiderSwap: true, // die goldene Spinne ist die normale, die pelzige Vogelspinne die seltene (siehe migrateSpiders in save.js)
   events: {},
   unlocked: [],
   scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
@@ -63,6 +64,7 @@ export function resetGame() {
   game.pettingZoo = true;
   game.monkeyIsland = true;
   game.jungleHall = true;
+  game.spiderSwap = true;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};

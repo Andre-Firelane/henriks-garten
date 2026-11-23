@@ -6,6 +6,7 @@ import { TOY_PLAY, TOYS } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
+import { COATS, coatAnims, ensureCoat } from './coats.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -14,7 +15,8 @@ export const SPECIES = {
     texture: 'sheep',
     // Test; nach links gespiegelt. Beim Grasen und als Bauernhof-Tier die Standbilder (siehe Sheep.js)
     anims: { walkDown: 'sheep_walk', walkUp: 'sheep_walk_back', idleDown: 'sheep_idle', idleUp: 'sheep_idle_back' },
-    skinAnims: { sheep2: { walkDown: 'sheep2_walk', walkUp: 'sheep2_walk_back', idleDown: 'sheep2_idle', idleUp: 'sheep2_idle_back' } }, // gefleckter Widder
+    skinAnims: { sheep2: { walkDown: 'sheep2_walk', walkUp: 'sheep2_walk_back', idleDown: 'sheep2_idle', idleUp: 'sheep2_idle_back' } }, // gefleckter Widder (Fellfarben: coats.js)
+    baseShare: 42, // weißes Schaf: Anteil an den Fängen neben den Fellfarben und Widdern (share in SKINS.sheep)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 25, // gemütlich, deutlich langsamer als der Spieler (80)
@@ -79,7 +81,8 @@ export const SPECIES = {
     eatTexture: 'cat_eat', // beim Fressen am Futter im Tierpark
     // Test; nach links gespiegelt (nicht beim Fressen und Schlafen)
     anims: { walkDown: 'cat_walk', walkUp: 'cat_walk_back', idleDown: 'cat_idle', idleUp: 'cat_idle_back' },
-    skinAnims: { cat2: { walkDown: 'cat2_walk', walkUp: 'cat2_walk_back', idleDown: 'cat2_idle', idleUp: 'cat2_idle_back' } }, // Glöckchen-Katze
+    skinAnims: { cat2: { walkDown: 'cat2_walk', walkUp: 'cat2_walk_back', idleDown: 'cat2_idle', idleUp: 'cat2_idle_back' } }, // Glöckchen-Katze (Fellfarben: coats.js)
+    baseShare: 40, // rot getigert: Anteil an den Fängen neben Fellfarben und Glöckchen-Katzen (share in SKINS.cat)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 60, // flink, aber noch langsamer als der Spieler
@@ -98,6 +101,7 @@ export const SPECIES = {
     // Animationen nach rechts (Test; nach links gespiegelt, nicht beim Fressen)
     anims: { walkDown: 'deer_walk', walkUp: 'deer_walk_back', idleDown: 'deer_idle', idleUp: 'deer_idle_back' },
     skinAnims: { stag: { walkDown: 'stag_walk', walkUp: 'stag_walk_back', idleDown: 'stag_idle', idleUp: 'stag_idle_back' } }, // Hirsch läuft und steht
+    baseShare: 56, // braunes Reh: Anteil an den Fängen neben Fellfarben und Hirschen (share in SKINS.deer)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 30,
@@ -215,6 +219,7 @@ export const SPECIES = {
     texture: 'giraffe',
     anims: { walkDown: 'giraffe_walk', walkUp: 'giraffe_walk_back', idleDown: 'giraffe_idle', idleUp: 'giraffe_idle_back' }, // Savanne
     skinAnims: { giraffe2: { walkDown: 'giraffe2_walk', walkUp: 'giraffe2_walk_back', idleDown: 'giraffe2_idle', idleUp: 'giraffe2_idle_back' } }, // Schoko-Giraffe
+    baseShare: 70, // neben Netzgiraffe und Schoko-Giraffe (share in SKINS.giraffe)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 164 / 168,
     speed: 16,
@@ -403,6 +408,7 @@ export const SPECIES = {
   yak: {
     texture: 'yak',
     anims: { walkDown: 'yak_walk', walkUp: 'yak_walk_back', idleDown: 'yak_idle', idleUp: 'yak_idle_back' }, // Videos; gefleckter Yak (yak2) weiter als Standbild
+    baseShare: 82, // neben dem gefleckten Yak und seinen Fellfarben (share in SKINS.yak)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 100 / 104,
     speed: 12,
@@ -547,6 +553,7 @@ export const SPECIES = {
     texture: 'snake',
     anims: { walkDown: 'snake_walk', walkUp: 'snake_walk_back', idleDown: 'snake_idle', idleUp: 'snake_idle' }, // Videos
     skinAnims: { snake2: { walkDown: 'snake2_walk', walkUp: 'snake2_walk_back', idleDown: 'snake2_idle', idleUp: 'snake2_idle' } },
+    baseShare: 55, // orange: neben den Farben und der grünen Baumschlange (share in SKINS.snake)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 14,
@@ -561,9 +568,11 @@ export const SPECIES = {
     catchWith: ['net'],
   },
   tarantula: {
-    texture: 'tarantula',
-    anims: { walkDown: 'tarantula_walk', walkUp: 'tarantula_walk_back' }, // Videos; im Stehen das Standbild
-    skinAnims: { tarantula2: { walkDown: 'tarantula2_walk', walkUp: 'tarantula2_walk_back' } },
+    // Spinne: die dünnbeinige goldene (Bilder tarantula2); die pelzige Vogelspinne (Bilder tarantula) ist die seltene
+    // Gestalt, als Fellfarbe tarantula_fur (coats.js; alte Spielstände: migrateSpiders in save.js)
+    texture: 'tarantula2',
+    anims: { walkDown: 'tarantula2_walk', walkUp: 'tarantula2_walk_back' }, // Videos; im Stehen das Standbild
+    baseShare: 40, // gold: neben den anderen Farben und den Vogelspinnen (alle in coats.js)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 60 / 64,
     speed: 12,
@@ -1126,8 +1135,10 @@ const FEED_WALK_TIMEOUT = 8; // kommt ein Tier nicht ans Futter, frisst es dort,
 // upJump (Fische): oben im Wasser das Sprung-Bild statt der Seitenansicht (siehe Fish.js render)
 // share statt wild: alle Skins mit share (und das Grundbild, wo kind.baseLevels es erlaubt) teilen sich die Fänge nach diesem Gewicht.
 export const SKINS = {
-  cat: { id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, wild: 0.12, baby: 0.03 }, // Katze 2: schwarz-weiß getigert mit Glöckchen
-  deer: { id: 'stag', name: tr('Hirsch', 'stag'), male: true, wild: 0.1, baby: 0 }, // ein Rehkitz ist nie ein Hirsch
+  // Katze, Reh, Giraffe, Yak, Schlange, Spinne: wie beim Schaf teilen sich Grundbild (kind.baseShare), seltene Gestalt und
+  // die Fellfarben aus coats.js die Fänge (share)
+  cat: [{ id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, share: 12, baby: 0.03 }], // weiße Langhaarkatze mit Glöckchen
+  deer: [{ id: 'stag', name: tr('Hirsch', 'stag'), male: true, share: 10, baby: 0 }], // ein Rehkitz ist nie ein Hirsch
   antelope: { id: 'antelope2', name: tr('Oryx-Antilope', 'oryx antelope'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   // Fischarten je Gebiet, alle gleich häufig (share, siehe rollSkin; der orange Fisch nur auf der Wiese, SPECIES.fish.baseLevels).
   // Savanne: immer der Lungenfisch (in der Trockenzeit steckt er im Schlamm). Fische bekommen keine Babys.
@@ -1159,15 +1170,15 @@ export const SKINS = {
   iguana: { id: 'iguana2', name: tr('Blauer Leguan', 'blue iguana'), male: true, wild: 0.12, baby: 0.03 }, // türkis mit orangem Kamm
   jaguar: { id: 'panther', name: tr('Panther', 'black panther'), male: true, wild: 0.1, baby: 0.03 }, // schwarzer Jaguar
   macaw: { id: 'macaw2', name: tr('Blau-gelber Ara', 'blue-and-yellow macaw'), male: true, wild: 0.15, baby: 0.03 }, // gilt für das ganze Paar
-  snake: { id: 'snake2', name: tr('grüne Baumschlange', 'green tree snake'), male: false, wild: 0.15, baby: 0 },
-  tarantula: { id: 'tarantula2', name: tr('Goldene Vogelspinne', 'golden tarantula'), male: false, wild: 0.15, baby: 0 },
+  snake: [{ id: 'snake2', name: tr('grüne Baumschlange', 'green tree snake'), male: false, share: 15, baby: 0 }],
   ray: { id: 'ray2', name: tr('Mantarochen', 'manta ray'), male: true, wild: 0.12, baby: 0 }, // groß, dunkel, mit heller Unterseite
-  sheep: { id: 'sheep2', name: tr('gefleckter Widder', 'spotted ram'), male: true, wild: 0.1, baby: 0.03 },
+  // Schafe: Fellfarben und Widder teilen sich die Fänge (share; das weiße Schaf: SPECIES.sheep.baseShare); weitere Farben in coats.js
+  sheep: [{ id: 'sheep2', name: tr('gefleckter Widder', 'spotted ram'), male: true, share: 10, baby: 0.03 }],
   fox: { id: 'fox2', name: tr('Silberfuchs', 'silver fox'), male: true, wild: 0.1, baby: 0.03 },
   squirrel: { id: 'squirrel2', name: tr('Streifenhörnchen', 'chipmunk'), male: false, neuter: true, wild: 0.1, baby: 0.03 },
   beaver: { id: 'beaver2', name: tr('Nutria', 'nutria'), male: false, wild: 0.1, baby: 0.03 },
   macaque: { id: 'macaque2', name: tr('Goldstumpfnase', 'golden snub-nosed monkey'), male: false, wild: 0.1, baby: 0.03 },
-  giraffe: { id: 'giraffe2', name: tr('Schoko-Giraffe', 'chocolate giraffe'), male: false, wild: 0.1, baby: 0.03 }, // ohne Flecken
+  giraffe: [{ id: 'giraffe2', name: tr('Schoko-Giraffe', 'chocolate giraffe'), male: false, share: 10, baby: 0.03 }], // ohne Flecken
   panda: { id: 'panda2', name: tr('Panda ohne Augenflecken', 'panda without eye patches'), male: true, wild: 0.1, baby: 0.03 },
   // seltene Varianten, bisher nur als Standbilder (Sprites/<Tier>2.webp, tools/rare-static.py); Animationen kommen noch
   anteater: { id: 'anteater2', name: tr('Tamandua', 'tamandua'), male: true, wild: 0.1, baby: 0.03 },
@@ -1189,7 +1200,7 @@ export const SKINS = {
   hedgehog: { id: 'hedgehog2', name: tr('Apfel-Igel', 'apple hedgehog'), male: true, wild: 0.1, baby: 0.03 }, // trägt einen Apfel auf den Stacheln
   boar: { id: 'boar2', name: tr('Bache mit Frischlingen', 'wild sow with piglets'), male: false, wild: 0.12, baby: 0.03 }, // dasselbe Bild, dazu laufen Frischlinge hinterher (Boar.js)
   tanuki: { id: 'tanuki2', name: tr('Fuchs-Tanuki', 'fox tanuki'), male: true, wild: 0.1, baby: 0.03 },
-  yak: { id: 'yak2', name: tr('Gefleckter Yak', 'spotted yak'), male: true, wild: 0.1, baby: 0.03 },
+  yak: [{ id: 'yak2', name: tr('Gefleckter Yak', 'spotted yak'), male: true, share: 10, baby: 0.03 }],
   howler: { id: 'gibbon', name: tr('Gibbon', 'gibbon'), male: true, wild: 0.1, baby: 0.03 }, // früher eine eigene Art (nur bei Nebel), siehe migrateSkinSpecies in save.js
 };
 
@@ -1204,6 +1215,17 @@ const TINT_CSS = {
   [TINT.sky]: 'sepia(0.8) saturate(2.5) hue-rotate(170deg)',
   [TINT.lilac]: 'sepia(0.8) saturate(2.5) hue-rotate(220deg)',
 };
+// Fellfarben (umgefärbte Bilder, coats.js) als Skins dazu, mit den Animationen ihrer Vorlage
+for (const [species, coats] of Object.entries(COATS)) {
+  const kind = SPECIES[species];
+  for (const coat of coats) {
+    const { g, ramp, ...skin } = coat;
+    SKINS[species] = [...[SKINS[species] ?? []].flat(), { ...skin, coat: true }];
+    const anims = coatAnims(coat, kind);
+    if (anims) (kind.skinAnims ??= {})[coat.id] = anims;
+  }
+}
+
 const PLACEHOLDER_SKINS = {};
 for (const [species, [tint, name, g]] of Object.entries(PLACEHOLDER_SKINS)) {
   if (SKINS[species]) continue;
@@ -1534,6 +1556,7 @@ export default class Animal {
   }
   set skin(id) {
     this._skin = id ?? null;
+    if (id && skinInfo(this.species, id)?.coat) ensureCoat(this.scene, id); // Fellfarbe: Bilder erst jetzt umfärben
     const tint = id ? skinInfo(this.species, id)?.tint : null;
     if (tint) {
       this.sprite?.setTint(tint);
@@ -1547,6 +1570,11 @@ export default class Animal {
   get texSkin() {
     const id = this._skin;
     const info = id ? skinInfo(this.species, id) : null;
+    if (info?.coat && !this.scene.textures.exists(id)) {
+      // Fellfarbe, deren Vorlage beim Setzen noch nicht geladen war: jetzt umfärben, bis dahin das normale Bild
+      ensureCoat(this.scene, id);
+      if (!this.scene.textures.exists(id)) return null;
+    }
     return info && !info.placeholder ? id : null;
   }
   lookTexture() {
@@ -1574,12 +1602,19 @@ export default class Animal {
     const here = skinsHere(this.species);
     const shared = here.filter((s) => s.share);
     if (from === 'wild' && shared.length) {
-      // gleichmäßig verteilt (z. B. Fischarten je Gebiet): Grundbild nur, wo es vorkommt
-      const base = this.kind.baseLevels?.includes(biomeOf()) ? 1 : 0;
-      let r = Math.random() * (base + shared.reduce((n, s) => n + s.share, 0)) - base;
+      // nach Anteilen verteilt (z. B. Fischarten je Gebiet, Fellfarben der Schafe): Grundbild nur, wo es vorkommt.
+      // Seltene Anteile (nicht common) zählen beim Event „Seltene Tiere“ und mit der Sternschnuppe mehr (rareChance)
+      const base = this.kind.baseLevels && !this.kind.baseLevels.includes(biomeOf()) ? 0 : this.kind.baseShare ?? (this.kind.baseLevels ? 1 : 0);
+      const total = base + shared.reduce((n, s) => n + s.share, 0);
+      const rareShare = shared.reduce((n, s) => n + (s.common ? 0 : s.share), 0);
+      const p = rareShare / total;
+      const q = Math.min(0.9, rareChance(p));
+      const boost = p > 0 && p < 1 ? (q / (1 - q)) / (p / (1 - p)) : 1; // Verhältnis selten : häufig
+      const weight = (s) => (s.common ? s.share : s.share * boost);
+      let r = Math.random() * (base + shared.reduce((n, s) => n + weight(s), 0)) - base;
       if (r < 0) return;
       for (const s of shared) {
-        r -= s.share;
+        r -= weight(s);
         if (r < 0) {
           this.skin = s.id;
           return;

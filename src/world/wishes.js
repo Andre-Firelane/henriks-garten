@@ -68,7 +68,7 @@ const WORDS = {
   macaw: ['einen Ara', 'Ein Ara', 'a macaw'],
   snake: ['eine Schlange', 'Eine Schlange', 'a snake'],
   piranha: ['einen Piranha', 'Ein Piranha', 'a piranha'],
-  tarantula: ['eine Vogelspinne', 'Eine Vogelspinne', 'a tarantula'],
+  tarantula: ['eine Spinne', 'Eine Spinne', 'a spider'],
   seal: ['einen Seehund', 'Ein Seehund', 'a seal'],
   penguin: ['einen Pinguin', 'Ein Pinguin', 'a penguin'],
   anteater: ['einen Ameisenbären', 'Ein Ameisenbär', 'an anteater'],

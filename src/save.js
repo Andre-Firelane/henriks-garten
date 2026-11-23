@@ -107,6 +107,7 @@ export function loadSave() {
   if (!Array.isArray(game.wishes?.open)) game.wishes = { open: [] }; // (ältere Spielstände: noch keine Besucherwünsche)
   if (!s.game.monkeyIsland) migrateMonkeyIsland();
   if (!s.game.jungleHall) migrateJungleHall();
+  if (!s.game.spiderSwap) migrateSpiders();
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
@@ -303,6 +304,21 @@ function migrateSkinSpecies() {
     for (const k of Object.keys(game.caughtIn ?? {})) game.caughtIn[k] = swap(game.caughtIn[k]);
     if (Array.isArray(game.bookNew)) game.bookNew = [...new Set(game.bookNew.map((e) => e.replace(new RegExp(`:${from}$`), `:${to}`)))];
   }
+}
+
+// Früher war die pelzige Vogelspinne die normale Spinne und die goldene die seltene; jetzt ist es umgekehrt (die pelzige
+// ist die Fellfarbe tarantula_fur, animals/coats.js). Jede gespeicherte Spinne behält ihr Aussehen
+function migrateSpiders() {
+  game.spiderSwap = true;
+  const swap = (a) => {
+    if (a?.species !== 'tarantula') return;
+    a.skin = a.skin === 'tarantula2' ? null : 'tarantula_fur';
+  };
+  for (const lvl of Object.values(game.levels)) lvl.animals.forEach(swap);
+  game.followers.forEach(swap);
+  for (const list of [game.expedition?.wagon, game.expedition?.stay]) (list ?? []).forEach(swap);
+  if (game.rarePromise?.species === 'tarantula') game.rarePromise = null;
+  if (Array.isArray(game.wishes?.open)) game.wishes.open = game.wishes.open.filter((w) => !(w.species === 'tarantula' && w.skin));
 }
 
 export function saveNow() {

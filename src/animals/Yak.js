@@ -56,7 +56,7 @@ export default class Yak extends Animal {
     this.lick.time = Math.max(this.lick.time, 6); // beim Bürsten bleibt es noch ein bisschen
     // ein paar Fellflocken fliegen
     for (let i = 0; i < 6; i++) {
-      const f = this.scene.add.circle(this.x + Phaser.Math.Between(-14, 14), this.y - Phaser.Math.Between(14, 30), Phaser.Math.FloatBetween(1.5, 2.5), this.skin === 'yak2' ? 0xe8dcc4 : 0x4a3e36, 0.9).setDepth(this.y + 2);
+      const f = this.scene.add.circle(this.x + Phaser.Math.Between(-14, 14), this.y - Phaser.Math.Between(14, 30), Phaser.Math.FloatBetween(1.5, 2.5), this.skin?.startsWith('yak2') ? 0xe8dcc4 : 0x4a3e36, 0.9).setDepth(this.y + 2);
       this.scene.tweens.add({ targets: f, x: f.x + Phaser.Math.Between(-10, 10), y: f.y + Phaser.Math.Between(8, 18), alpha: 0, duration: 600, onComplete: () => f.destroy() });
     }
     this.scene.tweens.add({ targets: this.sprite, scaleY: { from: 0.47, to: 0.5 }, duration: 180, ease: 'Quad.easeOut' });

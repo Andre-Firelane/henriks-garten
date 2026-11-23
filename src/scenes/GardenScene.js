@@ -480,7 +480,7 @@ const ANIMAL_INFO = {
   macaw: tr(['Ara', 'Mit seinem kräftigen Schnabel knackt er sogar harte Nüsse – und er kann bis zu 60 Jahre alt werden.'], ['Macaw', 'Its powerful beak can crack even hard nuts – and it can live up to 60 years.']),
   snake: tr(['Schlange', 'Sie riecht mit der Zunge: Beim Züngeln fängt sie Duftteilchen aus der Luft ein.'], ['Snake', 'It smells with its tongue: flicking it catches scent particles from the air.']),
   piranha: tr(['Piranha', 'Mit seinen messerscharfen Zähnen kann er sogar Nüsse knacken – meist frisst er aber Insekten, Fische und Früchte.'], ['Piranha', 'Its razor-sharp teeth can even crack nuts – but mostly it eats insects, fish and fruit.']),
-  tarantula: tr(['Vogelspinne', 'Sie hat acht Beine und acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Tarantula', 'It has eight legs and eight eyes – but still doesn’t see very well.']),
+  tarantula: tr(['Spinne', 'Sie hat acht Beine und meist acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Spider', 'It has eight legs and usually eight eyes – but still doesn’t see very well.']),
   seal: tr(['Seehund', 'Er kann bis zu 30 Minuten tauchen – und schläft sogar im Wasser, nur die Nase schaut zum Atmen heraus.'], ['Harbour seal', 'It can dive for up to 30 minutes – and even sleeps in the water with just its nose poking out to breathe.']),
   penguin: tr(['Kaiserpinguin', 'An Land watschelt er gemütlich – im Wasser aber schwimmt er schneller als ein Mensch rennen kann und taucht über 500 Meter tief.'], ['Emperor penguin', 'On land it waddles along slowly – but in the water it swims faster than a person can run and dives more than 500 metres deep.']),
   anteater: tr(['Großer Ameisenbär', 'Seine Zunge ist bis zu 60 Zentimeter lang – damit schleckt er an einem Tag bis zu 30.000 Ameisen und Termiten.'], ['Giant anteater', 'Its tongue is up to 60 centimetres long – with it, it licks up to 30,000 ants and termites in a single day.']),
@@ -3403,7 +3403,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!canWish(s) || EVENT_SPECIES[s] || !SPECIES_ORDER.includes(s)) return false;
     if (skin) {
       const sk = skinInfo(s, skin);
-      if (!canWishSkin(s, sk) || !(sk.wild > 0) || !((home[s] ?? 0) > 0) || this.homeSkins().has(skin)) return false;
+      if (!canWishSkin(s, sk) || !(sk.wild > 0 || sk.share > 0) || !((home[s] ?? 0) > 0) || this.homeSkins().has(skin)) return false;
       return sk.level ? isUnlocked(sk.level) && worldsOf(s).some((w) => w.level === sk.level) : worldsOf(s).some((w) => isUnlocked(w.level));
     }
     if ((home[s] ?? 0) > 0) return false;
@@ -6870,7 +6870,7 @@ export default class GardenScene extends Phaser.Scene {
     if (home.elk) lines.push(tr(`🏮 Die ${animalIcon('elk')} stehen im Nebel über dem Moorwasser – stell die Laterne aus der Kiste ans Ufer, dann kommen sie ins Licht.`, `🏮 The ${animalIcon('elk')} stand in the fog over the bog water – put the lantern from the chest by the shore and they come into the light.`));
     if (home.hedgehog || home.boar) lines.push(tr('🌰 Schüttel Eicheln aus einer großen Eiche – damit lockst du Igel aus den Laubhaufen und Wildschweine zum Fressen.', '🌰 Shake acorns from a big oak – they lure hedgehogs out of the leaf piles and wild boars to feed.'));
     if (home.beaver && LEVEL.beavers) lines.push(tr(`🪵 Im Biberdamm ist ein Loch – steck einen großen Stock hinein, dann kommt ein ${animalIcon('beaver')} mit.`, `🪵 There is a hole in the beaver dam – push a big stick into it and a ${animalIcon('beaver')} comes along.`));
-    if (home.snake || home.tarantula) lines.push(tr('🌿 Schlangen und Vogelspinnen verstecken sich im Dickicht – wo es raschelt, schlag es frei.', '🌿 Snakes and tarantulas hide in the thicket – where it rustles, cut it away.'));
+    if (home.snake || home.tarantula) lines.push(tr('🌿 Schlangen und Spinnen verstecken sich im Dickicht – wo es raschelt, schlag es frei.', '🌿 Snakes and spiders hide in the thicket – where it rustles, cut it away.'));
     return lines.map((l) => `<br><small>${l}</small>`).join('');
   }
 

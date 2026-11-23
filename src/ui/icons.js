@@ -35,7 +35,7 @@ const SHEETS = {
   snake: [72, 72, 4, 0],
   macaw: [64, 80, 4, 0],
   toucan: [64, 80, 4, 0],
-  tarantula: [64, 64, 4, 0],
+  tarantula: [64, 64, 4, 0, 'tarantula2'], // die dünnbeinige goldene Spinne (die pelzige Vogelspinne ist eine Fellfarbe, animals/coats.js)
   antelope: [72, 100, 4, 0],
   zebra: [80, 104, 4, 0],
   meerkat: [40, 56, 4, 0],
@@ -113,6 +113,16 @@ const SHEETS = {
   butterfly: [64, 64, 3, 0, 'butterfly', 12], // Schmetterlinge: der orange steht für alle (Raster: 3 Bilder je Zeile, 12 Zeilen)
 };
 
+// Bilder, die erst im Spiel entstehen (Fellfarben, animals/coats.js): Schlüssel → Adresse (data:-URL)
+const URLS = {};
+const sheetUrl = (file) => URLS[file] ?? `assets/${file}.png`;
+
+// ein im Spiel erzeugtes Bild anmelden (Spritesheet als data:-URL; Bildbreite, Bildhöhe, Anzahl Bilder; gezeigt wird das erste)
+export function registerAnimalIcon(key, url, w, h, count) {
+  SHEETS[key] = [w, h, count, 0, key];
+  URLS[key] = url;
+}
+
 // gibt es für diesen Schlüssel (Tierart oder Skin) ein eigenes Bild?
 export const hasAnimalIcon = (key) => !!SHEETS[key];
 
@@ -123,7 +133,7 @@ export function animalIcon(species, size = 2.6) {
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${size}em`,
-    `background-image:url(assets/${file}.png)`,
+    `background-image:url(${sheetUrl(file)})`,
     `background-size:${(w * count * k).toFixed(3)}em ${(size * rows).toFixed(3)}em`,
     `background-position:${(-w * frame * k).toFixed(3)}em 0`,
   ].join(';');
@@ -137,7 +147,7 @@ export function animalIconSquare(species, size = 3) {
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${(h * k).toFixed(3)}em`,
-    `background-image:url(assets/${file}.png)`,
+    `background-image:url(${sheetUrl(file)})`,
     `background-size:${(w * count * k).toFixed(3)}em ${(h * rows * k).toFixed(3)}em`,
     `background-position:${(-w * frame * k).toFixed(3)}em 0`,
   ].join(';');
@@ -160,7 +170,7 @@ export function animalIconFit(species, size = 2, onReady = null) {
   const style = [
     `width:${(box.w * k).toFixed(3)}em`,
     `height:${(box.h * k).toFixed(3)}em`,
-    `background-image:url(assets/${file}.png)`,
+    `background-image:url(${sheetUrl(file)})`,
     `background-size:${(w * count * k).toFixed(3)}em ${(h * rows * k).toFixed(3)}em`,
     `background-position:${(-(w * frame + box.x) * k).toFixed(3)}em ${(-box.y * k).toFixed(3)}em`,
   ].join(';');
@@ -196,7 +206,7 @@ function measureVisible(species, onReady) {
     VISIBLE[species] = x1 < 0 ? { x: 0, y: 0, w, h } : { x: x0 / scale, y: y0 / scale, w: (x1 - x0 + 1) / scale, h: (y1 - y0 + 1) / scale };
     for (const f of measuring[species]) f();
   };
-  img.src = `assets/${file}.png`;
+  img.src = sheetUrl(file);
 }
 
 export function animalIcons(list, size) {
