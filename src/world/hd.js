@@ -75,6 +75,8 @@ export const HD = [
   'hutwall_terrarium_raised_x', 'hutwall_terrarium_raised_y', 'post_hutwall_terrarium_raised', 'hutwall_terrarium_raised_back_x', 'hutwall_terrarium_raised_back_y', 'post_hutwall_terrarium_raised_back', 'post_hutwall_tank',
   // Eiswelt (Platzhalter)
   'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block',
+  'tundra0', 'tundra1', 'tundra2', 'ice_beach0', 'ice_beach1', 'ice_beach2', // Tundra und Kiesstrand (tools/ice-grounds.py)
+  'glacier0', 'glacier1', 'glacier2', 'snow_pine', // Gletscher und verschneite Tanne (tools/ice-placeholders2.py)
   'hutwall_ice_x', 'hutwall_ice_y', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
   'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
 ];

@@ -18,7 +18,7 @@ export const SHOPS = [
   { id: 'cottoncandy', name: tr('Zuckerwatte', 'Cotton Candy'), cost: 120, hearts: 3, icon: '🍭', stand: 'cottoncandy_stand', seller: 'cottoncandy_seller', items: ['cottoncandy'], blueprint: true },
   { id: 'pretzel', name: tr('Brezeln', 'Pretzels'), cost: 150, hearts: 3, icon: '🥨', stand: 'pretzel_stand', seller: 'pretzel_seller', items: ['pretzel'], blueprint: true },
   // Marktstand (Andres Bild, tools/deco-stand.py): 2×2 Kacheln, ohne Verkäufer-Figur und ohne Snack in der Hand
-  { id: 'souvenir', name: tr('Blumen & Andenken', 'Flowers & Souvenirs'), cost: 120, hearts: 3, icon: '🌸', stand: 'deco_stand', seller: null, items: [], size: 2, originY: 0.778, scale: 1 },
+  { id: 'souvenir', name: tr('Blumen & Andenken', 'Flowers & Souvenirs'), cost: 120, hearts: 1, icon: '🌸', stand: 'deco_stand', seller: null, items: [], size: 2, originY: 0.778, scale: 1 },
 ];
 export const MAX_BOOTHS = 3; // so viele Buden höchstens je Parkabschnitt
 export const shopDef = (id) => SHOPS.find((s) => s.id === id) ?? null;

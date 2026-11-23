@@ -108,6 +108,7 @@ export function loadSave() {
   if (!s.game.monkeyIsland) migrateMonkeyIsland();
   if (!s.game.jungleHall) migrateJungleHall();
   if (!s.game.spiderSwap) migrateSpiders();
+  if (!s.game.iceMap2) migrateIceMap();
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
@@ -308,6 +309,18 @@ function migrateSkinSpecies() {
 
 // Früher war die pelzige Vogelspinne die normale Spinne und die goldene die seltene; jetzt ist es umgekehrt (die pelzige
 // ist die Fellfarbe tarantula_fur, animals/coats.js). Jede gespeicherte Spinne behält ihr Aussehen
+// Die Eiswelt hat eine neue Karte (zwei Inseln, Fjord, Tundra; docs/plan-eiswelt.md): die wilden Tiere der alten Karte
+// stünden jetzt womöglich im Wasser, sie kommen beim nächsten Besuch neu; liegengelassene Werkzeuge liegen dann vor der
+// Forschungsstation
+function migrateIceMap() {
+  game.iceMap2 = true;
+  const lvl = game.levels.ice;
+  if (!lvl) return;
+  const o = tileToWorld(21, 24);
+  lvl.animals = (lvl.animals ?? []).filter((a) => a.state !== 'wild');
+  lvl.pickups = (lvl.pickups ?? []).map((p) => ({ ...p, x: o.x, y: o.y }));
+}
+
 function migrateSpiders() {
   game.spiderSwap = true;
   const swap = (a) => {

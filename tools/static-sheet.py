@@ -25,7 +25,17 @@ So entstanden (V = "Tiersprites Test/views", A = public/assets):
     gespiegelt zu vier: _d0 = _v0 gespiegelt, _d1 = _v0, _d2 = _v1, _d3 = _v1 gespiegelt; Reste vom weißen Hintergrund weg)
   python tools/static-sheet.py 128 128 112 124 $A/elk.png --wasser 128 112 72 0.6 $A/elk_water.png --schraeg 0.5 $V/elk_d0.png ... _d3.png
   python tools/cutout-views.py Sprites/Igel.webp $V/hedgehog 1 4 schatten,loecher,alle   (ebenso Igel2 -> hedgehog2)
-  python tools/static-sheet.py 80 64 50 60 $A/hedgehog.png $V/hedgehog_v0.png _v3 _v2 _v1   (Apfel-Igel: Höhe 56 wegen des Apfels)"""
+  python tools/static-sheet.py 80 64 50 60 $A/hedgehog.png $V/hedgehog_v0.png _v3 _v2 _v1   (Apfel-Igel: Höhe 56 wegen des Apfels)
+  Eiswelt (alle mit cutout-views.py ... 1 4 schatten-grau,loecher,alle; Nebenbilder mit der Höhe, die derselbe Faktor
+  wie beim Grundbild ergibt):
+  Eisbär.webp -> polarbear: 112 104 92 100; Eisbär wartet.webp -> polarbear_wait: 112 104 81 100
+  Walross.webp -> walrus: 104 100 84 96; Walross schläft.webp -> walrus_sleep: 104 100 60 96
+  Rentier.webp -> reindeer: 80 112 100 108; Polarfuchs.webp -> arcticfox: 72 72 56 68
+  Polarwolf.webp -> arcticwolf: 80 80 68 76; Polarwolf heult.webp -> arcticwolf_howl: 80 80 69 76
+  Papageientaucher.webp -> puffin: 48 52 42 48; Papageientaucher fliegt.webp -> puffin_fly: 64 60 36 58
+  Schneeeule.webp -> snowowl: 56 64 50 60; Schneehase.webp -> snowhare: 56 60 50 56
+  Schneeeule fliegt.webp -> snowowl_fly: 64 56 34 52, nur die Vorderansicht _v1 (die anderen passen nicht zusammen):
+    _d0 = _v1, _d1 = _v1 gespiegelt, Reihenfolge _d0 _d1 _d0 _d1"""
 import sys
 import numpy as np
 from PIL import Image

@@ -51,6 +51,9 @@ export function animalUid(a) {
 export const bondOf = (a) => (a?.uid != null ? game.bonds?.[a.uid] ?? null : null);
 
 // Ist dieses Tier gerade der Freund in seinem Gehege?
+// ist dieses Tier (feste Nummer) irgendwo Henriks Freund? (für gespeicherte Tiere ohne Gehege, z. B. im Aquarium)
+export const isFriendUid = (uid) => uid != null && Object.values(game.friends ?? {}).includes(uid);
+
 export function isFriend(a) {
   return a?.uid != null && !!a.enclosure && game.friends?.[friendKey(a.enclosure, a.species)] === a.uid && !!game.bonds?.[a.uid];
 }

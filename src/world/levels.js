@@ -111,55 +111,75 @@ function dryUp(rows, keep) {
   return rows.map((r, y) => [...r].map((c, x) => (c === '~' && Math.hypot(x - keep.tx, y - keep.ty) > keep.r ? '≈' : c)).join(''));
 }
 
-// Eiswelt: Festland in der Mitte mit der Forschungsstation, vier Inseln, die ihre Ecken bis an den Kartenrand füllen
-// (dazwischen 4 Kacheln breite Meeresarme), an den Seiten des Festlands offenes Meer (dort liegt das Wasserflugzeug). Erzeugt mit einem kleinen Skript, danach von Hand
+// Eiswelt (46 x 64, siehe docs/plan-eiswelt.md; Startpunkt erzeugt mit tools/ice-map.py, danach von Hand): oben Meer mit
+// zwei kleinen Inseln (Fähren über den Meeresarm), in der Mitte die Küste mit Forschungsstation und Wasserflugzeug (offenes
+// Meer rechts), rechts der Fjord vom Meer bis zum Gletscher (Bodenzone, Eisblöcke Ê an der Abbruchkante) mit Vogelfelsen
+// (Ɵ, Ȟ) an den Ufern, unten die Tundra mit der Taiga (verschneite Tannen Ṗ) am Rand
 const ICE_ROWS = [
-  'Ê..Ê..êêêêÊêê~~~~~~~~~~~~~~~~~~~~~.Êêê.êê.ê.ê.',
-  'ê......ê....~~~~~~~~~~~~~~~~~~~~~~....Ê......ê',
-  'Ê.......ê...~~~~~~~~~~~~~~~~~~~~~~...Ê.......Ê',
-  'ê...........~~~~~...~~~~~~~~~~~~~~...........Ê',
-  'ê...........~~~~~...~~~~~~~~~~~~~~...Ê..Ê....ê',
-  '....ê........~~~~~~.........~~~~~~...........ê',
-  'êê..Êê...ê...~~~~~~.........~~~~~~...........Ê',
-  'Ê.ê..........~~~~............~~~~~..........Êê',
-  'Ê............~~~~...ê........~~~~~...........ê',
-  'ê............~~~~#........ê.ê~~~~~...........ê',
-  'Ê......ê.....~~~~#.........ê.~~~~~....e......Ê',
-  '...Ê...Ê..e..~~~~#...........~~~~~êê.....ê..êê',
-  'ê~~Ê......~~~~~~~#..........~~~~~~.........~~Ê',
-  '~~~~~~~~~~~~~~~~~#........ê.~~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~########....~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~.....#....~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~.....#....~~~~~~~~~~~~~~~~~',
-  '~~~.......~~....~~......#......~~...#...~~~~~~',
-  '~~~.......~~....~~......#......~~...#......~~~',
-  '~~~................MMMMM#...........#......~~~',
-  '~~~................NɃ,,N#...........#......~~~',
-  '~~~................Nɓ,,G##################.~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...~~~~~~~',
+  '~~~~..........~~~~~~~~~~~~~~~~~~~~~......~~~~~',
+  '~~~.............~~~~~~~~~~~~~~........ê...~~~~',
+  '~~~...ê...Ê.ê.ê.~~~~~~~~~~~~~~...Ê.ê......~~~~',
+  '~~~.....e.......~~~~~~~~~~~~~~.ê.....e.ê..~~~~',
+  '~~~~..Ê......ê..~~~~~~~~~~~~~~............~~~~',
+  '~~~~~....#.....~~~~~~~~~~~~~~~~.....#....~~~~~',
+  '~~~~~....#...~~~~~~~~~~~~~~~~~~.....#.Ê..~~~~~',
+  '~~~~~~...#...~~~~~~~~~~~~~~~~~~~~...#....~~~~~',
+  '~~~~~~~..#..~~~~~~~~~~~~~~~~~~~~~~~~~...~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
+  '~~~...~.~#........~..~......~...~..~#..~..~~~~',
+  '~~~......############################......~~~',
+  '~~~.ê.ê............MMMMM#..............ê...~~~',
+  '~~~................NɃ,,N#..................~~~',
+  '~~~....Ê....Ê..ê...Nɓ,,G##################.~~~',
   '~~~................MMMMM#..................~~~',
-  '~~~..................c..#.ê..ê.............~~~',
-  '~~~.ê.........ê.........#......Ê...........~~~',
-  '~~~..ê........ê..Ê....ê.#..................~~~',
-  '~~~.....................#.................Ê~~~',
-  '~~~.....................#.................~~~~',
-  '~~~~~~...####################.~~.........Ê~~~~',
-  '~~~~~~~~~~~~~~~~~...........#~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~...........#~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~.......ê.#~~~~~~~~~~~~~~~~~',
-  '~~~~~~~~~~~~~~~~~~~.........#~~~~~~~~~~~~~~~~~',
-  'ê...........~~~~~.ê.........#~~~~~~~..Ê.......',
-  'ê.......ê...~~~~~...ê.......#~~~~............ê',
-  'êÊ...ê.....e~~~~~...........#~~~~...........êÊ',
-  'Ê.ê...ê.....~~~~~...........#~~~~.....êê.....ê',
-  '..........ê.~~~~~............~~~~............ê',
-  'ê......ê....Ê~~~~........Êê..~~~~..e.........ê',
-  'ê.Ê..........~~~~~~.........ê~~~~..........ê.Ê',
-  'ê............~~~~~~..........~~~~~....ê......Ê',
-  'ê......ê....Ê~~~~...........ê~~~~~............',
-  '.....ê...Ê.ê.~~~~...~~...~~..~~~~~........Ê..ê',
-  '......Ê.ê...~~~~~~~~~~~~~~~~~~~~~~...........Ê',
-  '....ê.......~~~~~~~~~~~~~~~~~~~~~~...........Ê',
-  'ÊêêÊ.ê...ê..Ê~~~~~~~~~~~~~~~~~~~~~êÊÊ.ÊÊêêÊêÊê',
+  '~~~..................c..#...............ê..~~~',
+  '~~~.....................#....ê.............~~~',
+  '~~~.....................#.Ê.........ê......~~~',
+  '~~~.......###############..................~~~',
+  '~~~..ê....#.........................ê......~~~',
+  '~~~.......#..................ê.Ê...........~~~',
+  '~~~.......#............Ê...Ɵ.....Ȟ.....Ɵ...~~~',
+  'ÊȒ........#.............~~~~...~~~~~~...~~~~~~',
+  'ÊÊ........#............Ê~~~~~~~~~~~~~~~~~~~~~~',
+  'ÊÊ........#............Ê~~~~~~~~~~~~~~~~~Ɵ~~~~',
+  'ÊÊ........#.............~~~~~~~Ɵ~~~~Ȟ~~~~~~~~~',
+  'ȒȒ........#............Ê~~~~~~~~~~~~~~~~~~~~~~',
+  'ÊÊ........#............Ê.~~~~~~~~...~~~~~~~~~~',
+  'ê.........#.................Ȟ.......Ɵ....Ȟ...Ȓ',
+  'Ȓ.........#..................................Ȓ',
+  'ȒȒ........#.....................#...........ṖÊ',
+  'ÊȒ........#....ȓ.....Ȓ..........#.e.......ȓ..Ê',
+  'Ȓ.....Ȓ...#.ȓ......Ɵ.........Ȓ..#............Ȓ',
+  'Ṗ.........#.....................#.Ṗ.........ȒȒ',
+  'ê.......Ȓ.#######################...........ṖȒ',
+  'Ê...................................Ê.Ȓ.....ṖÊ',
+  'êê...Ṗ........Ṗ.....ȓ........................Ṗ',
+  'ȒȒ..........Ȓ.............Ȓ.....Ȓ.Ȓ......ȓ...ê',
+  'Ȓ......Ṗ.......ȓ....Ȓ.......ȓ................Ê',
+  'ê........ê......................ȓ.ê.....ȓ.ȓ..Ȓ',
+  'ê....Ṗ.......Ṗ..Ȓ......ê..Ȓ...Ɵ.....ê.Ȓ.....ȒṖ',
+  'Ṗ...........................................Êê',
+  'ṖÊ.Ṗ......e..ȓ.Ṗ.............................Ṗ',
+  'ṖÊ....Ṗ...................ê........ȓ..Ȓ......Ȓ',
+  'Ê..........Ṗ..Ṗ.ȓ.............Ṗ..Ṗ......Ȓ.ê.ṖÊ',
+  'ṖȒ..ê..................Ê.....................Ṗ',
+  'êÊ....ȓ.......ȓ.............Ȓ...Ȓ.........ê.ȒṖ',
+  'ÊṖ.........ȓ.....ȓ.......ȓ....ê......Ê.ȓ.....ê',
+  'Ȓ.................................Ṗ......ê...Ê',
+  'ê....ȓ..........Ȓ..Ṗ.........ȓ.ȓ.....Ṗ......ṖÊ',
+  'Ȓ............................................Ȓ',
+  'Ṗ...Ṗ......Ṗ.....Ṗ.ṖṖ...Ṗ..........Ṗ.Ṗ......ȒṖ',
+  'Ê....Ṗ.Ṗ..ṖṖṖṖ..Ṗ.....ṖṖ.Ṗ.ṖṖ.......Ṗ.ṖṖ...Ṗ.Ṗ',
+  'ȒṖ..ṖṖṖṖ.....Ṗ..ṖṖṖṖ..ṖṖṖ.ṖṖṖ.......ṖṖ.Ṗ.ṖṖ..Ṗ',
+  'ṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖ',
+  'ṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖ',
 ];
 
 // Nacht in der Eiswelt: das Meer zwischen Festland und Inseln friert zu (man läuft hinüber); nur das offene Meer am
@@ -170,9 +190,9 @@ function freezeSea(rows, open, holes) {
   const hole = (x, y) => holes.some(([hx, hy]) => x >= hx && x <= hx + 1 && y >= hy && y <= hy + 1);
   return rows.map((r, y) => [...r].map((c, x) => (c === '~' && x >= open && y >= open && x < r.length - open && y < h - open && !hole(x, y) ? 'ɨ' : c)).join(''));
 }
-// Eislöcher: in jedem Meeresarm eins, abseits der Fähr-Bahnen (dort geht man nachts hinüber); daneben bleiben immer
+// Eislöcher: in den Meeresarmen und im Fjord, abseits der Fähr-Bahnen (dort geht man nachts hinüber); daneben bleiben immer
 // mindestens zwei Kacheln Eis zum Vorbeigehen
-const ICE_HOLES = [[13, 4], [5, 14], [30, 5], [40, 14], [30, 40], [39, 30], [13, 39], [4, 30]];
+const ICE_HOLES = [[22, 6], [14, 14], [27, 14], [26, 32], [38, 32]]; // zwischen den Inseln, in den Meeresarmen, im Fjord
 
 export const LEVELS = {
   meadow: {
@@ -690,11 +710,11 @@ export const LEVELS = {
     enclosures: [], // die Gehege sind im Tierpark
     hut: { tx0: 19, ty0: 19, tx1: 23, ty1: 22, style: 'ice' }, // Forschungsstation (Metall, flaches Dach mit Teleskop; mit Bett)
     chests: [
-      { tx: 21, ty: 23, tools: ['net', 'lasso', 'herring', 'sealball'] }, // Regal vor der Station
-      { tx: 10, ty: 11, tools: ['net', 'lasso', 'herring', 'sealball'] }, // Kisten auf den vier Inseln
-      { tx: 38, ty: 10, tools: ['net', 'lasso', 'herring', 'sealball'] },
-      { tx: 35, ty: 38, tools: ['net', 'lasso', 'herring', 'sealball'] },
-      { tx: 11, ty: 35, tools: ['net', 'lasso', 'herring', 'sealball'] },
+      { tx: 21, ty: 23, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // Regal vor der Station
+      { tx: 8, ty: 7, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // Kisten auf den beiden Inseln
+      { tx: 37, ty: 7, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] },
+      { tx: 34, ty: 39, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // an den Vogelfelsen am Südufer des Fjords
+      { tx: 10, ty: 50, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // in der Tundra
     ],
     hero: 'hero_ice', // Kleidung in der Eiswelt (Parka mit Fellkapuze)
     ambient: 'ambient_ice', // pfeifender Wind
@@ -704,8 +724,17 @@ export const LEVELS = {
     toolSpots: [],
     exits: [], // hin und zurück nur mit dem Wasserflugzeug
     snow: true, // es rieselt immer leicht Schnee (siehe Weather.js)
+    // Bodenzonen: Gletscher, Tundra (unten und links am Gletscher vorbei) und die Kiesstrände der Walrosse (Westküste am offenen Meer und
+    // am Südufer von Insel B); Platzhalter-Bilder aus tools/ice-grounds.py und tools/ice-placeholders2.py
+    grounds: [
+      { area: { tx0: 13, tx1: 23, ty0: 27, ty1: 38 }, ground: ['glacier0', 'glacier1', 'glacier2'], soft: 2 }, // Gletscher am Fjordende
+      { area: { tx0: 0, tx1: 45, ty0: 37, ty1: 63 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 3 },
+      { area: { tx0: 0, tx1: 19, ty0: 27, ty1: 36 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 3 },
+      { area: { tx0: 3, tx1: 7, ty0: 19, ty1: 26 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
+      { area: { tx0: 30, tx1: 41, ty0: 10, ty1: 12 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
+    ],
     // Pinguine watscheln in Gruppen am Wasser (siehe Penguin.js); nachts am offenen Meer am Kartenrand und an den Eislöchern.
-    spawn: { population: 6, weights: { penguin: 1, seal: 0.6 } }, // Robben schwimmen am Ufer (siehe Seal.js)
+    spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.7, arcticfox: 0.3, reindeer: 0.5, walrus: 0.45, puffin: 0.6 } }, // Robben schwimmen am Ufer (siehe Seal.js), Schneehasen vor allem in der Tundra
     // Eisschollen (siehe Floes.js), Lage in Kacheln. ferries: tragen Henrik zwischen Festland (from) und Insel (to) hin
     // und her und liegen an beiden Ufern wait Sekunden an (travel: Sekunden für die Fahrt, shift: Versatz im Takt);
     // drift: kleine Schollen zur Zierde, die langsam über das offene Meer am Rand treiben (period: Sekunden hin und zurück)
@@ -714,16 +743,13 @@ export const LEVELS = {
       wait: 5,
       travel: 7,
       ferries: [
-        { from: [16, 9], to: [13, 9], shift: 0 },
-        { from: [36, 16], to: [36, 13], shift: 6 },
-        { from: [29, 36], to: [32, 36], shift: 12 },
-        { from: [9, 29], to: [9, 32], shift: 18 },
+        { from: [9, 16], to: [9, 13], shift: 0 }, // Insel A (links)
+        { from: [36, 16], to: [36, 12], shift: 6 }, // Insel B (rechts)
       ],
       drift: [
-        { from: [1, 14], to: [1, 31], r: 0.55, period: 150 },
+        { from: [1, 17], to: [1, 28], r: 0.55, period: 110 },
         { from: [15, 1], to: [32, 1], r: 0.6, period: 160 },
-        { from: [14, 44], to: [32, 44], r: 0.5, period: 140 },
-        { from: [44, 25], to: [44, 32], r: 0.45, period: 90 },
+        { from: [44, 25], to: [44, 34], r: 0.45, period: 100 }, // an der Fjordmündung
       ],
     },
     // Tag und Nacht (siehe season.js): die Angaben der Nacht ersetzen die oben
@@ -732,6 +758,8 @@ export const LEVELS = {
       night: {
         rows: freezeSea(ICE_ROWS, 3, ICE_HOLES),
         iceHoles: ICE_HOLES, // dort erscheinen die Pinguine nachts meistens
+        // nachts ruft die Schneeeule (nur nachts, siehe SnowOwl.js)
+        spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.6, arcticfox: 0.3, snowowl: 0.3, reindeer: 0.5, walrus: 0.45, polarbear: 0.35 } },
         floes: null, // die Schollen sind ins Eis eingefroren
         seaIce: ['sea_ice0', 'sea_ice1', 'sea_ice2'], // helle, glatte Eisfläche (tools/sea-ice.py)
         night: true, // dunkel, Polarlicht am Himmel, warmes Licht an der Station (siehe Weather.js)

@@ -3,6 +3,8 @@
 // hoch, Augen zu), darf man sich bewegen. Hören sie auf und schauen sich um, muss man stillstehen – wer sich dann in ihrer
 // Nähe bewegt, wird gesehen, und das Rudel rennt davon und sucht sich eine neue Lichtung. Wer einen Wolf erreicht und
 // berührt, hat ihn gefangen; die anderen rennen davon. Während der Wolfsnacht gibt es im Wald keine anderen Tiere.
+// Dasselbe Spiel spielt in der Eiswelt der Polarwolf (arcticwolf) – ohne Dunkelheit und Spuren, zu jeder Tageszeit, und
+// die anderen Tiere bleiben (Optionen von WolfNight, siehe updatePolarWolves in GardenScene).
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
@@ -26,8 +28,8 @@ const HOWL_VOLUME = 0.55; // beim Rudel in der Nähe; weiter weg leiser
 export const NIGHT_DEPTH = 99940; // Dunkelheit über allem auf der Karte (unter den Beschriftungen)
 
 export default class Wolf extends Animal {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'wolf');
+  constructor(scene, x, y, species = 'wolf') {
+    super(scene, x, y, species);
     this.sprite.setScale(SCALE);
     this.pack = null;
     this.spot = null;
@@ -81,7 +83,7 @@ export default class Wolf extends Animal {
 
   render(moving) {
     // heulend bzw. fressend (beim Ruhen) mit eigenem Bild (schwarzer Wolf: wolf2_howl, wolf2_eat)
-    const base = this.skin ?? 'wolf';
+    const base = this.skin ?? this.species;
     const pose = this.state === 'wild' && this.pack && !this.pack.running ? (this.pack.phase === 'howl' ? `${base}_howl` : this.pack.phase === 'rest' && this.eats ? `${base}_eat` : null) : null;
     // nach dem Heulen bzw. Fressen zurück aufs normale Bild, damit Lauf- und Steh-Animation wieder greifen
     const key = this.sprite.texture.key;
@@ -201,20 +203,25 @@ class Pack {
 // Steuerung der Wolfsnacht im Wald: Dunkelheit mit Laternenlicht, Rudel, Spuren, Geheul
 // opts (Expedition, kleine Map): packs() – so viele Rudel sollen unterwegs sein (eins je Wolf auf der Tierliste);
 // size: so viele Wölfe je Rudel; leave: ein Rudel, aus dem man einen gefangen hat, zieht danach fort (es zählt als eine
-// Einheit, siehe unitOf)
+// Einheit, siehe unitOf). Polarwolf in der Eiswelt: species ('arcticwolf'), night: false (keine Dunkelheit, keine
+// Laterne), tracks: false (keine Spuren), alone: false (die anderen Tiere bleiben), where(tx, ty): nur dort liegen die Rudel,
+// hear: so weit (Kachel-Proportionen, y doppelt) ist das Geheul zu hören
 export class WolfNight {
   constructor(scene, opts = {}) {
     this.scene = scene;
     this.opts = opts;
+    this.species = opts.species ?? 'wolf';
     this.packs = [];
     this.tracks = [];
     this.signs = new Map();
-    // Dunkelheit: großes Bild mit durchsichtigem Kreis in der Mitte, folgt dem Spieler (die Laterne leuchtet)
-    this.dark = scene.add.image(0, 0, nightTexture(scene)).setScale(2.2).setDepth(NIGHT_DEPTH);
-    this.lantern = scene.add.image(0, 0, 'lantern').setScale(0.4).setDepth(NIGHT_DEPTH + 2);
-    this.glow = scene.add.image(0, 0, glowTexture(scene)).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffc860).setAlpha(0.45).setScale(1.6).setDepth(NIGHT_DEPTH + 1);
+    if (opts.night !== false) {
+      // Dunkelheit: großes Bild mit durchsichtigem Kreis in der Mitte, folgt dem Spieler (die Laterne leuchtet)
+      this.dark = scene.add.image(0, 0, nightTexture(scene)).setScale(2.2).setDepth(NIGHT_DEPTH);
+      this.lantern = scene.add.image(0, 0, 'lantern').setScale(0.4).setDepth(NIGHT_DEPTH + 2);
+      this.glow = scene.add.image(0, 0, glowTexture(scene)).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffc860).setAlpha(0.45).setScale(1.6).setDepth(NIGHT_DEPTH + 1);
+    }
     // im Wald gibt es währenddessen keine anderen Tiere
-    for (const a of [...scene.animals]) if (a.state === 'wild' && a.species !== 'wolf') scene.despawn(a);
+    if (opts.alone !== false) for (const a of [...scene.animals]) if (a.state === 'wild' && a.species !== this.species) scene.despawn(a);
     for (let i = 0; i < this.packTarget(); i++) this.addPack();
   }
 
@@ -230,7 +237,7 @@ export class WolfNight {
     const reach = reachable(p);
     const open = (tx, ty) => [-1, 0, 1].every((dx) => [-1, 0, 1].every((dy) => !isBlocked(tx + dx, ty + dy) && !inPen(tx + dx, ty + dy)));
     const free = (tx, ty, far, gap) =>
-      reach.has(tx + ',' + ty) && open(tx, ty) && Math.hypot(tx - p.tx, ty - p.ty) >= far && !this.packs.some((k) => k.tile && Math.hypot(k.tile.tx - tx, k.tile.ty - ty) < gap);
+      reach.has(tx + ',' + ty) && open(tx, ty) && (!this.opts.where || this.opts.where(tx, ty)) && Math.hypot(tx - p.tx, ty - p.ty) >= far && !this.packs.some((k) => k.tile && Math.hypot(k.tile.tx - tx, k.tile.ty - ty) < gap);
     // erst streng, dann etwas lockerer (näher am Spieler bzw. an den anderen Rudeln)
     for (const [far, gap] of [[FAR_FROM_PLAYER, 7], [FAR_FROM_PLAYER - 3, 4], [3, 0]]) {
       for (let i = 0; i < 300; i++) {
@@ -253,11 +260,11 @@ export class WolfNight {
     const n = Phaser.Math.Between(...(this.opts.size ?? PACK_SIZE));
     for (let i = 0; i < n; i++) {
       const at = packSpot(pack);
-      const w = this.scene.createAnimal('wolf', at.x, at.y);
+      const w = this.scene.createAnimal(this.species, at.x, at.y);
       w.pack = pack;
       w.herd = pack; // beim Fangen rennen die anderen davon (siehe scatter)
       w.life = Infinity;
-      w.eats = Math.random() < 0.5; // beim Ruhen frisst etwa die Hälfte
+      w.eats = this.scene.textures.exists(`${this.species}_eat`) && Math.random() < 0.5; // beim Ruhen frisst etwa die Hälfte (der Polarwolf hat kein Fress-Bild)
       // schwarze Wölfe kommen nur als ganzes Rudel: gewürfelt wird beim ersten, die anderen sehen genauso aus
       if (i === 0) w.rollSkin('wild');
       else w.skin = pack.members[0].skin;
@@ -269,6 +276,7 @@ export class WolfNight {
   layTracks(pack) {
     for (const t of pack.trackSprites ?? []) t.destroy();
     pack.trackSprites = [];
+    if (this.opts.tracks === false) return;
     let a = Math.random() * Math.PI * 2;
     let { tx, ty } = pack.tile;
     const pts = [];
@@ -309,16 +317,21 @@ export class WolfNight {
     const scene = this.scene;
     if (!scene.cache.audio.exists('wolf_howl')) return;
     const d = Math.hypot(scene.player.x - pack.x, (scene.player.y - pack.y) * 2);
-    const volume = HOWL_VOLUME * Phaser.Math.Clamp(1 - d / 900, 0.15, 1);
+    // hear (Eiswelt): nur so weit zu hören, weiter weg gar nicht (sonst überall wenigstens leise)
+    const hear = this.opts.hear ?? 900;
+    const volume = HOWL_VOLUME * Phaser.Math.Clamp(1 - d / hear, this.opts.hear ? 0 : 0.15, 1);
+    if (volume <= 0.01) return;
     scene.sound.play('wolf_howl', { volume, detune: Phaser.Math.Between(-150, 150) });
   }
 
   update(dt) {
     const p = this.scene.player;
-    this.dark.setPosition(p.x, p.y - 20);
-    const hand = { x: p.x + p.faceX * 11, y: p.sprite.y - 16 };
-    this.lantern.setPosition(hand.x, hand.y);
-    this.glow.setPosition(hand.x, hand.y).setAlpha(0.4 + Math.sin(this.scene.time.now / 180) * 0.04);
+    if (this.dark) {
+      this.dark.setPosition(p.x, p.y - 20);
+      const hand = { x: p.x + p.faceX * 11, y: p.sprite.y - 16 };
+      this.lantern.setPosition(hand.x, hand.y);
+      this.glow.setPosition(hand.x, hand.y).setAlpha(0.4 + Math.sin(this.scene.time.now / 180) * 0.04);
+    }
     for (const pack of this.packs) {
       pack.update(dt);
       this.signs.get(pack)?.setPosition(pack.x, pack.y - 52);
@@ -339,17 +352,17 @@ export class WolfNight {
     }
     while (this.opts.packs && this.packs.filter((k) => !k.caught).length < this.packTarget()) this.addPack();
     // andere Tiere (z. B. ein Reiher, der doch noch einfliegt) gibt es in dieser Nacht nicht
-    for (const a of [...this.scene.animals]) if (a.state === 'wild' && a.species !== 'wolf') this.scene.despawn(a);
+    if (this.opts.alone !== false) for (const a of [...this.scene.animals]) if (a.state === 'wild' && a.species !== this.species) this.scene.despawn(a);
   }
 
   // Event vorbei: es wird wieder hell, die Wölfe sind fort
   destroy() {
-    for (const a of [...this.scene.animals]) if (a.species === 'wolf' && a.state === 'wild') this.scene.despawn(a);
+    for (const a of [...this.scene.animals]) if (a.species === this.species && a.state === 'wild') this.scene.despawn(a);
     for (const pack of this.packs) for (const t of pack.trackSprites) t.destroy();
     for (const t of this.signs.values()) t.destroy();
-    this.dark.destroy();
-    this.lantern.destroy();
-    this.glow.destroy();
+    this.dark?.destroy();
+    this.lantern?.destroy();
+    this.glow?.destroy();
   }
 }
 

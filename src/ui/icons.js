@@ -109,6 +109,14 @@ const SHEETS = {
   warthog: [80, 88, 4, 0],
   vulture: [88, 108, 4, 0],
   penguin: [72, 80, 4, 0], // Eiswelt (auf der Weltkarte)
+  snowhare: [56, 60, 4, 0], // neue Eiswelt-Tiere
+  arcticfox: [72, 72, 4, 0],
+  arcticwolf: [80, 80, 4, 0],
+  snowowl: [56, 64, 4, 0],
+  reindeer: [80, 112, 4, 0],
+  walrus: [104, 100, 4, 0],
+  polarbear: [112, 104, 4, 0],
+  puffin: [48, 52, 4, 0],
   seal: [72, 88, 4, 1],
   butterfly: [64, 64, 3, 0, 'butterfly', 12], // Schmetterlinge: der orange steht für alle (Raster: 3 Bilder je Zeile, 12 Zeilen)
 };

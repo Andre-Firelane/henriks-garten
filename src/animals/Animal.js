@@ -676,6 +676,143 @@ export const SPECIES = {
     shadowW: 30,
     catchWith: ['herring', 'sealball'],
   },
+  // --- neue Eiswelt-Tiere (docs/plan-eiswelt.md); Standbilder mit 4 Ansichten (tools/static-sheet.py) ---
+  // Schneehase: wie die Katze, nur etwas schneller (Hand oder Kescher)
+  snowhare: {
+    texture: 'snowhare',
+    scale: 0.68, // etwas größer gezeichnet als die anderen Tiere (0,5)
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 56 / 60,
+    speed: 70, // flinker als die Katze (60), noch langsamer als Henrik (80)
+    restChance: 0.45,
+    restTime: [0.3, 1.2],
+    walkTime: [0.3, 0.8],
+    stepRate: 18,
+    hop: 3,
+    footW: 7,
+    shadowW: 24,
+    catchWith: ['touch', 'net'],
+  },
+  // Polarfuchs: unsichtbar, nur seine Spuren; am Ende der Spur die Laterne abstellen, dann leuchten seine Augen ->
+  // Kescher (siehe ArcticFox.js)
+  arcticfox: {
+    texture: 'arcticfox',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 68 / 72,
+    speed: 32,
+    restChance: 0.5,
+    restTime: [1, 3],
+    walkTime: [1, 2.5],
+    stepRate: 12,
+    hop: 1.5,
+    footW: 7,
+    shadowW: 22,
+    catchWith: ['net'],
+  },
+  // Polarwolf: wie der Wolf in der Wolfsnacht ("Ochs am Berg"), aber ohne Spuren und zu jeder Tageszeit (siehe Wolf.js)
+  arcticwolf: {
+    texture: 'arcticwolf',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 76 / 80,
+    speed: 22,
+    restChance: 0.5,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 1.5,
+    footW: 8,
+    shadowW: 34,
+    fleeSpeed: 120,
+    catchWith: ['touch'],
+  },
+  // Schneeeule (nur nachts): man hört sie nur; im Licht der abgestellten Laterne wird sie sichtbar -> Kescher oder Hand
+  // (siehe SnowOwl.js)
+  snowowl: {
+    texture: 'snowowl',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 60 / 64,
+    speed: 20,
+    restChance: 0.8,
+    restTime: [3, 7],
+    walkTime: [0.5, 1],
+    stepRate: 8,
+    hop: 1,
+    footW: 6,
+    shadowW: 22,
+    catchWith: ['net', 'touch'],
+  },
+  // Rentier: wilde Herde wie die Antilopen (Lasso, die ganze Herde flieht), wechselt aber öfter den Platz (siehe Reindeer.js)
+  reindeer: {
+    texture: 'reindeer',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 108 / 112,
+    speed: 24,
+    restChance: 0.55,
+    restTime: [2, 5],
+    walkTime: [1, 2.5],
+    stepRate: 9,
+    hop: 1.5,
+    footW: 9,
+    shadowW: 30,
+    fleeDist: 80,
+    fleeSpeed: 100,
+    catchWith: ['lasso'],
+    herd: true,
+    groupSize: [3, 5],
+  },
+  // Walross: am Strand und an der Eiskante, döst immer wieder; ein dösendes Walross mit der Wärmflasche wärmen, dann
+  // kommt es mit (siehe Walrus.js)
+  walrus: {
+    texture: 'walrus',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 96 / 100,
+    speed: 10,
+    restChance: 0.6,
+    restTime: [3, 6],
+    walkTime: [1, 2],
+    stepRate: 5,
+    hop: 1,
+    footW: 17,
+    shadowW: 64, // (wird größer gezeichnet, siehe SIZE in Walrus.js)
+    catchWith: ['warmer'],
+  },
+  // Eisbär (nachts auf dem Eis): Hering ans Eisloch legen, er setzt sich davor und lauert; dann einen Fisch zuwerfen ->
+  // er folgt (siehe PolarBear.js)
+  polarbear: {
+    texture: 'polarbear',
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 100 / 104,
+    speed: 20,
+    restChance: 0.5,
+    restTime: [2, 4],
+    walkTime: [1.5, 3],
+    stepRate: 8,
+    hop: 1,
+    footW: 18,
+    shadowW: 66, // (wird größer gezeichnet, siehe SIZE in PolarBear.js)
+    fleeDist: 110,
+    fleeSpeed: 60,
+    catchWith: ['herring'],
+  },
+  // Papageitaucher (nur tagsüber): Kolonie auf den Vogelfelsen am Fjord; wer gerade am Ufer landet -> Kescher
+  // (siehe Puffin.js)
+  puffin: {
+    texture: 'puffin',
+    scale: 0.65, // etwas größer gezeichnet als die anderen Tiere (0,5)
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 48 / 52,
+    speed: 14,
+    restChance: 0.6,
+    restTime: [1.5, 4],
+    walkTime: [0.5, 1.5],
+    stepRate: 12,
+    hop: 1,
+    footW: 6,
+    shadowW: 20,
+    catchWith: ['net'],
+    herd: true, // eine kleine Kolonie
+    groupSize: [3, 5],
+  },
   // Ameisenbär (Dschungel, bei jedem Wetter): scheu wie das Zebra, nur mit dem Lasso; frisst er aufgerichtet Ameisen am
   // Baum, auch durch Berühren (siehe Anteater.js). Läuft durch Dickicht hindurch (thicket)
   anteater: {
@@ -1274,7 +1411,7 @@ export default class Animal {
 
     this.shadow = scene.add.ellipse(x, y, this.kind.shadowW, this.kind.shadowW / 3, 0x14320a, 0.3);
     this.sprite = scene.add.sprite(x, y, this.kind.texture, this.kind.frames.downRight);
-    this.sprite.setOrigin(0.5, this.kind.originY).setScale(0.5);
+    this.sprite.setOrigin(0.5, this.kind.originY).setScale(this.kind.scale ?? 0.5); // kind.scale: größer bzw. kleiner gezeichnet (sonst 0,5)
 
     this.pickWander();
     this.wanderTime *= Math.random(); // nicht alle Tiere gleichzeitig loslaufen lassen
@@ -1709,6 +1846,14 @@ export default class Animal {
 
   // Bild, Blickrichtung und Wippen beim Laufen
   render(moving) {
+    // Aussehen gewechselt, während schon ein Bild bzw. eine Animation läuft (z. B. ist die Fellfarbe eben fertig
+    // umgefärbt, siehe coats.js; bis dahin zeigte es die Grundfarbe): aufs neue Bild umschalten, die passende Animation
+    // startet dann gleich unten
+    const look = this.texSkin;
+    if (look !== this.shownLook) {
+      if (this.shownLook !== undefined && this.sprite) this.sprite.stop().setFlipX(false).setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+      this.shownLook = look;
+    }
     // Animationen (kind.anims, mit Skin kind.skinAnims): ersetzen Standbilder und Wippen. Fehlt eine Animation für
     // die Richtung (z. B. walkUp oder idleUp), zeigt es dort das Standbild
     const anims = this.animSet();
@@ -1911,7 +2056,7 @@ export default class Animal {
   // Tierbaby (beim Event im Tierpark): dasselbe Bild, nur kleiner; wird nicht gespeichert und nicht gezählt
   makeBaby() {
     this.baby = true;
-    this.sprite.setScale(0.3);
+    this.sprite.setScale(0.3 * ((this.kind.scale ?? 0.5) / 0.5));
     this.shadow.setScale(0.6);
   }
 

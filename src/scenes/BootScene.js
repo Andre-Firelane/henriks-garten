@@ -41,7 +41,7 @@ const GROUPS = {
   asia: {
     species: ['panda', 'redpanda', 'macaque', 'tiger', 'orangutan', 'peacock', 'tanuki', 'yak', 'snowleopard'],
     keys: /^(panda|redpanda|macaque|tiger|orangutan|peacock|tanuki|yak|snowleopard|hero_asia|ride_asia)/,
-    art: /asia|^agrass|^snow_(kopje|rocks0|rocks1|pair|spire|rubble|stack|lionrock|cairn)$|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii|prayer_pole|stupa|salt_stone|salttool|brush)$/,
+    art: /asia|^agrass|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii|prayer_pole|stupa|salt_stone|salttool|brush)$/,
   },
   jungle: {
     species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'tapir', 'okapi', 'snake', 'tarantula', 'piranha'],
@@ -54,9 +54,9 @@ const GROUPS = {
     art: /reef|aquarium|tank|^aq_|^(anchor_sack|seaweed|coral|shell)$/,
   },
   ice: {
-    species: ['penguin', 'seal'],
-    keys: /^(hero_ice|penguin|seal|step_snow)/,
-    art: /snow|_ice|^ice_/,
+    species: ['penguin', 'seal', 'snowhare', 'arcticfox', 'arcticwolf', 'snowowl', 'reindeer', 'walrus', 'polarbear', 'puffin'],
+    keys: /^(hero_ice|penguin|seal|step_snow|snowhare|arcticfox|arcticwolf|snowowl|reindeer|walrus|polarbear|puffin|warmer)/,
+    art: /^snow\d$|^snow_path$|^snowman$|^snow_pine$|_ice|^ice_|^tundra|^glacier/, // die verschneiten Felsen (snow_kopje ...) stehen in Bambuswald und Eiswelt: Paket misc
   },
 };
 // in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
@@ -232,6 +232,8 @@ const PIXEL_ART = [
   'hut_desk_jungle', 'hut_chair_jungle', 'hut_plant_jungle', 'hut_shelf_jungle', 'hut_bed_savanna', 'hut_bed_jungle', 'hut_bed_savanna_sleep', 'hut_bed_jungle_sleep', 'planks_jungle',
   // Eiswelt (Platzhalter aus tools/ice-placeholders.cjs): Schnee, Polarmeer, zugefrorenes Meer, Eisfelsen, Forschungsstation
   'snow0', 'snow1', 'snow2', 'snow_path', 'ice_water0', 'ice_water1', 'sea_ice0', 'sea_ice1', 'sea_ice2', 'ice_rock', 'ice_block',
+  'tundra0', 'tundra1', 'tundra2', 'ice_beach0', 'ice_beach1', 'ice_beach2', // Tundra und Kiesstrand (Platzhalter aus tools/ice-grounds.py)
+  'glacier0', 'glacier1', 'glacier2', 'snow_pine', // Gletscher und verschneite Tanne (Platzhalter aus tools/ice-placeholders2.py)
   'hutwall_ice_x', 'hutwall_ice_y', 'post_hutwall_ice', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
   'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
 ];
@@ -241,7 +243,7 @@ const PIXEL_ART = [
 const TEST_ART = {};
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'tea_cup', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball', 'treasure_chest0', 'treasure_chest1'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'tea_cup', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball', 'warmer', 'treasure_chest0', 'treasure_chest1'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };
@@ -632,6 +634,7 @@ const ANIMAL_SOUNDS = {
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
   toucan: 'animal_toucan.wav', // Tukan-Ruf (beim Losfliegen und beim Fangen)
   penguin: 'animal_penguin.wav', // Ruf (beim Fangen und ab und zu aus der Gruppe)
+  snowowl: 'animal_snowowl.wav', // Ruf der Schneeeule (Platzhalter aus tools/owl-hoot.py)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -807,6 +810,8 @@ export default class BootScene extends Phaser.Scene {
     // seltene Varianten (Tamandua, Felsenpinguin, Sattelrobbe) vorerst als Standbilder, ohne Animationen
     for (const k of ['anteater', 'anteater2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 72 });
     for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
+    // neue Eiswelt-Tiere (Standbilder mit 4 Ansichten, tools/static-sheet.py)
+    for (const [k, w, h] of [['snowhare', 56, 60], ['arcticfox', 72, 72], ['arcticwolf', 80, 80], ['arcticwolf_howl', 80, 80], ['snowowl', 56, 64], ['snowowl_fly', 64, 56], ['reindeer', 80, 112], ['walrus', 104, 100], ['walrus_sleep', 104, 100], ['polarbear', 112, 104], ['polarbear_wait', 112, 104], ['puffin', 48, 52], ['puffin_fly', 64, 60]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
     for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus

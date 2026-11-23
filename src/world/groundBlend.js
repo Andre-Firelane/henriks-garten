@@ -2,6 +2,8 @@
 // liegt ganz mit einem Boden im gebackenen Boden. Am Rand einer Zone bekommt sie dazu ein eigenes, halb durchsichtiges
 // Bild mit dem jeweils anderen Boden, dessen Deckkraft dem Anteil des Zonenbodens folgt (zoneWeight in map.js): so
 // verläuft der Übergang über mehrere Kacheln, in welligen Buchten statt entlang der Rautenkanten. Wasser bleibt frei.
+// Stoßen zwei Zonen aneinander (Kiesstrand an Tundra, Moor an Laub), mischen sich ihre Böden ebenso weich; überlappen
+// sie, liegt die zuerst genannte oben (sharesAt).
 // Gemalt wird es wie der Uferstreifen mit dem Boden (bakeGround), danach werden die Bilder nicht mehr gebraucht.
 import Phaser from 'phaser';
 import { LEVEL, charAt, groundAt, groundZoneAt, zoneWeight } from './map.js';
@@ -37,40 +39,64 @@ function variant(list, tx, ty) {
   return list[n < 6 ? 0 : n < 9 ? 1 : 2];
 }
 
-// stärkste weiche Zone an einem Punkt: { zone, w }
-function strongest(zones, A, B) {
-  let best = null;
+// Böden der weichen Zonen: Zonen mit demselben Boden (z. B. zwei Rechtecke Laub) zählen als einer
+function softGrounds() {
+  const zones = LEVEL.grounds?.filter((z) => z.soft && z.ground);
+  if (!zones?.length) return null;
+  const byKey = new Map();
   for (const z of zones) {
-    const w = zoneWeight(z, A, B);
-    if (!best || w > best.w) best = { zone: z, w };
+    const k = z.ground.join();
+    if (!byKey.has(k)) byKey.set(k, { ground: z.ground, zones: [] });
+    byKey.get(k).zones.push(z);
   }
-  return best;
+  return [...byKey.values()];
+}
+
+// Anteile der Böden an einem Punkt (in out, Länge grounds + 1; der letzte ist der Grundboden des Gebiets): jeder Zonenboden
+// wiegt so viel wie seine stärkste Zone (zoneWeight). Die Böden liegen in der Reihenfolge von LEVEL.grounds übereinander,
+// der erste obenauf (wie bei groundZoneAt): überlappen sich zwei Zonen (Gletscher über der Tundra), deckt die erste die
+// zweite zu; stoßen sie nur aneinander (Kiesstrand an Tundra), gehen sie weich ineinander über statt hart. Mit nur einer
+// Zone in der Nähe ist das genau ihr Anteil gegen den Grundboden.
+function sharesAt(grounds, A, B, out) {
+  let rest = 1;
+  for (let i = 0; i < grounds.length; i++) {
+    let w = 0;
+    for (const z of grounds[i].zones) w = Math.max(w, zoneWeight(z, A, B));
+    out[i] = w * rest;
+    rest *= 1 - w;
+  }
+  out[grounds.length] = rest;
+  return out;
 }
 
 // Übergangsbild für die Kachel (oder null, wenn hier nichts zu überblenden ist)
 export function blendTexture(scene, tx, ty) {
-  const zones = LEVEL.grounds?.filter((z) => z.soft);
-  if (!zones?.length) return null;
-  // schneller Test an Ecken und Mitte: liegt hier überall derselbe Boden?
-  const probe = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]].map(([a, b]) => strongest(zones, tx + a, ty + b).w);
-  if (probe.every((w) => w < 0.003) || probe.every((w) => w > 0.997)) return null;
-  const own = groundZoneAt(tx, ty); // Boden, mit dem die Kachel gebacken ist
-  // Anteil auf dem Raster über der Kachel
-  const grid = new Float32Array((GX + 1) * (GY + 1));
-  const gzone = new Array((GX + 1) * (GY + 1));
+  const grounds = softGrounds();
+  if (!grounds) return null;
+  const n = grounds.length + 1; // Zonenböden und der Grundboden
+  // Boden, mit dem die Kachel gebacken ist (Index in grounds, n - 1 = Grundboden)
+  const ownZone = groundZoneAt(tx, ty);
+  let own = ownZone?.ground ? grounds.findIndex((g) => g.zones.includes(ownZone)) : n - 1;
+  if (own < 0) own = n - 1;
+  // schneller Test an Ecken und Mitte: liegt hier überall nur der eigene Boden?
+  const tmp = new Float32Array(n);
+  const probe = [[0, 0], [1, 0], [0, 1], [1, 1], [0.5, 0.5]].map(([a, b]) => sharesAt(grounds, tx + a, ty + b, tmp)[own]);
+  if (probe.every((v) => v > 0.997)) return null;
+  // Anteile auf dem Raster über der Kachel
+  const grid = new Float32Array((GX + 1) * (GY + 1) * n);
   for (let j = 0; j <= GY; j++) for (let i = 0; i <= GX; i++) {
     const px = (i / GX) * 2 - 1, py = (j / GY) * 2;
-    const s = strongest(zones, tx + (px + py) / 2, ty + (py - px) / 2);
-    grid[j * (GX + 1) + i] = s.w;
-    gzone[j * (GX + 1) + i] = s.zone;
+    sharesAt(grounds, tx + (px + py) / 2, ty + (py - px) / 2, tmp);
+    grid.set(tmp, (j * (GX + 1) + i) * n);
   }
   const w = TILE_W * RES, h = TILE_H * RES;
   const key = `blend_${serial++}`;
   const tex = scene.textures.createCanvas(key, w, h);
   const img = tex.context.createImageData(w, h);
   const d = img.data;
-  const base = pixelsOf(scene, variant(LEVEL.grass, tx, ty));
-  const pics = new Map(); // Bodenbild je Zone
+  const pics = []; // Bodenbild je Boden (der Grundboden zuletzt), erst wenn gebraucht
+  const picOf = (k) => (pics[k] ??= pixelsOf(scene, variant(k === n - 1 ? LEVEL.grass : grounds[k].ground, tx, ty)));
+  const sh = new Float32Array(n);
   let any = false;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
@@ -78,31 +104,35 @@ export function blendTexture(scene, tx, ty) {
       const a = (px + py) / 2, b = (py - px) / 2;
       if (a < -BLEED || b < -BLEED || a > 1 + BLEED || b > 1 + BLEED) continue;
       if (waterAt(tx + a, ty + b)) continue;
-      // Anteil: weich zwischen den Rasterpunkten
+      // Anteile: weich zwischen den Rasterpunkten
       const gx = ((x + 0.5) / w) * GX, gy = ((y + 0.5) / h) * GY;
       const i0 = Math.min(GX - 1, Math.floor(gx)), j0 = Math.min(GY - 1, Math.floor(gy));
       const fx = gx - i0, fy = gy - j0;
-      const at = (i, j) => grid[j * (GX + 1) + i];
-      const m = (at(i0, j0) * (1 - fx) + at(i0 + 1, j0) * fx) * (1 - fy) + (at(i0, j0 + 1) * (1 - fx) + at(i0 + 1, j0 + 1) * fx) * fy;
-      // darüber kommt der jeweils andere Boden
-      const alpha = own ? 1 - m : m;
+      const c00 = (j0 * (GX + 1) + i0) * n, c10 = c00 + n, c01 = c00 + (GX + 1) * n, c11 = c01 + n;
+      for (let k = 0; k < n; k++) sh[k] = (grid[c00 + k] * (1 - fx) + grid[c10 + k] * fx) * (1 - fy) + (grid[c01 + k] * (1 - fx) + grid[c11 + k] * fx) * fy;
+      // darüber kommen die anderen Böden, gemischt nach ihren Anteilen
+      const alpha = 1 - sh[own];
       if (alpha < 0.01) continue;
-      let pic = base;
-      if (!own) {
-        const z = gzone[Math.round(gy) * (GX + 1) + Math.round(gx)];
-        if (!pics.has(z)) pics.set(z, pixelsOf(scene, variant(z.ground, tx, ty)));
-        pic = pics.get(z);
-      }
-      // gleiche Stelle im Bild der anderen Bodenkachel (Rautenkoordinaten, etwas vom Rand weg)
+      // gleiche Stelle im Bild der anderen Bodenkacheln (Rautenkoordinaten, etwas vom Rand weg)
       const ca = Math.min(1 - EDGE, Math.max(EDGE, a)), cb = Math.min(1 - EDGE, Math.max(EDGE, b));
-      const sx = Math.min(pic.w - 1, Math.floor(((ca - cb + 1) / 2) * pic.w));
-      const sy = Math.min(pic.h - 1, Math.floor(((ca + cb) / 2) * pic.h));
-      const s = (sy * pic.w + sx) * 4;
+      let r = 0, g = 0, bl = 0, al = 0;
+      for (let k = 0; k < n; k++) {
+        if (k === own || sh[k] < 0.002) continue;
+        const pic = picOf(k);
+        const sx = Math.min(pic.w - 1, Math.floor(((ca - cb + 1) / 2) * pic.w));
+        const sy = Math.min(pic.h - 1, Math.floor(((ca + cb) / 2) * pic.h));
+        const s = (sy * pic.w + sx) * 4;
+        const f = sh[k] / alpha;
+        r += pic.data[s] * f;
+        g += pic.data[s + 1] * f;
+        bl += pic.data[s + 2] * f;
+        al += pic.data[s + 3] * f;
+      }
       const o = (y * w + x) * 4;
-      d[o] = pic.data[s];
-      d[o + 1] = pic.data[s + 1];
-      d[o + 2] = pic.data[s + 2];
-      d[o + 3] = Math.round(alpha * pic.data[s + 3]);
+      d[o] = r;
+      d[o + 1] = g;
+      d[o + 2] = bl;
+      d[o + 3] = Math.round(alpha * al);
       any = true;
     }
   }

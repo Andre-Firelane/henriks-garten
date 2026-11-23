@@ -60,6 +60,7 @@ import { raiseAt, raisedEdgeFloor,
   slotsShown,
   biomeOf,
   DECOR_RETURNED,
+  groundZoneAt,
 } from '../world/map.js';
 import DecorMode from '../world/DecorMode.js';
 import { DECOR, ensureDecor, giveDecor, placedIn, shopDecor, finalChestDecor } from '../world/decor.js';
@@ -119,6 +120,13 @@ import Boar from '../animals/Boar.js';
 import Tanuki from '../animals/Tanuki.js';
 import Yak, { BRUSHES_NEEDED } from '../animals/Yak.js';
 import SnowLeopard from '../animals/SnowLeopard.js';
+import ArcticFox from '../animals/ArcticFox.js';
+import SnowOwl from '../animals/SnowOwl.js';
+import Reindeer from '../animals/Reindeer.js';
+import Walrus from '../animals/Walrus.js';
+import PolarBear from '../animals/PolarBear.js';
+import Puffin from '../animals/Puffin.js';
+import WarmerTool from '../tools/WarmerTool.js';
 import Vulture from '../animals/Vulture.js';
 import Hyena, { HyenaPack } from '../animals/Hyena.js';
 import Warthog from '../animals/Warthog.js';
@@ -192,7 +200,7 @@ import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIconFit, animalIconSquare, animalIcons, hasAnimalIcon } from '../ui/icons.js';
 import { touchHandlers, setTouchTool, IS_PHONE, isTouch } from '../ui/touch.js';
-import { ensureFriendState, animalUid, bondOf, isFriend, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, FRIEND_LEVELS, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts, nameCost } from '../world/friends.js';
+import { ensureFriendState, animalUid, bondOf, isFriend, isFriendUid, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, FRIEND_LEVELS, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts, nameCost } from '../world/friends.js';
 import HandFoodTool from '../tools/HandFoodTool.js';
 import { closeWalkHint } from '../ui/walkHint.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
@@ -229,7 +237,14 @@ const SEASON_SPECIES = { hippo: 'rain', hyena: 'dry', warthog: 'dry', vulture: '
 const HALF_SLOT = ['fish', 'koi']; // belegen nur einen halben Platz beim Spawnen (siehe wildUnits)
 const spawnPools = (l) => [l.spawn, l.weatherSpawn].filter(Boolean);
 const spawnWeights = (l) => Object.assign({}, ...spawnPools(l).map((p) => p.weights));
-const ALL_SPECIES = ['seal', 'penguin', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cow', 'goat', 'pig', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const BAIT_NEAR_HOLE = 110; // so nah (Kachel-Proportionen, y doppelt) an der Mitte eines Eislochs muss der Fisch landen
+const WARM_REACH = 80; // so nah (Kachel-Proportionen, y doppelt) muss Henrik am Walross sein, um es zu wärmen
+const POLAR_PACKS = 1; // so viele Polarwolf-Rudel liegen in der Tundra ...
+const POLAR_PACK_SIZE = [3, 4]; // ... mit so vielen Wölfen
+const POLAR_HOWL_HEAR = 450; // ihr Geheul hört man nur so weit (Kachel-Proportionen, y doppelt; in der Wolfsnacht 900)
+const TUNDRA_SPECIES = ['snowhare', 'reindeer', 'arcticwolf', 'arcticfox', 'snowowl']; // Eiswelt: erscheinen meist in der Tundra
+const AT_HOME_CHANCE = 0.85; // ... so oft dort, sonst irgendwo
+const ALL_SPECIES = ['seal', 'penguin', 'polarbear', 'walrus', 'reindeer', 'puffin', 'arcticfox', 'arcticwolf', 'snowowl', 'snowhare', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cow', 'goat', 'pig', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -262,6 +277,7 @@ const CATCH_TOOLS = {
   swim: ['hand', tr('Mitschwimmen', 'Swim along')],
   rod: ['rod', tr('Angel', 'Fishing rod')],
   herring: ['herring', tr('Fisch', 'Fish')],
+  warmer: ['warmer', tr('Wärmflasche', 'Hot-water bottle')],
   sealball: ['ball', 'Ball'],
   drum: ['drum', tr('Trommel-Duell', 'Drum duel')],
   dam: ['forest_stick', tr('Damm reparieren', 'Repair the dam')],
@@ -318,6 +334,14 @@ const CATCH_TIPS = {
   tarantula: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
   seal: tr('Schwimmt in der Eiswelt am Ufer (nachts auch in den Eislöchern). Kommst du näher, taucht sie auf und wünscht sich einen Fisch oder einen Ball – hol das Richtige aus dem Regal und wirf es ihr zu, wie das Lasso. Daneben? Nach 2 Sekunden kannst du noch einmal werfen. Zu nah, und sie taucht ab!', 'Swims along the shore in the ice world (at night also in the ice holes). If you get closer, it pops up and wishes for a fish or a ball – get the right one from the shelf and throw it, like the lasso. Missed? After 2 seconds you can throw again. Too close, and it dives away!'),
   penguin: tr('In der Eiswelt, immer nah am Wasser. Kommst du zu nah, hüpft er ins Wasser und ist weg – wirf das Lasso aus etwas Abstand!', 'In the ice world, always close to the water. If you get too close, it hops into the water and is gone – throw the lasso from a little distance!'),
+  snowhare: tr('In der Eiswelt, vor allem in der Tundra. Er ist flink, aber nicht schneller als du – lauf hin und berühr ihn oder nimm den Kescher!', 'In the ice world, mostly on the tundra. It is quick, but not faster than you – run over and touch it, or use the net!'),
+  arcticfox: tr('Ihn selbst siehst du nicht, nur seine Spuren im Schnee. Folge ihnen bis zum Ende und stell dort die Laterne ab: Dann leuchten zwei Augen auf – schnell den Kescher!', 'You cannot see it, only its tracks in the snow. Follow them to the end and put the lantern down there: two eyes light up – quick, the net!'),
+  arcticwolf: tr('Ein Rudel liegt in der Tundra. Heulen die Wölfe, darfst du näher kommen; schauen sie sich um, bleib stehen! Wer einen Wolf erreicht und berührt, hat ihn.', 'A pack lies on the tundra. While the wolves howl you may come closer; when they look around, stand still! Reach a wolf and touch it to catch it.'),
+  snowowl: tr('Nur nachts. Du hörst sie rufen, aber siehst sie nicht. Stell die Laterne dort ab, wo es ruft: Im Licht siehst du sie – Kescher oder Hand!', 'Only at night. You hear it call but cannot see it. Put the lantern down where it calls: in the light you can see it – net or hand!'),
+  reindeer: tr('Eine scheue Herde, die oft weiterzieht. Bemerkt dich eines, rennt die ganze Herde – wirf das Lasso aus etwas Abstand.', 'A shy herd that often moves on. If one notices you, the whole herd runs – throw the lasso from a little distance.'),
+  walrus: tr('Am Kiesstrand und an der Eiskante. Walrosse dösen immer wieder ein – wärm ein dösendes mit der Wärmflasche, dann kommt es mit.', 'On the pebble beach and at the ice edge. Walruses keep dozing off – warm a dozing one with the hot-water bottle and it comes along.'),
+  polarbear: tr('Nur nachts auf dem Eis, tagsüber schläft er. Leg einen Fisch an ein Eisloch: Er setzt sich davor und lauert. Dann wirf ihm einen Fisch zu – und er folgt dir.', 'Only at night on the ice; by day it sleeps. Put a fish by an ice hole: it sits down and waits. Then throw it a fish – and it follows you.'),
+  puffin: tr('Nur tagsüber an den Vogelfelsen im Fjord. Sie fliegen aufs Meer und kommen mit Fisch zurück – wer gerade am Ufer landet: Kescher!', 'Only by day at the bird rocks in the fjord. They fly out to sea and come back with fish – one that just landed by the shore: net!'),
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
   howler: tr('Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso! Mit etwas Glück ist es ein seltener Gibbon.', 'It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso! With a bit of luck it is a rare gibbon.'),
   macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
@@ -376,6 +400,14 @@ const CATCH_TIPS_SHORT = {
   tarantula: tr('Dickicht weghacken, dann keschern!', 'Cut the thicket, then net it!'),
   seal: tr('Zuwerfen, was sie sich wünscht.', 'Throw it what it wishes for.'),
   penguin: tr('Lasso aus etwas Abstand!', 'Lasso it from a little distance!'),
+  snowhare: tr('Berühren oder Kescher!', 'Touch it or use the net!'),
+  arcticfox: tr('Spuren folgen, Laterne abstellen!', 'Follow the tracks, put down the lantern!'),
+  arcticwolf: tr('Beim Heulen gehen, sonst stehen!', 'Move while they howl, else stand still!'),
+  snowowl: tr('Wo es ruft: Laterne abstellen!', 'Where it calls: put down the lantern!'),
+  reindeer: tr('Lasso aus etwas Abstand!', 'Lasso it from a little distance!'),
+  walrus: tr('Dösend? Wärmflasche!', 'Dozing? Hot-water bottle!'),
+  polarbear: tr('Fisch ans Eisloch, dann zuwerfen!', 'Fish by the ice hole, then throw one!'),
+  puffin: tr('Beim Landen: Kescher!', 'When it lands: net!'),
   anteater: tr('Lasso – beim Ameisenschlecken berühren.', 'Lasso – touch it while it licks ants.'),
   howler: tr('Banane unter seinen Baum, dann das Lasso!', 'Banana under its tree, then the lasso!'),
   macaque: tr('Warte, bis er herausspringt – Lasso!', 'Wait until it jumps out – lasso!'),
@@ -488,6 +520,14 @@ const ANIMAL_INFO = {
   tarantula: tr(['Spinne', 'Sie hat acht Beine und meist acht Augen – sieht aber trotzdem nicht besonders gut.'], ['Spider', 'It has eight legs and usually eight eyes – but still doesn’t see very well.']),
   seal: tr(['Seehund', 'Er kann bis zu 30 Minuten tauchen – und schläft sogar im Wasser, nur die Nase schaut zum Atmen heraus.'], ['Harbour seal', 'It can dive for up to 30 minutes – and even sleeps in the water with just its nose poking out to breathe.']),
   penguin: tr(['Kaiserpinguin', 'An Land watschelt er gemütlich – im Wasser aber schwimmt er schneller als ein Mensch rennen kann und taucht über 500 Meter tief.'], ['Emperor penguin', 'On land it waddles along slowly – but in the water it swims faster than a person can run and dives more than 500 metres deep.']),
+  polarbear: tr(['Eisbär', 'Unter dem weißen Fell ist seine Haut schwarz – so speichert er die Wärme der Sonne. Er jagt Robben an den Eislöchern.'], ['Polar bear', 'Under its white fur its skin is black – that way it keeps the warmth of the sun. It hunts seals at the ice holes.']),
+  walrus: tr(['Walross', 'Mit seinen langen Stoßzähnen zieht es sich aus dem Wasser aufs Eis. Wird ihm warm, färbt sich seine Haut rosa.'], ['Walrus', 'It uses its long tusks to pull itself out of the water onto the ice. When it gets warm, its skin turns pink.']),
+  reindeer: tr(['Rentier', 'Als einzige Hirsche tragen bei den Rentieren auch die Weibchen ein Geweih. Ihre breiten Hufe sind wie Schneeschuhe.'], ['Reindeer', 'They are the only deer where the females have antlers too. Their wide hoofs work like snowshoes.']),
+  puffin: tr(['Papageitaucher', 'Er kann über zehn kleine Fische auf einmal quer im Schnabel tragen. Unter Wasser fliegt er mit seinen Flügeln.'], ['Puffin', 'It can carry more than ten small fish crosswise in its beak at once. Under water it flies with its wings.']),
+  arcticfox: tr(['Polarfuchs', 'Im Winter ist sein Fell weiß, im Sommer braun. Er hört Lemminge unter dem Schnee und springt kopfüber hinein.'], ['Arctic fox', 'In winter its fur is white, in summer brown. It hears lemmings under the snow and dives in head first.']),
+  arcticwolf: tr(['Polarwolf', 'Ein weißer Wolf aus dem hohen Norden. Das Rudel heult gemeinsam, damit es sich über weite Strecken findet.'], ['Arctic wolf', 'A white wolf from the far north. The pack howls together so its members can find each other over long distances.']),
+  snowowl: tr(['Schneeeule', 'Anders als die meisten Eulen jagt sie auch am Tag – im Sommer wird es in der Arktis gar nicht dunkel.'], ['Snowy owl', 'Unlike most owls it also hunts by day – in the Arctic summer it never gets dark.']),
+  snowhare: tr(['Schneehase', 'Seine großen, behaarten Hinterpfoten tragen ihn über den Schnee, ohne einzusinken.'], ['Arctic hare', 'Its big, furry hind paws carry it over the snow without sinking in.']),
   anteater: tr(['Großer Ameisenbär', 'Seine Zunge ist bis zu 60 Zentimeter lang – damit schleckt er an einem Tag bis zu 30.000 Ameisen und Termiten.'], ['Giant anteater', 'Its tongue is up to 60 centimetres long – with it, it licks up to 30,000 ants and termites in a single day.']),
   howler: tr(['Brüllaffe', 'Sein Brüllen hört man kilometerweit – er ist eines der lautesten Tiere der Welt.'], ['Howler monkey', 'Its howl can be heard for miles – it is one of the loudest animals in the world.']),
   macaque: tr(['Japanmakak', 'Kleine Hände und Füße mit fünf langen Fingern – fast wie bei uns.'], ['Japanese macaque', 'Small hands and feet with five long fingers – almost like ours.']),
@@ -596,9 +636,10 @@ const WILD_SILENT = [
   'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish',
   'gorilla', 'meerkat', 'hyena', 'wolf', 'panda', 'orangutan',
   'howler', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
+  'arcticfox', 'arcticwolf', 'snowowl', 'polarbear', 'puffin', // Eiswelt: unsichtbar, Rudel wie der Wolf, Eule ruft selbst (SnowOwl.js), Eisbär lauert, Vögel fliegen
 ];
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
-const CALL_FALLBACK = { tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig', boar: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
+const CALL_FALLBACK = { arcticwolf: 'animal_wolf', reindeer: 'animal_elk', walrus: 'animal_hippo', polarbear: 'animal_wolf', tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig', boar: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -734,13 +775,13 @@ const TOOLS = {
   net: {
     create: (scene, player) => new Net(scene, player),
     name: tr('Kescher', 'Net'),
-    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'squirrel', 'heron', 'meerkat', 'peacock', 'butterfly', 'vulture', 'snake', 'tarantula', 'macaw', 'toucan', 'iguana'],
+    catches: ['cat', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'frog', 'squirrel', 'heron', 'meerkat', 'peacock', 'butterfly', 'vulture', 'snake', 'tarantula', 'macaw', 'toucan', 'iguana', 'snowhare', 'arcticfox', 'snowowl', 'puffin'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)}`, `Catches ${animalIcons(list)}`),
   },
   lasso: {
     create: (scene, player) => new Lasso(scene, player),
     name: 'Lasso',
-    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'cow', 'goat', 'pig', 'heron', 'tiger', 'howler', 'anteater', 'jaguar', 'penguin'],
+    catches: ['deer', 'antelope', 'zebra', 'gnu', 'hippo', 'hyena', 'warthog', 'crocodile', 'sheep', 'cow', 'goat', 'pig', 'heron', 'tiger', 'howler', 'anteater', 'jaguar', 'penguin', 'reindeer'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} aus der Ferne`, `Catches ${animalIcons(list)} from a distance`),
   },
   trap: {
@@ -818,6 +859,12 @@ const TOOLS = {
     name: tr('Banane', 'Banana'),
     hint: tr(`Leg sie unten an den Baum, in dem ein ${animalIcon('howler')} sitzt – dann kommt er herunter`, `Put it at the foot of the tree a ${animalIcon('howler')} is sitting in – it will come down`),
   },
+  warmer: {
+    create: (scene, player) => new WarmerTool(scene, player),
+    name: tr('Wärmflasche', 'Hot-water bottle'),
+    catches: ['walrus'],
+    hint: (list) => tr(`Leg sie einem dösenden ${animalIcons(list)} an – dann wird ihm warm, und es kommt mit`, `Give it to a dozing ${animalIcons(list)} – it gets warm and comes along`),
+  },
   bone: {
     create: (scene, player) => new BoneTool(scene, player),
     name: tr('Knochen', 'Bones'),
@@ -854,7 +901,7 @@ const TOOLS = {
   lantern: {
     create: (scene, player) => new LanternTool(scene, player),
     name: tr('Moorlaterne', 'Moor lantern'),
-    hint: tr(`Stell sie am Moor ab – dann watet der ${animalIcon('elk')} ins Licht, und du siehst ihn`, `Put it down by the moor – the ${animalIcon('elk')} wades into the light, and you can see it`),
+    hint: tr(`Stell sie am Moor ab – dann watet der ${animalIcon('elk')} ins Licht. In der Eiswelt zeigt sie ${animalIcon('arcticfox')} und ${animalIcon('snowowl')}`, `Put it down by the moor – the ${animalIcon('elk')} wades into the light. In the ice world it reveals ${animalIcon('arcticfox')} and ${animalIcon('snowowl')}`),
   },
   // Blätterzweig vom Futterstrauch (Dschungel): kommt nicht ins Regal, man bricht ihn am Strauch ab (siehe LeafBushes.js)
   leaves: {
@@ -1283,6 +1330,8 @@ export default class GardenScene extends Phaser.Scene {
     // Auto für die Schnellreise: antippen oder daneben die Aktionstaste drücken öffnet die Weltkarte
     this.car = null;
     this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
+    this.polarWolves = null; // Polarwolf-Rudel in der Tundra der Eiswelt (siehe updatePolarWolves)
+    this.bearBait = null; // Fisch am Eisloch für den Eisbären (siehe dropBearBait)
     this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
@@ -2360,6 +2409,18 @@ export default class GardenScene extends Phaser.Scene {
           ? new Yak(this, x, y)
         : species === 'snowleopard'
           ? new SnowLeopard(this, x, y)
+        : species === 'arcticfox'
+          ? new ArcticFox(this, x, y)
+        : species === 'snowowl'
+          ? new SnowOwl(this, x, y)
+        : species === 'reindeer'
+          ? new Reindeer(this, x, y, this.animals)
+        : species === 'walrus'
+          ? new Walrus(this, x, y)
+        : species === 'polarbear'
+          ? new PolarBear(this, x, y)
+        : species === 'puffin'
+          ? new Puffin(this, x, y)
         : species === 'vulture'
           ? new Vulture(this, x, y)
         : species === 'hyena'
@@ -2390,8 +2451,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Macaw(this, x, y, species)
         : species === 'gnu'
           ? new Gnu(this, x, y)
-        : species === 'wolf'
-          ? new Wolf(this, x, y)
+        : species === 'wolf' || species === 'arcticwolf'
+          ? new Wolf(this, x, y, species)
         : species === 'crocodile'
           ? new Crocodile(this, this.animals)
         : species === 'squirrel'
@@ -2609,6 +2670,12 @@ export default class GardenScene extends Phaser.Scene {
         (species === 'penguin' && LEVEL.iceHoles && Math.random() < PENGUIN_AT_HOLES && this.tileFrom(this.holeTiles(), taken)) || // nachts meist an den Eislöchern
         (species === 'penguin' && this.tileFrom(NEAR_WATER, taken)) || // Pinguine immer am Wasser
         (species === 'seal' && this.tileFrom(Seal.shoreTiles(), taken)) || // Robben im Wasser am Ufer
+        (species === 'puffin' && this.tileFrom(Puffin.spawnTiles(), taken)) || // Papageitaucher an den Vogelfelsen am Fjord
+        (species === 'polarbear' && this.tileFrom(this.seaIceTiles(), taken)) || // Eisbären nachts draußen auf dem zugefrorenen Meer
+        (species === 'walrus' && LEVEL.iceHoles && this.tileFrom(this.holeTiles(), taken)) || // Walrosse nachts an den Eislöchern ...
+        (species === 'walrus' && this.tileFrom(this.groundTiles('ice_beach'), taken)) || // ... am Tag am Kiesstrand ...
+        (species === 'walrus' && this.tileFrom(NEAR_WATER, taken)) || // ... sonst irgendwo am Wasser
+        (TUNDRA_SPECIES.includes(species) && Math.random() < AT_HOME_CHANCE && this.tileFrom(this.groundTiles('tundra'), taken)) || // Eiswelt: meist in der Tundra
         (species === 'giraffe' && Math.random() < GIRAFFE_NEAR_TREES && this.tileFrom(NEAR_TREES, taken)) ||
         (species === 'panda' && this.tileFrom(NEAR_BAMBOO, taken)) ||
         (species === 'butterfly' && this.tileFrom(flowerTiles(), taken)) || // Schmetterlinge bei den Blumen // Pandas immer beim Bambus
@@ -2847,6 +2914,33 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Eiswelt bei Nacht: freie Plätze rund um die Eislöcher (LEVEL.iceHoles, je 2 x 2 Kacheln ab der Ecke oben links)
+  // freie Kacheln einer Bodenzone, deren Boden so anfängt (z. B. 'tundra' in der Eiswelt), einmal je Karte
+  groundTiles(prefix) {
+    const key = `${prefix}:${LEVEL_ID}:${LEVEL.season ?? ''}`;
+    if (this.groundTileCache?.key !== key) {
+      const list = [];
+      for (let ty = 1; ty < MAP_H - 1; ty++) {
+        for (let tx = 1; tx < MAP_W - 1; tx++) {
+          if (isBlocked(tx, ty) || !groundZoneAt(tx, ty, true)?.ground?.[0]?.startsWith(prefix)) continue;
+          list.push({ tx, ty });
+        }
+      }
+      this.groundTileCache = { key, list };
+    }
+    return this.groundTileCache.list;
+  }
+
+  // freie Kacheln auf dem zugefrorenen Meer (Eiswelt bei Nacht), einmal je Karte
+  seaIceTiles() {
+    const key = `${LEVEL_ID}:${LEVEL.season ?? ''}`;
+    if (this.seaIceCache?.key !== key) {
+      const list = [];
+      for (let ty = 1; ty < MAP_H - 1; ty++) for (let tx = 1; tx < MAP_W - 1; tx++) if (charAt(tx, ty) === 'ɨ' && !isBlocked(tx, ty)) list.push({ tx, ty });
+      this.seaIceCache = { key, list };
+    }
+    return this.seaIceCache.list;
+  }
+
   holeTiles() {
     return NEAR_WATER.filter(({ tx, ty }) => LEVEL.iceHoles.some(([hx, hy]) => Math.hypot(tx - hx - 0.5, ty - hy - 0.5) < 3));
   }
@@ -5838,7 +5932,7 @@ export default class GardenScene extends Phaser.Scene {
       if (room(t) <= 0) {
         // voll: wie bei releaseExtra – seltene Skins bleiben, sonst zieht vom häufigsten Aussehen (nicht dem des neuen Tiers,
         // falls möglich) das älteste aus. Aussehen: Skin, Farbvariante (Riff-Fische) oder Tierart (Kraken haben keine Variante)
-        const list = inside(t, a.species).filter((s) => !s.baby);
+        const list = inside(t, a.species).filter((s) => !s.baby && !isFriendUid(s.uid)); // Tierfreunde ziehen nie aus
         const pool = list.some((s) => !s.skin) ? list.filter((s) => !s.skin) : list;
         const look = (s) => String(s.skin ?? s.variant ?? s.species);
         const counts = {};
@@ -6306,6 +6400,44 @@ export default class GardenScene extends Phaser.Scene {
 
   // Knochen vor sich streuen (Werkzeug "Knochen"): lockt die Hyänen an, wenn sie gerade kichern; danach hat man gleich
   // das Lasso in der Hand (die Knochen kommen zurück in die Hütte)
+  // Eisbär-Köder: ein geworfener Fisch, der neben einem Eisloch landet (nachts), bleibt dort liegen; ein Eisbär trottet
+  // hin und lauert am Loch (siehe PolarBear.js). Gibt zurück, ob der Fisch liegen bleibt
+  dropBearBait(x, y) {
+    if (!LEVEL.iceHoles) return false;
+    const { tx, ty } = worldToTile(x, y);
+    if (isBlocked(tx, ty)) return false; // ins Wasser gefallen
+    const hole = LEVEL.iceHoles.map(([hx, hy]) => tileToWorld(hx + 0.5, hy + 0.5)).find((h) => Math.hypot(h.x - x, (h.y - y) * 2) < BAIT_NEAR_HOLE);
+    if (!hole) return false;
+    this.removeBearBait();
+    const img = this.add.image(x, y, 'herring').setScale(0.3).setDepth(y - 1);
+    this.bearBait = { x, y, hole, img, bear: null };
+    this.showToast(tr('🐟 Der Fisch liegt am Eisloch. Kommt ein Eisbär, setzt er sich davor und lauert.', '🐟 The fish lies by the ice hole. When a polar bear comes, it sits down there and waits.'));
+    return true;
+  }
+
+  removeBearBait() {
+    this.bearBait?.img.destroy();
+    this.bearBait = null;
+  }
+
+  // der Eisbär ist am Köder angekommen und lauert jetzt am Eisloch (den Fisch hat er sich geschnappt)
+  bearArrived(bear) {
+    this.removeBearBait();
+    if (Math.hypot(bear.x - this.player.x, (bear.y - this.player.y) * 2) < 600) this.showToast(tr('🐻‍❄️ Der Eisbär lauert am Eisloch! Wirf ihm jetzt einen Fisch zu.', '🐻‍❄️ The polar bear is waiting at the ice hole! Now throw it a fish.'));
+  }
+
+  // Wärmflasche: einem dösenden Walross in der Nähe anlegen – es wird warm und kommt mit (siehe Walrus.js)
+  warmWalrus() {
+    const p = this.player;
+    const near = this.animals
+      .filter((a) => a.species === 'walrus' && a.state === 'wild' && Math.hypot(a.x - p.x, (a.y - p.y) * 2) < WARM_REACH)
+      .sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+    if (!near) return this.showToast(tr('Hier döst kein Walross.', 'No walrus dozing here.'));
+    if (!near.canBeCaughtNow()) return this.showToast(tr('Es ist wach – warte, bis es döst.', 'It is awake – wait until it dozes.'));
+    if (this.tooCold()) return;
+    near.warm(() => this.catchAnimal(near));
+  }
+
   dropBones() {
     if (!this.hyenaPack) return;
     const p = this.player;
@@ -6601,7 +6733,7 @@ export default class GardenScene extends Phaser.Scene {
     this.tool.destroy(); // die Laterne steht jetzt am Boden (nicht zurück in die Kiste) ...
     this.tool = null;
     this.toolId = null;
-    this.equipTool('lasso'); // ... und Henrik hat gleich das Lasso für den Elch in der Hand
+    this.equipTool(biomeOf() === 'ice' ? 'net' : 'lasso'); // ... und Henrik hat gleich das Lasso für den Elch in der Hand (Eiswelt: den Kescher für Polarfuchs und Schneeeule)
   }
 
   removeLantern() {
@@ -6654,6 +6786,22 @@ export default class GardenScene extends Phaser.Scene {
       this.showToast(tr('🌅 Die Wolfsnacht ist vorbei – es wird wieder hell im Wald.', '🌅 The Wolf Night is over – it is getting light in the forest again.'));
     }
     this.wolfNight?.update(dt);
+  }
+
+  // Eiswelt: ein Polarwolf-Rudel liegt immer in der Tundra (Tag und Nacht) und spielt "Ochs am Berg" wie in der
+  // Wolfsnacht, nur ohne Dunkelheit und Spuren; die anderen Tiere bleiben (siehe WolfNight in Wolf.js)
+  updatePolarWolves(dt) {
+    const on = LEVEL_ID === 'ice';
+    if (on && !this.polarWolves) {
+      const tundra = new Set(this.groundTiles('tundra').map(({ tx, ty }) => tx + ',' + ty));
+      this.polarWolves = new WolfNight(this, { species: 'arcticwolf', night: false, tracks: false, alone: false, packs: () => POLAR_PACKS, size: POLAR_PACK_SIZE, hear: POLAR_HOWL_HEAR, where: (tx, ty) => tundra.has(tx + ',' + ty) });
+    }
+    if (!on && this.polarWolves) {
+      this.polarWolves.destroy();
+      this.polarWolves = null;
+    }
+    this.polarWolves?.update(dt);
+    if (this.bearBait && !LEVEL.iceHoles) this.removeBearBait(); // am Tag gibt es keine Eislöcher (und keine Eisbären)
   }
 
   // beim Umschauen hat sich der Spieler bewegt: kurzer Hinweis (nicht zu oft)
@@ -6724,13 +6872,15 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Gehege voll: das älteste Tier wird im Naturreservat ausgewildert (bringt ein paar Herzen). Seltene Varianten bleiben; sonst zuerst das
-  // Aussehen bzw. die Art, von der es am meisten gibt (Schaf, Kuh, Zebra, Giraffe ...), damit die Mischung ausgewogen bleibt
+  // Gehege voll: das älteste Tier wird im Naturreservat ausgewildert (bringt ein paar Herzen). Tierfreunde (benannte Tiere)
+  // ziehen nie aus, seltene Varianten bleiben bevorzugt; sonst zuerst das Aussehen bzw. die Art, von der es am meisten gibt
+  // (Schaf, Kuh, Zebra, Giraffe ...), damit die Mischung ausgewogen bleibt
   releaseExtra(e) {
     this.released ??= [];
     // jedes Kontingent für sich: ein neues Zebra kann nur ein Zebra verdrängen, nie eine Giraffe
     for (const { key, cap } of penQuotas(e)) while (penCount(this.animals, e, key) > cap) {
-      const inside = this.animals.filter((a) => a.state === 'penned' && a.enclosure === e && !a.baby && (key === null || quotaKey(a.species) === key));
+      const inside = this.animals.filter((a) => a.state === 'penned' && a.enclosure === e && !a.baby && !isFriend(a) && (key === null || quotaKey(a.species) === key));
+      if (!inside.length) break; // (nur noch Tierfreunde übrig: die bleiben)
       const looks = {};
       // seltene Varianten bleiben bevorzugt: zuerst zieht ein normales Tier aus, zuletzt ein Skin
       const rarity = (a) => (a.isRare() ? 1 : 0);
@@ -8172,12 +8322,13 @@ export default class GardenScene extends Phaser.Scene {
     return css ? `<span style="filter:${css}">${icon}</span>` : icon;
   }
 
-  // Tiere dieser Tierart(en) im Gehege des Schilds: der Tierfreund zuerst, dann die Großen, seltene Varianten vorn
+  // Tiere dieser Tierart(en) im Gehege des Schilds: der Tierfreund zuerst, seltene Varianten vorn. Ohne Tierbabys: die
+  // verschwinden nach dem Event wieder, als Freund taugen sie nicht
   signResidents(sign) {
     const kinds = sign.only ?? sign.enclosure.species ?? [];
     return this.animals
-      .filter((a) => a.state === 'penned' && a.enclosure === sign.enclosure && (!kinds.length || kinds.includes(a.species)))
-      .sort((a, b) => isFriend(b) - isFriend(a) || !!a.baby - !!b.baby || !!b.skin - !!a.skin);
+      .filter((a) => a.state === 'penned' && !a.baby && a.enclosure === sign.enclosure && (!kinds.length || kinds.includes(a.species)))
+      .sort((a, b) => isFriend(b) - isFriend(a) || !!b.skin - !!a.skin);
   }
 
   // Inhalt der Tafel: Bild, Name und Wissen zur Tierart, ihre Plätze, darunter die Tiere, die hier wohnen (zum Antippen)
@@ -8599,6 +8750,7 @@ export default class GardenScene extends Phaser.Scene {
     this.luck.update(dt);
     this.updateTrapMarkers();
     this.updateWolfNight(dt);
+    this.updatePolarWolves(dt);
     this.updateMigration(dt);
     this.updateFireflies(dt);
     this.ropeBridge?.update(dt);

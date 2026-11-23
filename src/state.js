@@ -16,6 +16,7 @@ export const game = {
   monkeyIsland: true, // Bambuswald: alle Affen auf der Affeninsel (siehe migrateMonkeyIsland in save.js)
   jungleHall: true, // Tropenhalle statt Dschungel-Gehegen und Reptilienhaus (siehe migrateJungleHall in save.js)
   spiderSwap: true, // die goldene Spinne ist die normale, die pelzige Vogelspinne die seltene (siehe migrateSpiders in save.js)
+  iceMap2: true, // neue Eiswelt-Karte mit Fjord und Tundra (siehe migrateIceMap in save.js)
   events: {},
   unlocked: [],
   scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
@@ -65,6 +66,7 @@ export function resetGame() {
   game.monkeyIsland = true;
   game.jungleHall = true;
   game.spiderSwap = true;
+  game.iceMap2 = true;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};

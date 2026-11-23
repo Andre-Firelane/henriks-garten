@@ -11,6 +11,7 @@ import { drawWaterFoam, waterEdge } from './waterFoam.js';
 
 const WATER_ORIGIN_Y = 40 / 44; // Wasserlinie im Bild "hippo_water"
 const HIPPO_SCALE = 0.65; // etwas größer als die anderen Tiere (0.5), an Land und im Wasser
+const PYGMY_SCALE = 0.8; // das Zwergflusspferd (Skin hippo2) ist um so viel kleiner
 const WATER_TIME = [10, 18]; // so lange treibt es im Wasser ...
 const LAND_TIME = [14, 22]; // ... und so lange grast es am Ufer
 const LAND_MIN = 5; // so lange bleibt es mindestens an Land, auch wenn man ihm nahe kommt (Zeit zum Fangen)
@@ -48,7 +49,7 @@ export default class Hippo extends Crocodile {
 
   // so lange treibt es im Wasser bzw. grast an Land, so groß ist es (Unterarten ändern das)
   times() {
-    return { water: WATER_TIME, land: LAND_TIME, landMin: LAND_MIN, scale: HIPPO_SCALE };
+    return { water: WATER_TIME, land: LAND_TIME, landMin: LAND_MIN, scale: HIPPO_SCALE * (this.skin === 'hippo2' ? PYGMY_SCALE : 1) };
   }
 
   inWater() {
@@ -227,6 +228,8 @@ export default class Hippo extends Crocodile {
     if (!this.inWater()) {
       this.foam?.setVisible(false);
       if (this.sprite.texture.key === this.waterTexture()) this.useBagLook();
+      // Größe auch an Land stimmig halten (z. B. Zwergflusspferd, schon an Land geladen); nicht während eines Tweens (Streicheln)
+      else if (!this.baby && !this.scene.tweens.isTweening(this.sprite)) this.sprite.setScale(this.times().scale);
       Animal.prototype.render.call(this, moving);
       return;
     }

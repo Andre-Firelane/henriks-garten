@@ -163,6 +163,7 @@ export const OBJECTS = {
   Ƨ: { key: 'prayer_pole', originY: 60 / 64, solid: true, hitbox: 4 },
   Ƈ: { key: 'snow_cairn', originY: 49 / 56, solid: true, hitbox: 12 },
   Ɵ: { key: 'snow_lionrock', originY: 104 / 128, solid: true, hitbox: 30 },
+  Ṗ: { key: 'snow_pine', originY: 100 / 112, solid: true, hitbox: 12 }, // verschneite Tanne (Taiga in der Eiswelt; Platzhalter aus tools/ice-placeholders2.py)
   Ʃ: { key: 'stupa', originY: 72 / 80, solid: true, hitbox: 14 },
   // verschneite Felsen (aus Felsen anderer Gebiete, tools/snow-rocks.py): große Felsgruppe, Felsen in mehreren Formen,
   // Geröll (begehbar), Steinstapel

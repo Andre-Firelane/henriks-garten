@@ -201,7 +201,7 @@ Ersetzt den abgeschalteten Gehegeausbau: den eigenen Tieren ein hübsches Zuhaus
   Bude steht **und** die Bauen-Leiste zu ist.
 - Im Setzen-Modus geht Setzen bzw. Aufheben vor dem Auto (sonst öffnete am Auto aus Versehen die Karte).
 - Der **Marktstand** (Andres Bild) wird die sechste Bude **„Blumen & Andenken“** über 2×2 Kacheln: Besucher kaufen dort
-  ein, das bringt Herzen. (Andre findet ihn groß – ausprobieren.)
+  ein, das bringt 1 Herz je Verkauf (Andre, 23.11.2026: mit 3 waren es zu viele; die anderen Buden 2–3). (Andre findet ihn groß – ausprobieren.)
 
 ## Speichern
 
