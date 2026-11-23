@@ -1540,6 +1540,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (data.boothMoved) this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.boothMoved));
     this.lastBuildHint = undefined;
+    game.buildOpen = !!data.decorResume; // (Mavis Buden-Aufgabe ist erst erledigt, wenn die Bauen-Leiste zu ist)
     this.updateBuildHint();
     if (DECOR_RETURNED) this.time.delayedCall(600, () => this.showToast(tr(`${DECOR_RETURNED}× Deko ist zurück in der Bauen-Leiste.`, `${DECOR_RETURNED}× decor is back in the build bar.`)));
     this.signPanel.classList.remove('show');
@@ -1666,6 +1667,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearCanoe && !this.leaving) {
         this.expOnwards({ x: this.player.x, y: this.player.y }); // Dschungel-Camp: mit dem Kanu weiter (vorher die Karten)
+        return;
+      }
+      if (this.decor?.on && ['place', 'pick'].includes(this.decor.state?.kind) && !this.leaving) {
+        this.decor.act(); // Setzen-Modus: Setzen bzw. Aufheben geht vor (am Auto öffnete sonst die Karte)
         return;
       }
       if (this.nearCar && !this.leaving) {
@@ -3763,21 +3768,32 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Mavis Buden-Aufgabe: wo ist man gerade? 'open' (Bauen-Taste drücken), 'order' (bestellen), 'place' (Bude an einen Weg
-  // stellen) oder null (keine Aufgabe). Den Eisstand gibt es schon in der Grundausstattung: dann gleich 'place'
+  // stellen), 'close' (steht – jetzt „Fertig“, erst dann ist die Aufgabe erledigt) oder null (keine Aufgabe). Den Eisstand
+  // gibt es schon in der Grundausstattung: dann gleich 'place'
   buildHintStage() {
-    if (storyActiveId() !== 'stands' || !game.story.heard || LEVEL_ID !== 'park' || Object.values(game.booths ?? {}).some((b) => !b.stored)) return null;
+    if (storyActiveId() !== 'stands' || !game.story.heard || LEVEL_ID !== 'park') return null;
+    if (Object.values(game.booths ?? {}).some((b) => !b.stored)) return this.decor?.on ? 'close' : null;
     if (!this.decor?.on) return 'open';
     return storedBooths(LEVEL_ID).length ? 'place' : 'order';
   }
 
-  // die passenden Knöpfe pulsieren (Bauen-Taste, „Bestellen“, beim Setzen die Bude in der Leiste), und Mavis Pfeil zeigt
-  // beim Setzen auf einen guten Platz
+  // der nächste Knopf pulsiert und bekommt den roten Pfeil (wie beim Tierfreund): Bauen-Taste, „Bestellen“, beim Setzen
+  // die Bude in der Leiste (solange sie nicht ausgewählt ist), danach „Fertig“; Mavis Pfeil zeigt beim Setzen auf einen
+  // guten Platz
   updateBuildHint() {
     const stage = this.buildHintStage();
-    document.getElementById('btn-decor')?.classList.toggle('tut', stage === 'open');
-    document.querySelector('#decor-bar [data-id="@order"]')?.classList.toggle('tut', stage === 'order');
     const booth = this.decor?.booths()[0];
-    document.querySelectorAll('#decor-bar .decor-item').forEach((el) => el.classList.toggle('tut', stage === 'place' && el.dataset.id === booth && this.decor.sel !== booth));
+    const mark = (el, on) => {
+      if (!el) return;
+      el.classList.toggle('tut', on);
+      const ptr = el.querySelector(':scope > .tut-pointer');
+      if (on && !ptr) el.insertAdjacentHTML('beforeend', TUT_POINTER);
+      else if (!on) ptr?.remove();
+    };
+    mark(document.getElementById('btn-decor'), stage === 'open');
+    mark(document.querySelector('#decor-bar [data-id="@order"]'), stage === 'order');
+    mark(document.querySelector('#decor-bar [data-id="@done"]'), stage === 'close');
+    document.querySelectorAll('#decor-bar .decor-item').forEach((el) => mark(el, stage === 'place' && el.dataset.id === booth && this.decor.sel !== booth));
     if (stage !== this.lastBuildHint) {
       this.lastBuildHint = stage;
       this.mavi?.updateArrow();
@@ -3848,7 +3864,7 @@ export default class GardenScene extends Phaser.Scene {
   // Setzen-Modus: steht Henrik an etwas, dem die Aktionstaste gilt (Schild, Futterhaus, Tierfreund …)? Dann ist die
   // Vorschau rot, und die Taste bleibt bei der anderen Aktion
   decorBusy() {
-    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearWish || this.nearFriend || this.shownSign || this.nearCar || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
+    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearWish || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
   }
 
   // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
@@ -4317,6 +4333,13 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   updateToolbar() {
+    // Setzen-Modus: kann man vor Henrik etwas setzen oder aufheben, zeigt die Leiste das (auch am Auto, siehe useTool)
+    const build = this.decor?.on && ['place', 'pick'].includes(this.decor.state?.kind) ? this.decor.toolbar() : null;
+    if (build) {
+      setTouchTool(null, build.image);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${build.image}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${build.label}</span></div>`;
+      return;
+    }
     if (this.nearBoat) {
       const label = this.nearBoat === 'board' ? tr('Ins Kanu steigen', 'Get into the canoe') : tr('Aussteigen', 'Get out');
       setTouchTool(null, 'assets/canoe_icon.png');

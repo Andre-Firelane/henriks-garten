@@ -190,10 +190,12 @@ Ersetzt den abgeschalteten Gehegeausbau: den eigenen Tieren ein hübsches Zuhaus
   schon gebaute Buden bleiben, wo sie sind (alte Spielstände ziehen um), und lassen sich umstellen.
 - **Baupläne für Buden:** Zuckerwatte und Brezeln gibt es erst mit Bauplan aus einer Kiste (`blueprint` in shops.js);
   Eisstand, Popcorn, Limonade und Blumen & Andenken sind von Anfang an bestellbar.
-- **Tutorial** (Mavis Buden-Aufgabe „Bestell eine Bude und stell sie an einen Weg“): erst pulsiert die Bauen-Taste, dann
-  „Bestellen“ (bzw. der Reiter Buden); im Katalog zeigt ein Pfeil auf den Eisstand; liegt die Bude in der Leiste, zeigt
-  Mavis Pfeil auf einen guten Platz (der erste frühere Bauplatz, der frei ist – im Zentrum rechts vor dem Haupthaus; der
-  linke liegt in der Fläche des künftigen Flamingo-Geheges). Erledigt, sobald eine Bude steht.
+- **Tutorial** (Mavis Buden-Aufgabe „Stell eine Bude an einen Weg“): der nächste Knopf pulsiert und bekommt den roten
+  Pfeil wie beim Tierfreund – Bauen-Taste, dann der Eisstand in der Leiste (bzw. „Bestellen“, wenn keine Bude in der
+  Leiste liegt; im Katalog zeigt der Pfeil auf den Eisstand), zuletzt „Fertig“. Mavis Pfeil zeigt auf einen guten Platz
+  (`boothHint` in levels.js: vor dem Haupthaus links vom Weg zur Tür, weit genug weg vom Auto). Erledigt erst, wenn eine
+  Bude steht **und** die Bauen-Leiste zu ist.
+- Im Setzen-Modus geht Setzen bzw. Aufheben vor dem Auto (sonst öffnete am Auto aus Versehen die Karte).
 - Der **Marktstand** (Andres Bild) wird die sechste Bude **„Blumen & Andenken“** über 2×2 Kacheln: Besucher kaufen dort
   ein, das bringt Herzen. (Andre findet ihn groß – ausprobieren.)
 

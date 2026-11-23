@@ -8,9 +8,9 @@ import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { ENCLOSURES, LEVEL, LEVEL_ID, START, charAt, exitAt, isBlocked, nearEnclosure, reservedAt } from '../world/map.js';
 
-// Buden-Aufgabe: guter Platz für die erste Bude – der erste frühere Bauplatz, der frei ist (nicht in der Fläche eines
-// künftigen Geheges, nichts darauf)
-const boothSpot = () => (LEVEL.legacySlots ?? []).find((s) => charAt(s.tx, s.ty) === '.' && !reservedAt(s.tx, s.ty)) ?? null;
+// Buden-Aufgabe: guter Platz für die erste Bude – boothHint (levels.js), sonst der erste frühere Bauplatz, der frei ist
+// (nicht in der Fläche eines künftigen Geheges, nichts darauf)
+const boothSpot = () => [LEVEL.boothHint, ...(LEVEL.legacySlots ?? [])].find((s) => s && charAt(s.tx, s.ty) === '.' && !reservedAt(s.tx, s.ty)) ?? null;
 import { LEVELS, isPark } from '../world/levels.js';
 import { seaReady } from '../story/steps.js';
 import { activeStep, completeStep, stepDone } from '../story/story.js';

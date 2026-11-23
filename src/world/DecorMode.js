@@ -157,6 +157,7 @@ export default class DecorMode {
     this.loadArt();
     if (!this.on) {
       this.on = true;
+      game.buildOpen = true; // (Mavis Buden-Aufgabe: erst nach „Fertig“ erledigt)
       this.keepOut = this.keepOutTiles();
       this.drawReserved();
       this.drawFree();
@@ -185,7 +186,9 @@ export default class DecorMode {
     this.bar.classList.remove('show');
     this.frame.classList.remove('show');
     window.removeEventListener('keydown', this.onKey, true);
+    game.buildOpen = false;
     this.scene.updateBuildHint?.();
+    this.scene.mavi?.check(); // (Buden-Aufgabe: jetzt erledigt, wenn eine Bude steht)
     this.scene.saveGame();
     this.scene.updateToolbar();
   }

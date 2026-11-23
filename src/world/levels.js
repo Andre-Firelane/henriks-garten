@@ -1206,8 +1206,10 @@ LEVELS.park = parkSection('park', {
   buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
   // Eisstand-Event: der Eiswagen steht mitten im Park unterhalb des Hauptwegs (die Plätze oberhalb sind für feste Buden)
   iceStand: { tx: 26, ty: 44 },
-  // frühere feste Bauplätze für Buden (nur noch für alte Spielstände und Mavis Platz bei der Buden-Aufgabe; Buden setzt
-  // man jetzt frei, siehe src/world/shops.js)
+  // Mavis Buden-Aufgabe: hierhin zeigt ihr Pfeil (vor dem Haupthaus links vom Weg zur Tür, weit genug weg vom Auto – dort
+  // ginge sonst die Karte auf)
+  boothHint: { tx: 25, ty: 40 },
+  // frühere feste Bauplätze für Buden (nur noch für alte Spielstände; Buden setzt man jetzt frei, siehe src/world/shops.js)
   legacySlots: [{ id: 'center1', tx: 25, ty: 43 }, { id: 'center2', tx: 33, ty: 40 }],
   scooterSpot: { tx: 27, ty: 39 }, // E-Roller: abgestellt an der Hauswand links neben der Tür des Haupthauses
   // Riesenrad (vorerst gestrichen – es passte nicht zur isometrischen Ansicht; der Code in src/world/FerrisWheel.js bleibt):

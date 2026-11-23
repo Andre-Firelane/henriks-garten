@@ -889,6 +889,17 @@
       }
       /* Mavis Buden-Aufgabe: der nächste Knopf pulsiert rot */
       #btn-decor.tut, #decor-bar .tut { animation: tut-pulse 1s ease-in-out infinite; }
+      #btn-decor, #decor-bar .decor-order, #decor-bar .decor-done { position: relative; }
+      /* unter dem Bauen-Knopf zeigt der Pfeil nach oben */
+      #btn-decor .tut-pointer { top: auto; bottom: -34px; transform: translateX(-50%) rotate(180deg); animation-name: tut-pointer-up; }
+      @keyframes tut-pointer-up { 0%, 100% { transform: translateX(-50%) rotate(180deg); } 50% { transform: translate(-50%, 8px) rotate(180deg); } }
+      #decor-bar .tut-pointer { left: auto; right: calc(100% + 4px); top: 50%; transform: translateY(-50%) rotate(-90deg); animation-name: tut-pointer-left; }
+      @keyframes tut-pointer-left { 50% { transform: translate(-8px, -50%) rotate(-90deg); } }
+      /* Teile in der Liste: der Pfeil sitzt oben im Feld (daneben schnitte ihn der scrollbare Bereich ab) */
+      #decor-bar .decor-item .tut-pointer { right: auto; left: 50%; top: -4px; font-size: 22px; transform: translateX(-50%); animation-name: chest-pointer; }
+      @media (max-height: 500px), (max-width: 600px) {
+        #decor-bar .tut-pointer { right: auto; left: 50%; top: -34px; transform: translateX(-50%); animation-name: chest-pointer; }
+      }
       @keyframes tut-pulse { 0%, 100% { box-shadow: 0 0 0 3px #e8483f; } 50% { box-shadow: 0 0 0 7px rgba(232, 72, 63, 0.35); } }
       /* Drehen: runder Knopf links neben der Leiste */
       #decor-bar .decor-turn {

@@ -177,7 +177,7 @@ export const STEPS = [
     id: 'stands',
     at: { level: 'park', spot: 'build' },
     goal: tr('Stell eine Bude an einen Weg', 'Put a stand next to a path'),
-    done: (game) => Object.values(game.booths ?? {}).some((b) => !b.stored),
+    done: (game) => Object.values(game.booths ?? {}).some((b) => !b.stored) && !game.buildOpen, // (erst nach „Fertig“)
     intro: [
       tr('Zeit für eine Bude! Einen Eisstand hast du schon – drück oben auf „Bauen“.', 'Time for a stand! You already have an ice cream stand – press “Build” at the top.'),
       tr('Stell ihn direkt an einen Weg, dort kaufen die Besucher ein. Mehr Buden gibt es unter „Bestellen“.', 'Put it right next to a path – that’s where visitors buy. More stands are under “Order”.'),
@@ -203,9 +203,11 @@ export const STEPS = [
     ],
     already: [tr('Du hast ja schon einen Tierfreund! Wie schön.', 'You already have an animal friend! How lovely.')],
     outro: [
-      tr('Schau, wie es sich freut! Je öfter du es besuchst, desto enger wird eure Freundschaft – über dem Namen siehst du, wie weit es noch bis zur nächsten Stufe ist.', 'Look how happy it is! The more often you visit, the closer your friendship gets – above the name you can see how far it is to the next level.'),
-      tr('Im Futterhaus am Futterautomaten gibt es auch Futter für deine Freunde. Probier aus, was dein Freund am liebsten frisst!', 'The food house at the feeder also has food for your friends. Find out what your friend likes best!'),
-      tr('Und jetzt geht die Reise richtig los: Die Savanne ist offen! Fahr mit dem Auto hin, ich warte dort an der Hütte auf dich.', 'And now the journey really begins: the savanna is open! Drive there by car, I’ll wait for you at the hut.'),
+      tr('Schau, wie es sich freut! Je öfter du es besuchst, desto enger wird eure Freundschaft.', 'Look how happy it is! The more often you visit, the closer you become.'),
+      tr('Der Balken über dem Namen zeigt, wie weit es bis zur nächsten Stufe ist.', 'The bar above the name shows how far it is to the next level.'),
+      tr('Im Futterhaus gibt es auch Futter für deine Freunde. Was frisst deiner am liebsten?', 'The food house also has food for your friends. What does yours like best?'),
+      tr('Und jetzt geht die Reise los: Die Savanne ist offen!', 'And now the journey begins: the savanna is open!'),
+      tr('Fahr mit dem Auto hin – ich warte dort an der Hütte auf dich.', 'Drive there by car – I’ll wait for you at the hut.'),
     ],
     reward: 20,
     unlocks: ['savanna'],
