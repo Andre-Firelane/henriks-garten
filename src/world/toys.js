@@ -57,16 +57,13 @@ export const PEN_TOYS = {
   pasture: ['hay_bale', 'scratch_post', 'salt_lick'],
   aviary: ['nest_platform', 'nest_platform'],
   flamingos: ['mud_nest', 'mud_nest', 'mud_nest'],
-  orangutans: ['lianas', 'straw_nest'],
   tigers: ['jute_ball', 'prey_sack'],
   pandas: ['slide', 'jute_ball'],
-  macaques: ['climb_ropes', 'jute_ball'],
-  howlers: ['lianas', 'lianas'],
-  macaws: ['swing_rings', 'swing_rings'],
-  anteaters: ['termite_mound', 'termite_mound'],
+  monkeys: ['climb_ropes', 'lianas', 'straw_nest', 'jute_ball', 'lianas', 'climb_ropes'], // Affeninsel (alle Affen zusammen)
+  // Tropenhalle: feste Plätze (toysAt in levels.js): Termitenhügel bei den Ameisenbären, Schaukelringe am Steg, Melonen
+  // und Salzleckstein am Teich unter dem Wasserfall
+  junglehall: ['termite_mound', 'termite_mound', 'swing_rings', 'melons', 'salt_lick'],
   jaguars: ['tree_platform', 'jute_ball'],
-  gorillas: ['straw_nest', 'climb_ropes'],
-  tapirs: ['melons', 'salt_lick'],
   tanukis: ['yarn_ball', 'straw_nest'],
   yaks: ['salt_lick', 'hay_bale'],
   snowleopards: ['jute_ball', 'prey_sack'],

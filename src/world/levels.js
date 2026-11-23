@@ -741,63 +741,6 @@ export const LEVELS = {
     },
   },
 
-  // Reptilienhaus: eigene, enge Halle hinter der Fassade im Dschungel-Bereich des Tierparks (wie das Aquarium), voller
-  // Dschungelpflanzen. Große Glasterrarien voller Pflanzen (tools/terrarium-glass.py): links die Schlangen, rechts die
-  // Vogelspinnen (auf einem Sockel, mit Netzen ẅ), unten links das Piranha-Becken, unten rechts das Leguan-Terrarium
-  // (Ast und Steine zum Sonnen). Gefangene ziehen beim Betreten des Tierparks hier ein
-  // (siehe sendToHouse in GardenScene)
-  reptiles: {
-    name: tr('Reptilienhaus', 'Reptile House'),
-    rows: [
-      'MMMMMMMMMMMMMMMMMM',
-      'Nľ.ḟ..ľ....ľ..Ḣ.ľN',
-      'N.MMMMMM..MMMMMM.N',
-      'N.NḢľnrN..Nẅnľ.N.N',
-      'N.NqL.ľN..Nľ.ẅnN.N',
-      'N.Nn.qrN..NrnľẅN.N',
-      'N.MMMMMM..MMMMMM.N',
-      'Nľ.n....ľ.....n.ľN',
-      'N................N',
-      'N.ľ............ľ.N',
-      'N.##############.N',
-      'N.MMMMMM##MMMMMM.N',
-      'N.N...(N##NľḢrnN.N',
-      'N.N(...N##NqL.ľN.N',
-      'N.N....N##NrnḟľN.N',
-      'N.MMMMMM##MMMMMM.N',
-      'NḢ..ľ...##....ľ.ľN',
-      'MMMMMMMMXXMMMMMMMM',
-    ],
-    grass: ['floor_reptiles'],
-    path: 'asia_path',
-    start: { tx: 8, ty: 16 },
-    enclosures: [
-      // Piranha-Becken unten links (Wasserbecken wie im Aquarium, ohne Zierfische, mit zwei Seegras-Büscheln)
-      { id: 'piranhas', name: tr('Piranha-Becken', 'Piranha Tank'), species: ['piranha'], world: 'jungle', seed: { tx: 4, ty: 13 }, slots: [6, 6], signAt: { tx: 4.5, ty: 15.6 }, signOnGlass: true },
-      { id: 'snakes', name: tr('Schlangen-Terrarium', 'Snake Terrarium'), species: ['snake'], world: 'jungle', seed: { tx: 5, ty: 4 }, slots: [4, 4], signAt: { tx: 4.5, ty: 6.6 }, signOnGlass: true },
-      { id: 'iguanas', name: tr('Leguan-Terrarium', 'Iguana Terrarium'), species: ['iguana'], world: 'jungle', seed: { tx: 12, ty: 12 }, slots: [3, 3], signAt: { tx: 12.5, ty: 15.6 }, signOnGlass: true },
-      { id: 'tarantulas', name: tr('Vogelspinnen-Terrarium', 'Tarantula Terrarium'), species: ['tarantula'], world: 'jungle', seed: { tx: 12, ty: 4 }, slots: [4, 4], signAt: { tx: 12.5, ty: 6.6 }, signOnGlass: true },
-    ],
-    // Terrarien zuerst (ihre Wände und ihr Boden gehören zum Terrarium), dann die Halle
-    buildings: [
-      { tx0: 2, ty0: 2, tx1: 7, ty1: 6, style: 'terrarium', noRoof: true },
-      { tx0: 10, ty0: 2, tx1: 15, ty1: 6, style: 'terrarium_raised', raise: 28, noRoof: true }, // Vogelspinnen auf einem Sockel (raise wie RAISE in tools/terrarium-glass.py)
-      { tx0: 2, ty0: 11, tx1: 7, ty1: 15, style: 'tank', noRoof: true, noDeco: true }, // Piranha-Becken
-      { tx0: 10, ty0: 11, tx1: 15, ty1: 15, style: 'terrarium', noRoof: true }, // Leguan-Terrarium
-      { tx0: 0, ty0: 0, tx1: 17, ty1: 17, style: 'reptiles', noRoof: true, pathFloor: 'asia_path', visitors: true },
-    ],
-    chests: [],
-    toolSpots: [],
-    background: '#1e1a12',
-    ambient: 'ambient_jungle', // ganz leise der Dschungel (warm und feucht)
-    ambientVolume: 0.15,
-    exits: [
-      { tx: 8, ty: 17, to: 'park3', arrive: { tx: 74, ty: 13 }, label: tr('Tierpark', 'Zoo') },
-      { tx: 9, ty: 17, to: 'park3', arrive: { tx: 74, ty: 13 }, label: tr('Tierpark', 'Zoo') },
-    ],
-    spawn: { population: 0, weights: {} },
-  },
-
   // Aquarium: eigene Zone hinter der Fassade oben links im Tierpark. Eine Halle (Gebäude ohne Dach, man ist immer drin)
   // mit zwei Wassertanks an der Rückwand; darin schwimmen Zierfische (siehe TankFish.js) zwischen Pflanzen und Deko.
   aquarium: {
@@ -966,80 +909,80 @@ const PARK_ROWS = [
       'b..T..f.K.g.3...........|y.y..|.#...............#]..ƚ.......................≠≠.y.........]3',
       '.K..g.b..T..3........y..-------.#..R.....vA..y..#].ƚ..Ʋ...............ƚƚ....≠≠.........v.]3',
       'f.g..f..g.f.3..y........y...y..y#v...........R..#[[[[[[[[[[[[[[[[[[[[[[[[[[[GG[[[[[[[[[[[[3',
-      '[[[[[[[[[[[[[[[[[[[[[[]################################b33333333333333333333333333333333333',
-      '222k2DDk222]P;^^^^^^^;]#............###--------MMMMMMM|b',
-      '2D22kD222DD]P;.......;]#..y.y.v.....###|.%.....N.C...N|b',
-      '2kD2222k22k]D;.P...ɫ.;]#.D.y......v.###|.~~....N....CN|b',
-      '22k2k22k2D2]D;.......;]#...Av..A.A..###|.~~~...N.....N|b',
-      'DkD222k2k2k]D;L...ww.;]#.......y....###|..~~...MMMGMMM|b',
-      '222D2k2k2k2]P;....ww.;]#......y.....###|...%.......g..|b',
-      '222k2Dk2222]n;.ɫ.....;]#b.........b.###|.....bb.......|b',
-      'k2D22k2k2D2]D;......*;]#.MMMMMMMMM..###|g.....b..b....|b',
-      'D22DD222222]ḩ;^^^G^^^;]#.NZ...z.sN..###|b.b....g..g..b|b',
+      '[[[[[[[[[[[[[[.........################################b33333333333333333333333333333333333',
+      '222k2DDk222]P;^^^^^^^;.#............###--------MMMMMMM|b',
+      '2D22kD222DD]P;.......;.#..y.y.v.....###|.%.....N.C...N|b',
+      '2kD2222k22k]D;.P...ɫ.;.#.D.y......v.###|.~~....N....CN|b',
+      '22k2k22k2D2]D;.......;.#...Av..A.A..###|.~~~...N.....N|b',
+      'DkD222k2k2k]D;L...ww.;.#.......y....###|..~~...MMMGMMM|b',
+      '222D2k2k2k2]P;....ww.;.#......y.....###|...%.......g..|b',
+      '222k2Dk2222]n;.ɫ.....;.#b.........b.###|.....bb.......|b',
+      'k2D22k2k2D2]D;......*;.#.MMMMMMMMM..###|g.....b..b....|b',
+      'D22DD222222]ḩ;^^^G^^^;.#.NZ...z.sN..###|b.b....g..g..b|b',
       'kD222D22222]P..D.#.2DP]#.N...VYV.N..###|..............|b',
       '[[[[[[[[[[[[.....#.1P.]#.N.......N..###|..............|b',
       ']ḩmkP..###########..Ț.]#.NVt.....N..###|..............|b',
-      ']|----|#........#..DPD]#.Ndix....N..###|....T.........|b',
-      ']|...k|#........#..D..]#.Ns.....ZN..###|..............|b',
-      ']|.Ø..|#g...ƃ...#....n]#.MMMMGGMMM.####|..@...........|b',
-      ']|....|#..%...f.#.ḫ1..]#bg.#####.fb####G...f......T...|b',
-      ']|n...|#.ooo...F#.....]#..f#####g..####G..............|X',
-      ']|....G#.oooo...######G################|..............|b',
-      ']|.ʬ..|#ƃ.ooo%..######G###############W|.........f....|b',
-      ']|....|#...ooo..#.....]##........######|F.............|b',
-      ']|m...|#.n...oo.#.P2nḩ]#.........######|..............|b',
-      ']|..L.|#f.....~~#.D.D.]#.........######----------------b',
-      ']|----|#....g..~B.PP1D]#......n.....###.....ff.b.b...g.b',
+      ']-----|#........#..DPD]#.Ndix....N..###|....T.........|b',
+      ']....k|#........#..D..]#.Ns.....ZN..###|..............|b',
+      ']..Ø..|#g...ƃ...#....n]#.MMMMGGMMM.####|..@...........|b',
+      '].....|#..%...f.#.ḫ1..]#bg.#####.fb####G...f......T...|b',
+      '].n...|#.ooo...F#.....]#..f#####g..####G..............|X',
+      '].....G#.oooo...######G################|..............|b',
+      ']..ʬ..|#ƃ.ooo%..######G###############W|.........f....|b',
+      '].....|#...ooo..#.....]##........######|F.............|b',
+      '].m...|#.n...oo.#.P2nḩ]#.........######|..............|b',
+      ']...L.|#f.....~~#.D.D.]#.........######----------------b',
+      ']-----|#....g..~B.PP1D]#......n.....###.....ff.b.b...g.b',
       '].PD...#........B~2Ɍ..]#.......n.n..###.b..gf.T.....bTbb',
       ']ḫ.D.############~kP.n]#....m.m...m.########g^^^^^^^^^^b',
-      ']|---G--|...|-G--ȹȹ-|P]#..D.........###..f.#.;........;b',
-      ']|......|..P|....ww.|.]#............###g.g.#.;........;b',
-      ']|n....m|P..|.ƀ.%wwn|n]#......mm..q.###....#g;........;b',
-      ']|......|..k|m...ww.|P]#.m.P..0K.K..###g..g#.;....b...;b',
-      ']|..U...|P.ḫ|..Ƅwww.|P]#............###...b##G........;b',
-      ']|......|D1.|...www.|D]#....n.q..l..###.bb.#.G.....*..;b',
-      ']|k...n.|1..|%...wwƀ|P]#..n.q.......###..T.##;...w.w..;b',
-      ']|.D....|.P.|....ww.|.]#....ll......###..fb.#;........;b',
-      ']|------|P..|----ȹȹ-|.]#...q.qq.....###b.b..#;........;b',
+      ']----G--|...|-G--ȹȹ-|P]#..D.........###..f.#.;........;b',
+      '].......|..P|....ww.|.]#............###g.g.#.;........;b',
+      '].n....m|P..|.ƀ.%wwn|n]#......mm..q.###....#g;........;b',
+      '].......|..k|m...ww.|P]#.m.P..0K.K..###g..g#.;....b...;b',
+      ']...U...|P.ḫ|..Ƅwww.|P]#............###...b##G........;b',
+      '].......|D1.|...www.|D]#....n.q..l..###.bb.#.G.....*..;b',
+      '].k...n.|1..|%...wwƀ|P]#..n.q.......###..T.##;...w.w..;b',
+      ']..D....|.P.|....ww.|.]#....ll......###..fb.#;........;b',
+      ']-------|P..|----ȹȹ-|.]#...q.qq.....###b.b..#;........;b',
       ']P..DḫP.n..ḫ..PDP~~ḩ.ḫ]#...........####..f..#^^^^^^^^^^b',
-      '][[[[[[[[[[[[[[[[ȸȸ[[[]################################b    55555555555555555555               5',
-      '            5..................q......#................bbbbb5J[[[[[[[[[[[[[[[Jḟ.               5',
-      '            T.^^^^^^^^^^^...K..r......I.K..[[[[[[[[[[[[[[[[b5ľ]n...........ľ]Jľ.               5',
-      '            5.;.........;.............#....]...Q..........]b5ľ]..J......J...]..ľ               5',
-      '            T.;..9......;.....#########....].......Q....K.]b5.].......ľ.....]qq.               5',
-      '            5.;......q..;l...##.......##...]....K.........]b5J]...n......ľ..]J.q               5',
-      '            T.;..hhhh...;...##..KlK.l..##..]..8.....Q.....]b5ľ].....J.......]nḢ.               5',
-      '            5.;.r.hhh...G####.K....q.q.K##.].....7.......Q]b5ľ]...........J.]ľ..               5',
-      '            T.;....h....G..#..l..q..ll...##G..............]b5.].J......n....].Ḣľ               5',
-      '            5.;.........;..#.lqooooooo.rq.#G..q...q....q..]b5.]....q.....ḟ..].J.               5',
-      '            T.^^^^^^^^^^^q.#..ooooooooo...#]..............]b5.[[[[[[[G[[[[[[[.ľ.               5',
-      '            5....l....q.r..###EEEEEEEEEE###[[[[[[[[[[[[[[[[b5........#.......ľ.ľ      Ř        5',
-      '            T..rll.qq.q....#.q.oooooooo.l.#W...........bbbbb5........#..............l.#.l......5',
-      '            5..............##..q...ooor...###################################################..5',
-      '            T[[[[[[[[[[[[[[.##K.r.K..l..l##[[[[[[[[[[[[b...#....#...............#....W.........5',
-      '            5]............]..##...q.K..K##.]..........]bnn.#.^^^G^^^^^^^^^^^^^^.#.[[[[[G[[[[[[[5',
-      '            T]..J...9.....]...##.......####G..q....Q..]b...#.;.......+......ľ.;.#.]...........]5',
-      '            5].........9..G#############...G....w...Q.]bnḟ.#.;.............+..;.#.]J......ľ...]5',
-      '            T]L....H......G........#.......]..www8....]b...#.;.......+........;.#.]......ľ....]5',
-      '            5]....9.......]........#.......]...ww...Q.]bJ..#.;+...........J...;.#.].....n...J.]5',
-      '            T]..9.....J...]....K...#.......].L....r...]b...#.;.....ľ..J..+....;.#.]..J....ľ...]5',
-      '            5].......q....]....r...#.....q.]..........]bJ..#.;.........ľ.....ľ;.#.].......q.ľ.]5',
-      '            T[[[[[[[[[[[[[[...q..l.#.r.....[[[[[[[[[[[[bľ..#.^^^^^^^^^^^^^^^^^^ľ#.[[[[[[[[[[[[[5',
-      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb...#....................#..............5',
-      '            5.K...l....q...l...K...#5ľ.n..q.ľ...n.q..ľ.5ľ.n#...ľ...q......ľ...n.#.q....ľ...n...5',
-      '            5#################################################################################.5',
-      '            5.l..q...l...q...K....l.5.q....ľ..#...n..ľ.5.q...ľ...n......ľ...q....ľ....n...q.ľ..5',
-      '            5[[[G[[[[[[[G[[[[[[[G[[[5[[[[[[[[[G[[[[[[[[5.[[[[[[[[G[[[[[[[[[..[[[[[[[[G[[[[[[[[[5',
-      '            5]l...K]]Ƨ....Ƨ]]......]5]..ľ..........n..]5.]..ľ.......n.....]..]..n.....ľ...q...]5',
-      '            5].....]]......]].O....]5].n.....q......ľ.]5.]...J..q.....J...]..]...J.........J..]5',
-      '            5]..l..]]..r...]]......]5]....ľ.......q.J.]5.].n.....r.....ľ..]..].q....L.....n...]5',
-      '            5]q....]]......]]....O.]5].ooooo.....L....]5.]....ľ........J..]..]......ľ.....J...]5',
-      '            5]...l.]]....r.]]......]5]ooooooo......n..]5.]..J........n.q..]..]..ľ........q....]5',
-      '            5].K...]]......]]......]5]oooooooo....J...]5.].....q..ľ.......]..]....J..n........]5',
-      '            5]....q]].Ʃ....]]..r...]5].oooooo..ľ......]5.].ľ...J......J...]..].n...L........ľ.]5',
-      '            5]l....]]......]]......]5]..ooo.....q...n.]5.]......n.....ľ...]..]......q.....J...]5',
-      '            5]..n..]]......]]......]5].ľ.......n......]5.]..q.....ľ.......]..]..ľ.....n.......]5',
-      '            5[[[[[[[[[[[[[[[[[[[[[[[5[[[[[[[[[[[[[[[[[[5.[[[[[[[[[[[[[[[[[[..[[[[[[[[[[[[[[[[[[5',
+      '][[[[[[[[[[[[[[[[ȸȸ[[[]################################b    555555555555555555555555555555555555',
+      '            5QQooooooooooooooooooo.Q..#.QQQ............bbbbbǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧ5',
+      '            TQoooooooooooooooooooo..K.I..QQ[[[[[[[[[[[[[[[[bǦľ.ľľ..n......ľŔŔŔŔŔŔŔŔŔn..ľ.Ḣ..ľ.Ǧ5',
+      '            5ooQ.....q.....q.JooooVVV######]...Q..........]bǦ......nn.nľľqľŔŔŔrŴrŔŔŔ....ľľ..qľǦ5',
+      '            Too.hhh.r..9......ooooVVV#ẑẑẑ.#].......Q....K.]bǦ.ľnn...ľqľnqn..ľoooooo.Ḣ.......n.Ǧ5',
+      '            5oo.hhh....q...L..ooooVVV#ẑrẑl#]....K.........]bǦľ.nnn..Ǫ.ľqľǪ.ľooooooooo.ľḢ.ľ....Ǧ5',
+      '            Toor.h...J........oooo####ẑẑẑ.#]..8.....Q.....]bǦ..ľJľľľ.ľ.ḟ###ooooooooooo.ľ.ľn.ľḟǦ5',
+      '            5oo........q...O..oooo#ţ##.9..#]9....7.......Q]bǦľ...ľ.ľ...ľ#ľľooooooooooo.J...ḟľľǦ5',
+      '            Too..9.ǧǧǧǧǧǧ.....oooo###ţ....#G..............]bǦ.ľ..ľ.....q#ľ..oooooooooonľq..n..Ǧ5',
+      '            5oo....Ǧ####Ǧǧǧǧǧǧoooo#ţ##....#G..q...q....q..]bǦn.qľn.....ľ#..ľḟoooooooo...ḟľqľ..Ǧ5',
+      '            Tooq...Ǧ##########EEEE#########]..............]bǦ...n.Jľ.ľ.ľ#ľ.qJ..ooooo....J....ľǦ5',
+      '            5oo.H..Ǧ####Ǧǧǧǧǧǧoooo...K#.q.#[[[[[[[[[[[[[[[[bǦľľǪľľ+.ľľľ.#ľḢ.q..nqJľ..ľ..ľľ.ľľľǦ5',
+      '            Too....Ǧ####Ǧ..9..oooo...l#l..#W...........bbb##G#..ḟ.ľqnǫľq#Ǫľ...qǫ.....nqḟḟ.....Ǧ5',
+      '            5oo.9..ǧǧǧǧǧǧ.....ooooK...#.QQ##################G#############################...qǦ5',
+      '            Too..q....J....r..oooo....#.QQ#[[[[[[[[[[[[b....Ǧḟ.ǫnǪn.....ľľ.ľ.....q..ǫľ.qn#ľ.ľ.Ǧ5',
+      '            5oo.J......9...q..oooo.K..#...#]..........]b.q..Ǧ.n..ľn.JľǫJ..ľľ...ľ+.ľ...ľn.#....Ǧ5',
+      '            Too....r.......J..oooo...l#l..#G..q....Q..]b....Ǧ...ľľ.ľ.ľľ...ľ.J.q...ľ...q..#.+.ľǦ5',
+      '            5oo..9.....q...L..oooo....#..K#G....w...Q.]b.K..Ǧ.ľľ..ľľľ...ľľľḢ.ľnḟľľľǪ.Ḣ...#.n..Ǧ5',
+      '            Too.....q.....r...oooo....#...#]..www8....]b....Ǧ.....ľľ..q.nḟľľľnnľ.ľľľ..ľ.n#ǫ..ľǦ5',
+      '            5Qo[[[[[[[G[[[[[[[oooo....#...#]...ww...Q.]b....Ǧ.ľ.qľľ..ľ..nḢľľ...ḟ......ǫ.n#.ľ..Ǧ5',
+      '            T.#############################].L....r...]b....Ǧ.MMMMMM.MMMMMM.MMMMMM.MMMMMM#Ḣ+.ľǦ5',
+      '            5...l...l...l...l...l..#l...l..]..........]b..l.ǦľNḢľnrN.Nẅnľ.N.NľḢrnN.N...(N#ľJ..Ǧ5',
+      '            T.K...q...K...q...K..Q.#.....QQ[[[[[[[[[[[[b....Ǧ.NqL.ľN.Nľ.ẅnN.NqL.ľN.N(...N#...ľǦ5',
+      '            bbbbbbbbbbbbbbbbbbbbbbbXbbbbbbbbbbbbbbbbbbbb....Ǧ.Nn.qrN.NrnľẅN.NrnḟľN.N....N#Ḣǫ..Ǧ5',
+      '            5.K.....l..q....l..K...#5ľ.n..q.ľ...n.q..ľ.5....Ǧ.MMMMMM.MMMMMM.MMMMMM.MMMMMM#nḟľ.Ǧ5',
+      '            5###############################################G#############################.ľľ.Ǧ5',
+      '            5....q..l....q..l..K....5..K.....l....l..K......Ǧ...n.ǫ..ľľľn..#.ǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǦ5',
+      '            5[[[G[[[[[[[G[[[[[[[G[[[5.....q.......q.........Ǧnnn+ľJḟnǪ.ǫḢǪ.#ľǦnľľ.ľ.......ľ...Ǧ5',
+      '            5]....K].......].......]5.K...............K.....Ǧ..ľ.ľľn....ľ..#ľǦ....Oľ.....ľ....Ǧ5',
+      '            5]l....].......]..O....]5......l....l........K..Ǧ.ľ..qľ...n....#ľǦľ..J...JJ..nľJn.Ǧ5',
+      '            5].....]...r...].......]5..q.............q......Ǧ....q...Ḣ...q.#ľǦľľ.Jľ.ľľľ.n..ľ..Ǧ5',
+      '            5]q....].......].....O.]5K......K....K....K....qǦ..Jľľ.ḟľ....Jľ#.Ǧ.ľľ....ľ....ľ.ľnǦ5',
+      '            5].....].Ƨ...rƧ].......]5....l........l.........Ǧ.qḢ.q..Ǫľľ.n..#ľǦ..J...ľJ..ľJJ...Ǧ5',
+      '            5].K...].......].......]5.......................Ǧ...ľ.Ḣľľľľ.ľľn##G.ľľ....ľľ...O...Ǧ5',
+      '            5]....q]..Ʃ....]...r...]5.q..K...l....K..q....l.Ǧqn...ľ.......ľḟqǦ....ľľ..ľ..ľ....Ǧ5',
+      '            5]....l].......].......]5......q.....q..........Ǧ..ľ.n.ľqľnnnnľnqǦ..ľ...Jľ.ľľ.ľ...Ǧ5',
+      '            5]..n..].......].......]5K...............K......Ǧľq.ľqnnľľľ..ľ.ľľǦ.....ľľľnnľľľ..ľǦ5',
+      '            5[[[[[[[[[[[[[[[[[[[[[[[5QQ.K..QQ...QQ..K.Q.....ǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧ5',
       '            555555555555555555555555555555555555555555555555555555555555555555555555555555555555',
 ];
 
@@ -1099,27 +1042,45 @@ const PARK_PENS = [
       { id: 'flamingos', name: tr('Flamingos', 'Flamingos'), species: ['flamingo'], netRoof: true, gate: 'net', world: 'park', unlock: 'flamingo', seed: { tx: 27, ty: 50 }, slots: [6, 9], upgrade: tr('Großer See mit Springbrunnen', 'Big lake with a fountain'), basic: [[30, 52, 'w'], [28, 51, ':'], [28, 52, '<'], [28, 53, '.'], [32, 51, '.'], [32, 52, '.'], [32, 53, '.'], [29, 50, '.'], [29, 54, '.'], [30, 50, '.'], [30, 54, '.'], [31, 50, '.'], [31, 54, '.'], [27, 49, '.'], [33, 49, '.'], [27, 55, '.'], [33, 55, '.']] },
       // Pfauen haben kein Gehege: sie laufen frei im Tierpark herum (höchstens 8, kein Ausbau)
       { id: 'peacocks', name: tr('Pfauen', 'Peacocks'), species: ['peacock'], world: 'asia', free: true, slots: [8, 8], section: 'park3' },
-      { id: 'butterflies', name: tr('Schmetterlinge', 'Butterflies'), species: ['butterfly'], world: 'meadow', free: true, slots: [10, 10], section: 'park' }, // flattern frei durch den Park
-      { id: 'orangutans', name: tr('Orang-Utan-Gehege', 'Orangutan Enclosure'), species: ['orangutan'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 20, ty: 77 }, slots: [3, 5], upgrade: tr('Hängematte mit Schlafnest', 'Hammock with a sleeping nest'), basic: [[19, 77, ':']] },
+      { id: 'butterflies', name: tr('Schmetterlinge', 'Butterflies'), species: ['butterfly'], world: 'meadow', free: true, slots: [4, 4], section: 'park' }, // flattern frei durch den Park (die meisten in der Tropenhalle, hallbutterflies)
       { id: 'tigers', name: tr('Tigergehege', 'Tiger Enclosure'), species: ['tiger'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 49, ty: 78 }, slots: [3, 5], upgrade: tr('Badebecken mit Spielball', 'Pool with a play ball'), basic: [[47, 77, ':'], [48, 77, '<'], [47, 78, '.'], [48, 78, '.'], [46, 77, '.'], [48, 76, '.'], [49, 77, '.']] },
       { id: 'pandas', name: tr('Pandagehege', 'Panda Enclosure'), species: ['panda', 'redpanda'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 48, ty: 66 }, quota: { panda: [2, 4], redpanda: [3, 5] }, upgrade: tr('Reifenschaukel und Spielball', 'Tire swing and play ball'), basic: [[49, 66, ':'], [46, 65, '<']] }, // rote Pandas wohnen mit im (verbreiterten) Gehege
-      { id: 'macaques', name: tr('Affenquelle', 'Monkey Spring'), species: ['macaque'], netRoof: true, gate: 'net', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 19, ty: 64 }, slots: [4, 6], upgrade: tr('Großer Badesee', 'Big bathing lake'), basic: [[20, 65, ':'], [20, 66, '<'], [17, 65, '.'], [19, 67, '.']] },
-      // Dschungel (rechts neben dem Bambuswald): Gehege links, rechts das Reptilienhaus
-      { id: 'howlers', name: tr('Affen-Gehege', 'Monkey Enclosure'), species: ['howler'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 69, ty: 64 }, slots: [7, 13], upgrade: tr('Größeres Gehege mit zwei Urwaldbäumen', 'Bigger enclosure with two jungle trees'), basic: [[71, 61, ']'], [71, 62, ']'], [71, 63, ']'], [71, 64, ']'], [71, 65, ']'], [71, 66, ']'], [71, 67, ']'], [71, 68, ']'], [74, 66, ':']] }, // Brüllaffen (die Gibbons sind ihre seltene Variante und zählen mit; die Plätze waren früher 4/7 + 3/6); vor dem Ausbau Innenzaun in Spalte 71
-      // große Voliere mit vielen Sitzplätzen (Urwaldbäume J, Sitzstangen +): die Aras sitzen nur dort und fliegen hin und her
-      { id: 'macaws', name: tr('Ara- und Tukan-Voliere', 'Macaw and Toucan Aviary'), species: ['macaw', 'toucan'], netRoof: true, gate: 'net', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 66, ty: 77 }, quota: { macaw: [4, 9], toucan: [3, 6] }, upgrade: tr('Größere Voliere mit Urwaldbaum und mehr Sitzstangen', 'Bigger aviary with a jungle tree and more perches'), basic: [[71, 75, ';'], [71, 76, ';'], [71, 77, ';'], [71, 78, ';'], [71, 79, ';'], [71, 80, ';'], [74, 78, ':'], [75, 76, ':'], [73, 79, ':']] }, // vor dem Ausbau Innennetz in Spalte 71
-      { id: 'anteaters', name: tr('Ameisenbär-Gehege', 'Anteater Enclosure'), species: ['anteater'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 86, ty: 77 }, slots: [4, 6], upgrade: tr('Größeres Gehege mit zweitem Ameisenbaum', 'Bigger enclosure with a second ant tree'), basic: [[89, 75, ']'], [89, 76, ']'], [89, 77, ']'], [89, 78, ']'], [89, 79, ']'], [89, 80, ']'], [92, 78, '.']] }, // rechts neben der Ara-Voliere; frisst Ameisen an den Urwaldbäumen; vor dem Ausbau Innenzaun in Spalte 89
-      { id: 'jaguars', name: tr('Jaguar-Gehege', 'Jaguar Enclosure'), species: ['jaguar'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 61, ty: 91 }, slots: [2, 4], upgrade: tr('Größeres Gehege mit mehr Kletterbäumen', 'Bigger enclosure with more climbing trees'), basic: [[66, 87, ']'], [66, 88, ']'], [66, 89, ']'], [66, 90, ']'], [66, 91, ']'], [66, 92, ']'], [66, 93, ']'], [66, 94, ']'], [66, 95, ']']] }, // unten links im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 66
-      { id: 'gorillas', name: tr('Gorilla-Gehege', 'Gorilla Enclosure'), species: ['gorilla'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 81, ty: 91 }, slots: [3, 5], upgrade: tr('Größeres Gehege mit Kletterbäumen und Baumstämmen', 'Bigger enclosure with climbing trees and logs'), basic: [[87, 87, ']'], [87, 88, ']'], [87, 89, ']'], [87, 90, ']'], [87, 91, ']'], [87, 92, ']'], [87, 93, ']'], [87, 94, ']'], [87, 95, ']']] }, // unten rechts im Dschungel-Teil; vor dem Ausbau Innenzaun in Spalte 87
-      // Tapire und Okapis teilen sich ein Gehege unten links neben dem Jaguar (Zeilen 83 bis 97): der Tapir badet im Teich
-      // (wie das Nilpferd), das Okapi läuft zwischen den Urwaldbäumen. Vor dem Ausbau ist der Teich kleiner und es fehlt ein Baum
-      { id: 'tapirs', name: tr('Tapir- und Okapi-Gehege', 'Tapir and Okapi Enclosure'), species: ['tapir', 'okapi'], gate: 'tall', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 47, ty: 89 }, quota: { tapir: [3, 5], okapi: [3, 5] }, upgrade: tr('Größerer Badeteich und ein zweiter Urwaldbaum', 'Bigger bathing pond and a second jungle tree'), basic: [[44, 91, '.'], [44, 92, '.'], [45, 92, '.'], [50, 92, '.']] },
+      // Affeninsel (siehe docs/plan-bambuswald.md): alle Affen leben zusammen auf einer Insel im Koi-Teich (Wassergraben statt
+      // Zaun, moat). Nur die Südseite ist Land mit Zaun und Tor (dort Streicheln, Füttern, Tierfreunde). Ein Steg mit
+      // Glaswänden führt über die Brücke mitten auf die Insel in den Glaspavillon, aus dem die Besucher ringsum zuschauen.
+      // zones: Lieblingsorte (Makaken an der heißen Quelle, Orang-Utans bei den Urwaldbäumen, Gorillas im Süden)
+      { id: 'monkeys', name: tr('Affeninsel', 'Monkey Island'), species: ['macaque', 'orangutan', 'howler', 'gorilla'], moat: true, gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 16, ty: 62 },
+        quota: { macaque: [6, 6], orangutan: [5, 5], howler: [13, 13], gorilla: [5, 5] }, // (Gibbons zählen zu den Brüllaffen)
+        zones: { macaque: { tx: 17, ty: 64, r: 4 }, orangutan: { tx: 26, ty: 74, r: 5 }, gorilla: { tx: 19, ty: 75, r: 5 } } },
+      // Tropenhalle (siehe docs/plan-dschungel.md): der ganze Dschungel-Teil ist eine große Glashalle mit Glasdach, voller
+      // Dschungelpflanzen. Durch die beiden Eingänge mit Lamellenvorhang (gate 'curtain') gehen auch die Besucher, auf dem
+      // Holzsteg (Weg der Bodenzone) durch die Halle. Aras, Tukane, Ameisenbären, Tapire, Okapis und eine kleine Gruppe
+      // Brüllaffen leben frei darin (open, wie im Wildpark). canopy: diese Arten bleiben oben in den Urwaldbäumen (die
+      // Brüllaffen, eine zweite Gruppe neben der auf der Affeninsel). zones: Lieblingsorte (Tapire am Teich unter dem
+      // Wasserfall, Okapis oben links, Ameisenbären unten links). mist: hier läuft der Sprühnebel (siehe JungleHall.js)
+      { id: 'junglehall', name: tr('Tropenhalle', 'Tropical Hall'), species: ['macaw', 'toucan', 'anteater', 'tapir', 'okapi', 'howler'],
+        open: true, visitors: true, gate: 'curtain', gateTiles: [{ tx: 60, ty: 71 }, { tx: 60, ty: 72 }, { tx: 60, ty: 84 }], canopy: ['howler'],
+        toysAt: [{ tx: 64, ty: 89 }, { tx: 70, ty: 93 }, { tx: 78, ty: 74 }, { tx: 83, ty: 71 }, { tx: 74, ty: 68 }], // siehe PEN_TOYS
+        zones: { tapir: { tx: 80, ty: 69, r: 5 }, okapi: { tx: 65, ty: 66, r: 6 }, anteater: { tx: 66, ty: 90, r: 7 } },
+        world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 63, ty: 75 },
+        quota: { macaw: [9, 9], toucan: [6, 6], anteater: [5, 5], tapir: [4, 4], okapi: [4, 4], howler: [5, 5] } },
+      // Jaguar hinter Glas unten rechts in der Halle (Glastür am Steg)
+      { id: 'jaguars', name: tr('Jaguar-Gehege', 'Jaguar Enclosure'), species: ['jaguar'], gate: 'glass', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 86, ty: 90 }, slots: [4, 4] },
+      // Terrarien und Piranha-Becken am unteren Steg (Glaskästen wie früher im Reptilienhaus, buildings beim Abschnitt)
+      { id: 'snakes', name: tr('Schlangen-Terrarium', 'Snake Terrarium'), species: ['snake'], world: 'jungle', seed: { tx: 65, ty: 81 }, slots: [4, 4], signAt: { tx: 64.5, ty: 83.6 }, signOnGlass: true },
+      { id: 'tarantulas', name: tr('Vogelspinnen-Terrarium', 'Tarantula Terrarium'), species: ['tarantula'], world: 'jungle', seed: { tx: 71, ty: 81 }, slots: [4, 4], signAt: { tx: 71.5, ty: 83.6 }, signOnGlass: true },
+      { id: 'iguanas', name: tr('Leguan-Terrarium', 'Iguana Terrarium'), species: ['iguana'], world: 'jungle', seed: { tx: 79, ty: 81 }, slots: [3, 3], signAt: { tx: 78.5, ty: 83.6 }, signOnGlass: true },
+      { id: 'piranhas', name: tr('Piranha-Becken', 'Piranha Tank'), species: ['piranha'], world: 'jungle', seed: { tx: 85, ty: 81 }, slots: [6, 6], signAt: { tx: 85.5, ty: 83.6 }, signOnGlass: true },
+      // Schmetterlinge in der Tropenhalle (2/3 aller Schmetterlinge, der Rest im Zentrum): frei, aber nur in der Halle
+      // (within), sitzen gern auf den Obsttellern
+      { id: 'hallbutterflies', name: tr('Schmetterlinge', 'Butterflies'), species: ['butterfly'], world: 'meadow', free: true, slots: [8, 8], section: 'park3', within: { tx0: 61, tx1: 93, ty0: 61, ty1: 95 } },
       // Bambuswald, unten links (Zeilen 83 bis 97, am Weg zum Dschungel): Tanuki-Garten mit Steinlaternen, Yak-Weide mit
       // Gebetsfahnen und Stupa, Schneeleoparden-Felsen mit Sonnenfelsen (im Tierpark ohne Schnee: alle auf Wiese)
       { id: 'tanukis', name: tr('Tanuki-Garten', 'Tanuki Garden'), species: ['tanuki'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 16, ty: 90 }, slots: [3, 5], upgrade: tr('Mehr Steinlaternen und ein Kirschbaum', 'More stone lanterns and a cherry tree'), basic: [[16, 89, ':'], [17, 91, '<'], [15, 92, '.']] },
       { id: 'yaks', name: tr('Yak-Weide', 'Yak Pasture'), species: ['yak'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 23, ty: 90 }, slots: [4, 5], upgrade: tr('Eine kleine Stupa', 'A small stupa'), basic: [[22, 93, ':'], [24, 94, '<']] },
       { id: 'snowleopards', name: tr('Schneeleoparden-Felsen', 'Snow Leopard Rocks'), species: ['snowleopard'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 31, ty: 91 }, slots: [2, 3], upgrade: tr('Ein zweiter Sonnenfelsen', 'A second sunning rock'), basic: [[33, 90, ':'], [32, 91, '<']] },
-      { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 30, ty: 69 }, species: ['koi'], pond: true, signAt: { tx: 33, ty: 75 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9], upgrade: tr('Steinlaternen und Kirschbäume', 'Stone lanterns and cherry trees'), basic: [[29, 68, ':'], [40, 71, '<'], [36, 74, '.'], [32, 65, '.']] },
+      // Koi-Teich: das Wasser rund um die Affeninsel samt der Brücke zum Glaspavillon (dort füttern die Besucher die Koi)
+      { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 31, ty: 65 }, species: ['koi'], pond: true, signAt: { tx: 34, ty: 70 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9] },
 ];
 
 // freischaltbar: Gehege, die mit dem ersten Tier ihrer Art entstehen (je im Abschnitt, in dem ihre Kacheln liegen)
@@ -1279,37 +1240,58 @@ LEVELS.park2 = parkSection('park2', {
   ],
 });
 
-// Bambuswald und rechts daneben der Dschungel mit dem Reptilienhaus. Oben geht es zurück ins Zentrum
+// Bambuswald und rechts daneben die Tropenhalle (Dschungel). Oben geht es zurück ins Zentrum
 LEVELS.park3 = parkSection('park3', {
-  x0: 12, x1: 95, y0: 59, y1: 97, // unten im Dschungel-Teil: Tapir-/Okapi-, Jaguar- und Gorilla-Gehege (Zeilen 83 bis 97)
+  x0: 12, x1: 95, y0: 59, y1: 97, // rechts die Tropenhalle (Spalten 60 bis 94, Zeilen 60 bis 96), unten links ein Kirschgarten
   edits: [
     [12, 59, edgeRow(12, '5'.repeat(44), [38])],
     [35, 82, '#'], // Weg vom Bambuswald hinunter zu Tanuki-, Yak- und Schneeleoparden-Gehege
   ],
   name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
-  car: { tx: 38.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26 },
-  start: { tx: 38, ty: 60 },
-  scooterSpot: { tx: 33, ty: 78 }, // E-Roller: im Gras links an der Kreuzung beim Auto
-  legacySlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // an der Hauptkreuzung: im Kirschgarten und neben dem Auto
+  // mit dem Auto (Schnellreise) und beim Laden kommt man am Teehaus an, auf dem Weg neben der Terrasse
+  car: { tx: 37.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26, arrive: { tx: 37, ty: 65 } }, // das Auto steht im Garten am Weg zum Teich
+  start: { tx: 37, ty: 65 },
+  scooterSpot: { tx: 34, ty: 77 }, // E-Roller: im Gras neben dem Auto
+  legacySlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // (frühere Bauplätze: im Garten am Weg)
   grounds: [
     { area: { tx0: 12, tx1: 35, ty0: 83, ty1: 97 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Tanuki-, Yak- und Schneeleoparden-Gehege
-    { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Dschungel-Bereich (rechts neben Asien)
-    { area: { tx0: 56, tx1: 59, ty0: 72, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] },
-    { area: { tx0: 36, tx1: 55, ty0: 83, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'] }, // Tapir- und Okapi-Gehege
+    // Tropenhalle: Dschungelboden, der Weg ist ein Holzsteg, klares Teichwasser (wie der Koi-Teich)
+    { area: { tx0: 60, tx1: 95, ty0: 59, ty1: 97 }, ground: ['jgrass0', 'jgrass1', 'jgrass2'], path: 'planks_jungle', water: ['asia_water0', 'asia_water0', 'asia_water1'] },
     { area: { tx0: 12, tx1: 59, ty0: 59, ty1: 82 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Asien-Bereich (mit dem breiteren Pandagehege)
+    { area: { tx0: 36, tx1: 59, ty0: 83, ty1: 97 }, ground: ['agrass0', 'agrass1', 'agrass2'] }, // Kirschgarten (früher Tapir- und Okapi-Gehege) und der Rasen vor der Halle
   ],
-  prayerFlags: [[{ tx: 21, ty: 87 }, { tx: 26, ty: 87 }]], // Gebetsfahnen über der Yak-Weide
+  prayerFlags: [[{ tx: 21, ty: 91 }, { tx: 26, ty: 91 }]], // Gebetsfahnen über der Yak-Weide (mitten im Gehege, nicht vor dem Schild)
+  // große Bilder über mehreren Kacheln (die Kacheln sind V): Teehaus am Teich mit Blick auf die Affeninsel
+  // (glow: Lampions, die beim Laternenabend leuchten; Pixel über dem Fußpunkt)
+  props: [{ key: 'teahouse', tx: 34, ty: 62, size: 3, originY: 106 / 154, glow: [{ dx: -104, dy: -41 }, { dx: 104, dy: -45 }] }], // Bild von Andre (tools/teahouse-sprites.py)
+  // Teehaus (siehe docs/plan-bambuswald.md): Besucher holen sich Tee und trinken ihn an einem der Stehtische (ţ)
+  teaHouse: { tx: 34, ty: 62, size: 3, tables: [{ tx: 35, ty: 66 }, { tx: 37, ty: 67 }, { tx: 35, ty: 68 }] },
+  // Seilbrücke der roten Pandas: vom Kletterbaum im Pandagehege über den Weg zum Kletterbaum am Zen-Garten
+  ropeBridge: { pen: 'pandas', from: { tx: 44, ty: 66 }, to: { tx: 39, ty: 66 } },
+  lanterns: true, // hier läuft der Laternenabend (Event am Hauptrechner)
+  // Tropenhalle (siehe docs/plan-dschungel.md, JungleHall.js): Fläche unter dem Glasdach (samt Wänden); dort laufen
+  // Sprühnebel und Glasdach-Schatten
+  jungleHall: { tx0: 60, tx1: 94, ty0: 60, ty1: 96 },
+  ambientZone: { sound: 'ambient_jungle', area: { tx0: 60, tx1: 94, ty0: 60, ty1: 96 }, fade: 3 }, // in der Halle: Dschungel-Geräusche
+  // Glaskästen am unteren Steg der Halle (wie früher im Reptilienhaus): Schlangen, Vogelspinnen (auf einem Sockel, raise wie
+  // RAISE in tools/terrarium-glass.py), Leguane, Piranhas (Wassertank)
+  buildings: [
+    { tx0: 62, ty0: 79, tx1: 67, ty1: 83, style: 'terrarium', noRoof: true },
+    { tx0: 69, ty0: 79, tx1: 74, ty1: 83, style: 'terrarium_raised', raise: 28, noRoof: true },
+    { tx0: 76, ty0: 79, tx1: 81, ty1: 83, style: 'terrarium', noRoof: true },
+    { tx0: 83, ty0: 79, tx1: 88, ty1: 83, style: 'tank', noRoof: true, noDeco: true },
+  ],
+  // Torbogen mit Schild über dem Glasgang am Ende der Brücke (Eingang zum Glaspavillon auf der Affeninsel)
+  // und über dem Haupteingang der Tropenhalle (zwei Torkacheln, Lamellenvorhang)
+  arches: [{ key: 'wildpark_arch', tx: 29.5, ty: 69, label: tr('Affeninsel', 'Monkey Island') }, { key: 'wildpark_arch', tx: 60, ty: 71.5, label: tr('Tropenhalle', 'Tropical Hall') }],
   sections: [
     // kleiner Wegweiser im Bambuswald an der Abzweigung zum Dschungel (at: nur an diesem Pfosten)
-    { label: tr('Dschungel', 'Jungle'), tx: 70, ty: 72, at: [43, 71] },
+    { label: tr('Tropenhalle', 'Tropical Hall'), tx: 60, ty: 72, at: [43, 71] },
     { label: tr('Zentrum', 'Center'), tx: 38, ty: 59, at: [43, 71] },
-    // kleiner Wegweiser beim Reptilienhaus: zurück zum Zentrum
-    { label: tr('Zentrum', 'Center'), tx: 38, ty: 59, at: [85, 73] },
   ],
   exits: [
     { tx: 26, ty: 0, to: 'park', arrive: { tx: 38, ty: 37 }, label: tr('Zentrum', 'Center') },
-    { tx: 74, ty: 11, to: 'reptiles', arrive: { tx: 8, ty: 16 }, label: tr('Reptilienhaus', 'Reptile House') }, // Tür in der Fassade im Dschungel-Bereich
   ],
 });
 

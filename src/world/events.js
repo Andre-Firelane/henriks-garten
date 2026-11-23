@@ -79,6 +79,14 @@ export const EVENTS = [
     duration: 5 * MINUTE,
     cooldown: 5 * MINUTE,
   },
+  {
+    id: 'lanterns',
+    name: tr('Laternenabend', 'Lantern Evening'),
+    text: tr('5 Minuten lang wird es im Bambuswald im Tierpark Abend: Laternen und Teehaus leuchten, Glühwürmchen schweben, die Tanukis werden munter. Die Besucher geben dort mehr Herzen.', 'For 5 minutes it is evening in the zoo’s bamboo forest: lanterns and the tea house glow, fireflies drift, the tanukis wake up. Visitors there give more hearts.'),
+    cost: 50,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
 ];
 
 // Event "Seltene Tiere": so oft ist ein neues wildes Tier eine seltene Variante (sonst etwa 10 %)
@@ -93,6 +101,7 @@ const EVENT_AREAS = {
   migration: ['savanna'],
   wolves: ['forest'],
   fireflies: ['asia'],
+  lanterns: ['park3'],
 };
 
 // laufende Events in einem Gebiet: [{ id, name, left }]

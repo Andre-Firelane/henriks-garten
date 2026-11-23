@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { TILE_W, TILE_H, tileToWorld, worldToTile } from '../world/iso.js';
-import { raiseAt,
+import { raiseAt, raisedEdgeFloor,
   LEVEL,
   LEVEL_ID,
   MAP_W,
@@ -16,6 +16,9 @@ import { raiseAt,
   TIGER_ZONE,
   NEAR_PATH,
   NEAR_PATH_TILES,
+  inFreeArea,
+  freeAreaTiles,
+  inJungleHall,
   JUNGLE_TREES,
   HOT_SPRING_TILES,
   setLevel,
@@ -125,6 +128,8 @@ import Critter, { randomCritter } from '../animals/Critter.js';
 import Macaw from '../animals/Macaw.js';
 import BananaTool from '../tools/BananaTool.js';
 import FireflyEvening, { glowTexture } from '../world/Fireflies.js';
+import JungleHall from '../world/JungleHall.js';
+import RopeBridge from '../world/RopeBridge.js';
 import Weather from '../world/Weather.js';
 import { SEASON_INFO, SEASON_LEVELS, firstSeason, seasonState, skipSeason } from '../world/season.js';
 import Thicket from '../world/Thicket.js';
@@ -149,7 +154,7 @@ import DrumTool from '../tools/DrumTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, penScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import LuckWorld, { rarePromiseHere } from '../world/LuckWorld.js';
@@ -161,7 +166,7 @@ import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen, openLuckPicker } from '../ui/luckPicker.js';
 import { MAX_BOOTHS, boothCount, boothKnown, orderBooth, storedBooths } from '../world/shops.js';
 import { activeId as storyActiveId } from '../story/story.js';
-import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, slotsIn, sourceDef, wheelSlot } from '../world/shops.js';
+import { AWAY_BUYS_PER_VISITOR_MINUTE, AWAY_RIDES_PER_VISITOR_MINUTE, SHOPS, SHOP_CHANCE, TEA, TEA_CHANCE, WHEEL, allSlots, builtOn, hasIceShop, hasShop, hasWheel, shopDef, shopsIn, slotsIn, sourceDef, wheelSlot } from '../world/shops.js';
 import FerrisWheel from '../world/FerrisWheel.js';
 import { PEN_TOYS, toysText } from '../world/toys.js';
 import Crocodile from '../animals/Crocodile.js';
@@ -410,10 +415,15 @@ const penCapFor = (species) => {
 // alle Gehege des Tierparks (aus allen Abschnitten, wie in levels.js beschrieben), samt Abschnitt (level); noch nicht
 // gebaute fehlen
 const parkPens = () => PARK_LEVELS.flatMap((level) => LEVELS[level].enclosures.filter((e) => !e.unlock || game.unlocked.includes(e.unlock)).map((e) => ({ ...e, level })));
-// das Gehege im Tierpark, in das ein Tier dieser Art zieht: bevorzugt das seiner Herkunftswelt
-const parkPenFor = (species, origin) => {
+// Plätze für diese Art in einem Gehege (in gemeinsamen Gehegen mit Kontingent nur ihre)
+const capFor = (e, species) => penQuotas(e).find((q) => q.key === (e.quota ? quotaKey(species) : null))?.cap ?? Infinity;
+// das Gehege im Tierpark, in das ein Tier dieser Art zieht: bevorzugt das seiner Herkunftswelt. Gibt es mehrere (z. B.
+// Brüllaffen auf der Affeninsel und in der Tropenhalle, Schmetterlinge im Zentrum und in der Halle), zuerst eins mit
+// freiem Platz. count(level): so viele Tiere dieser Art leben schon in diesem Abschnitt (ohne count: Platz egal)
+const parkPenFor = (species, origin, count = null) => {
   const pens = parkPens().filter((e) => accepts(e, species));
-  return pens.find((e) => e.world === origin) ?? pens[0] ?? null;
+  const room = (e) => !count || pens.length < 2 || count(e.level) < pens.filter((p) => p.level === e.level).reduce((n, p) => n + capFor(p, species), 0);
+  return pens.find((e) => room(e) && e.world === origin) ?? pens.find(room) ?? pens.find((e) => e.world === origin) ?? pens[0] ?? null;
 };
 // Gibt es im Tierpark (samt Aquarium und Reptilienhaus) gar kein Gehege für diese Art? (z. B. Pinguine, solange es dort
 // keine Eiswelt gibt): dann wird sie beim Ankommen gleich im Naturreservat ausgewildert. Gehege, die erst beim ersten
@@ -637,9 +647,9 @@ const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt de
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const BABY_LEVELS = [...PARK_LEVELS, 'aquarium'];// dort gibt es beim Tierbaby-Event Nachwuchs
 const AQUA = ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'];
-const REPTILES = ['snake', 'tarantula', 'piranha', 'iguana']; // ziehen ins Reptilienhaus (in dessen Terrarien bzw. ins Piranha-Becken)
-// Häuser mit eigener Halle (eigenes Level): welche Tierarten dort in die Becken bzw. Terrarien ziehen
-const HOUSES = { aquarium: AQUA, reptiles: REPTILES };
+// Häuser mit eigener Halle (eigenes Level): welche Tierarten dort in die Becken ziehen (Schlangen, Vogelspinnen, Leguane
+// und Piranhas wohnen seit der Tropenhalle in park3, siehe docs/plan-dschungel.md)
+const HOUSES = { aquarium: AQUA };
 const houseOf = (species) => Object.keys(HOUSES).find((h) => HOUSES[h].includes(species)) ?? null;
 const STARTLE_CHANCE = 0.1; // so wahrscheinlich schreckt beim Wegschlagen eines Dickichts eine Schlange oder Vogelspinne auf
 const MAX_RAYS = 2; // so viele Rochen gleiten höchstens gleichzeitig durchs Riff
@@ -678,7 +688,7 @@ const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_sav
 const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
 // Tiere, die nur während eines Events kommen: Event und Welten
 const EVENT_SPECIES = { flamingo: ['flamingo', FLAMINGO_WORLDS], jellyfish: ['jellyfish', ['reef']], wolf: ['wolves', ['forest']], gnu: ['migration', ['savanna']], redpanda: ['fireflies', ['asia']] };
-const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨' };
+const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨', lanterns: '🏮' };
 // lebt diese Art in diesem Level (bzw. dieser Wetterphase eines Levels)?
 const livesIn = (l, s) => !!spawnWeights(l)[s] || (s === 'heron' && !!l.herons) || (s === 'vulture' && !!l.vultures) || (s === 'hyena' && !!l.hyenas) || (s === 'iguana' && !!l.waterfallSun) || (s === 'gorilla' && !!l.gorillas) || (s === 'beaver' && !!l.beavers) || (s === 'yak' && !!l.yaks) || ((s === 'snake' || s === 'tarantula') && l.name === LEVELS.jungle.name); // im Dickicht des Dschungels
 // Welten, in denen es eine Tierart gibt: [{ level, extra }]; extra = { icon, name }, wenn nur bei einem Wetter oder Event
@@ -1023,6 +1033,8 @@ export default class GardenScene extends Phaser.Scene {
           }
           if (!raiseAt(tx, ty)) shore(x, y, tx, ty, groundAt(tx, ty));
         }
+        const edge = raisedEdgeFloor(tx, ty); // Terrarium auf einem Sockel: Boden auch zwischen erhöhtem Boden und Vorderwand
+        if (edge) ground.push([x, y - edge.raise, edge.key]);
 
         // Biberburg: ein weicher dunkler Erdfleck flach auf dem Gras darunter
         if (charAt(tx, ty) === 'Ƅ') this.add.image(x, y - SOIL_UP, 'forest_dark_soil').setDepth(SOIL_DEPTH);
@@ -1135,11 +1147,12 @@ export default class GardenScene extends Phaser.Scene {
       sprites: e.gates.map(({ tx, ty, vertical }, i) => {
         const { x, y } = tileToWorld(tx, ty);
         let style = e.gate && e.gate !== 'wood' ? `gate_${e.gate}_` : 'gate_';
-        if (e.gate === 'glass' && i === Math.floor(e.gates.length / 2)) style = 'gate_glassflap_'; // Katzenklappe in der Mitte
+        if (e.gate === 'glass' && e.petting && i === Math.floor(e.gates.length / 2)) style = 'gate_glassflap_'; // Katzenklappe in der Mitte (Katzenhaus)
         const img = this.add.image(x, y, style + (vertical ? 'y' : 'x'));
         // Kachelmitte liegt 20 Pixel über dem unteren Bildrand (bei hohen Toren wie dem Wildzaun-Tor ebenso)
         return img.setOrigin(0.5, (img.height - 20) / img.height).setDepth(y);
       }),
+      enclosure: e,
       open: false,
       closeTimer: 0,
     }));
@@ -1217,16 +1230,21 @@ export default class GardenScene extends Phaser.Scene {
       // mitten an einem Zaun (nicht neben einem Tor, z. B. die Schilder am Fußweg der Safari oder das zweite Schild eines
       // gemeinsamen Geheges): vor dem nächsten Zaunpfosten zeichnen, sonst verdeckt er die Zahl darunter
       if (onFence && (extra || fence || e.signAt)) front = Math.max(front, y + TILE_H / 2 + 2);
+      // eigene Tiefe ohne das Tor davor: gilt, solange das Tor offen (unsichtbar) ist – dann liegt die Spielfigur in der
+      // Toröffnung vor dem Schild statt dahinter (geschlossen muss das Schild vor dem Tor liegen, das es sonst anschneidet)
+      const own = onFence ? y + TILE_H / 2 + 2 : y + 2;
+      const parts = [];
       if (!onFence && !house && !e.signOnGlass) {
-        this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
+        parts.push(this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1));
       }
-      this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front);
+      parts.push(this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front));
       // das Bild der Tierart auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
       const list = only ?? e.species ?? [];
       const step = SIGN_INNER_W / list.length;
       list.forEach((s, i) => {
         const icon = this.add.image(sx - SIGN_INNER_W / 2 + step * (i + 0.5), sy - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
         icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
+        parts.push(icon);
       });
       // Plätze dieser Tierart: "4 / 6", voll mit Stern (teilen sich mehrere Arten die Plätze, steht auf jedem Schild die Summe)
       const quotas = penQuotas(e);
@@ -1234,7 +1252,10 @@ export default class GardenScene extends Phaser.Scene {
       const counts = quota
         ? [{ key: quota.key, text: this.add.text(sx, sy + 2, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '8px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 0).setDepth(front + 0.2) }]
         : [];
-      return { x, y, enclosure: e, counts, only, name };
+      parts.push(...counts.map((c) => c.text));
+      // nur Schilder, die wegen eines Tors nach vorn gerückt sind (nicht im Dunkeln, an der Hauswand oder auf dem Dach)
+      const lift = !e.dark && !wall && !house && own < front ? { parts: parts.map((p) => [p, p.depth]), drop: own - front } : null;
+      return { x, y, enclosure: e, counts, only, name, lift };
     });
     this.updatePenSigns();
     this.wrongHomeTimer = 0;
@@ -1362,7 +1383,10 @@ export default class GardenScene extends Phaser.Scene {
         if (otherSeason(s)) continue;
         // pending: aus einem anderen Tierpark-Abschnitt hergeschickt, noch ohne Platz (siehe sendToSection): kommt unten ins Gehege
         const a = s.pending ? this.createAnimal(s.species, start.x, start.y, s.variant) : this.createAnimal(s.species, s.x, s.y, s.variant);
-        if (s.pending) a.origin = s.origin;
+        if (s.pending) {
+          a.origin = s.origin;
+          a.pendingPlace = true; // unten gleich ins passende Gehege (auch wenn der Ankunftsort selbst in einem liegt)
+        }
         a.skin = s.skin ?? null; // seltener Skin (Katze 2)
         a.uid = s.uid ?? null; // feste Nummer (benannte Tiere, siehe src/world/friends.js)
         a.penSince = s.since ?? 0;
@@ -1407,10 +1431,16 @@ export default class GardenScene extends Phaser.Scene {
 
     // Tiere im Gehege, die nicht (mehr) ganz in dessen Innenfläche stehen (z. B. nach einem Ausbau): neu hineinsetzen
     for (const a of this.animals) {
+      if (a.pendingPlace) {
+        delete a.pendingPlace;
+        const e = this.pickPen(ENCLOSURES.filter((f) => accepts(f, a.species)), a);
+        if (e) this.placeInPen(a, e, true);
+        continue;
+      }
       // freilaufende außerhalb ihres Bereichs (z. B. nach einer Änderung der Karte): neu verteilen
       if (a.enclosure?.free) {
         const { tx, ty } = worldToTile(a.x, a.y);
-        if (!NEAR_PATH.has(tx + ',' + ty)) this.placeInPen(a, a.enclosure, true);
+        if (!inFreeArea(a.enclosure, tx, ty)) this.placeInPen(a, a.enclosure, true);
         continue;
       }
       // (auch: Gehege, das diese Art nicht mehr aufnimmt – z. B. nach dem Zusammenlegen von Teichen und Volieren)
@@ -1418,7 +1448,7 @@ export default class GardenScene extends Phaser.Scene {
       // steckt es auf etwas Festem fest (z. B. eine Katze, die oben auf dem Kratzbaum gespeichert wurde)? Dann auf einen freien Platz
       const stuck = a.state === 'penned' && a.blocked === Animal.prototype.blocked && a.blocked(a.x, a.y);
       if (a.state !== 'penned' || (fits && !stuck && a.enclosureFullyAt(a.x, a.y) === a.enclosure)) continue;
-      const e = (fits && a.enclosure) || ENCLOSURES.find((f) => accepts(f, a.species) && f.world === a.origin) || ENCLOSURES.find((f) => accepts(f, a.species));
+      const e = (fits && a.enclosure) || this.pickPen(ENCLOSURES.filter((f) => accepts(f, a.species)), a);
       if (e) this.placeInPen(a, e, true);
     }
 
@@ -1588,6 +1618,9 @@ export default class GardenScene extends Phaser.Scene {
     this.startSteam();
     this.drawBridges();
     this.drawArches();
+    this.drawProps();
+    this.ropeBridge = LEVEL.ropeBridge ? new RopeBridge(this, LEVEL.ropeBridge) : null; // Seilbrücke der roten Pandas
+    this.jungleHall = LEVEL.jungleHall ? new JungleHall(this, LEVEL.jungleHall) : null; // Tropenhalle: Glasdach und Sprühnebel
 
     // ESC (oder der Menü-Knopf oben rechts) öffnet das Menü: speichern, zurück zum Startbildschirm
     this.input.keyboard.on('keydown-ESC', (e) => e?.timeStamp !== this.decor?.escAt && this.openGameMenu()); // (Esc im Setzen-Modus beendet nur ihn)
@@ -1771,10 +1804,10 @@ export default class GardenScene extends Phaser.Scene {
       (MAP_W + MAP_H) * (TILE_H / 2) + TILE_H * 4,
     );
     cam.startFollow(this.player.sprite, true, 0.12, 0.12);
-    // Unterwasserwelt, Eiswelt und Savanne: nicht auf ganze Pixel runden. Schwimmend ist Henrik langsamer (unter 1 Pixel
-    // pro Bild je Achse); Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten Pixel ein, das sieht wie
-    // Stottern aus (vor dem gleichmäßigen Schnee bzw. Sand besonders beim Laufen nach links und rechts zu sehen)
-    cam.roundPixels = !LEVEL.sea && !LEVEL.snow && biomeOf() !== 'savanna';
+    // Kamera nirgends auf ganze Pixel runden: Figur und Kamera rasten sonst zu verschiedenen Zeiten auf den nächsten
+    // Pixel ein, das sieht wie Stottern aus (besonders beim Laufen genau nach links und rechts; zuerst in Unterwasserwelt,
+    // Eiswelt und Savanne bemerkt, dann auch auf der Wiese und im Tierpark)
+    cam.roundPixels = false;
   }
 
   // Bogenbrücken: Bohlen als geschwungenes Band über dem Wasser, rote Geländer an beiden Seiten.
@@ -1865,14 +1898,17 @@ export default class GardenScene extends Phaser.Scene {
   // die Mitte der Toröffnung (bei zwei Torkacheln entlang ty also ty + 0.5 zwischen ihnen). Das Bild (tools/
   // wildpark-placeholders.py) hat seinen Fußpunkt ARCH_FOOT Pixel unter der Oberkante und eine leere schräge Tafel
   // ARCH_BOARD Pixel darüber; den Namen schreibt das Spiel darauf, schräg wie auf den Wegweisern (signLabel).
-  // Tiefe: wie der vordere Pfosten, also vor allem in der Toröffnung und dahinter, hinter allem davor.
+  // Tiefe: das Bild ist längs der Mitte geteilt. Die linke Hälfte (vorderer Pfosten) hat die Tiefe des vorderen Pfostens,
+  // die rechte (hinterer Pfosten) die des hinteren – sonst verdeckt der hintere Pfosten Figuren in der Toröffnung.
   drawArches() {
     for (const a of LEVEL.arches ?? []) {
       const { x, y } = tileToWorld(a.tx, a.ty);
-      const img = this.add.image(x, y, a.key);
-      img.setOrigin(0.5, ARCH_FOOT / ARCH_H);
       const depth = tileToWorld(a.tx, a.ty + 1).y;
-      img.setDepth(depth);
+      for (const [right, d] of [[0, depth], [1, tileToWorld(a.tx, a.ty - 1).y]]) {
+        const img = this.add.image(x, y, a.key).setOrigin(0.5, ARCH_FOOT / ARCH_H).setDepth(d);
+        const w = img.frame.width / 2;
+        img.setCrop(right * w, 0, w, img.frame.height);
+      }
       if (!a.label) continue;
       // so groß wie möglich, aber höchstens so breit wie die Tafel (waagrecht gemessen)
       let text = null;
@@ -1882,6 +1918,16 @@ export default class GardenScene extends Phaser.Scene {
         if (text.texture.customData.width <= ARCH_BOARD_W) break;
       }
       text.setPosition(x, y - ARCH_BOARD).setDepth(depth + 0.01);
+    }
+  }
+
+  // große Bilder über mehreren Kacheln (LEVEL.props, z. B. das Teehaus im Bambuswald): in der Mitte der Grundfläche,
+  // Tiefe der vordersten Kachel (die Kacheln selbst sind V: unsichtbar und fest)
+  drawProps() {
+    for (const p of LEVEL.props ?? []) {
+      const n = p.size ?? 1;
+      const { x, y } = tileToWorld(p.tx + (n - 1) / 2, p.ty + (n - 1) / 2);
+      this.add.image(x, y, p.key).setOrigin(0.5, p.originY).setDepth(tileToWorld(p.tx + n - 1, p.ty + n - 1).y);
     }
   }
 
@@ -2885,7 +2931,7 @@ export default class GardenScene extends Phaser.Scene {
         }
         continue;
       }
-      if (a.feed || a.petted) continue;
+      if (a.feed || a.petted || a.inCanopy?.()) continue; // (Brüllaffen oben in den Bäumen der Tropenhalle: bleiben oben)
       // im offenen Bereich (Streichelzoo) kommt es zu Henrik selbst, sonst an die Stelle am Zaun, die ihm am nächsten ist
       const inside = a.enclosure.tileSet.has(tx + ',' + ty);
       const spot = inside ? this.besidePlayer(a) : this.penSpotNear(a.enclosure, p);
@@ -2923,7 +2969,7 @@ export default class GardenScene extends Phaser.Scene {
     const p = this.player;
     const dist = (o) => Math.hypot(p.x - o.x, (p.y - o.y) * 2);
     let best = null;
-    for (const a of this.friendsHere()) if (dist(a) < FRIEND_PET_DIST && (!best || dist(a) < dist(best))) best = a;
+    for (const a of this.friendsHere()) if (!a.inCanopy?.() && dist(a) < FRIEND_PET_DIST && (!best || dist(a) < dist(best))) best = a; // (Brüllaffen oben in den Bäumen der Tropenhalle: nicht)
     if (best && this.shownSign && dist(this.shownSign) < dist(best)) return null;
     return best;
   }
@@ -3530,6 +3576,7 @@ export default class GardenScene extends Phaser.Scene {
     // für Mavis Event-Aufgabe (ganz am Ende): nicht der Eiswagen und nicht die Tierbabys aus ihrer eigenen Aufgabe
     if (!free && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true;
     this.mavi?.check();
+    if (id === 'lanterns') this.showToast(tr('🏮 Laternenabend im Bambuswald!', '🏮 Lantern Evening in the bamboo forest!'));
     if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf die Wiese kommen viele Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! Lots of cows, pigs and goats are coming to the meadow – catch them!'));
     if (id === 'rare') this.showToast(tr('✨ Seltene Tiere! 5 Minuten lang ist in den Welten jedes zweite neue Tier eine seltene Variante.', '✨ Rare Animals! For 5 minutes every second new animal in the worlds is a rare variant.'));
     if (id === 'flamingo') this.showToast(tr('🦩 Flamingo-Flug! In Wiese, Wald und Savanne fliegen jetzt Flamingos.', '🦩 Flamingo Flight! Flamingos are now flying over the meadow, forest and savanna.'));
@@ -3634,6 +3681,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // warum ein Event gerade nicht startbar ist (sonst null)
   eventBlocked(ev) {
+    if (ev.id === 'lanterns' && !isUnlocked('park3')) return tr('braucht den Bambuswald im Tierpark', 'needs the bamboo forest in the zoo');
     if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) {
       return tr('braucht 2 gleiche größere Tiere in einem Gehege', 'needs 2 matching grown-up animals in one enclosure');
     }
@@ -4872,6 +4920,23 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // bunte Futterflocken fliegen in einem Bogen aufs Wasser, dann kleine Ringe
+  // Besucher auf der Brücke über dem Koi-Teich (siehe VisitorCrowd.feedKoi): Futter aufs Wasser neben der Brücke streuen,
+  // die Koi im Teich in der Nähe kommen herbei und schnappen. Gibt zurück, ob es geklappt hat
+  visitorFeedKoi(v) {
+    const e = v.pen;
+    const water = FISHPOND_TILES.filter(({ tx, ty }) => enclosureAt(tx, ty) === e)
+      .map((t) => tileToWorld(t.tx, t.ty))
+      .map((w) => ({ ...w, d: Math.hypot(w.x - v.x, (w.y - v.y) * 2) }))
+      .sort((p, q) => p.d - q.d)[0];
+    if (!water || water.d > KOI_FEED_DIST * 1.6) return false;
+    const spot = { x: water.x, y: water.y };
+    const koi = this.animals.filter((a) => a.species === 'koi' && a.state === 'penned' && a.enclosure === e && Math.hypot(a.x - spot.x, a.y - spot.y) < KOI_CALL_DIST * 1.5);
+    if (!koi.length) return false;
+    this.scatterFood(v, spot);
+    for (const a of koi) a.call(spot);
+    return true;
+  }
+
   scatterFood(from, spot) {
     const colors = [0xf08a2c, 0xe8483f, 0xf2c84a];
     for (let i = 0; i < 12; i++) {
@@ -5505,7 +5570,7 @@ export default class GardenScene extends Phaser.Scene {
     const fullBefore = new Set(ENCLOSURES.filter((e) => isFull(this.animals, e)));
     for (const a of [...this.followers]) {
       const fitting = ENCLOSURES.filter((e) => accepts(e, a.species));
-      const e = houseOf(a.species) ? this.tankFor(a, fitting) : fitting.find((f) => f.world === a.origin) ?? fitting[0];
+      const e = houseOf(a.species) ? this.tankFor(a, fitting) : this.pickPen(fitting, a);
       if (!e) continue;
       this.placeInPen(a, e);
       this.followers.splice(this.followers.indexOf(a), 1);
@@ -5516,10 +5581,9 @@ export default class GardenScene extends Phaser.Scene {
     this.aquaNowFull = [];
     nowFull.forEach((e, i) => this.time.delayedCall(1400 + i * 3200, () => this.showPenFull(e)));
     const tank = LEVEL_ID === 'aquarium';
-    const terra = LEVEL_ID === 'reptiles';
     const home = moved.length === 1
-      ? tr(`Dein Tier ist ${tank ? 'ins Becken' : terra ? 'ins Terrarium' : 'in sein Gehege'} gezogen.`, `Your animal moved into its ${tank ? 'tank' : terra ? 'terrarium' : 'enclosure'}.`)
-      : tr(`Deine Tiere sind ${tank ? 'in die Becken' : terra ? 'in die Terrarien' : 'in ihre Gehege'} gezogen.`, `Your animals moved into their ${tank ? 'tanks' : terra ? 'terrariums' : 'enclosures'}.`);
+      ? tr(`Dein Tier ist ${tank ? 'ins Becken' : 'in sein Gehege'} gezogen.`, `Your animal moved into its ${tank ? 'tank' : 'enclosure'}.`)
+      : tr(`Deine Tiere sind ${tank ? 'in die Becken' : 'in ihre Gehege'} gezogen.`, `Your animals moved into their ${tank ? 'tanks' : 'enclosures'}.`);
     let text = moved.length ? `<br>${animalIcons(moved, 2.6)}<br>${home}` : '';
     if (this.released?.length) {
       const hearts = this.released.reduce((s, r) => s + r.hearts, 0);
@@ -5580,18 +5644,16 @@ export default class GardenScene extends Phaser.Scene {
     this.aquaNowFull.push(...allTanks.filter((t) => tankFull(t) && !fullBefore.has(t)).map((t) => t.e));
     const kinds = HOUSES[level].filter((s) => delivered.includes(s)).map((s) => `${animalIcon(s, 2.6)} × ${delivered.filter((d) => d === s).length}`);
     const one = delivered.length === 1;
-    const swims = level === 'reptiles'
-      ? tr(one ? 'Dein Fang wohnt jetzt im Reptilienhaus.' : 'Deine Fänge wohnen jetzt im Reptilienhaus.', one ? 'Your catch lives in the reptile house now.' : 'Your catches live in the reptile house now.')
-      : one
-        ? tr('Dein Fang schwimmt jetzt im Aquarium.', 'Your catch is swimming in the aquarium now.')
-        : tr('Deine Fänge schwimmen jetzt im Aquarium.', 'Your catches are swimming in the aquarium now.');
+    const swims = one
+      ? tr('Dein Fang schwimmt jetzt im Aquarium.', 'Your catch is swimming in the aquarium now.')
+      : tr('Deine Fänge schwimmen jetzt im Aquarium.', 'Your catches are swimming in the aquarium now.');
     return `<br>${kinds.join(' ')}<br>${swims}`;
   }
 
   // Tierpark: Tiere, deren Gehege in einem anderen Abschnitt liegt, ziehen gleich dorthin (in dessen gespeicherten Stand,
   // noch ohne Platz: pending; beim nächsten Besuch kommen sie ins Gehege, siehe create). Gibt den Text für die Meldung zurück.
   sendToSection(level) {
-    const sent = this.followers.filter((a) => !houseOf(a.species) && parkPenFor(a.species, a.origin)?.level === level);
+    const sent = this.followers.filter((a) => !houseOf(a.species) && parkPenFor(a.species, a.origin, (l) => this.speciesIn(l, a.species))?.level === level);
     if (!sent.length) return '';
     const saved = (game.levels[level] ??= { animals: [], pickups: [] });
     for (const a of sent) {
@@ -5614,13 +5676,19 @@ export default class GardenScene extends Phaser.Scene {
   parkIncomeRates() {
     const adults = this.animals.filter((a) => a.state === 'penned' && !a.baby);
     const score = parkScore(adults);
-    const babies = babyPlan(adults).length;
+    const plan = babyPlan(adults);
+    const babies = plan.length;
+    // der Baby-Bonus gilt nur für den Anteil der Besucher, die zu Gehegen mit Babys gehen
+    const babyPens = [...new Set(plan.map((b) => b.enclosure))];
+    const babyTotal = score + babies * BABY_APPEAL;
+    const babyShare = babyTotal > 0 ? (babyPens.reduce((s, e) => s + penScore(adults, e), 0) + babies * BABY_APPEAL) / babyTotal : 0;
     const cap = parkCap(LEVEL_ID); // mit Riesenrad mehr Besucher
     const shops = shopsIn(LEVEL_ID).map(({ kind }) => ({ kind, rate: maxVisitors(score, cap) * AWAY_BUYS_PER_VISITOR_MINUTE * shopDef(kind).hearts }));
     if (hasWheel(LEVEL_ID)) shops.push({ kind: WHEEL.id, rate: maxVisitors(score, cap) * AWAY_RIDES_PER_VISITOR_MINUTE * WHEEL.hearts });
+    if (LEVEL.teaHouse) shops.push({ kind: TEA.id, rate: maxVisitors(score, cap) * AWAY_BUYS_PER_VISITOR_MINUTE * TEA_CHANCE / SHOP_CHANCE * TEA.hearts }); // Teehaus (Bambuswald)
     return {
       normal: maxVisitors(score, cap) * AWAY_HEARTS_PER_VISITOR_MINUTE,
-      babies: maxVisitors(score + babies * BABY_APPEAL, cap) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS),
+      babies: maxVisitors(babyTotal, cap) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS * babyShare),
       ice: LEVEL.iceStand ? maxVisitors(score, cap) * AWAY_ICE_PER_VISITOR_MINUTE : 0, // der Eiswagen steht nur im Zentrum
       // feste Buden und Riesenrad: Herzen pro Minute je Bude
       shops,
@@ -5676,18 +5744,24 @@ export default class GardenScene extends Phaser.Scene {
       // Besucher an, und die geben mehr (siehe parkIncomeRates)
       const babyTime = eventsIn(level).some((e) => e.id === 'babies');
       let babies = 0;
+      let babyScore = 0; // Anziehung der Becken mit Babys (nur dort gibt es den Baby-Bonus)
       const score = tanks.reduce((sum, t) => {
         const list = st.penned.filter((s) => tankOf(tanks, s) === t);
+        let n = 0;
         if (babyTime) {
           const fam = {};
           for (const a of list) if (babyFamily(a.species)) fam[babyFamily(a.species)] = (fam[babyFamily(a.species)] ?? 0) + 1;
-          babies += Object.values(fam).reduce((n, k) => n + Math.floor(k / 2), 0);
+          n = Object.values(fam).reduce((m, k) => m + Math.floor(k / 2), 0);
+          babies += n;
         }
-        const score = list.reduce((s, a) => s + appeal(a), 0);
-        return sum + (list.length >= t.cap ? score * FULL_BONUS : score);
+        const raw = list.reduce((s, a) => s + appeal(a), 0);
+        const score = list.length >= t.cap ? raw * FULL_BONUS : raw;
+        if (n) babyScore += score + n * BABY_APPEAL;
+        return sum + score;
       }, 0);
+      const total = score + babies * BABY_APPEAL;
       st.rate = babies
-        ? (maxVisitors(score + babies * BABY_APPEAL, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS)) / 60
+        ? (maxVisitors(total, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS * (babyScore / total))) / 60
         : (maxVisitors(score, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
     }
     st.hearts += st.rate * dt;
@@ -6033,15 +6107,21 @@ export default class GardenScene extends Phaser.Scene {
 
   // Glühwürmchen-Abend im Bambuswald: Abendlicht, leuchtende Laternen, Glühwürmchen und rote Pandas in den Kirschbäumen
   updateFireflies(dt) {
-    const on = this.fireflyEvening();
+    const lanterns = this.lanternEvening();
+    const on = this.fireflyEvening() || lanterns;
     if (on && !this.fireflies) {
-      this.fireflies = new FireflyEvening(this);
+      // Laternenabend (Bambuswald im Tierpark): Abendlicht, Laternen, Teehaus und Glühwürmchen, aber keine wilden roten Pandas
+      this.fireflies = new FireflyEvening(this, lanterns ? { pandas: false, props: LEVEL.props } : {});
       this.startAmbient(); // Abendgeräusche
     }
     if (!on && this.fireflies) {
       this.fireflies.destroy();
       this.fireflies = null;
       this.startAmbient();
+      if (LEVEL.lanterns) {
+        this.showToast(tr('🏮 Der Laternenabend ist vorbei.', '🏮 The Lantern Evening is over.'));
+        return;
+      }
       // Glas und leuchtendes Glas gibt es nur beim Event
       if (this.toolId === 'fireflyjar' || this.toolId === 'glowjar') {
         this.tool.destroy();
@@ -6387,6 +6467,20 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Gehege für ein Tier unter mehreren passenden in diesem Abschnitt (z. B. Brüllaffen: Affeninsel oder Tropenhalle):
+  // zuerst eins mit freiem Platz, dort bevorzugt das seiner Herkunftswelt; sind alle voll, das seiner Herkunftswelt (dort
+  // zieht dann ein anderes aus, siehe releaseExtra)
+  pickPen(fitting, a) {
+    const room = (e) => penCount(this.animals, e, e.quota ? quotaKey(a.species) : null) < capFor(e, a.species);
+    return fitting.find((e) => room(e) && e.world === a.origin) ?? fitting.find(room) ?? fitting.find((e) => e.world === a.origin) ?? fitting[0] ?? null;
+  }
+
+  // so viele Tiere dieser Art leben in einem Tierpark-Abschnitt (hier: die lebenden, sonst der gespeicherte Stand)
+  speciesIn(level, species) {
+    const list = level === LEVEL_ID ? this.animals : (game.levels[level]?.animals ?? []);
+    return list.filter((a) => a.state === 'penned' && !a.baby && quotaKey(a.species) === quotaKey(species)).length;
+  }
+
   // Aquarium: in welchen Tank ein Riff-Fisch zieht. Gleiche Arten sollen zusammen schwimmen: zuerst ein Tank mit Platz, in dem
   // schon Fische seiner Art sind, sonst der leerste mit Platz. Sind alle voll, der mit den meisten seiner Art (dort zieht dann
   // ein anderer ins Naturreservat, siehe releaseExtra)
@@ -6445,6 +6539,14 @@ export default class GardenScene extends Phaser.Scene {
   // Meerestiere: die Becken im Aquarium
   parkPenFull(species, origin) {
     if (houseOf(species)) return this.houseFull(houseOf(species), species);
+    // mehrere Gehege für diese Art (Brüllaffen, Schmetterlinge): voll, wenn alle zusammen voll sind
+    const pens = parkPens().filter((p) => accepts(p, species) && hasSlots(p));
+    if (pens.length > 1) {
+      const cap = pens.reduce((n, p) => n + capFor(p, species), 0);
+      const levels = [...new Set(pens.map((p) => p.level))];
+      const coming = this.followers.filter((a) => quotaKey(a.species) === quotaKey(species)).length;
+      return levels.reduce((n, l) => n + this.speciesIn(l, species), 0) + coming >= cap;
+    }
     const e = parkPenFor(species, origin);
     if (!e || !hasSlots(e)) return false;
     // nur das Kontingent dieser Tierart (in gemeinsamen Gehegen)
@@ -6478,7 +6580,7 @@ export default class GardenScene extends Phaser.Scene {
   placeInPen(animal, e, quiet = false) {
     // freilaufend (Pfauen): irgendwo im Park in der Nähe eines Wegs loslassen, damit sie sich verteilen
     if (e.free) {
-      const t = Phaser.Utils.Array.GetRandom(NEAR_PATH_TILES);
+      const t = Phaser.Utils.Array.GetRandom(freeAreaTiles(e)); // (Schmetterlinge der Tropenhalle nur dort, Pfauen nicht dort)
       const spot = t ? tileToWorld(t.tx, t.ty) : { x: this.player.x, y: this.player.y };
       animal.x = spot.x;
       animal.y = spot.y;
@@ -6695,9 +6797,7 @@ export default class GardenScene extends Phaser.Scene {
       this.tweens.add({ targets: tag, y: tag.y - 18, alpha: 0, delay: 600, duration: 1400, onComplete: () => tag.destroy() });
       const icon = animalIcon(animal.species, 3);
       notes.push(
-        houseOf(animal.species) === 'reptiles'
-          ? tr(`🌳 Das Terrarium für ${icon} im Reptilienhaus ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The terrarium for ${icon} in the reptile house is already full – when you bring it home, one animal moves to the nature reserve.`)
-          : AQUA.includes(animal.species)
+        AQUA.includes(animal.species)
           ? tr(`🌳 Das Becken für ${icon} im Aquarium ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The tank for ${icon} in the aquarium is already full – when you bring it home, one animal moves to the nature reserve.`)
           : tr(`🌳 Das Gehege für ${icon} ist schon voll – beim Abgeben zieht ein Tier ins Naturreservat.`, `🌳 The enclosure for ${icon} is already full – when you bring it home, one animal moves to the nature reserve.`),
       );
@@ -6935,6 +7035,11 @@ export default class GardenScene extends Phaser.Scene {
 
   // Ist hier gerade Glühwürmchen-Abend? Im Bambuswald und hinter seinen Durchgängen (Maps mit Kirschbäumen) beim Event,
   // auf einer Expeditions-Map mit der Event-Karte
+  // Laternenabend: läuft das Event, und ist man im Bambuswald des Tierparks (LEVEL.lanterns)?
+  lanternEvening() {
+    return !!LEVEL.lanterns && isActive('lanterns');
+  }
+
   fireflyEvening() {
     if (this.expMap) return this.expFireflies();
     return isActive('fireflies') && (LEVEL_ID === 'asia' || !!(LEVEL.side && LEVEL.fireflies));
@@ -6984,7 +7089,17 @@ export default class GardenScene extends Phaser.Scene {
       const e = houseOf(a.species) ? null : parkPenFor(a.species, a.origin);
       let key = null;
       let free = Infinity;
-      if (e && hasSlots(e)) {
+      const pens = parkPens().filter((p) => accepts(p, a.species) && hasSlots(p));
+      if (e && pens.length > 1) {
+        // mehrere Gehege für diese Art (Brüllaffen, Schmetterlinge): alle Plätze zusammen
+        key = `all:${quotaKey(a.species)}`;
+        if (!room.has(key)) {
+          const levels = [...new Set(pens.map((p) => p.level))];
+          const inside = levels.reduce((n, l) => n + (game.levels[l]?.animals ?? []).filter((s) => s.state === 'penned' && quotaKey(s.species) === quotaKey(a.species)).length, 0);
+          room.set(key, pens.reduce((n, p) => n + capFor(p, a.species), 0) - inside);
+        }
+        free = room.get(key);
+      } else if (e && hasSlots(e)) {
         const qk = e.quota ? quotaKey(a.species) : null;
         key = `${e.id}:${qk}`;
         if (!room.has(key)) {
@@ -7437,7 +7552,7 @@ export default class GardenScene extends Phaser.Scene {
   // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
   ambientKey() {
     if ((LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent?.()) return 'ambient_migration';
-    if (this.fireflyEvening?.()) return 'ambient_forest_night'; // Glühwürmchen-Abend: Abendgeräusche
+    if (this.fireflyEvening?.() || this.lanternEvening?.()) return 'ambient_forest_night'; // Glühwürmchen- und Laternenabend: Abendgeräusche
     return (LEVEL_ID === 'forest' && isActive('wolves')) || this.expWolfNight() || this.sideWolfNight() ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
@@ -7931,6 +8046,11 @@ export default class GardenScene extends Phaser.Scene {
     group.open = open;
     this.tweens.killTweensOf(group.sprites);
     this.tweens.add({ targets: group.sprites, alpha: open ? 0 : 1, duration: open ? 150 : 300 });
+    // Schilder dieses Geheges: offen auf ihre eigene Tiefe (Figuren im Tor davor), geschlossen wieder vor das Tor
+    for (const s of this.enclosureSigns ?? []) {
+      if (s.enclosure !== group.enclosure || !s.lift) continue;
+      for (const [p, d] of s.lift.parts) p.setDepth(open ? d + s.lift.drop : d);
+    }
   }
 
   update(_time, delta) {
@@ -8102,6 +8222,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.updateWishes(dt);
     this.decor?.update(); // Setzen-Modus: Vorschau auf der Kachel vor Henrik
+    // Mavis Buden-Aufgabe: sobald sie erklärt ist (oder sich der Stand ändert), leuchtet der nächste Knopf
+    if (this.decor && this.buildHintStage() !== this.lastBuildHint) this.updateBuildHint();
     // am Gehegeschild oder im Gehege: die Werkzeugleiste zeigt "Gehege ausbauen"
     const penHere = this.penAtSign();
     if (penHere !== this.penHere) {
@@ -8244,6 +8366,8 @@ export default class GardenScene extends Phaser.Scene {
     this.updateWolfNight(dt);
     this.updateMigration(dt);
     this.updateFireflies(dt);
+    this.ropeBridge?.update(dt);
+    this.jungleHall?.update(dt);
     this.hyenaPack?.update(dt);
     this.weather?.update(dt);
     this.updateSeason(dt);

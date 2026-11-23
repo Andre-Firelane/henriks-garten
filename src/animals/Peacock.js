@@ -5,7 +5,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { blockedAt, footTiles } from '../world/collision.js';
-import { ENCLOSURES, NEAR_PATH, buildingAt, inPen, isGate } from '../world/map.js';
+import { ENCLOSURES, NEAR_PATH, buildingAt, inPen, isGate, inJungleHall } from '../world/map.js';
 
 const DISPLAY_EVERY = [7, 14]; // so oft schlägt er ein Rad (Sekunden, in denen er nicht flieht)
 const DISPLAY_TIME = [3.5, 5]; // so lange zeigt er es
@@ -87,7 +87,7 @@ export default class Peacock extends Animal {
     if (!this.isFree()) return super.blocked(x, y);
     if (blockedAt(x, y, this.kind.footW, 3)) return true;
     // nur in der Nähe der Wege (nicht in die hintersten Ecken), nicht in Gehege, Häuser und Tore
-    return footTiles(x, y, this.kind.footW, 3).some(({ tx, ty }) => !NEAR_PATH.has(tx + ',' + ty) || inPen(tx, ty) || isGate(tx, ty) || buildingAt(tx, ty));
+    return footTiles(x, y, this.kind.footW, 3).some(({ tx, ty }) => !NEAR_PATH.has(tx + ',' + ty) || inJungleHall(tx, ty) || inPen(tx, ty) || isGate(tx, ty) || buildingAt(tx, ty));
   }
 
   render(moving) {

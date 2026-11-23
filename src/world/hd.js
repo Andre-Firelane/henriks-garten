@@ -52,6 +52,8 @@ export const HD = [
   'hut_chest_small', 'hut_desk_asia', 'hut_plant_asia', 'hut_shelf_asia', 'jar', 'jar_glow', 'koifood',
   'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn', // verschneite Felsen (tools/snow-rocks.py)
   'prayer_pole', 'stupa', 'salt_stone', 'salttool', 'brush', // Hochebene (tools/plateau-hd.py)
+  'glass_x', 'glass_y', 'teahouse', 'tea_table', 'zen_gravel', // neuer Bambuswald (tools/bamboo-placeholders.py)
+  'gate_curtain_x', 'gate_curtain_y', 'fruit_plate', 'jungle_shrub', // Tropenhalle (tools/junglehall-placeholders.py)
   // Riff
   'car_zoo', // Zooauto (Schnellreise, vergrößert gezeigt)
   'anchor_sack', 'boat_zoo', 'reef_algae', 'reef_anemone', 'reef_brain', 'reef_brain2', 'reef_branch', 'reef_branch2', 'reef_dark', 'reef_fan',

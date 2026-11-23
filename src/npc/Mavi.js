@@ -191,7 +191,7 @@ export default class Mavi {
         then?.();
       });
     } else {
-      sayToast(lines.join(' '));
+      sayToast(lines); // (nicht zu sehen: die Sätze nacheinander als kleine Blasen am Rand, nicht alle in einer)
       then?.();
     }
   }

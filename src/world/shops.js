@@ -29,10 +29,15 @@ export const WHEEL = { id: 'wheel', name: tr('Riesenrad', 'Ferris Wheel'), cost:
 export const WHEEL_VISITORS = 4;
 export const RIDE_CHANCE = 0.35; // so wahrscheinlich will ein Besucher (einmal) mitfahren
 export const AWAY_RIDES_PER_VISITOR_MINUTE = 0.15;
-// Herzen, die nicht von Tieren kommen (Buden und Riesenrad; für die Statistik und Mavis Besucher-Aufgabe)
-export const SHOP_IDS = [...SHOPS.map((s) => s.id), WHEEL.id];
-// Buden-Art oder Riesenrad (Name und Symbol für die Statistik)
-export const sourceDef = (id) => shopDef(id) ?? (id === WHEEL.id ? WHEEL : null);
+// Teehaus im Bambuswald (teaHouse in levels.js, fest gebaut): Besucher holen sich Tee und trinken ihn an einem Stehtisch
+// (TEA_TIME Sekunden, die Tasse in der Hand), danach gibt es Herzen
+export const TEA = { id: 'tea', name: tr('Teehaus', 'Tea House'), hearts: 3, icon: '🍵', items: ['tea_cup'] };
+export const TEA_CHANCE = 0.35; // so wahrscheinlich geht ein Besucher (einmal) ins Teehaus
+export const TEA_TIME = [9, 14];
+// Herzen, die nicht von Tieren kommen (Buden, Teehaus und Riesenrad; für die Statistik und Mavis Besucher-Aufgabe)
+export const SHOP_IDS = [...SHOPS.map((s) => s.id), TEA.id, WHEEL.id];
+// Buden-Art, Teehaus oder Riesenrad (Name und Symbol für die Statistik)
+export const sourceDef = (id) => shopDef(id) ?? (id === TEA.id ? TEA : id === WHEEL.id ? WHEEL : null);
 
 // so viele Sachen kauft ein Besucher höchstens, und so wahrscheinlich geht er (beim Ankommen bzw. nach einem Gehege)
 // zu einer Bude, deren Sorte er noch nicht hatte

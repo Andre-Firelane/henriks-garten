@@ -13,6 +13,8 @@ export const game = {
   parkSplit: true, // der Tierpark ist in drei Abschnitte geteilt (ältere Spielstände ziehen beim Laden um, siehe splitPark in save.js)
   wildpark: true, // der Wald im Tierpark ist der Wildpark (ältere Spielstände ziehen beim Laden um, siehe migrateWildpark in save.js)
   pettingZoo: true, // Streichelzoo: keine Maulwürfe mehr, Kuh, Schwein und Ziege sind eigene Arten (siehe migratePettingZoo in save.js)
+  monkeyIsland: true, // Bambuswald: alle Affen auf der Affeninsel (siehe migrateMonkeyIsland in save.js)
+  jungleHall: true, // Tropenhalle statt Dschungel-Gehegen und Reptilienhaus (siehe migrateJungleHall in save.js)
   events: {},
   unlocked: [],
   scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
@@ -59,6 +61,8 @@ export function resetGame() {
   game.parkSplit = true;
   game.wildpark = true;
   game.pettingZoo = true;
+  game.monkeyIsland = true;
+  game.jungleHall = true;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};

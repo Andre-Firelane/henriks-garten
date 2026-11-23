@@ -1,4 +1,4 @@
-"""Aufruf: python tools/replace-sprites.py <Ordner>   (braucht Pillow)
+"""Aufruf: python tools/replace-sprites.py <Ordner> [Namensanfang, z. B. toy_]   (braucht Pillow)
 Überarbeitete Bilder von Andre (freigestellte PNGs, z. B. aus scenario-assets) an die Stelle von Claudes Bildern setzen:
 MAP sagt, welche Datei welches Bild im Spiel ersetzt. Jedes neue Bild wird auf seinen Umriss zugeschnitten und so in die
 alten Bilder gesetzt, dass es den Umriss des alten ausfüllt (Seitenverhältnis bleibt) und unten mittig dort steht, wo das
@@ -12,8 +12,8 @@ import sys
 from PIL import Image
 
 A = 'public/assets'
-# je Ordner: Datei → Bild im Spiel. scenario-assets (7): diese Bilder waren schon vorher im Spiel – die Liste dient als
-# Nachweis, welches Bild welches ist
+# je Ordner: Datei → Bild im Spiel. scenario-assets (7): Blätter, Bäume, Stupa und Eicheln waren schon vorher im Spiel;
+# die Spielzeuge wurden erst am 23.11.2026 eingesetzt (python tools/replace-sprites.py "…/scenario-assets (7)" toy_)
 SETS = {}
 SETS['scenario-assets (7)'] = {
     'Wald_neu-2.png': 'leaf_branch', 'Wald_neu-3.png': 'leaf_bush', 'Wald_neu-4.png': 'leaf_bush_bare', 'Wald_neu-5.png': 'stupa',
@@ -66,6 +66,9 @@ def place(new, old_path, center, scale=1, out_path=None):
 
 src_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
 MAP = SETS[os.path.basename(os.path.normpath(src_dir))]
+# optional: nur Bilder, deren Name so anfängt (z. B. toy_)
+if len(sys.argv) > 2:
+    MAP = {n: k for n, k in MAP.items() if k.startswith(sys.argv[2])}
 os.makedirs('Sprites/Andre', exist_ok=True)
 for name, key in MAP.items():
     src = os.path.join(src_dir, name)

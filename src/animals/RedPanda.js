@@ -163,6 +163,7 @@ export default class RedPanda extends Animal {
   }
 
   catch() {
+    this.bridge?.release(this);
     if (this.state === 'wild' && this.tree) (this.scene.redpandaCaughtAt ??= []).push({ tx: this.tree.tx, ty: this.tree.ty, until: this.scene.time.now + TREE_REST * 1000 });
     this.scene.tweens.killTweensOf(this);
     this.setEating(false);
@@ -174,6 +175,7 @@ export default class RedPanda extends Animal {
   }
 
   restore(state) {
+    this.bridge?.release(this);
     super.restore(state);
     this.phase = null;
     this.tree = null;
@@ -186,8 +188,15 @@ export default class RedPanda extends Animal {
     this.tree = null;
   }
 
-  // beim Speichern: nicht oben im Baum (der Stamm ist fest), sondern daneben
+  // auf der Seilbrücke (siehe src/world/RopeBridge.js): die Brücke bewegt ihn, sonst nichts
+  update(dt, player) {
+    if (this.bridge) return this.render(!!this.bridgeMoving);
+    return super.update(dt, player);
+  }
+
+  // beim Speichern: nicht oben im Baum (der Stamm ist fest), sondern daneben; von der Seilbrücke an den Baum im Gehege
   savedSpot() {
+    if (this.bridge) return this.bridge.footSpot();
     if (!this.tree) return null;
     const { tx, ty } = worldToTile(this.x, this.y);
     return tileToWorld(tx + 1, ty);
@@ -197,11 +206,17 @@ export default class RedPanda extends Animal {
     const up = this.phase === 'tree';
     this.sprite.setVisible(!up);
     this.shadow.setVisible(!up);
-    super.render(moving && !this.climbY);
+    super.render(moving && (!this.climbY || !!this.bridge));
     if (this.climbY) this.sprite.setY(this.sprite.y - this.climbY); // am Stamm
+    if (this.bridge && this.climbY) {
+      // oben auf der Seilbrücke: vor der Brücke, ohne Schatten am Boden
+      this.sprite.setDepth(this.bridge.depth + 1);
+      this.shadow.setVisible(false);
+    }
   }
 
   destroy() {
+    this.bridge?.release(this);
     this.peek?.destroy();
     super.destroy();
   }

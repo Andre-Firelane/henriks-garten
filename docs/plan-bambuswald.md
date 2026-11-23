@@ -1,6 +1,6 @@
 # Plan: Bambuswald (neues Design für den Asien-Teil von `park3`)
 
-Stand: 22.11.2026, Ideensammlung abgestimmt, noch nicht umgesetzt. Nach Wildpark (plan-wildpark.md), Safari
+Stand: 23.11.2026, umgesetzt (noch nicht committet); was anders wurde als geplant, steht unter „Umsetzung“. Nach Wildpark (plan-wildpark.md), Safari
 (plan-safari.md) und Streichelzoo (plan-streichelzoo.md) ist der Bambuswald der vierte Bereich mit neuem Design.
 Offene Fragen stehen unter „Noch offen“ ganz unten.
 
@@ -86,3 +86,30 @@ Herzstück ist ein großer Teich mit der **Affeninsel** in der Mitte und dem **T
 - Genaue Lage und Größe von Insel, Teich, Teehaus und Glaspavillon (Skizze vor der Umsetzung).
 - Wie lange dauert der Laternenabend, und was kostet er?
 - Später geplant: mehr Durchmischung, z. B. Reptilienhaus und Aquarium zusammenfassen.
+
+## Umsetzung (23.11.2026)
+
+- **Karte** (PARK_ROWS in levels.js, Spalten 13–42, Zeilen 60–81): links der Koi-Teich als Wasser rund um die Insel
+  (oben, links, rechts; rechts 4 Kacheln breit), die Insel 15 × 16 Kacheln. Südseite: Wildzaun mit Tor, davor der Weg.
+  Rechts am Ufer Teehaus mit Terrasse und drei Stehtischen (ţ), daneben der Zen-Garten (ẑ, man geht nicht darüber),
+  darunter ein Garten mit Kirschbäumen, Laternen und Bambus, durch den ein Weg zum Auto führt.
+- **Affeninsel** (Gehege `monkeys`, `moat: true`: Wasser und Brücken begrenzen das Gehege, floodPen und placeToys in
+  map.js). Plätze: Makaken 6, Orang-Utans 5, Brüllaffen 13 (Gibbons zählen mit), Gorillas 5. Lieblingsorte (zones):
+  Makaken an der heißen Quelle, Orang-Utans und Gorillas im Süden. Spielzeug: Kletterseile, Lianen, Strohnest, Jute-Ball.
+- **Glaspavillon**: neue Zaunart Glas (ǧ, Ǧ; Bilder glass_x/glass_y wie das Glastor). Bogenbrücke über den Teich, dann
+  ein Gang mit Glaswänden in den Pavillon (4 × 4 Wegkacheln). Die Besucher stehen dort wie an jedem Gehege.
+- **Teehaus** (LEVEL.props und LEVEL.teaHouse): Besucher gehen mit 35 % einmal hin, stehen 9–14 Sekunden mit der Tasse
+  am Stehtisch und geben dann 3 Herzen (Statistik: „Teehaus“). Läuft auch, während man woanders ist.
+- **Koi füttern**: Besucher auf der Brücke füttern mit 60 % die Koi (höchstens alle 12 Sekunden), die Koi kommen
+  herbei, das bringt ein Herz mehr.
+- **Seilbrücke** (src/world/RopeBridge.js): vom Kletterbaum im Pandagehege über den Weg zum Kletterbaum am Zen-Garten;
+  alle 25–50 Sekunden geht ein roter Panda hinüber, sitzt 7–13 Sekunden oben und kommt zurück. Tierfreunde gehen nicht.
+- **Laternenabend**: Event für 50 Herzen, 5 Minuten (wie der Glühwürmchen-Abend, aber ohne wilde rote Pandas).
+  Laternen, Tor und die Lampions am Teehaus leuchten, Glühwürmchen schweben, die Tanukis verkleiden sich viel öfter,
+  und jeder Besucher gibt an jedem Gehege ein Herz mehr.
+- **Dschungel**: Affen-Gehege und Gorilla-Gehege sind weg (nur Zaun und Tor, Bäume und Pflanzen bleiben).
+- **Auto und Roller** stehen jetzt im Garten unten am Weg.
+- **Alte Spielstände** (migrateMonkeyIsland in save.js): Tierfreunde der Affen gelten auf der Insel weiter, das alte
+  Spielzeug fällt weg. Die Affen selbst kommen beim Betreten des Bambuswalds auf die Insel.
+- **Bilder** sind Platzhalter aus tools/bamboo-placeholders.py (Teehaus, Stehtisch, Teetasse, Zen-Kies, Glaswand), Kopien
+  zum Überarbeiten in Claude-Sprites/Bambuswald. Die Seilbrücke zeichnet das Spiel selbst.

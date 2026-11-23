@@ -7,7 +7,8 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { MAP_W, MAP_H, charAt, inPen, isBlocked } from '../world/map.js';
+import { LEVEL, MAP_W, MAP_H, charAt, inPen, isBlocked } from '../world/map.js';
+import { isActive } from '../world/events.js';
 
 // Verkleidungen: Bild, Fußpunkt, Anteil, wie oft, und wie weit der Schwanz neben der Mitte herausschaut
 const DISGUISES = [
@@ -27,6 +28,7 @@ const SPOT_REST = 90; // an einer Stelle, an der einer gefangen wurde, verkleide
 const MIN_NEW_SPOT = 6; // so viele Kacheln weit weg (vom Spieler) verkleidet er sich nach der Flucht neu
 const PEN_DISGUISE_EVERY = [40, 80]; // im Gehege: so oft verkleidet er sich ...
 const PEN_DISGUISE_TIME = [8, 14]; // ... und so lange
+const LANTERN_DISGUISE_EVERY = [10, 20]; // beim Laternenabend im Tierpark sind sie munter: viel öfter
 
 export default class Tanuki extends Animal {
   constructor(scene, x, y) {
@@ -232,7 +234,7 @@ export default class Tanuki extends Animal {
     }
     this.disguiseIn = (this.disguiseIn ?? Phaser.Math.FloatBetween(5, PEN_DISGUISE_EVERY[1])) - dt;
     if (this.disguiseIn <= 0) {
-      this.disguiseIn = Phaser.Math.FloatBetween(...PEN_DISGUISE_EVERY);
+      this.disguiseIn = Phaser.Math.FloatBetween(...(isActive('lanterns') && LEVEL.lanterns ? LANTERN_DISGUISE_EVERY : PEN_DISGUISE_EVERY));
       const { tx, ty } = worldToTile(this.x, this.y);
       this.smoke();
       this.hideAt({ tx, ty }, DISGUISES[0]);

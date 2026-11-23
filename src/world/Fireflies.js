@@ -22,9 +22,12 @@ const TORII_UP = 86; // ... und über dem Fuß des roten Tors
 const POOL_DEPTH = -98000;
 const POOL_ALPHA = 0.7; // mal Dämmerung
 
+// opts.pandas: rote Pandas in die Kirschbäume setzen (nicht beim Laternenabend im Tierpark); opts.props: auch die Lampions
+// großer Bilder leuchten (LEVEL.props mit glow, z. B. das Teehaus)
 export default class FireflyEvening {
-  constructor(scene) {
+  constructor(scene, opts = {}) {
     this.scene = scene;
+    this.pandas = opts.pandas ?? true;
     const cam = scene.cameras.main;
     this.dark = scene.add.rectangle(cam.width / 2, cam.height / 2, cam.width * 4, cam.height * 4, DUSK, 0).setScrollFactor(0).setDepth(NIGHT_DEPTH);
     scene.tweens.add({ targets: this.dark, fillAlpha: DUSK_ALPHA, duration: 1500 });
@@ -40,6 +43,16 @@ export default class FireflyEvening {
         const img = scene.add.image(p.x, p.y - (big ? TORII_UP : LANTERN_UP), glow).setBlendMode(Phaser.BlendModes.ADD).setTint(0xffb050).setScale(big ? 1.4 : 1.1).setAlpha(0).setDepth(NIGHT_DEPTH + 1);
         const pool = scene.add.ellipse(p.x, p.y + 2, big ? 90 : 60, big ? 30 : 20, 0xffc070, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(POOL_DEPTH);
         this.lights.push({ img, pool, phase: Math.random() * 10, big });
+      }
+    }
+    for (const prop of opts.props ?? []) {
+      const n = prop.size ?? 1;
+      const p = tileToWorld(prop.tx + (n - 1) / 2, prop.ty + (n - 1) / 2);
+      const depth = tileToWorld(prop.tx + n - 1, prop.ty + n - 1).y;
+      for (const g of prop.glow ?? []) {
+        const img = scene.add.image(p.x + g.dx, p.y + g.dy, glow).setBlendMode(Phaser.BlendModes.ADD).setTint(0xff9a50).setScale(1.2).setAlpha(0).setDepth(Math.max(depth + 1, NIGHT_DEPTH + 1));
+        const pool = scene.add.ellipse(p.x + g.dx * 0.8, p.y + 30, 70, 24, 0xffc070, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(POOL_DEPTH);
+        this.lights.push({ img, pool, phase: Math.random() * 10, big: false });
       }
     }
     this.flies = Array.from({ length: FLIES }, () => this.newFly(glow));
@@ -97,6 +110,7 @@ export default class FireflyEvening {
       f.core.setPosition(f.x, y).setAlpha(0.6 + blink * 0.4);
     }
     // rote Pandas in den Kirschbäumen (gefangene werden ersetzt)
+    if (!this.pandas) return;
     this.pandaIn -= dt;
     if (this.pandaIn <= 0) {
       this.pandaIn = 2;

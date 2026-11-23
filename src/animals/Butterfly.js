@@ -6,12 +6,15 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { worldToTile, tileToWorld } from '../world/iso.js';
-import { ENCLOSURES, LEVEL, MAP_W, MAP_H, NEAR_PATH, NEAR_PATH_TILES, buildingAt, charAt, inPen, noWildAt } from '../world/map.js';
+import { ENCLOSURES, LEVEL, MAP_W, MAP_H, NEAR_PATH_TILES, buildingAt, charAt, inPen, noWildAt, inFreeArea, freeAreaTiles } from '../world/map.js';
 
 export const BUTTERFLY_KINDS = 12; // so viele Farben hat das Spritesheet (je 3 Bilder: offen, halb, fast zu)
 const SCALE = 0.42; // Bild 64 × 64
 const FLY_H = [16, 40]; // so hoch flattert er über dem Boden ...
 const SIT_H = 9; // ... und so hoch sitzt er auf der Blüte
+const PLATE_H = 44; // ... bzw. auf dem Obstteller (Tropenhalle; Andres Bild, siehe tools/fruit-plate.py)
+const VISITOR_H = 42; // ... bzw. auf dem Kopf eines Besuchers (Tropenhalle, siehe landOn)
+const VISITOR_SIT = [6, 10]; // so lange bleibt er dort sitzen
 const FOLLOW_H = 26; // hinter Henrik her
 const SPEED = [20, 30]; // gemütliches Flattern (Pixel pro Sekunde)
 const ROAM = 4; // so viele Kacheln weit sucht er sich sein nächstes Ziel im Flug
@@ -26,7 +29,7 @@ const FLAP_RATE = 14; // Flügelschläge im Flug (Bilder pro Sekunde)
 const SIT_FLAP = [0, 0, 0, 1, 2, 2, 2, 1]; // auf der Blüte: langsam auf und zu
 const FLY_FLAP = [0, 1, 2, 1];
 
-const FLOWERS = 'fgḇṕẃŝḃƒȁṽ'; // rote, gelbe, blaue, lila, weiße Blumen, Sonnenblumen und die Waldblumen
+const FLOWERS = 'fgḇṕẃŝḃƒȁṽǫ'; // rote, gelbe, blaue, lila, weiße Blumen, Sonnenblumen, die Waldblumen und die Obstteller der Tropenhalle
 let flowerCache = { level: null, tiles: [] };
 
 // Blumen dieses Gebiets (im Tierpark nur nahe den Wegen und nicht in Gehegen, damit die Besucher sie sehen)
@@ -74,8 +77,9 @@ export default class Butterfly extends Animal {
   // Ziel im Flug: irgendwo in der Nähe (im Tierpark nahe den Wegen)
   pickTarget() {
     if (this.isFree()) {
-      const near = NEAR_PATH_TILES.filter((t) => Math.abs(t.tx - this.tile().tx) <= ROAM && Math.abs(t.ty - this.tile().ty) <= ROAM);
-      const t = Phaser.Utils.Array.GetRandom(near.length ? near : NEAR_PATH_TILES);
+      const area = freeAreaTiles(this.enclosure); // (Tropenhalle: nur darin)
+      const near = area.filter((t) => Math.abs(t.tx - this.tile().tx) <= ROAM && Math.abs(t.ty - this.tile().ty) <= ROAM);
+      const t = Phaser.Utils.Array.GetRandom(near.length ? near : area.length ? area : NEAR_PATH_TILES);
       this.target = t ? tileToWorld(t.tx, t.ty) : { x: this.x, y: this.y };
     } else {
       const { tx, ty } = this.tile();
@@ -95,7 +99,7 @@ export default class Butterfly extends Animal {
   findFlower() {
     const { tx, ty } = this.tile();
     const r = this.isFree() ? PARK_FLOWER_RANGE : FLOWER_RANGE;
-    const near = flowerTiles().filter((t) => Math.abs(t.tx - tx) <= r && Math.abs(t.ty - ty) <= r && (!this.isFree() || NEAR_PATH.has(t.tx + ',' + t.ty)));
+    const near = flowerTiles().filter((t) => Math.abs(t.tx - tx) <= r && Math.abs(t.ty - ty) <= r && (!this.isFree() || inFreeArea(this.enclosure, t.tx, t.ty)));
     const taken = this.scene.animals.filter((a) => a !== this && a.species === 'butterfly' && a.flower).map((a) => a.flower);
     const free = near.filter((t) => !taken.some((f) => f.tx === t.tx && f.ty === t.ty));
     return free.length ? Phaser.Utils.Array.GetRandom(free) : null;
@@ -106,9 +110,69 @@ export default class Butterfly extends Animal {
     if (this.state === 'following') return false;
     const { tx, ty } = worldToTile(x, y);
     if (tx < 1 || ty < 1 || tx > MAP_W - 2 || ty > MAP_H - 2 || charAt(tx, ty) === ' ') return true;
-    if (this.isFree()) return !!buildingAt(tx, ty);
+    if (this.isFree()) return !!buildingAt(tx, ty) || this.outside(tx, ty);
     if (this.state === 'wild' && noWildAt(tx, ty)) return true; // nicht über die eingezäunten Felder (dort sähe man ihn nicht)
     return false;
+  }
+
+  // außerhalb seines Bereichs (Schmetterlinge der Tropenhalle: nicht durch die Glaswand)
+  outside(tx, ty) {
+    const r = this.enclosure?.within;
+    return !!r && (tx < r.tx0 || tx > r.tx1 || ty < r.ty0 || ty > r.ty1);
+  }
+
+  // Tropenhalle: er setzt sich auf einen Besucher, der gerade steht (siehe Visitor.butterflyVisit); gibt true zurück, wenn
+  // er losfliegt
+  landOn(v) {
+    if (!this.isFree() || this.mode !== 'fly' || this.visitor) return false;
+    this.visitor = v;
+    this.flower = null;
+    this.mode = 'land';
+    this.target = { x: v.x, y: v.y + 1 };
+    this.targetH = VISITOR_H;
+    return true;
+  }
+
+  // auf dem Besucher: mit ihm bleiben, am Ende weiterflattern
+  updateOnVisitor(dt) {
+    const v = this.visitor;
+    if (!v || v.gone || (this.mode === 'sit' && Math.hypot(v.x - this.x, v.y + 1 - this.y) > 3)) {
+      this.visitor = null;
+      this.startFlying();
+      return false;
+    }
+    if (this.mode === 'sit') {
+      this.modeTime -= dt;
+      if (this.modeTime <= 0) {
+        this.visitor = null;
+        this.startFlying();
+      }
+      return false;
+    }
+    // hinfliegen (der Besucher steht still)
+    this.target = { x: v.x, y: v.y + 1 };
+    const dx = this.target.x - this.x;
+    const dy = this.target.y - this.y;
+    const d = Math.hypot(dx, dy);
+    this.h += (this.targetH - this.h) * Math.min(1, dt * 2);
+    if (d < 2) {
+      this.mode = 'sit';
+      this.modeTime = Phaser.Math.FloatBetween(...VISITOR_SIT);
+      this.x = this.target.x;
+      this.y = this.target.y;
+      this.h = VISITOR_H;
+      v.butterflyLanded?.(this, this.modeTime);
+      return false;
+    }
+    const step = Math.min(d, (this.speed ?? SPEED[1]) * dt);
+    this.x += (dx / d) * step;
+    this.y += (dy / d) * step;
+    return true;
+  }
+
+  // so hoch sitzt er auf dieser Blume (auf dem Obstteller höher)
+  sitHeight(f) {
+    return f && charAt(f.tx, f.ty) === 'ǫ' ? PLATE_H : SIT_H;
   }
 
   // nur im Flug scheu; auf der Blüte bleibt er sitzen
@@ -119,6 +183,7 @@ export default class Butterfly extends Animal {
 
   updateFree(dt, player) {
     this.phase += dt;
+    if (this.visitor) return this.updateOnVisitor(dt);
     if (this.state === 'wild' && this.shouldFlee(player)) {
       this.mode = 'fly';
       this.flower = null;
@@ -139,7 +204,7 @@ export default class Butterfly extends Animal {
         this.mode = 'land';
         this.flower = f;
         this.target = tileToWorld(f.tx, f.ty);
-        this.targetH = SIT_H;
+        this.targetH = this.sitHeight(f);
       } else {
         this.modeTime = Phaser.Math.FloatBetween(...FLY_TIME) / 2;
       }
@@ -152,7 +217,7 @@ export default class Butterfly extends Animal {
     if (this.mode === 'land' && d < 2) {
       this.mode = 'sit';
       this.modeTime = Phaser.Math.FloatBetween(...(this.isFree() ? PARK_SIT_TIME : SIT_TIME));
-      this.h = SIT_H;
+      this.h = this.sitHeight(this.flower);
       return false;
     }
     // im Zickzack: die Richtung schwankt beim Flattern
@@ -169,6 +234,7 @@ export default class Butterfly extends Animal {
 
   catch() {
     this.flower = null;
+    this.visitor = null;
     this.startFlying();
     super.catch();
   }

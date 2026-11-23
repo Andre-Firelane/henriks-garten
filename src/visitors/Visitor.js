@@ -3,13 +3,13 @@
 // (siehe src/world/visitors.js). Besucher sind nicht fest: sie laufen nur auf dem Wegnetz.
 import Phaser from 'phaser';
 import { tileToWorld, worldToTile } from '../world/iso.js';
-import { ENCLOSURES } from '../world/map.js';
+import { ENCLOSURES, objectAt, inJungleHall } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { isPark } from '../world/levels.js';
 import { MAX_WISH_WALKERS, WISH_CHANCE, WISH_TALK_DIST, openWishes, thanksLine, wishIcon, wishKey, wishLine, wishSlotFree } from '../world/wishes.js';
-import { MAX_BUYS, RIDE_CHANCE, SHOP_CHANCE, WHEEL, shopDef } from '../world/shops.js';
+import { MAX_BUYS, RIDE_CHANCE, SHOP_CHANCE, TEA, TEA_CHANCE, TEA_TIME, WHEEL, shopDef } from '../world/shops.js';
 import { LEVEL, LEVEL_ID } from '../world/map.js';
 import { BABY_BONUS, HOUSE_VISITORS, parkCap, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
 
@@ -22,6 +22,10 @@ const LOOK_TIME = [6, 10]; // Sekunden vor einem Gehege, dazu mehr bei Gehegen m
 const VISITS = [2, 4]; // so viele Gehege schaut sich ein Besucher an, bevor er geht
 const FEED_CHANCE = 0.25; // so oft füttert er am Ende des Schauens
 const PEN_FEED_PAUSE = 40; // Sekunden, bevor dasselbe Gehege wieder gefüttert wird
+// Koi-Teich (Bambuswald): wer auf der Brücke steht, füttert oft die Koi (sie kommen herbei), das bringt ein Herz mehr
+const KOI_FEED_CHANCE = 0.6;
+const KOI_FEED_DELAY = 1500; // Millisekunden nach dem Ankommen
+const KOI_FEED_PAUSE = 12; // Sekunden, bevor wieder jemand die Koi füttert
 const SPREAD = 8; // so weit stehen und laufen Besucher neben der Kachelmitte (damit sie sich nicht überlagern)
 const SCORE_EVERY = 3; // Sekunden zwischen zwei Neuberechnungen der Anziehung
 // Eiswagen-Event und feste Buden (src/world/shops.js): wer eine Sorte noch nicht hatte, geht mit dieser Wahrscheinlichkeit
@@ -35,6 +39,12 @@ const QUEUE_PATIENCE = 90; // Riesenrad: so lange (Sekunden) wartet er höchsten
 // Freilaufende Pfauen (und Schmetterlinge, die auf einer Blüte sitzen): kommt ein Besucher an einem vorbei, bleibt er kurz stehen und schaut; meist gibt es ein Herz
 // (immer, wenn der Pfau gerade ein Rad schlägt). Jeden Pfau schaut er sich nur einmal an.
 const PEACOCK_WATCH_DIST = 56;
+// Tropenhalle: so oft (Sekunden) prüft ein stehender Besucher, ob sich ein Schmetterling auf ihn setzt, so wahrscheinlich
+// passiert es dann, so nah (Welt-Pixel) muss einer flattern, und so viele Herzen gibt es dafür
+const BUTTERFLY_CHECK = 6;
+const BUTTERFLY_CHANCE = 0.18;
+const BUTTERFLY_REACH = 160;
+const BUTTERFLY_HEARTS = 2;
 const PEACOCK_WATCH_TIME = [2.5, 4];
 const PEACOCK_HEART_CHANCE = 0.6;
 // Bewunderungsherzen: jeder Besucher gibt beim Stehenbleiben vor einem Gehege mit Tieren genau ein Herz
@@ -168,6 +178,7 @@ export class Visitor {
     } else if (this.phase === 'look') {
       this.timer -= dt;
       this.glanceTimer -= dt;
+      this.butterflyVisit(dt);
       if (this.glanceTimer <= 0) {
         // kurz zur Seite schauen, dann wieder ins Gehege
         this.glanceTimer = Phaser.Math.FloatBetween(2, 5);
@@ -211,9 +222,9 @@ export class Visitor {
         this.next();
       }
     } else if (this.phase === 'buy') {
-      // an der Bude: warten, dann gibt es den Snack
+      // an der Bude: warten, dann gibt es den Snack (im Teehaus: am Stehtisch den Tee trinken, dann gibt es Herzen)
       this.timer -= dt;
-      this.faceTowards(this.shop?.at);
+      this.faceTowards(this.spot?.table ?? this.shop?.at);
       if (this.timer <= 0) {
         this.takeItem(this.shop?.kind ?? 'icecream');
         this.shop = null;
@@ -310,6 +321,34 @@ export class Visitor {
   }
 
   // unterwegs: steht ein freilaufender Pfau in der Nähe, den er noch nicht angeschaut hat? Dann stehen bleiben
+  // steht er in der Tropenhalle (siehe JungleHall.js)?
+  inJungleHall() {
+    const { tx, ty } = worldToTile(this.x, this.y);
+    return inJungleHall(tx, ty);
+  }
+
+  // Tropenhalle: ab und zu setzt sich ein Schmetterling auf einen Besucher, der gerade vor einem Gehege steht
+  butterflyVisit(dt) {
+    this.butterflyCheck = (this.butterflyCheck ?? Phaser.Math.FloatBetween(2, BUTTERFLY_CHECK)) - dt;
+    if (this.butterflyCheck > 0 || this.butterfly) return;
+    this.butterflyCheck = BUTTERFLY_CHECK;
+    if (this.timer < 6 || Math.random() > BUTTERFLY_CHANCE || !this.inJungleHall()) return;
+    const b = this.scene.animals.find((a) => a.species === 'butterfly' && a.enclosure?.within && a.mode === 'fly' && !a.visitor && Math.hypot(a.x - this.x, (a.y - this.y) * 2) < BUTTERFLY_REACH);
+    if (b?.landOn(this)) this.butterfly = b;
+  }
+
+  // der Schmetterling sitzt jetzt auf ihm: er bleibt so lange stehen, freut sich und gibt zwei Herzen
+  butterflyLanded(b, time) {
+    this.timer = Math.max(this.timer, time + 1);
+    this.scene.time.delayedCall(700, () => {
+      if (this.gone) return;
+      this.say('🦋');
+      for (let i = 0; i < BUTTERFLY_HEARTS; i++) this.scene.time.delayedCall(300 * i, () => !this.gone && this.popHeart());
+      this.scene.addHearts(BUTTERFLY_HEARTS, 'butterfly');
+    });
+    this.scene.time.delayedCall((time + 1) * 1000, () => (this.butterfly = null));
+  }
+
   lookForPeacock(dt) {
     this.peacockCheck = (this.peacockCheck ?? Math.random() * 0.5) - dt;
     if (this.peacockCheck > 0) return;
@@ -329,11 +368,17 @@ export class Visitor {
 
   // Snack bekommen: Herzen (je eins kurz nacheinander), und der Snack kommt in die Hand (statt eines alten)
   takeItem(kind) {
-    const def = shopDef(kind);
+    const def = kind === TEA.id ? TEA : shopDef(kind);
     this.had.add(kind);
     this.bought++;
     for (let i = 0; i < def.hearts; i++) this.scene.time.delayedCall(250 * i, () => this.popHeart());
     this.scene.addHearts(def.hearts, kind);
+    if (kind === TEA.id) {
+      // ausgetrunken: die Tasse bleibt am Tisch
+      this.itemSprite?.destroy();
+      this.itemSprite = null;
+      return;
+    }
     if (!def.items?.length) return; // (Blumen & Andenken: nichts in der Hand)
     this.itemSprite?.destroy();
     this.itemSprite = this.scene.add.image(this.x, this.y, Phaser.Utils.Array.GetRandom(def.items)).setScale(0.5).setOrigin(0.5, 1);
@@ -406,6 +451,13 @@ export class Visitor {
       this.goal = null;
       this.phase = 'buy';
       this.timer = Phaser.Math.FloatBetween(...BUY_TIME);
+      if (this.shop?.kind === TEA.id) {
+        // Teehaus: gleich mit der Tasse in der Hand am Stehtisch, eine Weile trinken
+        this.timer = Phaser.Math.FloatBetween(...TEA_TIME);
+        this.itemSprite?.destroy();
+        this.itemSprite = this.scene.add.image(this.x, this.y, TEA.items[0]).setScale(0.5).setOrigin(0.5, 1);
+        this.itemTime = Infinity;
+      }
       return;
     }
     this.phase = 'look';
@@ -415,10 +467,20 @@ export class Visitor {
     // ein Herz für dieses Gehege, nach einem Viertel der Zeit
     // während der Tierbabys gibt es an Gehegen mit Babys mehr Herzen (die Kleinen sind so süß)
     const babies = this.scene.animals.some((a) => a.baby && a.enclosure === this.pen);
-    const bonus = Math.floor(BABY_BONUS) + (Math.random() < BABY_BONUS % 1 ? 1 : 0); // 2,5 im Schnitt: 2 oder 3
+    const bonus = Math.floor(BABY_BONUS) + (Math.random() < BABY_BONUS % 1 ? 1 : 0); // im Schnitt BABY_BONUS: abgerundet oder eins mehr
     this.heartsLeft = score > 0 ? 1 + (babies ? bonus : 0) : 0;
     this.heartStep = (this.timer * 0.75) / Math.max(1, this.heartsLeft);
     this.heartAt = this.timer * 0.75;
+    // Laternenabend im Bambuswald: die Besucher sind verzaubert und geben ein Herz mehr
+    if (LEVEL.lanterns && isActive('lanterns') && this.heartsLeft > 0) {
+      this.heartsLeft++;
+      this.heartStep = (this.timer * 0.75) / this.heartsLeft;
+    }
+    // Sprühnebel in der Tropenhalle: wer gerade dort schaut, staunt und gibt ein Herz mehr (siehe JungleHall.js)
+    if (this.scene.jungleHall?.misty && this.heartsLeft > 0 && this.inJungleHall()) {
+      this.heartsLeft++;
+      this.heartStep = (this.timer * 0.75) / this.heartsLeft;
+    }
     // Tierfreund ab Stufe 3 (siehe src/world/friends.js): die Besucher kennen ihn, rufen seinen Namen und geben ein Herz mehr
     const friend = this.scene.friendIn?.(this.pen);
     if (friend && friend.level >= 3 && score > 0) {
@@ -427,6 +489,9 @@ export class Visitor {
       if (Math.random() < FRIEND_SAY_CHANCE) this.scene.time.delayedCall(Phaser.Math.Between(400, 1600), () => !this.gone && this.say(tr(`Guck mal, da ist ${friend.bond.name}!`, `Look, there’s ${friend.bond.name}!`)));
     }
     this.faceTowardsPen();
+    if (this.crowd.koiBridge(this) && Math.random() < KOI_FEED_CHANCE) {
+      this.scene.time.delayedCall(KOI_FEED_DELAY, () => !this.gone && this.phase === 'look' && this.crowd.feedKoi(this));
+    }
   }
 
   faceTowardsPen() {
@@ -654,7 +719,7 @@ export class VisitorCrowd {
 
   // Buden dieses Abschnitts, zu denen Besucher gehen können: die festen und (solange das Event läuft) der Eiswagen
   shopList() {
-    const list = (this.grid.shops ?? []).map((s) => ({ ...s, chance: SHOP_CHANCE }));
+    const list = (this.grid.shops ?? []).map((s) => ({ ...s, chance: s.kind === TEA.id ? TEA_CHANCE : SHOP_CHANCE }));
     if (isActive('icecream') && this.grid.ice?.length) list.push({ id: 'event', kind: 'icecream', at: LEVEL.iceStand, spots: this.grid.ice, chance: ICE_CHANCE });
     return list;
   }
@@ -926,6 +991,22 @@ export class VisitorCrowd {
     if (done) this.scene.wishThanked?.(v.thanks);
     v.thanks = null;
     this.thanking = null;
+  }
+
+  // steht er auf einer Brücke über einem Koi-Teich (und schaut den Koi zu)?
+  koiBridge(v) {
+    return !!(v.pen?.pond && v.pen.species?.includes('koi') && v.spot && objectAt(v.spot.tx, v.spot.ty)?.bridge);
+  }
+
+  // Koi von der Brücke aus füttern: ein Herz mehr (nicht zu oft hintereinander)
+  feedKoi(v) {
+    const e = v.pen;
+    if (this.time - (this.lastFed.get(e) ?? -Infinity) < KOI_FEED_PAUSE) return;
+    if (!this.scene.visitorFeedKoi?.(v)) return;
+    this.lastFed.set(e, this.time);
+    v.timer = Math.max(v.timer, 5); // noch etwas zuschauen, wie sie schnappen
+    v.popHeart();
+    this.scene.addHearts(1, 'koi');
   }
 
   // Futter ins Gehege werfen, wenn dort gerade Tiere fressen können (nicht zu oft dasselbe Gehege)

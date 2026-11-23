@@ -61,7 +61,7 @@ const GROUPS = {
 // in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
 const GROUP_ORDER = ['farm', 'misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
 // Pakete je Gebiet (dazu kommen die der Tiere, die dort stehen oder einem folgen, siehe levelGroups)
-const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], reptiles: ['jungle'], aquarium: ['reef'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle'] };
+const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], aquarium: ['reef'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle', 'reef'] }; // (reef: Wände des Piranha-Beckens in der Tropenhalle)
 // Events mit Bildern aus einem Paket (Flamingos fliegen auch über Wiese und Wald; Reittier auf der Wiese)
 export const EVENT_GROUPS = { flamingo: ['savanna'], ride: ['misc'] };
 const SPECIES_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, { species = [] }]) => species.map((s) => [s, group])));
@@ -173,6 +173,9 @@ const PIXEL_ART = [
   'agrass0', 'agrass1', 'agrass2', 'asia_path', 'asia_water0', 'asia_water1', 'asia_water2', 'hotspring',
   'bamboo', 'tall_grass', 'jungle_tree', 'cherry_tree', 'hammock', 'peacock_perch',
   'sun_rock', 'stone_lantern', 'torii',
+  // neuer Bambuswald (Platzhalter aus tools/bamboo-placeholders.py): Glaswand des Glaspavillons, Teehaus, Stehtisch, Kies des Zen-Gartens
+  'glass_x', 'glass_y', 'post_glass', 'teahouse', 'tea_table', 'zen_gravel',
+  'gate_curtain_x', 'gate_curtain_y', 'fruit_plate', 'jungle_shrub', // Tropenhalle (tools/junglehall-placeholders.py)
   // Hochebene im Bambuswald (der Schnee selbst: src/world/SnowCover.js): Gebetsfahnen-Stange, Stupa, Salzstein (am Boden
   // und in der Hand) und Bürste für die Yaks (tools/plateau-hd.py)
   'prayer_pole', 'stupa', 'salt_stone', 'salttool', 'brush',
@@ -207,7 +210,7 @@ const PIXEL_ART = [
   'safari_jeep_front', 'safari_jeep_back', // Besucherautos der Safari (tools/safari-jeep-cut.py, Paket savanna)
   'build_stakes', 'build_planks', // Baustelle vor dem Ausbau
   // Aquarium: Fassade im Tierpark, Halle und Wassertanks, Böden, Deko im Tank
-  'reptile_facade', 'hutwall_reptiles_x', 'hutwall_reptiles_y', 'post_hutwall_reptiles', 'hutwall_terrarium_x', 'hutwall_terrarium_y',
+  'hutwall_terrarium_x', 'hutwall_terrarium_y',
   'post_hutwall_terrarium', 'hutwall_terrarium_raised_x', 'hutwall_terrarium_raised_y', 'post_hutwall_terrarium_raised', 'hutwall_terrarium_raised_back_x', 'hutwall_terrarium_raised_back_y', 'post_hutwall_terrarium_raised_back',
   'floor_reptiles', 'terrarium_floor', 'aquarium_facade', 'hutwall_aquarium_x', 'hutwall_aquarium_y', 'post_hutwall_aquarium', 'hutwall_tank_x', 'hutwall_tank_y', 'post_hutwall_tank',
   'floor_aquarium', 'tank_floor', 'seaweed', 'coral', 'tank_rock', 'shell', 'tank_chest',
@@ -237,7 +240,7 @@ const PIXEL_ART = [
 const TEST_ART = {};
 
 // Gegenstände in doppelter Auflösung (werden halb so groß angezeigt)
-const ITEMS = ['icecream', 'icecream2', 'icecream3', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball', 'treasure_chest0', 'treasure_chest1'];
+const ITEMS = ['icecream', 'icecream2', 'icecream3', 'tea_cup', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'net', 'lasso', 'trap', 'hand', 'food', 'esign_pasture', 'esign_cats', 'esign_pond', 'esign_aviary', 'esign_savanna', 'esign_deerpark', 'esign_foxden', 'esign_forestaviary', 'esign_meerkat', 'esign_lion', 'esign_crocodile', 'koifood', 'esign_koi', 'esign_board', 'parkfood', 'jar', 'scissors', 'lantern', 'bone', 'jar_glow', 'machete', 'banana', 'canoe_icon', 'rod', 'drum', 'herring', 'ball', 'treasure_chest0', 'treasure_chest1'];
 
 // Muss zu tools/prepare-characters.js passen
 const HERO_FRAME = { frameWidth: 72, frameHeight: 116 };

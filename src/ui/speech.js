@@ -13,6 +13,7 @@ let catcher = null;
 let toastEl = null;
 let state = null; // { pages, page, shown, timer, onDone }
 let toastTimer = null;
+let toastQueue = []; // weitere Sätze für die kleine Blase am Rand (einer nach dem anderen)
 
 function ensure() {
   if (bubble) return;
@@ -43,7 +44,7 @@ function ensure() {
   bubble.addEventListener('pointerdown', next);
   toastEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    hideToast();
+    hideToast(); // (antippen: gleich der nächste Satz)
   });
 }
 
@@ -124,8 +125,18 @@ export function placeSpeech(x, y) {
 }
 
 // kleine Blase am Rand mit Mavis Gesicht (sie ist gerade nicht zu sehen); geht von selbst wieder weg
+// text: ein Satz oder mehrere (Liste) – mehrere kommen nacheinander, jeder als eigene kurze Blase (antippen: weiter)
 export function sayToast(text) {
   ensure();
+  if (Array.isArray(text)) {
+    toastQueue = text.slice(1);
+    if (!text.length) return;
+    text = text[0];
+  } else toastQueue = [];
+  showToastLine(text);
+}
+
+function showToastLine(text) {
   toastEl.innerHTML = `<span class="speech-face"></span><span><b class="speech-name">Mavi</b>${text}</span>`;
   toastEl.classList.remove('show');
   void toastEl.offsetWidth; // Animation neu starten
@@ -137,4 +148,8 @@ export function sayToast(text) {
 function hideToast() {
   clearTimeout(toastTimer);
   toastEl?.classList.remove('show');
+  if (toastQueue.length) {
+    const next = toastQueue.shift();
+    toastTimer = setTimeout(() => showToastLine(next), 350); // kurz weg, dann der nächste Satz
+  }
 }

@@ -66,13 +66,14 @@ export const APPEAL = {
 };
 
 const MAX_VISITORS = 16; // im Tierpark (bei so vielen Gehegen brächten neue Tiere sonst kaum noch etwas)
-// Häuser mit eigener Halle haben weniger Platz für Besucher: das Reptilienhaus mit zwei kleinen Terrarien nur wenige
-export const HOUSE_VISITORS = { aquarium: 8, reptiles: 4 };
+// Häuser mit eigener Halle haben weniger Platz für Besucher
+export const HOUSE_VISITORS = { aquarium: 8 };
 // Tierbaby-Event: Babys sind besonders süß. Es kommen nicht mehr Besucher als sonst, aber sie gehen lieber zu den
 // Gehegen mit Babys (BABY_APPEAL zählt bei der Wahl mit), und wer dort stehen bleibt, gibt zusätzlich im Schnitt
-// 2,5 Herzen (abwechselnd 2 oder 3). Mit einigen Tierpaaren bringt das Event so mehr ein, als es kostet (50 Herzen).
-export const BABY_APPEAL = 3;
-export const BABY_BONUS = 2.5;
+// ein halbes Herz (mal 0, mal 1). Mit einigen Tierpaaren bringt das Event so etwas mehr ein, als es kostet (50 Herzen).
+// (vorher 3 und 2,5: das brachte schon mit wenigen Tieren viel zu viel)
+export const BABY_APPEAL = 1.5;
+export const BABY_BONUS = 0.5;
 
 // seltene Skins locken mehr Besucher an als die normale Art (Katze 2: mehr als doppelt so viel wie eine Katze, Oryx 1,5-mal)
 export const SKIN_APPEAL = { tanuki2: 6, yak2: 5.5, stag: 4, wolf2: 7, lion2: 8, zebra2: 4.5, cat2: 3, antelope2: 4.5, koi3: 3, frog2: 3, tiger2: 7, orangutan2: 7, peacock2: 6, jellyfish2: 7, ray2: 8, lungfish: 2, shoebill: 6, croc_albino: 8, gibbon: 6, sheep2: 2.5, heron2: 5, fox2: 6, squirrel2: 3, beaver2: 6, macaque2: 7, giraffe2: 6, panda2: 8, octopus2: 7, anteater2: 5, meerkat2: 4, vulture2: 6, gorilla2: 9, hyena2: 6, hippo2: 6, warthog2: 5, toucan2: 6, penguin2: 5, seal2: 6, seahorse2: 6, turtle2: 7, tapir2: 7, okapi2: 8 }; // koi3: weißer Koi mit rotem Punkt
@@ -260,6 +261,18 @@ export function buildPathGrid() {
     return best;
   };
   const shops = shopsIn(LEVEL_ID).map(({ slot, kind }) => ({ id: slot.id, kind, at: { tx: slot.tx, ty: slot.ty }, spots: standSpots(slot) })).filter((s) => s.spots.length);
+  // Teehaus: Plätze auf dem Weg direkt neben den Stehtischen (dort trinken die Besucher ihren Tee); man schaut zum Tisch
+  const t = LEVEL.teaHouse;
+  const tea = [];
+  for (const table of t?.tables ?? []) {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const k = key(table.tx + dx, table.ty + dy);
+      if (!walk.has(k) || claimed.has(k)) continue;
+      claimed.add(k);
+      tea.push({ tx: table.tx + dx, ty: table.ty + dy, table, taken: null });
+    }
+  }
+  if (tea.length) shops.push({ id: 'teahouse', kind: 'tea', at: { tx: t.tx + 1, ty: t.ty + 1 }, spots: tea });
   const ice = LEVEL.iceStand ? standSpots(LEVEL.iceStand) : [];
   // Riesenrad: Warteplätze auf dem Weg nah an den 2×2 Kacheln (dort stellen sich die Besucher an)
   let wheel = [];

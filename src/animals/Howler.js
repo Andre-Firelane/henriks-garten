@@ -6,7 +6,7 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
-import { LEVEL, reachableJungleTrees } from '../world/map.js';
+import { LEVEL, charAt, reachableJungleTrees } from '../world/map.js';
 
 const CROWN_UP = 104; // Höhe der Baumkrone über dem Fuß des Urwaldbaums (Bild "jungle_tree")
 const TROOP_SIZE = [3, 4]; // so viele sind in einem Trupp
@@ -22,6 +22,8 @@ const CLIMB_MS = 1200; // so lange klettert er herunter bzw. hinauf
 const EAT_TIME = 10; // so lange frisst er unten die Banane – in der Zeit fängt man ihn mit dem Lasso
 const CALL_VOLUME = 0.7; // Brüllen ganz nah ...
 const CALL_HEAR = 420; // ... und so weit (Welt-Pixel, etwa 13 Kacheln) hört man es noch
+const CANOPY_JUMP_EVERY = [12, 25]; // Tropenhalle (canopy): so oft springt er auf einen anderen Baum ...
+const CANOPY_CALL = 0.3; // ... und so oft brüllt er dabei (nicht bei jedem Sprung)
 
 export default class Howler extends Animal {
   constructor(scene, x, y, species = 'howler') {
@@ -79,11 +81,70 @@ export default class Howler extends Animal {
   }
 
   blocked(x, y) {
-    if (this.state === 'wild') return false; // er bewegt sich nur zwischen Baum und Banane
+    if (this.state === 'wild' || this.inCanopy()) return false; // er bewegt sich nur zwischen Baum und Banane bzw. von Baum zu Baum
     return super.blocked(x, y);
   }
 
+  // im Gehege mit canopy (Tropenhalle, siehe levels.js): er bleibt oben in den Urwaldbäumen
+  inCanopy() {
+    return this.state === 'penned' && !!this.enclosure?.canopy?.includes(this.species);
+  }
+
+  // Tropenhalle: sitzt gut sichtbar oben in einem Urwaldbaum des Geheges und springt ab und zu auf einen freien Baum in
+  // der Nähe (wie wild, nur zu sehen). Gibt es keinen Baum, läuft er wie im normalen Gehege
+  updateCanopy(dt, player) {
+    if (this.phase === 'jump') return false;
+    const trees = (this.enclosure.tiles ?? []).filter(({ tx, ty }) => charAt(tx, ty) === 'J');
+    if (!trees.length) return super.updateFree(dt, player);
+    const taken = Howler.takenTrees(this.scene, this);
+    if (this.phase !== 'tree' || !this.tree) {
+      const free = trees.filter((t) => !taken.has(t.tx + ',' + t.ty));
+      this.sitIn(Phaser.Utils.Array.GetRandom(free.length ? free : trees));
+      this.jumpIn = Phaser.Math.FloatBetween(2, CANOPY_JUMP_EVERY[1]);
+      return false;
+    }
+    this.jumpIn -= dt;
+    if (this.jumpIn > 0) return false;
+    this.jumpIn = Phaser.Math.FloatBetween(...CANOPY_JUMP_EVERY);
+    const options = trees.filter((t) => !taken.has(t.tx + ',' + t.ty) && (t.tx !== this.tree.tx || t.ty !== this.tree.ty) && Math.hypot(t.tx - this.tree.tx, t.ty - this.tree.ty) <= JUMP_RANGE);
+    const next = Phaser.Utils.Array.GetRandom(options);
+    if (!next) return false;
+    if (Math.random() < CANOPY_CALL) this.call();
+    this.scene.rustleCrown?.(this.tree);
+    const from = { x: this.x, y: this.y };
+    const to = tileToWorld(next.tx, next.ty);
+    to.y += 3;
+    this.tree = next;
+    this.phase = 'jump';
+    this.faceX = Math.sign(to.x - from.x) || this.faceX;
+    this.faceY = Math.sign(to.y - from.y) || this.faceY;
+    const k = { t: 0 };
+    this.scene.tweens.add({
+      targets: k,
+      t: 1,
+      duration: JUMP_MS,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        this.x = from.x + (to.x - from.x) * k.t;
+        this.y = from.y + (to.y - from.y) * k.t;
+        this.lift = CROWN_UP + Math.sin(Math.PI * k.t) * JUMP_ARC;
+      },
+      onComplete: () => {
+        if (!this.inCanopy() || this.phase !== 'jump') return;
+        this.sitIn(next);
+        this.scene.rustleCrown?.(next);
+      },
+    });
+    return false;
+  }
+
+  // oben in den Bäumen der Tropenhalle kommt er nicht zum Futter der Besucher herunter
+  canFeed() {
+    return !this.inCanopy() && super.canFeed();
+  }
+
   updateFree(dt, player) {
+    if (this.inCanopy()) return this.updateCanopy(dt, player);
     if (this.state !== 'wild') return super.updateFree(dt, player);
     if (this.phase === 'tree') {
       // Banane unten an seinem Baum? Dann kommt er herunter
@@ -138,6 +199,11 @@ export default class Howler extends Animal {
         this.scene.rustleCrown?.(next);
       },
     });
+  }
+
+  // im Baum: gespeichert wird der Platz am Fuß des Baums (beim Laden setzt er sich wieder hinein)
+  savedSpot() {
+    return this.tree && this.inCanopy() ? tileToWorld(this.tree.tx, this.tree.ty) : { x: this.x, y: this.y };
   }
 
   // Brüllen: laut, weiter weg leiser (eigener Laut, falls es einen gibt, sonst der Affenruf viel tiefer). Der Gibbon

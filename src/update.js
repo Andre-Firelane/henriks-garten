@@ -1,5 +1,5 @@
 // Neue Version: Handy und Tablet holen eine schon offene Seite oft aus dem Speicher, statt sie neu zu laden.
-// Kommt die Seite wieder in den Vordergrund, fragt sie nach der aktuellen Version (version.json, beim Build geschrieben).
+// Beim Start und wenn die Seite wieder in den Vordergrund kommt, fragt sie nach der aktuellen Version (version.json, beim Build geschrieben).
 // Gibt es eine neuere, speichert sie den Stand und lädt neu (danach geht es auf dem Startbildschirm mit "Weiterspielen" weiter).
 import { saveNow } from './save.js';
 import { showLoading } from './ui/loading.js';
@@ -21,6 +21,8 @@ async function check() {
 }
 
 export function setupUpdateCheck() {
+  // gleich beim Spielstart (falls der Browser eine alte Seite aus dem Speicher genommen hat)
+  check();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') check();
   });

@@ -292,10 +292,10 @@ export const STEPS = [
     goal: tr('Bring die Bambuswald-Tiere zu Mavi in den Tierpark (Bambuswald & Dschungel)', 'Bring the bamboo forest animals to Mavi in the zoo (Bamboo Forest & Jungle)'),
     intro: [
       tr('Da seid ihr ja! Deine Tiere aus dem Bambuswald sind schon in ihre Gehege gezogen.', 'There you are! Your animals from the bamboo forest have already moved into their enclosures.'),
-      tr('Jetzt kommt der Dschungel – mit dem Wasserflugzeug! Und das Reptilienhaus hier im Park ist auch offen.', 'Next up is the jungle – by seaplane! And the reptile house here in the zoo is open too.'),
+      tr('Jetzt kommt der Dschungel – mit dem Wasserflugzeug! Deine Dschungeltiere ziehen hier in die Tropenhalle.', 'Next up is the jungle – by seaplane! Your jungle animals will move into the tropical hall here.'),
     ],
     reward: 10,
-    unlocks: ['jungle', 'reptiles'],
+    unlocks: ['jungle', 'reptiles'], // (reptiles: das frühere Reptilienhaus, die Tiere wohnen jetzt in der Tropenhalle)
   },
   {
     id: 'jungle',

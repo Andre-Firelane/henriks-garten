@@ -5,6 +5,7 @@ import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
 import { migrateStory, syncStory } from './story/story.js';
 import { SHOP_IDS, migrateLegacySlots } from './world/shops.js';
+import { DECOR, giveDecor } from './world/decor.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -104,11 +105,13 @@ export function loadSave() {
   if (!s.game.nextAnimalId) game.nextAnimalId = 1;
   if (s.game.namings == null) game.namings = Object.keys(game.bonds).length; // jeder bisherige Freund zählt als ein Benennen
   if (!Array.isArray(game.wishes?.open)) game.wishes = { open: [] }; // (ältere Spielstände: noch keine Besucherwünsche)
+  if (!s.game.monkeyIsland) migrateMonkeyIsland();
+  if (!s.game.jungleHall) migrateJungleHall();
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
   save.lastSaved = s.savedAt;
-  return s.level;
+  return s.level === 'reptiles' ? 'park3' : s.level; // (das Reptilienhaus gibt es nicht mehr, siehe migrateJungleHall)
 }
 
 // Früher war der Tierpark eine einzige Karte, jetzt sind es drei Abschnitte (park, park2, park3; siehe levels.js): die
@@ -185,6 +188,76 @@ function migratePettingZoo() {
     delete game.heartsBy?.[s];
   }
   if (GONE_SPECIES.includes(game.rarePromise?.species)) game.rarePromise = null;
+}
+
+// Bambuswald (siehe docs/plan-bambuswald.md): Affenquelle, Orang-Utan-Gehege, Affen-Gehege und Gorilla-Gehege gibt es
+// nicht mehr, alle Affen leben auf der Affeninsel (monkeys). Die Tierfreunde ziehen mit (Name und Freundschaft bleiben),
+// das Spielzeug der alten Gehege fällt weg (die Insel hat ihr eigenes). Die Tiere selbst setzt GardenScene beim Betreten
+// des Bambuswalds auf die Insel (Tiere, deren Gehege es nicht mehr gibt, kommen in ein passendes).
+const MONKEY_PENS = ['macaques', 'orangutans', 'howlers', 'gorillas'];
+function migrateMonkeyIsland() {
+  game.monkeyIsland = true;
+  for (const [k, uid] of Object.entries(game.friends ?? {})) {
+    const [pen, species] = k.split(':');
+    if (!MONKEY_PENS.includes(pen)) continue;
+    delete game.friends[k];
+    game.friends[`monkeys:${species}`] ??= uid;
+  }
+  for (const pen of MONKEY_PENS) {
+    delete game.decor?.toys?.[pen];
+    delete game.penLevel?.[pen];
+  }
+}
+
+// Tropenhalle (siehe docs/plan-dschungel.md): Ara-Voliere, Ameisenbär- und Tapir-Gehege gibt es nicht mehr, ihre Tiere
+// leben frei in der Halle (junglehall); die Tierfreunde ziehen mit. Das Reptilienhaus ist weg: seine Tiere ziehen in die
+// Terrarien und das Piranha-Becken der Halle (pending: GardenScene setzt sie beim nächsten Besuch ein, wie bei
+// sendToSection). 2/3 der Schmetterlinge aus dem Zentrum flattern jetzt in der Halle (der Tierfreund bleibt im Zentrum).
+// Deko und Buden im umgebauten Teil (Halle und der Garten unten links) kommen zurück in die Bauen-Leiste.
+const JUNGLE_PENS = ['macaws', 'anteaters', 'tapirs'];
+function migrateJungleHall() {
+  game.jungleHall = true;
+  for (const [k, uid] of Object.entries(game.friends ?? {})) {
+    const [pen, species] = k.split(':');
+    if (!JUNGLE_PENS.includes(pen)) continue;
+    delete game.friends[k];
+    game.friends[`junglehall:${species}`] ??= uid;
+  }
+  for (const pen of [...JUNGLE_PENS, 'jaguars']) {
+    delete game.decor?.toys?.[pen];
+    delete game.penLevel?.[pen];
+  }
+  const park3 = (game.levels.park3 ??= { animals: [], pickups: [] });
+  // Reptilienhaus → Terrarien der Halle
+  for (const a of game.levels.reptiles?.animals ?? []) {
+    if (a.state === 'penned') park3.animals.push({ ...a, pending: true, origin: 'jungle' });
+  }
+  delete game.levels.reptiles;
+  // Schmetterlinge: zwei Drittel in die Halle
+  const park = game.levels.park;
+  if (park?.animals) {
+    const friend = game.friends?.['butterflies:butterfly'];
+    const flies = park.animals.filter((a) => a.species === 'butterfly' && a.state === 'penned' && (friend == null || a.uid !== friend));
+    const all = park.animals.filter((a) => a.species === 'butterfly' && a.state === 'penned').length;
+    for (const a of flies.slice(0, Math.round((all * 2) / 3))) {
+      park.animals.splice(park.animals.indexOf(a), 1);
+      park3.animals.push({ ...a, pending: true, origin: 'meadow' });
+    }
+  }
+  // umgebaut (Kacheln im Abschnitt park3): die Halle, der Rasen davor und der Garten unten links (früher Tapir- und Okapi-Gehege)
+  const rebuilt = (tx, ty) => (tx >= 48 && tx <= 83 && ty >= 0 && ty <= 38) || (tx >= 44 && tx <= 47 && ty >= 13 && ty <= 38) || (tx >= 24 && tx <= 43 && ty >= 24 && ty <= 38);
+  const placed = game.decor?.placed?.park3;
+  if (placed) {
+    game.decor.placed.park3 = placed.filter((d) => {
+      if (!rebuilt(d.tx, d.ty)) return true;
+      if (DECOR[d.id]) giveDecor(d.id);
+      return false;
+    });
+  }
+  for (const [id, b] of Object.entries(game.booths ?? {})) {
+    if (b.level !== 'park3' || b.stored) continue;
+    if ([[0, 0], [1, 0], [0, 1], [1, 1]].some(([dx, dy]) => rebuilt(b.tx + dx, b.ty + dy))) game.booths[id] = { level: 'park3', stored: true };
+  }
 }
 
 // Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik

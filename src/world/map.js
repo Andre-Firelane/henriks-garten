@@ -20,7 +20,8 @@ export const slotsShown = () => storyAt('stands');
 // ɨ: zugefrorenes Meer (Eiswelt bei Nacht, begehbar); ȸ ȹ: Zaun über einem Bach (Wildpark im Tierpark)
 // ŝ ĉ ṗ ķ ẋ: Sonnenblumen, Mais, Kürbisse, Kohl und Vogelscheuche auf dem Acker (Wiese)
 // ≠: Sandpiste der Safari im Tierpark (dort fahren die Besucherautos; kein Weg für Fußgänger, die Tiere laufen darüber)
-const GROUND = { '≠': 'savanna_path', 'ȸ': 'water', 'ȹ': 'water', '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
+// ẑ: geharkter Kies im Zen-Garten am Teehaus (Bambuswald im Tierpark; man geht nicht darüber)
+const GROUND = { 'ẑ': 'zen_gravel', '≠': 'savanna_path', 'ȸ': 'water', 'ȹ': 'water', '≈': 'mud', '=': 'soil', '~': 'water', o: 'fishpond', w: 'water', ',': 'planks', h: 'hotspring', B: 'water', E: 'water', Ƭ: 'water', ƫ: 'water', ř: 'water', ǒ: 'water', 0: 'water', Ŝ: 'water', ɨ: 'sea_ice', ŝ: 'soil', ĉ: 'soil', ṗ: 'soil', ķ: 'soil', ẋ: 'soil' }; // 0: Springbrunnen im See
 const PATH_CHARS = '#GXI';
 // Boden in den Hütten je Gebiet (sonst Holzdielen)
 const HUT_FLOOR = { forest: 'planks_forest', savanna: 'planks_savanna', asia: 'planks_asia', jungle: 'planks_jungle', ice: 'planks_ice', office: 'floor_office', aquarium: 'floor_aquarium', tank: 'tank_floor', reptiles: 'floor_reptiles', terrarium: 'terrarium_floor', terrarium_raised: 'terrarium_floor' }; // Weg, Tor, Übergang und das Tor über dem Weg (Torii) liegen auf dem Weg-Boden
@@ -58,6 +59,11 @@ export const OBJECTS = {
   // Netz der Voliere (entlang tx bzw. ty)
   '^': { key: 'net_x', originY: 44 / 64, solid: true, fence: { kind: 'net', axis: 'x' } },
   ';': { key: 'net_y', originY: 44 / 64, solid: true, fence: { kind: 'net', axis: 'y' } },
+  // Glaswand (Glaspavillon auf der Affeninsel im Tierpark; Bild wie das Glastor), entlang tx bzw. ty
+  ǧ: { key: 'glass_x', originY: 44 / 64, solid: true, fence: { kind: 'glass', axis: 'x' } },
+  Ǧ: { key: 'glass_y', originY: 44 / 64, solid: true, fence: { kind: 'glass', axis: 'y' } },
+  // Stehtisch am Teehaus (Bambuswald im Tierpark): dort trinken die Besucher ihren Tee
+  ţ: { key: 'tea_table', originY: 38 / 39, solid: true, hitbox: 8 },
   // dichter Maschendraht (Teich)
   '{': { key: 'chain_x', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'x' } },
   '}': { key: 'chain_y', originY: 44 / 64, solid: true, fence: { kind: 'chain', axis: 'y' } },
@@ -118,9 +124,6 @@ export const OBJECTS = {
   '+': { key: 'peacock_perch', originY: 84 / 96, solid: true, hitbox: 6 }, // hohe Sitzstange (Pfauengehege)
   // Aquarium: Fassade am Rand des Tierparks (großes Bild, ragt über den Kartenrand; die Kachelmitte ist die Tür)
   // ganz hinten (gleich über dem Boden): hinter der Fassade liegt nur der Kartenrand, alles auf der Karte steht davor
-  // Reptilienhaus im Dschungel-Bereich des Tierparks (die Kachel ist die Tür; das Haus selbst steht auf Kacheln
-  // außerhalb der Karte); durch die Tür geht es hinein (Übergang ins Level "reptiles")
-  Ř: { key: 'reptile_facade', originX: 228 / 880, originY: 404 / 560, solid: false, noCull: true, depthFixed: -99000 },
   '`': { key: 'aquarium_facade', originX: 760 / 1296, originY: 680 / 752, solid: false, noCull: true, depthFixed: -99000 },
   // Deko in den Wassertanks
   '(': { key: 'seaweed', originY: 100 / 112, solid: false },
@@ -184,6 +187,8 @@ export const OBJECTS = {
   Ŵ: { key: 'waterfall', originY: 150 / 160, solid: true, waterfall: true },
   Ṁ: { key: 'mangrove', originY: 100 / 112, solid: true, hitbox: 12 }, // Mangrove am Ufer (Stelzwurzeln)
   ľ: { key: 'jungle_plant', originY: 40 / 48, solid: false }, // großblättrige Bodenpflanze (begehbar)
+  Ǫ: { key: 'jungle_shrub', originY: 116 / 128, solid: true, hitbox: 18 }, // großer Strauch mit riesigen Blättern (Tropenhalle)
+  ǫ: { key: 'fruit_plate', originY: 56 / 64, solid: true, hitbox: 6 }, // Obstteller auf einem Pfosten (Tropenhalle im Tierpark: dort sitzen die Schmetterlinge)
   ẅ: { key: 'spider_web', originY: 58 / 64, solid: false }, // Spinnennetz zwischen zwei Zweigen (Vogelspinnen-Terrarium)
   // große Blumen (später fliegen Kolibris zu ihnen): Helikonie und Hibiskus
   Ḣ: { key: 'heliconia', originY: 88 / 96, solid: true, hitbox: 6, bigFlower: true },
@@ -408,10 +413,10 @@ export function setLevel(id) {
         });
       } else {
         const out = [];
-        ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id], out);
+        ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id], out, !!e.moat);
         game.decor.toys[e.id] = out;
       }
-    } else ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id]);
+    } else ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id], null, !!e.moat);
   }
   // selbst gesetzte Deko (nur Tierpark): nur auf Rasen; was dort nicht mehr passt (z. B. nach einem Umbau), wandert zurück
   // in die Deko-Taste (DECOR_RETURNED zählt mit, die Szene zeigt einen Hinweis)
@@ -464,7 +469,7 @@ export function setLevel(id) {
     // free: freilaufende Tiere (z. B. Pfauen) – ein "Gehege" ohne Fläche, Zaun und Schild, nur zum Zählen
     // pond: Teich ohne Zaun (Koi) – das Gehege ist das zusammenhängende Wasser samt Brücke ab dem Startpunkt
     // shore (Teich ohne Zaun): dazu das Ufer so viele Kacheln breit, ohne Wege (dort hüpfen z. B. die Frösche)
-    let tiles = e.free ? [] : e.pond ? floodChars(e.seed, 'oE') : e.seed ? floodPen(e.seed) : rectTiles(e.area);
+    let tiles = e.free ? [] : e.pond ? floodChars(e.seed, 'oE') : e.seed ? floodPen(e.seed, !!e.moat) : rectTiles(e.area);
     if (e.pond && e.shore) tiles = withShore(tiles, e.shore);
     // jede Kachel gehört nur einem Gehege: das zuerst genannte behält sie (z. B. der Teich auf der Lichtung im Wildpark,
     // dessen Fläche sonst auch zum Wildpark zählen würde)
@@ -672,7 +677,8 @@ export function isUpgraded(e) {
 // (.), dessen Nachbarn alle im Gehege liegen (nicht am Zaun oder Tor), das erste möglichst mittig, jedes weitere mit
 // möglichst viel Abstand zu den anderen. Gibt die neuen Zeilen zurück.
 // out: dort landen die Plätze { id, tx, ty } (gestaltbare Gehege merken sie sich)
-function placeToys(rows, seed, list, out = null) {
+// moat: Wasser und Brücken begrenzen das Gehege (Insel)
+function placeToys(rows, seed, list, out = null, moat = false) {
   const grid = rows.map((r) => [...r]);
   const inside = new Set([seed.tx + ',' + seed.ty]);
   const todo = [seed];
@@ -683,6 +689,7 @@ function placeToys(rows, seed, list, out = null) {
       const ty = t.ty + dy;
       const c = grid[ty]?.[tx];
       if (inside.has(tx + ',' + ty) || c === undefined || c === ' ' || c === 'G' || OBJECTS[c]?.fence) continue;
+      if (moat && (GROUND[c] === 'fishpond' || OBJECTS[c]?.bridge)) continue;
       inside.add(tx + ',' + ty);
       todo.push({ tx, ty });
     }
@@ -835,7 +842,8 @@ function crownHidden(tx, ty, strict = false) {
   return false;
 }
 
-function floodPen(seed) {
+// moat: auch Wasser und Brücken begrenzen das Gehege (Insel im Teich, z. B. die Affeninsel)
+function floodPen(seed, moat = false) {
   const seen = new Set([seed.tx + ',' + seed.ty]);
   const tiles = [];
   const todo = [seed];
@@ -847,13 +855,28 @@ function floodPen(seed) {
       const key = n.tx + ',' + n.ty;
       if (seen.has(key) || n.tx < 0 || n.ty < 0 || n.tx >= MAP_W || n.ty >= MAP_H) continue;
       const c = charAt(n.tx, n.ty);
-      if (c === 'G' || OBJECTS[c]?.fence) continue;
+      if (c === 'G' || OBJECTS[c]?.fence || (moat && (GROUND[c] === 'fishpond' || OBJECTS[c]?.bridge))) continue;
       seen.add(key);
       todo.push(n);
       if (tiles.length > 2000) throw new Error(`Gehege bei ${seed.tx},${seed.ty} ist nicht geschlossen`); // (die Safari hat rund 900 Kacheln)
     }
   }
   return tiles;
+}
+
+// Freilaufende Tiere (Gehege mit free): Kacheln nahe den Wegen (NEAR_PATH); mit within nur darin (Schmetterlinge der
+// Tropenhalle), sonst nicht in der Tropenhalle (Pfauen im Bambuswald)
+const inRect = (r, tx, ty) => !!r && tx >= r.tx0 && tx <= r.tx1 && ty >= r.ty0 && ty <= r.ty1;
+export function inFreeArea(e, tx, ty) {
+  if (!NEAR_PATH.has(tx + ',' + ty)) return false;
+  return e?.within ? inRect(e.within, tx, ty) : !inRect(LEVEL.jungleHall, tx, ty);
+}
+export function freeAreaTiles(e) {
+  return NEAR_PATH_TILES.filter(({ tx, ty }) => inFreeArea(e, tx, ty));
+}
+// Liegt die Kachel in der Tropenhalle (unter dem Glasdach, samt Wänden)?
+export function inJungleHall(tx, ty) {
+  return inRect(LEVEL.jungleHall, tx, ty);
 }
 
 // Liegt die Kachel in irgendeinem Gehege?
@@ -888,6 +911,16 @@ export function buildingAt(tx, ty, margin = 0) {
 export function raiseAt(tx, ty) {
   const h = buildingAt(tx, ty);
   return h?.raise && tx > h.tx0 && tx < h.tx1 && ty > h.ty0 && ty < h.ty1 ? h.raise : 0;
+}
+
+// Vordere Wandkacheln eines Terrariums auf einem Sockel: dort liegt zwischen dem erhöhten Boden und der Wand noch ein
+// Streifen Boden auf Sockelhöhe (sonst sieht man dort den Boden davor durchscheinen, z. B. Rasen in der Tropenhalle).
+// Gibt { raise, key } zurück oder null
+export function raisedEdgeFloor(tx, ty) {
+  const h = buildingAt(tx, ty);
+  if (!h?.raise) return null;
+  const front = (ty === h.ty1 && tx > h.tx0 && tx <= h.tx1) || (tx === h.tx1 && ty > h.ty0 && ty <= h.ty1);
+  return front ? { raise: h.raise, key: HUT_FLOOR[h.style] ?? 'planks' } : null;
 }
 
 // Liegt die Kachel in der Hütte bzw. einem Gebäude (samt Wänden)?
@@ -1225,7 +1258,7 @@ export function reachableJungleTrees() {
 export function isBlocked(tx, ty) {
   if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
   const c = charAt(tx, ty);
-  if ('~owH '.includes(c)) return true; // Leerzeichen: außerhalb der Karte (nichts zu sehen, z. B. neben dem Tierpark)
+  if ('~owHẑ '.includes(c)) return true; // Leerzeichen: außerhalb der Karte (nichts zu sehen, z. B. neben dem Tierpark)
   if (c === 'Ď') return thicketBlock.at ? thicketBlock.at(tx, ty) : true;
   return objectAt(tx, ty)?.solid ?? false;
 }
