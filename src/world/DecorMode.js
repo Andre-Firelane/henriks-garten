@@ -32,6 +32,7 @@ const RESERVED = 0xffa040;
 const FREE = 0x9dff8a; // Kacheln, auf die man bauen darf
 const KEEP_CLEAR = 6; // so viel Platz (Welt-Pixel, Höhe doppelt) bleibt um eine feste Deko frei zu Henrik und den Tieren
 const BOOTH_GAP = 3; // so viele Kacheln liegen mindestens zwischen zwei Buden (sonst teilen sie sich die Plätze davor)
+const REACH = 2; // Antippen: so viele Kacheln um Henrik herum erreicht man (in jede Richtung, auch schräg)
 
 // Blickrichtung der Spielfigur (faceX, faceY: schräg im Bild) → Nachbarkachel
 const AHEAD = { '1,1': [1, 0], '-1,1': [0, 1], '1,-1': [0, -1], '-1,-1': [-1, 0] };
@@ -248,6 +249,62 @@ export default class DecorMode {
     else if (kind === 'pick') this.pickUp(entry);
     else if (kind === 'no' && this.ghost) this.scene.tweens.add({ targets: this.ghost, x: this.ghost.x + 3, duration: 50, yoyo: true, repeat: 2 });
     return true;
+  }
+
+  // Antippen bzw. Anklicken (Weltpunkt): auf einer Kachel in Henriks Nähe gesetzte Deko aufheben bzw. das gewählte Teil
+  // dorthin setzen. Getroffen zählt die Kachel unter dem Finger oder das Bild einer gesetzten Deko (z. B. die Krone eines
+  // Baums). Große Teile (2×2) reichen von Henrik weg. Geht es nicht, blinkt die Kachel rot mit kurzem Hinweis.
+  tap(wx, wy) {
+    if (!this.on) return;
+    const p = this.scene.player;
+    const here = worldToTile(p.x, p.y);
+    const near = (t) => Math.max(Math.abs(t.tx - here.tx), Math.abs(t.ty - here.ty)) <= REACH;
+    const { tx, ty } = worldToTile(wx, wy);
+    const entry = this.entryAt(tx, ty) ?? this.entryUnder(wx, wy);
+    if (entry) {
+      const tiles = entry.item && !isToy(entry.id) && !entry.booth ? decorTiles(entry.item) : [entry];
+      if (tiles.some(near)) return this.pickUp(entry);
+      return this.tapNo(tiles[0].tx, tiles[0].ty, tr('Geh näher heran', 'Get closer'));
+    }
+    if (!this.sel) return this.tapNo(tx, ty, null);
+    if (!near({ tx, ty })) return this.tapNo(tx, ty, tr('Geh näher heran', 'Get closer'));
+    // Richtung von Henrik zur Kachel (die längere Achse): dorthin wächst ein großes Teil
+    const ddx = tx - here.tx;
+    const ddy = ty - here.ty;
+    this.dir = Math.abs(ddx) >= Math.abs(ddy) ? [Math.sign(ddx) || 1, 0] : [0, Math.sign(ddy)];
+    if (this.canPlace(tx, ty, this.sel)) {
+      this.place(tx, ty, this.sel);
+      return;
+    }
+    const pen = anyPenAt(tx, ty);
+    const full = !isToy(this.sel) && designablePen(pen) && !!DECOR[this.sel]?.pen && this.penDecor(pen) >= penDecorMax(pen);
+    const why = (isBooth(this.sel) && this.boothProblem(tx, ty, this.sel)) || (full ? tr('Das Gehege ist voll', 'The enclosure is full') : tr('Hier geht das nicht', 'Not here'));
+    this.key = ''; // (update() rechnet die Richtung vor Henrik neu)
+    this.tapNo(tx, ty, why);
+  }
+
+  // gesetzte Deko (bzw. Spielzeug), deren Bild an diesem Weltpunkt liegt – vorderste zuerst
+  entryUnder(wx, wy) {
+    const hits = [...this.scene.decorImages.entries()].filter(([, img]) => img.active && img.getBounds().contains(wx, wy));
+    hits.sort((a, b) => b[1].depth - a[1].depth);
+    for (const [k] of hits) {
+      const [tx, ty] = k.split(',').map(Number);
+      const e = this.entryAt(tx, ty);
+      if (e) return e;
+    }
+    return null;
+  }
+
+  // Antippen ging nicht: Kachel kurz rot, Hinweis unten (kurz, fürs Handy)
+  tapNo(tx, ty, text) {
+    const c = tileToWorld(tx, ty);
+    const g = this.scene.add.graphics().setDepth(-99988);
+    g.fillStyle(NO, 0.45);
+    g.lineStyle(2, NO, 0.95);
+    g.fillPoints(diamond(c.x, c.y), true);
+    g.strokePoints(diamond(c.x, c.y), true);
+    this.scene.tweens.add({ targets: g, alpha: 0, delay: 250, duration: 350, onComplete: () => g.destroy() });
+    if (text) this.scene.showToast(text);
   }
 
   // Werkzeugleiste im Setzen-Modus: { image, label }

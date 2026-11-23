@@ -26,7 +26,11 @@ const DEVIL_PUSH = 80; // so stark schubst er (Pixel pro Sekunde) ...
 const DEVIL_REACH = 30; // ... wen er so nah erwischt
 const FOG_VEIL = 0.22; // milchiger Schleier über allem
 const FOG_CLEAR = 1.6; // so groß ist der klare Bereich um Henrik (Maßstab des Verlaufsbilds)
-const FOG_PUFFS = 45; // so viele Schwaden steigen gleichzeitig auf
+// so viele Schwaden steigen gleichzeitig auf. Am Tablet weniger (dafür dichter): jede ist ein großes, halb durchsichtiges
+// Bild, und zusammen mit Schleier und Verlaufsbild muss der Grafikchip den Bildschirm sonst viele Male übermalen (ruckelt)
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const FOG_PUFFS = TOUCH ? 18 : 45;
+const FOG_PUFF_ALPHA = TOUCH ? 0.75 : 0.55; // so deckend ist eine Schwade auf dem Höhepunkt
 const FOG_NEAR = 700; // nur über Wasser in dieser Entfernung (Welt-Pixel) von Henrik
 const FOG_RISE = 9; // so schnell steigen sie (Pixel pro Sekunde)
 const FLAKES = 90; // so viele Schneeflocken sind gleichzeitig zu sehen
@@ -241,7 +245,7 @@ export default class Weather {
       f.img
         .setPosition(f.x + f.drift * f.age, f.y - FOG_RISE * f.age)
         .setScale(f.size * (0.6 + t * 0.8), f.size * (0.35 + t * 0.4))
-        .setAlpha(Math.sin(Math.PI * t) * 0.55);
+        .setAlpha(Math.sin(Math.PI * t) * FOG_PUFF_ALPHA);
     }
   }
 

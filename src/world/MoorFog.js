@@ -22,7 +22,14 @@ const JITTER = 14; // so weit (Pixel) liegt sie neben der Kachelmitte
 const EDGE = 3; // so viele Kacheln vom Rand des Moors bis zum vollen Nebel
 const DRIFT = 12; // so weit (Pixel) wabert eine Schwade hin und her
 const BANKS = [0.3, 1.45]; // Nebelbänke: so stark schwankt die Dichte (dünnste Lücke, dickste Bank)
-const RISERS = 26; // so viele aufsteigende Schwaden gleichzeitig
+// Am Tablet weniger Schwaden: jede ist ein großes, halb durchsichtiges Bild, und über jeder Moorkachel liegt eine; der
+// Grafikchip müsste den Bildschirm sonst viele Male übermalen (ruckelt). Dort nur jede vierte Kachel (jede zweite in
+// beiden Richtungen), dafür größer und dichter, und halb so viele aufsteigende
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const STRIDE = TOUCH ? 2 : 1;
+const TOUCH_SIZE = TOUCH ? 1.45 : 1; // so viel größer ...
+const TOUCH_ALPHA = TOUCH ? 1.7 : 1; // ... und dichter ist dann eine liegende Schwade
+const RISERS = TOUCH ? 13 : 26; // so viele aufsteigende Schwaden gleichzeitig
 const RISE_NEAR = 650; // nur über Wasser in dieser Entfernung (Welt-Pixel) von Henrik
 const RISE = [7, 13]; // so schnell steigen sie (Pixel pro Sekunde)
 const RISE_LIFE = [6, 11]; // so lange (Sekunden)
@@ -71,11 +78,12 @@ export default class MoorFog {
         for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) wet += isWater(tx + dx, ty + dy) ? 1 : 0;
         wet /= 9;
         if (isWater(tx, ty)) this.water.push({ tx, ty });
+        if ((tx - area.tx0) % STRIDE || (ty - area.ty0) % STRIDE) continue; // (am Tablet nur jede vierte Kachel)
         const edge = Math.min(1, (Math.min(tx - area.tx0, area.tx1 - tx, ty - area.ty0, area.ty1 - ty) + 1) / EDGE);
-        const base = (ALPHA_LAND + (ALPHA_WATER - ALPHA_LAND) * Math.min(1, wet * 1.6)) * edge;
+        const base = (ALPHA_LAND + (ALPHA_WATER - ALPHA_LAND) * Math.min(1, wet * 1.6)) * edge * TOUCH_ALPHA;
         const p = tileToWorld(tx, ty);
         const x = p.x + Phaser.Math.Between(-JITTER, JITTER), y = p.y - 10 + Phaser.Math.Between(-JITTER / 2, JITTER / 2);
-        const s = Phaser.Math.FloatBetween(...PUFF_SCALE);
+        const s = Phaser.Math.FloatBetween(...PUFF_SCALE) * TOUCH_SIZE;
         const img = scene.add.image(x, y, this.tex).setScale(s * Phaser.Math.FloatBetween(1, 1.4), s * 0.45).setTint(TINT).setDepth(DEPTH).setAlpha(0);
         this.puffs.push({ img, x, y, base, phase: Math.random() * 10, speed: Phaser.Math.FloatBetween(0.12, 0.28) });
       }

@@ -19,7 +19,10 @@ const ICON_SHRINK = ICON('<path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/>');
 export const IS_PHONE = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
 
 // Die Szene trägt hier ein, was die Knöpfe tun (wird bei jedem Levelwechsel neu gesetzt)
-export const touchHandlers = { action: null, menu: null };
+export const touchHandlers = { action: null, menu: null, tap: null }; // tap(clientX, clientY): kurzes Tippen ins Bild
+
+const TAP_MS = 300; // so kurz und …
+const TAP_PX = 12; // … so ruhig (CSS-Pixel) ist ein Tippen in der Joystick-Hälfte (sonst Laufen)
 
 let ui = null;
 
@@ -73,10 +76,13 @@ export function setupTouchControls() {
 
   let stickId = null;
   let origin = null;
+  let downAt = 0;
+  let wander = 0; // so weit hat sich der Finger seit dem Aufsetzen höchstens bewegt
   const move = (e) => {
     let dx = e.clientX - origin.x;
     let dy = e.clientY - origin.y;
     const d = Math.hypot(dx, dy);
+    wander = Math.max(wander, d);
     if (d > RADIUS) {
       dx = (dx / d) * RADIUS;
       dy = (dy / d) * RADIUS;
@@ -94,6 +100,8 @@ export function setupTouchControls() {
   const release = (e) => {
     if (e.pointerId !== stickId) return;
     stickId = null;
+    // kurz getippt statt gelaufen: als Tippen ins Bild weitergeben (z. B. Bauen: Deko auf diese Kachel)
+    if (e.type === 'pointerup' && wander < TAP_PX && e.timeStamp - downAt < TAP_MS) touchHandlers.tap?.(e.clientX, e.clientY);
     touch.x = 0;
     touch.y = 0;
     base.classList.remove('show');
@@ -105,6 +113,8 @@ export function setupTouchControls() {
     stickId = e.pointerId;
     zone.setPointerCapture(e.pointerId);
     origin = { x: e.clientX, y: e.clientY };
+    downAt = e.timeStamp;
+    wander = 0;
     base.style.left = `${origin.x}px`;
     base.style.top = `${origin.y}px`;
     base.classList.add('show');

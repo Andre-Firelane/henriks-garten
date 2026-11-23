@@ -66,8 +66,12 @@ Busch aus `OBJECTS`.
    Deko-Taste. Danach ist sie gleich ausgewählt, so stellt man sie schnell um. Im Auswahlfeld gibt es dafür auch
    „Aufheben“ (nichts ausgewählt). Nichts geht verloren (kein Verkaufen, kein Wegwerfen). Später vielleicht „Alles
    einsammeln“ je Abschnitt.
-6. Später vielleicht: Im Setzen-Modus eine Kachel in der Nähe antippen, dann landet die Deko dort. Das wird erst nach
-   dem Ausprobieren entschieden.
+6. **Antippen** (umgesetzt 23.11.2026, Andre: am Tablet war das Davorstellen zu fummelig): Im Setzen-Modus eine Kachel
+   bis zu 2 Kacheln um Henrik herum (auch schräg, `REACH` in DecorMode.js) antippen bzw. am PC anklicken. Liegt dort
+   gesetzte Deko (oder trifft man ihr Bild, z. B. die Baumkrone), wird sie aufgehoben; sonst landet das gewählte Teil
+   dort (große Teile reichen von Henrik weg). Geht es nicht, blinkt die Kachel rot mit kurzem Hinweis („Hier geht das
+   nicht“, „Geh näher heran“, Grund bei Buden). Auch in der linken Bildschirmhälfte: ein kurzes, ruhiges Tippen
+   (unter 0,3 s) zählt dort als Tippen, nicht als Laufen. Die Vorschau vor Henrik und die Aktionstaste gibt es weiter.
 
 Der Setzen-Modus darf andere Aktionen am selben Ort nicht schlucken. Steht Henrik zum Beispiel an einem Gehegeschild,
 gilt die Aktionstaste wie bisher dem Schild, und die Vorschau ist rot.

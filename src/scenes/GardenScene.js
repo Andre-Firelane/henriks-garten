@@ -1775,8 +1775,16 @@ export default class GardenScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ENTER', useTool);
     // am PC: Linksklick ins Bild wie die Aktionstaste (Regal, Auto, Computer und Schilder haben ihre eigenen Klicks;
     // auf Tablet und Handy gibt es dafür den Aktionsknopf)
+    // Bauen: Antippen bzw. Anklicken einer Kachel in Henriks Nähe setzt dort bzw. hebt auf (Tablet: viel leichter, als
+    // Henrik genau davorzustellen); die linke Bildschirmhälfte (Joystick) meldet kurzes Tippen über touchHandlers.tap
     this.input.on('pointerdown', (pointer, over) => {
-      if (pointer.wasTouch || pointer.button !== 0 || over.length) return;
+      if (pointer.button !== 0 || over.length) return;
+      if (this.decor?.on && !this.leaving) {
+        const w = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+        this.decor.tap(w.x, w.y);
+        return;
+      }
+      if (pointer.wasTouch) return;
       useTool();
     });
     // Übersicht über Tiere und Werkzeuge (Taste I oder Tippen auf das Abzeichen oben links)
@@ -1809,6 +1817,12 @@ export default class GardenScene extends Phaser.Scene {
     this.updateMount();
     this.hud.onclick = () => this.showJournal();
     touchHandlers.action = useTool;
+    touchHandlers.tap = (cx, cy) => {
+      if (!this.decor?.on || this.leaving) return;
+      const r = this.game.canvas.getBoundingClientRect();
+      const w = this.cameras.main.getWorldPoint(((cx - r.left) * this.scale.width) / r.width, ((cy - r.top) * this.scale.height) / r.height);
+      this.decor.tap(w.x, w.y);
+    };
     touchHandlers.menu = () => this.openGameMenu();
     cam.setBounds(
       -MAP_H * (TILE_W / 2) - TILE_W,
