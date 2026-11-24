@@ -273,11 +273,12 @@ export class Visitor {
   }
 
   // Blase mitführen; noch nicht angesprochene sind versteckt, solange schon genug Wünsche angenommen sind (und alle,
-  // während er im Riesenrad sitzt)
+  // während er im Riesenrad sitzt). Nach dem Ansprechen verschwindet die Blase; erst der Besucher, der zum großen
+  // Moment kommt, trägt sie wieder (zum Wiedererkennen)
   placeWish() {
     const el = this.wishEl;
     if (!el) return;
-    const show = (this.wishAccepted || wishSlotFree()) && this.phase !== 'ride' && this.chatTimer <= 0;
+    const show = (this.wishAccepted ? !!this.thanks : wishSlotFree()) && this.phase !== 'ride' && this.chatTimer <= 0;
     if (show !== el.classList.contains('show')) el.classList.toggle('show', show);
     if (!show) return;
     const cam = this.scene.cameras.main;
@@ -287,7 +288,7 @@ export class Visitor {
     el.style.top = `${Math.round((this.y - 58 - cam.worldView.y) * cam.zoom * z)}px`;
   }
 
-  // angesprochen: er erzählt von seinem Wunsch und bleibt kurz stehen; die Blase bleibt
+  // angesprochen: er erzählt von seinem Wunsch und bleibt kurz stehen; die Blase verschwindet (siehe placeWish)
   tellWish() {
     const species = this.wish;
     this.wishAccepted = true;
@@ -574,7 +575,8 @@ export class VisitorCrowd {
 
   updateScore() {
     this.score = parkScore(this.scene.animals);
-    this.max = maxVisitors(this.score, HOUSE_VISITORS[LEVEL_ID] ?? parkCap(LEVEL_ID)); // in Aquarium und Reptilienhaus eigene Obergrenze, mit Riesenrad mehr
+    const animals = this.scene.animals.filter((a) => a.state === 'penned' && !a.baby).length;
+    this.max = maxVisitors(this.score, HOUSE_VISITORS[LEVEL_ID] ?? parkCap(LEVEL_ID), animals); // in Aquarium und Reptilienhaus eigene Obergrenze, mit Riesenrad mehr; mit wenigen Tieren wenige
     this.scoreTimer = SCORE_EVERY;
     this.pruneWishes();
     // sind neue Tiere eingezogen, kommt der nächste Besucher entsprechend früher

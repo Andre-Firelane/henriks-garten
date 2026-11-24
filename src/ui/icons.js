@@ -112,7 +112,7 @@ const SHEETS = {
   snowhare: [76, 82, 4, 0], // neue Eiswelt-Tiere
   arcticfox: [72, 72, 4, 0],
   arcticwolf: [80, 80, 4, 0],
-  snowowl: [56, 64, 4, 0],
+  snowowl: [72, 80, 4, 0],
   reindeer: [92, 128, 4, 0],
   walrus: [136, 128, 4, 0],
   polarbear: [152, 148, 4, 0],

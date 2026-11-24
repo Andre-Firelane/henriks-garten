@@ -35,8 +35,8 @@ So entstanden (V = "Tiersprites Test/views", A = public/assets):
   Polarwolf.webp -> arcticwolf: 80 80 68 76; Polarwolf heult.webp -> arcticwolf_howl: 80 80 69 76
   Papageientaucher.webp -> puffin: 64 68 55 63 (_v3 gespiegelt); Papageientaucher fliegt.webp -> puffin_fly: 84 78 47 76
     (_v1 und _v3 gespiegelt: dort schaute der Schnabel nach rechts)
-  Schneeeule.webp -> snowowl: 56 64 50 60; Schneehase.webp -> snowhare: 76 82 68 76 (größer statt scale 0.68 im Spiel)
-  Schneeeule fliegt.webp -> snowowl_fly: 64 56 34 52, nur die Vorderansicht _v1 (die anderen passen nicht zusammen):
+  Schneeeule.webp -> snowowl: 72 80 68 76 (so groß wie der Hase); Schneehase.webp -> snowhare: 76 82 68 76 (größer statt scale 0.68 im Spiel)
+  Schneeeule fliegt.webp -> snowowl_fly: 88 76 46 72, nur die Vorderansicht _v1 (die anderen passen nicht zusammen):
     _d0 = _v1, _d1 = _v1 gespiegelt, Reihenfolge _d0 _d1 _d0 _d1"""
 import sys
 import numpy as np

@@ -6,7 +6,7 @@
 // trottet ein Stück von Henrik weg und legt sich dort wieder hin. Kommt Henrik von der anderen Seite, reicht Berühren.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
-import { worldToTile } from '../world/iso.js';
+import { worldToTile, tileToWorld } from '../world/iso.js';
 import { MAP_W, MAP_H, charAt } from '../world/map.js';
 
 const SIZE = 0.5; // (das Bild ist in voller Größe gezeichnet, 1,35-fach wie früher bei 0,75: so bleibt es scharf)
@@ -66,20 +66,72 @@ export default class PolarBear extends Animal {
     return super.shouldFlee(player);
   }
 
-  // auf den Weg zum Fisch bzw. weg: einfach hinübergehen, wenn etwas im Weg ist (das Eis ist frei; es geht nur um
-  // Steine am Rand)
+  // Weg um das Wasser herum (Breitensuche über die Kacheln, nur über Kacheln ohne Wasser): Liste von Kachel-Mitten bis
+  // kurz vor das Ziel, oder null, wenn es keinen gibt
+  findPath(gx, gy) {
+    const s = worldToTile(this.x, this.y);
+    const g = worldToTile(gx, gy);
+    if (s.tx === g.tx && s.ty === g.ty) return [];
+    const key = (x, y) => y * MAP_W + x;
+    const from = new Map([[key(s.tx, s.ty), -1]]);
+    const queue = [[s.tx, s.ty]];
+    const free = (x, y) => x >= 1 && y >= 1 && x <= MAP_W - 2 && y <= MAP_H - 2 && charAt(x, y) !== '~';
+    for (let i = 0; i < queue.length && i < 4000; i++) {
+      const [x, y] = queue[i];
+      if (x === g.tx && y === g.ty) {
+        const path = [];
+        for (let k = key(x, y); k !== -1; k = from.get(k)) path.unshift(tileToWorld(k % MAP_W, Math.floor(k / MAP_W)));
+        path.shift(); // die eigene Kachel
+        path.pop(); // die Ziel-Kachel: dort geht es direkt zum Ziel
+        return path;
+      }
+      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
+        const k = key(nx, ny);
+        // die Ziel-Kachel darf auch Wasser sein (Fisch direkt am Loch)
+        if (from.has(k) || (!free(nx, ny) && !(nx === g.tx && ny === g.ty))) continue;
+        from.set(k, key(x, y));
+        queue.push([nx, ny]);
+      }
+    }
+    return null;
+  }
+
+  // auf den Weg zum Fisch bzw. weg: um Eislöcher herum (findPath); kommt er trotzdem nicht voran, geht er einfach
+  // geradeaus hinüber – er darf nie hängenbleiben
   walkTo(tx, ty, speed, dt) {
-    const dx = tx - this.x;
-    const dy = ty - this.y;
-    const d = Math.hypot(dx, dy);
+    const d = Math.hypot(tx - this.x, ty - this.y);
     if (d < 1) return d;
-    const step = Math.min(d, speed * dt);
+    // Weg neu suchen, wenn sich das Ziel ändert oder alle 2 Sekunden
+    this.pathAge = (this.pathAge ?? 99) + dt;
+    if (!this.path || this.pathFor?.x !== tx || this.pathFor?.y !== ty || this.pathAge > 2) {
+      if (this.pathFor?.x !== tx || this.pathFor?.y !== ty) this.bestD = Infinity; // neues Ziel
+      this.path = this.findPath(tx, ty) ?? [];
+      this.pathFor = { x: tx, y: ty };
+      this.pathAge = 0;
+    }
+    while (this.path.length && Math.hypot(this.path[0].x - this.x, this.path[0].y - this.y) < 6) this.path.shift();
+    const goal = this.path[0] ?? { x: tx, y: ty };
+    const dx = goal.x - this.x;
+    const dy = goal.y - this.y;
+    const gd = Math.hypot(dx, dy) || 1;
+    const step = Math.min(gd, speed * dt);
     this.faceX = dx < 0 ? -1 : 1;
     this.faceY = dy < 0 ? -1 : 1;
-    if (!this.move((dx / d) * step, (dy / d) * step)) {
-      this.x += (dx / d) * step;
-      this.y += (dy / d) * step;
+    // Fortschritt prüfen: kommt er 1,5 Sekunden lang nicht näher ans Ziel, geht er 1 Sekunde lang einfach geradeaus
+    if (this.pushLeft > 0) this.pushLeft -= dt;
+    else if (this.move((dx / gd) * step, (dy / gd) * step)) {
+      if (d < (this.bestD ?? Infinity) - 4) {
+        this.bestD = d;
+        this.stuckFor = 0;
+      } else if ((this.stuckFor = (this.stuckFor ?? 0) + dt) > 1.5) {
+        this.pushLeft = 1;
+        this.stuckFor = 0;
+        this.bestD = Infinity;
+      }
+      return d;
     }
+    this.x += (dx / gd) * step;
+    this.y += (dy / gd) * step;
     return d;
   }
 

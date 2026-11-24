@@ -391,7 +391,8 @@ export const SPECIES = {
   // die Verkleidung, sitzt er verdutzt da und lässt sich durch Berühren fangen (siehe Tanuki.js)
   tanuki: {
     texture: 'tanuki',
-    anims: { walkDown: 'tanuki_walk', walkUp: 'tanuki_walk_back', idleDown: 'tanuki_idle', idleUp: 'tanuki_idle_back' }, // Videos; Fuchs-Tanuki (tanuki2) weiter als Standbild
+    anims: { walkDown: 'tanuki_walk', walkUp: 'tanuki_walk_back', idleDown: 'tanuki_idle', idleUp: 'tanuki_idle_back' }, // Videos
+    skinAnims: { tanuki2: { walkDown: 'tanuki2_walk', walkUp: 'tanuki2_walk_back', idleDown: 'tanuki2_idle', idleUp: 'tanuki2_idle_back' } }, // Fuchs-Tanuki
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 28,
@@ -408,7 +409,8 @@ export const SPECIES = {
   // kommt es mit (siehe Yak.js und world/YakHerd.js).
   yak: {
     texture: 'yak',
-    anims: { walkDown: 'yak_walk', walkUp: 'yak_walk_back', idleDown: 'yak_idle', idleUp: 'yak_idle_back' }, // Videos; gefleckter Yak (yak2) weiter als Standbild
+    anims: { walkDown: 'yak_walk', walkUp: 'yak_walk_back', idleDown: 'yak_idle', idleUp: 'yak_idle_back' }, // Videos
+    skinAnims: { yak2: { walkDown: 'yak2_walk', walkUp: 'yak2_walk_back', idleDown: 'yak2_idle', idleUp: 'yak2_idle_back' } }, // gefleckter Yak (und seine Fellfarben)
     baseShare: 82, // neben dem gefleckten Yak und seinen Fellfarben (share in SKINS.yak)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 100 / 104,
@@ -731,15 +733,15 @@ export const SPECIES = {
   snowowl: {
     texture: 'snowowl',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 60 / 64,
+    originY: 76 / 80, // (Bild so groß wie der Schneehase, 24.11.2026)
     speed: 20,
     restChance: 0.8,
     restTime: [3, 7],
     walkTime: [0.5, 1],
     stepRate: 8,
     hop: 1,
-    footW: 6,
-    shadowW: 22,
+    footW: 7,
+    shadowW: 26,
     catchWith: ['net', 'touch'],
   },
   // Rentier: wilde Herde, trabt ständig im Kreis auf ihrem Pfad; still am Pfad warten, Lasso (siehe Reindeer.js)
@@ -818,6 +820,7 @@ export const SPECIES = {
   anteater: {
     texture: 'anteater',
     anims: { walkDown: 'anteater_walk', walkUp: 'anteater_walk_back', idleDown: 'anteater_idle', idleUp: 'anteater_idle_back' }, // Videos
+    skinAnims: { anteater2: { walkDown: 'anteater2_walk', walkUp: 'anteater2_walk_back', idleDown: 'anteater2_idle' } }, // Tamandua (von hinten im Stehen das Standbild)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 22,
@@ -911,7 +914,8 @@ export const SPECIES = {
   // Blätterzweig gefüttert, läuft es mit.
   okapi: {
     texture: 'okapi',
-    anims: { walkDown: 'okapi_walk', walkUp: 'okapi_walk_back', idleDown: 'okapi_idle', idleUp: 'okapi_idle_back' }, // Videos; Streifen-Okapi (okapi2) weiter als Standbild
+    anims: { walkDown: 'okapi_walk', walkUp: 'okapi_walk_back', idleDown: 'okapi_idle', idleUp: 'okapi_idle_back' }, // Videos
+    skinAnims: { okapi2: { walkDown: 'okapi2_walk', walkUp: 'okapi2_walk_back', idleDown: 'okapi2_idle', idleUp: 'okapi2_idle_back' } }, // Streifen-Okapi
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 100 / 104,
     speed: 24,

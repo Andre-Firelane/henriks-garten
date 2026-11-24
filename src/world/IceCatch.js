@@ -48,8 +48,22 @@ function ensureTextures(scene) {
   // weiche Linie, in der Mitte am hellsten
   for (let i = 0; i < 20; i++) g.fillStyle(0xffffff, Math.sin((i / 19) * Math.PI) * 0.9).fillRect(i * 2, 1, 2, 1.4);
   g.generateTexture('wind_streak', 40, 4);
+  // Schildchen über den Blubberstellen: einmal als Bild (SIGN_RES-fach fein) statt als Zeichnung, die in jedem Bild neu
+  // zerlegt wird (bis zu zehn Schilder, auch außerhalb des Bildes, ließen das Tablet ruckeln)
+  const k = SIGN_RES;
+  const box = (x, y) => [(SIGN_O - 8.5 + x) * k, (SIGN_O - 8.5 + y) * k, 17 * k, 17 * k, 4 * k];
+  g.clear();
+  g.fillStyle(0x5a4632, 0.35).fillRoundedRect(...box(0, 1));
+  g.fillStyle(0xfffaf0, 0.95).fillRoundedRect(...box(0, 0));
+  g.lineStyle(k, 0x8a6e4e, 1).strokeRoundedRect(...box(0, 0));
+  g.fillStyle(0xfffaf0, 0.95).fillTriangle((SIGN_O - 3) * k, (SIGN_O + 8.2) * k, (SIGN_O + 3) * k, (SIGN_O + 8.2) * k, SIGN_O * k, (SIGN_O + 11.5) * k);
+  g.generateTexture('ice_net_sign', SIGN_W * k, SIGN_H * k);
   g.destroy();
 }
+const SIGN_RES = 4;
+const SIGN_O = 10; // Mitte des Schildchens im Bild (Pixel)
+const SIGN_W = 20;
+const SIGN_H = 23;
 
 export default class IceCatch {
   constructor(scene) {
@@ -247,11 +261,7 @@ export default class IceCatch {
   // kleines Schild mit dem Kescher über einer Blubberstelle (zeigt: hier mit dem Kescher fischen)
   netSign(x, y) {
     const scene = this.scene;
-    const g = scene.add.graphics();
-    g.fillStyle(0x5a4632, 0.35).fillRoundedRect(-8.5, -7.5, 17, 17, 4);
-    g.fillStyle(0xfffaf0, 0.95).fillRoundedRect(-8.5, -8.5, 17, 17, 4);
-    g.lineStyle(1, 0x8a6e4e, 1).strokeRoundedRect(-8.5, -8.5, 17, 17, 4);
-    g.fillStyle(0xfffaf0, 0.95).fillTriangle(-3, 8.2, 3, 8.2, 0, 11.5);
+    const g = scene.add.image(0, 0, 'ice_net_sign').setOrigin(SIGN_O / SIGN_W, SIGN_O / SIGN_H).setScale(1 / SIGN_RES);
     const icon = scene.add.image(0, 0, 'net').setDisplaySize(13, 13);
     return scene.add.container(x, y - NET_SIGN_UP, [g, icon]).setDepth(99990);
   }

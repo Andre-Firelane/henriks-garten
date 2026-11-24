@@ -67,11 +67,10 @@ export default class Sheep extends Animal {
   render(moving) {
     const key = this.grazing ? this.grazeTexture() : this.baseTexture();
     // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)
-    const skinAnims = Object.values(this.kind.skinAnims ?? {}).flatMap((s) => Object.values(s));
-    const allAnims = [...Object.values(this.kind.anims ?? {}), ...skinAnims];
     const onAnim = !this.grazing && Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);
     if (this.sprite.texture.key !== key && !onAnim) {
-      const fromAnim = allAnims.includes(this.sprite.texture.key);
+      const skinAnims = Object.values(this.kind.skinAnims ?? {}).flatMap((s) => Object.values(s));
+      const fromAnim = [...Object.values(this.kind.anims ?? {}), ...skinAnims].includes(this.sprite.texture.key);
       this.sprite.stop().setFlipX(false);
       this.sprite.setTexture(key, fromAnim ? 0 : this.sprite.frame.name);
     }

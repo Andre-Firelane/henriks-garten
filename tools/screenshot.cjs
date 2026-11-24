@@ -8,7 +8,8 @@
 //   --key e             Taste drücken (mehrfach möglich; läuft nach den Klicks); --key w:800 hält sie 800 ms;
 //                       --key move@700,300 bewegt die Maus dorthin, --key click@700,300 klickt dort;
 //                       --key drag@600,350-500,200 zieht einen Finger von dort nach dort (Touch), hold@… ebenso,
-//                       lässt aber nicht los (Bild mitten im Ziehen)
+//                       lässt aber nicht los (Bild mitten im Ziehen); long@… und longhold@… drücken erst 600 ms
+//                       still (langes Drücken), dann ziehen
 //   --wait 1500         Millisekunden nach den Klicks/Tasten bis zum Bild
 //   --out shot.png      Zieldatei (Standard: tools/shots/<level>-<size>.png, der Ordner ist in .gitignore)
 //   --port 5181         Test-Port; läuft dort kein Server, startet das Skript selbst einen (vite) und beendet ihn danach
@@ -91,17 +92,18 @@ const up = () => new Promise((res) => http.get(url, (r) => (r.resume(), res(true
       // „w:800“: Taste so viele Millisekunden halten (z. B. Henrik laufen lassen)
       const [key, ms] = k.split(/:(?=\d+$)/);
       const mouse = k.match(/^(move|click)@(\d+),(\d+)$/); // „move@700,300“ bzw. „click@700,300“: Maus im Spielbild
-      const finger = k.match(/^(drag|hold)@(\d+),(\d+)-(\d+),(\d+)$/); // Finger ziehen (Touch-Ereignisse über CDP)
+      const finger = k.match(/^(drag|hold|long|longhold)@(\d+),(\d+)-(\d+),(\d+)$/); // Finger ziehen (Touch-Ereignisse über CDP)
       if (finger) {
         const [x1, y1, x2, y2] = finger.slice(2).map(Number);
         const cdp = await page.context().newCDPSession(page);
         const at = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
         await at('touchStart', x1, y1);
+        if (finger[1].startsWith('long')) await page.waitForTimeout(600);
         for (let s = 1; s <= 12; s++) {
           await page.waitForTimeout(30);
           await at('touchMove', x1 + ((x2 - x1) * s) / 12, y1 + ((y2 - y1) * s) / 12);
         }
-        if (finger[1] === 'drag') await at('touchEnd');
+        if (finger[1] === 'drag' || finger[1] === 'long') await at('touchEnd');
       } else if (mouse) {
         await page.mouse.move(Number(mouse[2]), Number(mouse[3]), { steps: 5 });
         if (mouse[1] === 'click') await page.mouse.click(Number(mouse[2]), Number(mouse[3]));

@@ -44,7 +44,7 @@ const SHEETS = {
   cat: ['', '_eat', '_sleep', '_walk', '_walk_back', '_idle', '_idle_back'],
   deer: ['', '_eat', '_walk', '_walk_back', '_idle', '_idle_back'],
   giraffe: ['', '_eat', '_walk', '_walk_back', '_idle', '_idle_back', '_eating', '_eating_back'],
-  yak2: [''], // der gefleckte Yak hat nur Standbilder
+  yak2: ['', '_walk', '_walk_back', '_idle', '_idle_back'],
   snake: ['', '_walk', '_walk_back', '_idle'],
   spider: ['', '_walk', '_walk_back'],
 };
@@ -203,7 +203,11 @@ function recolorPart(data, coat, [lo, hi], i, until) {
 // steht jedes Bild in einer Warteschlange und wird zwischen den Bildern des Spiels jeweils nur BUDGET_MS lang bearbeitet.
 // Eine Fellfarbe gilt erst als fertig (coatReady), wenn alle ihre Bilder da sind; bis dahin zeigt das Tier die Grundfarbe.
 // Die fertigen Bilder kommen wie alle anderen erst beim Malen auf die Grafikkarte (lazyGpu, siehe gpuTextures.js).
-const BUDGET_MS = 5;
+// Ein Stück je Bild des Spiels (nach dem Malen), nicht pausenlos: mit setTimeout(0) allein lief die Warteschlange mehrmals
+// zwischen zwei Bildern, und zusammen mit dem Nachladen im Hintergrund ruckelte das Tablet nach „Weiterspielen“ mit vielen
+// Fellfarben im Tierpark eine halbe Minute lang (am Tablet darum auch weniger Zeit je Stück)
+const BUDGET_MS = matchMedia('(pointer: coarse)').matches ? 3 : 5;
+const nextFrame = () => requestAnimationFrame(() => setTimeout(pump, 0));
 const jobs = []; // { textures, anims, coat, src, key, icon } – Bilder der Tiere vor den Bildchen fürs Tierbuch
 const queued = new Set(); // Schlüssel in der Warteschlange
 const pending = new Map(); // Fellfarbe → so viele Bilder fehlen noch
@@ -221,7 +225,7 @@ function enqueue(job) {
   }
   if (!pumping) {
     pumping = true;
-    setTimeout(pump, 0);
+    nextFrame();
   }
 }
 
@@ -237,7 +241,7 @@ function pump() {
     queued.delete(job.key);
     finish(job);
   }
-  if (jobs.length) setTimeout(pump, 0);
+  if (jobs.length) nextFrame();
   else pumping = false;
 }
 

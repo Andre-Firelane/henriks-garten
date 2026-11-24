@@ -3,6 +3,7 @@
 // Ansprüche der Tierarten: needs = Merkmal, das die Map haben muss (features in expeditionMaps.js), seasons = bei welchem
 // Wetter sie vorkommen (ohne Angabe: bei jedem), units = so viele Fang-Einheiten [min, max] (Herde, Kolonie, Rudel = eine)
 // plain = Standardtier: bekommt in der Expedition keine eigene Tierkarte (nur seltene Karten), lebt aber als Nebentier auf den Maps
+// Angelfische stehen hier nicht: sie schwimmen als Schatten in jedem Gewässer (FishShadows.js) und zählen nicht zur Tierliste
 export const SPECIES_RULES = {
   savanna: {
     antelope: { plain: true, units: [1, 2] },
@@ -12,7 +13,6 @@ export const SPECIES_RULES = {
     meerkat: { plain: true, units: [1, 2] },
     crocodile: { needs: 'water', seasons: ['normal', 'rain'], units: [1, 1] },
     hippo: { needs: 'water', seasons: ['rain'], units: [1, 2] },
-    fish: { plain: true, needs: 'water', seasons: ['rain'], units: [1, 2] }, // Lungenfisch
     heron: { needs: 'water', seasons: ['rain'], units: [1, 2] }, // Schuhschnabel
     warthog: { seasons: ['dry'], units: [1, 2] },
     hyena: { needs: 'graveyard', seasons: ['dry'], units: [1, 1] },
@@ -55,7 +55,6 @@ export const SPECIES_RULES = {
     hedgehog: { needs: 'leaves', seasons: ['normal', 'fog'], units: [1, 2] }, // versteckt in Laubhaufen
     elk: { needs: 'moor', seasons: ['normal', 'fog'], units: [1, 1] }, // im Moorwasser, nur im Licht der Laterne
     frog: { plain: true, needs: 'water', seasons: ['normal', 'rain'], units: [1, 1] },
-    fish: { plain: true, needs: 'river', seasons: ['normal', 'rain'], units: [1, 2] }, // Forellen im Bach
     heron: { needs: 'water', seasons: ['rain'], units: [1, 1] },
     beaver: { needs: 'dam', units: [1, 1] }, // nur auf Maps mit Biberdamm (beavers): Stock ins Loch, dann kommt einer mit
   },

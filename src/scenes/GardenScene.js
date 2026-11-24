@@ -168,7 +168,7 @@ import DrumTool from '../tools/DrumTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
-import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, penScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { parkCap, ANIMALS_PER_VISITOR, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, penScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { MOUNTS, MOUNT_COST, SCOOTER_COST, buyMount, buyScooter, ownsMount, ownsScooter } from '../world/mounts.js';
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
@@ -223,6 +223,8 @@ import { activeId, activeStep, countStoryCatch, isUnlocked, skipStory, storyAt }
 import { RARE_WISH_CHANCE, THANK_DIST, canWish, canWishSkin, ensureWishes, openWishes, wishHearts, wishIcon, wishKey, wishName } from '../world/wishes.js';
 import Mavi from '../npc/Mavi.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
+
+const MAP_REROLLS = 3; // Expedition: so oft darf man die Karten für die nächste Map neu würfeln
 
 // Torbogen über dem Tor des Wildparks (Bild 128 x 176, siehe drawArches): Fußpunkt, Mitte der Tafel über dem Fußpunkt,
 // nutzbare Breite der Tafel und ihre Steigung (1 Pixel höher je 2 Pixel nach rechts)
@@ -342,11 +344,11 @@ const CATCH_TIPS = {
   tarantula: tr('Sie versteckt sich im Dickicht. Schlag Dickicht mit der Machete weg – manchmal schreckt eine auf und flieht ins nächste Gebüsch: schnell mit dem Kescher fangen!', 'It hides in the thicket. Cut thicket with the machete – sometimes one gets startled and flees into the next bush: quick, catch it with the net!'),
   seal: tr('Schwimmt in der Eiswelt am Ufer (nachts auch in den Eislöchern). Kommst du näher, taucht sie auf und wünscht sich einen Fisch oder einen Ball – hol das Richtige aus dem Regal und wirf es ihr zu, wie das Lasso. Daneben? Nach 2 Sekunden kannst du noch einmal werfen. Zu nah, und sie taucht ab!', 'Swims along the shore in the ice world (at night also in the ice holes). If you get closer, it pops up and wishes for a fish or a ball – get the right one from the shelf and throw it, like the lasso. Missed? After 2 seconds you can throw again. Too close, and it dives away!'),
   penguin: tr('In der Eiswelt, immer nah am Wasser. Kommst du zu nah, hüpft er ins Wasser und ist weg – wirf das Lasso aus etwas Abstand!', 'In the ice world, always close to the water. If you get too close, it hops into the water and is gone – throw the lasso from a little distance!'),
-  snowhare: tr('In der Eiswelt, vor allem in der Tundra. Kommst du zu nah, flitzt er in seinen Bau – und kommt aus einem anderen Loch wieder heraus. Schieb Löcher zu, bis nur eins offen ist, und warte dort: Berühren oder Kescher!', 'In the ice world, mostly on the tundra. Get too close and it darts into its burrow – and comes out of another hole. Fill in holes until only one is open, and wait there: touch it or use the net!'),
+  snowhare: tr('Nur tagsüber in der Eiswelt, vor allem in der Tundra. Kommst du zu nah, flitzt er in seinen Bau – und kommt aus einem anderen Loch wieder heraus. Schieb Löcher zu, bis nur eins offen ist, und warte dort: Berühren oder Kescher!', 'Only by day in the ice world, mostly on the tundra. Get too close and it darts into its burrow – and comes out of another hole. Fill in holes until only one is open, and wait there: touch it or use the net!'),
   arcticfox: tr('Ihn selbst siehst du nicht, nur seine Spuren im Schnee. Folge ihnen bis zum Ende und stell dort die Laterne ab: Dann leuchten zwei Augen auf – schnell den Kescher!', 'You cannot see it, only its tracks in the snow. Follow them to the end and put the lantern down there: two eyes light up – quick, the net!'),
   arcticwolf: tr('Ein Rudel liegt in der Tundra. Heulen die Wölfe, darfst du näher kommen; schauen sie sich um, bleib stehen! Wer einen Wolf erreicht und berührt, hat ihn.', 'A pack lies on the tundra. While the wolves howl you may come closer; when they look around, stand still! Reach a wolf and touch it to catch it.'),
   snowowl: tr('Nur nachts. Du hörst sie rufen, aber siehst sie nicht. Ein kleines „Huu“ neben dir zeigt, aus welcher Richtung es kommt. Sie sitzt oben in einer verschneiten Tanne. Bist du nah, steigt es genau über ihrer Tanne auf: Stell die Laterne darunter ab – im Licht siehst du sie. Kescher!', 'Only at night. You hear it call but cannot see it. A small “Hoo” next to you shows where it comes from. It sits up in a snowy pine. When you are close, it rises right above its pine: put the lantern down beneath it – in the light you can see it. Net!'),
-  reindeer: tr('Die Herde trabt ständig im Kreis auf ihrem Pfad – schneller als du. Folge den Trampelspuren, stell dich an den Pfad und warte still. Wer stillsteht, wird nicht bemerkt: Wirf das Lasso, wenn sie vorbeikommen.', 'The herd keeps trotting in a circle on its trail – faster than you. Follow the hoof tracks, stand by the trail and wait quietly. Standing still, you go unnoticed: throw the lasso as they pass.'),
+  reindeer: tr('Nur tagsüber. Die Herde trabt ständig im Kreis auf ihrem Pfad – schneller als du. Folge den Trampelspuren, stell dich an den Pfad und warte still. Wer stillsteht, wird nicht bemerkt: Wirf das Lasso, wenn sie vorbeikommen.', 'Only by day. The herd keeps trotting in a circle on its trail – faster than you. Follow the hoof tracks, stand by the trail and wait quietly. Standing still, you go unnoticed: throw the lasso as they pass.'),
   walrus: tr('Am Kiesstrand und an der Eiskante. Weck ein dösendes Walross mit der Wärmflasche – dann hat es Hunger. Kescher 2 Muscheln, wo es im Wasser blubbert (Kescher-Zeichen), und füttere es: Dann kommt es mit.', 'On the pebble beach and at the ice edge. Wake a dozing walrus with the hot-water bottle – then it is hungry. Net 2 mussels where the water bubbles (net sign) and feed it: then it comes along.'),
   polarbear: tr('Nur nachts auf dem Eis. Angle einen großen Fisch und leg ihn an ein Eisloch: Der Bär frisst ihn und döst danach. Schleich dich an, aber achte auf den Wind (die Schneefahnen): Weht er von dir zum Bären, riecht er dich. Berühren fängt ihn.', 'Only at night on the ice. Catch a big fish and put it by an ice hole: the bear eats it and then dozes. Sneak up, but watch the wind (the snow streaks): if it blows from you to the bear, it smells you. Touch it to catch it.'),
   puffin: tr('Nur tagsüber an den Vogelfelsen im Fjord. Sie fliegen aufs Meer und kommen mit Fisch zurück – wer gerade am Ufer landet: Kescher!', 'Only by day at the bird rocks in the fjord. They fly out to sea and come back with fish – one that just landed by the shore: net!'),
@@ -1016,6 +1018,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.expCamp = !!(LEVEL.camp && expRun());
     this.expMap = !!(LEVEL.expedition && !LEVEL.camp && expRun() && !LEVEL.side);
+    // Angelfische gehören nicht mehr zur Tierliste einer Map (laufende Runs aus älteren Spielständen)
+    if (expRun()) for (const list of [expRun().left, expRun().home]) if (list) delete list.fish;
     this.canoeExitArmed = false; // (siehe Ausgänge auf dem Fluss in update) // (hinter einem Durchgang: keine Expedition, siehe sideMaps.js)
     this.expCaught = new Set(); // Einheiten (Herde, Rudel …), aus denen man auf dieser Map schon ein Tier gefangen hat
     this.nearCages = false; // (die Szene wird beim Levelwechsel wiederverwendet: alte Werte nicht in die Werkzeugleiste mitnehmen)
@@ -1964,6 +1968,10 @@ export default class GardenScene extends Phaser.Scene {
       const w = this.cameras.main.getWorldPoint(((cx - r.left) * this.scale.width) / r.width, ((cy - r.top) * this.scale.height) / r.height);
       this.decor.tap(w.x, w.y);
     };
+    // Bauen: Finger in der Joystick-Hälfte lange auf einem gesetzten Teil – es hängt dann am Finger (DecorMode.grab)
+    touchHandlers.hold = (cx, cy) => !!this.decor?.on && !this.leaving && this.decor.grab(cx, cy);
+    touchHandlers.holdMove = (cx, cy) => this.decor?.dragMove(cx, cy);
+    touchHandlers.holdEnd = (cx, cy) => this.decor?.dragEnd(cx, cy);
     touchHandlers.menu = () => this.openGameMenu();
     cam.setBounds(
       -MAP_H * (TILE_W / 2) - TILE_W,
@@ -6384,8 +6392,13 @@ export default class GardenScene extends Phaser.Scene {
   // Tierpark: gefangene Meerestiere (Riff-Fische, Seepferdchen) kommen gleich beim Betreten ins Aquarium, Schlangen und
   // Vogelspinnen ins Reptilienhaus (in dessen gespeicherten Stand), in die passenden Becken bzw. Terrarien wie in tankFor.
   // Ist alles voll, zieht dort eines der häufigsten Art ins Naturreservat. Gibt den Text für die Meldung zurück.
-  sendToHouse(level) {
-    const fish = this.followers.filter((a) => HOUSES[level].includes(a.species));
+  // list: statt der Mitläufer diese Tiere (auch nur Daten wie { species, variant, skin }), z. B. Angelfische aus dem Expeditions-Camp
+  sendToHouse(level, list = this.followers) {
+    const fish = list.filter((a) => HOUSES[level].includes(a.species));
+    const drop = (a) => {
+      for (const l of [this.followers, this.animals]) if (l.includes(a)) l.splice(l.indexOf(a), 1);
+      a.destroy?.();
+    };
     if (!fish.length) return '';
     const saved = (game.levels[level] ??= { animals: [], pickups: [] });
     const allTanks = houseTanks(level);
@@ -6415,9 +6428,7 @@ export default class GardenScene extends Phaser.Scene {
         };
         if (!list.length || rank(a) < low) {
           out(a.species, a.skin, a.variant);
-          this.followers.splice(this.followers.indexOf(a), 1);
-          this.animals.splice(this.animals.indexOf(a), 1);
-          a.destroy();
+          drop(a);
           continue;
         }
         const pool = list.filter((s) => rank(s) === low);
@@ -6445,14 +6456,12 @@ export default class GardenScene extends Phaser.Scene {
         }
       }
       const p = tileToWorld(Phaser.Math.FloatBetween(t.tx0 - 0.3, t.tx1 + 0.3), Phaser.Math.FloatBetween(t.ty0 - 0.3, t.ty1 + 0.3));
-      saved.animals.push({ species: a.species, variant: a.variant, skin: a.skin ?? null, since: Date.now(), state: 'penned', x: p.x, y: p.y });
-      this.followers.splice(this.followers.indexOf(a), 1);
-      this.animals.splice(this.animals.indexOf(a), 1);
-      a.destroy();
+      saved.animals.push({ species: a.species, variant: a.variant, skin: a.skin ?? null, ...(a.uid != null ? { uid: a.uid } : {}), since: Date.now(), state: 'penned', x: p.x, y: p.y });
+      drop(a);
       delivered.push(a.species);
     }
     if (!delivered.length) return '';
-    this.aquaNowFull.push(...allTanks.filter((t) => tankFull(t) && !fullBefore.has(t)).map((t) => t.e));
+    this.aquaNowFull?.push(...allTanks.filter((t) => tankFull(t) && !fullBefore.has(t)).map((t) => t.e));
     const kinds = HOUSES[level].filter((s) => delivered.includes(s)).map((s) => `${animalIcon(s, 2.6)} × ${delivered.filter((d) => d === s).length}`);
     const one = delivered.length === 1;
     const swims = one
@@ -6493,7 +6502,7 @@ export default class GardenScene extends Phaser.Scene {
     const babyPens = [...new Set(plan.map((b) => b.enclosure))];
     const babyTotal = score + babies * BABY_APPEAL;
     const babyShare = babyTotal > 0 ? (babyPens.reduce((s, e) => s + penScore(adults, e), 0) + babies * BABY_APPEAL) / babyTotal : 0;
-    const cap = parkCap(LEVEL_ID); // mit Riesenrad mehr Besucher
+    const cap = Math.min(parkCap(LEVEL_ID), Math.ceil(adults.length / ANIMALS_PER_VISITOR)); // mit Riesenrad mehr Besucher, mit wenigen Tieren weniger
     const shops = shopsIn(LEVEL_ID).map(({ kind }) => ({ kind, rate: maxVisitors(score, cap) * AWAY_BUYS_PER_VISITOR_MINUTE * shopDef(kind).hearts }));
     if (hasWheel(LEVEL_ID)) shops.push({ kind: WHEEL.id, rate: maxVisitors(score, cap) * AWAY_RIDES_PER_VISITOR_MINUTE * WHEEL.hearts });
     if (LEVEL.teaHouse) shops.push({ kind: TEA.id, rate: maxVisitors(score, cap) * AWAY_BUYS_PER_VISITOR_MINUTE * TEA_CHANCE / SHOP_CHANCE * TEA.hearts }); // Teehaus (Bambuswald)
@@ -6572,8 +6581,8 @@ export default class GardenScene extends Phaser.Scene {
       }, 0);
       const total = score + babies * BABY_APPEAL;
       st.rate = babies
-        ? (maxVisitors(total, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS * (babyScore / total))) / 60
-        : (maxVisitors(score, HOUSE_VISITORS[level]) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
+        ? (maxVisitors(total, HOUSE_VISITORS[level], st.penned.length) * AWAY_HEARTS_PER_VISITOR_MINUTE * (1 + BABY_BONUS * (babyScore / total))) / 60
+        : (maxVisitors(score, HOUSE_VISITORS[level], st.penned.length) * AWAY_HEARTS_PER_VISITOR_MINUTE) / 60;
     }
     st.hearts += st.rate * dt;
     if (st.hearts < 1) return;
@@ -7797,6 +7806,7 @@ export default class GardenScene extends Phaser.Scene {
       for (const t of SPECIES[sp]?.catchWith ?? []) if (TOOLS[t] && !CARRIED.includes(t)) need.add(t); // (den Blätterzweig gibt es am Strauch)
       for (const [t, list] of Object.entries(TOOL_LURES)) if (list.includes(sp) && TOOLS[t] && t !== 'glowjar' && t !== 'acorns') need.add(t); // (das leuchtende Glas entsteht erst aus dem Glas, Eicheln schüttelt man aus den Eichen)
     }
+    if (this.fishShadows?.spots.length) need.add('rod'); // Angelfische: in jedem Gewässer mit Fischschatten (FishShadows.js)
     const order = ['net', 'lasso', 'trap', 'lantern', 'rod', 'drum', 'food', 'banana', 'bone', 'ball', 'koifood', 'fireflyjar'];
     return [...need].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99));
   }
@@ -8052,6 +8062,14 @@ export default class GardenScene extends Phaser.Scene {
     if (!r) return;
     // seltene Varianten zuerst: sie bekommen sicher einen Platz (im Zoo zieht für sie eher ein normales Tier aus)
     const rare = (a) => !!a.skin && !skinInfo(a.species, a.skin)?.common;
+    // Angelfische belegen keinen Platz im Wagen: sie schwimmen gleich in der Süßwasserhalle im Aquarium (wie sonst beim
+    // Betreten des Tierparks, siehe sendToHouse; volles Becken: einer wird im Naturreservat ausgewildert)
+    const isFish = (a) => a.species === 'fish';
+    const caughtFish = [...r.wagon, ...r.stay, ...arrivals].filter(isFish);
+    r.wagon = r.wagon.filter((a) => !isFish(a));
+    r.stay = r.stay.filter((a) => !isFish(a));
+    arrivals = arrivals.filter((a) => !isFish(a));
+    const fishNote = caughtFish.length ? this.expFishHome(caughtFish) : '';
     const all = [...r.wagon, ...r.stay, ...arrivals];
     const { wagon, stay, release } = sortWagon([...all.filter(rare), ...all.filter((a) => !rare(a))], this.expPlacer());
     r.wagon = wagon;
@@ -8064,6 +8082,7 @@ export default class GardenScene extends Phaser.Scene {
     for (; r.counted < r.step; r.counted++) countExpStep(r.biome);
     const released = '';
     const later = (ms, fn) => this.time.delayedCall(ms, fn);
+    if (fishNote) later(isFinalCamp() || arrivals.length || r.step === 0 ? 4200 : 900, () => this.showToast(fishNote.replace(/^<br>/, '')));
     if (isFinalCamp() && !r.finalChest) {
       this.expPoint('car');
       later(700, () => this.expFinalChest(() => this.showToast(tr('🏁 Ziel erreicht! Sieh dir deinen Wagen an – mit dem Auto geht es zurück in den Zoo.', '🏁 Goal reached! Look at your wagon – the car takes you back to the zoo.') + released)));
@@ -8074,6 +8093,18 @@ export default class GardenScene extends Phaser.Scene {
       this.expPoint('exit');
       later(900, () => this.showToast(LEVEL.campHint ?? tr('⛺ Willkommen im Expeditions-Camp! Folge rechts dem Weg tiefer in die Savanne – die Tafel am Zelt zeigt deinen Weg.', '⛺ Welcome to the expedition camp! Follow the path on the right deeper into the savanna – the board at the tent shows your route.')));
     } else this.expPoint(isFinalCamp() ? 'car' : 'exit');
+  }
+
+  // Angelfische aus dem Expeditions-Camp gleich in die Süßwasserhalle bringen. Gibt den Text für die Meldung zurück
+  expFishHome(list) {
+    this.released = [];
+    let text = this.sendToHouse('aquarium', list);
+    if (this.released.length) {
+      const hearts = this.released.reduce((s, x) => s + x.hearts, 0);
+      text += `<br>🌳 ${animalIcons(this.released.map((x) => x.species), 2.2)} ${tr('im Naturreservat ausgewildert', 'released into the nature reserve')} · <span class="heart">♥</span> ${hearts}`;
+    }
+    this.released = [];
+    return text;
   }
 
   // Tiere des Wagens in die Käfige setzen (je eins), die übrigen ins Sammelgehege; vorher die alten entfernen
@@ -8308,7 +8339,8 @@ export default class GardenScene extends Phaser.Scene {
     return exit.label;
   }
 
-  // am Weg aus dem Camp: die Karten für die nächste Map (wie in einer Kiste; neu würfeln gegen Herzen)
+  // am Weg aus dem Camp: die Karten für die nächste Map (wie in einer Kiste; neu würfeln gegen Herzen, höchstens
+  // MAP_REROLLS mal je Auswahl)
   expOnwards(prev) {
     this.player.x = prev.x;
     this.player.y = prev.y;
@@ -8330,12 +8362,14 @@ export default class GardenScene extends Phaser.Scene {
         cards: cards.map((c) => this.expCardView(c)),
         cost: rerollCost(rerolls),
         hearts: game.hearts,
+        left: MAP_REROLLS - rerolls,
       }),
       (i) => {
         this.scene.resume();
         this.expTake(cards[i]);
       },
       () => {
+        if (rerolls >= MAP_REROLLS) return;
         game.hearts -= rerollCost(rerolls);
         rerolls++;
         cards = rollRunCards(cardCount());

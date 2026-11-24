@@ -24,6 +24,7 @@ import { DECOR, FLOOR_FILL, decorKey, isRug, fillChar, ensureDecor, giveDecor, p
 import { isEventsOpen } from '../ui/eventsPanel.js';
 import { boothTiles, builtOn, pickUpBooth, placeBooth, shopsIn, slotsIn, storedBooths } from './shops.js';
 import { isFriend } from './friends.js';
+import { isTouch } from '../ui/touch.js';
 
 const OK = 0x5fd05a;
 const NO = 0xe0503c;
@@ -39,8 +40,10 @@ const ROOM = 'house'; // Haupthaus: dort nur Möbel (indoor in decor.js), drauß
 // und ab so viel Bewegung zählt es als Ziehen statt Antippen
 const LIFT = 36;
 const DRAG_PX = 12;
+// Finger so lange (ms) ruhig auf einem gesetzten Teil: es hebt sich und hängt am Finger (Tablet und Handy, mit und ohne Hand)
+const HOLD_MS = 350;
 
-const TAKEN = () => tr('Zum Aufheben erst die Hand wählen', 'Choose the hand to pick up');
+const TAKEN = () => (isTouch() ? tr('Gedrückt halten zum Verschieben', 'Hold to move') : tr('Zum Aufheben erst die Hand wählen', 'Choose the hand to pick up'));
 
 // Blickrichtung der Spielfigur (faceX, faceY: schräg im Bild) → Nachbarkachel
 const AHEAD = { '1,1': [1, 0], '-1,1': [0, 1], '1,-1': [0, -1], '-1,-1': [-1, 0] };
@@ -136,9 +139,10 @@ export default class DecorMode {
         ${i < 9 ? `<span class="key">${++i}</span>` : ''}<span class="n">${this.count(id)}</span>
         <img src="assets/${itemDef(id).key}.png" alt=""><span class="name">${itemDef(id).name}</span></button>`;
     const section = (title, ids) => (ids.length ? `<div class="decor-head">${title}</div>${ids.map(item).join('')}` : '');
-    const items = section(tr('Buden', 'Stands'), this.booths()) + section(LEVEL_ID === ROOM ? tr('Möbel', 'Furniture') : tr('Deko', 'Decor'), this.decos())
-      + `<button class="decor-item${this.picking ? ' sel' : ''}" data-id="@pick"><span class="key">0</span>
-        <img src="assets/hand.png" alt=""><span class="name">${tr('Aufheben', 'Pick up')}</span></button>`;
+    // (die Hand zuerst: sonst liegt sie am Tablet ganz unten in der Liste, und man muss erst hinscrollen)
+    const items = `<button class="decor-item${this.picking ? ' sel' : ''}" data-id="@pick"><span class="key">0</span>
+        <img src="assets/hand.png" alt=""><span class="name">${tr('Aufheben', 'Pick up')}</span></button>`
+      + section(tr('Buden', 'Stands'), this.booths()) + section(LEVEL_ID === ROOM ? tr('Möbel', 'Furniture') : tr('Deko', 'Decor'), this.decos());
     const none = LEVEL_ID === ROOM ? tr('Möbel gibt es unter „Bestellen“.', 'Order furniture below.') : tr('Buden und Deko gibt es unter „Bestellen“.', 'Order stands and decor below.');
     const empty = this.entries().length ? '' : `<div class="decor-empty">${none}</div>`;
     this.bar.innerHTML = `<button class="decor-turn${this.sel && this.turnable() ? '' : ' off'}${this.turned() ? ' on' : ''}" data-id="@turn"><span class="turn-icon">↻</span>${tr('Drehen', 'Turn')}<span class="key">R</span></button>
@@ -222,7 +226,9 @@ export default class DecorMode {
     if (!this.on) return;
     this.on = false;
     this.hover = null;
+    if (this.drag?.grab) this.putBack(this.drag.grab); // (gerade ein Teil am Finger: zurück an seinen Platz)
     this.drag = null;
+    clearTimeout(this.holdTimer);
     this.barDrag = null;
     this.sel = null;
     this.state = null;
@@ -320,6 +326,7 @@ export default class DecorMode {
     if (kind === 'place') this.place(tx, ty, this.sel);
     else if (kind === 'pick') this.pickUp(entry);
     else if (kind === 'no' && this.ghost) this.scene.tweens.add({ targets: this.ghost, x: this.ghost.x + 3, duration: 50, yoyo: true, repeat: 2 });
+    else if (kind === 'none' && isTouch()) this.scene.showToast(tr('Teil antippen oder gedrückt halten und ziehen', 'Tap an item, or hold and drag it'));
     return true;
   }
 
@@ -331,7 +338,7 @@ export default class DecorMode {
     if (!this.on) return false;
     const { tx, ty } = worldToTile(wx, wy);
     if (!this.picking) {
-      if (!this.sel) return this.tapNo(tx, ty, tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
+      if (!this.sel) return this.tapNo(tx, ty, this.entryAt(tx, ty) || this.entryUnder(wx, wy) ? TAKEN() : tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
       if (this.occupied(tx, ty) && !isRug(this.sel)) return this.tapNo(tx, ty, TAKEN()); // mit einem Teil in der Hand wird nichts aufgehoben (ein Teppich darf unter Möbel)
     }
     const entry = this.picking ? this.entryAt(tx, ty) ?? this.entryUnder(wx, wy) : null;
@@ -360,8 +367,10 @@ export default class DecorMode {
   // beim Loslassen landet es dort; mit der Hand greift der Finger eine gesetzte Deko und trägt sie mit (eine Bude wird nur
   // aufgehoben, der Abschnitt baut sich dafür neu auf). Kurz angetippt wie bisher: setzen bzw. aufheben.
   // Ohne Reichweite um Henrik (wie die Maus): man sieht ja nur das Bild um ihn herum
+  // Finger ruhig auf einem gesetzten Teil (auch ohne Hand, auch mit einem anderen Teil in der Hand): siehe grab
   dragStart(cx, cy) {
     if (!this.on) return;
+    clearTimeout(this.holdTimer);
     const w = this.toWorld(cx, cy);
     const { tx, ty } = worldToTile(w.x, w.y);
     this.drag = null;
@@ -372,10 +381,60 @@ export default class DecorMode {
       if (entry.booth) return;
       this.drag = { x0: cx, y0: cy, moved: false, carried: true };
     } else {
-      if (!this.sel) return this.tapNo(tx, ty, tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
-      this.drag = { x0: cx, y0: cy, moved: false, carried: false };
+      const under = this.entryAt(tx, ty) ?? this.entryUnder(w.x, w.y);
+      if (!this.sel && !under) return this.tapNo(tx, ty, tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
+      const d = (this.drag = { x0: cx, y0: cy, moved: false, carried: false });
+      if (under) this.holdTimer = setTimeout(() => this.drag === d && !d.moved && this.grab(cx, cy), HOLD_MS);
     }
-    this.hoverAt(w);
+    if (this.sel) this.hoverAt(w);
+  }
+
+  // Finger lange auf einem gesetzten Teil (rechte Bildhälfte über dragStart, Joystick-Hälfte über touchHandlers.hold):
+  // aufheben und mit dem Finger tragen; beim Loslassen landet es dort (geht es nicht, zurück an seinen Platz; in die
+  // Leiste gezogen bleibt es dort). Danach ist wieder gewählt, was vorher gewählt war. Eine Bude wird nur aufgehoben (der
+  // Abschnitt baut sich neu auf). true: gegriffen
+  grab(cx, cy) {
+    if (!this.on) return false;
+    const w = this.toWorld(cx, cy);
+    const { tx, ty } = worldToTile(w.x, w.y);
+    const entry = this.entryAt(tx, ty) ?? this.entryUnder(w.x, w.y);
+    if (!entry) return false;
+    const back = { sel: this.sel, picking: this.picking, flip: this.flip, rot: this.rot };
+    const from = { tx: entry.item.tx ?? entry.tx, ty: entry.item.ty ?? entry.ty, id: entry.id };
+    navigator.vibrate?.(25);
+    this.pickUp(entry);
+    if (entry.booth) {
+      this.drag = null;
+      return true;
+    }
+    this.drag = { x0: cx, y0: cy, moved: false, carried: true, grab: { from, back } };
+    this.hoverAt(this.toWorld(cx, cy - LIFT)); // (hebt sich ein Stück über den Finger)
+    return true;
+  }
+
+  // gegriffenes Teil zurück an seinen alten Platz (mit seiner Drehung, die hat pickUp übernommen)
+  putBack(g) {
+    if (!(this.count(g.from.id) > 0)) return;
+    this.sel = g.from.id;
+    this.dir = [0, 0]; // (gespeichert ab der kleinsten Kachel, wie die Vorschau unter dem Zeiger)
+    this.place(g.from.tx, g.from.ty, g.from.id);
+  }
+
+  // nach dem Verschieben: wieder das, was vorher gewählt war
+  restore(back) {
+    if (back.picking) return this.choose('@pick');
+    const keep = back.sel && this.count(back.sel) > 0;
+    this.sel = keep ? back.sel : null;
+    this.picking = false;
+    if (keep) {
+      this.flip = back.flip;
+      this.rot = back.rot;
+    }
+    this.loadArt();
+    this.drawFree();
+    this.renderBar();
+    this.key = '';
+    this.update();
   }
 
   dragMove(cx, cy) {
@@ -383,13 +442,36 @@ export default class DecorMode {
     if (!d || !this.on) return;
     if (!d.moved && Math.hypot(cx - d.x0, cy - d.y0) < DRAG_PX) return;
     d.moved = true;
-    this.hoverAt(this.toWorld(cx, cy - LIFT));
+    clearTimeout(this.holdTimer); // (losgezogen, bevor es sich hob: kein Greifen)
+    if (this.sel) this.hoverAt(this.toWorld(cx, cy - LIFT));
   }
 
   dragEnd(cx, cy) {
     const d = this.drag;
     this.drag = null;
+    clearTimeout(this.holdTimer);
     if (!d || !this.on) return;
+    if (d.grab) {
+      if (!this.inBar({ clientX: cx, clientY: cy })) {
+        const w = this.toWorld(cx, cy - LIFT);
+        const { tx, ty } = worldToTile(w.x, w.y);
+        this.dir = [0, 0];
+        if (!d.moved) this.putBack(d.grab); // nur gehalten: bleibt, wo es war
+        else if (this.canPlace(tx, ty, this.sel)) this.place(tx, ty, this.sel);
+        else {
+          this.tapNo(tx, ty, tr('Hier geht das nicht', 'Not here'));
+          this.putBack(d.grab);
+        }
+      }
+      this.hover = null;
+      if (this.on) this.restore(d.grab.back);
+      return;
+    }
+    if (!this.sel) {
+      if (d.moved) return;
+      const w = this.toWorld(cx, cy);
+      return this.tap(w.x, w.y); // (nichts gewählt, kurz auf ein Teil getippt: Hinweis)
+    }
     if (!d.moved && d.carried) {
       this.hoverAt(null); // nur angetippt: aufgehoben, jetzt in der Hand
       return;

@@ -34,6 +34,7 @@ const FOG_PUFF_ALPHA = TOUCH ? 0.75 : 0.55; // so deckend ist eine Schwade auf d
 const FOG_NEAR = 700; // nur über Wasser in dieser Entfernung (Welt-Pixel) von Henrik
 const FOG_RISE = 9; // so schnell steigen sie (Pixel pro Sekunde)
 const FLAKES = 90; // so viele Schneeflocken sind gleichzeitig zu sehen
+const FLAKE_TEX = 8; // Bild einer Flocke (Pixel; wird auf ihre Größe verkleinert)
 const FLAKE_FALL = [18, 38]; // so schnell fallen sie (Pixel pro Sekunde)
 const FLAKE_WIND = 45; // so schnell treibt der Wind sie (Pixel pro Sekunde, Eiswelt, siehe IceCatch.js)
 const NIGHT_DARK = 0.45; // so dunkel ist es nachts in der Eiswelt
@@ -74,8 +75,24 @@ export default class Weather {
   startSnow() {
     this.steps = [];
     this.lastStep = null;
-    this.snow = this.scene.add.graphics().setScrollFactor(0).setDepth(DARK_DEPTH + 2);
-    this.flakes = Array.from({ length: FLAKES }, () => this.newFlake(true));
+    // jede Flocke ein kleines Bild (eine vorgezeichnete Scheibe): als Zeichnung mit 90 Kreisen wurde sie in jedem Bild neu
+    // zerlegt, das kostete am Tablet ein Drittel der Rechenzeit
+    if (!this.scene.textures.exists('snowflake')) {
+      const g = this.scene.make.graphics({ x: 0, y: 0 }, false);
+      g.fillStyle(0xffffff, 1).fillCircle(FLAKE_TEX / 2, FLAKE_TEX / 2, FLAKE_TEX / 2);
+      g.generateTexture('snowflake', FLAKE_TEX, FLAKE_TEX);
+      g.destroy();
+    }
+    this.flakes = Array.from({ length: FLAKES }, () => {
+      const f = this.newFlake(true);
+      f.img = this.scene.add.image(f.x, f.y, 'snowflake').setScrollFactor(0).setDepth(DARK_DEPTH + 2);
+      this.lookFlake(f);
+      return f;
+    });
+  }
+
+  lookFlake(f) {
+    f.img.setScale((f.r * 2) / FLAKE_TEX).setAlpha(0.55 + f.r * 0.25);
   }
 
   newFlake(anywhere) {
@@ -189,8 +206,6 @@ export default class Weather {
     const cam = this.scene.cameras.main;
     const vw = cam.width / cam.zoom;
     const vh = cam.height / cam.zoom;
-    const g = this.snow;
-    g.clear();
     // Eiswelt: die Flocken treiben mit dem Wind (dieselbe Richtung wie die Schneefahnen, siehe IceCatch.js), fallen
     // aber immer etwas nach unten; sonst ein Hauch Wind von rechts
     const ice = this.scene.iceCatch;
@@ -205,9 +220,11 @@ export default class Weather {
       f.x += (Math.sin(f.sway * 1.3) * 10 + wx * (0.7 + f.r * 0.3)) * dt; // schaukelt; große (nahe) Flocken treiben schneller
       if (f.x < left) f.x = right; // seitlich hinausgeweht: kommt auf der anderen Seite wieder herein
       else if (f.x > right) f.x = left;
-      if (f.y > cam.height / 2 + vh / 2 + 10) this.flakes[i] = this.newFlake(false);
-      g.fillStyle(0xffffff, 0.55 + f.r * 0.25);
-      g.fillCircle(f.x, f.y, f.r);
+      if (f.y > cam.height / 2 + vh / 2 + 10) {
+        Object.assign(f, this.newFlake(false));
+        this.lookFlake(f);
+      }
+      f.img.setPosition(f.x, f.y);
     }
   }
 

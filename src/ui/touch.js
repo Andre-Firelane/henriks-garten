@@ -19,10 +19,13 @@ const ICON_SHRINK = ICON('<path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/>');
 export const IS_PHONE = matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) < 600;
 
 // Die Szene trägt hier ein, was die Knöpfe tun (wird bei jedem Levelwechsel neu gesetzt)
-export const touchHandlers = { action: null, menu: null, tap: null }; // tap(clientX, clientY): kurzes Tippen ins Bild
+// tap(clientX, clientY): kurzes Tippen ins Bild; hold(clientX, clientY): Finger lange ruhig (Bauen: Teil greifen, true =
+// gegriffen – dann bekommen holdMove/holdEnd den Finger statt des Joysticks)
+export const touchHandlers = { action: null, menu: null, tap: null, hold: null, holdMove: null, holdEnd: null };
 
 const TAP_MS = 300; // so kurz und …
 const TAP_PX = 12; // … so ruhig (CSS-Pixel) ist ein Tippen in der Joystick-Hälfte (sonst Laufen)
+const HOLD_MS = 350; // so lange ruhig: gedrückt gehalten (siehe touchHandlers.hold)
 
 let ui = null;
 
@@ -78,7 +81,10 @@ export function setupTouchControls() {
   let origin = null;
   let downAt = 0;
   let wander = 0; // so weit hat sich der Finger seit dem Aufsetzen höchstens bewegt
+  let holdTimer = 0;
+  let held = false; // Finger hält ein Teil (Bauen): kein Laufen bis zum Loslassen
   const move = (e) => {
+    if (held) return touchHandlers.holdMove?.(e.clientX, e.clientY);
     let dx = e.clientX - origin.x;
     let dy = e.clientY - origin.y;
     const d = Math.hypot(dx, dy);
@@ -100,6 +106,12 @@ export function setupTouchControls() {
   const release = (e) => {
     if (e.pointerId !== stickId) return;
     stickId = null;
+    clearTimeout(holdTimer);
+    if (held) {
+      held = false;
+      touchHandlers.holdEnd?.(e.clientX, e.clientY);
+      return;
+    }
     // kurz getippt statt gelaufen: als Tippen ins Bild weitergeben (z. B. Bauen: Deko auf diese Kachel)
     if (e.type === 'pointerup' && wander < TAP_PX && e.timeStamp - downAt < TAP_MS) touchHandlers.tap?.(e.clientX, e.clientY);
     touch.x = 0;
@@ -115,6 +127,18 @@ export function setupTouchControls() {
     origin = { x: e.clientX, y: e.clientY };
     downAt = e.timeStamp;
     wander = 0;
+    held = false;
+    clearTimeout(holdTimer);
+    const id = e.pointerId;
+    const at = { x: e.clientX, y: e.clientY };
+    holdTimer = setTimeout(() => {
+      if (stickId !== id || wander >= TAP_PX || !touchHandlers.hold?.(at.x, at.y)) return;
+      held = true; // gegriffen: Joystick weg, Henrik bleibt stehen
+      touch.x = 0;
+      touch.y = 0;
+      base.classList.remove('show');
+      knob.style.transform = '';
+    }, HOLD_MS);
     base.style.left = `${origin.x}px`;
     base.style.top = `${origin.y}px`;
     base.classList.add('show');

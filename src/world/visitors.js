@@ -145,7 +145,11 @@ export function releaseHearts(species, skin = null) {
 }
 
 // Wie viele Besucher gleichzeitig da sein dürfen: 2 Schafe locken einen an, ein voller Park ein Dutzend
-export function maxVisitors(score, cap = MAX_VISITORS) {
+// animals: so viele Tiere (ohne Babys) leben im Abschnitt – höchstens 1 Besucher je ANIMALS_PER_VISITOR Tiere, damit
+// wenige (auch sehr beliebte) Tiere nicht schon viele Besucher anlocken
+export const ANIMALS_PER_VISITOR = 2;
+export function maxVisitors(score, cap = MAX_VISITORS, animals = Infinity) {
+  cap = Math.min(cap, Math.ceil(animals / ANIMALS_PER_VISITOR));
   if (score <= 0) return 0;
   return Math.max(1, Math.min(cap, Math.round(score / 4)));
 }

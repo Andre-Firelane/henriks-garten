@@ -33,8 +33,10 @@ const caught = (sp) => game.caughtSpecies?.includes(sp);
 // Arten je Welt und alle Arten: dieselben Listen wie im Tierbuch (setzt GardenScene über setTrophySpecies, samt den
 // Tieren, die nur bei einem Event kommen)
 let speciesLists = { all: [], of: () => [] };
+// (die Listen je Welt ändern sich im Spiel nicht: einmal ausrechnen, die Prüfung läuft alle paar Sekunden)
 export function setTrophySpecies(all, of) {
-  speciesLists = { all, of };
+  const memo = new Map();
+  speciesLists = { all, of: (w) => (memo.has(w) ? memo.get(w) : memo.set(w, of(w)).get(w)) };
 }
 const worldSpecies = (w) => speciesLists.of(w);
 const allSpecies = () => speciesLists.all;

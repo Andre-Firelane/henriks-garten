@@ -31,7 +31,7 @@ export const RIDE_CHANCE = 0.35; // so wahrscheinlich will ein Besucher (einmal)
 export const AWAY_RIDES_PER_VISITOR_MINUTE = 0.15;
 // Teehaus im Bambuswald (teaHouse in levels.js, fest gebaut): Besucher holen sich Tee und trinken ihn an einem Stehtisch
 // (TEA_TIME Sekunden, die Tasse in der Hand), danach gibt es Herzen
-export const TEA = { id: 'tea', name: tr('Teehaus', 'Tea House'), hearts: 3, icon: '🍵', items: ['tea_cup'] };
+export const TEA = { id: 'tea', name: tr('Teehaus', 'Tea House'), hearts: 1, icon: '🍵', items: ['tea_cup'] };
 export const TEA_CHANCE = 0.35; // so wahrscheinlich geht ein Besucher (einmal) ins Teehaus
 export const TEA_TIME = [9, 14];
 // Herzen, die nicht von Tieren kommen (Buden, Teehaus und Riesenrad; für die Statistik und Mavis Besucher-Aufgabe)

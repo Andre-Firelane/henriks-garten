@@ -761,7 +761,8 @@ export const LEVELS = {
         rows: freezeSea(ICE_ROWS, 3, ICE_HOLES),
         iceHoles: ICE_HOLES, // dort erscheinen die Pinguine nachts meistens
         // nachts ruft die Schneeeule: immer genau eine, oben in einer Tanne (nicht über spawn, siehe updateOwl in IceCatch.js)
-        spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.6, arcticfox: 0.3, reindeer: 0.5, walrus: 0.45, polarbear: 0.35 } },
+        // Schneehase und Rentier nur tagsüber (Ausgleich für Schneeeule und Eisbär, die es nur nachts gibt)
+        spawn: { population: 9, weights: { penguin: 1, seal: 0.6, arcticfox: 0.3, walrus: 0.45, polarbear: 0.35 } },
         floes: null, // die Schollen sind ins Eis eingefroren
         seaIce: ['sea_ice0', 'sea_ice1', 'sea_ice2'], // helle, glatte Eisfläche (tools/sea-ice.py)
         night: true, // dunkel, Polarlicht am Himmel, warmes Licht an der Station (siehe Weather.js)
@@ -1345,12 +1346,15 @@ LEVELS.park3 = parkSection('park3', {
   edits: [
     [12, 59, edgeRow(12, '5'.repeat(44), [38])],
     [35, 82, '#'], // Weg vom Bambuswald hinunter zu Tanuki-, Yak- und Schneeleoparden-Gehege
+    [41, 67, 'F'], // Futterautomat am Weg neben dem Teehaus
+    [58, 73, 'F'], // ... und am Weg vor der Tropenhalle
   ],
   name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
   // mit dem Auto (Schnellreise) und beim Laden kommt man am Teehaus an, auf dem Weg neben der Terrasse
   car: { tx: 37.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26, arrive: { tx: 37, ty: 65 } }, // das Auto steht im Garten am Weg zum Teich
   start: { tx: 37, ty: 65 },
+  feeders: [{ tx: 41, ty: 67, world: 'asia' }, { tx: 58, ty: 73, world: 'jungle' }],
   scooterSpot: { tx: 34, ty: 77 }, // E-Roller: im Gras neben dem Auto
   legacySlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // (frühere Bauplätze: im Garten am Weg)
   grounds: [

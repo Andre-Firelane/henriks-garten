@@ -12,7 +12,8 @@ export function isLuckPickerOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// view(): { cards: [{ icon, title, text, color, tag }], cost, hearts, title? } (title: Überschrift statt "Eine Kiste!") (wird nach dem Neuwürfeln neu geholt)
+// view(): { cards: [{ icon, title, text, color, tag }], cost, hearts, title?, left? } (title: Überschrift statt "Eine Kiste!";
+// left: so oft darf man noch neu würfeln, ohne Angabe beliebig oft) (wird nach dem Neuwürfeln neu geholt)
 // onPick(i): Karte i genommen; onReroll(): neu würfeln (der Aufrufer zieht die Herzen ab und würfelt)
 export function openLuckPicker(view, onPick, onReroll) {
   panel = document.getElementById('luck');
@@ -31,7 +32,8 @@ function render() {
   const v = state.view();
   state.n = v.cards.length;
   state.selected = Math.min(state.selected, state.n - 1);
-  const short = v.hearts < v.cost;
+  const short = v.hearts < v.cost || v.left === 0;
+  const left = v.left != null ? ` (${v.left})` : '';
   panel.innerHTML = `<div class="chest-box luck-box">
       <h2>${v.title ?? tr('Eine Kiste! Such dir etwas aus:', 'A chest! Pick one:')}</h2>
       <div class="chest-items luck-cards" style="--n:${v.cards.length}">${v.cards
@@ -42,7 +44,7 @@ function render() {
           </button>`,
         )
         .join('')}</div>
-      <button class="start-btn small luck-reroll"${short ? ' disabled' : ''}>🎲 ${tr('Neu würfeln', 'Reroll')} <span class="heart">♥</span> ${v.cost}</button>
+      <button class="start-btn small luck-reroll"${short ? ' disabled' : ''}>🎲 ${tr('Neu würfeln', 'Reroll')}${left} <span class="heart">♥</span> ${v.cost}</button>
       <p class="chest-hint">${tr('Tippe auf eine Karte – oder wähle mit <b>A</b>/<b>D</b> und nimm sie mit <b>E</b>. <b>R</b> würfelt neu.', 'Tap a card – or choose with <b>A</b>/<b>D</b> and take it with <b>E</b>. <b>R</b> rerolls.')}</p>
     </div>`;
   highlight();
@@ -54,7 +56,7 @@ function highlight() {
 
 function reroll() {
   const v = state.view();
-  if (v.hearts < v.cost) return;
+  if (v.hearts < v.cost || v.left === 0) return;
   state.onReroll();
   render();
 }

@@ -1,8 +1,8 @@
 # Plan: Besucherwünsche im Tierpark
 
 Stand: 21.11.2026, umgesetzt (Schritte 1 und 2, noch nicht committet; Code in src/world/wishes.js, Visitor.js, GardenScene.js). Angepasst: Wunsch-Besucher laufen frei herum, Tierbild mit Herz,
-mehrere gleichzeitig unterwegs, höchstens 2 angenommene Wünsche, 30 Herzen. Die Blase bleibt bis zum Schluss über dem
-Besucher (auch nach dem Ansprechen und beim großen Moment), als Erkennungszeichen.
+mehrere gleichzeitig unterwegs, höchstens 2 angenommene Wünsche, 30 Herzen. Nach dem Ansprechen verschwindet die Blase
+(24.11.2026); der Besucher, der zum großen Moment kommt, trägt sie wieder, als Erkennungszeichen.
 
 ## Ziel
 
@@ -30,8 +30,8 @@ Bewusst **ohne Stammgäste**: keine Namen, keine wiederkehrenden Figuren.
   Fuchs sehen!“
 - Der Wunsch kommt als **Wunschkarte** zu den Aufgaben, wie Mavis Aufgaben-Karte: „Ein Besucher wünscht sich einen
   Fuchs“, mit dem Hinweis aus dem Tierbuch, wo das Tier lebt.
-- Danach geht der Besucher weiter, die Blase bleibt als Erkennungszeichen (ansprechen kann man ihn nicht mehr). Sein
-  Aussehen wird gemerkt.
+- Danach geht der Besucher weiter, seine Blase verschwindet (ansprechen kann man ihn nicht mehr). Sein Aussehen wird
+  gemerkt. Kommt er zum großen Moment, erscheint die Blase wieder als Erkennungszeichen.
 - Sind schon 2 Wünsche angenommen, zeigen Wunsch-Besucher keine Blase mehr, bis wieder ein Platz frei ist.
 - Spricht man ihn nicht an, geht er irgendwann wie jeder Besucher. Es kommen neue nach.
 

@@ -114,6 +114,11 @@ Kein Angeln: Asien hat die Kois, das Riff bleibt, wie es ist.
 Dieselben Pools wie im Gebiet, aber die Seltenheit ist heruntergesetzt: Seltene und sehr seltene Fische beißen dort
 deutlich öfter (Vorschlag: Gewichte selten 4, sehr selten 2). Das ist ein Anreiz, auf Expedition zu gehen.
 
+Seit 24.11.2026 (gebaut): Fische gehören nicht mehr zur Tierliste der Expeditions-Maps (keine Tierkarte, kein Zähler),
+sie schwimmen einfach als Schatten in jedem Gewässer, und die Angel liegt in jeder Kiste einer Map mit Fischschatten.
+Gefangene Fische belegen keinen Platz im Wagen: Im nächsten Camp schwimmen sie gleich in der Süßwasserhalle
+(expFishHome in GardenScene). Der Bambuswald hat keinen Fisch-Pool (dort gibt es die Kois), dort wird nicht geangelt.
+
 ## Entschieden
 
 - **Eimer ohne Grenze.** Es passen beliebig viele Fische hinein.

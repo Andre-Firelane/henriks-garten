@@ -213,11 +213,14 @@ Geschicklichkeit (kein Reaktionstest, nichts geht verloren).
   Herde trabt dicht vorbei: Dann das Lasso. Läuft Henrik auf die Herde zu, schreckt sie auf, weicht aus und läuft
   danach wieder auf ihrem Pfad weiter. Kein Leittier, kein Nachzügler, kein Leckstein.
 
+- **Schneehase und Rentier nur tagsüber (Andre, 24.11.2026):** als Ausgleich zu Schneeeule und Eisbär, die es nur nachts gibt.
+
 ## Noch offen
 
 - **Eisbär nochmal überdenken (Andre, 24.11.2026):** Andre befürchtet, dass die Sache mit der Windrichtung niemand
   versteht. Bis dahin: Steht Henrik am Fisch, traut sich der Bär nicht heran und wartet in einigem Abstand; der Bär geht
-  überall durch (außer Wasser), damit er nirgends hängenbleibt.
+  überall durch (außer Wasser), damit er nirgends hängenbleibt. Auf dem Weg zum Fisch sucht er sich einen Weg um die
+  Eislöcher herum; kommt er 1,5 Sekunden nicht näher, geht er einfach geradeaus hinüber (PolarBear.js, walkTo).
 
 - Ist die Kälte (3 Minuten) zu knapp, wenn nachts mehr Tiere unterwegs sind? Andre: „wird sich zeigen“.
 - Echte Bilder für Tundra-Boden, Gletscher, Kiesstrand, verschneite Tanne und Schneehöhle (jetzt Platzhalter aus

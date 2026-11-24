@@ -368,6 +368,7 @@ const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle hyena_idl
   howler_idle gibbon_idle gibbon_idle_back ride_jungle_idle ride_jungle_idle_back ride_reef_idle ride_reef_idle_back ride_asia_idle
   ride_asia_idle_back elk_idle elk_idle_back hedgehog_idle hedgehog_idle_back boar_idle boar_idle_back boar_mud_idle piglet_idle
   piglet_idle_back okapi_idle okapi_idle_back tapir_idle tapir_idle_back tanuki_idle tanuki_idle_back yak_idle yak_idle_back
+  anteater2_idle okapi2_idle okapi2_idle_back tanuki2_idle tanuki2_idle_back yak2_idle yak2_idle_back
   snowleopard_idle snowleopard_idle_back`.split(/\s+/);
 const VIDEO_ANIMS = {
   // seltene Varianten aus Videos (Schaf2: gefleckter Widder, Reiher2: Storch, Fuchs2: Silberfuchs, Eichhörnchen2:
@@ -487,6 +488,10 @@ const VIDEO_ANIMS = {
   anteater_walk_back: [104, 72, 25],
   anteater_idle: [104, 72, 54],
   anteater_idle_back: [104, 72, 52],
+  // Tamandua (seltener Ameisenbär): ohne Stehen von hinten (dort das Standbild)
+  anteater2_walk: [104, 72, 24],
+  anteater2_walk_back: [104, 72, 21],
+  anteater2_idle: [104, 72, 18],
   canoe_paddle_anim: [160, 152, 29],
   canoe_paddle_anim_back: [160, 152, 49],
   // Reittiere Maultier (Dschungel) und Seabob (Riff)
@@ -589,6 +594,10 @@ const VIDEO_ANIMS = {
   tapir_walk_back: [96, 88, 23],
   tapir_idle: [96, 88, 30],
   tapir_idle_back: [96, 88, 45],
+  okapi2_walk: [88, 104, 24], // Streifen-Okapi; breitere Rahmen, die Figur passt sonst nicht hinein
+  okapi2_walk_back: [80, 104, 21],
+  okapi2_idle: [96, 104, 24],
+  okapi2_idle_back: [80, 104, 26],
   // Bambuswald: Tanuki, Yak, Schneeleopard
   tanuki_walk: [72, 72, 21],
   tanuki_walk_back: [72, 72, 24],
@@ -598,6 +607,14 @@ const VIDEO_ANIMS = {
   yak_walk_back: [112, 104, 22],
   yak_idle: [112, 104, 25],
   yak_idle_back: [112, 104, 17],
+  tanuki2_walk: [72, 72, 25], // Fuchs-Tanuki
+  tanuki2_walk_back: [72, 72, 24],
+  tanuki2_idle: [72, 72, 22],
+  tanuki2_idle_back: [72, 72, 23],
+  yak2_walk: [112, 104, 25], // gefleckter Yak (auch Vorlage seiner Fellfarben)
+  yak2_walk_back: [112, 104, 24],
+  yak2_idle: [128, 104, 20], // breiter: der Schwanz schlägt aus
+  yak2_idle_back: [112, 104, 17],
   snowleopard_walk: [88, 80, 48],
   snowleopard_walk_back: [88, 80, 27],
   snowleopard_idle: [88, 80, 47], // ganzes Video: duckt sich mittendrin
@@ -820,7 +837,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['anteater', 'anteater2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 72 });
     for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
     // neue Eiswelt-Tiere (Standbilder mit 4 Ansichten, tools/static-sheet.py)
-    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['arcticwolf', 80, 80], ['arcticwolf_howl', 80, 80], ['snowowl', 56, 64], ['snowowl_fly', 64, 56], ['reindeer', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
+    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['arcticwolf', 80, 80], ['arcticwolf_howl', 80, 80], ['snowowl', 72, 80], ['snowowl_fly', 88, 76], ['reindeer', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
     for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus

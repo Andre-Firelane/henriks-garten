@@ -321,7 +321,7 @@ export function setLevel(id) {
     if (side) LEVEL = { ...LEVEL, ...sideOverrides(base, side) };
     if (weather !== 'dry') delete LEVEL.gatherAt; // am letzten Wasserloch drängen sich die Tiere nur in der Trockenzeit
   }
-  ROWS = LEVEL.rows;
+  ROWS = [...LEVEL.rows]; // (eigene Kopie: gesetzte Deko schreibt Zeichen hinein; in der Vorlage blieben sie sonst beim nächsten Besuch stehen)
   // ... und ihre Kartenstücke (größere Teiche im Regen, Schlamm in der Trockenzeit): { tx, ty, rows }
   for (const u of LEVEL.mapPatches ?? []) {
     ROWS = ROWS.map((row, y) => {

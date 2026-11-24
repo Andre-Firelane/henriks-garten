@@ -905,6 +905,11 @@ const ANIMATIONS = [
   { src: 'Animation/Ameisenbär läuft hinten.mp4', out: 'anteater_walk_back.png', scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Animation/Ameisenbär idle vorne.webm', out: 'anteater_idle.png', every: 2, scale: 0.55, mirror: 'all', frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Animation/Ameisenbär idle hinten.mp4', out: 'anteater_idle_back.png', every: 2, scale: 0.55, frameW: 104, frameH: 72, feetY: 68 },
+  // Tamandua (seltener Ameisenbär): so lang wie der große Ameisenbär; Laufen je ein Schrittzyklus (tools/find-loop.py),
+  // auch von hinten läuft er nach links (daher gespiegelt); ohne Video von hinten im Stehen (dort das Standbild)
+  { src: 'Animation/Ameisenbär2 läuft vorne.mp4', out: 'anteater2_walk.png', range: [1, 24], mirror: 'all', scale: 0.275, frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär2 läuft hinten.mp4', out: 'anteater2_walk_back.png', range: [65, 85], mirror: 'all', scale: 0.275, frameW: 104, frameH: 72, feetY: 68 },
+  { src: 'Animation/Ameisenbär2 idle vorne.mp4', out: 'anteater2_idle.png', every: 2, mirror: 'all', scale: 0.275, frameW: 104, frameH: 72, feetY: 68 },
   { src: 'Sprites/Ameisenbär frisst.png', out: 'anteater_eat.png', cols: 1, rows: 1, scale: 0.145, frameW: 88, frameH: 80, feetY: 76 },
   // Biber (Wald): Laufen von vorne (nach links gefilmt, gespiegelt) und hinten; Knabbern an einem Holzstück (nach links
   // gefilmt, gespiegelt; das Holz ist mit im Bild, darum ein breiterer Rahmen). Gleiche Größe wie beaver.png
@@ -1047,6 +1052,20 @@ const ANIMATIONS = [
   { src: 'Animation/Yak läuft hinten.mp4', out: 'yak_walk_back.png', range: [1, 22], scale: 0.25, frameW: 112, frameH: 104, feetY: 100 },
   { src: 'Animation/Yak Idle vorne.mp4', out: 'yak_idle.png', every: 2, scale: 0.247, frameW: 112, frameH: 104, feetY: 100 },
   { src: 'Animation/Yak idle hinten.mp4', out: 'yak_idle_back.png', every: 2, scale: 0.25, frameW: 112, frameH: 104, feetY: 100 },
+  // seltene Varianten (Streifen-Okapi, Fuchs-Tanuki, gefleckter Yak): Figur so hoch wie beim normalen Tier, Laufen je ein
+  // Schrittzyklus (tools/find-loop.py), Stehen jedes zweite Bild (Okapi nur die erste Hälfte, es bewegt sich kaum); breitere Rahmen, wo die Figur sonst nicht hineinpasst
+  { src: 'Animation/Okapi2 läuft vorne.mp4', out: 'okapi2_walk.png', range: [18, 41], scale: 0.259, frameW: 88, frameH: 104, feetY: 100 },
+  { src: 'Animation/Okapi2 läuft hinten.mp4', out: 'okapi2_walk_back.png', range: [5, 25], scale: 0.24, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Okapi2 idle vorne.mp4', out: 'okapi2_idle.png', range: [0, 47], every: 2, scale: 0.259, frameW: 96, frameH: 104, feetY: 100 },
+  { src: 'Animation/Okapi2 idle hinten.mp4', out: 'okapi2_idle_back.png', every: 2, scale: 0.24, frameW: 80, frameH: 104, feetY: 100 },
+  { src: 'Animation/Tanuki2 läuft vorne.mp4', out: 'tanuki2_walk.png', range: [42, 66], scale: 0.162, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tanuki2 läuft hinten.mp4', out: 'tanuki2_walk_back.png', range: [45, 68], scale: 0.205, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tanuki2 idle vorne.mp4', out: 'tanuki2_idle.png', every: 2, scale: 0.162, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Tanuki2 idle hinten.mp4', out: 'tanuki2_idle_back.png', every: 2, scale: 0.205, frameW: 72, frameH: 72, feetY: 68 },
+  { src: 'Animation/Yak2 läuft vorne.mp4', out: 'yak2_walk.png', range: [48, 72], scale: 0.255, frameW: 112, frameH: 104, feetY: 100 },
+  { src: 'Animation/Yak2 läuft hinten.mp4', out: 'yak2_walk_back.png', range: [67, 90], scale: 0.294, frameW: 112, frameH: 104, feetY: 100 },
+  { src: 'Animation/Yak2 idle vorne.mp4', out: 'yak2_idle.png', every: 2, scale: 0.255, frameW: 128, frameH: 104, feetY: 100 },
+  { src: 'Animation/Yak2 idle hinten.mp4', out: 'yak2_idle_back.png', every: 2, scale: 0.294, frameW: 112, frameH: 104, feetY: 100 },
   // Schneeleopard: im Stehen das ganze Video, er duckt sich mittendrin; dropShadowGreen und onlyFigure: gemalter Schatten und Schimmer auf dem Greenscreen weg
   { src: 'Animation/Schneeleopard löuft vorne.mp4', out: 'snowleopard_walk.png', dropShadowGreen: 25, range: [0, 47], scale: 0.174, frameW: 88, frameH: 80, feetY: 76 },
   { src: 'Animation/Schneeleopard läuft hinten.mp4', out: 'snowleopard_walk_back.png', dropShadowGreen: 25, loopBlend: 1, scale: 0.203, frameW: 88, frameH: 80, feetY: 76 },
