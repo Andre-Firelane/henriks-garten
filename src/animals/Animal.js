@@ -684,6 +684,7 @@ export const SPECIES = {
   snowhare: {
     texture: 'snowhare', // (Bild 1,36-fach so groß wie früher mit scale 0,68: so wird es nicht hochgezogen und bleibt scharf)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    anims: { walkDown: 'snowhare_walk', walkUp: 'snowhare_walk_back', idleDown: 'snowhare_idle', idleUp: 'snowhare_idle_back' }, // Videos
     originY: 76 / 82,
     speed: 70, // flinker als die Katze (60), noch langsamer als Henrik (80)
     fleeSpeed: 120, // ins Loch flitzt er schneller als Henrik
@@ -748,6 +749,7 @@ export const SPECIES = {
   reindeer: {
     texture: 'reindeer',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    anims: { walkDown: 'reindeer_walk', walkUp: 'reindeer_walk_back', idleDown: 'reindeer_idle', idleUp: 'reindeer_idle_back', runDown: 'reindeer_run', runUp: 'reindeer_run_back' }, // Videos; wild rennt es (Reindeer.animKey)
     originY: 123 / 128, // (Bild 1,14-fach so groß wie früher: ein Ticken größer, trotzdem scharf)
     speed: 24,
     restChance: 0.55,

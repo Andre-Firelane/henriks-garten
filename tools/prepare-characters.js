@@ -1071,6 +1071,20 @@ const ANIMATIONS = [
   { src: 'Animation/Schneeleopard läuft hinten.mp4', out: 'snowleopard_walk_back.png', dropShadowGreen: 25, loopBlend: 1, scale: 0.203, frameW: 88, frameH: 80, feetY: 76 },
   { src: 'Animation/Schneelopard idle vorne.mp4', out: 'snowleopard_idle.png', dropShadowGreen: 25, onlyFigure: true, every: 2, scale: 0.174, frameW: 88, frameH: 80, feetY: 76 },
   { src: 'Animation/Schneeleopard idle hinten.mp4', out: 'snowleopard_idle_back.png', dropShadowGreen: 25, dropGreyHalo: true, onlyFigure: true, every: 2, scale: 0.203, frameW: 104, frameH: 80, feetY: 76 },
+  // Rentier (Eiswelt): Figur so hoch wie das Standbild (114 px), Laufen (im Gehege, folgend) und Rennen (wild auf dem
+  // Rundweg) je ein Schrittzyklus (tools/find-loop.py), Stehen jedes zweite Bild (vorne nur die erste Hälfte);
+  // dropShadowGreen: gemalter Schatten auf dem Greenscreen weg
+  { src: 'Animation/Rentier läuft vorne.mp4', out: 'reindeer_walk.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [60, 82], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier läuft hinten.mp4', out: 'reindeer_walk_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [24, 56], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier rennt vorne.mp4', out: 'reindeer_run.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [46, 55], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier rennt hinten.mp4', out: 'reindeer_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [32, 44], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier idle vorne.mp4', out: 'reindeer_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 47], every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier idle hinten.mp4', out: 'reindeer_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  // Schneehase: Figur so hoch wie das Standbild (68 px); höherer Rahmen, beim Hoppeln springt er hoch
+  { src: 'Animation/Schneehase läuft vorne.mp4', out: 'snowhare_walk.png', range: [18, 38], scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  { src: 'Animation/Schneehase läuft hinten.mp4', out: 'snowhare_walk_back.png', range: [45, 82], scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  { src: 'Animation/Schneehase idle vorne.mp4', out: 'snowhare_idle.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  { src: 'Animation/Schneehase idle hinten.mp4', out: 'snowhare_idle_back.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   // Zooauto mit Anhänger (Schnellreise, in allen Gebieten): ein Bild, Fahrtrichtung unten-links wie bisher Bild 0/1 der
   // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
   // (ca. 199,183,172) in der unteren Hälfte entfernt

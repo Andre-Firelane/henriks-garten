@@ -369,7 +369,7 @@ const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle hyena_idl
   ride_asia_idle_back elk_idle elk_idle_back hedgehog_idle hedgehog_idle_back boar_idle boar_idle_back boar_mud_idle piglet_idle
   piglet_idle_back okapi_idle okapi_idle_back tapir_idle tapir_idle_back tanuki_idle tanuki_idle_back yak_idle yak_idle_back
   anteater2_idle okapi2_idle okapi2_idle_back tanuki2_idle tanuki2_idle_back yak2_idle yak2_idle_back
-  snowleopard_idle snowleopard_idle_back`.split(/\s+/);
+  snowleopard_idle snowleopard_idle_back reindeer_idle reindeer_idle_back snowhare_idle snowhare_idle_back`.split(/\s+/);
 const VIDEO_ANIMS = {
   // seltene Varianten aus Videos (Schaf2: gefleckter Widder, Reiher2: Storch, Fuchs2: Silberfuchs, Eichhörnchen2:
   // Streifenhörnchen, Biber2: Nutria, Affe2: Goldstumpfnase); gleiche Größe wie die normalen Tiere
@@ -619,6 +619,17 @@ const VIDEO_ANIMS = {
   snowleopard_walk_back: [88, 80, 27],
   snowleopard_idle: [88, 80, 47], // ganzes Video: duckt sich mittendrin
   snowleopard_idle_back: [104, 80, 44], // breiter: geduckt
+  // Eiswelt: Rentier läuft (Gehege, folgend) und rennt (wild auf dem Pfad), Schneehase hoppelt
+  reindeer_walk: [88, 128, 23],
+  reindeer_walk_back: [88, 128, 33],
+  reindeer_run: [88, 128, 10],
+  reindeer_run_back: [88, 128, 13],
+  reindeer_idle: [88, 128, 24],
+  reindeer_idle_back: [88, 128, 12],
+  snowhare_walk: [56, 88, 21],
+  snowhare_walk_back: [56, 88, 38],
+  snowhare_idle: [56, 88, 24],
+  snowhare_idle_back: [56, 88, 24],
 };
 
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };

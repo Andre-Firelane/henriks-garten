@@ -226,11 +226,15 @@ export default class SnowHare extends Animal {
       for (const h of this.holes ?? []) h.ghost?.setAlpha(isCovered(scene, h.img) ? GHOST_ALPHA : 0);
     }
     if (!this.ghost) return;
-    if (!wild || hidden || this.sprite.texture.key !== 'snowhare') {
+    const key = this.sprite.texture.key;
+    if (!wild || hidden || !key.startsWith('snowhare')) {
       this.ghost.setAlpha(0);
       return;
     }
     const sp = this.sprite;
+    // Kontur zum gerade gezeigten Bild (Standbild oder Animation: Hoppeln, Stehen)
+    const outline = outlineTexture(scene, key);
+    if (this.ghost.texture.key !== outline) this.ghost.setTexture(outline);
     this.ghost.setFrame(sp.frame.name).setOrigin(sp.originX, sp.originY).setScale(sp.scaleX, sp.scaleY).setFlipX(sp.flipX).setPosition(sp.x, sp.y).setAngle(sp.angle);
     if (this.cropped) this.ghost.setCrop(0, 0, sp.frame.width, sp.frame.height * PEEK_SHOW);
     else this.ghost.setCrop();
