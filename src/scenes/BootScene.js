@@ -9,6 +9,7 @@ import { game } from '../state.js';
 import { isActive } from '../world/events.js';
 import { LEVELS, isPark } from '../world/levels.js';
 import { itemDef } from '../world/decor.js';
+import { FURNITURE_KEYS } from '../world/hd.js';
 import { makeCoatIcons } from '../animals/coats.js';
 
 // Handy und Tablet (Touch): WebP-Fassung statt PNG (etwa ein Viertel so groß, siehe tools/make-webp.py); der PC lädt PNG
@@ -22,13 +23,15 @@ const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) 
 // Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs, Eichhörnchen, Elch, Wildschwein, Igel und Biber nur das Grundbild, das
 // der Tierpark zeigt, z. B. auf den Gehegeschildern),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|freshfish|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 // Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
 // der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
 // mit (z. B. Grasbüschel, Akazie, Kirschbaum und Steinlaterne als Deko im Tierpark); alles andere ohne Paket
 // (Reittier der Wiese ...) kommt ins Paket misc
 const GROUPS = {
+  // Möbel im Haupthaus (zuerst: ihre Namen enthalten die Welten, z. B. fn_desk_savanna_0)
+  house: { art: /^fn_/ },
   // Hoftiere der Wiese und des Streichelzoos (Kuh, Schwein, Ziege). Ihre Töne bleiben in misc: Wildschwein und
   // Warzenschwein grunzen wie das Schwein
   farm: { species: ['cow', 'pig', 'goat'], keys: /^farm_/ },
@@ -60,9 +63,9 @@ const GROUPS = {
   },
 };
 // in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
-const GROUP_ORDER = ['farm', 'misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
+const GROUP_ORDER = ['farm', 'misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice', 'house'];
 // Pakete je Gebiet (dazu kommen die der Tiere, die dort stehen oder einem folgen, siehe levelGroups)
-const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], aquarium: ['reef'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle', 'reef'] }; // (reef: Wände des Piranha-Beckens in der Tropenhalle)
+const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], aquarium: ['reef'], house: ['farm', 'house'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle', 'reef'] }; // (reef: Wände des Piranha-Beckens in der Tropenhalle)
 // Events mit Bildern aus einem Paket (Flamingos fliegen auch über Wiese und Wald; Reittier auf der Wiese)
 export const EVENT_GROUPS = { flamingo: ['savanna'], ride: ['misc'] };
 const SPECIES_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, { species = [] }]) => species.map((s) => [s, group])));
@@ -86,9 +89,10 @@ export function levelGroups(level) {
   }
   for (const [id, gs] of Object.entries(EVENT_GROUPS)) if (isActive(id)) gs.forEach((g) => groups.add(g));
   // Tierpark: Bilder der Deko, die man hat bzw. die hier steht (z. B. Koralle aus dem Riff, Eisblock aus der Eiswelt)
-  if (isPark(level) && game.decor) {
+  if ((isPark(level) || level === 'house') && game.decor) {
     const ids = [...Object.keys(game.decor.owned ?? {}), ...(game.decor.placed?.[level] ?? []).map((d) => d.id)];
     for (const id of ids) {
+      if (!!itemDef(id)?.indoor !== (level === 'house')) continue; // (Möbel nur im Haupthaus, Deko nur draußen)
       const key = itemDef(id)?.key;
       const group = key && groupOf(key);
       if (group && group !== 'misc') groups.add(group);
@@ -184,6 +188,7 @@ const PIXEL_ART = [
   'snow_kopje', 'snow_rocks0', 'snow_rocks1', 'snow_pair', 'snow_spire', 'snow_rubble', 'snow_stack', 'snow_lionrock', 'snow_cairn',
   // Tierpark
   'park_path', 'signpost_post',
+  'stall', // Stall hinter dem Haupthaus (aus Sprites/Stall.webp, tools/stall-cut.py)
   'deco_stand', // Bude „Blumen & Andenken“ (Marktstand aus Sprites/Dekoladen.webp, tools/deco-stand.py)
   // neue Deko (Bilder von Andre aus tools/decor-sprites.py; Wegsteine noch Platzhalter aus tools/decor-placeholders.py)
   'stepping_stones', 'flower_arch', 'lantern_post', 'pavilion', 'snowman', 'anchor',
@@ -202,6 +207,8 @@ const PIXEL_ART = [
   'hutwall_office_x', 'hutwall_office_y', 'post_hutwall_office', 'gate_door_office_x', 'gate_door_office_y', 'hutroof_office',
   'floor_office', 'office_desk', 'office_chair', 'office_plant_monstera', 'office_plant_strelitzia',
   'office_sofa', 'office_table', 'office_armchair', 'office_rug',
+  // Möbel im Haupthaus, je Ansicht ein Bild (tools/furniture-sprites.py, Paket house)
+  ...FURNITURE_KEYS,
   'icecream_stand', // Eisstand-Event
   'popcorn_stand', 'lemonade_stand', 'cottoncandy_stand', 'pretzel_stand', // feste Buden (src/world/shops.js)
   // Riesenrad (vorerst gestrichen, siehe wheelSlot in levels.js): 'wheel_ring', 'wheel_stand', 'wheel_gondola', 'visitor1_sit' … 'visitor8_sit'
@@ -864,6 +871,9 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('piranha_swim', 'assets/piranha_swim.png', { frameWidth: 96, frameHeight: 64 });
     load.spritesheet('piranha_box', 'assets/piranha_box.png', { frameWidth: 64, frameHeight: 76 });
     load.spritesheet('reeffish_swim', 'assets/reeffish_swim.png', { frameWidth: 96, frameHeight: 64 }); // ... mit wackelnder Schwanzflosse (tools/fish-wag.cjs)
+    // Angelfische (docs/plan-angeln.md): 30 Arten in doppelter Auflösung (tools/freshwater-fish.py), mit wackelnder Schwanzflosse
+    load.spritesheet('freshfish', 'assets/freshfish.png', { frameWidth: 192, frameHeight: 128 });
+    load.spritesheet('freshfish_swim', 'assets/freshfish_swim.png', { frameWidth: 192, frameHeight: 128 });
     for (const k of ['seahorse', 'seahorse2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff) und Fetzenfisch
     for (const k of ['octopus', 'octopus2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // Krake (Riff) und Kalmar (seltene Variante)
     for (const k of ['jellyfish', 'jellyfish2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)

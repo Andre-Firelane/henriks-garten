@@ -10,6 +10,7 @@ node tools/screenshot.cjs [--level park] [--size pc|phone|tablet|1024x768] [--cl
 - Startet ein Test-Spiel (speichert nie), überspringt die Vorschau, wartet bis das Spiel läuft, drückt Mavis Sprechblasen weg, klickt/drückt dann die angegebenen Dinge und macht das Bild (Standard: `tools/shots/<level>-<size>.png`, nicht im Git).
 - Nutzt den Test-Port 5181; läuft dort kein Server, startet das Skript selbst einen und beendet ihn danach. Der Tablet-Server (5173) bleibt unberührt.
 - Im Bash-Tool mit `dangerouslyDisableSandbox: true` aufrufen (sonst darf vite keinen Port öffnen). Immer nur einen Lauf gleichzeitig.
+- `--key w:800` hält eine Taste 800 ms (Henrik laufen lassen; W/D abwechselnd läuft gerade nach oben rechts).
 - Dauert etwa 25 Sekunden. Bei einem neuen Test-Spiel liegt oft noch die Steuerungs-Erklärung über dem Bild (Mitte unten).
 
 ## Ideen für später

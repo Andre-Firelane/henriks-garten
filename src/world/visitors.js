@@ -4,6 +4,7 @@ import { ENCLOSURES, EXITS, GATE_TILES, LEVEL, LEVEL_ID, MAP_H, isUpgraded, MAP_
 import { tileToWorld } from './iso.js';
 import { WHEEL_VISITORS, hasWheel, shopsIn } from './shops.js';
 import { TOY_BONUS } from './toys.js';
+import { FRESH_FISH, RARITY_APPEAL } from './fishing.js';
 
 // Anziehung je Tierart: seltene Tiere (kleines Gewicht in spawn.weights der Welten) und schwer zu fangende
 // (nur mit Lasso, Falle oder Futter) locken mehr Besucher an als häufige, die man einfach berührt
@@ -11,7 +12,7 @@ export const APPEAL = {
   sheep: 1,
   cat: 1.2,
   frog: 1.2,
-  fish: 1.2,
+  fish: 0.5, // Angelfische: je Art nach Seltenheit (FISH_APPEAL unten), wie die Riff-Fische
   squirrel: 1.5,
   deer: 2,
   elk: 5, // groß und selten zu sehen
@@ -77,6 +78,9 @@ export const BABY_BONUS = 0.5;
 
 // seltene Skins locken mehr Besucher an als die normale Art (Katze 2: mehr als doppelt so viel wie eine Katze, Oryx 1,5-mal)
 export const SKIN_APPEAL = { tanuki2: 6, yak2: 5.5, stag: 4, wolf2: 7, lion2: 8, zebra2: 4.5, cat2: 3, antelope2: 4.5, koi3: 3, frog2: 3, tiger2: 7, orangutan2: 7, peacock2: 6, jellyfish2: 7, ray2: 8, lungfish: 2, shoebill: 6, croc_albino: 8, gibbon: 6, sheep2: 2.5, sheep_grey: 1.2, sheep_moorit: 1.3, sheep_choc: 1.8, sheep_black: 2.2, sheep2_grey: 3, sheep2_brown: 3.5, sheep2_black: 4.5, cat_grey: 1.1, cat_brown: 1.1, cat_cream: 1.2, cat_black: 1.3, cat2_cream: 3.5, cat2_blue: 4, cat2_red: 4.5, cat2_black: 5, deer_dark: 1.1, deer_light: 1.1, deer_black: 1.4, stag_dark: 4.5, stag_light: 4.5, stag_black: 6, giraffe_net: 1.2, yak2_gold: 6.5, yak2_brown: 6, yak2_grey: 6, snake_anery: 1.1, snake_caramel: 1.1, tarantula_fur: 6, tarantula_fur_brown: 6.5, tarantula_fur_rust: 7, tarantula_fur_grey: 7, tarantula_fur_blue: 8, heron2: 5, fox2: 6, squirrel2: 3, beaver2: 6, macaque2: 7, giraffe2: 6, panda2: 8, octopus2: 7, anteater2: 5, meerkat2: 4, vulture2: 6, gorilla2: 9, hyena2: 6, hippo2: 6, warthog2: 5, toucan2: 6, penguin2: 5, seal2: 6, seahorse2: 6, turtle2: 7, tapir2: 7, okapi2: 8 }; // koi3: weißer Koi mit rotem Punkt
+
+// Angelfische (docs/plan-angeln.md): häufig 0,5 (wie Riff-Fische), selten 1, sehr selten 2; die Größe zählt nicht
+for (const f of FRESH_FISH) SKIN_APPEAL[f.id] = RARITY_APPEAL[f.rarity];
 
 // (geht auch mit gespeicherten Tieren eines anderen Levels: braucht nur species, skin, variant, baby)
 export const appeal = (a) => (a.baby ? BABY_APPEAL : skinAppeal(a.species, a.skin ?? a.variant));

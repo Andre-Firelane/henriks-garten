@@ -1010,10 +1010,11 @@ export class VisitorCrowd {
     this.scene.addHearts(1, 'koi');
   }
 
-  // Futter ins Gehege werfen, wenn dort gerade Tiere fressen können (nicht zu oft dasselbe Gehege)
+  // Futter ins Gehege werfen, wenn dort gerade Tiere fressen können (nicht zu oft dasselbe Gehege).
+  // Im Streichelzoo (und Katzenhaus) nie: dort wird nur gestreichelt, sonst laufen alle Tiere zum Futter
   feed(v) {
     const e = v.pen;
-    if (!e || this.time - (this.lastFed.get(e) ?? -Infinity) < PEN_FEED_PAUSE) return;
+    if (!e || e.petting || this.time - (this.lastFed.get(e) ?? -Infinity) < PEN_FEED_PAUSE) return;
     if (this.scene.feedEnclosure(e, v) > 0) {
       this.lastFed.set(e, this.time);
     }

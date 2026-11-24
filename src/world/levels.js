@@ -251,14 +251,14 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 13, ty0: 21, tx1: 17, ty1: 24, style: 'meadow' },
     chests: [
-      { tx: 15, ty: 25, tools: ['net', 'lasso'] },
+      { tx: 15, ty: 25, tools: ['net', 'lasso', 'rod'] }, // Angel: Fischschatten am Ufer (docs/plan-angeln.md)
     ],
     ambient: 'ambient_meadow', // Hintergrundgeräusch in Dauerschleife: public/assets/sounds/<Name>.mp3
     toolSpots: [],
     exits: [], // in die anderen Gebiete und in den Tierpark nur mit dem Auto
     // Spawner: so viele wilde Tiere sind ungefähr gleichzeitig unterwegs; die Zahlen dahinter sind die
     // Wahrscheinlichkeiten (je größer, desto häufiger). Tiere verschwinden nach einer Weile und neue kommen.
-    spawn: { population: 17, weights: { sheep: 5.5, goat: 0.2, pig: 0.15, cow: 0.15, cat: 2, fish: 2, frog: 1.6, butterfly: 3 } }, // Hoftiere: selten, beim Bauernhof-Event viele (siehe pickSpecies)
+    spawn: { population: 17, weights: { sheep: 5.5, goat: 0.2, pig: 0.15, cow: 0.15, cat: 2, frog: 1.6, butterfly: 3 } }, // Hoftiere: selten, beim Bauernhof-Event viele (siehe pickSpecies)
     // Fischreiher fliegen unabhängig vom Spawner über die Karte: alle every Sekunden einer, landChance landet
     herons: { every: [50, 110], landChance: 0.5 },
     objectKeys: { Ŝ: 'meadow_dock' }, // Holzsteg am See statt des Dschungelstegs
@@ -361,8 +361,8 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 25, ty0: 11, tx1: 29, ty1: 14, style: 'forest' },
     chests: [
-      { tx: 27, ty: 15, tools: ['net', 'lasso', 'trap', 'lantern'] }, // Moorlaterne für die Elche im Nebel
-      { tx: 22, ty: 48, tools: ['net', 'lasso', 'trap', 'lantern'] }, // Kiste im Süden zwischen Moor und Eichenhain (an der Flussmündung)
+      { tx: 27, ty: 15, tools: ['net', 'lasso', 'trap', 'lantern', 'rod'] }, // Moorlaterne für die Elche im Nebel
+      { tx: 22, ty: 48, tools: ['net', 'lasso', 'trap', 'lantern', 'rod'] }, // Kiste im Süden zwischen Moor und Eichenhain (an der Flussmündung)
     ],
     hero: 'hero_forest', // Kleidung der Spielfigur in diesem Gebiet (Pfadfinder)
     ambient: 'ambient_forest_river', // Waldgeräusche mit leisem Flussrauschen darunter (tools/prepare-sounds.js)
@@ -378,7 +378,7 @@ export const LEVELS = {
       { tx: 0, ty: 48, to: '@side', passage: 'west', back: { tx: 1, ty: 48 }, maps: ['fx_bog', 'fx_birch', 'fx_moorside'], label: tr('Tiefer ins Moor', 'Deeper into the bog') },
       { tx: 31, ty: 63, to: '@side', passage: 'south', back: { tx: 31, ty: 62 }, maps: ['fx_oakgrove', 'fx_leafwood', 'fx_gorge', 'fx_moorside'], label: tr('Tiefer in den Eichenwald', 'Deeper into the oak wood') },
     ],
-    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fish: 2.5, fox: 1, frog: 0.7, elk: 0.7, hedgehog: 1.2, boar: 0.9 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
+    spawn: { population: 17, weights: { deer: 4.4, squirrel: 2.5, fox: 1, frog: 0.7, elk: 0.7, hedgehog: 1.2, boar: 0.9 } }, // jedes zehnte Reh ist ein Hirsch (Skin); Frösche meist an den Moortümpeln und am Fluss; Elche im Moorwasser (höchstens 2)
     // Fluss vom Wasserfall oben links bis unten rechts (fließt wie im Dschungel), mit Felsen, um die er schäumt
     // im Moor (except) läuft er in stille Tümpel aus
     flow: { frames: ['forest_flow0', 'forest_flow1', 'forest_flow2', 'forest_flow3'], ms: 300, minSize: 40, except: { tx0: 0, tx1: 21, ty0: 46, ty1: 63 } },
@@ -409,7 +409,7 @@ export const LEVELS = {
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
     hut: { tx0: 13, ty0: 20, tx1: 17, ty1: 23, style: 'savanna' },
     chests: [
-      { tx: 15, ty: 24, tools: ['net', 'lasso', 'food'] },
+      { tx: 15, ty: 24, tools: ['net', 'lasso', 'food', 'rod'] },
     ],
     hero: 'hero_savanna', // Kleidung der Spielfigur in diesem Gebiet (Safari)
     background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
@@ -444,7 +444,7 @@ export const LEVELS = {
         ambient: 'ambient_savanna_rain', // Regen und Donner
         objectKeys: { ƚ: 'savanna_tallgrass_rain', Ƙ: 'savanna_bush_rain', v: 'savanna_shrub_rain' }, // alles grünt und blüht
         ambientVolume: 0.5,
-        spawn: { population: 10, weights: { antelope: 0.3, zebra: 0.3, giraffe: 0.2, meerkat: 0.15, lion: 0.12, crocodile: 0.35, fish: 0.7, hippo: 0.45 } },
+        spawn: { population: 10, weights: { antelope: 0.3, zebra: 0.3, giraffe: 0.2, meerkat: 0.15, lion: 0.12, crocodile: 0.35, hippo: 0.45 } },
         herons: { every: [35, 70], landChance: 0.7 },
       },
       // Trockenzeit: Schlamm statt Wasser (darin die Lungenfische), ein letztes kleines Wasserloch, an dem sich Zebras und
@@ -454,8 +454,8 @@ export const LEVELS = {
         fishIn: '≈',
         grass: ['sdry0', 'sdry1', 'sdry2'],
         objectKeys: { A: 'acacia_bare', ƚ: 'savanna_tallgrass_dry', Ƙ: 'dry_bush' }, // kahl und strohgelb
-        chests: [{ tx: 15, ty: 24, tools: ['net', 'lasso', 'food', 'bone'] }],
-        spawn: { population: 9, weights: { antelope: 0.35, zebra: 0.35, giraffe: 0.15, meerkat: 0.3, lion: 0.12, fish: 0.5, warthog: 0.5 } },
+        chests: [{ tx: 15, ty: 24, tools: ['net', 'lasso', 'food', 'bone', 'rod'] }],
+        spawn: { population: 9, weights: { antelope: 0.35, zebra: 0.35, giraffe: 0.15, meerkat: 0.3, lion: 0.12, warthog: 0.5 } },
         gatherAt: { tx: 31, ty: 30, r: 90 }, // dort drängen sich Zebras und Antilopen (Leine, siehe Animal.pickWander)
         vultures: { every: [30, 60] }, // so oft kreist ein Geier heran (Sekunden)
         hyenas: { every: [40, 80], near: { tx: 33, ty: 5, r: 10 } }, // so oft kichert das Hyänenrudel – nur, wenn man in der Nähe des Elefantenfriedhofs ist
@@ -710,11 +710,11 @@ export const LEVELS = {
     enclosures: [], // die Gehege sind im Tierpark
     hut: { tx0: 19, ty0: 19, tx1: 23, ty1: 22, style: 'ice' }, // Forschungsstation (Metall, flaches Dach mit Teleskop; mit Bett)
     chests: [
-      { tx: 21, ty: 23, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // Regal vor der Station
-      { tx: 8, ty: 7, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // Kisten auf den beiden Inseln
-      { tx: 37, ty: 7, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] },
-      { tx: 34, ty: 39, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // an den Vogelfelsen am Südufer des Fjords
-      { tx: 10, ty: 50, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer'] }, // in der Tundra
+      { tx: 21, ty: 23, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer', 'rod'] }, // Regal vor der Station
+      { tx: 8, ty: 7, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer', 'rod'] }, // Kisten auf den beiden Inseln
+      { tx: 37, ty: 7, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer', 'rod'] },
+      { tx: 34, ty: 39, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer', 'rod'] }, // an den Vogelfelsen am Südufer des Fjords
+      { tx: 10, ty: 50, tools: ['net', 'lasso', 'herring', 'sealball', 'lantern', 'warmer', 'rod'] }, // in der Tundra
     ],
     hero: 'hero_ice', // Kleidung in der Eiswelt (Parka mit Fellkapuze)
     ambient: 'ambient_ice', // pfeifender Wind
@@ -779,7 +779,7 @@ export const LEVELS = {
     // es in Raum 3: abgedunkelt, mitten im Raum ein großes Becken voller leuchtender Quallen, rundherum ein Weg
     // (dark: siehe drawDarkRooms)
     rows: [
-'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
       'NZ..................ZNZMMMMMMMMMMMMMMNZ...........ZN',
       'N...MMMMMMMMMMMMMMMM.N.N.).)..(..)(.NN.............N',
       'N...N......?.(.?.(.N.N.N.)(?..?(../)NN.###########.N',
@@ -797,7 +797,25 @@ export const LEVELS = {
       'N.N.().N#..Ł###..Ł...N.....#.N)..?N#.N#....Ɓ..Ɓ....N',
       'N.MMMMMM#..###.......N..Ɓ..#.MMMMMM#.N#............N',
       'N.......#.###Ł.Z....ZNZ....##########N#.Z.........ZN',
-      'MMMMMMMMMMXXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+      'MMMMMMMMMMXXMMMMMMMMMM......#........MMMMMMMMMMMMMMM',
+      '                     NMMMMM.#..................ZN   ',
+      '                     NN...N.#...................N   ',
+      '                     NN(..N.#.....Ɓ......Ɓ......N   ',
+      '                     NN.?.N.#...................N   ',
+      '                     NN..(N.#...................N   ',
+      '                     NN...N.#...................N   ',
+      '                     NN...N.#..Ł......Ł......Ł..N   ',
+      '                     NN.(.N.#...................N   ',
+      '                     NN..?N.#...................N   ',
+      '                     NN...N.#...................N   ',
+      '                     NN(..N.#.MMMMMMMMMMMMMMMM..N   ',
+      '                     NN...N.#.N.(.....(....?.N..N   ',
+      '                     NN..(N.#.N....(....?...(N..N   ',
+      '                     NN?..N.#.N..(..?....(...N..N   ',
+      '                     NMMMMM.#.MMMMMMMMMMMMMMMM..N   ',
+      '                     N......###################.N   ',
+      '                     NZ..........Ɓ.....Ɓ.....Ɓ.ZN   ',
+      '                     MMMMMMMMMMMMMMMMMMMMMMMMMMMM   ',
     ],
     grass: ['floor_aquarium'],
     path: 'aq_path',
@@ -811,9 +829,14 @@ export const LEVELS = {
       { id: 'turtles', name: tr('Schildkröten- und Rochenbecken', 'Turtle and Ray Tank'), species: ['turtle', 'ray'], world: 'reef', seed: { tx: 25, ty: 5 }, quota: { turtle: [4, 4], ray: [3, 3] }, signAt: { tx: 25.5, ty: 7 }, signOnGlass: true }, // die riesige Beckenfront
       { id: 'jellyfish', name: tr('Quallenbecken', 'Jellyfish Tank'), species: ['jellyfish'], world: 'reef', unlock: 'jellyfish', seed: { tx: 44, ty: 8 }, slots: [12, 12], signAt: { tx: 44, ty: 11 }, signOnGlass: true, dark: true },
       { id: 'octopus', name: tr('Krakenbecken', 'Octopus Tank'), species: ['octopus'], world: 'reef', seed: { tx: 31, ty: 14 }, slots: [3, 3], signAt: { tx: 31.5, ty: 16 }, signOnGlass: true },
+      // Süßwasserhalle (docs/plan-angeln.md): je Welt ein Becken für die Angelfische (welches: fishTank in src/world/fishing.js)
+      { id: 'fwCold', name: tr('Heimische und nordische Gewässer', 'Native and Northern Waters'), species: ['fish'], world: 'meadow', seed: { tx: 24, ty: 26 }, slots: [20, 20], signAt: { tx: 26, ty: 23 }, signOnGlass: true }, // Wiese, Wald, Eiswelt: lang an der linken Wand
+      { id: 'fwWarm', name: tr('Tropische Flüsse', 'Tropical Rivers'), species: ['fish'], world: 'jungle', seed: { tx: 37, ty: 31 }, slots: [20, 20], signAt: { tx: 37.5, ty: 33 }, signOnGlass: true }, // Savanne, Dschungel: lang an der unteren Wand
     ],
     // Tanks zuerst: so gehören ihre Wände und ihr Boden zum Tank, nicht zur Halle. pathFloor: Mosaik auf dem Weg in der Halle
     buildings: [
+      { tx0: 22, ty0: 19, tx1: 26, ty1: 33, style: 'tank', noRoof: true, noDeco: true }, // Süßwasserhalle (ohne Riff-Zierfische): großes Becken an der linken Wand
+      { tx0: 30, ty0: 29, tx1: 45, ty1: 33, style: 'tank', noRoof: true, noDeco: true }, // ... und eins unten rechts an der unteren Wand
       { tx0: 4, ty0: 2, tx1: 19, ty1: 6, style: 'tank', noRoof: true },
       { tx0: 2, ty0: 8, tx1: 7, ty1: 12, style: 'tank', noRoof: true },
       { tx0: 2, ty0: 13, tx1: 7, ty1: 16, style: 'tank', noRoof: true },
@@ -823,6 +846,7 @@ export const LEVELS = {
       { tx0: 41, ty0: 5, tx1: 47, ty1: 11, style: 'tank', noRoof: true, noDeco: true }, // Raum 3: Quallenbecken mitten im Raum (ohne Zierfische)
       { tx0: 21, ty0: 0, tx1: 37, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Raum 2 (die Wand dazwischen gehört zur Halle)
       { tx0: 37, ty0: 0, tx1: 51, ty1: 18, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true, dark: true }, // Raum 3, abgedunkelt
+      { tx0: 21, ty0: 18, tx1: 48, ty1: 36, style: 'aquarium', noRoof: true, pathFloor: 'aq_path', visitors: true }, // Süßwasserhalle unter Raum 2 und 3 (zu Raum 2 hin offen: eine große Halle)
     ],
     // freischaltbar: der Durchgang in den dunklen Quallenraum öffnet sich, sobald man die erste Qualle fängt
     unlocks: [{ id: 'jellyfish', tx: 37, ty: 16, rows: ['#', '#'] }],
@@ -836,6 +860,41 @@ export const LEVELS = {
       { tx: 11, ty: 18, to: 'park2', arrive: { tx: 2, ty: 15 }, label: tr('Tierpark', 'Zoo') },
     ],
     spawn: { population: 0, weights: {} }, // die Zierfische sind keine Tiere
+  },
+
+  // Haupthaus (siehe docs/plan-haupthaus.md): Henriks eigener Raum hinter der Tür des Haupthauses im Zentrum. Ein Raum ohne
+  // Dach (man ist immer drin); alle Möbel samt Computer (Events) setzt man selbst (Bauen, Katalog „Möbel“, siehe indoor in
+  // decor.js, Hauptrechner: houseComputers). Kein Auto, keine Weltkarte, keine Besucher; zurück durch die Tür unten.
+  house: {
+    name: tr('Haupthaus', 'Main Building'),
+    rows: [
+      'MMMMMMMMMMMMMMMM',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'N..............N',
+      'MMMMMMMXXMMMMMMM',
+    ],
+    grass: ['floor_office'],
+    path: 'floor_office',
+    start: { tx: 7, ty: 10 },
+    buildings: [{ tx0: 0, ty0: 0, tx1: 15, ty1: 11, style: 'office', noRoof: true }],
+    chests: [],
+    toolSpots: [],
+    background: '#3a2e24',
+    ambient: 'ambient_meadow', // leise Vögel draußen
+    ambientVolume: 0.08,
+    exits: [
+      { tx: 7, ty: 11, to: 'park', arrive: { tx: 29, ty: 17 }, label: tr('Tierpark', 'Zoo') },
+      { tx: 8, ty: 11, to: 'park', arrive: { tx: 30, ty: 17 }, label: tr('Tierpark', 'Zoo') },
+    ],
+    spawn: { population: 0, weights: {} },
   },
 
   // Unterwasserwelt: ein buntes Riff vor Australien. Henrik schwimmt (schwebt über dem Meeresboden), Fischschwärme ziehen
@@ -1048,7 +1107,7 @@ const PARK_PENS = [
       // gehört zum (abgeschalteten) Gehegeausbau.
       // Teich auf der Lichtung (ohne Zaun): Fische im Wasser, Frösche am Ufer (shore). Steht vor dem Wildpark, damit Wasser
       // und Ufer zum Teich zählen und nicht zum Wildpark.
-      { id: 'clearingpond', name: tr('Teich', 'Pond'), species: ['frog', 'fish'], pond: true, shore: 1, signAt: { tx: 8, ty: 39 }, signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 10, ty: 41 }, quota: { frog: [6, 9], fish: [6, 9] }, upgrade: tr('Schilf am Teich', 'Reeds by the pond'), basic: [[10, 39, '.'], [13, 42, '.']] },
+      { id: 'clearingpond', name: tr('Teich', 'Pond'), species: ['frog'], pond: true, shore: 1, signAt: { tx: 8, ty: 39 }, signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 10, ty: 41 }, quota: { frog: [6, 9] }, upgrade: tr('Schilf am Teich', 'Reeds by the pond'), basic: [[10, 39, '.'], [13, 42, '.']] },
       { id: 'deerpark', name: tr('Wildpark', 'Wildlife Park'), species: ['deer', 'elk'], // Rehe und Elche laufen frei herum
         open: true, decor: true, gate: 'tall', gateTiles: [{ tx: 22, ty: 41 }, { tx: 22, ty: 42 }], visitors: true, signAt: { tx: 18, ty: 40 }, toysAt: [{ tx: 9, ty: 37 }], // Schild an der Weggabelung hinter dem Tor, der Futterautomat gegenüber auf der anderen Seite des Waldwegs; Futterraufe auf der Lichtung
         world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 18, ty: 41 }, quota: { deer: [6, 9], elk: [2, 3] }, upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[17, 36, '5'], [18, 36, 'D'], [17, 37, 'ḩ'], [18, 37, 'D'], [20, 37, 'D'], [21, 37, '5'], [17, 38, '5'], [18, 38, 'ḩ'], [19, 38, 'D'], [20, 38, 'ḩ'], [21, 38, 'k'], [17, 39, 'k'], [20, 39, 'D'], [21, 39, 'ḩ'], [17, 43, '5'], [18, 43, 'ḫ'], [19, 43, 'ḩ'], [20, 43, 'D'], [21, 43, 'k'], [17, 44, 'k'], [20, 44, '5'], [17, 45, 'k'], [19, 45, 'k'], [21, 45, 'k']] },
@@ -1176,6 +1235,9 @@ LEVELS.park = parkSection('park', {
     [0, 22, edgeRow(0, '2'.repeat(23) + '4'.repeat(33), [32, 48])],
     [0, 60, edgeRow(0, '2'.repeat(23) + '4'.repeat(33), [38])],
     [55, 40, 'b'], // ... und auf die Wiese
+    // Haupthaus: nur noch Fassade (das Innere ist ein eigenes Level, siehe LEVELS.house); innen gesperrt und leer
+    ...[32, 33, 34, 35, 36, 37].map((ty) => [26, ty, 'VVVVVVV']),
+    ...[28, 29, 30].map((ty) => [34, ty, 'VV']), // Stall (stableBox) rechts hinter dem Haupthaus: gesperrt
   ],
   name: tr('Tierpark', 'Zoo'),
   part: { name: tr('Zentrum', 'Center'), icon: 'hero' }, // Feld im Tierpark-Schild der Weltkarte
@@ -1191,8 +1253,9 @@ LEVELS.park = parkSection('park', {
   grounds: [{ area: { tx0: 0, tx1: 22, ty0: 22, ty1: 60 }, ground: ['fgrass0', 'fgrass1', 'fgrass2'], path: 'forest_path' }],
   // große Bilder jenseits des Kartenrands (ganz hinten): der dunkle Wald hinter dem Wolfswald; Kachel und ihr Punkt im Bild
   backdrops: [{ key: 'wolf_forest_edge', tx: 0, ty: 29, ox: 560, oy: 400 }],
-  // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte
-  buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office' }],
+  // Katzenhaus mit Glaswänden (begehbar, Dach wird beim Betreten durchsichtig) und das Haupthaus in der Mitte (facade: nur
+  // Fassade mit Tür, die Tür führt ins Level house; das Dach bleibt zu, man sieht nicht hinein)
+  buildings: [{ tx0: 47, ty0: 24, tx1: 53, ty1: 28, style: 'cathouse' }, { tx0: 25, ty0: 31, tx1: 33, ty1: 38, style: 'office', facade: true }],
   // Eisstand-Event: der Eiswagen steht mitten im Park unterhalb des Hauptwegs (die Plätze oberhalb sind für feste Buden)
   iceStand: { tx: 26, ty: 44 },
   // Mavis Buden-Aufgabe: hierhin zeigt ihr Pfeil (vor dem Haupthaus links vom Weg zur Tür, weit genug weg vom Auto – dort
@@ -1200,13 +1263,16 @@ LEVELS.park = parkSection('park', {
   boothHint: { tx: 25, ty: 40 },
   // frühere feste Bauplätze für Buden (nur noch für alte Spielstände; Buden setzt man jetzt frei, siehe src/world/shops.js)
   legacySlots: [{ id: 'center1', tx: 25, ty: 43 }, { id: 'center2', tx: 33, ty: 40 }],
-  stable: { tx: 33, ty: 40 }, // Stall (Reittiere, E-Roller): rechts neben der Tür des Haupthauses (vorerst ein Schild)
+  // Stall (Reittiere, E-Roller): Scheune rechts hinter dem Haupthaus (Platzhalter-Zeichnung), Tor zum Weg nach rechts unten;
+  // stable ist der Platz vor dem Tor (Aktionstaste, Mavi), stableBox die gesperrten Kacheln
+  stable: { tx: 36, ty: 29.5 },
+  stableBox: { tx0: 34, ty0: 28, tx1: 35, ty1: 30 },
   scooterSpot: { tx: 27, ty: 39 }, // E-Roller: abgestellt an der Hauswand links neben der Tür des Haupthauses
   // Riesenrad (vorerst gestrichen – es passte nicht zur isometrischen Ansicht; der Code in src/world/FerrisWheel.js bleibt):
   // großer Bauplatz auf der Wiese über dem Haupthaus, am Weg zur Savanne (2×2 Kacheln ab tx/ty; clear: dort stehen dann
   // keine Bäume und Büsche). Zum Wiederaufnehmen diese Zeile einschalten und die Bilder in BootScene wieder laden.
   // wheelSlot: { id: 'wheel', tx: 29, ty: 25, clear: { tx0: 25, tx1: 34, ty0: 24, ty1: 29 } },
-  computers: [{ tx: 30, ty: 33 }], // Hauptrechner im Haupthaus (Events)
+  houseDoor: { tx: 29.5, ty: 38 }, // Tür des Haupthauses (Mavis Pfeil, wenn es drinnen weitergeht)
   feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 15, ty: 40, world: 'forest' }],
   // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
   signScale: 1.25,
@@ -1222,6 +1288,8 @@ LEVELS.park = parkSection('park', {
     { tx: 32, ty: 0, to: 'park2', arrive: { tx: 24, ty: 22 }, label: tr('Savanne & Aquarium', 'Savanna & Aquarium') },
     { tx: 48, ty: 0, to: 'park2', arrive: { tx: 40, ty: 22 }, label: tr('Savanne & Aquarium', 'Savanna & Aquarium') },
     { tx: 38, ty: 38, to: 'park3', arrive: { tx: 26, ty: 1 }, label: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle') },
+    { tx: 29, ty: 16, to: 'house', arrive: { tx: 7, ty: 10 }, label: tr('Haupthaus', 'Main Building') }, // Tür des Haupthauses
+    { tx: 30, ty: 16, to: 'house', arrive: { tx: 8, ty: 10 }, label: tr('Haupthaus', 'Main Building') },
   ],
 });
 
@@ -1256,7 +1324,7 @@ LEVELS.park2 = parkSection('park2', {
     stops: [{ tx: 30.5, ty: 2.5 }, { tx: 35.5, ty: 9.5 }, { tx: 60, ty: 9.5 }, { tx: 76.5, ty: 17 }],
   },
   // Vorplatz: links, wo früher der Krokodilteich war, bleibt Platz für ein späteres Café (Spalten 14–18, Zeilen 17–21)
-  scooterSpot: { tx: 31, ty: 16 }, // E-Roller: an der Kreuzung neben der Ecke des Erdmännchen-Zauns
+  scooterSpot: { tx: 30.75, ty: 17 }, // E-Roller: neben der Ecke des Erdmännchen-Zauns, etwas zum Zaun hin (nicht auf dem Weg)
   legacySlots: [{ id: 'savanna1', tx: 34, ty: 17 }, { id: 'savanna2', tx: 38, ty: 16 }], // beim Auto: links oben an der Kreuzung und rechts oben auf der freien Sandfläche zwischen Anhänger und Weg
   sections: [
     { label: tr('Aquarium', 'Aquarium'), tx: 8, ty: 15 },

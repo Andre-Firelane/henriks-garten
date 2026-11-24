@@ -1,6 +1,6 @@
 # Plan: Haupthaus (Einrichten und Trophäen)
 
-Stand: 2026-11-24, Plan. Die Trophäenliste ist ein Vorschlag und muss noch abgestimmt werden.
+Stand: 2026-11-24, Schritte 1–6 aus Abschnitt 6 gebaut (nicht committet). Eigene Bilder fehlen noch (Abschnitt 7).
 
 ## Ziel
 
@@ -101,29 +101,58 @@ Erreichte Trophäen zählen auch in der Statistik (sessions.js).
 3. Vitrinen mit Trophäen-Auswahl.
 4. Eigene Bilder: Trophäen, neue Möbel, Fassade.
 
-## 6. Start für die neue Sitzung
+## 6. Umsetzung (gebaut 2026-11-24, nicht committet)
 
-Stand 2026-11-24 (nicht committet, auf Andres GO warten): Reittiere, Roller, Stall, Mavi-Aufgabe `stable`, Trophäen
-(`src/world/trophies.js`, Tierbuch-Reiter mit Fortschritt, Statistik) sind gebaut. Das Haupthaus noch nicht.
+- **Level `house`** (`src/world/levels.js`): Raum 14 × 10 (Karte 16 × 12), Gebäude `style: 'office'`, `noRoof`, Boden
+  `floor_office`; hinten fest der Schreibtisch mit dem Hauptrechner (`computers`) und dem Bürostuhl. Ausgang unten (7–8/11)
+  zurück vor die Tür (Park 29–30/17). Kein Auto, keine Besucher, leise Vogelstimmen. Ladepaket `farm`.
+- **Park-Haus als Fassade**: `facade: true` am Gebäude (Dach bleibt zu, kein Durchsichtigwerden), Innenkacheln per `edits`
+  mit `V` gesperrt, die alten Möbelzeichen sind weg; die Tür (29–30/38 der ganzen Karte) ist ein Ausgang ins Level `house`.
+  `houseDoor` im Park für Mavis Pfeil.
+- **Mavi**: `babies` und `event` stehen bei `{ level: 'park', spot: 'door' }` (vor der Tür) und `also: { level: 'house',
+  spot: 'computer' }`. Im Zentrum zeigt der Pfeil zur Tür, im Haus zum Computer. `officeOpen`/`inOffice` entfallen.
+- **Sonst**: Events-Knopf auch im Haus; ins Haus zu Fuß (`scooterRiding` aus, der Roller bleibt an seinem Platz);
+  aus dem Haus zurück zählt nicht als Rückkehr aus einer Welt (`ROOM` in GardenScene).
+- **Möbel** (`src/world/decor.js`): Möbel sind Deko mit `indoor: true` (eigene Zeichen ⑴ …), Stil-Gruppen
+  `FURNITURE_STYLES` (Trophäen, Büro, Wiese, Wald, Savanne, Bambuswald, Dschungel, Eiswelt). Gespeichert wie die Deko in
+  `game.decor` (`owned`, `placed.house`, je Möbel `rot`) statt einem eigenen `game.house`. Preise 20–300.
+- **Bilder** (2026-11-24 neu, Andres alte Bilder ersetzt): `tools/furniture-sprites.py` zeichnet alle Möbel als
+  isometrische Körper in 4-facher Auflösung (`fn_<id>_<Ansicht>`, Paket `house`), je Richtung ein eigenes Bild mit
+  gleichem Licht (Stühle, Sofas, Schreibtische, Regale, Betten: 4 Ansichten; Hängematte, Teppich: 2; Pflanzen, runder
+  Tisch, Sockel, Vitrine: 1). Fußpunkt genau in der Bildmitte; Größe, Fußpunkt und Trophäen-Plätze stehen in
+  `src/world/furnitureArt.js`. Grundflächen: Sofa, Schreibtische, Regale 1 × 2, Betten 2 × 1, Teppich 2 × 2, sonst 1 × 1;
+  „Drehen“ geht im Haus eine Vierteldrehung weiter (die Grundfläche dreht mit), draußen wird weiter gespiegelt.
+- **Computer**: ein Möbel (`computer_desk`, `computer: true`); Events dort, wo er steht (`houseComputers`).
+- **Grundausstattung** (neue Spielstände): der Computer steht schon, dazu 4 Möbel in der Bauen-Leiste (`HOUSE_KIT`: Sofa,
+  Sessel, Tisch, Monstera). Ältere Stände behalten ihre aufgestellten Möbel bzw. bekommen einmal Computer mit Bürostuhl am
+  alten Platz (`game.decor.houseComputer`). Beim ersten Besuch blinkt die Bauen-Taste, bis man sie drückt
+  (`game.houseBuildSeen`).
+- **Trophäen-Möbel**: Sockel (1 Trophäe, 60), Wandregal (4, 120), Vitrine (3, 150). Davor (nicht im Setzen-Modus) öffnet
+  die Aktionstaste die Auswahl der erreichten Trophäen; gespeichert an der gesetzten Deko (`trophies: [Ids]`). Eine
+  Trophäe steht nur an einem Platz; ist das Möbel voll, macht die zuerst gewählte Platz. Wandregal von hinten: keine
+  Plaketten. Hebt man das Möbel auf, ist die Auswahl weg (die Trophäen bleiben im Tierbuch).
+- **Vitrine/Wandregal** in zwei Ebenen (`fn_<id>_<Ansicht>_f` = Glas, Pfosten, Kanten über den Plaketten), Vitrine eine
+  Trophäe je Etage. Hinweis: hat man eine erreichte Trophäe, die noch nirgends steht, blinkt über jedem Trophäen-Möbel mit
+  freiem Platz ein rotes Dreieck (`updateShowcaseHints`). Cheat T: nächste Trophäe freischalten.
+- **Große Stücke** (je 300–400 Herzen, im Katalog ihrer Gruppe): Aquarium bis zum Boden (Büro; Kopien der bis zu 5
+  seltensten Angelfische aus allen Becken, die echten bleiben, `drawTankFish`), Kachelofen mit Ofenbank und Strickkorb
+  (Wiese), Feldstein-Kamin mit Geweih (Wald), Trommelecke mit Fell und Kissen (Savanne), Zimmerbrunnen mit Bambusrohr
+  (Bambuswald, plätschert: leises Flussrauschen je nach Abstand), Zimmerbaum mit Ara auf der Stange (Dschungel, ruft ab
+  und zu), Iglu-Leseecke (Eiswelt).
+- Bauen-Regeln: Aufheben nur mit gewählter Hand (nie mit einem Teil in der Hand). Teppiche liegen immer unten und
+  belegen keine Kacheln (`isRug`, Bild-Schlüssel `rug:tx,ty`): Möbel stehen darauf, ein Teppich passt auch unter
+  stehende Möbel (nicht zwei Teppiche übereinander); die Hand hebt zuerst das Möbel obendrauf auf.
+- **Bauen mit der Maus** (PC): im Setzen-Modus folgt die Vorschau dem Mauszeiger, ein Klick setzt bzw. hebt auf, ohne
+  Reichweite um Henrik (gilt auch draußen); läuft Henrik los, gilt wieder die Kachel vor ihm. Tablet: Antippen wie bisher
+  (2 Kacheln um Henrik). Der Katalog springt nach dem Bestellen nicht mehr nach oben.
+- Test: `node tools/screenshot.cjs --level house`; laufen mit `--key w:350` (Taste halten).
 
-Vorgehen (je Schritt testen, Screenshots mit `node tools/screenshot.cjs`, nur ein Test gleichzeitig):
+## 7. Offen
 
-1. **Level `house` anlegen** (`src/world/levels.js`, wie `aquarium`): Zeilen für einen Raum ca. 14 × 10, Gebäude
-   `style: 'office'`, `noRoof: true`, Boden `floor_office`; Ausgang unten zur Tür des Park-Hauses (`to: 'park'`,
-   `arrive` vor der Tür ca. 29/40); Startpunkt hinter der Tür. Kein Auto, keine Weltkarte, keine Besucher.
-2. **Park-Haus zur Fassade machen**: Kacheln 26–32/32–37 leeren und sperren, Tür (29–30/38) als Ausgang ins Level
-   `house`; Dach nicht mehr durchsichtig. `computers` aus dem Park entfernen.
-3. **Computer und Startmöbel** im Haus: `computers` im Level `house`; Startmöbel wie heute (Schreibtisch mit Computer
-   fest; Sofa, Sessel, Tisch, Teppich, 2 Pflanzen) zunächst als Kartenzeichen.
-4. **Alles, was am Haus hängt, nachziehen** (Liste in Abschnitt 5): Mavi `babies`/`event` → `{ level: 'house', spot:
-   'computer' }` (`also` vor der Tür), `giftReady`, Events-Knopf (`home`), Roller (absteigen vor der Tür),
-   `isPark`-Abfragen prüfen (das Haus zählt nicht als Tierpark-Abschnitt für Besucher/Gehege), Spielstand
-   (`game.levels.house`), Ladepakete in BootScene.
-5. **Möbel-Katalog**: in `decor.js` Möbel mit `indoor: true` (Hütten-Bilder je Stil + Büromöbel), Katalog im Haus nur
-   Möbel, draußen nur Deko; `DecorMode` im Haus innerhalb des Raums erlauben. Startmöbel werden setzbare Möbel.
-6. **Vitrinen**: Vitrine, Wandregal, Sockel (Platzhalter-Bilder) im Möbel-Katalog; davor Aktionstaste → Auswahl der
-   erreichten Trophäen (`game.house.shelves`), die Plaketten (`trophyBadge`) erscheinen darauf.
-7. Plan, Gedächtnis, Commit erst nach GO.
+- Eigene Bilder: Trophäen (statt Plaketten), Fassade des Haupthauses.
+- Neue Möbel: Aquarium mit gefangenen Fischen, Lampen, Bilderrahmen, Teppiche je Stil.
+- Die Hütten in den Welten zeigen noch die alten Möbelbilder (hut_*).
+- Im Katalog stehen die Möbel auf dem Gras-und-Himmel-Hintergrund der Deko.
 
 ## Offene Fragen
 

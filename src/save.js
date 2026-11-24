@@ -7,6 +7,8 @@ import { tileToWorld, worldToTile } from './world/iso.js';
 import { migrateStory, syncStory } from './story/story.js';
 import { SHOP_IDS, migrateLegacySlots } from './world/shops.js';
 import { DECOR, giveDecor } from './world/decor.js';
+import { LEVELS } from './world/levels.js';
+import { fishKind, fishTank } from './world/fishing.js';
 
 const KEY = 'henrik-spiel-save';
 const VERSION = 1;
@@ -115,6 +117,7 @@ export function loadSave() {
   if (!s.game.jungleHall) migrateJungleHall();
   if (!s.game.spiderSwap) migrateSpiders();
   if (!s.game.iceMap2) migrateIceMap();
+  if (!s.game.fishing) migrateFishing();
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
@@ -325,6 +328,64 @@ function migrateIceMap() {
   const o = tileToWorld(21, 24);
   lvl.animals = (lvl.animals ?? []).filter((a) => a.state !== 'wild');
   lvl.pickups = (lvl.pickups ?? []).map((p) => ({ ...p, x: o.x, y: o.y }));
+}
+
+// Angeln (docs/plan-angeln.md): Fische leben nicht mehr im Teich auf der Lichtung (clearingpond), sondern in der
+// Süßwasserhalle des Aquariums, je Welt in einem eigenen Becken (fishTank). Jeder gespeicherte Fisch zieht dorthin und
+// behält seine Art; der orange Fisch ohne Art ist jetzt der Goldfisch, alle bisherigen Fische sind klein (variant 0).
+// Tierfreunde ziehen mit (Name und Freundschaft bleiben). Passen nicht alle ins Becken, werden die übrigen ausgewildert
+// und bringen je 2 Herzen (Tierfreunde nie). Wilde Fische gibt es nicht mehr (nur noch Schatten zum Angeln).
+const RELEASE_HEARTS = 2;
+function migrateFishing() {
+  game.fishing = true;
+  const fix = (a) => {
+    if (a?.species !== 'fish') return;
+    a.skin = fishKind(a.skin).id;
+    a.variant = a.variant === 1 ? 1 : 0;
+  };
+  game.followers.forEach(fix);
+  for (const list of [game.expedition?.wagon, game.expedition?.stay]) (list ?? []).forEach(fix);
+  if (game.rarePromise?.species === 'fish') game.rarePromise = null;
+  // Fisch-Tierfreunde: alter Schlüssel (Gehege:fish) -> uid
+  const friendUids = new Set();
+  for (const [k, uid] of Object.entries(game.friends ?? {})) {
+    if (!k.endsWith(':fish')) continue;
+    friendUids.add(uid);
+    delete game.friends[k];
+  }
+  const aq = LEVELS.aquarium;
+  const tanks = Object.fromEntries(
+    aq.enclosures.filter((e) => e.species?.includes('fish')).map((e) => {
+      const b = aq.buildings.find((h) => h.style === 'tank' && e.seed.tx >= h.tx0 && e.seed.tx <= h.tx1 && e.seed.ty >= h.ty0 && e.seed.ty <= h.ty1);
+      return [e.id, { e, b }];
+    }),
+  );
+  const home = (game.levels.aquarium ??= { animals: [], pickups: [] });
+  home.animals ??= [];
+  const count = (id) => home.animals.filter((s) => s.species === 'fish' && s.state === 'penned' && s.tank === id).length;
+  for (const [id, lvl] of Object.entries(game.levels)) {
+    if (!Array.isArray(lvl.animals)) continue;
+    const keep = [];
+    for (const a of lvl.animals) {
+      if (a.species !== 'fish' || (id === 'aquarium' && a.state === 'penned')) {
+        keep.push(a);
+        continue;
+      }
+      if (a.state !== 'penned') continue; // wild (oder sonst unterwegs): verschwindet
+      fix(a);
+      const t = tanks[fishTank(a.skin)];
+      const friend = a.uid != null && friendUids.has(a.uid);
+      if (!t || (!friend && count(t.e.id) >= t.e.slots[0])) {
+        game.hearts = (game.hearts ?? 0) + RELEASE_HEARTS;
+        continue;
+      }
+      const p = tileToWorld(t.b.tx0 + 1 + Math.random() * (t.b.tx1 - t.b.tx0 - 2), t.b.ty0 + 1 + Math.random() * (t.b.ty1 - t.b.ty0 - 2));
+      home.animals.push({ ...a, x: p.x, y: p.y, state: 'penned', tank: t.e.id, pending: undefined, origin: a.origin ?? fishKind(a.skin).world });
+      if (friend) game.friends[`${t.e.id}:fish`] ??= a.uid;
+    }
+    if (id !== 'aquarium') lvl.animals = keep;
+  }
+  for (const a of home.animals) delete a.tank;
 }
 
 function migrateSpiders() {

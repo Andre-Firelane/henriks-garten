@@ -2,7 +2,7 @@
 // Ob eine Aufgabe erledigt ist, steht immer im Spielstand (done) – nicht in dem, was seit ihrem Start passiert ist.
 // So merkt das Spiel auch, wenn man etwas schon vorher (in anderer Reihenfolge) geschafft hat.
 //
-// at:      wo Mavi steht, solange die Aufgabe läuft: Gebiet und Platz ('start', 'car', 'hut', 'computer', 'sign',
+// at:      wo Mavi steht, solange die Aufgabe läuft: Gebiet und Platz ('start', 'car', 'hut', 'computer', 'door', 'sign',
 //          'aquarium', 'entry'; siehe spot in src/npc/Mavi.js); also: ein zweiter Platz (z. B. im Aquarium)
 // intro:   was sie zur Aufgabe sagt (Seiten der Sprechblase)
 // already: kurz, wenn die Aufgabe schon erledigt ist, bevor man mit ihr gesprochen hat
@@ -138,7 +138,8 @@ export const STEPS = [
   {
     // (früher an dieser Stelle: der Eiswagen, siehe STEP_RENAMES in story.js)
     id: 'babies',
-    at: { level: 'park', spot: 'computer' },
+    at: { level: 'park', spot: 'door' }, // vor dem Haupthaus …
+    also: { level: 'house', spot: 'computer' }, // … und drinnen am Computer
     goal: tr('Starte am Computer im Haupthaus die Tierbabys', 'Start the animal babies at the computer in the main building'),
     done: (game) => !!game.events.babies,
     intro: [
@@ -185,7 +186,7 @@ export const STEPS = [
     already: [tr('Du hast ja schon eine Bude – lecker!', 'You’ve already got a stand – yummy!')],
     outro: [
       tr('Super! Die Besucher stehen schon an – jeder Verkauf bringt dir Herzen.', 'Great! The visitors are already queueing – every sale brings you hearts.'),
-      tr('Komm mit, gleich neben der Tür ist unser Stall!', 'Come along, our stable is right next to the door!'),
+      tr('Komm mit, gleich hinter dem Haupthaus ist unser Stall!', 'Come along, our stable is right behind the main building!'),
     ],
     reward: 20,
   },
@@ -193,7 +194,7 @@ export const STEPS = [
     // Stall: Reittiere leihen oder kaufen, E-Roller freischalten (siehe src/world/mounts.js)
     id: 'stable',
     at: { level: 'park', spot: 'stable' },
-    goal: tr('Schau in den Stall neben dem Haupthaus', 'Look into the stable next to the main building'),
+    goal: tr('Schau in den Stall hinter dem Haupthaus', 'Look into the stable behind the main building'),
     done: (game) => !!game.story.flags.stable,
     intro: [
       tr('Das ist unser Stall. Hier gibt es Reittiere – damit bist du in den Welten viel schneller!', 'This is our stable. It has mounts – they make you much faster in the worlds!'),
@@ -339,7 +340,8 @@ export const STEPS = [
   {
     // ganz zum Schluss (vorher unterbrach es zwischen Aquarium und Bambuswald den Ablauf)
     id: 'event',
-    at: { level: 'park', spot: 'computer' },
+    at: { level: 'park', spot: 'door' }, // vor dem Haupthaus …
+    also: { level: 'house', spot: 'computer' }, // … und drinnen am Computer
     goal: tr('Starte am Computer ein Event (nicht die Tierbabys)', 'Start an event at the computer (not the animal babies)'),
     done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk, Überraschungs-Flamingos oder die Tierbabys aus ihrer Aufgabe)
     intro: [

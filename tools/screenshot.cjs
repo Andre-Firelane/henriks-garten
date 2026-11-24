@@ -5,7 +5,8 @@
 //   --level park        Startgebiet (wie ?level=…, z. B. forest, savanna, ice, aquarium)
 //   --size pc           pc (1400×800), phone (844×390, Touch), tablet (1280×800, Touch) oder z. B. 1024x768
 //   --click "#btn-events"   nach dem Start anklicken (mehrfach möglich, in dieser Reihenfolge)
-//   --key e             Taste drücken (mehrfach möglich; läuft nach den Klicks)
+//   --key e             Taste drücken (mehrfach möglich; läuft nach den Klicks); --key w:800 hält sie 800 ms;
+//                       --key move@700,300 bewegt die Maus dorthin, --key click@700,300 klickt dort
 //   --wait 1500         Millisekunden nach den Klicks/Tasten bis zum Bild
 //   --out shot.png      Zieldatei (Standard: tools/shots/<level>-<size>.png, der Ordner ist in .gitignore)
 //   --port 5181         Test-Port; läuft dort kein Server, startet das Skript selbst einen (vite) und beendet ihn danach
@@ -79,7 +80,17 @@ const up = () => new Promise((res) => http.get(url, (r) => (r.resume(), res(true
       await page.waitForTimeout(400);
     }
     for (const k of args.key) {
-      await page.keyboard.press(k);
+      // „w:800“: Taste so viele Millisekunden halten (z. B. Henrik laufen lassen)
+      const [key, ms] = k.split(/:(?=\d+$)/);
+      const mouse = k.match(/^(move|click)@(\d+),(\d+)$/); // „move@700,300“ bzw. „click@700,300“: Maus im Spielbild
+      if (mouse) {
+        await page.mouse.move(Number(mouse[2]), Number(mouse[3]), { steps: 5 });
+        if (mouse[1] === 'click') await page.mouse.click(Number(mouse[2]), Number(mouse[3]));
+      } else if (ms) {
+        await page.keyboard.down(key);
+        await page.waitForTimeout(Number(ms));
+        await page.keyboard.up(key);
+      } else await page.keyboard.press(k);
       await page.waitForTimeout(300);
     }
     await page.waitForTimeout(Number(args.wait));

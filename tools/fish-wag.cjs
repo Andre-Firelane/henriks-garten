@@ -12,6 +12,8 @@ const SHEETS = [
   { src: 'public/assets/reeffish.png', out: 'public/assets/reeffish_swim.png', fw: 96, fh: 64, count: 44, tail: 0.36, squash: 0.3, bend: 3.5, smooth: true },
   // Piranha (prepare-characters.js): je nach rechts und links
   { src: 'public/assets/piranha.png', out: 'public/assets/piranha_swim.png', fw: 96, fh: 64, count: 2, tail: 0.32, squash: 0.3, bend: 3.5, smooth: true },
+  // Angelfische (tools/freshwater-fish.py): 30 Arten, je nach rechts und links, doppelte Auflösung
+  { src: 'public/assets/freshfish.png', out: 'public/assets/freshfish_swim.png', fw: 192, fh: 128, count: 60, tail: 0.32, squash: 0.3, bend: 7, smooth: true },
   // Zierfische (Pixel-Art aus make-sprites.js): 6 Arten, je nach rechts und links; scharfe Pixel, nur ganze Pixel
   { src: 'public/assets/minifish.png', out: 'public/assets/minifish_swim.png', fw: 20, fh: 16, count: 12, tail: 0.38, squash: 0.25, bend: 1, smooth: false },
 ];

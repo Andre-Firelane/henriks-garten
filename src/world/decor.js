@@ -9,6 +9,7 @@ import { tr } from '../i18n.js';
 import { game } from '../state.js';
 import { TOYS, PEN_TOYS, toyKey } from './toys.js';
 import { shopDef, SHOPS, MAX_BOOTHS, boothCount, hasShop, orderBooth } from './shops.js';
+import { FURNITURE_ART } from './furnitureArt.js';
 
 // Deko-Teile: Zeichen in der Karte, Bild, Fußpunkt im Bild, fest (hitbox: nur der Kern) bzw. wiegt sich (sway), Name.
 // big: große Deko (fest); beim Setzen prüft das Spiel, dass sie keinen Weg versperrt. pen: darf auch in Gehege (Natur).
@@ -65,6 +66,105 @@ export const DECOR = {
   heliconia: { char: '⓰', key: 'heliconia', originY: 88 / 96, solid: true, hitbox: 6, big: true, name: tr('Helikonie', 'Heliconia'), cost: 15, pen: true, world: 'jungle' },
   jungle_plant: { char: '⓱', key: 'jungle_plant', originY: 40 / 48, solid: false, name: tr('Blattpflanze', 'Leafy plant'), cost: 8, pen: true, world: 'jungle' },
 };
+
+// Möbel fürs Haupthaus (indoor: nur dort bestellbar und setzbar, die Deko oben nur draußen; Plan: docs/plan-haupthaus.md).
+// style: Gruppe im Katalog (Büro und die Hütten-Stile der Welten); Bilder aus den Hütten (hut_<Teil>_<Stil>) und dem
+// früheren Büro im Haupthaus. size 2: Sofa, Teppich, Regal, Bett bedecken 2×2 Kacheln.
+export const FURNITURE_STYLES = [
+  { id: 'trophies', name: tr('Trophäen zeigen', 'Show trophies') },
+  { id: 'office', name: tr('Büro', 'Office') },
+  { id: 'meadow', name: tr('Wiese', 'Meadow') },
+  { id: 'forest', name: tr('Wald', 'Forest') },
+  { id: 'savanna', name: tr('Savanne', 'Savanna') },
+  { id: 'asia', name: tr('Bambuswald', 'Bamboo Forest') },
+  { id: 'jungle', name: tr('Dschungel', 'Jungle') },
+  { id: 'ice', name: tr('Eiswelt', 'Ice World') },
+];
+const FURNITURE_CHARS = [...'⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒱⒲⒳⒴⒵'];
+// Bilder aus tools/furniture-sprites.py (FURNITURE_ART: Grundfläche, Ansichten, Fußpunkt). showcase: so viele Trophäen
+// passen darauf (Plätze je Ansicht in FURNITURE_ART); welche darauf stehen, steht an der gesetzten Deko (trophies: [Ids]).
+// computer: dort startet man Events (wie früher am festen Hauptrechner)
+const furniture = {
+  trophy_plinth: { name: tr('Sockel', 'Plinth'), cost: 60, style: 'trophies', showcase: 1 },
+  trophy_shelf: { name: tr('Wandregal', 'Wall shelf'), cost: 120, style: 'trophies', showcase: 4 },
+  trophy_case: { name: tr('Vitrine', 'Display case'), cost: 150, style: 'trophies', showcase: 2 },
+  computer_desk: { name: tr('Computer', 'Computer'), cost: 200, style: 'office', computer: true },
+  office_sofa: { name: tr('Sofa', 'Sofa'), cost: 150, style: 'office' },
+  office_armchair: { name: tr('Sessel', 'Armchair'), cost: 80, style: 'office' },
+  office_table: { name: tr('Tisch', 'Table'), cost: 50, style: 'office' },
+  office_chair: { name: tr('Bürostuhl', 'Office chair'), cost: 30, style: 'office' },
+  office_rug: { name: tr('Teppich', 'Rug'), cost: 100, style: 'office', floor: true },
+  office_monstera: { name: tr('Monstera', 'Monstera'), cost: 30, style: 'office' },
+  office_strelitzia: { name: tr('Strelitzie', 'Bird of paradise'), cost: 30, style: 'office' },
+};
+for (const { id: style } of FURNITURE_STYLES.slice(2)) {
+  furniture[`desk_${style}`] = { name: tr('Schreibtisch', 'Desk'), cost: 100, style };
+  furniture[`chair_${style}`] = { name: tr('Stuhl', 'Chair'), cost: 30, style };
+  furniture[`shelf_${style}`] = { name: tr('Regal', 'Shelf'), cost: 120, style };
+  furniture[`plant_${style}`] = { name: tr('Pflanze', 'Plant'), cost: 20, style };
+}
+furniture.bed_savanna = { name: tr('Himmelbett', 'Canopy bed'), cost: 250, style: 'savanna' };
+furniture.bed_jungle = { name: tr('Hängematte', 'Hammock'), cost: 250, style: 'jungle' };
+furniture.bed_ice = { name: tr('Stockbett', 'Bunk bed'), cost: 300, style: 'ice' };
+// große Stücke: Aquarium (Kopien der seltensten Angelfische schwimmen darin, siehe GardenScene.drawTankFish) und je Gebiet
+// eins (Brunnen plätschert, der Ara ruft ab und zu)
+furniture.aquarium = { name: tr('Aquarium', 'Aquarium'), cost: 400, style: 'office', tank: true };
+furniture.stove_meadow = { name: tr('Kachelofen', 'Tiled stove'), cost: 350, style: 'meadow' };
+furniture.fireplace_forest = { name: tr('Kamin', 'Fireplace'), cost: 400, style: 'forest' };
+furniture.drums_savanna = { name: tr('Trommelecke', 'Drum corner'), cost: 300, style: 'savanna' };
+furniture.fountain_asia = { name: tr('Zimmerbrunnen', 'Indoor fountain'), cost: 300, style: 'asia', splash: true };
+furniture.tree_jungle = { name: tr('Baum mit Ara', 'Tree with macaw'), cost: 350, style: 'jungle', parrot: true };
+furniture.igloo_ice = { name: tr('Iglu-Leseecke', 'Igloo reading nook'), cost: 400, style: 'ice' };
+Object.entries(furniture).forEach(([id, f], i) => {
+  const art = FURNITURE_ART[id];
+  const a = art.art[0];
+  DECOR[id] = {
+    ...f, char: FURNITURE_CHARS[i], indoor: true, shop: true, key: `fn_${id}_0`, originY: a.oy / a.h,
+    solid: !f.floor, floor: !!f.floor, big: !f.floor, foot: art.size, views: art.views,
+    hitbox: art.size[0] * art.size[1] === 1 ? 12 : undefined,
+  };
+});
+// Ansicht einer gesetzten Deko (Möbel: 0–3, ältere Stände hatten flip); Möbel mit weniger Ansichten zählen reihum
+export const decorRot = (d) => (DECOR[d.id]?.indoor ? (d.rot ?? (d.flip ? 1 : 0)) % (DECOR[d.id].views ?? 1) : 0);
+// Grundfläche [entlang tx, entlang ty] in dieser Ansicht (bei 1 und 3 gedreht); draußen size × size
+export function footprint(id, rot = 0) {
+  const def = DECOR[id];
+  if (!def?.foot) return [def?.size ?? 1, def?.size ?? 1];
+  const [w, d] = def.foot;
+  return rot % 2 ? [d, w] : [w, d];
+}
+// Bild eines Möbels in dieser Ansicht: Schlüssel, Größe, Fußpunkt (originX, originY), Trophäen-Plätze
+export function furnitureLook(id, rot = 0) {
+  const art = FURNITURE_ART[id];
+  const a = art?.art[rot % art.art.length];
+  if (!a) return null;
+  const key = `fn_${id}_${rot % art.art.length}`;
+  // front: vordere Ebene (Glas, Kanten) über Plaketten und Fischen; swim/anchor: Schwimmraum im Aquarium
+  return { key, frontKey: a.front ? key + '_f' : null, originX: a.ox / a.w, originY: a.oy / a.h, slots: a.slots ?? [], swim: a.swim, anchor: a.anchor };
+}
+// Grundausstattung des Haupthauses (neue Spielstände): der Computer steht schon (Events), dazu 4 Möbel in der
+// Bauen-Leiste zum selbst Aufstellen (beim ersten Besuch blinkt die Bauen-Taste)
+const HOUSE_KIT = { office_sofa: 1, office_armchair: 1, office_table: 1, office_monstera: 1 };
+// ältere Spielstände (vor dem Computer-Möbel): der Computer am Platz des früheren festen Hauptrechners, mit Bürostuhl
+const HOUSE_COMPUTER = [
+  { id: 'computer_desk', tx: 5, ty: 1, rot: 1 },
+  { id: 'office_chair', tx: 6, ty: 2, rot: 3 },
+];
+// Mitte der gesetzten Computer im Haupthaus (Kachel, auch halbe): dort startet man Events
+export const houseComputers = () =>
+  (game.decor?.placed?.house ?? []).filter((d) => DECOR[d.id]?.computer).map((d) => {
+    const [w, h] = footprint(d.id, decorRot(d));
+    return { tx: d.tx + (w - 1) / 2, ty: d.ty + (h - 1) / 2 };
+  });
+
+// Teppiche im Haupthaus liegen immer ganz unten und belegen keine Kacheln: Möbel können darauf stehen, ein Teppich
+// passt auch unter schon gesetzte Möbel (nur nicht zwei Teppiche übereinander). Bild-Schlüssel mit 'rug:' davor
+export const isRug = (id) => !!DECOR[id]?.indoor && !!DECOR[id]?.floor;
+export const decorKey = (d) => (isRug(d.id) ? `rug:${d.tx},${d.ty}` : `${d.tx},${d.ty}`);
+// weitere Kacheln eines großen Teils: fest (V), bei Bodenteilen (Teppich) begehbar
+export const FLOOR_FILL = '⒰';
+export const fillChar = (id) => (DECOR[id]?.floor ? FLOOR_FILL : 'V');
+
 export const decorByChar = (c) => Object.keys(DECOR).find((id) => DECOR[id].char === c) ?? null;
 
 // Grundausstattung: hat jeder Spielstand von Anfang an (auch ältere beim Laden)
@@ -81,6 +181,25 @@ export function ensureDecor() {
   if (!game.decor.starterBooth && game.builds) {
     game.decor.starterBooth = true;
     if (!hasShop('park', 'icecream') && boothCount('park') < MAX_BOOTHS) orderBooth('park', 'icecream');
+  }
+  // Haupthaus mit eigenem Raum: Computer aufgestellt, 4 Möbel in der Bauen-Leiste (Spielstände, die schon Startmöbel
+  // haben – houseStart –, behalten ihre)
+  if (!game.decor.houseStart) {
+    game.decor.houseStart = true;
+    game.decor.houseComputer = true;
+    game.decor.placed.house = [...(game.decor.placed.house ?? []), { ...HOUSE_COMPUTER[0] }];
+    for (const [id, n] of Object.entries(HOUSE_KIT)) giveDecor(id, n);
+  }
+  // der Hauptrechner ist ein Möbel geworden (2026-11-24): wer keinen hat, bekommt ihn mit Stuhl an den alten Platz;
+  // Möbel mit flip (vorher gespiegelt) haben jetzt eine Ansicht (rot)
+  if (!game.decor.houseComputer) {
+    game.decor.houseComputer = true;
+    const placed = (game.decor.placed.house ??= []);
+    for (const d of placed) {
+      if (DECOR[d.id]?.indoor && d.flip) d.rot = 1;
+      if (DECOR[d.id]?.indoor) delete d.flip;
+    }
+    if (!placed.some((d) => DECOR[d.id]?.computer) && !game.decor.owned.computer_desk) placed.push(...HOUSE_COMPUTER.map((d) => ({ ...d })));
   }
   // die Wegsteine kamen später zur Grundausstattung: ältere Spielstände bekommen sie einmal dazu
   if (!game.decor.stones) {
@@ -133,16 +252,17 @@ export function learnBlueprint(id) {
   if ((DECOR[id] || id.startsWith('stand:')) && !hasBlueprint(id)) ensureDecor().shop.push(id);
 }
 
-// Kacheln, die eine gesetzte Deko bedeckt (size 2: 2×2 ab tx/ty)
+// Kacheln, die eine gesetzte Deko bedeckt (size 2: 2×2 ab tx/ty; Möbel: ihre Grundfläche in ihrer Ansicht)
 export function decorTiles(d) {
-  const n = DECOR[d.id]?.size ?? 1;
+  const [w, h] = footprint(d.id, decorRot(d));
   const out = [];
-  for (let dy = 0; dy < n; dy++) for (let dx = 0; dx < n; dx++) out.push({ tx: d.tx + dx, ty: d.ty + dy });
+  for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) out.push({ tx: d.tx + dx, ty: d.ty + dy });
   return out;
 }
 
-// Teile im Katalog (Reihenfolge nach Preis): die allgemeinen und alles, was man schon einmal gefunden hat
-export const shopDecor = () => Object.keys(DECOR).filter((id) => DECOR[id].shop || ensureDecor().shop.includes(id)).sort((a, b) => DECOR[a].cost - DECOR[b].cost);
+// Teile im Katalog (Reihenfolge nach Preis): die allgemeinen und alles, was man schon einmal gefunden hat; draußen nur
+// Deko, im Haupthaus nur Möbel (indoor)
+export const shopDecor = (indoor = false) => Object.keys(DECOR).filter((id) => !!DECOR[id].indoor === indoor && (DECOR[id].shop || ensureDecor().shop.includes(id))).sort((a, b) => DECOR[a].cost - DECOR[b].cost);
 
 // in die Deko-Taste (bzw. aus ihr heraus)
 export function giveDecor(id, n = 1) {

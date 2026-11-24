@@ -38,6 +38,7 @@ import { raiseAt, raisedEdgeFloor,
   isBlockedPoint,
   isFishpond,
   exitAt,
+  OBJECTS,
   nearEnclosure,
   accepts,
   BRIDGES,
@@ -63,14 +64,13 @@ import { raiseAt, raisedEdgeFloor,
   groundZoneAt,
 } from '../world/map.js';
 import DecorMode from '../world/DecorMode.js';
-import { DECOR, ensureDecor, giveDecor, placedIn, shopDecor, finalChestDecor } from '../world/decor.js';
+import { DECOR, FURNITURE_STYLES, decorKey, isRug, decorRot, ensureDecor, footprint, furnitureLook, giveDecor, houseComputers, placedIn, shopDecor, finalChestDecor } from '../world/decor.js';
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
 import { tr, locale } from '../i18n.js';
 import { FARM_SPECIES, save, saveHandlers, writeSave } from '../save.js';
 import Player from '../player/Player.js';
 import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, skinInfo, SKINS } from '../animals/Animal.js';
-import Fish from '../animals/Fish.js';
 import Squirrel from '../animals/Squirrel.js';
 import Frog from '../animals/Frog.js';
 import Heron from '../animals/Heron.js';
@@ -96,6 +96,10 @@ import Koi from '../animals/Koi.js';
 import { afterPaint, hideLoading, setLoadingBackground, setLoadingProgress, showLoading } from '../ui/loading.js';
 import { EVENT_GROUPS, groupOfKey, groupsLoaded, levelGroups, whenGroupsLoaded } from './BootScene.js';
 import ReefFish from '../animals/ReefFish.js';
+import AngelFish from '../animals/AngelFish.js';
+import FishShadows from '../world/FishShadows.js';
+import FishBucket from '../world/FishBucket.js';
+import { fishFrame, fishKind, fishRank, fishTank } from '../world/fishing.js';
 import Piranha from '../animals/Piranha.js';
 import Iguana from '../animals/Iguana.js';
 import Beaver from '../animals/Beaver.js';
@@ -286,7 +290,7 @@ const CATCH_TOOLS = {
   leaves: ['leaf_branch', tr('Blätterzweig', 'Leafy branch')],
 };
 const CATCH_TIPS = {
-  fish: tr('Nur wenn er nach den Luftblasen auftaucht.', 'Only when it comes up after the air bubbles.'),
+  fish: tr('Mit der Angel nach einem Schatten im Wasser auswerfen. Welcher Fisch anbeißt, siehst du erst beim Herausholen.', 'Cast your rod at a shadow in the water. You only see which fish bit when you pull it out.'),
   koi: tr('Streu am Ufer Fischfutter ins Wasser – dann kommen sie hoch und schnappen. Schnell keschern!', 'Scatter fish food into the water from the shore – they come up and snap at it. Net them quickly!'),
   reeffish: tr('Im Riff. Kommst du zu nah, flüchten sie – schwimm hinterher, du bist schneller. Im Aquarium ziehen sie in die Becken.', 'In the reef. If you get too close, they flee – swim after them, you are faster. At the aquarium they move into the tanks.'),
   seahorse: tr('Versteckt sich in den Korallen. Steigen Bläschen auf, schaut es gleich heraus – dann schnell keschern!', 'Hides in the corals. When bubbles rise, it peeks out – then net it quickly!'),
@@ -352,7 +356,7 @@ const CATCH_TIPS = {
 // Kurzfassung der Fang-Tipps für die Meldung draußen (Handy: lange Texte verdecken das Bild und sind zu schnell weg).
 // Nur der Kern, was zu tun ist – die ausführliche Fassung steht im Tierbuch
 const CATCH_TIPS_SHORT = {
-  fish: tr('Keschern, wenn er nach den Luftblasen auftaucht.', 'Net it when it comes up after the bubbles.'),
+  fish: tr('Angel nach einem Schatten auswerfen!', 'Cast the rod at a shadow!'),
   koi: tr('Fischfutter ins Wasser streuen, dann keschern.', 'Scatter fish food, then net them.'),
   reeffish: tr('Hinterherschwimmen – du bist schneller!', 'Swim after them – you are faster!'),
   seahorse: tr('Steigen Bläschen auf, schnell keschern!', 'When bubbles rise, net it quickly!'),
@@ -694,10 +698,16 @@ const AQUARIUM_TOUR = { tx: 3, ty: 16 }; // Ankunft vor der Aquariumtür (park2)
 const PEACOCK_CALL_VOLUME = 0.18; // leise im Hintergrund (beim Fangen klingt der Ruf so laut wie die anderen Tierrufe)
 const MAX_ORANGUTANS = 2; // so viele Orang-Utans sitzen höchstens gleichzeitig in den Urwaldbäumen
 const BABY_LEVELS = [...PARK_LEVELS, 'aquarium'];// dort gibt es beim Tierbaby-Event Nachwuchs
-const AQUA = ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish'];
+const AQUA = ['reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'fish']; // fish: Angelfische in der Süßwasserhalle (docs/plan-angeln.md)
 // Häuser mit eigener Halle (eigenes Level): welche Tierarten dort in die Becken ziehen (Schlangen, Vogelspinnen, Leguane
 // und Piranhas wohnen seit der Tropenhalle in park3, siehe docs/plan-dschungel.md)
 const HOUSES = { aquarium: AQUA };
+const ROOM = 'house';
+const HOME_FISH = 5; // so viele Fischkopien schwimmen höchstens im Aquarium-Möbel
+const HOME_FISH_SCALE = 0.1; // Bild 192 × 128: im Möbel-Aquarium etwa 19 Bildpunkte lang
+const SPLASH_VOLUME = 0.22; // Zimmerbrunnen: so laut direkt daneben
+// Trophäen-Plaketten auf den Möbeln im Haupthaus: Grundfarbe und Glanzpunkt je Stufe
+const BADGE_COLORS = { bronze: [0xc98a4f, 0xf3c79a], silver: [0xb9c0c8, 0xffffff], gold: [0xe0a820, 0xfff2a8] }; // Haupthaus: eigener Raum (kein Tierpark-Abschnitt, keine Besucher; zählt wie ein Haus, nicht wie eine Welt)
 const houseOf = (species) => Object.keys(HOUSES).find((h) => HOUSES[h].includes(species)) ?? null;
 const STARTLE_CHANCE = 0.1; // so wahrscheinlich schreckt beim Wegschlagen eines Dickichts eine Schlange oder Vogelspinne auf
 const MAX_RAYS = 2; // so viele Rochen gleiten höchstens gleichzeitig durchs Riff
@@ -810,7 +820,7 @@ const TOOLS = {
     create: (scene, player) => new RodTool(scene, player),
     name: tr('Angel', 'Fishing rod'),
     catches: ['piranha'],
-    hint: (list) => tr(`Damit angelst du ${animalIcons(list)} vom Kanu aus – beißt einer an, schnell drücken!`, `Fish for ${animalIcons(list)} from the canoe – when one bites, press quickly!`),
+    hint: (list) => tr(`Damit angelst du ${animalIcons(list)} – wirf nach einem Schatten im Wasser aus!`, `Fish for ${animalIcons(list)} – cast at a shadow in the water!`),
   },
   scissors: {
     create: (scene, player) => new ScissorsTool(scene, player),
@@ -1015,6 +1025,15 @@ export default class GardenScene extends Phaser.Scene {
     const thicketImages = new Map();
     const swayPlants = new Map(); // Pflanzen, die sich wiegen, wenn man hindurchläuft (siehe Sway.js)
     this.decorImages = new Map(); // selbst gesetzte Deko: "tx,ty" → Bild (siehe DecorMode.js)
+    // Haupthaus: vordere Ebenen, Plaketten, Fischkopien, Hinweis-Dreiecke, Brunnen (die Szene wird beim Neustart wiederverwendet)
+    this.decorFronts = new Map();
+    this.showcaseBadges = new Map();
+    this.showcaseHints = [];
+    this.homeFish = [];
+    this.splashSound?.destroy();
+    this.splashSound = null;
+    this.splashLoading = false;
+    this.parrotTimer = null;
     this.crownImages = new Map();
     this.waterfalls = [];
     // fließender Fluss (LEVEL.flow): seine Wasserkacheln sind eigene Bilder, deren Bild reihum wechselt (siehe animateFlow)
@@ -1232,9 +1251,10 @@ export default class GardenScene extends Phaser.Scene {
       };
       this.gateGroups.push(group);
       front.push(...group.sprites);
-      // Eingang des Haupthauses: dorthin zeigt Mavis Pfeil, bevor man drin ist (dann zum Computer)
+      // Tür des Haupthauses (nur noch Fassade, die Tür führt ins Level house): dorthin zeigt Mavis Pfeil, wenn es drinnen
+      // am Computer weitergeht
       const door = group.sprites[0];
-      if (h.style === 'office' && door) this.officeDoor = { x: door.x, y: door.y - OFFICE_DOOR_H };
+      if (h.facade && door) this.officeDoor = { x: (door.x + (group.sprites[1]?.x ?? door.x)) / 2, y: door.y - OFFICE_DOOR_H };
       // obere Ecke der Grundfläche liegt im Dachbild bei ROOF_ANCHOR (Hütten: 184, 100)
       const top = tileToWorld(h.tx0, h.ty0);
       const bottom = tileToWorld(h.tx1, h.ty1);
@@ -1419,6 +1439,8 @@ export default class GardenScene extends Phaser.Scene {
     // Werkzeuge am Boden: gespeicherter Stand oder die Startplätze des Levels
     const saved = game.levels[LEVEL_ID];
     this.thicket = thicketImages.size ? new Thicket(this, thicketImages, saved?.thicket) : null; // Dickicht (Dschungel)
+    this.fishShadows = new FishShadows(this); // Fischschatten zum Angeln (docs/plan-angeln.md)
+    this.fishBucket = new FishBucket(this, this.player); // Fischeimer an Henrik
     const pickupList =
       saved?.pickups ??
       TOOL_SPOTS.filter((s) => s.tool !== 'empty').map(({ tool, tx, ty }) => ({ tool, ...tileToWorld(tx, ty) }));
@@ -1446,6 +1468,7 @@ export default class GardenScene extends Phaser.Scene {
       for (const s of saved.animals) {
         if (!SPECIES[s.species]) continue; // unbekannte Tierart im Spielstand (z. B. aus einer anderen Version): überspringen
         if (otherSeason(s)) continue;
+        if (s.species === 'fish' && s.state === 'wild') continue; // wilde Fische gibt es nicht mehr, nur Schatten (FishShadows)
         // pending: aus einem anderen Tierpark-Abschnitt hergeschickt, noch ohne Platz (siehe sendToSection): kommt unten ins Gehege
         const a = s.pending ? this.createAnimal(s.species, start.x, start.y, s.variant) : this.createAnimal(s.species, s.x, s.y, s.variant);
         if (s.pending) {
@@ -1609,11 +1632,11 @@ export default class GardenScene extends Phaser.Scene {
       e.stopPropagation();
       this.showCharms();
     };
-    // Events-Knopf (nur im Tierpark, im Aquarium und im Reptilienhaus): dieselbe Tafel wie am Hauptrechner
+    // Events-Knopf (nur im Tierpark, im Aquarium und im Haupthaus): dieselbe Tafel wie am Hauptrechner
     const eventsBtn = document.getElementById('btn-events');
     eventsBtn.innerHTML = '<span class="charms-icon">🎉</span><span class="btn-label">Events</span>'; // auf dem Handy nur das Bild
     eventsBtn.setAttribute('aria-label', 'Events');
-    eventsBtn.classList.toggle('show', home);
+    eventsBtn.classList.toggle('show', home || LEVEL_ID === ROOM);
     eventsBtn.onclick = (e) => {
       e.stopPropagation();
       if (this.decor?.on) this.decor.toggle(); // (Setzen-Modus erst beenden)
@@ -1625,7 +1648,8 @@ export default class GardenScene extends Phaser.Scene {
     };
     // Deko-Taste (nur im Tierpark): Deko aussuchen, setzen und aufheben (siehe src/world/DecorMode.js)
     // große Deko (2×2 Kacheln, z. B. der Pavillon): die Karte zeichnet sie nicht selbst (unsichtbares Zeichen)
-    for (const d of placedIn(LEVEL_ID)) if (DECOR[d.id]?.size) this.drawDecor(d.tx, d.ty);
+    for (const d of placedIn(LEVEL_ID)) if (DECOR[d.id]?.size || DECOR[d.id]?.indoor) this.drawDecor(d.tx, d.ty, isRug(d.id) ? d : null); // (Möbel: in ihrer Ansicht)
+    for (const d of this.showcases()) this.drawShowcase(d.tx, d.ty); // Haupthaus: Trophäen auf Vitrinen, Regalen, Sockeln
     this.decor = new DecorMode(this);
     const decorBtn = document.getElementById('btn-decor');
     // Eisstand als Bild (public/assets/icon_build.png, eng zugeschnitten aus hd/icecream_stand; wie das Kleeblatt am Glücksbringer-Knopf); auf dem Handy nur das Bild
@@ -1641,7 +1665,7 @@ export default class GardenScene extends Phaser.Scene {
     if (data.decorResume) {
       if (data.decorResume.face) Object.assign(this.player, { faceX: data.decorResume.face.x, faceY: data.decorResume.face.y });
       this.decor.flip = !!data.decorResume.flip;
-      this.decor.start(data.decorResume.sel);
+      this.decor.start(data.decorResume.sel, data.decorResume.pick);
     }
     if (data.boothMoved) this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.boothMoved));
     this.lastBuildHint = undefined;
@@ -1729,6 +1753,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearComputer && !this.leaving) {
         this.openEventsPanel(); // am Hauptrechner: Events
+        return;
+      }
+      if (this.nearShowcase && !this.leaving && !this.decor?.on) {
+        this.openShowcase(this.nearShowcase); // vor Vitrine, Wandregal oder Sockel: Trophäen darauf stellen
         return;
       }
       if (this.nearStable && !this.leaving && !this.driving) {
@@ -1847,16 +1875,24 @@ export default class GardenScene extends Phaser.Scene {
     // auf Tablet und Handy gibt es dafür den Aktionsknopf)
     // Bauen: Antippen bzw. Anklicken einer Kachel in Henriks Nähe setzt dort bzw. hebt auf (Tablet: viel leichter, als
     // Henrik genau davorzustellen); die linke Bildschirmhälfte (Joystick) meldet kurzes Tippen über touchHandlers.tap
+    // Maus am PC: im Setzen-Modus folgt die Vorschau dem Zeiger, ein Klick setzt bzw. hebt auf – überall, ohne Reichweite
     this.input.on('pointerdown', (pointer, over) => {
-      if (pointer.button !== 0 || over.length) return;
+      if (pointer.button !== 0) return;
       if (this.decor?.on && !this.leaving) {
         const w = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-        this.decor.tap(w.x, w.y);
+        if (!pointer.wasTouch) this.decor.hoverAt(w);
+        this.decor.tap(w.x, w.y, !pointer.wasTouch);
         return;
       }
+      if (over.length) return;
       if (pointer.wasTouch) return;
       useTool();
     });
+    this.input.on('pointermove', (pointer) => {
+      if (pointer.wasTouch || !this.decor?.on || this.leaving) return;
+      this.decor.hoverAt(this.cameras.main.getWorldPoint(pointer.x, pointer.y));
+    });
+    this.input.on('gameout', () => this.decor?.hover && this.decor.hoverAt(null)); // (Maus hat das Spielbild verlassen)
     // Übersicht über Tiere und Werkzeuge (Taste I oder Tippen auf das Abzeichen oben links)
     this.input.keyboard.on('keydown-I', () => this.showJournal());
     // beim Reiten: Werkzeug wechseln (Q bzw. der Werkzeug-Knopf auf dem Tablet) – überall, ohne zur Hütte zu gehen
@@ -1878,6 +1914,15 @@ export default class GardenScene extends Phaser.Scene {
       for (const b of Object.values(game.bonds ?? {})) b.pettedAt = b.fedAt = 0; // Tierfreunde: Streicheln und Füttern gehen wieder
       if (this.shownSign && !this.signOpen) this.showSignPanel(this.shownSign);
       this.showToast('Cheat: <span class="heart">♥</span> +50 · Tierfreunde wieder bereit');
+    });
+    // Cheat zum Testen: T schaltet die nächste noch fehlende Trophäe frei (mit der Meldung wie sonst)
+    this.input.keyboard.on('keydown-T', () => {
+      const t = TROPHIES.find((x) => !hasTrophy(x.id));
+      if (!t) return this.showToast('Cheat: alle Trophäen da');
+      (game.trophies ??= {})[t.id] = Date.now();
+      countTrophy(t.id);
+      this.showToast(`Cheat: 🏆 ${tr('Trophäe', 'Trophy')}: ${t.name}`);
+      this.updateShowcaseHints();
     });
     document.getElementById('btn-swap').onclick = (e) => {
       e.stopPropagation();
@@ -2394,7 +2439,7 @@ export default class GardenScene extends Phaser.Scene {
   createAnimal(species, x, y, variant) {
     const a =
       species === 'fish'
-        ? new Fish(this, this.animals)
+        ? new AngelFish(this, x, y, variant)
         : species === 'koi'
           ? new Koi(this, this.animals, variant)
         : species === 'reeffish'
@@ -2679,7 +2724,8 @@ export default class GardenScene extends Phaser.Scene {
       }
       return this.finishSpawn(group, fadeIn);
     }
-    if (species === 'fish' || species === 'koi' || species === 'crocodile' || species === 'hippo' || species === 'tapir' || species === 'squirrel' || species === 'seahorse') {
+    if (species === 'fish') return group; // Angelfische gibt es nur als Schatten (FishShadows), nie als wildes Tier
+    if (species === 'koi' || species === 'crocodile' || species === 'hippo' || species === 'tapir' || species === 'squirrel' || species === 'seahorse') {
       const a = this.createAnimal(species, 0, 0);
       if (species === 'squirrel') a.restore('wild'); // setzt es auf seinen Baum
       if (species === 'koi') a.placeRandom(); // irgendwo in den Koi-Teich
@@ -3474,9 +3520,10 @@ export default class GardenScene extends Phaser.Scene {
     document.removeEventListener('keydown', this.feederKeys, true);
     this.feederKeys = null;
     this.feederOpen = false;
-    document.getElementById('feeder').classList.remove('show');
+    document.getElementById('feeder').classList.remove('show', 'showcase');
     document.body.classList.remove('sign-open');
     this.scene.resume();
+    if (LEVEL_ID === ROOM) this.saveGame(); // (Trophäen-Möbel: die Auswahl gleich speichern)
   }
 
 
@@ -4034,6 +4081,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!fresh.length) return;
     for (const t of fresh) countTrophy(t.id);
     this.showToast(fresh.map((t) => `🏆 ${tr('Trophäe', 'Trophy')}: ${t.name}`).join('<br>'));
+    this.updateShowcaseHints(); // (neue Trophäe: Dreieck über freien Plätzen)
   }
 
   // Tierpark-Abschnitt: sind alle Gehege mit Plätzen voll? (für die Trophäe "Volles Haus")
@@ -4156,12 +4204,15 @@ export default class GardenScene extends Phaser.Scene {
     openEvents(
       () => ({
         hearts: game.hearts,
-        shop: [
-          { head: true, name: tr('Buden', 'Stands') },
-          ...this.boothOffers().map((o) => ({ ...o, id: 'stand:' + o.id })),
-          { head: true, name: tr('Deko', 'Decor') },
-          ...this.decoOffers(),
-        ],
+        // im Haupthaus nur Möbel, nach Stilen (Büro, dann die Welten)
+        shop: LEVEL_ID === ROOM
+          ? FURNITURE_STYLES.flatMap((st) => [{ head: true, name: st.name }, ...this.decoOffers(true).filter((o) => DECOR[o.id].style === st.id)])
+          : [
+            { head: true, name: tr('Buden', 'Stands') },
+            ...this.boothOffers().map((o) => ({ ...o, id: 'stand:' + o.id })),
+            { head: true, name: tr('Deko', 'Decor') },
+            ...this.decoOffers(),
+          ],
       }),
       (_t, id) => (id.startsWith('stand:') ? this.buyBooth(id.slice(6)) : this.buyDecor(id)),
       () => {
@@ -4235,7 +4286,9 @@ export default class GardenScene extends Phaser.Scene {
       if (on && !ptr) el.insertAdjacentHTML('beforeend', TUT_POINTER);
       else if (!on) ptr?.remove();
     };
-    mark(document.getElementById('btn-decor'), stage === 'open');
+    // (beim ersten Besuch im Haupthaus blinkt die Bauen-Taste, bis man sie einmal drückt: game.houseBuildSeen)
+    const houseHint = LEVEL_ID === ROOM && !game.houseBuildSeen && !this.decor?.on;
+    mark(document.getElementById('btn-decor'), stage === 'open' || houseHint);
     mark(document.querySelector('#decor-bar [data-id="@order"]'), stage === 'order');
     mark(document.querySelector('#decor-bar [data-id="@done"]'), stage === 'close');
     document.querySelectorAll('#decor-bar .decor-item').forEach((el) => mark(el, stage === 'place' && el.dataset.id === booth && this.decor.sel !== booth));
@@ -4245,12 +4298,12 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
-  // Deko im Katalog: Teile mit Preis und wie viele man schon hat
-  decoOffers() {
+  // Deko im Katalog: Teile mit Preis und wie viele man schon hat (indoor: die Möbel des Haupthauses)
+  decoOffers(indoor = false) {
     const owned = ensureDecor().owned;
-    return shopDecor().map((id) => {
+    return shopDecor(indoor).map((id) => {
       const def = DECOR[id];
-      const placed = PARK_LEVELS.reduce((n, l) => n + placedIn(l).filter((d) => d.id === id).length, 0);
+      const placed = (indoor ? [ROOM] : PARK_LEVELS).reduce((n, l) => n + placedIn(l).filter((d) => d.id === id).length, 0);
       return {
         id,
         name: def.name,
@@ -4281,23 +4334,260 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // selbst gesetzte Deko (DecorMode): Bild an dieser Kachel zeichnen bzw. wieder wegnehmen (die Karte selbst ändert DecorMode)
-  drawDecor(tx, ty) {
-    const obj = objectAt(tx, ty);
+  drawDecor(tx, ty, rug = null) {
+    // rug: ein Teppich (steht nicht in der Karte, die Kachel gehört evtl. einem Möbel darauf)
+    const obj = rug ? OBJECTS[DECOR[rug.id].char] : objectAt(tx, ty);
     if (!obj?.decor && !obj?.toy) return null;
-    // große Deko (2×2 Kacheln): in der Mitte der Grundfläche, Tiefe der vordersten Kachel
-    const n = (obj.decor && DECOR[obj.decor].size) || 1;
-    const { x, y } = tileToWorld(tx + (n - 1) / 2, ty + (n - 1) / 2);
-    const depth = obj.floor ? -99990 : tileToWorld(tx + n - 1, ty + n - 1).y;
-    const img = this.add.image(x, y, obj.key).setOrigin(0.5, obj.originY).setDepth(depth);
-    this.decorImages.set(`${tx},${ty}`, img);
+    // große Deko (2×2 Kacheln) und Möbel: in der Mitte der Grundfläche, Tiefe der vordersten Kachel; Möbel in ihrer
+    // Ansicht (rot, eigenes Bild je Richtung)
+    const entry = rug ?? (DECOR[obj.decor]?.indoor ? placedIn(LEVEL_ID).find((d) => d.tx === tx && d.ty === ty && !isRug(d.id)) : null);
+    const rot = entry ? decorRot(entry) : 0;
+    const [w, h] = obj.decor ? footprint(obj.decor, rot) : [1, 1];
+    const look = entry ? furnitureLook(obj.decor, rot) : obj;
+    const { x, y } = tileToWorld(tx + (w - 1) / 2, ty + (h - 1) / 2);
+    const depth = obj.floor ? -99990 : tileToWorld(tx + w - 1, ty + h - 1).y;
+    const img = this.add.image(x, y, look.key).setOrigin(look.originX ?? 0.5, look.originY).setDepth(depth); // (Teppich: Bodenteil, liegt unter allem)
+    this.decorImages.set(rug ? decorKey(rug) : `${tx},${ty}`, img);
+    // vordere Ebene (Glas, Kanten) über Plaketten und Fischen
+    if (entry && look.frontKey) (this.decorFronts ??= new Map()).set(`${tx},${ty}`, this.add.image(x, y, look.frontKey).setOrigin(look.originX, look.originY).setDepth(depth + 0.05));
+    if (entry && DECOR[obj.decor].tank) this.drawTankFish(entry, img, look);
+    if (entry && DECOR[obj.decor].computer) {
+      this.computerSprite = img; // für Mavis Pfeil
+      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearComputer && this.openEventsPanel());
+    }
     if (obj.sway) this.sway.plants.set(`${tx},${ty}`, { img, deg: obj.sway, obj });
+    if (obj.decor && DECOR[obj.decor].showcase) this.drawShowcase(tx, ty);
     return img;
   }
 
-  removeDecor(tx, ty) {
+  // Aquarium-Möbel: Kopien der seltensten Angelfische, die man hat (die echten bleiben in ihren Becken). Seltenheit wie
+  // beim Angeln (episch vor selten vor häufig), große zuerst; jede Art nur einmal, höchstens HOME_FISH
+  drawTankFish(entry, img, look) {
+    if (!look.swim) return;
+    const all = [...Object.values(game.levels).flatMap((l) => l.animals ?? []), ...game.followers].filter((a) => a.species === 'fish');
+    const rank = (a) => ({ epic: 3, rare: 2, common: 1 })[fishKind(a.skin).rarity] * 2 + (a.variant === 1 ? 1 : 0);
+    const seen = new Set();
+    const pick = all.sort((a, b) => rank(b) - rank(a)).filter((a) => !seen.has(fishKind(a.skin).id) && seen.add(fishKind(a.skin).id)).slice(0, HOME_FISH);
+    const [u0, v0, z0, u1, v1, z1] = look.swim;
+    const k = `${entry.tx},${entry.ty}`;
+    this.homeFish ??= [];
+    for (const a of pick) {
+      const f = { key: k, img, look, kind: fishFrame(a.skin), big: a.variant === 1, box: [u0, v0, z0, u1, v1, z1], phase: Math.random() * 10 };
+      f.pos = { u: Phaser.Math.FloatBetween(u0, u1), v: Phaser.Math.FloatBetween(v0, v1), z: Phaser.Math.FloatBetween(z0, z1) };
+      f.target = { ...f.pos };
+      f.speed = Phaser.Math.FloatBetween(0.12, 0.25); // Kacheln pro Sekunde
+      f.sprite = this.add.image(img.x, img.y, 'freshfish', f.kind * 2).setScale(HOME_FISH_SCALE * (f.big ? 1.3 : 1));
+      this.homeFish.push(f);
+    }
+    this.updateTankFish(0);
+  }
+
+  // jedes Bild: die Fische im Aquarium-Möbel ziehen langsam zu einem neuen Punkt im Becken
+  updateTankFish(dt) {
+    for (const f of this.homeFish ?? []) {
+      const [u0, v0, z0, u1, v1, z1] = f.box;
+      const d = Math.hypot(f.target.u - f.pos.u, f.target.v - f.pos.v);
+      if (d < 0.03) f.target = { u: Phaser.Math.FloatBetween(u0, u1), v: Phaser.Math.FloatBetween(v0, v1), z: Phaser.Math.FloatBetween(z0, z1) };
+      const k = d > 0 ? Math.min(1, (f.speed * dt) / d) : 0;
+      const du = (f.target.u - f.pos.u) * k;
+      const dv = (f.target.v - f.pos.v) * k;
+      f.pos.u += du;
+      f.pos.v += dv;
+      f.pos.z += (f.target.z - f.pos.z) * Math.min(1, dt * 0.6);
+      f.phase += dt;
+      const [ax, ay] = f.look.anchor;
+      const x = f.img.x + (f.pos.u - f.pos.v) * 32 - ax;
+      const y = f.img.y + (f.pos.u + f.pos.v) * 16 - f.pos.z - ay + Math.sin(f.phase * 2) * 0.6;
+      if (Math.abs(du - dv) > 1e-5) f.right = du - dv > 0; // Blickrichtung im Bild
+      f.sprite.setPosition(x, y).setFrame(f.kind * 2 + (f.right === false ? 1 : 0)).setDepth(f.img.depth + 0.01 + (f.pos.u + f.pos.v) * 0.001);
+    }
+  }
+
+  // Hauptrechner, an denen man Events startet: im Haupthaus die gesetzten Computer-Möbel, sonst die festen des Levels
+  computers() {
+    return LEVEL_ID === ROOM ? houseComputers() : LEVEL.computers ?? [];
+  }
+
+  // Trophäen-Möbel im Haupthaus (Vitrine, Wandregal, Sockel; showcase in decor.js): die gesetzten mit ihren Trophäen
+  showcases() {
+    return LEVEL_ID === ROOM ? placedIn(ROOM).filter((d) => DECOR[d.id]?.showcase) : [];
+  }
+
+  // Plaketten der Trophäen auf einem Trophäen-Möbel (Platzhalter wie im Tierbuch: Scheibe in der Farbe der Stufe mit Tier
+  // oder Zeichen) – auf den Plätzen slots, gedreht gespiegelt
+  drawShowcase(tx, ty) {
     const k = `${tx},${ty}`;
+    this.showcaseBadges ??= new Map();
+    this.showcaseBadges.get(k)?.forEach((o) => o.destroy());
+    this.showcaseBadges.delete(k);
+    const d = this.showcases().find((s) => s.tx === tx && s.ty === ty);
+    const img = this.decorImages.get(k);
+    if (!d || !img) return;
+    const def = DECOR[d.id];
+    const r = def.showcase === 1 ? 9 : 7;
+    const out = [];
+    const slots = furnitureLook(d.id, decorRot(d)).slots; // (von hinten gesehen: keine)
+    (d.trophies ?? []).filter(hasTrophy).slice(0, slots.length).forEach((id, i) => {
+      const t = TROPHIES.find((x) => x.id === id);
+      const [dx, dy] = slots[i];
+      const x = img.x + dx;
+      const y = img.y + dy;
+      const depth = img.depth + 0.01 * (i + 1);
+      const [base, light] = BADGE_COLORS[t.tier] ?? BADGE_COLORS.gold;
+      const g = this.add.graphics().setDepth(depth);
+      g.fillStyle(0x000000, 0.25).fillCircle(x, y + 1, r + 1);
+      g.fillStyle(base, 1).fillCircle(x, y, r);
+      g.fillStyle(light, 0.8).fillCircle(x - r * 0.3, y - r * 0.3, r * 0.45);
+      g.lineStyle(1, 0x5a3a1a, 0.6).strokeCircle(x, y, r);
+      out.push(g);
+      if (t.animal && this.textures.exists(t.animal)) {
+        const a = this.add.image(x, y, t.animal, 0).setDepth(depth + 0.001);
+        a.setScale((r * 1.7) / Math.max(a.width, a.height));
+        out.push(a);
+      } else {
+        out.push(this.add.text(x, y, t.mark ?? '★', { fontFamily: 'Arial', fontSize: `${Math.round(r * 1.3)}px`, color: '#6a4210', resolution: 4 }).setOrigin(0.5).setDepth(depth + 0.001));
+      }
+    });
+    if (out.length) this.showcaseBadges.set(k, out);
+    this.updateShowcaseHints();
+  }
+
+  // Hinweis: hat man eine erreichte Trophäe, die noch nirgends steht, blinkt über jedem Trophäen-Möbel mit freiem Platz
+  // ein kleines rotes Dreieck (nicht im Setzen-Modus)
+  updateShowcaseHints() {
+    (this.showcaseHints ?? []).forEach((h) => h.destroy());
+    this.showcaseHints = [];
+    if (LEVEL_ID !== ROOM || this.decor?.on) return;
+    const list = this.showcases();
+    const shown = new Set(list.flatMap((d) => d.trophies ?? []));
+    if (!TROPHIES.some((t) => hasTrophy(t.id) && !shown.has(t.id))) return;
+    for (const d of list) {
+      const slots = furnitureLook(d.id, decorRot(d)).slots;
+      if ((d.trophies ?? []).filter(hasTrophy).length >= slots.length) continue;
+      const img = this.decorImages.get(`${d.tx},${d.ty}`);
+      if (!img) continue;
+      const h = this.add
+        .text(img.x, img.y - img.displayHeight * img.originY - 4, '▼', { fontFamily: 'Arial', fontSize: '16px', color: '#e8483f', stroke: '#ffffff', strokeThickness: 3, resolution: 4 })
+        .setOrigin(0.5, 1)
+        .setDepth(100000);
+      this.tweens.add({ targets: h, alpha: 0.15, duration: 450, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.showcaseHints.push(h);
+    }
+  }
+
+  // Zimmerbrunnen plätschert (lauter, je näher Henrik ist); der Ara am Zimmerbaum ruft ab und zu
+  updateHouseSounds(dt) {
+    if (LEVEL_ID !== ROOM || !this.player) return;
+    const near = (prop) => {
+      let best = Infinity;
+      for (const d of placedIn(ROOM)) {
+        if (!DECOR[d.id]?.[prop]) continue;
+        const img = this.decorImages.get(`${d.tx},${d.ty}`);
+        if (img) best = Math.min(best, Math.hypot(this.player.x - img.x, (this.player.y - img.y) * 2));
+      }
+      return best;
+    };
+    const splash = near('splash');
+    const vol = splash === Infinity ? 0 : Math.max(0, 1 - splash / (TILE_W * 4)) * SPLASH_VOLUME;
+    if (vol > 0 && !this.splashSound && this.cache.audio.exists('ambient_forest_river')) {
+      this.splashSound = this.sound.add('ambient_forest_river', { loop: true, volume: 0 });
+      this.splashSound.play();
+    } else if (vol > 0 && !this.splashSound && !this.splashLoading) {
+      this.splashLoading = true;
+      this.load.audio('ambient_forest_river', 'assets/sounds/ambient_forest_river.mp3');
+      this.load.start();
+    }
+    this.splashSound?.setVolume(vol);
+    this.parrotTimer = (this.parrotTimer ?? Phaser.Math.FloatBetween(8, 15)) - dt;
+    if (this.parrotTimer <= 0) {
+      this.parrotTimer = Phaser.Math.FloatBetween(20, 45);
+      const parrot = near('parrot');
+      if (parrot < TILE_W * 6 && this.cache.audio.exists('animal_macaw')) this.sound.play('animal_macaw', { volume: 0.25 * (1 - parrot / (TILE_W * 6)) + 0.05 });
+    }
+  }
+
+  // davor die Aktionstaste: welche erreichten Trophäen auf diesem Möbel stehen (eine Trophäe steht nur an einem Platz:
+  // wählt man sie hier, verschwindet sie vom anderen; ist es voll, macht die zuerst gewählte Platz)
+  openShowcase(d) {
+    if (this.feederOpen || this.leaving) return;
+    const def = DECOR[d.id];
+    const earned = TROPHIES.filter((t) => hasTrophy(t.id));
+    this.feederOpen = true;
+    this.scene.pause();
+    const box = document.getElementById('feeder');
+    box.classList.add('showcase');
+    let pick = 0;
+    const chosen = () => (d.trophies ?? []).filter(hasTrophy);
+    const elsewhere = (id) => this.showcases().some((s) => s !== d && s.trophies?.includes(id));
+    const draw = () => {
+      const on = chosen();
+      const items = earned.map((t, i) => {
+        const sel = on.includes(t.id);
+        const sub = t.id.startsWith('coats_') ? ` · ${(ANIMAL_INFO[t.animal] ?? [t.animal])[0]}` : '';
+        const note = sel ? tr('steht hier', 'shown here') : elsewhere(t.id) ? tr('steht woanders', 'shown elsewhere') : '';
+        return `<button type="button" class="feeder-item${sel ? ' chosen' : ''}${i === pick ? ' picked' : ''}" data-item="${i}">${trophyBadge(t, animalIcon)}<b>${t.name}${sub}</b><small>${note}</small></button>`;
+      });
+      box.innerHTML = `<b class="feeder-title">${def.name} · ${on.length} / ${def.showcase}</b>
+        ${earned.length ? `<div class="feeder-items">${items.join('')}</div>` : `<small class="feeder-hint">${tr('Noch keine Trophäen. Im Tierbuch steht, was es zu holen gibt.', 'No trophies yet. The Animal Book shows what you can earn.')}</small>`}
+        <div class="sign-close"><button type="button" data-close>${tr('Fertig', 'Done')}</button></div>`;
+    };
+    const toggle = (i) => {
+      const t = earned[i];
+      if (!t) return;
+      const list = chosen();
+      if (list.includes(t.id)) d.trophies = list.filter((id) => id !== t.id);
+      else {
+        if (list.length >= def.showcase) list.shift();
+        d.trophies = [...list, t.id];
+        for (const s of this.showcases()) {
+          if (s === d || !s.trophies?.includes(t.id)) continue;
+          s.trophies = s.trophies.filter((id) => id !== t.id);
+          this.drawShowcase(s.tx, s.ty);
+        }
+      }
+      this.drawShowcase(d.tx, d.ty);
+      draw();
+    };
+    draw();
+    box.classList.add('show');
+    document.body.classList.add('sign-open');
+    box.onclick = (ev) => {
+      if (ev.target.closest('[data-close]')) return this.closeFeeder();
+      const btn = ev.target.closest('[data-item]');
+      if (btn) {
+        pick = Number(btn.dataset.item);
+        toggle(pick);
+      }
+    };
+    this.feederKeys = (ev) => {
+      const k = ev.key;
+      const moves = { ArrowLeft: -1, a: -1, A: -1, ArrowUp: -1, w: -1, W: -1, ArrowRight: 1, d: 1, D: 1, ArrowDown: 1, s: 1, S: 1 };
+      if (k in moves && earned.length) {
+        pick = (pick + moves[k] + earned.length) % earned.length;
+        draw();
+      } else if (k === 'Enter' || k === ' ' || k.toUpperCase() === ACTION_KEY) {
+        if (!ev.repeat) toggle(pick);
+      } else if (k === 'Escape' || k === 'Backspace') {
+        this.closeFeeder();
+      } else return;
+      ev.preventDefault();
+      ev.stopPropagation();
+    };
+    setTimeout(() => this.feederOpen && document.addEventListener('keydown', this.feederKeys, true), 0);
+    this.events.once('shutdown', () => this.feederKeys && document.removeEventListener('keydown', this.feederKeys, true));
+  }
+
+  removeDecor(tx, ty, key = null) {
+    const k = key ?? `${tx},${ty}`; // (Teppich: 'rug:tx,ty')
     const img = this.decorImages.get(k);
     if (!img) return;
+    this.showcaseBadges?.get(k)?.forEach((o) => o.destroy()); // (Trophäen-Möbel: die Plaketten)
+    this.decorFronts?.get(k)?.destroy();
+    this.decorFronts?.delete(k);
+    this.homeFish = (this.homeFish ?? []).filter((f) => (f.key === k ? (f.sprite.destroy(), false) : true));
+    this.time.delayedCall(0, () => this.updateShowcaseHints());
+    if (img === this.computerSprite) this.computerSprite = null; // (Computer aufgehoben)
+    this.showcaseBadges?.delete(k);
     this.decorImages.delete(k);
     const plant = this.sway.plants.get(k);
     if (plant) this.sway.active.delete(plant);
@@ -4433,19 +4723,22 @@ export default class GardenScene extends Phaser.Scene {
     board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearSlot?.slot === slot && this.openEventsPanel(null, slot.id));
   }
 
-  // Stall (LEVEL.stable): vorerst ein Schild mit dem E-Roller als Platzhalter (ein Stall-Bild fehlt noch); davor öffnet
-  // die Aktionstaste den Reiter Reittiere (leihen, kaufen, E-Roller)
+  // Stall (LEVEL.stableBox, 2 × 3 Kacheln): rote Scheune (Bild aus tools/stall-cut.py), Giebelseite links, Tor auf der
+  // langen Seite rechts zum Weg; auf dem Dachschild steht „Stall“. Vor dem Tor (LEVEL.stable) öffnet die Aktionstaste
+  // den Reiter Reittiere
   drawStable() {
     this.stable = null;
     const spot = LEVEL.stable;
-    if (!spot) return;
+    const box = LEVEL.stableBox;
+    if (!spot || !box) return;
+    const P = (a, b) => tileToWorld(a - 0.5, b - 0.5); // Eckpunkt des Kachelgitters
+    const left = P(box.tx0, box.ty1 + 1), right = P(box.tx1 + 1, box.ty0), foot = P(box.tx1 + 1, box.ty1 + 1);
+    const depth = (left.y + right.y) / 2; // davor (Weg, Giebelseite) ist Henrik vorn, sonst dahinter
+    const img = this.add.image(foot.x, foot.y, 'stall').setOrigin(0.404, 0.998).setDepth(depth);
+    // Schrift auf dem Schild: steigt mit dem Dach nach rechts an (Mitte des Schilds 33.5 / -93 vom Fußpunkt)
+    this.signLabel(tr('Stall', 'Stable'), 1.5, -0.5).setPosition(foot.x + 33.5, foot.y - 93).setDepth(depth + 0.01);
+    img.setInteractive({ useHandCursor: true, pixelPerfect: true }).on('pointerdown', () => this.nearStable && this.openEventsPanel(null, null, 'mounts'));
     const { x, y } = tileToWorld(spot.tx, spot.ty);
-    const front = y + 4;
-    this.add.rectangle(x, y - 14, 3, 26, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
-    const board = this.add.image(x, y - 38, 'esign_board').setScale(0.5).setDepth(front);
-    const icon = this.add.sprite(x, y - 36, 'scooter_empty', 1);
-    icon.setScale(0.42).setDepth(front + 0.1); // (der Roller füllt nur einen Teil seines Bildes)
-    board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearStable && this.openEventsPanel(null, null, 'mounts'));
     this.stable = { x, y };
   }
 
@@ -4894,9 +5187,15 @@ export default class GardenScene extends Phaser.Scene {
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Stall', 'Stable')}</span></div>`;
       return;
     }
+    if (this.nearShowcase && !this.decor?.on) {
+      const img = `assets/${DECOR[this.nearShowcase.id].key}.png`;
+      setTouchTool(null, img);
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Trophäen zeigen', 'Show trophies')}</span></div>`;
+      return;
+    }
     if (this.nearComputer) {
-      setTouchTool(null, 'assets/office_desk.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/office_desk.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Computer benutzen', 'Use computer')}</span></div>`;
+      setTouchTool(null, 'assets/fn_computer_desk_0.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/fn_computer_desk_0.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Computer benutzen', 'Use computer')}</span></div>`;
       return;
     }
     if (this.luck?.nearChest) {
@@ -6065,12 +6364,37 @@ export default class GardenScene extends Phaser.Scene {
     this.released ??= [];
     const delivered = [];
     for (const a of fish) {
-      const tanks = allTanks.filter((t) => accepts(t.e, a.species));
+      const tanks = allTanks.filter((t) => accepts(t.e, a.species) && (a.species !== 'fish' || t.e.id === fishTank(a.skin))); // Angelfische: Becken ihrer Welt
       if (!tanks.length) continue;
       const same = (t) => inside(t, a.species).filter((s) => s.species === a.species && s.variant === a.variant).length;
       const room = (t) => t.capFor(a.species) - inside(t, a.species).length;
       const t = [...tanks].sort((p, q) => (room(q) > 0) - (room(p) > 0) || same(q) - same(p) || room(q) - room(p))[0];
-      if (room(t) <= 0) {
+      if (room(t) <= 0 && a.species === 'fish') {
+        // Angelfische: es zieht der am wenigsten seltene aus (fishRank: häufig vor selten vor sehr selten, klein vor groß),
+        // unter gleichen die häufigste Art im Becken, davon der älteste. Ist der neue weniger selten als alle, geht er selbst
+        const list = inside(t, a.species).filter((s) => !s.baby && !isFriendUid(s.uid)); // Tierfreunde ziehen nie aus
+        const rank = (s) => fishRank(s.skin, s.variant);
+        const low = Math.min(...list.map(rank));
+        const out = (species, skin, variant) => {
+          const hearts = releaseHearts(species, skin ?? variant);
+          this.addHearts(hearts, species);
+          this.released.push({ species, hearts });
+        };
+        if (!list.length || rank(a) < low) {
+          out(a.species, a.skin, a.variant);
+          this.followers.splice(this.followers.indexOf(a), 1);
+          this.animals.splice(this.animals.indexOf(a), 1);
+          a.destroy();
+          continue;
+        }
+        const pool = list.filter((s) => rank(s) === low);
+        const counts = {};
+        for (const s of pool) counts[s.skin] = (counts[s.skin] ?? 0) + 1;
+        const most = Object.keys(counts).sort((u, v) => counts[v] - counts[u])[0];
+        const victim = pool.filter((s) => String(s.skin) === most).sort((u, v) => (u.since ?? 0) - (v.since ?? 0))[0];
+        saved.animals.splice(saved.animals.indexOf(victim), 1);
+        out(victim.species, victim.skin, victim.variant);
+      } else if (room(t) <= 0) {
         // voll: wie bei releaseExtra – seltene Skins bleiben, sonst zieht vom häufigsten Aussehen (nicht dem des neuen Tiers,
         // falls möglich) das älteste aus. Aussehen: Skin, Farbvariante (Riff-Fische) oder Tierart (Kraken haben keine Variante)
         const list = inside(t, a.species).filter((s) => !s.baby && !isFriendUid(s.uid)); // Tierfreunde ziehen nie aus
@@ -6979,6 +7303,9 @@ export default class GardenScene extends Phaser.Scene {
   // zuerst eins mit freiem Platz, dort bevorzugt das seiner Herkunftswelt; sind alle voll, das seiner Herkunftswelt (dort
   // zieht dann ein anderes aus, siehe releaseExtra)
   pickPen(fitting, a) {
+    // Angelfische: in das Becken ihrer Welt in der Süßwasserhalle
+    const ownTank = a.species === 'fish' && fitting.find((e) => e.id === fishTank(a.skin));
+    if (ownTank) return ownTank;
     const room = (e) => penCount(this.animals, e, e.quota ? quotaKey(a.species) : null) < capFor(e, a.species);
     return fitting.find((e) => room(e) && e.world === a.origin) ?? fitting.find(room) ?? fitting.find((e) => e.world === a.origin) ?? fitting[0] ?? null;
   }
@@ -6993,6 +7320,7 @@ export default class GardenScene extends Phaser.Scene {
   // schon Fische seiner Art sind, sonst der leerste mit Platz. Sind alle voll, der mit den meisten seiner Art (dort zieht dann
   // ein anderer ins Naturreservat, siehe releaseExtra)
   tankFor(fish, tanks) {
+    if (fish.species === 'fish') tanks = tanks.filter((e) => e.id === fishTank(fish.skin)).length ? tanks.filter((e) => e.id === fishTank(fish.skin)) : tanks; // Becken der eigenen Welt
     const inside = (e) => this.animals.filter((a) => a.state === 'penned' && a.enclosure === e && (!e.quota || a.species === fish.species));
     const same = (e) => inside(e).filter((a) => a.variant === fish.variant).length;
     const room = (e) => (penQuotas(e).find((q) => q.key === (e.quota ? fish.species : null))?.cap ?? 0) - inside(e).length;
@@ -7024,7 +7352,9 @@ export default class GardenScene extends Phaser.Scene {
       if (!inside.length) break; // (nur noch Tierfreunde übrig: die bleiben)
       const looks = {};
       // seltene Varianten bleiben bevorzugt: zuerst zieht ein normales Tier aus, zuletzt ein Skin
-      const rarity = (a) => (a.isRare() ? 1 : 0);
+      // (Angelfische: zuerst häufige, dann seltene, zuletzt sehr seltene; bei gleicher Seltenheit kleine vor großen. Ist der
+      // neue Fisch weniger selten als alle anderen, zieht er selbst gleich wieder aus)
+      const rarity = (a) => (a.species === 'fish' ? fishRank(a.skin, a.variant) : a.isRare() ? 1 : 0);
       const least = Math.min(...inside.map(rarity));
       const pool = inside.filter((a) => rarity(a) === least);
       const look = (a) => a.skin ?? a.variant ?? a.species;
@@ -8073,7 +8403,7 @@ export default class GardenScene extends Phaser.Scene {
   leaveLevel(exit) {
     this.leaving = true;
     // zum ersten Mal mit Meerestieren zurück: Ankunft mit Mavi direkt vor dem Aquarium
-    if (isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID] && activeId() === 'reef' && seaReady(game) && this.followers.some((a) => a.origin === 'reef')) {
+    if (isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID] && LEVEL_ID !== ROOM && activeId() === 'reef' && seaReady(game) && this.followers.some((a) => a.origin === 'reef')) {
       exit = { ...exit, to: 'park2', arrive: AQUARIUM_TOUR };
     }
     let returned = null;
@@ -8091,6 +8421,7 @@ export default class GardenScene extends Phaser.Scene {
       this.tool = null;
       this.toolId = null;
     }
+    if (exit.to === ROOM) game.scooterRiding = false; // ins Haupthaus zu Fuß: der Roller bleibt vor der Tür
     if (isPark(LEVEL_ID)) game.parkIncome = { ...game.parkIncome, [LEVEL_ID]: this.parkIncomeRates() }; // ab jetzt kommen die Herzen dieses Abschnitts laufend (siehe parkIncome)
     this.saveLevelState();
     if (LEVEL.expedition) delete game.levels[LEVEL_ID]; // Expedition: Camp und Maps beginnen immer frisch
@@ -8109,7 +8440,7 @@ export default class GardenScene extends Phaser.Scene {
       const wait = !groupsLoaded(groups);
       showLoading(tr(`${LEVELS[exit.to].name} wird geladen …`, `Loading ${LEVELS[exit.to].name} …`), wait ? 0 : null);
       // aus einer Welt zurück in den Tierpark (nicht aus einem anderen Abschnitt oder Haus): zählt für die Tafeln (maybeShowPromo)
-      const fromWorld = isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID];
+      const fromWorld = isPark(exit.to) && !isPark(LEVEL_ID) && !HOUSES[LEVEL_ID] && LEVEL_ID !== ROOM;
       const go = () => afterPaint(() => this.scene.restart({ level: exit.to, arrive: exit.arrive, returned, fromWorld, keepBoat: !!exit.keepBoat }));
       if (wait) whenGroupsLoaded(groups, setLoadingProgress).then(go);
       else go();
@@ -8647,7 +8978,7 @@ export default class GardenScene extends Phaser.Scene {
       this.updateToolbar();
     }
     // am Hauptrechner: die Aktionstaste zeigt die Events
-    const computer = (LEVEL.computers ?? []).some((c) => {
+    const computer = this.computers().some((c) => {
       const p = tileToWorld(c.tx, c.ty);
       return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 1.6;
     });
@@ -8655,8 +8986,24 @@ export default class GardenScene extends Phaser.Scene {
       this.nearComputer = computer;
       this.updateToolbar();
     }
+    // vor einem Trophäen-Möbel (Haupthaus, nicht im Setzen-Modus): die Aktionstaste wählt die Trophäen darauf
+    const showcase = this.decor?.on ? null : this.showcases().find((d) => {
+      const p = tileToWorld(d.tx, d.ty);
+      return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 1.6;
+    }) ?? null;
+    if (showcase !== this.nearShowcase) {
+      this.nearShowcase = showcase;
+      this.updateToolbar();
+    }
     // am Stall: die Aktionstaste öffnet den Reiter Reittiere
-    const stable = !!this.stable && Math.hypot(this.player.x - this.stable.x, (this.player.y - this.stable.y) * 2) < CHEST_DIST * 1.6;
+    // (von jeder Seite: Abstand zur Grundfläche LEVEL.stableBox in Kacheln, ungerundet)
+    let stable = false;
+    if (this.stable && LEVEL.stableBox) {
+      const a = this.player.x / (TILE_W / 2), b = (this.player.y - TILE_H / 2) / (TILE_H / 2);
+      const ptx = (a + b) / 2, pty = (b - a) / 2, s = LEVEL.stableBox;
+      const dx = Math.max(s.tx0 - 0.5 - ptx, 0, ptx - s.tx1 - 0.5), dy = Math.max(s.ty0 - 0.5 - pty, 0, pty - s.ty1 - 0.5);
+      stable = Math.hypot(dx, dy) < 0.9;
+    }
     if (stable !== !!this.nearStable) {
       this.nearStable = stable;
       this.updateToolbar();
@@ -8699,10 +9046,10 @@ export default class GardenScene extends Phaser.Scene {
     const { tx: px, ty: py } = worldToTile(this.player.x, this.player.y);
     for (const house of this.houses) {
       const h = house.h;
+      if (h.facade) continue; // (Haupthaus im Park: das Dach bleibt zu, durch die Tür geht es ins Level house)
       const inside = px >= h.tx0 && px <= h.tx1 && py >= h.ty0 && py <= h.ty1 && !(px === h.tx0 || py === h.ty0); // samt Tür
       if (inside !== house.inside) {
         house.inside = inside;
-        if (h.style === 'office') this.time.delayedCall(0, () => this.mavi.updateArrow()); // Pfeil: Tür ↔ Computer
         if (house.roof) this.tweens.add({ targets: house.roof, alpha: inside ? HUT_ROOF_ALPHA : (ROOF_ALPHA[h.style] ?? 1), duration: 250 });
         this.tweens.add({ targets: house.front, alpha: inside ? Math.min(HUT_FRONT_ALPHA, FRONT_ALPHA[h.style] ?? 1) : (FRONT_ALPHA[h.style] ?? 1), duration: 250 });
       }
@@ -8757,6 +9104,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.updateWishes(dt);
     this.decor?.update(); // Setzen-Modus: Vorschau auf der Kachel vor Henrik
+    this.updateTankFish(dt); // Haupthaus: Fische im Aquarium-Möbel
+    this.updateHouseSounds(dt); // ... Brunnen und Ara
     // Mavis Buden-Aufgabe: sobald sie erklärt ist (oder sich der Stand ändert), leuchtet der nächste Knopf
     if (this.decor && this.buildHintStage() !== this.lastBuildHint) this.updateBuildHint();
     // am Gehegeschild oder im Gehege: die Werkzeugleiste zeigt "Gehege ausbauen"
@@ -8840,13 +9189,17 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.pickups = this.pickups.filter((p) => !p.collected);
     this.tool?.update(dt);
+    this.fishShadows?.update(dt);
+    this.fishBucket?.update();
 
     // Wilde Tiere fangen, die der Spieler berührt oder mit einem Werkzeug erwischt
     for (const a of this.animals) {
       if (a.canBeCaughtWith('touch') && Math.hypot(this.player.x - a.x, this.player.y - a.y) < CATCH_DIST) this.catchAnimal(a, 'touch');
     }
     if (this.tool) for (const a of this.tool.caughtBy(this.animals)) this.catchAnimal(a);
-    this.followers.forEach((s, i) => (s.followGap = FOLLOW_GAP * (i + 1)));
+    // Angelfische sitzen im Eimer bei Henrik und zählen in der Reihe nicht mit
+    let gapN = 0;
+    for (const s of this.followers) s.followGap = s.inBucket?.() ? 0 : FOLLOW_GAP * ++gapN;
 
     for (const a of this.animals) {
       // im Kanu: Tiere, die folgen, sitzen unsichtbar mit im Boot

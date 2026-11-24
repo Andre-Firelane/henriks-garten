@@ -71,7 +71,11 @@ export default class Mavi {
     else if (at.spot === 'car' && LEVEL.car) return this.freeTile({ tx: Math.round(LEVEL.car.tx) - 2, ty: Math.round(LEVEL.car.ty) + 1 }, true); // neben dem Auto (dort kommt man an)
     else if (at.spot === 'hut' && LEVEL.hut) t = { tx: LEVEL.hut.tx1 + 1, ty: LEVEL.hut.ty1 + 1 };
     else if (at.spot === 'stable' && LEVEL.stable) t = { tx: LEVEL.stable.tx + 1, ty: LEVEL.stable.ty + 1 }; // neben dem Stall
-    else if (at.spot === 'computer' && LEVEL.computers?.length) t = { tx: LEVEL.computers[0].tx + 1, ty: LEVEL.computers[0].ty + 1 };
+    else if (at.spot === 'door' && LEVEL.houseDoor) t = { tx: LEVEL.houseDoor.tx + 1.5, ty: LEVEL.houseDoor.ty + 1 }; // vor dem Haupthaus, rechts neben der Tür
+    else if (at.spot === 'computer' && this.scene.computers().length) {
+      const c = this.scene.computers()[0]; // (im Haupthaus ein Möbel: dort, wo es gerade steht)
+      t = { tx: Math.round(c.tx) + 1, ty: Math.round(c.ty) + 1 };
+    }
     else if (at.spot === 'sign') {
       // vor dem Schild auf dem Weg, nicht auf dem Zaun: nächste Kachel mit Abstand zu allen Gehegen
       const s = this.scene.sheepSign();
@@ -279,6 +283,7 @@ export default class Mavi {
     const meet = (!game.story.heard && (!step.introWhen || step.introWhen(game))) || (step.talk && (!step.done || stepDone(step)));
     if (meet) return step.also?.level === LEVEL_ID ? LEVEL_ID : step.at.level;
     if (step.id === 'reef') return seaReady(game) ? 'park2' : 'reef';
+    if (POINT[step.id] === 'computer' && LEVEL_ID === 'house') return LEVEL_ID; // (der Computer steht im Haupthaus)
     if (PARK_TASKS.includes(step.id)) return isPark(LEVEL_ID) ? LEVEL_ID : 'park';
     return step.at.level;
   }
@@ -290,7 +295,7 @@ export default class Mavi {
     let follow = null;
     if (step && !isSpeaking() && !LEVEL.expedition) { // (in der Expedition zeigt das Camp selbst, wohin es geht)
       const goal = this.taskLevel(step);
-      if (this.hasNews()) target = this.inOffice() && !this.officeOpen() ? this.scene.officeDoor : { x: this.sprite.x, y: this.sprite.y - this.sprite.displayHeight * this.sprite.originY - ARROW_GAP };
+      if (this.hasNews()) target = { x: this.sprite.x, y: this.sprite.y - this.sprite.displayHeight * this.sprite.originY - ARROW_GAP };
       else if (goal !== LEVEL_ID) target = this.carPoint();
       else if (POINT[step.id] === 'computer' && game.story.heard) target = this.computerPoint();
       else if (this.needsNet(step)) target = this.scene.chestPoint(); // Wiesen-Aufgabe: zum Regal, dort liegt der Kescher
@@ -367,23 +372,11 @@ export default class Mavi {
     return car ? { x: car.img.x, y: car.img.getBounds().top + 4 } : null;
   }
 
-  // Computer im Haupthaus: von außen zur Eingangstür (das Dach verdeckt ihn), drinnen zum Computer
+  // Computer im Haupthaus: drinnen zum Computer, im Zentrum zur Tür des Haupthauses (sonst kein Pfeil)
   computerPoint() {
     const pc = this.scene.computerSprite;
-    if (!pc) return null;
-    return this.officeOpen() ? { x: pc.x, y: pc.y - pc.displayHeight * pc.originY + 4 } : this.scene.officeDoor;
-  }
-
-  // ist man im Haupthaus (oder gibt es keine Tür, zu der der Pfeil zeigen könnte)?
-  officeOpen() {
-    const office = this.scene.houses?.find((house) => house.h.style === 'office');
-    return !!office?.inside || !this.scene.officeDoor;
-  }
-
-  // steht Mavi im Haupthaus (am Computer)?
-  inOffice() {
-    const at = activeStep()?.at;
-    return at?.level === LEVEL_ID && at.spot === 'computer';
+    if (pc) return { x: pc.x, y: pc.y - pc.displayHeight * pc.originY + 4 };
+    return this.scene.officeDoor ?? null;
   }
 
   // Weltkarte: Pfeil zu dem Gebiet, in dem es weitergeht, und der Hinweis dazu

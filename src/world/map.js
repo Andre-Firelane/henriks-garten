@@ -8,7 +8,7 @@ import { currentSeason, firstSeason } from './season.js';
 import { storyAt } from '../story/story.js';
 import { sideHere, sideOverrides } from './sideMaps.js';
 import { PEN_TOYS, TOYS, toyKey } from './toys.js';
-import { DECOR, decorByChar, decorTiles, giveDecor, designablePen, ensureDecor } from './decor.js';
+import { DECOR, FLOOR_FILL, decorByChar, decorTiles, fillChar, giveDecor, designablePen, ensureDecor, isRug } from './decor.js';
 import { slotsIn, boothTiles } from './shops.js';
 
 // leere Bauplätze (Buden, Riesenrad) erst ab Mavis Buden-Aufgabe zeigen – vorher lenken sie nur ab
@@ -264,7 +264,8 @@ export const OBJECTS = {
 for (const [id, t] of Object.entries(TOYS)) OBJECTS[t.char] = { key: t.key ?? toyKey(id), originY: t.originY, solid: t.solid, hitbox: t.hitbox, toy: id };
 // selbst gesetzte Deko im Tierpark (❶ …, siehe src/world/decor.js)
 // (große Deko über 2×2 Kacheln: unsichtbar, ihr Bild zeichnet die Szene in der Mitte der Grundfläche; die übrigen Kacheln: V)
-for (const [id, d] of Object.entries(DECOR)) OBJECTS[d.char] = { key: d.key, originY: d.originY, solid: d.solid, hitbox: d.hitbox, sway: d.sway, floor: d.floor, decor: id, invisible: !!d.size };
+OBJECTS[FLOOR_FILL] = { invisible: true, solid: false }; // weitere Kacheln eines Teppichs: begehbar, ohne Bild
+for (const [id, d] of Object.entries(DECOR)) OBJECTS[d.char] = { key: d.key, originX: d.originX, originY: d.originY, solid: d.solid, hitbox: d.hitbox, sway: d.sway, floor: d.floor, decor: id, invisible: !!d.size || !!d.indoor }; // (große Deko und Möbel zeichnet die Szene selbst, in ihrer Ansicht)
 
 export let LEVEL_ID;
 export let LEVEL;
@@ -420,12 +421,20 @@ export function setLevel(id) {
     } else ROWS = placeToys(ROWS, e.seed, PEN_TOYS[e.id], null, !!e.moat);
   }
   // selbst gesetzte Deko (nur Tierpark): nur auf Rasen; was dort nicht mehr passt (z. B. nach einem Umbau), wandert zurück
-  // in die Deko-Taste (DECOR_RETURNED zählt mit, die Szene zeigt einen Hinweis)
+  // in die Deko-Taste (DECOR_RETURNED zählt mit, die Szene zeigt einen Hinweis). Im Haupthaus ebenso die Möbel
+  if (id === 'house') ensureDecor(); // (Startmöbel des Haupthauses, siehe decor.js)
   if (game.decor?.placed?.[id]?.length) {
     game.decor.placed[id] = game.decor.placed[id].filter((d) => {
       const tiles = DECOR[d.id] ? decorTiles(d) : [];
+      if (isRug(d.id)) {
+        // Teppich: nur im Raum (Boden oder ein Möbel darauf), ohne Zeichen in der Karte
+        const inside = (t) => { const c = ROWS[t.ty]?.[t.tx]; return c === '.' || c === FLOOR_FILL || c === 'V' || !!OBJECTS[c]?.decor; };
+        if (tiles.length && tiles.every(inside)) return true;
+        returnDecor(d);
+        return false;
+      }
       const ok = tiles.length > 0 && tiles.every((t) => ROWS[t.ty]?.[t.tx] === '.' && !reservedAt(t.tx, t.ty));
-      if (ok) tiles.forEach((t, i) => (ROWS[t.ty] = ROWS[t.ty].slice(0, t.tx) + (i ? 'V' : DECOR[d.id].char) + ROWS[t.ty].slice(t.tx + 1)));
+      if (ok) tiles.forEach((t, i) => (ROWS[t.ty] = ROWS[t.ty].slice(0, t.tx) + (i ? fillChar(d.id) : DECOR[d.id].char) + ROWS[t.ty].slice(t.tx + 1)));
       else returnDecor(d);
       return ok;
     });

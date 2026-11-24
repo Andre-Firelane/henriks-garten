@@ -20,7 +20,7 @@ import { tileToWorld, worldToTile, TILE_W, TILE_H } from './iso.js';
 import { isPark } from './levels.js';
 import { LEVEL, LEVEL_ID, ENCLOSURES, EXITS, GATE_TILES, CAR_BODIES, MAP_W, MAP_H, OBJECTS, charAt, isBlocked, buildingAt, nearSegment, reservedAt, reservedTiles, anyPenAt, setTileChar } from './map.js';
 import { countPark } from '../sessions.js';
-import { DECOR, ensureDecor, giveDecor, placedIn, isToy, isBooth, itemDef, designablePen, toyFits, penDecorMax, decorTiles } from './decor.js';
+import { DECOR, FLOOR_FILL, decorKey, isRug, fillChar, ensureDecor, giveDecor, placedIn, isToy, isBooth, itemDef, designablePen, toyFits, penDecorMax, decorTiles, footprint, furnitureLook } from './decor.js';
 import { isEventsOpen } from '../ui/eventsPanel.js';
 import { boothTiles, builtOn, pickUpBooth, placeBooth, shopsIn, slotsIn, storedBooths } from './shops.js';
 import { isFriend } from './friends.js';
@@ -32,7 +32,11 @@ const RESERVED = 0xffa040;
 const FREE = 0x9dff8a; // Kacheln, auf die man bauen darf
 const KEEP_CLEAR = 6; // so viel Platz (Welt-Pixel, Höhe doppelt) bleibt um eine feste Deko frei zu Henrik und den Tieren
 const BOOTH_GAP = 3; // so viele Kacheln liegen mindestens zwischen zwei Buden (sonst teilen sie sich die Plätze davor)
-const REACH = 2; // Antippen: so viele Kacheln um Henrik herum erreicht man (in jede Richtung, auch schräg)
+const REACH = 2;
+const ROOM = 'house'; // Haupthaus: dort nur Möbel (indoor in decor.js), draußen nur Deko // Antippen: so viele Kacheln um Henrik herum erreicht man (in jede Richtung, auch schräg)
+
+// Hinweis: mit einem Teil in der Hand auf etwas Gesetztes gezeigt (aufheben geht nur mit der Hand)
+const TAKEN = () => tr('Zum Aufheben erst die Hand wählen', 'Choose the hand to pick up');
 
 // Blickrichtung der Spielfigur (faceX, faceY: schräg im Bild) → Nachbarkachel
 const AHEAD = { '1,1': [1, 0], '-1,1': [0, 1], '1,-1': [0, -1], '-1,-1': [-1, 0] };
@@ -41,7 +45,8 @@ export default class DecorMode {
   constructor(scene) {
     this.scene = scene;
     this.on = false;
-    this.sel = null; // ausgewähltes Deko-Teil (null: nur aufheben)
+    this.sel = null; // ausgewähltes Deko-Teil (null: nichts in der Hand)
+    this.picking = false; // Hand gewählt: nur dann hebt die Aktionstaste bzw. ein Klick Gesetztes auf (nie mit einem Teil in der Hand)
     this.state = null; // { tx, ty, kind: 'place' | 'no' | 'pick' | 'none', entry }
     this.key = '';
     this.marks = null;
@@ -54,10 +59,11 @@ export default class DecorMode {
     this.bar = document.getElementById('decor-bar');
     this.frame = document.getElementById('decor-frame');
     this.flip = false; // gespiegelt setzen
+    this.rot = 0; // Möbel im Haupthaus: Ansicht 0–3 (statt Spiegeln, siehe tools/furniture-sprites.py)
     this.bar.classList.remove('show');
     this.frame.classList.remove('show');
     // gespeicherte Drehung der gesetzten Deko und des Spielzeugs (die Karte zeichnet sie ungedreht)
-    for (const d of [...placedIn(LEVEL_ID), ...Object.values(ensureDecor().toys).flat()]) if (d.flip) scene.decorImages.get(`${d.tx},${d.ty}`)?.setFlipX(true);
+    for (const d of [...placedIn(LEVEL_ID), ...Object.values(ensureDecor().toys).flat()]) if (d.flip && !DECOR[d.id]?.indoor) scene.decorImages.get(`${d.tx},${d.ty}`)?.setFlipX(true);
     scene.events.once('shutdown', () => {
       window.removeEventListener('keydown', this.onKey, true);
       this.bar.classList.remove('show');
@@ -66,7 +72,7 @@ export default class DecorMode {
   }
 
   get enabled() {
-    return isPark(LEVEL_ID);
+    return isPark(LEVEL_ID) || LEVEL_ID === ROOM;
   }
 
   // Deko-Taste: Setzen-Modus an bzw. aus
@@ -79,12 +85,14 @@ export default class DecorMode {
   // Teile, die man gerade hat: Buden dieses Abschnitts (bestellt bzw. aufgehoben) bzw. Deko (wie in DECOR, danach
   // Spielzeug); ohne Angabe beides, Buden zuerst
   booths() {
+    if (LEVEL_ID === ROOM) return [];
     return storedBooths(LEVEL_ID).map((b) => 'booth:' + b.id).filter((id) => itemDef(id));
   }
 
   decos() {
     const owned = ensureDecor().owned;
-    return [...Object.keys(DECOR), ...Object.keys(owned).filter(isToy).sort()].filter((id) => owned[id] > 0 && itemDef(id));
+    if (LEVEL_ID === ROOM) return Object.keys(DECOR).filter((id) => DECOR[id].indoor && owned[id] > 0);
+    return [...Object.keys(DECOR).filter((id) => !DECOR[id].indoor), ...Object.keys(owned).filter(isToy).sort()].filter((id) => owned[id] > 0 && itemDef(id));
   }
 
   entries() {
@@ -106,11 +114,12 @@ export default class DecorMode {
         ${i < 9 ? `<span class="key">${++i}</span>` : ''}<span class="n">${this.count(id)}</span>
         <img src="assets/${itemDef(id).key}.png" alt=""><span class="name">${itemDef(id).name}</span></button>`;
     const section = (title, ids) => (ids.length ? `<div class="decor-head">${title}</div>${ids.map(item).join('')}` : '');
-    const items = section(tr('Buden', 'Stands'), this.booths()) + section(tr('Deko', 'Decor'), this.decos())
-      + `<button class="decor-item${this.sel ? '' : ' sel'}" data-id="@pick"><span class="key">0</span>
+    const items = section(tr('Buden', 'Stands'), this.booths()) + section(LEVEL_ID === ROOM ? tr('Möbel', 'Furniture') : tr('Deko', 'Decor'), this.decos())
+      + `<button class="decor-item${this.picking ? ' sel' : ''}" data-id="@pick"><span class="key">0</span>
         <img src="assets/hand.png" alt=""><span class="name">${tr('Aufheben', 'Pick up')}</span></button>`;
-    const empty = this.entries().length ? '' : `<div class="decor-empty">${tr('Buden und Deko gibt es unter „Bestellen“.', 'Order stands and decor below.')}</div>`;
-    this.bar.innerHTML = `<button class="decor-turn${this.sel ? '' : ' off'}${this.flip ? ' on' : ''}" data-id="@turn"><span class="turn-icon">↻</span>${tr('Drehen', 'Turn')}<span class="key">R</span></button>
+    const none = LEVEL_ID === ROOM ? tr('Möbel gibt es unter „Bestellen“.', 'Order furniture below.') : tr('Buden und Deko gibt es unter „Bestellen“.', 'Order stands and decor below.');
+    const empty = this.entries().length ? '' : `<div class="decor-empty">${none}</div>`;
+    this.bar.innerHTML = `<button class="decor-turn${this.sel && this.turnable() ? '' : ' off'}${this.turned() ? ' on' : ''}" data-id="@turn"><span class="turn-icon">↻</span>${tr('Drehen', 'Turn')}<span class="key">R</span></button>
       <div class="decor-title">${tr('Bauen', 'Build')}</div>
       ${empty}<div class="decor-items">${items}</div>
       <button class="decor-order" data-id="@order">${tr('Bestellen', 'Order')}</button>
@@ -130,6 +139,7 @@ export default class DecorMode {
     if (id === '@turn') return this.turn();
     if (id === '@order') return this.scene.openCatalog();
     this.sel = id === '@pick' ? null : id;
+    this.picking = id === '@pick';
     this.loadArt();
     this.key = '';
     this.drawFree(); // (was wo passt, hängt vom Teil ab: Spielzeug nur in sein Gehege)
@@ -153,11 +163,14 @@ export default class DecorMode {
     if (n >= 1 && n <= 9 && list[n - 1]) this.choose(list[n - 1]);
   }
 
-  start(id) {
+  // pick: Hand gewählt (ohne Angabe: wenn es nichts zu setzen gibt)
+  start(id, pick = undefined) {
     this.sel = id && this.count(id) > 0 ? id : null;
+    this.picking = !this.sel && (pick ?? true);
     this.loadArt();
     if (!this.on) {
       this.on = true;
+      if (LEVEL_ID === ROOM) game.houseBuildSeen = true; // (Haupthaus: die Bauen-Taste blinkt nicht mehr)
       game.buildOpen = true; // (Mavis Buden-Aufgabe: erst nach „Fertig“ erledigt)
       this.keepOut = this.keepOutTiles();
       this.drawReserved();
@@ -170,11 +183,13 @@ export default class DecorMode {
     this.renderBar();
     this.key = '';
     this.update();
+    this.scene.updateShowcaseHints?.(); // (im Setzen-Modus keine Trophäen-Hinweise)
   }
 
   stop() {
     if (!this.on) return;
     this.on = false;
+    this.hover = null;
     this.sel = null;
     this.state = null;
     this.key = '';
@@ -189,35 +204,44 @@ export default class DecorMode {
     window.removeEventListener('keydown', this.onKey, true);
     game.buildOpen = false;
     this.scene.updateBuildHint?.();
+    this.scene.updateShowcaseHints?.();
     this.scene.mavi?.check(); // (Buden-Aufgabe: jetzt erledigt, wenn eine Bude steht)
     this.scene.saveGame();
     this.scene.updateToolbar();
   }
 
   // jedes Bild: Kachel vor Henrik prüfen und die Vorschau zeichnen (nur wenn sich etwas geändert hat)
+  // Maus am PC: die Vorschau folgt dem Mauszeiger (Weltpunkt; null: wieder die Kachel vor Henrik). Läuft Henrik los,
+  // gilt wieder die Kachel vor ihm, bis die Maus sich bewegt
+  hoverAt(w) {
+    this.hover = w;
+    if (this.on) this.update();
+  }
+
   update() {
     if (!this.on) return;
     const p = this.scene.player;
+    if (this.hover && p.moving) this.hover = null;
     const here = worldToTile(p.x, p.y);
-    const [dx, dy] = AHEAD[`${p.faceX},${p.faceY}`] ?? [0, 1];
-    const tx = here.tx + dx;
-    const ty = here.ty + dy;
+    const [dx, dy] = this.hover ? [0, 0] : AHEAD[`${p.faceX},${p.faceY}`] ?? [0, 1]; // (Maus: große Teile wachsen von der Kachel unter dem Zeiger nach hinten)
+    const { tx, ty } = this.hover ? worldToTile(this.hover.x, this.hover.y) : { tx: here.tx + dx, ty: here.ty + dy };
     this.dir = [dx, dy];
-    const busy = this.scene.decorBusy();
-    const key = `${tx},${ty},${this.sel},${busy},${this.count(this.sel)}`;
+    const busy = !this.hover && this.scene.decorBusy(); // (die Maus setzt auch neben dem Computer, der Futterkiste …)
+    const key = `${tx},${ty},${this.sel},${busy},${this.count(this.sel)},${this.rot},${!!this.hover}`;
     if (key === this.key) return;
     this.key = key;
-    const entry = this.entryAt(tx, ty);
+    const entry = this.picking ? this.entryAt(tx, ty) ?? (this.hover ? this.entryUnder(this.hover.x, this.hover.y) : null) : null;
+    const taken = !this.picking && !!this.sel && !isRug(this.sel) && this.occupied(tx, ty); // (mit einem Teil in der Hand: dort steht schon etwas; Teppiche dürfen darunter)
     let kind = 'none';
     let full = false;
     if (busy) kind = 'no';
-    else if (entry) kind = 'pick';
+    else if (entry) kind = 'pick'; // (nur mit der Hand)
     else if (this.sel) {
       kind = this.canPlace(tx, ty, this.sel) ? 'place' : 'no';
       const pen = anyPenAt(tx, ty);
       full = kind === 'no' && !isToy(this.sel) && designablePen(pen) && !!DECOR[this.sel]?.pen && this.penDecor(pen) >= penDecorMax(pen);
     }
-    const why = kind === 'no' && !busy && isBooth(this.sel) ? this.boothProblem(tx, ty, this.sel) : null;
+    const why = kind === 'no' && !busy && taken ? TAKEN() : kind === 'no' && !busy && isBooth(this.sel) ? this.boothProblem(tx, ty, this.sel) : null;
     this.state = { tx, ty, kind, entry, full, why, block: this.sel && kind !== 'pick' ? this.block(tx, ty, this.sel) : null };
     this.drawPreview();
     this.scene.updateToolbar();
@@ -232,10 +256,24 @@ export default class DecorMode {
     });
   }
 
-  // Drehen: das nächste Teil gespiegelt (bzw. wieder normal) setzen
+  // Möbel (indoor) drehen sich durch ihre Ansichten, alles andere wird gespiegelt
+  indoor(id = this.sel) {
+    return !!DECOR[id]?.indoor;
+  }
+
+  turnable() {
+    return !this.indoor() || (DECOR[this.sel]?.views ?? 1) > 1;
+  }
+
+  turned() {
+    return this.indoor() ? this.rot > 0 : this.flip;
+  }
+
+  // Drehen: Möbel in die nächste Ansicht (eine Vierteldrehung), anderes Teil gespiegelt (bzw. wieder normal) setzen
   turn() {
-    if (!this.sel) return;
-    this.flip = !this.flip;
+    if (!this.sel || !this.turnable()) return;
+    if (this.indoor()) this.rot = (this.rot + 1) % DECOR[this.sel].views;
+    else this.flip = !this.flip;
     this.key = '';
     this.renderBar();
     this.update();
@@ -254,13 +292,18 @@ export default class DecorMode {
   // Antippen bzw. Anklicken (Weltpunkt): auf einer Kachel in Henriks Nähe gesetzte Deko aufheben bzw. das gewählte Teil
   // dorthin setzen. Getroffen zählt die Kachel unter dem Finger oder das Bild einer gesetzten Deko (z. B. die Krone eines
   // Baums). Große Teile (2×2) reichen von Henrik weg. Geht es nicht, blinkt die Kachel rot mit kurzem Hinweis.
-  tap(wx, wy) {
+  // mouse: Klick mit der Maus am PC – überall auf der Karte, ohne Reichweite um Henrik
+  tap(wx, wy, mouse = false) {
     if (!this.on) return;
     const p = this.scene.player;
     const here = worldToTile(p.x, p.y);
-    const near = (t) => Math.max(Math.abs(t.tx - here.tx), Math.abs(t.ty - here.ty)) <= REACH;
+    const near = (t) => mouse || Math.max(Math.abs(t.tx - here.tx), Math.abs(t.ty - here.ty)) <= REACH;
     const { tx, ty } = worldToTile(wx, wy);
-    const entry = this.entryAt(tx, ty) ?? this.entryUnder(wx, wy);
+    if (!this.picking) {
+      if (!this.sel) return this.tapNo(tx, ty, tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
+      if (this.occupied(tx, ty) && !isRug(this.sel)) return this.tapNo(tx, ty, TAKEN()); // mit einem Teil in der Hand wird nichts aufgehoben (ein Teppich darf unter Möbel)
+    }
+    const entry = this.picking ? this.entryAt(tx, ty) ?? this.entryUnder(wx, wy) : null;
     if (entry) {
       const tiles = entry.item && !isToy(entry.id) && !entry.booth ? decorTiles(entry.item) : [entry];
       if (tiles.some(near)) return this.pickUp(entry);
@@ -271,7 +314,7 @@ export default class DecorMode {
     // Richtung von Henrik zur Kachel (die längere Achse): dorthin wächst ein großes Teil
     const ddx = tx - here.tx;
     const ddy = ty - here.ty;
-    this.dir = Math.abs(ddx) >= Math.abs(ddy) ? [Math.sign(ddx) || 1, 0] : [0, Math.sign(ddy)];
+    this.dir = mouse ? [0, 0] : Math.abs(ddx) >= Math.abs(ddy) ? [Math.sign(ddx) || 1, 0] : [0, Math.sign(ddy)]; // (Maus: wie die Vorschau unter dem Zeiger)
     if (this.canPlace(tx, ty, this.sel)) {
       this.place(tx, ty, this.sel);
       return;
@@ -288,8 +331,8 @@ export default class DecorMode {
     const hits = [...this.scene.decorImages.entries()].filter(([, img]) => img.active && img.getBounds().contains(wx, wy));
     hits.sort((a, b) => b[1].depth - a[1].depth);
     for (const [k] of hits) {
-      const [tx, ty] = k.split(',').map(Number);
-      const e = this.entryAt(tx, ty);
+      const [tx, ty] = k.replace('rug:', '').split(',').map(Number);
+      const e = k.startsWith('rug:') ? this.rugEntry(tx, ty) : this.entryAt(tx, ty);
       if (e) return e;
     }
     return null;
@@ -318,6 +361,7 @@ export default class DecorMode {
     if (kind === 'no' && why) return { image: img(this.sel), label: why };
     if (kind === 'no' && full) return { image: img(this.sel), label: tr('Das Gehege ist voll', 'The enclosure is full') };
     if (kind === 'no' && this.sel) return { image: img(this.sel), label: tr('Hier geht das nicht', 'Not here') };
+    if (!this.picking) return { image: 'assets/hand.png', label: tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand') };
     return { image: 'assets/hand.png', label: tr('Zum Aufheben davorstellen', 'Stand in front to pick up') };
   }
 
@@ -325,10 +369,11 @@ export default class DecorMode {
   // Kachel vor ihm aus nach hinten (weg von Henrik) und zur Seite reichen. { tx, ty } = kleinstes tx/ty, tiles
   block(tx, ty, id) {
     const n = (!isToy(id) && (isBooth(id) ? itemDef(id)?.size : DECOR[id]?.size)) || 1;
-    if (n === 1) return { tx, ty, tiles: [{ tx, ty }] };
+    const [w, h] = this.indoor(id) ? footprint(id, this.rot % (DECOR[id].views ?? 1)) : [n, n]; // (Möbel: Grundfläche in ihrer Ansicht)
+    if (w === 1 && h === 1) return { tx, ty, tiles: [{ tx, ty }] };
     const [dx, dy] = this.dir ?? [0, 1];
     const tiles = [];
-    for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) tiles.push({ tx: tx + (dx ? dx * a : b), ty: ty + (dy ? dy * a : b) });
+    for (let a = 0; a < w; a++) for (let b = 0; b < h; b++) tiles.push({ tx: tx + (dx ? dx * a : a), ty: ty + (dy ? dy * b : b) });
     return { tx: Math.min(...tiles.map((t) => t.tx)), ty: Math.min(...tiles.map((t) => t.ty)), tiles };
   }
 
@@ -338,12 +383,26 @@ export default class DecorMode {
     const slot = slotsIn(LEVEL_ID).find((s) => boothTiles(s).some((t) => t.tx === tx && t.ty === ty));
     if (slot) return { id: 'booth:' + slot.id, tx, ty, booth: slot.id, item: slot };
     const placed = game.decor.placed[LEVEL_ID] ?? [];
-    const d = placed.find((p) => decorTiles(p).some((t) => t.tx === tx && t.ty === ty)); // (große Deko: jede ihrer Kacheln)
+    const on = (p) => decorTiles(p).some((t) => t.tx === tx && t.ty === ty); // (große Deko: jede ihrer Kacheln)
+    const d = placed.find((p) => on(p) && !isRug(p.id)) ?? placed.find(on); // (auf einem Teppich: erst das Möbel darauf)
     if (d) return { id: d.id, tx, ty, list: placed, item: d };
     const pen = anyPenAt(tx, ty);
     const toys = designablePen(pen) ? game.decor.toys?.[pen.id] ?? [] : [];
     const t = toys.find((p) => p.tx === tx && p.ty === ty);
     return t ? { id: 'toy:' + t.id, tx, ty, list: toys, item: t } : null;
+  }
+
+  // steht hier etwas (ein Teppich allein zählt nicht: darauf darf man stellen)?
+  occupied(tx, ty) {
+    const e = this.entryAt(tx, ty);
+    return !!e && !isRug(e.id);
+  }
+
+  // der Teppich, der an dieser Stelle beginnt (sein Bild wurde angeklickt)
+  rugEntry(tx, ty) {
+    const placed = game.decor.placed[LEVEL_ID] ?? [];
+    const d = placed.find((p) => isRug(p.id) && p.tx === tx && p.ty === ty);
+    return d ? { id: d.id, tx, ty, list: placed, item: d } : null;
   }
 
   // so viel Deko (ohne Spielzeug) steht schon in diesem Gehege
@@ -357,27 +416,30 @@ export default class DecorMode {
       // Bude: an den neuen Platz, dann den Abschnitt neu aufbauen (gleich kauft dort jemand ein)
       const b = this.block(tx, ty, id);
       placeBooth(def.booth, LEVEL_ID, b.tx, b.ty, this.flip);
-      this.scene.rebuildForDecor({ sel: null }, def.booth);
+      this.scene.rebuildForDecor({ sel: null, pick: false }, def.booth); // (danach nichts in der Hand, auch nicht die Hand)
       return;
     }
     giveDecor(id, -1);
     countPark('decor'); // für die Statistik
     const pen = anyPenAt(tx, ty);
-    const flip = this.flip || undefined; // (nur speichern, wenn gedreht)
+    const flip = (!this.indoor(id) && this.flip) || undefined; // (nur speichern, wenn gedreht)
+    const rot = (this.indoor(id) && this.rot % (DECOR[id].views ?? 1)) || undefined; // Möbel: Ansicht
     const block = this.block(tx, ty, id); // (große Deko: 2×2 Kacheln, gespeichert ab der kleinsten)
+    const item = isToy(id) ? null : { id, tx: block.tx, ty: block.ty, flip, rot };
     if (isToy(id)) (game.decor.toys[pen.id] ??= []).push({ id: def.toy, tx, ty, flip });
-    else (game.decor.placed[LEVEL_ID] ??= []).push({ id, tx: block.tx, ty: block.ty, flip });
-    for (const t of block.tiles) setTileChar(t.tx, t.ty, t.tx === block.tx && t.ty === block.ty ? def.char : 'V');
+    else (game.decor.placed[LEVEL_ID] ??= []).push(item);
+    // (Teppich im Haupthaus: kein Zeichen in der Karte, er liegt unter allem)
+    if (!isRug(id)) for (const t of block.tiles) setTileChar(t.tx, t.ty, t.tx === block.tx && t.ty === block.ty ? def.char : fillChar(id));
     // der Tierfreund des Geheges freut sich (nur ein Effekt, keine Herzen: sonst lohnte sich Hin- und Herstellen)
     if (designablePen(pen)) for (const a of this.scene.animals ?? []) if (a.enclosure?.id === pen.id && a.sprite && isFriend(a)) this.scene.friendHeart(a);
-    const img = this.scene.drawDecor(block.tx, block.ty);
-    img?.setFlipX(this.flip);
+    const img = this.scene.drawDecor(block.tx, block.ty, isRug(id) ? item : null);
+    if (!this.indoor(id)) img?.setFlipX(this.flip);
     if (img) {
       const s = img.scale;
       img.setScale(s * 0.6);
       this.scene.tweens.add({ targets: img, scale: s, duration: 220, ease: 'Back.easeOut' });
     }
-    if (!(game.decor.owned[id] > 0)) this.sel = null; // keins mehr: nur noch aufheben
+    if (!(game.decor.owned[id] > 0)) this.sel = null; // keins mehr: nichts in der Hand (aufheben erst nach Wahl der Hand, sonst hebt der nächste Klick es gleich wieder auf)
     this.drawFree();
     this.renderBar();
     this.key = '';
@@ -396,11 +458,13 @@ export default class DecorMode {
     entry.list.splice(i, 1);
     giveDecor(entry.id, 1);
     const tiles = isToy(entry.id) ? [{ tx: entry.tx, ty: entry.ty }] : decorTiles(entry.item);
-    for (const t of tiles) setTileChar(t.tx, t.ty, '.');
+    if (!isRug(entry.id)) for (const t of tiles) setTileChar(t.tx, t.ty, '.'); // (Teppich: die Kacheln gehören evtl. Möbeln darauf)
     this.lit = null;
-    this.scene.removeDecor(entry.item.tx, entry.item.ty);
+    this.scene.removeDecor(entry.item.tx, entry.item.ty, isRug(entry.id) ? decorKey(entry.item) : null);
+    this.picking = false;
     this.sel = entry.id; // gleich wieder ausgewählt: so stellt man sie schnell um (mit ihrer Drehung)
     this.flip = !!entry.item.flip;
+    this.rot = entry.item.rot ?? 0;
     this.drawFree();
     this.renderBar();
     this.key = '';
@@ -413,7 +477,9 @@ export default class DecorMode {
     const block = this.block(tx, ty, id);
     if (!def || !block.tiles.every((t) => this.freeTile(t.tx, t.ty, id))) return false;
     const n = def.size ?? 1;
-    const c = tileToWorld(block.tx + (n - 1) / 2, block.ty + (n - 1) / 2);
+    const bw = Math.max(...block.tiles.map((t) => t.tx)) - block.tx + 1;
+    const bh = Math.max(...block.tiles.map((t) => t.ty)) - block.ty + 1;
+    const c = tileToWorld(block.tx + (bw - 1) / 2, block.ty + (bh - 1) / 2);
     const mavi = this.scene.mavi?.sprite;
     if (mavi && Math.hypot(mavi.x - c.x, (mavi.y - c.y) * 2) < TILE_W) return false;
     if (!def.solid) return true;
@@ -431,7 +497,17 @@ export default class DecorMode {
   // Darf dieses Teil hier überhaupt stehen (ohne das, was sich bewegt: Henrik, Tiere, Mavi)? Das zeigt auch das Overlay
   // (id null: nur Aufheben – dann die Flächen draußen)
   freeTile(tx, ty, id = null) {
+    // Teppich (Haupthaus): auch unter Möbel, nur nicht auf einen anderen Teppich, an die Wand oder vor die Tür
+    if (isRug(id)) {
+      if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return false;
+      const c = charAt(tx, ty);
+      const room = c === '.' || c === FLOOR_FILL || c === 'V' || !!OBJECTS[c]?.decor; // (V: weitere Kachel eines großen Möbels)
+      const rug = placedIn(LEVEL_ID).some((d) => isRug(d.id) && decorTiles(d).some((t) => t.tx === tx && t.ty === ty));
+      return room && !rug && !this.keepOut.has(tx + ',' + ty);
+    }
     if (charAt(tx, ty) !== '.') return false; // nur Rasen (kein Weg, kein Wasser, nichts darauf)
+    // Haupthaus: nur Möbel, überall im Raum (ohne Teil: die Fläche fürs Overlay)
+    if (LEVEL_ID === ROOM) return (!id || !!DECOR[id]?.indoor) && !this.keepOut.has(tx + ',' + ty);
     if (buildingAt(tx, ty, 1)) return false; // nicht in und direkt an Gebäuden
     if (reservedAt(tx, ty)) return false; // Fläche eines künftigen Geheges
     if (this.keepOut.has(tx + ',' + ty)) return false; // vor Toren, Schildern, Buden, Futterhaus, Ausgängen …
@@ -552,6 +628,8 @@ export default class DecorMode {
     this.marks = null;
     this.ghost?.destroy();
     this.ghost = null;
+    this.ghostFront?.destroy();
+    this.ghostFront = null;
     this.lit?.clearTint();
     this.lit = null;
   }
@@ -573,19 +651,25 @@ export default class DecorMode {
     }
     this.marks = g;
     if (s.kind === 'pick') {
-      this.lit = this.scene.decorImages.get(`${s.entry.item?.tx ?? s.tx},${s.entry.item?.ty ?? s.ty}`) ?? null;
+      this.lit = this.scene.decorImages.get(s.entry.item && !isToy(s.entry.id) && !s.entry.booth ? decorKey(s.entry.item) : `${s.entry.item?.tx ?? s.tx},${s.entry.item?.ty ?? s.ty}`) ?? null;
       this.lit?.setTint(0xfff2a0);
       return;
     }
     if (!this.sel) return;
     const def = itemDef(this.sel);
     const obj = OBJECTS[def.char];
-    const look = isBooth(this.sel) ? def : obj; // (Bude: eigenes Bild und eigene Größe)
-    const n = def.size ?? 1; // große Deko: in der Mitte ihrer Grundfläche
-    const b = s.block ?? { tx: s.tx, ty: s.ty };
-    const { x, y } = tileToWorld(b.tx + (n - 1) / 2, b.ty + (n - 1) / 2);
-    this.ghost = this.scene.add.image(x, y, look.key).setOrigin(0.5, look.originY).setScale(def.scale ?? 1).setAlpha(0.6).setDepth(y + 1).setFlipX(this.flip);
-    if (s.kind === 'no') this.ghost.setTint(0xff8070);
+    const look = isBooth(this.sel) ? def : this.indoor() ? furnitureLook(this.sel, this.rot) : obj; // (Bude: eigenes Bild und eigene Größe; Möbel: Ansicht)
+    const b = s.block ?? { tx: s.tx, ty: s.ty, tiles: [s] };
+    // in der Mitte der Grundfläche
+    const bw = Math.max(...b.tiles.map((t) => t.tx)) - b.tx + 1;
+    const bh = Math.max(...b.tiles.map((t) => t.ty)) - b.ty + 1;
+    const { x, y } = tileToWorld(b.tx + (bw - 1) / 2, b.ty + (bh - 1) / 2);
+    this.ghost = this.scene.add.image(x, y, look.key).setOrigin(look.originX ?? 0.5, look.originY).setScale(def.scale ?? 1).setAlpha(0.6).setDepth(y + 1).setFlipX(!this.indoor() && this.flip);
+    if (look.frontKey) this.ghostFront = this.scene.add.image(x, y, look.frontKey).setOrigin(look.originX, look.originY).setAlpha(0.6).setDepth(y + 1.01);
+    if (s.kind === 'no') {
+      this.ghost.setTint(0xff8070);
+      this.ghostFront?.setTint(0xff8070);
+    }
   }
 }
 

@@ -7,6 +7,7 @@ import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
 import { COATS, coatAnims, coatReady, ensureCoat } from './coats.js';
+import { FRESH_FISH } from '../world/fishing.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -1227,21 +1228,21 @@ export const SPECIES = {
     shadowW: 36,
     catchWith: ['swim'], // mitschwimmen, bis er einem vertraut
   },
+  // Angelfisch (AngelFish.js): nur mit der Angel, die Art ist der Skin (SKINS.fish)
   fish: {
     texture: 'fish',
-    baseLevels: ['meadow'], // der orange Fisch (ohne Skin) kommt nur auf der Wiese vor, sonst die Arten in SKINS.fish
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
     originY: 68 / 72,
-    speed: 12, // gemütliches Schwimmen im Fischteich
-    restChance: 0.4,
+    speed: 12,
+    restChance: 0,
     restTime: [1, 3],
     walkTime: [1, 3],
     stepRate: 8,
     hop: 1,
     footW: 4,
     shadowW: 20,
-    catchWith: ['net'],
+    catchWith: ['rod'],
   },
 };
 
@@ -1277,20 +1278,9 @@ export const SKINS = {
   cat: [{ id: 'cat2', name: tr('Glöckchen-Katze', 'bell cat'), male: false, share: 12, baby: 0.03 }], // weiße Langhaarkatze mit Glöckchen
   deer: [{ id: 'stag', name: tr('Hirsch', 'stag'), male: true, share: 10, baby: 0 }], // ein Rehkitz ist nie ein Hirsch
   antelope: { id: 'antelope2', name: tr('Oryx-Antilope', 'oryx antelope'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
-  // Fischarten je Gebiet, alle gleich häufig (share, siehe rollSkin; der orange Fisch nur auf der Wiese, SPECIES.fish.baseLevels).
-  // Savanne: immer der Lungenfisch (in der Trockenzeit steckt er im Schlamm). Fische bekommen keine Babys.
-  fish: [
-    { id: 'fish_carp', name: tr('Karpfen', 'carp'), male: true, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish_tench', name: tr('Schleie', 'tench'), male: false, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish_roach', name: tr('Rotauge', 'roach'), male: false, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish_perch', name: tr('Barsch', 'perch'), male: true, level: 'meadow', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish_trout', name: tr('Forelle', 'trout'), male: false, level: 'forest', share: 1, baby: 0, common: true },
-    { id: 'fish_grayling', name: tr('Äsche', 'grayling'), male: false, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish_pike', name: tr('Hecht', 'pike'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish2', name: tr('Wels', 'catfish'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'fish_sturgeon', name: tr('Stör', 'sturgeon'), male: true, level: 'forest', share: 1, baby: 0, common: true, upJump: true },
-    { id: 'lungfish', name: tr('Lungenfisch', 'lungfish'), male: true, level: 'savanna', share: 1, baby: 0, common: true },
-  ],
+  // Angelfische (docs/plan-angeln.md, src/world/fishing.js): die Fischart ist der Skin. Gewürfelt wird beim Angeln (rollFish), nicht
+  // über share/wild; alle gelten als häufig (keine Meldung „seltene …“), die Seltenheit steckt in den Pools. Fische bekommen keine Babys.
+  fish: FRESH_FISH.map(({ id, name, male }) => ({ id, name, male, baby: 0, common: true })),
   heron: [
     { id: 'shoebill', name: tr('Schuhschnabel', 'shoebill'), male: true, level: 'savanna', seasons: ['rain'], wild: 1, baby: 0, common: true }, // in der Savanne bei Starkregen immer ein Schuhschnabel
     { id: 'heron2', name: tr('Storch', 'stork'), male: true, wild: 0.1, baby: 0.03 },

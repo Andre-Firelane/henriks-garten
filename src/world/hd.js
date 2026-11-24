@@ -3,11 +3,16 @@
 // (Breite, Höhe, Fußpunkt bleiben gleich), zeigt aber das ganze große Bild.
 import { IS_PHONE } from '../ui/touch.js';
 import { TOYS, toyKey } from './toys.js';
+import { FURNITURE_ART } from './furnitureArt.js';
+
+// Möbel im Haupthaus: ein Bild je Ansicht (tools/furniture-sprites.py)
+export const FURNITURE_KEYS = Object.entries(FURNITURE_ART).flatMap(([id, a]) => a.art.flatMap((v, k) => (v.front ? [`fn_${id}_${k}`, `fn_${id}_${k}_f`] : [`fn_${id}_${k}`])));
 
 export const HD_SCALE = 4;
 
 export const HD = [
   ...Object.keys(TOYS).map(toyKey), // Spielzeug der zweiten Ausbaustufe
+  ...FURNITURE_KEYS,
   // Wald
   'fgrass0', 'fgrass1', 'fgrass2', 'forest_path', 'planks_forest', 'pine', 'dark_tree', 'dark_bush', 'log', 'fern', 'mushroom',
   'forest_boulder', 'forest_boulder2', 'forest_stump', 'forest_mossy_log', 'forest_elder', 'forest_hazel', 'forest_bluebells', 'forest_foxglove',
@@ -36,7 +41,7 @@ export const HD = [
   'jungle_plant', 'jungle_tree', 'lion_rock', 'mesh_x', 'mesh_y', 'nest_box', 'net_x', 'net_y', 'office_armchair', 'office_chair',
   'office_desk', 'office_plant_monstera', 'office_plant_strelitzia', 'office_rug', 'office_sofa', 'office_table', 'park_path', 'parkfood',
   'peacock_perch', 'reeds', 'reptile_facade', 'sgrass0', 'sgrass1', 'sgrass2', 'stone_lantern', 'sun_rock', 'tall_grass', 'tall_x',
-  'tall_y', 'tire_swing', 'torii', 'toy_ball', 'tuft', 'deco_stand',
+  'tall_y', 'tire_swing', 'torii', 'toy_ball', 'tuft', 'deco_stand', 'stall',
   'stepping_stones', 'flower_arch', 'lantern_post', 'pavilion', 'snowman', 'anchor',
   // Savanne
   'savanna_tallgrass', 'savanna_tallgrass_rain', 'savanna_tallgrass_dry', 'savanna_bush', 'savanna_bush_rain', 'savanna_shrub_rain',

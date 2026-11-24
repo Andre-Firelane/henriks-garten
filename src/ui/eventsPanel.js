@@ -287,7 +287,10 @@ function pick(i) {
     // Katalog: bestellen, die Tafel bleibt offen (man bestellt oft mehrere)
     onPick(tab, it.id);
     state.selected = i;
+    // neu zeichnen, ohne dass die Liste wieder nach oben springt (die Tafel bzw. die Liste scrollt)
+    const keep = ['.chest-box', '.chest-items'].map((sel) => [sel, panel.querySelector(sel)?.scrollTop ?? 0]);
     render();
+    for (const [sel, top] of keep) if (top) panel.querySelector(sel)?.scrollTo(0, top);
     panel.querySelector(`.ev-item[data-i="${i}"]`)?.classList.add('bought');
     return;
   }
