@@ -147,10 +147,23 @@ Erreichte Trophäen zählen auch in der Statistik (sessions.js).
   (2 Kacheln um Henrik). Der Katalog springt nach dem Bestellen nicht mehr nach oben.
 - Test: `node tools/screenshot.cjs --level house`; laufen mit `--key w:350` (Taste halten).
 
+- **Gemalte Bilder** (2026-11-24): Andres Bilder in `Sprites/Möbel/` ersetzen die gezeichneten, wo es sie gibt
+  (`tools/furniture_art.py`, läuft in furniture-sprites.py mit). Sie werden in den Umriss des gezeichneten Körpers
+  eingepasst (Größe, Fußpunkt, Schatten, Trophäen-Plätze, Schwimmraum bleiben); Pflanzen und der Baum gleichmäßig
+  verkleinert, der Rest auf den Umriss gezogen (die gemalten sind oft etwas höher, Teppiche steiler). Fehlende Ansichten
+  gespiegelt; Schreibtische: gemalt nur Ansicht 1 und 2, 0 und 3 gespiegelt (Unterschrank steht dadurch immer hinten).
+  Regale: nur von vorn gemalt, Rückseiten weiter gezeichnet. Holz von Schreibtischen und Regalen auf die Stilfarbe
+  umgefärbt. Weiter gezeichnet: alle Stühle, Bürostuhl, Computer, Monstera, Strelitzie, Wandregal, Asien-Schreibtisch,
+  Eiswelt-Möbel (Schreibtisch, Regal, Stockbett). Tanne mit Schnee ergänzt, Kamin-Rückseite in Steingrau.
+  Vorderebene (Aquarium, Vitrine) aus dem gemalten Bild: Rahmen bzw. vorderer Pfosten ganz, Glas als Schleier.
+- **Teppiche je Stil** (`rug_<Stil>`, 100 Herzen): Wiese (dunkelrot), Wald (grün), Savanne (Streifen), Bambuswald (blau),
+  Eiswelt (Stern), aus `Sprites/Möbel/Teppiche.webp`; der Büro-Teppich ist der orange daraus.
+
 ## 7. Offen
 
 - Eigene Bilder: Trophäen (statt Plaketten), Fassade des Haupthauses.
-- Neue Möbel: Aquarium mit gefangenen Fischen, Lampen, Bilderrahmen, Teppiche je Stil.
+- Neue Möbel: Lampen, Bilderrahmen; Dschungel-Teppich.
+- Gemalt fehlen noch: Stühle, Wandregal, Asien-Schreibtisch, Eiswelt-Möbel (weiß), Rückseiten der Regale.
 - Die Hütten in den Welten zeigen noch die alten Möbelbilder (hut_*).
 - Im Katalog stehen die Möbel auf dem Gras-und-Himmel-Hintergrund der Deko.
 

@@ -170,11 +170,58 @@ Schritt 1 (Karte) und Schritt 2 (Tiere) sind gebaut und im Browser getestet.
   Polarwolf + heult, Schneeeule + fliegt, Schneehase; public/assets/: Rentier, Walross). Von der fliegenden
   Schneeeule wird nur die Vorderansicht verwendet (die anderen Ansichten passen nicht zusammen).
 
+## Fangen mit mehr Schritten (24.11.2026)
+
+Bisher war es oft nur: Werkzeug holen, hingehen, fertig. Jetzt braucht jeder Fang ein paar Schritte, aber keine
+Geschicklichkeit (kein Reaktionstest, nichts geht verloren).
+
+- **Schneehase: Bau mit mehreren Löchern.** Jeder Hase hat einen Bau mit 2 bis 3 Löchern, die unterirdisch verbunden
+  sind. Er hoppelt in der Nähe herum. Kommt Henrik näher, flitzt er in das nächste Loch und kommt nach einer Weile aus
+  einem anderen wieder heraus (am liebsten aus einem, das weit von Henrik weg ist). Steht Henrik an einem offenen Loch,
+  schiebt er es mit der Aktionstaste zu (Schneehaufen). Das letzte Loch bleibt immer offen. Ist nur noch eines offen,
+  muss der Hase dort heraus: Er schaut erst ein paar Sekunden schnuppernd heraus, auch wenn Henrik danebensteht. Dann
+  fängt man ihn mit der Hand oder dem Kescher. Fängt man ihn draußen, geht das auch. Unsichtbarkeit (Tarnung) gibt es
+  nicht.
+- **Walross: wecken, Muscheln holen, füttern.** Die Wärmflasche weckt ein dösendes Walross. Es ist dann hungrig und
+  zeigt eine Muschel in der Sprechblase (eine Zeit lang, dann döst es wieder ein). Im flachen Wasser neben den Walrossen
+  blubbert es an ein paar Stellen. Über jeder Stelle schwebt ein Kescher-Zeichen. Ein Kescher-Schwung dort bringt eine Muschel. Mit 2 Muscheln füttert Henrik das
+  hungrige Walross (Aktionstaste), dann kommt es mit. Die Muscheln kann man auch vorher sammeln. Ein Walross, das
+  schläft, frisst nicht.
+- **Eisbär: Fisch ans Eisloch, mit dem Wind anschleichen.** Neben jedem Eisloch ist eine kleine Ablagestelle, darüber
+  schwebt eine Hinweisblase mit dem Fisch (wie der Salzstein bei den Yaks). Henrik legt dort den Fisch aus der Kiste ab
+  (Aktionstaste mit dem Fisch in der Hand, oder hinwerfen). Andre wollte ausdrücklich den Fisch aus der Kiste, nicht den
+  geangelten. Die Plätze gibt es nur, solange ein wilder Eisbär unterwegs ist (nach dem Fang verschwinden sie). Der Bär trottet hin, frisst (brummt) und legt sich danach satt hin und döst. Es weht Wind, man sieht ihn
+  an Schneefahnen und am Schnee, der in dieselbe Richtung treibt. Die Richtung wechselt selten. Steht Henrik so, dass
+  der Wind von ihm zum Bären weht, schnuppert der Bär erst (Warnung, „?“), steht dann brummend auf, trottet ein Stück
+  von Henrik weg und legt sich dort wieder hin. Kommt Henrik von der anderen Seite oder von der Seite, reicht Berühren.
+  Bilder in voller Größe (152 × 148, Platz für die Rückansicht), schlafend: polarbear_sleep (Andre, 24.11.2026).
+- **Walrosse auf den Inseln:** Auf beiden Inseln liegt fast immer mindestens ein Walross am Ufer (walrusIslands in
+  levels.js); fehlt eins 45 Sekunden lang, kommt ein neues, nur außer Sicht.
+- **Hasen hinter Bäumen:** Löcher und Hase bekommen eine Kontur, die durch Bäume scheint (wie beim Kanu).
+- **Schneeeule:** nachts sitzt immer genau eine oben in einer verschneiten Tanne der Taiga (nicht mehr über spawn; ist sie
+  gefangen, kommt nach 30 Sekunden eine neue). Laterne unter die Tanne.
+- **Schneeeule finden:** Weiter weg zeigt ein kleines „Huu ♪“ neben Henrik die Richtung, nah steigt es genau an ihrem
+  Platz auf und sie ruft öfter. Die Laterne darf etwas weiter weg stehen (110). Ruf: Andres Aufnahme.
+- **Töne (Andre, 24.11.2026):** animal_polarbear, animal_snowowl, animal_reindeer (mp3).
+- **Umsetzung:** SnowHare.js (Bau, Löcher als gezeichnete Platzhalter), Walrus.js (Hunger), PolarBear.js (fressen,
+  dösen, schnuppern, weiterziehen), Reindeer.js (Rundweg, Trampelspuren als ein Bild je Herde), IceCatch.js
+  (Aktionstaste und Leiste: Loch zuschieben, Walross füttern, Fisch ans Eisloch; Blubberstellen, Muscheln, Wind und
+  Schneefahnen). Die Muscheln gelten nur, solange Henrik in der Eiswelt ist.
+- **Rentiere: im Kreis auf ihrem Pfad.** Die Herde läuft ständig auf einem festen Rundweg durch die Tundra, schneller
+  als Henrik und groß (eine Runde dauert etwa 50 Sekunden). Hinterherlaufen bringt nichts, so wie beim Jaguar. Den
+  Pfad erkennt man an Trampelspuren im Schnee, die im Kreis verlaufen, mit Lücken (kurze Stücke, gut fürs Tablet). Man stellt sich an den Pfad und wartet still. Wer stillsteht, wird nicht bemerkt, und die
+  Herde trabt dicht vorbei: Dann das Lasso. Läuft Henrik auf die Herde zu, schreckt sie auf, weicht aus und läuft
+  danach wieder auf ihrem Pfad weiter. Kein Leittier, kein Nachzügler, kein Leckstein.
+
 ## Noch offen
+
+- **Eisbär nochmal überdenken (Andre, 24.11.2026):** Andre befürchtet, dass die Sache mit der Windrichtung niemand
+  versteht. Bis dahin: Steht Henrik am Fisch, traut sich der Bär nicht heran und wartet in einigem Abstand; der Bär geht
+  überall durch (außer Wasser), damit er nirgends hängenbleibt.
 
 - Ist die Kälte (3 Minuten) zu knapp, wenn nachts mehr Tiere unterwegs sind? Andre: „wird sich zeigen“.
 - Echte Bilder für Tundra-Boden, Gletscher, Kiesstrand, verschneite Tanne und Schneehöhle (jetzt Platzhalter aus
   tools/ice-grounds.py und tools/ice-placeholders2.py). Die Vogelfelsen sind die Schneefelsen aus dem Bambuswald.
 - Wasserflugzeug: beim Teststart direkt in der Eiswelt fehlt sein Bild (es liegt im Dschungel-Paket).
-- Eisbär tagsüber in der Schneehöhle (Hügel mit Atemwölkchen) fehlt noch; echter Eulenruf statt Platzhalter;
+- Eisbär tagsüber in der Schneehöhle (Hügel mit Atemwölkchen) fehlt noch; 
   Polarwolf-Geheul in der Eiswelt.

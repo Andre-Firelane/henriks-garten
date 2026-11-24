@@ -6,14 +6,21 @@
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { pawTexture } from './Wolf.js';
+import { glowTexture } from '../world/Fireflies.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { MAP_W, MAP_H, charAt, inPen, isBlocked } from '../world/map.js';
 
 const LIGHT_DIST = 70; // so nah (Kachel-Proportionen, y doppelt) muss die abgestellte Laterne am Fuchs stehen
 const SHOW_ALPHA = 0.55; // so deutlich ist er im Laternenlicht zu sehen (weiß im Schnee) ...
-const EYE_COLOR = 0xd8ff8a; // ... und so leuchten seine Augen
+const EYE_COLOR = 0xd8ff8a; // ... und so leuchten seine Augen ...
+const EYE_W = 2.5; // ... so groß (Welt-Pixel, etwa wie die gemalten Augen) ...
+const EYE_H = 1.5;
+const GLOW_SCALE = 0.11; // weicher Schein um jedes Auge (Bild der Glühwürmchen)
+const GLOW_ALPHA = 0.85;
+const BLINK_EVERY = [2.5, 5]; // ... so oft blinzeln sie ...
+const BLINK_TIME = 0.14; // ... so kurz
 // Lage der Augen im Bild (von den Füßen aus, ausgemessen in arcticfox.png): nach rechts unten bzw. links unten schauend
-const EYES = { 1: [[9, -36], [17, -34]], [-1]: [[-10, -38], [1, -38]] };
+const EYES = { 1: [[9, -36.5], [17, -39.5]], [-1]: [[-10, -38.5], [0, -38.5]] }; // (Seitenansicht: das hintere Auge sitzt höher, darunter die Nase)
 const TRACK_STEP = 0.55; // Abstand der Abdrücke (Kacheln; kleiner als beim Schneeleoparden)
 const TRACK_START = [8, 13]; // so weit (Kacheln) vom Versteck beginnt die Spur
 const TRACK_VIA = [1, 2]; // an so vielen Felsen oder Tannen führt sie vorbei
@@ -135,18 +142,22 @@ export default class ArcticFox extends Animal {
     return false;
   }
 
-  // zwei leuchtende Punkte (Augen im Laternenlicht)
+  // zwei leuchtende Augen im Laternenlicht: klein und mandelförmig wie die gemalten Augen, ein heller Kern mit einem
+  // feinen dunklen Rand (sonst sähe man sie am Tag auf dem Schnee nicht) und ein weicher Schein darum; ab und zu
+  // blinzeln sie
   showEyes(on) {
     if (on && !this.eyes) {
-      // auf hellem Schnee: leuchtend gelbgrün mit dunklem Rand (sonst sähe man sie am Tag nicht)
-      const eye = (i) => this.scene.add.circle(0, 0, 2, EYE_COLOR, 1).setStrokeStyle(1, 0x1d2a1a, 1).setData('i', i);
-      const halo = (i) => this.scene.add.circle(0, 0, 4.5, EYE_COLOR, 0.45).setBlendMode(Phaser.BlendModes.ADD).setData('i', i);
-      this.eyes = [halo(0), halo(1), eye(0), eye(1)];
+      const scene = this.scene;
+      const glow = (i) => scene.add.image(0, 0, glowTexture(scene)).setTint(EYE_COLOR).setBlendMode(Phaser.BlendModes.ADD).setScale(GLOW_SCALE).setData({ i, glow: true });
+      const eye = (i) => scene.add.ellipse(0, 0, EYE_W, EYE_H, 0xe4ff8c, 1).setStrokeStyle(0.4, 0x3d5a1c, 0.5).setData({ i });
+      const shine = (i) => scene.add.circle(0, 0, 0.35, 0xffffff, 1).setData({ i, shine: true });
+      this.eyes = [glow(0), glow(1), eye(0), eye(1), shine(0), shine(1)];
       for (const e of this.eyes) {
-        const to = e.radius > 3 ? 0.45 : 1;
+        const to = e.getData('glow') ? GLOW_ALPHA : 1;
         e.setAlpha(0);
-        this.scene.tweens.add({ targets: e, alpha: to, duration: 600 });
+        scene.tweens.add({ targets: e, alpha: to, duration: 700 });
       }
+      this.blinkIn = Phaser.Math.FloatBetween(...BLINK_EVERY);
     }
     if (!on && this.eyes) {
       for (const e of this.eyes) e.destroy();
@@ -189,9 +200,18 @@ export default class ArcticFox extends Animal {
     this.showEyes(this.lit);
     if (this.eyes) {
       const at = EYES[this.faceX < 0 ? -1 : 1];
+      // blinzeln: kurz zu (flach)
+      this.blinkIn -= this.scene.game.loop.delta / 1000;
+      if (this.blinkIn < -BLINK_TIME) this.blinkIn = Phaser.Math.FloatBetween(...BLINK_EVERY);
+      const open = this.blinkIn < 0 ? 0.15 : 1;
       for (const e of this.eyes) {
         const [dx, dy] = at[e.getData('i')];
-        e.setPosition(this.sprite.x + dx * Math.abs(this.sprite.scaleX), this.sprite.y + dy * this.sprite.scaleY).setDepth(this.sprite.depth + 0.5); // (das Bild ist verkleinert gezeichnet)
+        // (das Bild ist verkleinert gezeichnet; die Mitte des gemalten Auges liegt einen halben Bildpunkt weiter)
+        const x = this.sprite.x + (dx + 0.5) * Math.abs(this.sprite.scaleX);
+        const y = this.sprite.y + (dy + 0.5) * this.sprite.scaleY;
+        const k = e.getData('glow') ? GLOW_SCALE : 1;
+        e.setPosition(e.getData('shine') ? x + 0.4 : x, e.getData('shine') ? y - 0.3 : y).setScale(k, k * (e.getData('glow') ? Math.max(open, 0.5) : open)).setDepth(this.sprite.depth + (e.getData('glow') ? 0.4 : 0.5));
+        if (e.getData('shine')) e.setVisible(open === 1);
       }
     }
   }

@@ -7,7 +7,7 @@
 // Biss. Welche Art es ist, zeigt sich erst beim Herausholen (rollFish), die Größe sieht man am Schatten.
 import Phaser from 'phaser';
 import { tr } from '../i18n.js';
-import { BIG_SCALE, biteWait, fishFrame, fishKind, rollFish } from '../world/fishing.js';
+import { BIG_SCALE, RARITY_LOOK, biteWait, fishFrame, fishKind, rollFish } from '../world/fishing.js';
 import { worldToTile } from '../world/iso.js';
 
 const REACH = 90; // so nah (Welt-Pixel) muss der Schwarm am Kanu sein
@@ -108,7 +108,7 @@ export default class RodTool {
     this.state.shadow = null; // (reset gibt die Stelle sonst frei, take macht das selbst)
     this.reset();
     const { tx, ty } = worldToTile(f.x, f.y);
-    const skin = rollFish(tx, ty);
+    const { skin, rarity } = rollFish(tx, ty);
     scene.fishShadows.take(f); // im Schwarm bleibt der Rest
     this.splash(f.x, f.y);
     const a = scene.createAnimal('fish', f.x, f.y, f.big ? 1 : 0);
@@ -130,7 +130,16 @@ export default class RodTool {
     scene.time.delayedCall(450, () => {
       const box = document.getElementById('success');
       if (!box) return;
-      box.innerHTML = `<b>${size}${name}!</b><span>${fishImageHtml(scene, skin)}</span>`;
+      // Seltenheit: Rahmenfarbe und ein Schild (nur für diese Meldung, danach wieder die normale Tafel)
+      const look = RARITY_LOOK[rarity];
+      box.innerHTML = `<b>${size}${name}!</b><span>${fishImageHtml(scene, skin)}</span><span style="padding:2px 12px;border-radius:10px;font-weight:bold;font-size:14px;color:#fff;background:${look.color}">${look.name}</span>`;
+      box.style.borderColor = look.color;
+      box.style.boxShadow = `0 6px 0 ${look.dark}, 0 0 ${rarity === 'epic' ? 34 : 24}px ${look.glow}`;
+      clearTimeout(box.rarityReset);
+      box.rarityReset = setTimeout(() => {
+        box.style.borderColor = '';
+        box.style.boxShadow = '';
+      }, 3100);
       box.classList.remove('show');
       void box.offsetWidth; // Animation neu starten
       box.classList.add('show');

@@ -9,6 +9,8 @@ src/world/furnitureArt.js (Größe, Fußpunkt, Trophäen-Plätze je Ansicht)."""
 import json, math, os, random
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
+import furniture_art  # gemalte Bilder aus Sprites/Möbel/ (tools/furniture_art.py)
+
 HD = 4  # wie HD_SCALE in src/world/hd.js
 SS = 2  # Überabtastung (Kanten glätten)
 K = HD * SS  # Bildpunkte je alter Bildpunkt beim Zeichnen
@@ -344,20 +346,29 @@ def render(item, k, split=False):
     pad = 6
     half = max(ax - min(xs), max(xs) - ax) + pad
     bounds = (ax - half, min(ys) - pad - item.get('extra_top', 0), ax + half, max(ys) + pad)
+    scv = Canvas(bounds)
+    shadow(scv, w, d, item.get('shadow', 0.9))
     cv = Canvas(bounds)
-    shadow(cv, w, d, item.get('shadow', 0.9))
     fcv = Canvas(bounds) if split else None
     for p in order(prims):
         p.draw(fcv if split and p.front else cv)
-    big = cv.img.resize((cv.w // SS, cv.h // SS), Image.LANCZOS)
-    front = fcv.img.resize((fcv.w // SS, fcv.h // SS), Image.LANCZOS) if split else None
+    small = lambda c: c.img.resize((c.w // SS, c.h // SS), Image.LANCZOS)
+    sh, body = small(scv), small(cv)
+    front = small(fcv) if split else None
+    big = sh.copy()
+    big.alpha_composite(body)
     box = big.getbbox()
     if front is not None and front.getbbox():
         fb = front.getbbox()
         box = (0, min(box[1], fb[1]), big.width, max(box[3], fb[3]))
     big = trim(big, ax, ay, bounds, box)
+    crop = lambda im: im.crop((0, box[1], im.width, box[3]))
+    # Schatten und Körper (mit vorderen Teilen) einzeln, für die gemalten Bilder (tools/furniture_art.py)
+    whole = crop(body)
     if front is not None:
-        front = front.crop((0, box[1], front.width, box[3])) if front.getbbox() else None  # (nichts vorn: kein Bild)
+        whole.alpha_composite(crop(front))
+        front = crop(front) if front.getbbox() else None  # (nichts vorn: kein Bild)
+    big.info['shadow'], big.info['body'] = crop(sh), whole
     return big, front, f
 
 
@@ -1285,6 +1296,8 @@ add('drums_savanna', drums_savanna(), (2, 2), 4)
 add('fountain_asia', fountain_asia(), (1, 1), 4)
 add('tree_jungle', tree_jungle(), (1, 2), 4)
 add('igloo_ice', igloo_ice(), (2, 2), 4)
+for st in ('asia', 'forest', 'meadow', 'ice', 'savanna'):  # Teppiche je Stil (Bilder aus Sprites/Möbel/Teppiche.webp)
+    add(f'rug_{st}', rug(), (2, 2), 2)
 
 
 def main(only=None):
@@ -1297,6 +1310,19 @@ def main(only=None):
         for k in range(item['views']):
             has_slots = id in SLOTS and (k < 2 or item['views'] == 1)  # (von hinten: keine Plaketten)
             img, front, f = render(item, k, split=has_slots or id in SWIM)
+            views = furniture_art.ART.get(id, [])
+            if k < len(views):  # gemaltes Bild in den Umriss des gezeichneten, auf dessen Schatten
+                style = id.rsplit('_', 1)[-1]
+                painted, ratio, (px, pt) = furniture_art.fitted(views[k], img.info['body'], hexc(STYLES[style]['wood']) if style in STYLES else None)
+                if abs(ratio - 1) > 0.08:
+                    print(f'  {id} {k}: Seitenverhältnis gemalt/gezeichnet {ratio:.2f}')
+                info = img.info
+                img = Image.new('RGBA', painted.size, (0, 0, 0, 0))  # (größer, wenn das gemalte Bild übersteht)
+                img.alpha_composite(info['shadow'], (px, pt))
+                img.alpha_composite(painted)
+                img.info.update(ox=info['ox'] + px, oy=info['oy'] + pt)
+                if front is not None or id in SWIM:
+                    front = furniture_art.front_layer(id, painted) if (has_slots or id in SWIM) else None
             key = f'fn_{id}_{k}'
             for kk, im in ((key, img), (key + '_f', front)):
                 if im is None:

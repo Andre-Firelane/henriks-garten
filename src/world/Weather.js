@@ -35,6 +35,7 @@ const FOG_NEAR = 700; // nur über Wasser in dieser Entfernung (Welt-Pixel) von 
 const FOG_RISE = 9; // so schnell steigen sie (Pixel pro Sekunde)
 const FLAKES = 90; // so viele Schneeflocken sind gleichzeitig zu sehen
 const FLAKE_FALL = [18, 38]; // so schnell fallen sie (Pixel pro Sekunde)
+const FLAKE_WIND = 45; // so schnell treibt der Wind sie (Pixel pro Sekunde, Eiswelt, siehe IceCatch.js)
 const NIGHT_DARK = 0.45; // so dunkel ist es nachts in der Eiswelt
 const AURORA = [0x5dffb0, 0x48e0e8, 0xa47bff]; // Farben der Polarlichter (grün, türkis, violett)
 const AURORA_SHOW = [7, 16]; // so viele Sekunden leuchtet ein Band, wenn es auftaucht ...
@@ -186,14 +187,24 @@ export default class Weather {
 
   updateSnow(dt) {
     const cam = this.scene.cameras.main;
+    const vw = cam.width / cam.zoom;
     const vh = cam.height / cam.zoom;
     const g = this.snow;
     g.clear();
+    // Eiswelt: die Flocken treiben mit dem Wind (dieselbe Richtung wie die Schneefahnen, siehe IceCatch.js), fallen
+    // aber immer etwas nach unten; sonst ein Hauch Wind von rechts
+    const ice = this.scene.iceCatch;
+    const wx = ice ? ice.windX * FLAKE_WIND : -4;
+    const wy = ice ? ice.windY * FLAKE_WIND * 0.5 : 0;
+    const left = cam.width / 2 - vw / 2 - 20;
+    const right = cam.width / 2 + vw / 2 + 20;
     for (let i = 0; i < this.flakes.length; i++) {
       const f = this.flakes[i];
       f.sway += dt;
-      f.y += f.speed * dt;
-      f.x += Math.sin(f.sway * 1.3) * 10 * dt - 4 * dt; // schaukelt, ein Hauch Wind von rechts
+      f.y += Math.max(FLAKE_FALL[0] * 0.4, f.speed + wy) * dt;
+      f.x += (Math.sin(f.sway * 1.3) * 10 + wx * (0.7 + f.r * 0.3)) * dt; // schaukelt; große (nahe) Flocken treiben schneller
+      if (f.x < left) f.x = right; // seitlich hinausgeweht: kommt auf der anderen Seite wieder herein
+      else if (f.x > right) f.x = left;
       if (f.y > cam.height / 2 + vh / 2 + 10) this.flakes[i] = this.newFlake(false);
       g.fillStyle(0xffffff, 0.55 + f.r * 0.25);
       g.fillCircle(f.x, f.y, f.r);

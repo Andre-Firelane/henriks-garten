@@ -13,7 +13,9 @@ export default class Net extends ZoneTool {
   }
 
   use() {
-    if (super.use()) this.showSwoosh();
+    if (!super.use()) return;
+    this.showSwoosh();
+    if (this.id === 'net') this.scene.iceCatch?.netSwing(this.zone); // Eiswelt: an einer Blubberstelle eine Muschel
   }
 
   draw() {

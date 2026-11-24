@@ -1,9 +1,8 @@
 // Fisch und Ball für die Robben (Eiswelt): werden im Bogen geworfen wie das Lasso (gleiche Reichweite, genau in
 // Laufrichtung). Trifft der Wurf eine Robbe, die sich genau das wünscht, schnappt sie ihn und folgt Henrik (siehe
 // Seal.js); trifft er eine, die sich das andere wünscht, schüttelt sie den Kopf. Daneben geworfen: es platscht ins
-// Wasser bzw. fällt in den Schnee – nach WAIT Sekunden kann man noch einmal werfen. Eisbär (nachts): ein Fisch, der neben
-// einem Eisloch landet, bleibt dort als Köder liegen (dropBearBait in GardenScene); lauert der Eisbär dann am Loch,
-// fängt ihn der nächste Fisch, den man ihm zuwirft (siehe PolarBear.js).
+// Wasser bzw. fällt in den Schnee – nach WAIT Sekunden kann man noch einmal werfen. Eisbär (nachts): ein Fisch, der an
+// der Ablagestelle neben einem Eisloch landet, bleibt dort als Köder liegen (dropBearBait in GardenScene, IceCatch.js).
 import ZoneTool from './ZoneTool.js';
 import { charAt } from '../world/map.js';
 import { worldToTile } from '../world/iso.js';
@@ -37,7 +36,7 @@ export default class TreatTool extends ZoneTool {
     const along = Math.hypot(ax, ay * 2);
     let best = null;
     for (const a of this.scene.animals) {
-      const target = (a.species === 'seal' && a.mode === 'peek') || (this.id === 'herring' && a.species === 'polarbear' && a.lurk);
+      const target = (a.species === 'seal' && a.mode === 'peek');
       if (!target || a.state !== 'wild') continue;
       const dx = a.x - p.x;
       const dy = a.y - p.y;
@@ -73,7 +72,7 @@ export default class TreatTool extends ZoneTool {
     const z = this.zone;
     const seal = this.scene.animals.find((a) => a.species === 'seal' && a.state === 'wild' && this.zoneDistance(a) < this.radius * 1.5);
     seal?.refuse?.(this.id);
-    if (this.id === 'herring' && this.scene.dropBearBait?.(z.x, z.y)) return; // liegt jetzt als Köder am Eisloch
+    if (this.id === 'herring' && this.scene.dropBearBait?.(z.x, z.y)) return; // liegt jetzt an der Ablagestelle am Eisloch
     const { tx, ty } = worldToTile(z.x, z.y);
     if (charAt(tx, ty) === '~') {
       const ring = this.scene.add.ellipse(z.x, z.y, 12, 5).setStrokeStyle(1.5, 0xffffff, 0.9).setDepth(z.y);

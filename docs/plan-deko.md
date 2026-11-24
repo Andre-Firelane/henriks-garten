@@ -67,11 +67,17 @@ Busch aus `OBJECTS`.
    „Aufheben“ (nichts ausgewählt). Nichts geht verloren (kein Verkaufen, kein Wegwerfen). Später vielleicht „Alles
    einsammeln“ je Abschnitt.
 6. **Antippen** (umgesetzt 23.11.2026, Andre: am Tablet war das Davorstellen zu fummelig): Im Setzen-Modus eine Kachel
-   bis zu 2 Kacheln um Henrik herum (auch schräg, `REACH` in DecorMode.js) antippen bzw. am PC anklicken. Liegt dort
+   bis zu 2 Kacheln um Henrik herum (auch schräg; seit 7. ohne Reichweite) antippen bzw. am PC anklicken. Liegt dort
    gesetzte Deko (oder trifft man ihr Bild, z. B. die Baumkrone), wird sie aufgehoben; sonst landet das gewählte Teil
    dort (große Teile reichen von Henrik weg). Geht es nicht, blinkt die Kachel rot mit kurzem Hinweis („Hier geht das
    nicht“, „Geh näher heran“, Grund bei Buden). Auch in der linken Bildschirmhälfte: ein kurzes, ruhiges Tippen
    (unter 0,3 s) zählt dort als Tippen, nicht als Laufen. Die Vorschau vor Henrik und die Aktionstaste gibt es weiter.
+7. **Ziehen** (umgesetzt 24.11.2026, Andre: Antippen geht, Ziehen wie mit der Maus ist besser): Tablet und Handy, rechte
+   Bildhälfte. Mit einem Teil in der Hand folgt die Vorschau dem Finger (etwas darüber, sonst verdeckt ihn der Finger),
+   beim Loslassen landet es dort. Mit der Hand greift der Finger eine gesetzte Deko und trägt sie mit; nach dem Absetzen
+   ist wieder die Hand gewählt (Buden werden nur aufgehoben, der Abschnitt baut sich neu auf). Ein Teil lässt sich auch
+   direkt aus der Leiste aufs Bild ziehen; zurück in die Leiste gezogen, passiert nichts. Kurzes Antippen wie unter 6.
+   Seitdem gibt es keine Reichweite um Henrik mehr (wie mit der Maus: man sieht ohnehin nur das Bild um ihn herum).
 
 Der Setzen-Modus darf andere Aktionen am selben Ort nicht schlucken. Steht Henrik zum Beispiel an einem Gehegeschild,
 gilt die Aktionstaste wie bisher dem Schild, und die Vorschau ist rot.

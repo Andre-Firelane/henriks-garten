@@ -28,12 +28,14 @@ So entstanden (V = "Tiersprites Test/views", A = public/assets):
   python tools/static-sheet.py 80 64 50 60 $A/hedgehog.png $V/hedgehog_v0.png _v3 _v2 _v1   (Apfel-Igel: Höhe 56 wegen des Apfels)
   Eiswelt (alle mit cutout-views.py ... 1 4 schatten-grau,loecher,alle; Nebenbilder mit der Höhe, die derselbe Faktor
   wie beim Grundbild ergibt):
-  Eisbär.webp -> polarbear: 112 104 92 100; Eisbär wartet.webp -> polarbear_wait: 112 104 81 100
-  Walross.webp -> walrus: 104 100 84 96; Walross schläft.webp -> walrus_sleep: 104 100 60 96
-  Rentier.webp -> reindeer: 80 112 100 108; Polarfuchs.webp -> arcticfox: 72 72 56 68
+  Eisbär.webp -> polarbear: 152 148 124 144; Eisbär wartet.webp -> polarbear_wait: 152 148 109 144;
+    EIsbär schläft.webp -> polarbear_sleep: 152 148 90 144 (volle Größe statt scale 0.75 im Spiel, Platz für die Rückansicht)
+  Walross.webp -> walrus: 136 128 108 123; Walross schläft.webp -> walrus_sleep: 136 128 77 123 (volle Größe)
+  Rentier.webp -> reindeer: 92 128 114 123 (etwas größer als früher 100); Polarfuchs.webp -> arcticfox: 72 72 56 68
   Polarwolf.webp -> arcticwolf: 80 80 68 76; Polarwolf heult.webp -> arcticwolf_howl: 80 80 69 76
-  Papageientaucher.webp -> puffin: 48 52 42 48; Papageientaucher fliegt.webp -> puffin_fly: 64 60 36 58
-  Schneeeule.webp -> snowowl: 56 64 50 60; Schneehase.webp -> snowhare: 56 60 50 56
+  Papageientaucher.webp -> puffin: 64 68 55 63 (_v3 gespiegelt); Papageientaucher fliegt.webp -> puffin_fly: 84 78 47 76
+    (_v1 und _v3 gespiegelt: dort schaute der Schnabel nach rechts)
+  Schneeeule.webp -> snowowl: 56 64 50 60; Schneehase.webp -> snowhare: 76 82 68 76 (größer statt scale 0.68 im Spiel)
   Schneeeule fliegt.webp -> snowowl_fly: 64 56 34 52, nur die Vorderansicht _v1 (die anderen passen nicht zusammen):
     _d0 = _v1, _d1 = _v1 gespiegelt, Reihenfolge _d0 _d1 _d0 _d1"""
 import sys

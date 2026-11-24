@@ -55,16 +55,16 @@
         #btn-book { height: 48px; padding: 0 10px; } #btn-book .book-label { display: none; }
       }
       /* erste Begegnung mit einer Tierart: kleine Blase mit dem Werkzeug über dem Tier (antippen: Fang-Tipp) */
-      #encounter, #beaver-hint, #yak-hint, #oak-hint {
+      #encounter, #beaver-hint, #yak-hint, #oak-hint, #bear-hint {
         position: fixed; z-index: 4; display: none; align-items: center; gap: 2px; padding: 3px 6px 3px 4px; cursor: pointer;
         transform: translate(-50%, calc(-100% - 10px)); background: rgba(255, 248, 230, 0.82); border: 2px solid rgba(107, 66, 36, 0.7); border-radius: 12px;
       }
-      #encounter::after, #beaver-hint::after, #yak-hint::after, #oak-hint::after {
+      #encounter::after, #beaver-hint::after, #yak-hint::after, #oak-hint::after, #bear-hint::after {
         content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px;
         border: 6px solid transparent; border-top-color: rgba(107, 66, 36, 0.7); border-bottom: 0;
       }
-      #encounter.show, #beaver-hint.show, #yak-hint.show, #oak-hint.show { display: flex; animation: enc-in 0.3s ease-out; }
-      #encounter img, #beaver-hint img, #yak-hint img, #oak-hint img { width: 28px; height: 28px; object-fit: contain; }
+      #encounter.show, #beaver-hint.show, #yak-hint.show, #oak-hint.show, #bear-hint.show { display: flex; animation: enc-in 0.3s ease-out; }
+      #encounter img, #beaver-hint img, #yak-hint img, #oak-hint img, #bear-hint img { width: 28px; height: 28px; object-fit: contain; }
       #beaver-hint .animal, #yak-hint .animal { margin: 0; }
       @keyframes enc-in { from { opacity: 0; } }
       /* nächste Starter-Aufgabe oben links unter dem Zähler (antippen öffnet das Tierbuch) */
@@ -949,7 +949,9 @@
         position: relative; width: 78px; flex: none; padding: 4px 4px 3px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
         background: #f3e2c0; border: 2px solid #8a5a30; border-radius: 10px; color: #3c2814; font: inherit;
       }
-      #decor-bar .decor-item img { height: 38px; max-width: 64px; object-fit: contain; }
+      #decor-bar .decor-item img { height: 38px; max-width: 64px; object-fit: contain; pointer-events: none; }
+      /* Teile lassen sich mit dem Finger aus der Leiste aufs Bild ziehen; Scrollen und Ziehen trennt DecorMode.barMove */
+      #decor-bar .decor-item { touch-action: none; }
       #decor-bar .decor-item.sel { background: #ffe9a8; border-color: #ffd84a; box-shadow: 0 0 0 2px #ffd84a; }
       #decor-bar .n { position: absolute; top: 2px; right: 4px; padding: 0 4px; border-radius: 8px; background: #3c2814; color: #fff8e6; font-size: 11px; }
       #decor-bar .key { position: absolute; top: 3px; left: 5px; font-size: 10px; opacity: 0.55; }
@@ -962,17 +964,19 @@
          Drehen links, Fertig rechts, die Teile dazwischen wischt man seitlich */
       @media (max-height: 500px), (max-width: 600px) {
         #decor-bar, body.touch #decor-bar {
-          top: auto; bottom: 8px; left: 30%; right: 150px; transform: none; max-height: none;
-          flex-direction: row; align-items: center; padding: 5px; gap: 5px;
+          top: auto; bottom: 8px; left: 22%; right: 140px; transform: none; max-height: none;
+          flex-direction: row; align-items: center; padding: 6px; gap: 6px;
         }
         #decor-bar .decor-title, #decor-bar .name { display: none; }
-        #decor-bar .decor-items { flex-direction: row; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; gap: 5px; }
-        #decor-bar .decor-item { width: 50px; } #decor-bar .decor-item img { height: 28px; max-width: 42px; }
-        #decor-bar .decor-done { flex: none; font-size: 12px; padding: 10px 8px; }
-        #decor-bar .decor-head { writing-mode: vertical-rl; transform: rotate(180deg); padding: 0 2px; border-top: none; border-right: 1px solid rgba(255, 248, 230, 0.25); font-size: 10px; }
-        #decor-bar .decor-order { flex: none; font-size: 12px; padding: 10px 6px; }
+        #decor-bar .decor-items { flex-direction: row; flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; gap: 6px; }
+        #decor-bar .decor-item { width: 66px; min-height: 60px; justify-content: center; }
+        #decor-bar .decor-item img { height: 42px; max-width: 56px; }
+        #decor-bar .n { font-size: 13px; padding: 1px 5px; }
+        #decor-bar .decor-done { flex: none; font-size: 15px; padding: 0 12px; height: 60px; }
+        #decor-bar .decor-head { writing-mode: vertical-rl; transform: rotate(180deg); padding: 0 2px; border-top: none; border-right: 1px solid rgba(255, 248, 230, 0.25); font-size: 11px; }
+        #decor-bar .decor-order { flex: none; font-size: 15px; padding: 0 10px; height: 60px; }
         #decor-bar .decor-empty { width: auto; flex: none; max-width: 90px; }
-        #decor-bar .decor-turn { position: static; flex: none; width: 46px; height: 46px; font-size: 9px; } #decor-bar .decor-turn .turn-icon { font-size: 20px; }
+        #decor-bar .decor-turn { position: static; flex: none; width: 60px; height: 60px; font-size: 11px; } #decor-bar .decor-turn .turn-icon { font-size: 26px; }
       }
       /* Handy hochkant: über dem Aktionsknopf, über die ganze Breite */
       @media (max-width: 600px) and (orientation: portrait) {
@@ -1240,6 +1244,7 @@
     <div id="encounter"></div>
     <div id="beaver-hint"></div>
     <div id="yak-hint"></div>
+    <div id="bear-hint"></div>
     <div id="oak-hint"></div>
     <div id="tip"></div>
     <div id="success"></div>

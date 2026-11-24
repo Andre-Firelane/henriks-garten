@@ -724,6 +724,8 @@ export const LEVELS = {
     toolSpots: [],
     exits: [], // hin und zurück nur mit dem Wasserflugzeug
     snow: true, // es rieselt immer leicht Schnee (siehe Weather.js)
+    // auf den beiden Inseln liegt fast immer mindestens ein Walross am Ufer (siehe updateIslands in IceCatch.js)
+    walrusIslands: [{ tx0: 3, tx1: 16, ty0: 4, ty1: 12 }, { tx0: 30, tx1: 42, ty0: 3, ty1: 12 }],
     // Bodenzonen: Gletscher, Tundra (unten und links am Gletscher vorbei) und die Kiesstrände der Walrosse (Westküste am offenen Meer und
     // am Südufer von Insel B); Platzhalter-Bilder aus tools/ice-grounds.py und tools/ice-placeholders2.py
     grounds: [
@@ -758,8 +760,8 @@ export const LEVELS = {
       night: {
         rows: freezeSea(ICE_ROWS, 3, ICE_HOLES),
         iceHoles: ICE_HOLES, // dort erscheinen die Pinguine nachts meistens
-        // nachts ruft die Schneeeule (nur nachts, siehe SnowOwl.js)
-        spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.6, arcticfox: 0.3, snowowl: 0.3, reindeer: 0.5, walrus: 0.45, polarbear: 0.35 } },
+        // nachts ruft die Schneeeule: immer genau eine, oben in einer Tanne (nicht über spawn, siehe updateOwl in IceCatch.js)
+        spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.6, arcticfox: 0.3, reindeer: 0.5, walrus: 0.45, polarbear: 0.35 } },
         floes: null, // die Schollen sind ins Eis eingefroren
         seaIce: ['sea_ice0', 'sea_ice1', 'sea_ice2'], // helle, glatte Eisfläche (tools/sea-ice.py)
         night: true, // dunkel, Polarlicht am Himmel, warmes Licht an der Station (siehe Weather.js)

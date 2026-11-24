@@ -80,7 +80,7 @@ export const FURNITURE_STYLES = [
   { id: 'jungle', name: tr('Dschungel', 'Jungle') },
   { id: 'ice', name: tr('Eiswelt', 'Ice World') },
 ];
-const FURNITURE_CHARS = [...'⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒱⒲⒳⒴⒵'];
+const FURNITURE_CHARS = [...'⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒱⒲⒳⒴⒵ⒶⒷⒸⒹⒺ'];
 // Bilder aus tools/furniture-sprites.py (FURNITURE_ART: Grundfläche, Ansichten, Fußpunkt). showcase: so viele Trophäen
 // passen darauf (Plätze je Ansicht in FURNITURE_ART); welche darauf stehen, steht an der gesetzten Deko (trophies: [Ids]).
 // computer: dort startet man Events (wie früher am festen Hauptrechner)
@@ -115,6 +115,8 @@ furniture.drums_savanna = { name: tr('Trommelecke', 'Drum corner'), cost: 300, s
 furniture.fountain_asia = { name: tr('Zimmerbrunnen', 'Indoor fountain'), cost: 300, style: 'asia', splash: true };
 furniture.tree_jungle = { name: tr('Baum mit Ara', 'Tree with macaw'), cost: 350, style: 'jungle', parrot: true };
 furniture.igloo_ice = { name: tr('Iglu-Leseecke', 'Igloo reading nook'), cost: 400, style: 'ice' };
+// Teppiche je Stil (liegen unten wie der Büro-Teppich; Bilder aus Sprites/Möbel/Teppiche.webp)
+for (const style of ['meadow', 'forest', 'savanna', 'asia', 'ice']) furniture[`rug_${style}`] = { name: tr('Teppich', 'Rug'), cost: 100, style, floor: true };
 Object.entries(furniture).forEach(([id, f], i) => {
   const art = FURNITURE_ART[id];
   const a = art.art[0];

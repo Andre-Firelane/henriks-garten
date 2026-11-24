@@ -1,81 +1,227 @@
 // Eisbär (Eiswelt, nur nachts; siehe spawn in levels.js unter ice.seasons.night): streift über das zugefrorene Meer und
-// hält Abstand zu Henrik (langsamer als er, aber so kommt man nicht an ihn heran). Wirft Henrik einen Fisch an ein
-// Eisloch (dropBearBait in GardenScene, aus TreatTool), trottet der Eisbär dorthin, setzt sich vor das Loch und lauert
-// (polarbear_wait) – jetzt flieht er nicht mehr. Wirft man ihm dann noch einen Fisch zu, schnappt er ihn und folgt
-// Henrik. Nach LURK_TIME gibt er auf und streift weiter.
+// hält Abstand zu Henrik (langsamer als er, aber so kommt man nicht an ihn heran). Fangen (docs/plan-eiswelt.md): einen
+// selbst geangelten großen Fisch an ein Eisloch legen (placeBearFish in IceCatch.js). Der Bär trottet hin, frisst ihn
+// (polarbear_wait) und legt sich danach satt hin und döst (polarbear_sleep, bis es das Bild gibt das sitzende mit 💤).
+// Jetzt zählt der Wind (IceCatch.js): Weht er von Henrik zum Bären, schnuppert der Bär erst (fangbar), dann steht er auf,
+// trottet ein Stück von Henrik weg und legt sich dort wieder hin. Kommt Henrik von der anderen Seite, reicht Berühren.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
+import { worldToTile } from '../world/iso.js';
+import { MAP_W, MAP_H, charAt } from '../world/map.js';
 
-const SIZE = 0.75; // deutlich größer als die anderen Tiere (0,5)
-const LURK_TIME = 90; // so lange (Sekunden) lauert er am Eisloch
+const SIZE = 0.5; // (das Bild ist in voller Größe gezeichnet, 1,35-fach wie früher bei 0,75: so bleibt es scharf)
+const BABY_SIZE = 0.27;
 const TO_BAIT_SPEED = 1.6; // so viel schneller als sonst trottet er zum Fisch
 const ARRIVED = 10; // so nah am Fisch: angekommen
+const EAT_TIME = 4; // so lange frisst er
+const SLEEP_TIME = 180; // so lange döst er danach (dann streift er wieder umher)
+const SNORE_EVERY = 2.6; // so oft steigt beim Dösen ein 💤 auf
+const SMELL_DIST = 320; // so weit riecht er Henrik mit dem Wind (Kachel-Proportionen, y doppelt)
+const SNIFF_TIME = 2.5; // so lange schnuppert er, bevor er aufsteht
+const WARY_DIST = 230; // steht Henrik so nah am Fisch, traut sich der Bär nicht heran ...
+const WARY_STOP = 260; // ... und wartet so weit vom Fisch, bis Henrik weggeht
+const SHIFT_DIST = 190; // so weit trottet er danach weg, bevor er sich wieder hinlegt
+const GROWL_DIST = 600; // so weit hört man ihn brummen ...
+const GROWL_VOLUME = 0.55; // ... ganz nah so laut
+const SHIFT_MAX = 8; // spätestens nach so vielen Sekunden legt er sich wieder hin (falls etwas im Weg ist)
 
 export default class PolarBear extends Animal {
   constructor(scene, x, y) {
     super(scene, x, y, 'polarbear');
     this.sprite.setScale(SIZE);
-    this.lurk = null; // { until, faceX }
+    this.mode = 'roam'; // 'roam' → 'bait' → 'eat' → 'sleep' ⇄ 'sniff' → 'shift' → 'sleep' … → 'roam'
+    this.modeTime = 0;
+    this.sleepLeft = 0;
+    this.sniff = 0;
+    this.snoreIn = 0;
+  }
+
+  get resting() {
+    return this.mode === 'sleep' || this.mode === 'sniff';
+  }
+
+  // offenes Wasser (Eislöcher) oder Kartenrand?
+  water(x, y) {
+    const { tx, ty } = worldToTile(x, y);
+    return tx < 1 || ty < 1 || tx > MAP_W - 2 || ty > MAP_H - 2 || charAt(tx, ty) === '~';
+  }
+
+  // wild geht er überall durch (Felsen, Bäume, Schollen …), nur nicht ins Wasser und nicht aus der Karte: so bleibt er
+  // nirgends hängen
+  blocked(x, y) {
+    if (this.state === 'wild') return this.water(x, y);
+    return super.blocked(x, y);
   }
 
   canBeCaughtNow() {
-    return this.state === 'wild' && !!this.lurk;
+    return this.state === 'wild' && this.resting;
   }
 
   canDespawn() {
-    return !this.lurk && this.scene.bearBait?.bear !== this;
+    return this.mode === 'roam' && this.scene.bearBait?.bear !== this;
   }
 
   shouldFlee(player) {
-    if (this.lurk || this.scene.bearBait?.bear === this) return false;
+    if (this.mode !== 'roam') return false;
     return super.shouldFlee(player);
+  }
+
+  // auf den Weg zum Fisch bzw. weg: einfach hinübergehen, wenn etwas im Weg ist (das Eis ist frei; es geht nur um
+  // Steine am Rand)
+  walkTo(tx, ty, speed, dt) {
+    const dx = tx - this.x;
+    const dy = ty - this.y;
+    const d = Math.hypot(dx, dy);
+    if (d < 1) return d;
+    const step = Math.min(d, speed * dt);
+    this.faceX = dx < 0 ? -1 : 1;
+    this.faceY = dy < 0 ? -1 : 1;
+    if (!this.move((dx / d) * step, (dy / d) * step)) {
+      this.x += (dx / d) * step;
+      this.y += (dy / d) * step;
+    }
+    return d;
   }
 
   updateFree(dt, player) {
     if (this.state !== 'wild') return super.updateFree(dt, player);
-    const now = this.scene.time.now / 1000;
-    if (this.lurk) {
-      this.faceX = this.lurk.faceX;
-      this.faceY = 1;
-      if (now >= this.lurk.until) this.lurk = null;
+    const scene = this.scene;
+    if (this.mode === 'eat') {
+      this.modeTime -= dt;
+      if (this.modeTime <= 0) {
+        this.mode = 'sleep';
+        this.sleepLeft = SLEEP_TIME;
+        this.waryShown = false;
+        scene.bearAsleep?.(this);
+      }
       return false;
     }
-    // liegt ein Fisch am Eisloch und holt ihn noch kein anderer: hin
-    const bait = this.scene.bearBait;
-    if (bait && (!bait.bear || bait.bear === this || !this.scene.animals.includes(bait.bear))) {
-      bait.bear = this;
-      const dx = bait.x - this.x;
-      const dy = bait.y - this.y;
-      const d = Math.hypot(dx, dy);
-      if (d < ARRIVED) {
-        this.lurk = { until: now + LURK_TIME, faceX: bait.hole.x < this.x ? -1 : 1 };
-        this.scene.bearArrived?.(this);
+    if (this.resting || this.mode === 'shift') {
+      this.sleepLeft -= dt;
+      if (this.sleepLeft <= 0) {
+        this.mode = 'roam'; // ausgeschlafen: streift wieder umher
         return false;
       }
-      const step = Math.min(d, this.kind.speed * TO_BAIT_SPEED * dt);
-      this.faceX = dx < 0 ? -1 : 1;
-      this.faceY = dy < 0 ? -1 : 1;
-      if (!this.move((dx / d) * step, (dy / d) * step)) {
-        // etwas im Weg: einfach hinübergehen (das Eis ist frei; es geht nur um Steine am Rand)
-        this.x += (dx / d) * step;
-        this.y += (dy / d) * step;
+    }
+    if (this.resting) {
+      this.snoreIn -= dt;
+      if (this.mode === 'sleep' && this.snoreIn <= 0) {
+        this.snoreIn = SNORE_EVERY;
+        const t = scene.add.text(this.x + 22, this.y - 54, '💤', { fontSize: '14px', resolution: 4 }).setOrigin(0.5).setDepth(100000).setAlpha(0.9);
+        scene.tweens.add({ targets: t, y: t.y - 14, x: t.x + 6, alpha: 0, duration: 1800, onComplete: () => t.destroy() });
+      }
+      // riecht er Henrik? (der Wind weht von Henrik zu ihm)
+      const smells = scene.iceCatch?.smells(player, this, SMELL_DIST);
+      if (smells) {
+        if (this.mode === 'sleep') {
+          this.mode = 'sniff';
+          this.showSniff();
+        }
+        this.sniff += dt;
+        if (this.sniff >= SNIFF_TIME) this.startShift(player);
+      } else {
+        this.sniff = Math.max(0, this.sniff - dt);
+        if (this.mode === 'sniff' && this.sniff <= 0) this.mode = 'sleep';
+      }
+      return false;
+    }
+    if (this.mode === 'shift') {
+      this.modeTime -= dt;
+      const d = this.walkTo(this.shiftTo.x, this.shiftTo.y, this.kind.speed * TO_BAIT_SPEED, dt);
+      if (d < ARRIVED || this.modeTime <= 0) {
+        this.mode = 'sleep';
+        this.sniff = 0;
       }
       return true;
     }
+    // liegt ein Fisch am Eisloch und holt ihn noch kein anderer: hin
+    const bait = scene.bearBait;
+    if (bait && (!bait.bear || bait.bear === this || !scene.animals.includes(bait.bear))) {
+      bait.bear = this;
+      this.mode = 'bait';
+      // steht Henrik am Fisch, traut er sich nicht heran: wartet in einigem Abstand und schaut herüber
+      const henrikAtBait = Math.hypot(player.x - bait.x, (player.y - bait.y) * 2) < WARY_DIST;
+      const toBait = Math.hypot(this.x - bait.x, (this.y - bait.y) * 2);
+      if (henrikAtBait && toBait < WARY_STOP) {
+        this.faceX = player.x < this.x ? -1 : 1;
+        this.faceY = player.y < this.y ? -1 : 1;
+        if (!this.waryShown) {
+          this.waryShown = true;
+          scene.bearWary?.(this);
+        }
+        return false;
+      }
+      const d = this.walkTo(bait.x, bait.y, this.kind.speed * TO_BAIT_SPEED, dt);
+      if (d < ARRIVED) {
+        this.mode = 'eat';
+        this.modeTime = EAT_TIME;
+        this.growl(player);
+        this.faceX = bait.hole.x < this.x ? -1 : 1;
+        this.faceY = 1;
+        scene.bearArrived?.(this);
+        return false;
+      }
+      return true;
+    }
+    if (this.mode === 'bait') this.mode = 'roam'; // Fisch weg (z. B. Tag geworden)
     return super.updateFree(dt, player);
   }
 
+  // gerochen: aufstehen und ein Stück von Henrik weg trotten, dort wieder hinlegen
+  startShift(player) {
+    // weg von Henrik, auf eine Stelle, die kein Wasser ist (sonst ein anderer Winkel)
+    const away = Math.atan2(this.y - player.y, this.x - player.x);
+    this.shiftTo = null;
+    for (const turn of [0, 0.5, -0.5, 1, -1, 1.5, -1.5]) {
+      const a = away + turn + Phaser.Math.FloatBetween(-0.2, 0.2);
+      const to = { x: this.x + Math.cos(a) * SHIFT_DIST, y: this.y + (Math.sin(a) * SHIFT_DIST) / 2 };
+      if (!this.water(to.x, to.y)) {
+        this.shiftTo = to;
+        break;
+      }
+    }
+    this.shiftTo ??= { x: this.x, y: this.y };
+    this.mode = 'shift';
+    this.modeTime = SHIFT_MAX;
+    this.sniff = 0;
+    this.growl(player);
+    this.scene.bearSmelled?.(this);
+  }
+
+  // Brummen (animal_polarbear), je näher Henrik ist, desto lauter
+  growl(player) {
+    const scene = this.scene;
+    const d = Math.hypot(player.x - this.x, (player.y - this.y) * 2);
+    if (d > GROWL_DIST || !scene.cache.audio.exists('animal_polarbear')) return;
+    scene.sound.play('animal_polarbear', { volume: GROWL_VOLUME * (0.3 + 0.7 * (1 - d / GROWL_DIST)), detune: Phaser.Math.Between(-80, 80) });
+  }
+
+  // schnuppert: kleines "?" über dem Kopf
+  showSniff() {
+    const t = this.scene.add.text(this.x + 16 * this.faceX, this.y - 66, '?', { fontFamily: 'Trebuchet MS, Arial', fontSize: '18px', fontStyle: 'bold', color: '#ffffff', stroke: '#33465c', strokeThickness: 4, resolution: 4 }).setOrigin(0.5).setDepth(100000);
+    this.scene.tweens.add({ targets: t, y: t.y - 10, alpha: { from: 1, to: 0 }, duration: 1400, onComplete: () => t.destroy() });
+  }
+
   catch() {
-    this.lurk = null;
+    this.mode = 'roam';
     super.catch();
+  }
+
+  restore(state) {
+    super.restore(state);
+    this.mode = 'roam';
   }
 
   render(moving) {
     super.render(moving);
-    this.sprite.setScale(this.baby ? 0.4 : SIZE);
+    this.sprite.setScale(this.baby ? BABY_SIZE : SIZE);
     const f = this.kind.frames;
     const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
-    if (this.state === 'wild' && this.lurk) this.sprite.setTexture('polarbear_wait', frame).setFlipX(false);
-    else if (this.sprite.texture.key === 'polarbear_wait') this.sprite.setTexture('polarbear', frame);
+    const wild = this.state === 'wild';
+    // liegt: eigenes Bild, falls es das schon gibt (sonst sitzend wie beim Fressen); schnuppert: sitzt auf
+    const sleepKey = this.scene.textures.exists('polarbear_sleep') ? 'polarbear_sleep' : 'polarbear_wait';
+    const key = wild && this.mode === 'sleep' ? sleepKey : wild && (this.mode === 'eat' || this.mode === 'sniff') ? 'polarbear_wait' : null;
+    if (key) this.sprite.setTexture(key, frame).setFlipX(false);
+    else if (this.sprite.texture.key !== 'polarbear') this.sprite.setTexture('polarbear', frame);
   }
 }

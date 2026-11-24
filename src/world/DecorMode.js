@@ -32,10 +32,14 @@ const RESERVED = 0xffa040;
 const FREE = 0x9dff8a; // Kacheln, auf die man bauen darf
 const KEEP_CLEAR = 6; // so viel Platz (Welt-Pixel, Höhe doppelt) bleibt um eine feste Deko frei zu Henrik und den Tieren
 const BOOTH_GAP = 3; // so viele Kacheln liegen mindestens zwischen zwei Buden (sonst teilen sie sich die Plätze davor)
-const REACH = 2;
-const ROOM = 'house'; // Haupthaus: dort nur Möbel (indoor in decor.js), draußen nur Deko // Antippen: so viele Kacheln um Henrik herum erreicht man (in jede Richtung, auch schräg)
+const ROOM = 'house'; // Haupthaus: dort nur Möbel (indoor in decor.js), draußen nur Deko
 
 // Hinweis: mit einem Teil in der Hand auf etwas Gesetztes gezeigt (aufheben geht nur mit der Hand)
+// Ziehen mit dem Finger: so weit (CSS-Pixel) über dem Finger liegt das mitgeführte Teil (sonst verdeckt ihn der Finger),
+// und ab so viel Bewegung zählt es als Ziehen statt Antippen
+const LIFT = 36;
+const DRAG_PX = 12;
+
 const TAKEN = () => tr('Zum Aufheben erst die Hand wählen', 'Choose the hand to pick up');
 
 // Blickrichtung der Spielfigur (faceX, faceY: schräg im Bild) → Nachbarkachel
@@ -56,6 +60,13 @@ export default class DecorMode {
     this.keepOut = null;
     this.free = null; // Overlay: Kacheln, auf die man bauen darf
     this.onKey = (e) => this.keyDown(e);
+    this.drag = null; // Finger zieht gerade ein Teil übers Bild: { cx, cy, moved, carried, bar }
+    this.barDrag = null; // Finger liegt auf einem Teil der Leiste (wird zum Ziehen, sobald er die Leiste verlässt)
+    this.onBarMove = (e) => this.barMove(e);
+    this.onBarUp = (e) => this.barUp(e);
+    window.addEventListener('pointermove', this.onBarMove);
+    window.addEventListener('pointerup', this.onBarUp);
+    window.addEventListener('pointercancel', this.onBarUp);
     this.bar = document.getElementById('decor-bar');
     this.frame = document.getElementById('decor-frame');
     this.flip = false; // gespiegelt setzen
@@ -66,6 +77,9 @@ export default class DecorMode {
     for (const d of [...placedIn(LEVEL_ID), ...Object.values(ensureDecor().toys).flat()]) if (d.flip && !DECOR[d.id]?.indoor) scene.decorImages.get(`${d.tx},${d.ty}`)?.setFlipX(true);
     scene.events.once('shutdown', () => {
       window.removeEventListener('keydown', this.onKey, true);
+      window.removeEventListener('pointermove', this.onBarMove);
+      window.removeEventListener('pointerup', this.onBarUp);
+      window.removeEventListener('pointercancel', this.onBarUp);
       this.bar.classList.remove('show');
       this.frame.classList.remove('show');
     });
@@ -109,6 +123,14 @@ export default class DecorMode {
   renderBar() {
     // eine durchgehende Liste: Zwischenüberschrift Buden bzw. Deko (nur, wenn dort etwas liegt), dann Aufheben; die
     // Zifferntasten zählen über die ganze Liste
+    // ein Teil, das der Finger gerade aus der Leiste zieht, bleibt (unsichtbar) in der Seite, bis er loslässt: sonst
+    // landet das Ende der Berührung an einem gelöschten Element, Phaser bekommt es nie mit und nimmt danach keine
+    // Finger mehr an
+    const held = this.barDrag?.el;
+    if (held && this.bar.contains(held)) {
+      held.style.display = 'none';
+      document.body.appendChild(held);
+    }
     let i = 0;
     const item = (id) => `<button class="decor-item${id === this.sel ? ' sel' : ''}" data-id="${id}">
         ${i < 9 ? `<span class="key">${++i}</span>` : ''}<span class="n">${this.count(id)}</span>
@@ -127,8 +149,18 @@ export default class DecorMode {
     this.bar.querySelectorAll('[data-id]').forEach((el) => {
       el.onclick = (e) => {
         e.stopPropagation();
+        if (performance.now() < (this.noClickUntil ?? 0)) return; // (gerade aus der Leiste aufs Bild gezogen)
         this.choose(el.dataset.id);
       };
+      // Tablet und Handy: ein Teil aus der Leiste aufs Bild ziehen (kurz antippen wählt es nur aus)
+      if (el.classList.contains('decor-item') && !el.dataset.id.startsWith('@')) {
+        el.onpointerdown = (e) => {
+          if (e.pointerType === 'mouse' || this.barDrag) return;
+          const list = this.bar.querySelector('.decor-items');
+          const row = getComputedStyle(list).flexDirection === 'row'; // Handy: Leiste quer unten, sonst hochkant rechts
+          this.barDrag = { el, id: el.dataset.id, pid: e.pointerId, x0: e.clientX, y0: e.clientY, list, row, scroll0: row ? list.scrollLeft : list.scrollTop, mode: null };
+        };
+      }
     });
     this.scene.updateBuildHint?.();
   }
@@ -190,6 +222,8 @@ export default class DecorMode {
     if (!this.on) return;
     this.on = false;
     this.hover = null;
+    this.drag = null;
+    this.barDrag = null;
     this.sel = null;
     this.state = null;
     this.key = '';
@@ -221,7 +255,7 @@ export default class DecorMode {
   update() {
     if (!this.on) return;
     const p = this.scene.player;
-    if (this.hover && p.moving) this.hover = null;
+    if (this.hover && p.moving && !this.drag) this.hover = null; // (beim Ziehen mit dem Finger bleibt die Vorschau am Finger)
     const here = worldToTile(p.x, p.y);
     const [dx, dy] = this.hover ? [0, 0] : AHEAD[`${p.faceX},${p.faceY}`] ?? [0, 1]; // (Maus: große Teile wachsen von der Kachel unter dem Zeiger nach hinten)
     const { tx, ty } = this.hover ? worldToTile(this.hover.x, this.hover.y) : { tx: here.tx + dx, ty: here.ty + dy };
@@ -289,41 +323,130 @@ export default class DecorMode {
     return true;
   }
 
-  // Antippen bzw. Anklicken (Weltpunkt): auf einer Kachel in Henriks Nähe gesetzte Deko aufheben bzw. das gewählte Teil
-  // dorthin setzen. Getroffen zählt die Kachel unter dem Finger oder das Bild einer gesetzten Deko (z. B. die Krone eines
-  // Baums). Große Teile (2×2) reichen von Henrik weg. Geht es nicht, blinkt die Kachel rot mit kurzem Hinweis.
-  // mouse: Klick mit der Maus am PC – überall auf der Karte, ohne Reichweite um Henrik
-  tap(wx, wy, mouse = false) {
-    if (!this.on) return;
-    const p = this.scene.player;
-    const here = worldToTile(p.x, p.y);
-    const near = (t) => mouse || Math.max(Math.abs(t.tx - here.tx), Math.abs(t.ty - here.ty)) <= REACH;
+  // Antippen, Anklicken bzw. Loslassen nach dem Ziehen (Weltpunkt): gesetzte Deko aufheben bzw. das gewählte Teil dorthin
+  // setzen – überall im Bild, ohne Reichweite um Henrik. Getroffen zählt die Kachel unter dem Finger oder das Bild einer
+  // gesetzten Deko (z. B. die Krone eines Baums). Große Teile (2×2) wachsen wie die Vorschau unter dem Zeiger nach hinten.
+  // Geht es nicht, blinkt die Kachel rot mit kurzem Hinweis. true: gesetzt
+  tap(wx, wy) {
+    if (!this.on) return false;
     const { tx, ty } = worldToTile(wx, wy);
     if (!this.picking) {
       if (!this.sel) return this.tapNo(tx, ty, tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
       if (this.occupied(tx, ty) && !isRug(this.sel)) return this.tapNo(tx, ty, TAKEN()); // mit einem Teil in der Hand wird nichts aufgehoben (ein Teppich darf unter Möbel)
     }
     const entry = this.picking ? this.entryAt(tx, ty) ?? this.entryUnder(wx, wy) : null;
-    if (entry) {
-      const tiles = entry.item && !isToy(entry.id) && !entry.booth ? decorTiles(entry.item) : [entry];
-      if (tiles.some(near)) return this.pickUp(entry);
-      return this.tapNo(tiles[0].tx, tiles[0].ty, tr('Geh näher heran', 'Get closer'));
-    }
+    if (entry) return this.pickUp(entry);
     if (!this.sel) return this.tapNo(tx, ty, null);
-    if (!near({ tx, ty })) return this.tapNo(tx, ty, tr('Geh näher heran', 'Get closer'));
-    // Richtung von Henrik zur Kachel (die längere Achse): dorthin wächst ein großes Teil
-    const ddx = tx - here.tx;
-    const ddy = ty - here.ty;
-    this.dir = mouse ? [0, 0] : Math.abs(ddx) >= Math.abs(ddy) ? [Math.sign(ddx) || 1, 0] : [0, Math.sign(ddy)]; // (Maus: wie die Vorschau unter dem Zeiger)
+    this.dir = [0, 0]; // (wie die Vorschau unter dem Zeiger)
     if (this.canPlace(tx, ty, this.sel)) {
       this.place(tx, ty, this.sel);
-      return;
+      return true;
     }
     const pen = anyPenAt(tx, ty);
     const full = !isToy(this.sel) && designablePen(pen) && !!DECOR[this.sel]?.pen && this.penDecor(pen) >= penDecorMax(pen);
     const why = (isBooth(this.sel) && this.boothProblem(tx, ty, this.sel)) || (full ? tr('Das Gehege ist voll', 'The enclosure is full') : tr('Hier geht das nicht', 'Not here'));
     this.key = ''; // (update() rechnet die Richtung vor Henrik neu)
     this.tapNo(tx, ty, why);
+  }
+
+  // Bildschirmpunkt (CSS-Pixel) → Weltpunkt
+  toWorld(cx, cy) {
+    const r = this.scene.game.canvas.getBoundingClientRect();
+    const { width, height } = this.scene.scale;
+    return this.scene.cameras.main.getWorldPoint(((cx - r.left) * width) / r.width, ((cy - r.top) * height) / r.height);
+  }
+
+  // Ziehen mit dem Finger (Tablet und Handy, rechte Bildhälfte): mit einem Teil in der Hand folgt die Vorschau dem Finger,
+  // beim Loslassen landet es dort; mit der Hand greift der Finger eine gesetzte Deko und trägt sie mit (eine Bude wird nur
+  // aufgehoben, der Abschnitt baut sich dafür neu auf). Kurz angetippt wie bisher: setzen bzw. aufheben.
+  // Ohne Reichweite um Henrik (wie die Maus): man sieht ja nur das Bild um ihn herum
+  dragStart(cx, cy) {
+    if (!this.on) return;
+    const w = this.toWorld(cx, cy);
+    const { tx, ty } = worldToTile(w.x, w.y);
+    this.drag = null;
+    if (this.picking) {
+      const entry = this.entryAt(tx, ty) ?? this.entryUnder(w.x, w.y);
+      if (!entry) return this.tapNo(tx, ty, null);
+      this.pickUp(entry);
+      if (entry.booth) return;
+      this.drag = { x0: cx, y0: cy, moved: false, carried: true };
+    } else {
+      if (!this.sel) return this.tapNo(tx, ty, tr('Wähl ein Teil oder die Hand', 'Pick an item or the hand'));
+      this.drag = { x0: cx, y0: cy, moved: false, carried: false };
+    }
+    this.hoverAt(w);
+  }
+
+  dragMove(cx, cy) {
+    const d = this.drag;
+    if (!d || !this.on) return;
+    if (!d.moved && Math.hypot(cx - d.x0, cy - d.y0) < DRAG_PX) return;
+    d.moved = true;
+    this.hoverAt(this.toWorld(cx, cy - LIFT));
+  }
+
+  dragEnd(cx, cy) {
+    const d = this.drag;
+    this.drag = null;
+    if (!d || !this.on) return;
+    if (!d.moved && d.carried) {
+      this.hoverAt(null); // nur angetippt: aufgehoben, jetzt in der Hand
+      return;
+    }
+    const w = this.toWorld(cx, cy - (d.moved ? LIFT : 0));
+    const placed = this.tap(w.x, w.y);
+    if (placed && d.carried && !this.sel?.startsWith('booth:')) this.choose('@pick'); // umgestellt: wieder die Hand (gleich das Nächste greifen)
+    if (this.on) this.hoverAt(null);
+  }
+
+  // Leiste: Finger auf einem Teil. Längs der Leiste bewegt scrollt sie (die Teile haben touch-action: none, sonst
+  // schnappt sich der Browser schräge Bewegungen fürs Scrollen), quer dazu (zum Bild hin) oder aus der Leiste hinaus wird
+  // das Teil ausgewählt und mitgezogen
+  barMove(e) {
+    const b = this.barDrag;
+    if (!b || e.pointerId !== b.pid || !this.on) return;
+    const along = b.row ? e.clientX - b.x0 : e.clientY - b.y0;
+    const across = b.row ? e.clientY - b.y0 : e.clientX - b.x0;
+    if (!b.mode) {
+      if (Math.hypot(along, across) < DRAG_PX) return;
+      b.mode = Math.abs(along) > Math.abs(across) ? 'scroll' : 'drag';
+    }
+    if (b.mode === 'scroll') {
+      if (this.inBar(e)) {
+        b.list[b.row ? 'scrollLeft' : 'scrollTop'] = b.scroll0 - along;
+        return;
+      }
+      b.list[b.row ? 'scrollLeft' : 'scrollTop'] = b.scroll0; // (schräg hinausgezogen: doch ziehen, Leiste wie vorher)
+      b.mode = 'drag';
+    }
+    if (!this.drag) {
+      if (this.sel !== b.id || this.picking) this.choose(b.id);
+      this.drag = { x0: b.x0, y0: b.y0, moved: true, carried: false, bar: true };
+    }
+    this.hoverAt(this.toWorld(e.clientX, e.clientY - LIFT));
+  }
+
+  inBar(e) {
+    const r = this.bar.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  }
+
+  barUp(e) {
+    const b = this.barDrag;
+    if (!b || e.pointerId !== b.pid) return;
+    this.barDrag = null;
+    setTimeout(() => !this.bar.contains(b.el) && b.el.remove()); // (nach dem Ende der Berührung, siehe renderBar)
+    if (!b.mode) return; // nur angetippt: das Klicken wählt es aus
+    this.noClickUntil = performance.now() + 400;
+    if (b.mode === 'scroll') return;
+    const back = e.type === 'pointercancel' || this.inBar(e);
+    if (back) { // zurück in die Leiste gezogen: nichts setzen
+      this.drag = null;
+      this.hoverAt(null);
+      return;
+    }
+    this.dragEnd(e.clientX, e.clientY);
   }
 
   // gesetzte Deko (bzw. Spielzeug), deren Bild an diesem Weltpunkt liegt – vorderste zuerst

@@ -678,13 +678,13 @@ export const SPECIES = {
     catchWith: ['herring', 'sealball'],
   },
   // --- neue Eiswelt-Tiere (docs/plan-eiswelt.md); Standbilder mit 4 Ansichten (tools/static-sheet.py) ---
-  // Schneehase: wie die Katze, nur etwas schneller (Hand oder Kescher)
+  // Schneehase: hoppelt bei seinem Bau mit mehreren Löchern (Hand oder Kescher, siehe SnowHare.js)
   snowhare: {
-    texture: 'snowhare',
-    scale: 0.68, // etwas größer gezeichnet als die anderen Tiere (0,5)
+    texture: 'snowhare', // (Bild 1,36-fach so groß wie früher mit scale 0,68: so wird es nicht hochgezogen und bleibt scharf)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 56 / 60,
+    originY: 76 / 82,
     speed: 70, // flinker als die Katze (60), noch langsamer als Henrik (80)
+    fleeSpeed: 120, // ins Loch flitzt er schneller als Henrik
     restChance: 0.45,
     restTime: [0.3, 1.2],
     walkTime: [0.3, 0.8],
@@ -742,11 +742,11 @@ export const SPECIES = {
     shadowW: 22,
     catchWith: ['net', 'touch'],
   },
-  // Rentier: wilde Herde wie die Antilopen (Lasso, die ganze Herde flieht), wechselt aber öfter den Platz (siehe Reindeer.js)
+  // Rentier: wilde Herde, trabt ständig im Kreis auf ihrem Pfad; still am Pfad warten, Lasso (siehe Reindeer.js)
   reindeer: {
     texture: 'reindeer',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 108 / 112,
+    originY: 123 / 128, // (Bild 1,14-fach so groß wie früher: ein Ticken größer, trotzdem scharf)
     speed: 24,
     restChance: 0.55,
     restTime: [2, 5],
@@ -754,19 +754,19 @@ export const SPECIES = {
     stepRate: 9,
     hop: 1.5,
     footW: 9,
-    shadowW: 30,
+    shadowW: 34,
     fleeDist: 80,
-    fleeSpeed: 100,
+    fleeSpeed: 85,
     catchWith: ['lasso'],
     herd: true,
     groupSize: [3, 5],
   },
-  // Walross: am Strand und an der Eiskante, döst immer wieder; ein dösendes Walross mit der Wärmflasche wärmen, dann
-  // kommt es mit (siehe Walrus.js)
+  // Walross: am Strand und an der Eiskante, döst immer wieder; mit der Wärmflasche wecken, dann mit 3 Muscheln füttern
+  // (siehe Walrus.js, IceCatch.js)
   walrus: {
     texture: 'walrus',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 96 / 100,
+    originY: 123 / 128,
     speed: 10,
     restChance: 0.6,
     restTime: [3, 6],
@@ -774,15 +774,15 @@ export const SPECIES = {
     stepRate: 5,
     hop: 1,
     footW: 17,
-    shadowW: 64, // (wird größer gezeichnet, siehe SIZE in Walrus.js)
+    shadowW: 64, // (Bild in voller Größe, siehe SIZE in Walrus.js)
     catchWith: ['warmer'],
   },
-  // Eisbär (nachts auf dem Eis): Hering ans Eisloch legen, er setzt sich davor und lauert; dann einen Fisch zuwerfen ->
-  // er folgt (siehe PolarBear.js)
+  // Eisbär (nachts auf dem Eis): großen Fisch ans Eisloch legen, er frisst und döst; gegen den Wind anschleichen und
+  // berühren (siehe PolarBear.js)
   polarbear: {
     texture: 'polarbear',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 100 / 104,
+    originY: 144 / 148,
     speed: 20,
     restChance: 0.5,
     restTime: [2, 4],
@@ -790,18 +790,17 @@ export const SPECIES = {
     stepRate: 8,
     hop: 1,
     footW: 18,
-    shadowW: 66, // (wird größer gezeichnet, siehe SIZE in PolarBear.js)
+    shadowW: 60, // (Bild in voller Größe, siehe SIZE in PolarBear.js)
     fleeDist: 110,
     fleeSpeed: 60,
-    catchWith: ['herring'],
+    catchWith: ['touch'],
   },
   // Papageitaucher (nur tagsüber): Kolonie auf den Vogelfelsen am Fjord; wer gerade am Ufer landet -> Kescher
   // (siehe Puffin.js)
   puffin: {
     texture: 'puffin',
-    scale: 0.65, // etwas größer gezeichnet als die anderen Tiere (0,5)
-    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
-    originY: 48 / 52,
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 }, // (Bild 1,3-fach groß statt scale 0,65: scharf)
+    originY: 63 / 68,
     speed: 14,
     restChance: 0.6,
     restTime: [1.5, 4],

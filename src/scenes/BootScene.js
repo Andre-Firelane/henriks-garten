@@ -641,7 +641,9 @@ const ANIMAL_SOUNDS = {
   macaw: 'animal_macaw.wav', // Krächzen (beim Losfliegen und beim Fangen)
   toucan: 'animal_toucan.wav', // Tukan-Ruf (beim Losfliegen und beim Fangen)
   penguin: 'animal_penguin.wav', // Ruf (beim Fangen und ab und zu aus der Gruppe)
-  snowowl: 'animal_snowowl.wav', // Ruf der Schneeeule (Platzhalter aus tools/owl-hoot.py)
+  snowowl: 'animal_snowowl.mp3', // Ruf der Schneeeule (Andre, 24.11.2026)
+  polarbear: 'animal_polarbear.mp3', // Brummen (beim Fangen, am Köder, wenn er Henrik riecht)
+  reindeer: 'animal_reindeer.mp3', // Grunzen (beim Fangen und ab und zu aus der vorbeitrabenden Herde)
 };
 
 export default class BootScene extends Phaser.Scene {
@@ -818,7 +820,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['anteater', 'anteater2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 72 });
     for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
     // neue Eiswelt-Tiere (Standbilder mit 4 Ansichten, tools/static-sheet.py)
-    for (const [k, w, h] of [['snowhare', 56, 60], ['arcticfox', 72, 72], ['arcticwolf', 80, 80], ['arcticwolf_howl', 80, 80], ['snowowl', 56, 64], ['snowowl_fly', 64, 56], ['reindeer', 80, 112], ['walrus', 104, 100], ['walrus_sleep', 104, 100], ['polarbear', 112, 104], ['polarbear_wait', 112, 104], ['puffin', 48, 52], ['puffin_fly', 64, 60]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
+    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['arcticwolf', 80, 80], ['arcticwolf_howl', 80, 80], ['snowowl', 56, 64], ['snowowl_fly', 64, 56], ['reindeer', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
     for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus

@@ -26,7 +26,8 @@ export default class LanternTool {
     this.sprite.setPosition(p.x - p.faceX * 11, p.sprite.y - 16 - p.handLift);
     this.sprite.setDepth(p.y + (p.faceY > 0 ? 0.1 : -0.1));
     const flicker = Math.sin(this.scene.time.now / 130) * 0.05 + Math.sin(this.scene.time.now / 47) * 0.03;
-    this.glow.setPosition(this.sprite.x, this.sprite.y - 2).setDepth(GLOW_DEPTH).setAlpha(0.65 + flicker);
+    const dim = this.scene.lanternDim?.(); // am Tag in der Eiswelt nur ein schwacher Schein
+    this.glow.setPosition(this.sprite.x, this.sprite.y - 2).setDepth(GLOW_DEPTH).setScale(dim ? 0.5 : 1.1).setAlpha((dim ? 0.3 : 0.65) + flicker);
   }
 
   // mit der Laterne fängt man nicht

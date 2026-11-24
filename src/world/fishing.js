@@ -121,11 +121,19 @@ function poolAt(tx, ty) {
   return (p.waters.find((w) => w.areas?.some(inside)) ?? p.waters.at(-1)).fish;
 }
 
-// Fischart für einen Biss an dieser Kachel auswürfeln (Skin-Id)
+// Fischart für einen Biss an dieser Kachel auswürfeln: { skin, rarity } (rarity: wie selten er an dieser Stelle ist)
 export function rollFish(tx, ty) {
   const pool = poolAt(tx, ty);
   const weights = LEVEL.expedition ? EXPEDITION_WEIGHT : RARITY;
   let n = Math.random() * pool.reduce((s, [, rar]) => s + weights[rar], 0);
-  for (const [id, rar] of pool) if ((n -= weights[rar]) <= 0) return id;
-  return pool.at(-1)?.[0] ?? GOLDFISH;
+  for (const [id, rar] of pool) if ((n -= weights[rar]) <= 0) return { skin: id, rarity: rar };
+  const last = pool.at(-1);
+  return last ? { skin: last[0], rarity: last[1] } : { skin: GOLDFISH, rarity: 'epic' };
 }
+
+// Anzeige der Seltenheit in der Fang-Meldung (Rahmenfarbe und Schild)
+export const RARITY_LOOK = {
+  common: { name: tr('Häufig', 'Common'), color: '#5fa63c', dark: '#3f7a24', glow: 'rgba(120, 200, 90, 0.6)' },
+  rare: { name: tr('Selten', 'Rare'), color: '#3b8fe0', dark: '#2560a8', glow: 'rgba(90, 160, 255, 0.75)' },
+  epic: { name: tr('Sehr selten', 'Very rare'), color: '#a24fe0', dark: '#6c2ca3', glow: 'rgba(200, 120, 255, 0.95)' },
+};
