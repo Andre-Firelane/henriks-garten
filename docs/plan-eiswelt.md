@@ -110,18 +110,81 @@ Event-Karte: **Orcas** (offenes Meer, siehe unten).
 - Weitere Ideen, noch nicht abgestimmt: Polarlicht-Nacht (stärkeres Polarlicht, Tiere zeigen sich öfter), große
   Rentierwanderung über das Eis, Rückkehr der Papageitaucher am Morgen.
 
-## Eiswelt im Tierpark (Vorschlag, noch nicht abgestimmt)
+## Eiswelt im Tierpark (abgestimmt mit Andre, 24.11.2026; gebaut 24.11.2026, siehe „Umsetzung Tierpark“)
 
-Ein großer eigener Abschnitt mit Schneeboden:
+Ein eigener Parkabschnitt (`park4`, eigenes Level wie park2/park3; das eigene Gelände aus plan-eigenes-gelaende.md
+rückt dann auf `park5`) mit Schneeboden.
 
-- **Pinguin-Bucht:** Felsen, Becken und eine Rutsche ins Wasser, Besucher am Geländer.
-- **Eisbären-Anlage:** Tundra und Wasser hinter einem Graben, dazu ein Unterwasser-Fenster.
-- **Robben- und Walross-Becken:** gemeinsames Becken mit Felsstrand.
-- **Rentier-Tundra:** Die Rentiere laufen frei zwischen den Besuchern wie die Hirsche im Wildpark.
-- **Vogelfelsen-Voliere** (Netzdach): Papageitaucher, Schneeeule.
-- **Polarfuchs-Bau, Polarwolf-Gehege, Schneehasen.**
-- Kein Tag-Nacht-Wechsel im Tierpark (kein Wetter im Zoo), höchstens Polarlicht als Deko. Buden: heiße Schokolade,
-  Iglu.
+```
+ Streichelzoo │ Eistor ══►  ┌──────────── Eiswelt ─────────────┐
+              │             │  Polarhalle  ║  Robben & Walross  │
+              │             │  (Pinguine,  ║  (Außenbecken mit  │
+              │             │   Vögel)     ║   Kiesstrand)      │
+              │             │      ══ Rundweg ══                │
+              │             │  Eisbären-Anlage   Rentier-Gehege │
+              │             │  Wölfe · Füchse · Hasen           │
+              │             │  Iglu-Bude · heiße Schokolade     │
+              └─────────────┴───────────────────────────────────┘
+                 ║ = Glaswand: von der Halle unter Wasser ins Robbenbecken
+```
+
+- **Eingang beim Streichelzoo:** Ein Weg führt rechts am Streichelzoo vorbei (nicht hindurch) zum Kartenrand, wo früher
+  der Ausgang auf die Wiese war (Kachel 55/40 im Zentrum). Dort steht ein Torbogen aus Eisblöcken mit dem Schild
+  „Eiswelt“ (wie die Bögen von Wildpark und Streichelzoo), dahinter beginnt der Schnee.
+- **Polarhalle** (Gegenstück zur Tropenhalle: Glaswände, das Dach wird beim Betreten durchsichtig): Pinguin-Becken mit
+  Felsen. **Papageitaucher und Schneeeule fliegen frei durch die Halle.** Nicht alles ist in der Halle, es gibt auch
+  Außenbereiche.
+- **Robben & Walross zusammen** in einem Außenbecken mit Kiesstrand: Sie liegen am Ufer, dösen und schwimmen an der
+  Oberfläche (vorhandene Bilder). Eine Seite des Beckens ist die Glaswand der Polarhalle: Von drinnen schaut man unter
+  Wasser ins Becken (statt eines Tunnels, der in der Schrägansicht nicht zu lesen wäre; Vorbild ist das große Becken im
+  Aquarium). Dort schwimmen Robben und Walrosse in ganzer Gestalt.
+- **Eisbären-Anlage** draußen: Tundra und Wasser hinter einem Graben, **ohne** Unterwasserfenster.
+- **Rentiere** draußen in einem großen Gehege (nicht frei zwischen den Besuchern).
+- **Polarwolf, Polarfuchs (mit Bau), Schneehase:** eigene Außengehege.
+- Kein Tag-Nacht-Wechsel im Zoo: Eule und Bär sind einfach da. Leichter Schneefall und eigener Ambient-Ton.
+- Futterautomat mit Fisch; Buden: heiße Schokolade, Iglu.
+- **Schnellreise mit dem Schneemobil** statt des Autos (nur Schnellreise, Henrik fährt nicht selbst).
+- Gefangene Eiswelt-Tiere, die bis jetzt im Park ausgewildert wurden, ziehen beim Betreten in ihre neuen Gehege.
+- Besucherwünsche, Besucher-Anziehung (`APPEAL`) und Futter der neuen Arten kommen mit den Gehegen.
+
+**Bilder von Andre:** Schneemobil-Sprite; Schwimm-Animationen unter Wasser (Seitenansicht, als Video mit wiederholbarem
+Zyklus, Spritesheet mit tools/find-loop.py, andere Richtung gespiegelt) für **Robbe und Walross**. Pinguin und Eisbär
+bekommen keine Unterwasser-Animation.
+
+## Umsetzung Tierpark (24.11.2026, nicht committet)
+
+- **Aufbau (Andre, 24.11.2026):** Polarhalle in der Mitte, ein geschwungener Rundweg mit Knicken um sie herum, außen die
+  Gehege in unregelmäßigen Formen (L-Formen): Polarwölfe und Polarfüchse links, Schneehasen oben, Robben & Walrosse
+  oben rechts (langes Becken mit Kiesstrand), Eisbären unten rechts hinter einem Wassergraben, Rentiere unten links,
+  Platz mit Futterautomat und Schneemobil am Eingang. tools/park-ice-map.py zeichnet den Abschnitt (40 × 35 Kacheln,
+  Gehege als Flächen, die Zäune ergeben sich daraus) in PARK_ROWS rechts neben das Zentrum (Spalten 56–95, Zeilen 24–58).
+- **Eingang:** Weg unterhalb des Streichelzoos (Zeilen 46/47) zum rechten Rand des Zentrums, nicht bei 55/40 (dort liegt
+  der Zaun direkt am Rand). Torbogen „Eiswelt“ gleich dahinter, vorerst der Bogen des Wildparks. Offen ist park4, sobald
+  die Eiswelt offen ist (isUnlocked).
+- **Polarhalle:** Glasfassade ohne Holz (hohe klare Scheiben in schmalen hellen Metallrahmen, Glastür mit zwei Flügeln;
+  das Pinguinbecken innen mit niedrigem Glas derselben Art; tools/glass-facade.py), Glasdach mit Streben wie die
+  Tropenhalle (JungleHall mit mist: false). Links ein großes
+  Pinguinbecken hinter Glas, davor der Holzsteg. Papageitaucher und Schneeeulen fliegen frei zwischen Felsen und Tannen
+  (src/animals/hallFlight.js). Unten rechts die große Treppe (Platzhalter tools/polar-stairs.py) hinunter.
+- **Unterwasser-Scheibe (Level polarunder):** ein Raum unter der Halle. Hinten steht über die ganze Breite das Becken als
+  großer Glaskasten wie im Aquarium (3 Kacheln tief): vorne die hohe Scheibe mit Pfosten, rechts die Seitenscheibe, oben
+  die Wasseroberfläche, drinnen Rückwand mit Lichtstrahlen und Kiesboden mit Felsen, Bläschen
+  (src/world/UnderwaterWindow.js). Robben und Walrosse aus dem Außenbecken schwimmen darin hin und her, mal vorne an
+  der Scheibe, mal weiter hinten (dort kleiner, blasser, bläulicher). Bis die Videos da sind, gleiten die Standbilder;
+  mit einer Animation <Art>_underwater (Seitenansicht) spielt sie diese, nach links gespiegelt. Ohne Tiere steht ein
+  kurzer Hinweis auf der Scheibe. Im Raum: Weg aus festgetretenem Schnee vor der ganzen Scheibe und von der Tür hinauf,
+  Steinklötze zum Sitzen (Andre: Stein statt Holzbänken), Eisblöcke in den Ecken. Drei Besucher kommen durch die Tür,
+  stellen sich an verschiedene Stellen vor die Scheibe, schauen, wechseln den Platz und gehen wieder (nur Figuren,
+  ohne Herzen). Treppe und Sitzsteine sind HD-Platzhalter (tools/polar-stairs.py, tools/stone-seat-ice.py: 8-fach
+  gezeichnet, Fassungen für hd/ und hd2/).
+- **Außenbecken:** Robben wechseln zwischen Schwimmen (Kopf im Wasser) und Strand, Walrosse dösen immer wieder (💤).
+- Polarwölfe vorerst Kopie der Waldwölfe (so gewollt). Schneefall, leiser Wind-Ton, Schritte im Schnee; kein Tag und
+  keine Nacht. Besucher-Anziehung, Futter (Futterhaus) und Wunsch-Sätze der neuen Arten; Trophäe „voller Abschnitt“
+  und Tierbaby-Event auch hier.
+- **Schneemobil** mit Anhänger (Andres Bild, freigestellt mit tools/snowmobile-cut.py, Lage und Größe wie das Zoo-Auto)
+  auf dem Platz am Eingang; der Fuchsbau ist unten kürzer, damit der Anhänger nicht in ein Gehege ragt.
+- **Noch offen:** Buden heiße Schokolade und Iglu (brauchen Bilder), Torbogen aus Eisblöcken, echtes
+  Bild der Treppe.
 
 ## Reihenfolge (Andre, 23.11.2026)
 
@@ -215,12 +278,24 @@ Geschicklichkeit (kein Reaktionstest, nichts geht verloren).
 
 - **Schneehase und Rentier nur tagsüber (Andre, 24.11.2026):** als Ausgleich zu Schneeeule und Eisbär, die es nur nachts gibt.
 
-## Noch offen
+## Eisbär ohne Wind (Andre, 24.11.2026)
 
-- **Eisbär nochmal überdenken (Andre, 24.11.2026):** Andre befürchtet, dass die Sache mit der Windrichtung niemand
-  versteht. Bis dahin: Steht Henrik am Fisch, traut sich der Bär nicht heran und wartet in einigem Abstand; der Bär geht
-  überall durch (außer Wasser), damit er nirgends hängenbleibt. Auf dem Weg zum Fisch sucht er sich einen Weg um die
-  Eislöcher herum; kommt er 1,5 Sekunden nicht näher, geht er einfach geradeaus hinüber (PolarBear.js, walkTo).
+Die Windrichtung hat niemand verstanden; Wind und Schneefahnen sind ganz weg (die Schneeflocken treiben wieder nur
+leicht von rechts). Neu:
+
+- Fisch aus der Kiste ans Eisloch, ein Stück weggehen (steht Henrik am Fisch, wartet der Bär in einigem Abstand).
+- Der Bär frisst eine Weile (18 Sekunden). Ein gestrichelter Ring auf dem Eis zeigt, wie weit Henrik weg bleiben muss,
+  eine kleine Uhr neben dem Bären, wie lange er noch frisst.
+- Geht Henrik in den Ring, wird der Ring rot, der Bär steht auf, schaut herüber, brummt („!“), und die Uhr bleibt stehen.
+  Keine Strafe: Geht Henrik wieder hinaus, frisst er weiter.
+- Satt schläft er ein (💤, 3 Minuten). Jetzt hingehen und streicheln (berühren) fängt ihn.
+
+- **Polarfuchs und Polarwolf animiert (Andre, 24.11.2026), bis es eigene Videos gibt:** Der Polarfuchs ist der Silberfuchs,
+  aufgehellt (tools/arctic-fox.py, auch das Schlafbild: im Gehege schläft er wie der Fuchs). Der Polarwolf zeigt die
+  Bilder des grauen Wolfs, selten den schwarzen Wolf (eigene Variante „schwarzer Polarwolf“); die Wolfsbilder sind ein
+  eigenes Paket (wolves), das Wald und Eiswelt laden.
+
+## Noch offen
 
 - Ist die Kälte (3 Minuten) zu knapp, wenn nachts mehr Tiere unterwegs sind? Andre: „wird sich zeigen“.
 - Echte Bilder für Tundra-Boden, Gletscher, Kiesstrand, verschneite Tanne und Schneehöhle (jetzt Platzhalter aus

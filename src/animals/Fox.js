@@ -15,8 +15,8 @@ const DEN_SPOTS = [[0, 24], [-26, 14], [26, 14], [-30, 4], [30, 4]];
 const SPOT_GAP = 16; // so viel Platz braucht ein schlafender Fuchs
 
 export default class Fox extends Animal {
-  constructor(scene, x, y) {
-    super(scene, x, y, 'fox');
+  constructor(scene, x, y, species = 'fox') {
+    super(scene, x, y, species); // (der Polarfuchs schläft im Gehege genauso, siehe ArcticFox.js)
   }
 
   // Schlafplatz vor der Höhle im eigenen Gehege (oder null)
@@ -29,7 +29,7 @@ export default class Fox extends Animal {
         const p = tileToWorld(tx, ty);
         // Plätze, an denen schon ein anderer Fuchs schläft oder hinwill, sind belegt
         const others = this.scene.animals
-          .filter((a) => a !== this && a.species === 'fox' && (a.sleeping || a.bed))
+          .filter((a) => a !== this && a.species === this.species && (a.sleeping || a.bed))
           .map((a) => a.bed ?? { x: a.x, y: a.y });
         const spot = DEN_SPOTS.find(
           ([dx, dy]) =>
@@ -128,8 +128,9 @@ export default class Fox extends Animal {
       super.render(moving);
       return;
     }
-    // eingerollt (Silberfuchs: fox2_sleep)
-    const sleep = this.texSkin && this.scene.textures.exists(`${this.texSkin}_sleep`) ? `${this.texSkin}_sleep` : 'fox_sleep';
+    // eingerollt (Silberfuchs: fox2_sleep, Polarfuchs: arcticfox_sleep)
+    const own = `${this.baseTexture()}_sleep`;
+    const sleep = this.scene.textures.exists(own) ? own : 'fox_sleep';
     if (this.sprite.texture.key !== sleep) {
       this.sprite.stop().setFlipX(false);
       this.sprite.setTexture(sleep, 0).setOrigin(0.5, SLEEP_ORIGIN_Y);

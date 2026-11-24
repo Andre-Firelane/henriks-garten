@@ -61,6 +61,7 @@ export const HD = [
   'gate_curtain_x', 'gate_curtain_y', 'fruit_plate', 'jungle_shrub', // Tropenhalle (tools/junglehall-placeholders.py)
   // Riff
   'car_zoo', // Zooauto (Schnellreise, vergrößert gezeigt)
+  'car_snow', // Schneemobil mit Anhänger (Eiswelt im Tierpark, tools/snowmobile-cut.py)
   'anchor_sack', 'boat_zoo', 'reef_algae', 'reef_anemone', 'reef_brain', 'reef_brain2', 'reef_branch', 'reef_branch2', 'reef_dark', 'reef_fan',
   'reef_fan2', 'reef_gravel', 'reef_kelp', 'reef_path', 'reef_rock', 'reef_sand0', 'reef_sand1', 'reef_sand2', 'reef_seagrass',
   'reef_starfish', 'reef_tube', 'reef_tube2', 'scissors', 'shell', 'tank_rock',
@@ -84,6 +85,8 @@ export const HD = [
   'glacier0', 'glacier1', 'glacier2', 'snow_pine', // Gletscher und verschneite Tanne (tools/ice-placeholders2.py)
   'hutwall_ice_x', 'hutwall_ice_y', 'gate_door_ice_x', 'gate_door_ice_y', 'hutroof_ice', 'planks_ice',
   'hut_desk_ice', 'hut_chair_ice', 'hut_shelf_ice', 'hut_bed_ice', 'hut_bed_ice_sleep',
+  'glasswall_x', 'glasswall_y', 'post_glasswall', 'gate_glassdoor_x', 'gate_glassdoor_y', 'glasslow_x', 'glasslow_y', 'post_glasslow', 'gate_glasslow_x', 'gate_glasslow_y', // Glasfassade der Polarhalle (tools/glass-facade.py)
+  'stairs_ice', 'seat_stone_ice', // Treppe und Sitzsteine (Tierpark, Eiswelt; tools/polar-stairs.py, tools/stone-seat-ice.py)
 ];
 
 // sehr große Bilder (Dächer, Gebäude) sind nur 2- bzw. 1-mal so groß, sonst zu viel Speicher

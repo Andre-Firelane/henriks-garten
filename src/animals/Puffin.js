@@ -7,6 +7,7 @@ import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld } from '../world/iso.js';
 import { MAP_W, MAP_H, charAt, isBlocked, inPen, LEVEL } from '../world/map.js';
+import { inHall, resetHallFlight, updateHallFlight } from './hallFlight.js';
 
 const ROCKS = { Ɵ: { lift: 36, dx: 14 }, Ȟ: { lift: 30, dx: 6 } }; // Vogelfelsen: so hoch sitzt er oben drauf
 const PERCH_TIME = [8, 16]; // so lange sitzt er auf seinem Inselfelsen ...
@@ -16,6 +17,7 @@ const VISIT_CHANCE = 0.3; // so oft fliegt er statt aufs Meer ans Ufer hinüber
 const FLY_TIME = 2.2; // so lange dauert ein Flug
 const FLY_ARC = 60; // so hoch steigt er dabei zusätzlich
 const SEA_DIST = 420; // so weit fliegt er hinaus (Welt-Pixel)
+const FLY_ANIM = 'puffin_fly_anim'; // Flügelschlag (Video, Seitenansicht nach rechts)
 
 // Vogelfelsen: Inselfelsen (rundum Wasser, unerreichbar) und Uferfelsen am Wasser; freie Uferkacheln neben den
 // Uferfelsen (dort landet er beim Besuch); einmal je Karte
@@ -118,6 +120,7 @@ export default class Puffin extends Animal {
   }
 
   updateFree(dt, player) {
+    if (inHall(this)) return updateHallFlight(this, dt, () => super.updateFree(dt, player)); // Polarhalle im Tierpark
     if (this.state !== 'wild') return super.updateFree(dt, player);
     if (!this.mode && !this.sitHome()) return false;
     if (this.fly) {
@@ -169,30 +172,54 @@ export default class Puffin extends Animal {
     this.mode = null;
     this.fly = null;
     this.lift = 0;
+    resetHallFlight(this);
+  }
+
+  // fliegt gerade (draußen oder in der Polarhalle)?
+  get flying() {
+    if (inHall(this) && this.hallUp) return !!this.hallFlight;
+    return this.state === 'wild' && !!this.fly;
+  }
+
+  // Flugbild: Flügelschlag-Animation in Seitenansicht (nach rechts gemalt, nach links gespiegelt); ohne sie das Standbild
+  showFly(frame) {
+    const s = this.sprite;
+    if (this.scene.anims.exists(FLY_ANIM)) {
+      if (!s.anims.isPlaying || s.anims.currentAnim?.key !== FLY_ANIM) s.play(FLY_ANIM).setOrigin(0.5, this.kind.originY);
+      s.setFlipX(this.faceX < 0);
+    } else s.setTexture('puffin_fly', frame).setFlipX(false);
   }
 
   render(moving) {
-    super.render(moving);
+    const f = this.kind.frames;
+    const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
+    const flying = this.flying;
+    // gelandet: vom Flugbild zurück aufs Standbild (die Steh-Animation startet Animal.render)
+    if (!flying && (this.sprite.texture.key === FLY_ANIM || this.sprite.texture.key === 'puffin_fly')) this.showStill('puffin');
+    if (flying) {
+      this.showFly(frame);
+      this.placeSprite(false);
+    } else super.render(moving);
+    if (inHall(this) && this.hallUp) {
+      // in der Polarhalle: oben auf einem Felsen bzw. im Flug zum nächsten
+      this.sprite.setAlpha(1).setVisible(true);
+      this.sprite.setY(this.sprite.y - this.hallUp).setDepth(this.y + 60);
+      this.shadow.setVisible(!!this.hallFlight);
+      return;
+    }
     if (this.state !== 'wild') {
-      if (this.sprite.texture.key === 'puffin_fly') this.sprite.setTexture('puffin', this.faceX < 0 ? 1 : 0);
       this.sprite.setAlpha(1).setVisible(true);
       return;
     }
     const away = this.mode === 'away';
     this.sprite.setVisible(!away);
     this.shadow.setVisible(!away && !this.lift);
-    const f = this.kind.frames;
-    const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
     if (this.fly) {
       const k = Math.min(1, this.fly.t);
-      this.sprite.setTexture('puffin_fly', frame).setFlipX(false);
       // aufs Meer: weit draußen ausblenden; vom Meer zurück: einblenden
       const fade = this.fly.then === 'away' ? 1 - Math.max(0, k - 0.7) / 0.3 : this.fly.from.h === 40 ? Math.min(1, k / 0.3) : 1;
       this.sprite.setAlpha(fade);
-    } else {
-      if (this.sprite.texture.key === 'puffin_fly') this.sprite.setTexture('puffin', frame);
-      this.sprite.setAlpha(1);
-    }
+    } else this.sprite.setAlpha(1);
     if (this.lift) this.sprite.setY(this.sprite.y - this.lift).setDepth(this.y + 60); // oben auf dem Felsen bzw. in der Luft
   }
 }

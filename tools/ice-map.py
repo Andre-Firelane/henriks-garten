@@ -1,4 +1,4 @@
-"""Eiswelt-Karte (46 x 64) erzeugen: oben Meer mit zwei kleinen Inseln, Küste mit Forschungsstation und Wasserflugzeug,
+"""Eiswelt-Karte (46 x 64) erzeugen: oben Meer mit zwei kleinen Inseln, Küste mit Forschungsstation und Schneemobil,
 rechts der Fjord (vom offenen Meer bis zum Gletscher) mit Vogelfelsen an den Ufern, unten die Tundra mit der Taiga
 (verschneite Tannen) am Rand.
 Aufruf: python tools/ice-map.py [Vorschau.png]  -> gibt die Zeilen für ICE_ROWS in src/world/levels.js aus
@@ -66,7 +66,6 @@ def path(points):
             for y in range(min(y0, y1), max(y0, y1) + 1):
                 if g[y][x] in '.ê':
                     g[y][x] = '#'
-path([(41, 21), (24, 21)])                       # Wasserflugzeug -> Tür
 path([(24, 21), (24, 18), (9, 18), (9, 17)])     # zur Fähre auf Insel A
 path([(24, 18), (36, 18), (36, 17)])             # zur Fähre auf Insel B
 path([(24, 21), (24, 26), (10, 26), (10, 42)])   # am Gletscher vorbei in die Tundra

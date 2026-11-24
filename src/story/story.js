@@ -57,7 +57,7 @@ export function storyAt(id) {
 
 export function isUnlocked(level) {
   if (!game.story.locks) return true;
-  const id = level === 'aquarium' ? 'park2' : level;
+  const id = level === 'aquarium' ? 'park2' : level === 'park4' ? 'ice' : level; // die Eiswelt im Tierpark ist mit der Eiswelt offen
   return !LOCKABLE.includes(id) || game.story.unlocked.includes(id);
 }
 

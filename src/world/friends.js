@@ -133,6 +133,9 @@ export const SPECIES_FOOD = {
   redpanda: ['leaves', 'banana'], tanuki: ['acorns', 'banana', 'herring'], yak: ['greens', 'leaves'],
   macaque: ['banana', 'acorns'], howler: ['banana', 'leaves'], orangutan: ['banana', 'leaves'], gorilla: ['banana', 'leaves'],
   macaw: ['banana'], toucan: ['banana'], tapir: ['leaves', 'banana', 'greens'], okapi: ['leaves', 'greens'],
+  penguin: ['herring'], seal: ['herring'], walrus: ['herring'], polarbear: ['herring', 'bone'], puffin: ['herring'],
+  arcticfox: ['bone', 'herring'], arcticwolf: ['bone', 'herring'], snowowl: ['bone'], snowhare: ['greens', 'leaves'],
+  reindeer: ['greens', 'leaves'],
 };
 export const FEED_POINTS = 1;
 export const FAVORITE_POINTS = 3;

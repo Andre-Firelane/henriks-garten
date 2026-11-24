@@ -26,6 +26,10 @@ const WISHES = ['herring', 'sealball'];
 const WATER_ORIGIN_Y = FEET_Y / 88; // Fußlinie in den Bildern im Wasser (seal, seal_swim_idle)
 const PEEK_ANIM = 'seal_swim_idle';
 const LAND_HEAD = { x: 16, y: 24 }; // an Land: so weit vorne und über den Füßen liegt ihre Nase (Ball nach dem Fang)
+// im Becken (Tierpark, Eiswelt): so lange schwimmt sie, so lange liegt bzw. robbt sie am Strand
+const PEN_SWIM = [12, 24];
+const PEN_LAND = [14, 28];
+const PEN_SWIM_RANGE = 4; // so weit (Kacheln) schwimmt sie im Becken auf einmal
 
 // Wasser direkt am Ufer (eine begehbare Kachel daneben): dort schwimmt sie. Einmal je Karte berechnet
 let shoreFor = null;
@@ -65,11 +69,92 @@ export default class Seal extends Animal {
     return shoreWater();
   }
 
-  // wild schwimmt sie nur im Wasser
+  // wild schwimmt sie nur im Wasser, im Becken des Tierparks nur in dessen Wasser (an Land wie sonst)
   blocked(x, y) {
-    if (this.state !== 'wild') return super.blocked(x, y);
     const { tx, ty } = worldToTile(x, y);
+    if (this.wet()) return charAt(tx, ty) !== 'w' || !this.enclosure?.tileSet.has(tx + ',' + ty);
+    if (this.state !== 'wild') return super.blocked(x, y);
     return charAt(tx, ty) !== '~';
+  }
+
+  // im Wasser (wild immer, im Becken nur beim Schwimmen)?
+  wet() {
+    return this.state === 'wild' || (this.state === 'penned' && !!this.penInWater);
+  }
+
+  // ---- im Becken (Tierpark) ----
+  penTiles(test) {
+    return (this.enclosure?.tiles ?? []).filter(({ tx, ty }) => test(tx, ty));
+  }
+
+  nearestOf(tiles) {
+    let best = null;
+    let bestD = Infinity;
+    for (const t of tiles) {
+      const p = tileToWorld(t.tx, t.ty);
+      const d = Math.hypot(p.x - this.x, p.y - this.y);
+      if (d < bestD) [best, bestD] = [p, d];
+    }
+    return best;
+  }
+
+  updatePen(dt, player) {
+    this.time += dt;
+    const water = (tx, ty) => charAt(tx, ty) === 'w';
+    if (this.penInWater === undefined) this.penInWater = Math.random() < 0.5;
+    this.penLeft = (this.penLeft ?? Phaser.Math.FloatBetween(3, (this.penInWater ? PEN_SWIM : PEN_LAND)[1])) - dt;
+    if (this.penInWater) {
+      const here = worldToTile(this.x, this.y);
+      if (!water(here.tx, here.ty)) {
+        // (gerade eingezogen bzw. geladen) gleich ins Wasser
+        const w = this.nearestOf(this.penTiles(water));
+        if (!w) return (this.penInWater = false);
+        Object.assign(this, { x: w.x, y: w.y });
+      }
+      this.rise = Math.max(LOW, this.rise - dt * RISE_SPEED);
+      if (this.penLeft > 0) return this.penSwim(dt);
+      // ans Ufer: auf die nächste freie Kachel direkt am Wasser
+      const shoreTile = (tx, ty) => !water(tx, ty) && !isBlocked(tx, ty) && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => water(tx + dx, ty + dy));
+      const out = this.nearestOf(this.penTiles(shoreTile));
+      if (out) {
+        this.splash();
+        Object.assign(this, { x: out.x, y: out.y });
+        this.penInWater = false;
+        this.rise = 1;
+        this.pickWander();
+      }
+      this.penLeft = Phaser.Math.FloatBetween(...PEN_LAND);
+      return false;
+    }
+    if (this.penLeft > 0) return super.updateFree(dt, player);
+    const w = this.nearestOf(this.penTiles(water));
+    if (w) {
+      this.splash();
+      Object.assign(this, { x: w.x, y: w.y });
+      this.penInWater = true;
+      this.target = null;
+    }
+    this.penLeft = Phaser.Math.FloatBetween(...PEN_SWIM);
+    return false;
+  }
+
+  // im Becken langsam zu einer anderen Wasserkachel in der Nähe
+  penSwim(dt) {
+    if (!this.target || Math.hypot(this.target.x - this.x, this.target.y - this.y) < 3 || this.wanderTime <= 0) {
+      const { tx, ty } = worldToTile(this.x, this.y);
+      const near = this.penTiles((x, y) => charAt(x, y) === 'w' && Math.abs(x - tx) <= PEN_SWIM_RANGE && Math.abs(y - ty) <= PEN_SWIM_RANGE);
+      const t = Phaser.Utils.Array.GetRandom(near);
+      this.target = t ? tileToWorld(t.tx, t.ty) : null;
+      this.wanderTime = Phaser.Math.FloatBetween(4, 9);
+    }
+    this.wanderTime -= dt;
+    if (!this.target) return false;
+    const dx = this.target.x - this.x;
+    const dy = this.target.y - this.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const step = this.kind.speed * dt;
+    if (!this.move((dx / len) * step, (dy / len) * step)) this.target = null;
+    return true;
   }
 
   // fangen nur mit dem, was sie sich gerade wünscht, und nur aufgetaucht
@@ -83,6 +168,7 @@ export default class Seal extends Animal {
   }
 
   updateFree(dt, player) {
+    if (this.state === 'penned' && this.enclosure) return this.updatePen(dt, player);
     if (this.state !== 'wild') return super.updateFree(dt, player);
     this.time += dt;
     const d = Math.hypot(player.x - this.x, (player.y - this.y) * 2);
@@ -185,7 +271,7 @@ export default class Seal extends Animal {
   }
 
   render(moving) {
-    const wild = this.state === 'wild';
+    const wild = this.wet(); // (im Becken beim Schwimmen wie wild: nur der Kopf schaut heraus)
     if (wild) this.waterLook();
     else {
       // an Land: von den Wasserbildern zurück auf die liegende Robbe (robben übernimmt Animal.render)
@@ -210,7 +296,7 @@ export default class Seal extends Animal {
     }
     // Wunsch-Blase über dem Kopf (an Land liegt sie: Kopf niedriger und vorne)
     const top = wild ? this.sprite.y + (TOP - FEET_Y) * 0.5 : this.sprite.y - LAND_HEAD.y;
-    const show = wild && this.mode === 'peek' && this.rise > 0.8 && !!this.wish;
+    const show = this.state === 'wild' && this.mode === 'peek' && this.rise > 0.8 && !!this.wish;
     this.bubble.setVisible(show);
     if (show) {
       this.bubbleIcon.setTexture(this.wish === 'herring' ? 'herring' : 'ball').setScale(this.wish === 'herring' ? 0.3 : 0.5);

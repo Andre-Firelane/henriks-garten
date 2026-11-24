@@ -143,6 +143,7 @@ import Macaw from '../animals/Macaw.js';
 import BananaTool from '../tools/BananaTool.js';
 import FireflyEvening, { glowTexture } from '../world/Fireflies.js';
 import JungleHall from '../world/JungleHall.js';
+import UnderwaterWindow from '../world/UnderwaterWindow.js';
 import RopeBridge from '../world/RopeBridge.js';
 import Weather from '../world/Weather.js';
 import { SEASON_INFO, SEASON_LEVELS, firstSeason, seasonState, skipSeason } from '../world/season.js';
@@ -274,6 +275,7 @@ const TOAST_MIN_W = 260; // so breit (CSS-Pixel) muss der Platz neben dem Abzeic
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
 const SIGN_INNER_W = 38; // helle Tafel des Torschilds (Welt-Pixel), darauf die Tierbilder
 const SIGN_ICON_H = 22;
+const FLOOR_PROP_DEPTH = -99900; // flache Bilder im Boden (LEVEL.props mit floor): über dem gebackenen Boden, unter allem anderen
 
 // Für die Übersicht: womit man fängt (Bild, Name) und besondere Tipps je Tierart
 const CATCH_TOOLS = {
@@ -350,7 +352,7 @@ const CATCH_TIPS = {
   snowowl: tr('Nur nachts. Du hörst sie rufen, aber siehst sie nicht. Ein kleines „Huu“ neben dir zeigt, aus welcher Richtung es kommt. Sie sitzt oben in einer verschneiten Tanne. Bist du nah, steigt es genau über ihrer Tanne auf: Stell die Laterne darunter ab – im Licht siehst du sie. Kescher!', 'Only at night. You hear it call but cannot see it. A small “Hoo” next to you shows where it comes from. It sits up in a snowy pine. When you are close, it rises right above its pine: put the lantern down beneath it – in the light you can see it. Net!'),
   reindeer: tr('Nur tagsüber. Die Herde trabt ständig im Kreis auf ihrem Pfad – schneller als du. Folge den Trampelspuren, stell dich an den Pfad und warte still. Wer stillsteht, wird nicht bemerkt: Wirf das Lasso, wenn sie vorbeikommen.', 'Only by day. The herd keeps trotting in a circle on its trail – faster than you. Follow the hoof tracks, stand by the trail and wait quietly. Standing still, you go unnoticed: throw the lasso as they pass.'),
   walrus: tr('Am Kiesstrand und an der Eiskante. Weck ein dösendes Walross mit der Wärmflasche – dann hat es Hunger. Kescher 2 Muscheln, wo es im Wasser blubbert (Kescher-Zeichen), und füttere es: Dann kommt es mit.', 'On the pebble beach and at the ice edge. Wake a dozing walrus with the hot-water bottle – then it is hungry. Net 2 mussels where the water bubbles (net sign) and feed it: then it comes along.'),
-  polarbear: tr('Nur nachts auf dem Eis. Angle einen großen Fisch und leg ihn an ein Eisloch: Der Bär frisst ihn und döst danach. Schleich dich an, aber achte auf den Wind (die Schneefahnen): Weht er von dir zum Bären, riecht er dich. Berühren fängt ihn.', 'Only at night on the ice. Catch a big fish and put it by an ice hole: the bear eats it and then dozes. Sneak up, but watch the wind (the snow streaks): if it blows from you to the bear, it smells you. Touch it to catch it.'),
+  polarbear: tr('Nur nachts auf dem Eis. Leg einen Fisch aus der Kiste an ein Eisloch und geh ein Stück weg. Der Bär kommt und frisst eine Weile: Bleib draußen vor dem Ring, sonst hört er auf. Ist er satt, schläft er ein. Dann hingehen und streicheln.', 'Only at night on the ice. Put a fish from the chest by an ice hole and step away. The bear comes and eats for a while: stay outside the ring, or it stops. Once full, it falls asleep. Then go over and pet it.'),
   puffin: tr('Nur tagsüber an den Vogelfelsen im Fjord. Sie fliegen aufs Meer und kommen mit Fisch zurück – wer gerade am Ufer landet: Kescher!', 'Only by day at the bird rocks in the fjord. They fly out to sea and come back with fish – one that just landed by the shore: net!'),
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
   howler: tr('Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso! Mit etwas Glück ist es ein seltener Gibbon.', 'It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso! With a bit of luck it is a rare gibbon.'),
@@ -416,7 +418,7 @@ const CATCH_TIPS_SHORT = {
   snowowl: tr('Wo es ruft: Laterne abstellen!', 'Where it calls: put down the lantern!'),
   reindeer: tr('Am Pfad still warten, Lasso!', 'Wait still by the trail, lasso!'),
   walrus: tr('Wecken, 2 Muscheln, füttern!', 'Wake it, 2 mussels, feed it!'),
-  polarbear: tr('Großer Fisch ans Eisloch, gegen den Wind!', 'Big fish by the hole, come from downwind!'),
+  polarbear: tr('Fisch ans Eisloch, warten, bis er schläft!', 'Fish by the hole, wait till it sleeps!'),
   puffin: tr('Beim Landen: Kescher!', 'When it lands: net!'),
   anteater: tr('Lasso – beim Ameisenschlecken berühren.', 'Lasso – touch it while it licks ants.'),
   howler: tr('Banane unter seinen Baum, dann das Lasso!', 'Banana under its tree, then the lasso!'),
@@ -1371,7 +1373,7 @@ export default class GardenScene extends Phaser.Scene {
     this.wolfNight = null; // Wolfsnacht im Wald (siehe updateWolfNight)
     this.polarWolves = null; // Polarwolf-Rudel in der Tundra der Eiswelt (siehe updatePolarWolves)
     this.bearBait = null; // großer Fisch am Eisloch für den Eisbären (siehe placeBearFish in IceCatch.js)
-    this.iceCatch = null; // Eiswelt: Hasenbau, Muscheln, Eisbär-Köder, Wind (siehe updatePolarWolves)
+    this.iceCatch = null; // Eiswelt: Hasenbau, Muscheln, Eisbär-Köder (siehe updatePolarWolves)
     this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
@@ -1431,7 +1433,7 @@ export default class GardenScene extends Phaser.Scene {
     const hero = LEVEL.hero && this.textures.exists(LEVEL.hero) ? LEVEL.hero : 'hero';
     this.player = new Player(this, start.x, start.y, hero, { swim: !!LEVEL.sea });
     // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel (erst nach Henrik: der Nebel richtet sich nach seiner Position)
-    this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.expedition && !LEVEL.camp && LEVEL.season !== 'normal') ? new Weather(this, LEVEL.season) : null; // Expedition: gewürfeltes Wetter
+    this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.expedition && !LEVEL.camp && LEVEL.season !== 'normal') || LEVEL.snow ? new Weather(this, LEVEL.season) : null; // Expedition: gewürfeltes Wetter; Eiswelt im Tierpark: nur Schneefall
     // war Henrik beim Verlassen auf dem E-Roller (Tierpark-Abschnitt, Aquarium, Reptilienhaus, Ausbau): weiterfahren
     if (game.scooterRiding && this.scooter && ownsScooter()) this.getOnScooter(true);
     // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel, nicht zurück aus einer kleinen Map), findet es am Inselsteg
@@ -1483,6 +1485,7 @@ export default class GardenScene extends Phaser.Scene {
         if (!SPECIES[s.species]) continue; // unbekannte Tierart im Spielstand (z. B. aus einer anderen Version): überspringen
         if (otherSeason(s)) continue;
         if (s.species === 'fish' && s.state === 'wild') continue; // wilde Fische gibt es nicht mehr, nur Schatten (FishShadows)
+        if ((s.species === 'wolf' || s.species === 'arcticwolf') && s.state === 'wild') continue; // alte Spielstände: wilde Wölfe ohne Rudel liefen sonst zahm herum (das Rudel legt WolfNight neu an)
         // pending: aus einem anderen Tierpark-Abschnitt hergeschickt, noch ohne Platz (siehe sendToSection): kommt unten ins Gehege
         const a = s.pending ? this.createAnimal(s.species, start.x, start.y, s.variant) : this.createAnimal(s.species, s.x, s.y, s.variant);
         if (s.pending) {
@@ -1736,6 +1739,8 @@ export default class GardenScene extends Phaser.Scene {
     this.drawProps();
     this.ropeBridge = LEVEL.ropeBridge ? new RopeBridge(this, LEVEL.ropeBridge) : null; // Seilbrücke der roten Pandas
     this.jungleHall = LEVEL.jungleHall ? new JungleHall(this, LEVEL.jungleHall) : null; // Tropenhalle: Glasdach und Sprühnebel
+    this.polarHall = LEVEL.polarHall ? new JungleHall(this, LEVEL.polarHall, { mist: false }) : null; // Polarhalle (Eiswelt im Tierpark): nur das Glasdach
+    this.underwater = LEVEL.underwater ? new UnderwaterWindow(this, LEVEL.underwater) : null; // Unterwasser-Scheibe unter der Polarhalle
 
     // ESC (oder der Menü-Knopf oben rechts) öffnet das Menü: speichern, zurück zum Startbildschirm
     this.input.keyboard.on('keydown-ESC', (e) => e?.timeStamp !== this.decor?.escAt && this.openGameMenu()); // (Esc im Setzen-Modus beendet nur ihn)
@@ -2106,7 +2111,8 @@ export default class GardenScene extends Phaser.Scene {
     for (const p of LEVEL.props ?? []) {
       const n = p.size ?? 1;
       const { x, y } = tileToWorld(p.tx + (n - 1) / 2, p.ty + (n - 1) / 2);
-      this.add.image(x, y, p.key).setOrigin(0.5, p.originY).setDepth(tileToWorld(p.tx + n - 1, p.ty + n - 1).y);
+      // floor: liegt flach im Boden (z. B. die Treppe in der Polarhalle), alles steht darüber
+      this.add.image(x, y, p.key).setOrigin(0.5, p.originY).setDepth(p.floor ? FLOOR_PROP_DEPTH : tileToWorld(p.tx + n - 1, p.ty + n - 1).y);
     }
   }
 
@@ -6925,7 +6931,7 @@ export default class GardenScene extends Phaser.Scene {
   // der Eisbär ist am Köder angekommen und frisst (danach legt er sich hin, siehe PolarBear.js)
   bearArrived(bear) {
     this.removeBearBait();
-    if (this.nearPlayer(bear)) this.showToast(tr('🐻‍❄️ Der Eisbär frisst den Fisch.', '🐻‍❄️ The polar bear is eating the fish.'));
+    if (this.nearPlayer(bear)) this.showToast(tr('🐻‍❄️ Er frisst. Bleib weg und warte!', '🐻‍❄️ It’s eating. Stay away and wait!'));
   }
 
   // Henrik steht am Fisch: der Eisbär traut sich nicht heran
@@ -6933,14 +6939,16 @@ export default class GardenScene extends Phaser.Scene {
     if (this.nearPlayer(bear)) this.showToast(tr('Der Eisbär traut sich nicht heran. Geh ein Stück vom Fisch weg.', 'The polar bear won’t come closer. Step away from the fish.'));
   }
 
-  // satt: er döst – jetzt anschleichen, aber nicht mit dem Wind
+  // satt: er schläft – jetzt hingehen und streicheln
   bearAsleep(bear) {
-    if (this.nearPlayer(bear)) this.showToast(tr('💤 Satt! Schleich dich an – aber so, dass der Wind ihm nicht deinen Geruch bringt.', '💤 Full! Sneak up on it – but don’t let the wind carry your scent to it.'));
+    if (this.nearPlayer(bear)) this.showToast(tr('💤 Er schläft! Jetzt hin und streicheln.', '💤 It’s asleep! Go and pet it.'));
   }
 
-  // gerochen: er trottet ein Stück weiter und legt sich dort wieder hin
-  bearSmelled(bear) {
-    if (this.nearPlayer(bear)) this.showToast(tr('Er hat dich gerochen! Komm gegen den Wind.', 'It smelled you! Come from downwind.'));
+  // beim Fressen zu nah: er hört auf und brummt (beim ersten Mal ein Hinweis)
+  bearDisturbed(bear) {
+    if (this.bearDisturbHint || !this.nearPlayer(bear)) return;
+    this.bearDisturbHint = true;
+    this.showToast(tr('Zu nah! Geh aus dem Ring, dann frisst er weiter.', 'Too close! Leave the ring and it eats on.'));
   }
 
   // Schneehase ist in seinen Bau geflitzt: beim ersten Mal ein Hinweis
@@ -7337,7 +7345,7 @@ export default class GardenScene extends Phaser.Scene {
       this.polarWolves = null;
     }
     this.polarWolves?.update(dt);
-    // Fangen mit mehr Schritten (Hasenbau, Muscheln, Eisbär-Köder, Wind), siehe IceCatch.js
+    // Fangen mit mehr Schritten (Hasenbau, Muscheln, Eisbär-Köder), siehe IceCatch.js
     if (on && !this.iceCatch) this.iceCatch = new IceCatch(this);
     if (!on && this.iceCatch) {
       this.iceCatch.destroy();
@@ -8634,7 +8642,7 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event
+        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard', 'wolf', 'arcticwolf'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event; wilde Wölfe gehören zu einem Rudel (WolfNight legt es neu an)
         .map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, ...(a.uid != null ? { uid: a.uid } : {}), since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
@@ -9360,6 +9368,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateFireflies(dt);
     this.ropeBridge?.update(dt);
     this.jungleHall?.update(dt);
+    this.underwater?.update(dt);
     this.hyenaPack?.update(dt);
     this.weather?.update(dt);
     this.updateSeason(dt);

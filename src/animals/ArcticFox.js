@@ -4,7 +4,7 @@
 // ihn mit dem Kescher. Kein Wegrennen, kein Zeitdruck. Spuren wie beim Schneeleoparden (SnowLeopard.js), Laterne wie
 // beim Elch (Elk.js). Im Gehege ist er ein ganz normales Tier.
 import Phaser from 'phaser';
-import Animal from './Animal.js';
+import Fox from './Fox.js';
 import { pawTexture } from './Wolf.js';
 import { glowTexture } from '../world/Fireflies.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
@@ -20,7 +20,7 @@ const GLOW_ALPHA = 0.85;
 const BLINK_EVERY = [2.5, 5]; // ... so oft blinzeln sie ...
 const BLINK_TIME = 0.14; // ... so kurz
 // Lage der Augen im Bild (von den Füßen aus, ausgemessen in arcticfox.png): nach rechts unten bzw. links unten schauend
-const EYES = { 1: [[9, -36.5], [17, -39.5]], [-1]: [[-10, -38.5], [0, -38.5]] }; // (Seitenansicht: das hintere Auge sitzt höher, darunter die Nase)
+const EYES = { 1: [[10, -38.5], [18, -41.5]], [-1]: [[-11, -38.5], [-19, -41.5]] }; // (Halbprofil: das hintere Auge sitzt höher)
 const TRACK_STEP = 0.55; // Abstand der Abdrücke (Kacheln; kleiner als beim Schneeleoparden)
 const TRACK_START = [8, 13]; // so weit (Kacheln) vom Versteck beginnt die Spur
 const TRACK_VIA = [1, 2]; // an so vielen Felsen oder Tannen führt sie vorbei
@@ -30,7 +30,8 @@ const TRACK_DEPTH = -99989;
 const VIA_CHARS = 'ȒȞƟÊṖ'; // Felsen, Eisblöcke und Tannen, an denen die Spur vorbeiführt
 const SPOT_AWAY = 9; // so weit (Kacheln) weg von Henrik sucht er sich ein Versteck
 
-export default class ArcticFox extends Animal {
+// (Bilder: der Silberfuchs aufgehellt, tools/arctic-fox.py; im Gehege schläft er wie der Fuchs, siehe Fox.js)
+export default class ArcticFox extends Fox {
   constructor(scene, x, y) {
     super(scene, x, y, 'arcticfox');
     this.spot = null; // Kachel des Verstecks (Ende der Spur)
@@ -194,7 +195,11 @@ export default class ArcticFox extends Animal {
       this.showEyes(false);
       return;
     }
-    // wild: nur im Laternenlicht schwach zu sehen, dazu die Augen
+    // wild: sitzt still (Standbild statt Steh-Animation, darauf sind die Augen ausgemessen); nur im Laternenlicht schwach
+    // zu sehen, dazu die Augen
+    const f = this.kind.frames;
+    this.sprite.stop().setFlipX(false);
+    this.sprite.setTexture(this.kind.texture, this.faceX < 0 ? f.downLeft : f.downRight).setOrigin(0.5, this.kind.originY);
     this.sprite.setVisible(this.lit).setAlpha(SHOW_ALPHA);
     this.shadow.setVisible(false);
     this.showEyes(this.lit);

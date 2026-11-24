@@ -5,8 +5,7 @@
 //   (netSwing). Mit MUSSELS_NEEDED Muscheln füttert Henrik ein hungriges Walross (Walrus.js), dann kommt es mit.
 // - Eisbär: neben jedem Eisloch eine kleine Ablagestelle, darüber eine Hinweisblase mit dem Fisch (wie der Salzstein
 //   über dem Steinhaufen der Yaks). Mit dem Fisch aus der Kiste in der Hand legt Henrik ihn dort ab (oder wirft ihn
-//   hin, dropBearBait in GardenScene); der Eisbär kommt (PolarBear.js). Dazu der Wind: Schneefahnen treiben übers
-//   Bild, die Richtung wechselt selten; smells() sagt, ob der Bär Henrik riecht.
+//   hin, dropBearBait in GardenScene); der Eisbär kommt (PolarBear.js).
 import Phaser from 'phaser';
 import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from './iso.js';
@@ -35,24 +34,14 @@ const ISLAND_REFILL = 45; // ... ist keins mehr da (gefangen, weggeschwommen), k
 const ISLAND_HIDDEN = 420; // ... aber nur, wo Henrik es nicht gerade sieht (Abstand in Welt-Pixeln)
 const ISLAND_LIFE = 600; // so lange (Sekunden) bleibt es mindestens
 const OWL_REFILL = 30; // nachts sitzt immer eine Schneeeule in einer Tanne: ist sie gefangen, kommt nach so vielen Sekunden eine neue
-const WIND_CHANGE = [240, 360]; // so oft (Sekunden) dreht der Wind
-const WIND_TURN = 3; // so lange (Sekunden) dauert das Drehen
-const STREAKS = 14; // so viele Schneefahnen sind gleichzeitig unterwegs
-const STREAK_SPEED = 190; // Welt-Pixel pro Sekunde
-const STREAK_DEPTH = 99990; // über der Welt, unter Texten und Sprechblasen
-const SMELL_ANGLE = 0.55; // cos des Winkels: so genau muss der Wind von Henrik zum Bären wehen (etwa 55 Grad)
 
 function ensureTextures(scene) {
-  if (scene.textures.exists('wind_streak')) return;
+  if (scene.textures.exists('ice_net_sign')) return;
   const g = scene.make.graphics({ x: 0, y: 0 }, false);
-  // weiche Linie, in der Mitte am hellsten
-  for (let i = 0; i < 20; i++) g.fillStyle(0xffffff, Math.sin((i / 19) * Math.PI) * 0.9).fillRect(i * 2, 1, 2, 1.4);
-  g.generateTexture('wind_streak', 40, 4);
   // Schildchen über den Blubberstellen: einmal als Bild (SIGN_RES-fach fein) statt als Zeichnung, die in jedem Bild neu
   // zerlegt wird (bis zu zehn Schilder, auch außerhalb des Bildes, ließen das Tablet ruckeln)
   const k = SIGN_RES;
   const box = (x, y) => [(SIGN_O - 8.5 + x) * k, (SIGN_O - 8.5 + y) * k, 17 * k, 17 * k, 4 * k];
-  g.clear();
   g.fillStyle(0x5a4632, 0.35).fillRoundedRect(...box(0, 1));
   g.fillStyle(0xfffaf0, 0.95).fillRoundedRect(...box(0, 0));
   g.lineStyle(k, 0x8a6e4e, 1).strokeRoundedRect(...box(0, 0));
@@ -72,38 +61,12 @@ export default class IceCatch {
     this.spots = []; // Blubberstellen { x, y, tx, ty, bubbleIn }
     this.spotCheckIn = 0;
     ensureTextures(scene);
-    const a = Phaser.Math.Between(0, 7) * (Math.PI / 4);
-    this.wind = { angle: a, from: a, to: a, turn: 0, changeIn: Phaser.Math.FloatBetween(...WIND_CHANGE) };
-    this.streaks = [];
-    for (let i = 0; i < STREAKS; i++) {
-      const img = scene.add.image(0, 0, 'wind_streak').setDepth(STREAK_DEPTH).setAlpha(0);
-      this.streaks.push({ img, life: 0, age: Math.random() * 2, max: 1 });
-    }
     this.near = null;
     this.islandCheckIn = 0;
     this.islands = (LEVEL.walrusIslands ?? []).map((r) => ({ ...r, emptyFor: ISLAND_REFILL })); // beim Ankommen gleich eins
   }
 
-  get windX() {
-    return Math.cos(this.wind.angle);
-  }
-
-  get windY() {
-    return Math.sin(this.wind.angle);
-  }
-
-  // riecht der Bär Henrik? Der Wind weht ungefähr von Henrik zum Bären, und Henrik ist nah genug
-  smells(player, bear, dist) {
-    const vx = bear.x - player.x;
-    const vy = bear.y - player.y;
-    if (Math.hypot(vx, vy * 2) > dist) return false;
-    const len = Math.hypot(vx, vy);
-    if (len < 1) return true;
-    return (vx * this.windX + vy * this.windY) / len > SMELL_ANGLE;
-  }
-
   update(dt) {
-    this.updateWind(dt);
     this.updateIslands(dt);
     this.updateOwl(dt);
     this.updateSpots(dt);
@@ -114,40 +77,6 @@ export default class IceCatch {
       this.near = near;
       this.nearKey = key;
       this.scene.updateToolbar();
-    }
-  }
-
-  // --- Wind und Schneefahnen ---
-
-  updateWind(dt) {
-    const w = this.wind;
-    w.changeIn -= dt;
-    if (w.changeIn <= 0) {
-      w.changeIn = Phaser.Math.FloatBetween(...WIND_CHANGE);
-      w.from = w.angle;
-      w.to = w.angle + (Math.random() < 0.5 ? 1 : -1) * Phaser.Math.Between(1, 3) * (Math.PI / 4);
-      w.turn = WIND_TURN;
-    }
-    if (w.turn > 0) {
-      w.turn = Math.max(0, w.turn - dt);
-      w.angle = Phaser.Math.Linear(w.to, w.from, w.turn / WIND_TURN);
-    }
-    const view = this.scene.cameras.main.worldView;
-    for (const s of this.streaks) {
-      s.age += dt;
-      if (s.age >= s.max) {
-        // neue Fahne irgendwo im Bild (etwas gegen den Wind versetzt, damit sie ins Bild treibt)
-        s.age = 0;
-        s.max = Phaser.Math.FloatBetween(0.9, 1.8);
-        s.x = view.x + Math.random() * view.width - this.windX * 120;
-        s.y = view.y + Math.random() * view.height - this.windY * 120;
-        s.alpha = Phaser.Math.FloatBetween(0.25, 0.5);
-        s.img.setScale(Phaser.Math.FloatBetween(0.6, 1.2), 1);
-      }
-      s.x += this.windX * STREAK_SPEED * dt;
-      s.y += this.windY * STREAK_SPEED * dt;
-      const t = s.age / s.max;
-      s.img.setPosition(s.x, s.y).setRotation(this.wind.angle).setAlpha(Math.sin(t * Math.PI) * s.alpha);
     }
   }
 
@@ -472,8 +401,6 @@ export default class IceCatch {
     for (const o of this.bait ?? []) o.img.destroy();
     this.bait = [];
     this.scene.bearHintEl?.classList.remove('show');
-    for (const s of this.streaks) s.img.destroy();
-    this.streaks = [];
     for (const s of this.spots) s.sign.destroy();
     this.spots = [];
   }

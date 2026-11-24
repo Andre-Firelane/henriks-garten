@@ -10,6 +10,7 @@ import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
 import { MAP_W, MAP_H, charAt, inPen, isBlocked } from '../world/map.js';
 import { tr } from '../i18n.js';
+import { inHall, resetHallFlight, updateHallFlight } from './hallFlight.js';
 
 const LIGHT_DIST = 110; // so nah (Kachel-Proportionen, y doppelt) muss die abgestellte Laterne stehen
 const CALL_EVERY = [9, 16]; // so oft ruft sie (Sekunden)
@@ -71,6 +72,7 @@ export default class SnowOwl extends Animal {
   }
 
   updateFree(dt, player) {
+    if (inHall(this)) return updateHallFlight(this, dt, () => super.updateFree(dt, player)); // Polarhalle im Tierpark
     if (this.state !== 'wild') return super.updateFree(dt, player);
     if (!this.spot && !this.perchSomewhere(worldToTile(player.x, player.y))) return false;
     const l = this.scene.lantern;
@@ -122,6 +124,7 @@ export default class SnowOwl extends Animal {
   restore(state) {
     super.restore(state);
     this.spot = null;
+    resetHallFlight(this);
   }
 
   enterPen() {
@@ -137,6 +140,16 @@ export default class SnowOwl extends Animal {
       this.shadow.setVisible(false);
       if (this.sprite.texture.key !== 'snowowl') this.sprite.setTexture('snowowl', this.faceX < 0 ? 1 : 0);
       if (this.spot) this.sprite.setY(this.y - PERCH_UP).setDepth(this.y + 2);
+      return;
+    }
+    // in der Polarhalle: oben auf einem Felsen bzw. einer Tanne, im Flug zum nächsten Platz (Vorderansicht)
+    if (inHall(this) && this.hallUp) {
+      const f = this.kind.frames;
+      const flying = !!this.hallFlight && this.scene.textures.exists('snowowl_fly');
+      if (flying) this.sprite.setTexture('snowowl_fly', this.faceX < 0 ? 1 : 0).setFlipX(false);
+      else this.sprite.setTexture('snowowl', this.faceX < 0 ? f.downLeft : f.downRight).setFlipX(false);
+      this.sprite.setY(this.sprite.y - this.hallUp).setDepth(this.y + 60);
+      this.shadow.setVisible(!!this.hallFlight);
       return;
     }
     // folgt sie Henrik und ist unterwegs: fliegen (nur Vorderansicht, nach links bzw. rechts)

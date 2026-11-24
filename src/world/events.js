@@ -93,7 +93,7 @@ export const EVENTS = [
 // Weltkarte: in diesen Gebieten läuft das Event (dort bekommt das Schild einen leuchtenden Rahmen). Das Reittier ist
 // kein Ereignis in einem Gebiet, sondern begleitet einen überall – es wird auf der Karte nicht markiert.
 const EVENT_AREAS = {
-  babies: ['park', 'park2', 'park3', 'aquarium'],
+  babies: ['park', 'park2', 'park3', 'park4', 'aquarium'],
   flamingo: ['meadow', 'forest', 'savanna'],
   farm: ['meadow'],
   rare: ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'],

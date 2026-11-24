@@ -1074,17 +1074,40 @@ const ANIMATIONS = [
   // Rentier (Eiswelt): Figur so hoch wie das Standbild (114 px), Laufen (im Gehege, folgend) und Rennen (wild auf dem
   // Rundweg) je ein Schrittzyklus (tools/find-loop.py), Stehen jedes zweite Bild (vorne nur die erste Hälfte);
   // dropShadowGreen: gemalter Schatten auf dem Greenscreen weg
-  { src: 'Animation/Rentier läuft vorne.mp4', out: 'reindeer_walk.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [60, 82], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
-  { src: 'Animation/Rentier läuft hinten.mp4', out: 'reindeer_walk_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [24, 56], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
-  { src: 'Animation/Rentier rennt vorne.mp4', out: 'reindeer_run.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [46, 55], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
-  { src: 'Animation/Rentier rennt hinten.mp4', out: 'reindeer_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [32, 44], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
-  { src: 'Animation/Rentier idle vorne.mp4', out: 'reindeer_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 47], every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
-  { src: 'Animation/Rentier idle hinten.mp4', out: 'reindeer_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier läuft vorne.mp4', out: 'reindeer_walk.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [60, 82], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier läuft hinten.mp4', out: 'reindeer_walk_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [24, 56], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier rennt vorne.mp4', out: 'reindeer_run.png', dropShadowGreen: 18, dropGreyHalo: true, range: [46, 55], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier rennt hinten.mp4', out: 'reindeer_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [32, 44], scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier idle vorne.mp4', out: 'reindeer_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [0, 47], every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
+  { src: 'Animation/Rentier idle hinten.mp4', out: 'reindeer_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
   // Schneehase: Figur so hoch wie das Standbild (68 px); höherer Rahmen, beim Hoppeln springt er hoch
   { src: 'Animation/Schneehase läuft vorne.mp4', out: 'snowhare_walk.png', range: [18, 38], scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
-  { src: 'Animation/Schneehase läuft hinten.mp4', out: 'snowhare_walk_back.png', range: [45, 82], scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  { src: 'Animation/Schneehase läuft hinten.mp4', out: 'snowhare_walk_back.png', range: [45, 82], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   { src: 'Animation/Schneehase idle vorne.mp4', out: 'snowhare_idle.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   { src: 'Animation/Schneehase idle hinten.mp4', out: 'snowhare_idle_back.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  // Eisbär: Figur so hoch wie das Standbild (vorne 124, hinten 137 px im Bogen, im Spiel halb so groß, SIZE in
+  // PolarBear.js); Laufen je ein Schrittzyklus, Stehen und Fressen jedes zweite Bild (vor und zurück). Frisst: nur der
+  // Teil, in dem er liegt und am Fisch knabbert (ohne onlyFigure, sonst fällt der Fisch weg)
+  { src: 'Animation/Eisbär läuft vorne.mp4', out: 'polarbear_walk.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [23, 42], scale: 0.335, frameW: 152, frameH: 148, feetY: 143 },
+  { src: 'Animation/EIsbär läuft hinten.mp4', out: 'polarbear_walk_back.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [41, 62], scale: 0.418, frameW: 168, frameH: 148, feetY: 143 },
+  { src: 'Animation/Eisbär idle vorne.mp4', out: 'polarbear_idle.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 47], every: 2, scale: 0.335, frameW: 152, frameH: 148, feetY: 143 },
+  { src: 'Animation/Eisbär idle hinten.mp4', out: 'polarbear_idle_back.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, every: 2, scale: 0.418, frameW: 152, frameH: 148, feetY: 143 },
+  { src: 'Animation/Eisbär frisst.mp4', out: 'polarbear_eat.png', brownToGrey: true, dropShadowGreen: 18, dropGreyHalo: true, range: [24, 71], every: 2, scale: 0.335, frameW: 152, frameH: 148, feetY: 143 },
+  // Walross: Figur so hoch wie das Standbild (108 px, im Spiel halb so groß); von hinten läuft es mit dem Video von vorne
+  // (Walrus.js); unter Wasser (Unterwasser-Scheibe, Seitenansicht nach rechts) das ganze kurze Schwimm-Video
+  { src: 'Animation/Walross läuft vorne.mp4', out: 'walrus_walk.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [57, 76], scale: 0.308, frameW: 152, frameH: 128, feetY: 122 },
+  { src: 'Animation/Walross idle vorne.mp4', out: 'walrus_idle.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 47], every: 2, scale: 0.308, frameW: 136, frameH: 128, feetY: 122 },
+  { src: 'Animation/Walross idle hinten.mp4', out: 'walrus_idle_back.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 47], every: 2, scale: 0.308, frameW: 136, frameH: 128, feetY: 122 },
+  { src: 'Animation/Walross schwimmt.mp4', out: 'walrus_underwater.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 22], scale: 0.308, frameW: 136, frameH: 128, feetY: 122 },
+  // Robbe und Sattelrobbe unter Wasser (Unterwasser-Scheibe): Seitenansicht, im Video nach links -> gespiegelt; im
+  // Spiel kleiner gezeigt (SCALE in UnderwaterWindow.js)
+  { src: 'Animation/Robbe schwimmt.mp4', out: 'seal_underwater.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, mirror: 'all', range: [20, 54], scale: 0.45, frameW: 160, frameH: 120, feetY: 110 },
+  { src: 'Animation/Robbe2 schwimmt.mp4', out: 'seal2_underwater.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, mirror: 'all', range: [6, 44], scale: 0.45, frameW: 200, frameH: 120, feetY: 110 },
+  // Papageitaucher: Figur so hoch wie das Standbild (55 px); fliegt (Seitenansicht nach rechts) ein Flügelschlag,
+  // anderthalbmal so groß wie zuerst (war zu klein)
+  { src: 'Animation/Papageientaucher idle vorne.mp4', out: 'puffin_idle.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [0, 47], every: 2, scale: 0.137, frameW: 64, frameH: 68, feetY: 62 },
+  { src: 'Animation/Papageientaucher idle hinten.mp4', out: 'puffin_idle_back.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [0, 47], every: 2, scale: 0.137, frameW: 64, frameH: 68, feetY: 62 },
+  { src: 'Animation/Papageientaucher fliegt.mp4', out: 'puffin_fly_anim.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [46, 59], scale: 0.3, frameW: 112, frameH: 100, feetY: 92 },
   // Zooauto mit Anhänger (Schnellreise, in allen Gebieten): ein Bild, Fahrtrichtung unten-links wie bisher Bild 0/1 der
   // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
   // (ca. 199,183,172) in der unteren Hälfte entfernt
@@ -1114,15 +1137,17 @@ const ANIMATIONS = [
 // keyPerFrame: Video wechselt zwischen Hintergrundtönen (Hintergrund je Bild erkennen, siehe readVideo);
 // dropShadowGreen: dunkelgrüne Reste (gemalter Schatten auf dem Greenscreen): Pixel mit so viel mehr Grün als Rot/Blau weg;
 // whiteBreath: Halbdurchsichtiges vor dem Greenscreen (Atemwölkchen) ist grün geworden: grünstichige Pixel weiß und zart;
+// darkShadow: dunkelgrüne Schattenreste am Rand der Figur weg (siehe readVideo);
 // dropGreyHalo: halb durchsichtiges Dunkelgrau ohne Rotstich weg (Schatten, Rand eines Lichtscheins; Schneeleopard von hinten);
 // onlyFigure: Grünstichiges weg und je Bild nur das größte zusammenhängende Stück behalten (z. B. ohne die Atemwolke);
+// keepParts: dazu auch Stücke ab diesem Anteil am größten (Geweihhälfte am dünnen Steg, Rentier);
 // dropSteel: neutral graue, helle Pixel weg (eine Messerklinge; Kleidung und Fell sind wärmer getönt), den Umriss danach
 // entfernt onlyFigure
 // in einem Bild (Zelle ox, oy, w x h) nur das größte zusammenhängende sichtbare Stück behalten, alles andere durchsichtig.
 // Zusammenhang wird an der um THIN Pixel geschrumpften Figur geprüft: dünne Linien (z. B. der Umriss einer Atemwolke),
 // die nur über einen schmalen Steg an der Figur hängen, zählen nicht dazu; danach wieder so weit aufgefüllt
 const THIN = 3;
-function keepLargestPart(data, W, ox, oy, w, h) {
+function keepLargestPart(data, W, ox, oy, w, h, keepParts = 0) {
   const solid = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) solid[y * w + x] = data[((oy + y) * W + ox + x) * 4 + 3] ? 1 : 0;
   // schrumpfen bzw. wachsen lassen (Quadrat mit Radius r), getrennt nach Zeilen und Spalten
@@ -1172,16 +1197,18 @@ function keepLargestPart(data, W, ox, oy, w, h) {
     }
     sizes.push(n);
   }
-  const keepId = sizes.indexOf(Math.max(...sizes));
+  // keepParts: auch Stücke behalten, die mindestens so groß sind (Anteil am größten), z. B. eine Geweihhälfte, die nur
+  // über einen dünnen Steg am Kopf hängt
+  const biggest = Math.max(...sizes);
   const kept = new Uint8Array(w * h);
-  for (let p = 0; p < w * h; p++) kept[p] = label[p] === keepId ? 1 : 0;
+  for (let p = 0; p < w * h; p++) kept[p] = label[p] && (sizes[label[p]] === biggest || (keepParts && sizes[label[p]] >= biggest * keepParts)) ? 1 : 0;
   const keep = grow(kept, THIN + 1, false);
   for (let p = 0; p < w * h; p++) if (!keep[p]) data[((oy + Math.floor(p / w)) * W + ox + (p % w)) * 4 + 3] = 0;
 }
 
-function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false, dropGreyHalo = false }) {
+function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false, dropGreyHalo = false, darkShadow = false, keepParts = 0 }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
-  const img = video ? readVideo(src, keyPerFrame) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
+  const img = video ? readVideo(src, keyPerFrame, darkShadow) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
   count ??= cols * rows;
   const { width: W, height: H, data } = img;
@@ -1246,7 +1273,7 @@ function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror 
   if (onlyFigure) {
     // halb Durchsichtiges vor dem Greenscreen (die Atemwolke) ist grünstichig: weg, dann hängt die Wolke nicht mehr an der Figur
     for (let k = 0; k < data.length; k += 4) if (data[k + 3] && data[k + 1] - Math.max(data[k], data[k + 2]) >= 12) data[k + 3] = 0;
-    for (const i of frames) keepLargestPart(data, W, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch);
+    for (const i of frames) keepLargestPart(data, W, (i % cols) * cw, Math.floor(i / cols) * ch, cw, ch, keepParts);
   }
   if (steady) steadyFrames(img, cols, cw, ch, frames);
   if (evenBrightness) {
@@ -1318,7 +1345,7 @@ function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror 
 // wird der grüne Schimmer entfernt (Grün höchstens so stark wie Rot oder Blau)
 const KEY_NEAR = 45; // so nah an einer Hintergrundfarbe: ganz durchsichtig
 const KEY_FAR = 100; // ab so weit weg: ganz Figur
-function readVideo(src, perFrame = false) {
+function readVideo(src, perFrame = false, darkShadow = false) {
   const file = path.resolve(src);
   const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file])
     .toString().trim().split(',').map(Number);
@@ -1424,7 +1451,12 @@ function readVideo(src, perFrame = false) {
           edgy = A(X + dx, y + dy) < 255;
         }
       }
-      if (edgy) img.data[k + 1] = Math.min(img.data[k + 1], Math.max(img.data[k], img.data[k + 2]));
+      if (!edgy) continue;
+      // darkShadow: dunkelgrüne Randpixel (gemalter Schatten zwischen den Beinen, den der Farbeimer von außen nicht
+      // erreicht) ganz weg statt nur entgrünt, sonst bleiben sie als schwarzer Fleck
+      const rb = Math.max(img.data[k], img.data[k + 2]);
+      if (darkShadow && rb < 70 && img.data[k + 1] - rb > 25) img.data[k + 3] = 0;
+      else img.data[k + 1] = Math.min(img.data[k + 1], rb);
     }
   }
   img.frames = frames;
@@ -1612,6 +1644,19 @@ function prepareGrid(entry) {
   }
   // buttonEyes: große Augen (heller Ring um die Pupille) durch kleine schwarze Knopfaugen ersetzen (Pinguin läuft)
   if (entry.buttonEyes) for (let n = 0; n < total; n++) buttonEyes(sheet, ...at(n), frameW, frameH);
+  // brownToGrey: Braunes (deutlich mehr Rot als Blau) silbergrau mit leichtem Blaustich färben, Helligkeit bleibt
+  // (Eisbär frisst: aus dem braunen Happen wird ein Fisch)
+  if (entry.brownToGrey) {
+    const d = sheet.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (!d[i + 3] || d[i] - d[i + 2] < 30 || d[i] < d[i + 1]) continue;
+      const l = 0.3 * d[i] + 0.59 * d[i + 1] + 0.11 * d[i + 2];
+      const v = Math.min(255, l * 1.1);
+      d[i] = Math.round(v * 0.92);
+      d[i + 1] = Math.round(v * 0.97);
+      d[i + 2] = Math.round(Math.min(255, v * 1.06));
+    }
+  }
   writeSheet(out, sheet);
   console.log(`${out}: ${total} Frames à ${frameW}x${frameH}, Maßstab ${scale.toFixed(3)}`);
 }

@@ -27,6 +27,7 @@ const SECTIONS = [
   ['park', tr('Zentrum', 'Center'), 'sheep'],
   ['park2', tr('Savanne', 'Savanna'), 'lion'],
   ['park3', tr('Bambuswald', 'Bamboo Forest'), 'panda'],
+  ['park4', tr('Eiswelt', 'Ice World'), 'polarbear'],
 ];
 
 const caught = (sp) => game.caughtSpecies?.includes(sp);

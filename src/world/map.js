@@ -62,6 +62,12 @@ export const OBJECTS = {
   // Glaswand (Glaspavillon auf der Affeninsel im Tierpark; Bild wie das Glastor), entlang tx bzw. ty
   ǧ: { key: 'glass_x', originY: 44 / 64, solid: true, fence: { kind: 'glass', axis: 'x' } },
   Ǧ: { key: 'glass_y', originY: 44 / 64, solid: true, fence: { kind: 'glass', axis: 'y' } },
+  // Glasfassade ohne Holz (Polarhalle im Tierpark): hoch (ǩ Ǩ) bzw. niedrig (ǯ Ʒ, Pinguinbecken in der Halle), entlang
+  // tx bzw. ty; Bilder aus tools/glass-facade.py
+  ǩ: { key: 'glasswall_x', originY: 80 / 100, solid: true, fence: { kind: 'glasswall', axis: 'x' } },
+  Ǩ: { key: 'glasswall_y', originY: 80 / 100, solid: true, fence: { kind: 'glasswall', axis: 'y' } },
+  ǯ: { key: 'glasslow_x', originY: 44 / 64, solid: true, fence: { kind: 'glasslow', axis: 'x' } },
+  Ʒ: { key: 'glasslow_y', originY: 44 / 64, solid: true, fence: { kind: 'glasslow', axis: 'y' } },
   // Stehtisch am Teehaus (Bambuswald im Tierpark): dort trinken die Besucher ihren Tee
   ţ: { key: 'tea_table', originY: 38 / 39, solid: true, hitbox: 8 },
   // dichter Maschendraht (Teich)
@@ -75,6 +81,8 @@ export const OBJECTS = {
   4: { key: 'bush', originY: 33 / 40, solid: true }, // niedrige Füller rechts neben den Gehegen, damit man hineinsieht
   5: { key: 'dark_bush', originY: 36 / 44, solid: true },
   6: { key: 'bamboo', originY: 118 / 128, solid: true }, // Bambus als Füller (Asien)
+  ṩ: { key: 'snow_pine', originY: 100 / 112, solid: true }, // verschneite Tanne als Füller (Eiswelt im Tierpark)
+  ṧ: { key: 'seat_stone_ice', originY: 38 / 48, solid: true, hitbox: 12 }, // Steinklotz zum Sitzen (an der Unterwasser-Scheibe; Platzhalter aus tools/stone-seat-ice.py)
   // Erdhöhle im Fuchsbau
   U: { key: 'den', originY: 44 / 56, solid: true, hitbox: 16 },
   // Erdmännchenbau (Savanne, sandfarben)
@@ -461,7 +469,7 @@ export function setLevel(id) {
   GATE_TILES = tilesWith('G').map((t) => {
     const up = beyondGate(t.tx, t.ty - 1, -1);
     const down = beyondGate(t.tx, t.ty + 1, 1);
-    let vertical = '|!;}]N'.includes(up) || '|!;}]N'.includes(down);
+    let vertical = '|!;}]NǨƷ'.includes(up) || '|!;}]NǨƷ'.includes(down);
     // Zaun (auch ein Eckstück) über oder unter dem Tor, links und rechts aber keiner: das Tor sitzt in einer senkrechten
     // Zaunlinie (z. B. bei runden Gehegen, wo neben dem Tor gleich die Ecke kommt)
     const left = charAt(t.tx - 1, t.ty);

@@ -22,7 +22,7 @@ export function showLoading(text, progress = null) {
 // Hintergrund von Lade- und Startbildschirm: Bildschirmfoto dieser Welt (gibt es keins, bleibt das bisherige)
 const BACKGROUNDS = ['park', 'meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'aquarium'];
 export function setLoadingBackground(level) {
-  if (level === 'park2' || level === 'park3') level = 'park'; // die Abschnitte des Tierparks
+  if (level === 'park2' || level === 'park3' || level === 'park4') level = 'park'; // die Abschnitte des Tierparks
   level = LEVELS[level]?.expedition ?? level; // Expedition: Bild ihrer Welt
   if (BACKGROUNDS.includes(level)) document.documentElement.style.setProperty('--bg', `url(assets/bg/bg_${level}.jpg)`);
 }

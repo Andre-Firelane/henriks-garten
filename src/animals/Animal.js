@@ -700,7 +700,9 @@ export const SPECIES = {
   // Polarfuchs: unsichtbar, nur seine Spuren; am Ende der Spur die Laterne abstellen, dann leuchten seine Augen ->
   // Kescher (siehe ArcticFox.js)
   arcticfox: {
-    texture: 'arcticfox',
+    texture: 'arcticfox', // (der Silberfuchs aufgehellt, tools/arctic-fox.py)
+    eatTexture: 'arcticfox_eat',
+    anims: { walkDown: 'arcticfox_walk', walkUp: 'arcticfox_walk_back', idleDown: 'arcticfox_idle', idleUp: 'arcticfox_idle_back' },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 32,
@@ -714,8 +716,12 @@ export const SPECIES = {
     catchWith: ['net'],
   },
   // Polarwolf: wie der Wolf in der Wolfsnacht ("Ochs am Berg"), aber ohne Spuren und zu jeder Tageszeit (siehe Wolf.js)
+  // (vorerst mit den Bildern des grauen Wolfs, selten der schwarze Wolf; eigene Videos kommen noch)
   arcticwolf: {
-    texture: 'arcticwolf',
+    texture: 'wolf',
+    eatTexture: 'wolf_eat',
+    anims: { walkDown: 'wolf_walk', walkUp: 'wolf_walk_back', idleDown: 'wolf_idle', idleUp: 'wolf_idle_back' },
+    skinAnims: { wolf2: { walkDown: 'wolf2_walk', walkUp: 'wolf2_walk_back', idleDown: 'wolf2_idle', idleUp: 'wolf2_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 22,
@@ -769,6 +775,7 @@ export const SPECIES = {
   // (siehe Walrus.js, IceCatch.js)
   walrus: {
     texture: 'walrus',
+    anims: { walkDown: 'walrus_walk', walkUp: 'walrus_walk', idleDown: 'walrus_idle', idleUp: 'walrus_idle_back' }, // Videos (robbt auch nach oben mit dem Video von vorne); dösend das Standbild walrus_sleep
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 123 / 128,
     speed: 10,
@@ -781,10 +788,11 @@ export const SPECIES = {
     shadowW: 64, // (Bild in voller Größe, siehe SIZE in Walrus.js)
     catchWith: ['warmer'],
   },
-  // Eisbär (nachts auf dem Eis): großen Fisch ans Eisloch legen, er frisst und döst; gegen den Wind anschleichen und
-  // berühren (siehe PolarBear.js)
+  // Eisbär (nachts auf dem Eis): Fisch ans Eisloch legen, er frisst eine Weile (Henrik bleibt weg) und schläft dann ein;
+  // dann hingehen und berühren (siehe PolarBear.js)
   polarbear: {
     texture: 'polarbear',
+    anims: { walkDown: 'polarbear_walk', walkUp: 'polarbear_walk_back', idleDown: 'polarbear_idle', idleUp: 'polarbear_idle_back', eat: 'polarbear_eat' }, // Videos; frisst am Eisloch (PolarBear.animKey), schlafend das Standbild
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 144 / 148,
     speed: 20,
@@ -803,6 +811,7 @@ export const SPECIES = {
   // (siehe Puffin.js)
   puffin: {
     texture: 'puffin',
+    anims: { idleDown: 'puffin_idle', idleUp: 'puffin_idle_back' }, // Videos; beim Laufen das Standbild, Fliegen siehe Puffin.js
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 }, // (Bild 1,3-fach groß statt scale 0,65: scharf)
     originY: 63 / 68,
     speed: 14,
@@ -1297,6 +1306,8 @@ export const SKINS = {
   frog: { id: 'frog2', name: tr('blauer Frosch', 'blue frog'), male: true, wild: 0.1, baby: 0.03 }, // blau mit bunten Punkten
   jellyfish: { id: 'jellyfish2', name: tr('Goldqualle', 'golden jellyfish'), male: false, wild: 0.08, baby: 0 }, // golden, mit Ranken auf dem Schirm
   wolf: { id: 'wolf2', name: tr('schwarzer Wolf', 'black wolf'), male: true, wild: 0.1, baby: 0.03 }, // gilt für das ganze Rudel
+  // Polarwolf: eigener Name (zählt nicht als schwarzer Wolf), zeigt aber dessen Bilder (tex)
+  arcticwolf: { id: 'arcticwolf2', tex: 'wolf2', name: tr('schwarzer Polarwolf', 'black arctic wolf'), male: true, wild: 0.1, baby: 0.03 },
   lion: { id: 'lion2', name: tr('Schwarzmähnen-Löwe', 'black-maned lion'), male: true, wild: 0.1, baby: 0 }, // ein Löwenbaby hat noch keine Mähne
   zebra: { id: 'zebra2', name: tr('Schoko-Zebra', 'chocolate zebra'), male: false, wild: 0.1, baby: 0.03 }, // gilt für die ganze Herde
   iguana: { id: 'iguana2', name: tr('Blauer Leguan', 'blue iguana'), male: true, wild: 0.12, baby: 0.03 }, // türkis mit orangem Kamm
@@ -1708,7 +1719,7 @@ export default class Animal {
       ensureCoat(this.scene, id);
       return null;
     }
-    return info && !info.placeholder ? id : null;
+    return info && !info.placeholder ? info.tex ?? id : null; // (tex: Bilder einer anderen Art, z. B. Polarwolf → wolf2)
   }
   lookTexture() {
     return this.eatingLook ? this.eatTexture() : this.baseTexture();

@@ -52,6 +52,7 @@ export default class Walrus extends Animal {
   }
 
   updateFree(dt, player) {
+    if (this.state === 'penned') return this.updatePen(dt, player);
     if (this.state !== 'wild') return super.updateFree(dt, player);
     this.home ??= { x: this.x, y: this.y };
     if (this.warming) {
@@ -104,10 +105,36 @@ export default class Walrus extends Animal {
     return super.updateFree(dt, player);
   }
 
+  // im Becken (Tierpark): döst wie draußen immer wieder am Strand, wach robbt es herum
+  updatePen(dt, player) {
+    this.phaseLeft -= dt;
+    if (this.phaseLeft <= 0) {
+      this.dozing = !this.dozing;
+      this.phaseLeft = Phaser.Math.FloatBetween(...(this.dozing ? DOZE_TIME : AWAKE_TIME));
+    }
+    if (!this.dozing) return super.updateFree(dt, player);
+    this.snoreIn -= dt;
+    if (this.snoreIn <= 0) {
+      this.snoreIn = SNORE_EVERY;
+      const t = this.scene.add.text(this.x + 18, this.y - 58, '💤', { fontSize: '14px', resolution: 4 }).setOrigin(0.5).setDepth(100000).setAlpha(0.9);
+      this.scene.tweens.add({ targets: t, y: t.y - 14, x: t.x + 6, alpha: 0, duration: 1800, onComplete: () => t.destroy() });
+    }
+    return false;
+  }
+
+  get sleepy() {
+    return (this.state === 'wild' && (this.dozing || this.warming)) || (this.state === 'penned' && this.dozing);
+  }
+
+  // dösend: Standbild walrus_sleep statt Animation
+  animKey(moving) {
+    return this.sleepy ? null : super.animKey(moving);
+  }
+
   render(moving) {
     super.render(moving);
     this.sprite.setScale(this.baby ? 0.35 : SIZE);
-    const sleepy = this.state === 'wild' && (this.dozing || this.warming);
+    const sleepy = this.sleepy;
     const f = this.kind.frames;
     const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
     if (sleepy) this.sprite.setTexture('walrus_sleep', frame).setFlipX(false);

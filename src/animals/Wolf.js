@@ -83,7 +83,7 @@ export default class Wolf extends Animal {
 
   render(moving) {
     // heulend bzw. fressend (beim Ruhen) mit eigenem Bild (schwarzer Wolf: wolf2_howl, wolf2_eat)
-    const base = this.skin ?? this.species;
+    const base = this.texSkin ?? this.kind.texture; // (Polarwolf: Bilder des Wolfs)
     const pose = this.state === 'wild' && this.pack && !this.pack.running ? (this.pack.phase === 'howl' ? `${base}_howl` : this.pack.phase === 'rest' && this.eats ? `${base}_eat` : null) : null;
     // nach dem Heulen bzw. Fressen zurück aufs normale Bild, damit Lauf- und Steh-Animation wieder greifen
     const key = this.sprite.texture.key;

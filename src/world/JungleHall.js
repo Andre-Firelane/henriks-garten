@@ -26,10 +26,12 @@ const MIST_SOUND = 'ambient_waterfall'; // leises Rauschen (das Wasserfall-Gerä
 const MIST_VOLUME = 0.22;
 const GLITTER_EVERY = 0.12; // so oft glitzert ein Blatt
 
+// mist: false – nur Glasdach und Lichtstrahlen, ohne Beregnung (Polarhalle in der Eiswelt des Tierparks)
 export default class JungleHall {
-  constructor(scene, area) {
+  constructor(scene, area, { mist = true } = {}) {
     this.scene = scene;
     this.area = area;
+    this.mist = mist;
     this.level = 0; // 0: kein Nebel, 1: voller Nebel
     this.mistTime = 0;
     this.nextMist = Phaser.Math.FloatBetween(...MIST_FIRST);
@@ -120,6 +122,7 @@ export default class JungleHall {
   }
 
   update(dt) {
+    if (!this.mist) return;
     // Ablauf: warten → sprühen (ein- und ausblenden)
     if (this.mistTime > 0) {
       this.mistTime -= dt;

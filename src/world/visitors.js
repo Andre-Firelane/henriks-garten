@@ -36,6 +36,15 @@ export const APPEAL = {
   anteater: 5,
   penguin: 6, // watschelt so lustig
   seal: 6,
+  // Eiswelt (Gehege im Tierpark-Abschnitt park4): nach Seltenheit und Aufwand beim Fangen
+  polarbear: 8, // nur nachts, braucht Köder, Geduld und Abstand
+  walrus: 6,
+  reindeer: 4,
+  puffin: 4.5,
+  arcticfox: 5,
+  arcticwolf: 5.5,
+  snowowl: 6,
+  snowhare: 3,
   iguana: 5,
   beaver: 4,
   jaguar: 6,

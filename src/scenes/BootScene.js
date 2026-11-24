@@ -35,7 +35,9 @@ const GROUPS = {
   // Hoftiere der Wiese und des Streichelzoos (Kuh, Schwein, Ziege). Ihre Töne bleiben in misc: Wildschwein und
   // Warzenschwein grunzen wie das Schwein
   farm: { species: ['cow', 'pig', 'goat'], keys: /^farm_/ },
-  forest: { species: ['deer', 'fox', 'squirrel', 'wolf', 'beaver', 'elk', 'hedgehog', 'boar'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hedgehog|boar|piglet|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$|oak$|leafpile$|elder$|hazel$|stump$|mossy_log$|boulder2?$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark, die Laubhaufen in der Igel-Voliere, Holunder, Hasel, Baumstumpf, bemooster Stamm und Felsbrocken im Wildpark: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
+  // Wolf und schwarzer Wolf: eigenes kleines Paket, das auch die Eiswelt lädt (der Polarwolf zeigt vorerst ihre Bilder)
+  wolves: { species: ['wolf', 'arcticwolf'], keys: /^wolf(?!_forest_edge$)/ },
+  forest: { species: ['deer', 'fox', 'squirrel', 'beaver', 'elk', 'hedgehog', 'boar'], keys: /^(deer|stag|fox|squirrel|wolf|beaver|elk|hedgehog|boar|piglet|hero_forest|ride_forest|forest_waterfall)/, art: /^forest_(?!path$|gnawed_tree$|beaver_lodge$|dark_soil$|stand$|oak$|leafpile$|elder$|hazel$|stump$|mossy_log$|boulder2?$)/ }, // angenagter Baum und Biberburg (samt dunkler Erde) stehen auch im Teich im Tierpark, die Laubhaufen in der Igel-Voliere, Holunder, Hasel, Baumstumpf, bemooster Stamm und Felsbrocken im Wildpark: gleich mitladen; den Hochstand gibt es als Bonus aus einer Kiste in jeder Welt
   savanna: {
     species: ['antelope', 'zebra', 'giraffe', 'lion', 'crocodile', 'meerkat', 'hippo', 'gnu', 'hyena', 'warthog', 'vulture', 'flamingo', 'lungfish', 'shoebill'],
     keys: /^(antelope|zebra|giraffe|lion|croc|meerkat|hippo|gnu|hyena|warthog|vulture|flamingo|lungfish|shoebill|hero_savanna|ride_savanna|bone_pile)/,
@@ -57,15 +59,15 @@ const GROUPS = {
     art: /reef|aquarium|tank|^aq_|^(anchor_sack|seaweed|coral|shell)$/,
   },
   ice: {
-    species: ['penguin', 'seal', 'snowhare', 'arcticfox', 'arcticwolf', 'snowowl', 'reindeer', 'walrus', 'polarbear', 'puffin'],
-    keys: /^(hero_ice|penguin|seal|step_snow|snowhare|arcticfox|arcticwolf|snowowl|reindeer|walrus|polarbear|puffin|warmer)/,
+    species: ['penguin', 'seal', 'snowhare', 'arcticfox', 'snowowl', 'reindeer', 'walrus', 'polarbear', 'puffin'],
+    keys: /^(hero_ice|car_snow|penguin|seal|step_snow|snowhare|arcticfox|arcticwolf|snowowl|reindeer|walrus|polarbear|puffin|warmer)/,
     art: /^snow\d$|^snow_path$|^snowman$|^snow_pine$|_ice|^ice_|^tundra|^glacier/, // die verschneiten Felsen (snow_kopje ...) stehen in Bambuswald und Eiswelt: Paket misc
   },
 };
 // in dieser Reihenfolge laden die Pakete im Hintergrund (etwa der Weg durchs Spiel)
-const GROUP_ORDER = ['farm', 'misc', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice', 'house'];
+const GROUP_ORDER = ['farm', 'misc', 'forest', 'wolves', 'savanna', 'asia', 'jungle', 'reef', 'ice', 'house'];
 // Pakete je Gebiet (dazu kommen die der Tiere, die dort stehen oder einem folgen, siehe levelGroups)
-const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], aquarium: ['reef'], house: ['farm', 'house'], reef: ['reef'], ice: ['ice'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle', 'reef'] }; // (reef: Wände des Piranha-Beckens in der Tropenhalle)
+const LEVEL_GROUPS = { park: ['farm'], meadow: ['farm'], forest: ['forest', 'wolves'], savanna: ['savanna'], asia: ['asia'], jungle: ['jungle'], aquarium: ['reef'], house: ['farm', 'house'], reef: ['reef'], ice: ['ice', 'wolves'], park2: ['savanna', 'reef'], park3: ['asia', 'jungle', 'reef'], park4: ['farm', 'ice', 'wolves'], polarunder: ['ice'] }; // (reef: Wände des Piranha-Beckens in der Tropenhalle; wolves in park4: der Polarwolf hat das Bild des Wolfs)
 // Events mit Bildern aus einem Paket (Flamingos fliegen auch über Wiese und Wald; Reittier auf der Wiese)
 export const EVENT_GROUPS = { flamingo: ['savanna'], ride: ['misc'] };
 const SPECIES_GROUP = Object.fromEntries(Object.entries(GROUPS).flatMap(([group, { species = [] }]) => species.map((s) => [s, group])));
@@ -180,6 +182,9 @@ const PIXEL_ART = [
   'sun_rock', 'stone_lantern', 'torii',
   // neuer Bambuswald (Platzhalter aus tools/bamboo-placeholders.py): Glaswand des Glaspavillons, Teehaus, Stehtisch, Kies des Zen-Gartens
   'glass_x', 'glass_y', 'post_glass', 'teahouse', 'tea_table', 'zen_gravel',
+  'glasswall_x', 'glasswall_y', 'post_glasswall', 'gate_glassdoor_x', 'gate_glassdoor_y', // Glasfassade der Polarhalle (tools/glass-facade.py)
+  'glasslow_x', 'glasslow_y', 'post_glasslow', 'gate_glasslow_x', 'gate_glasslow_y',
+  'stairs_ice', 'seat_stone_ice', // große Treppe in der Polarhalle und Sitzsteine an der Unterwasser-Scheibe (Tierpark, Eiswelt; Platzhalter aus tools/polar-stairs.py und tools/stone-seat-ice.py)
   'gate_curtain_x', 'gate_curtain_y', 'fruit_plate', 'jungle_shrub', // Tropenhalle (tools/junglehall-placeholders.py)
   // Hochebene im Bambuswald (der Schnee selbst: src/world/SnowCover.js): Gebetsfahnen-Stange, Stupa, Salzstein (am Boden
   // und in der Hand) und Bürste für die Yaks (tools/plateau-hd.py)
@@ -361,7 +366,7 @@ const SAVANNA_ANIMS = {
 const GORILLA_DRUM = { gorilla_drum_in: [0, 23, 0], gorilla_drum_loop: [24, 92, -1], gorilla_drum_out: [93, 101, 0] };
 // Stehen mit nur jedem zweiten Videobild (every: 2 in tools/prepare-characters.js): läuft mit 12 statt 24 Bildern pro
 // Sekunde, also genauso schnell wie im Video. Die Bewegungen im Stehen sind langsam, die Bögen werden so halb so groß
-const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle hyena_idle hyena_idle_back panda_idle tiger_idle_back tiger2_idle
+const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle arcticfox_idle hyena_idle hyena_idle_back panda_idle tiger_idle_back tiger2_idle
   hero_asia_idle hero_asia_idle_back wolf_idle wolf_idle_back wolf2_idle wolf2_idle_back farm_cow_idle farm_cow_idle_back farm_goat_idle
   farm_goat_idle_back hero_jungle_idle hero_jungle_idle_back hero_ice_idle hero_ice_idle_back macaw_idle macaw2_idle toucan_idle
   toucan_idle_back snake_idle snake2_idle anteater_idle anteater_idle_back iguana_idle jaguar_idle gorilla_idle gorilla_idle_back
@@ -369,7 +374,8 @@ const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle hyena_idl
   ride_asia_idle_back elk_idle elk_idle_back hedgehog_idle hedgehog_idle_back boar_idle boar_idle_back boar_mud_idle piglet_idle
   piglet_idle_back okapi_idle okapi_idle_back tapir_idle tapir_idle_back tanuki_idle tanuki_idle_back yak_idle yak_idle_back
   anteater2_idle okapi2_idle okapi2_idle_back tanuki2_idle tanuki2_idle_back yak2_idle yak2_idle_back
-  snowleopard_idle snowleopard_idle_back reindeer_idle reindeer_idle_back snowhare_idle snowhare_idle_back`.split(/\s+/);
+  snowleopard_idle snowleopard_idle_back reindeer_idle reindeer_idle_back snowhare_idle snowhare_idle_back
+  polarbear_idle polarbear_idle_back polarbear_eat walrus_idle walrus_idle_back puffin_idle puffin_idle_back`.split(/\s+/);
 const VIDEO_ANIMS = {
   // seltene Varianten aus Videos (Schaf2: gefleckter Widder, Reiher2: Storch, Fuchs2: Silberfuchs, Eichhörnchen2:
   // Streifenhörnchen, Biber2: Nutria, Affe2: Goldstumpfnase); gleiche Größe wie die normalen Tiere
@@ -385,6 +391,10 @@ const VIDEO_ANIMS = {
   fox2_walk_back: [72, 72, 20],
   fox2_idle: [72, 72, 22],
   fox2_idle_back: [72, 72, 39],
+  arcticfox_walk: [72, 72, 22], // Polarfuchs: der Silberfuchs aufgehellt (tools/arctic-fox.py)
+  arcticfox_walk_back: [72, 72, 20],
+  arcticfox_idle: [72, 72, 22],
+  arcticfox_idle_back: [72, 72, 39],
   squirrel2_run: [64, 60, 22],
   squirrel2_idle: [64, 60, 31],
   squirrel2_idle_back: [64, 60, 37],
@@ -627,9 +637,26 @@ const VIDEO_ANIMS = {
   reindeer_idle: [88, 128, 24],
   reindeer_idle_back: [88, 128, 12],
   snowhare_walk: [56, 88, 21],
-  snowhare_walk_back: [56, 88, 38],
+  snowhare_walk_back: [56, 88, 19], // (jedes zweite Videobild)
   snowhare_idle: [56, 88, 24],
   snowhare_idle_back: [56, 88, 24],
+  // Eiswelt: Eisbär läuft, steht und frisst (vor und zurück, VIDEO_YOYO); Walross robbt (von hinten mit dem Video von
+  // vorne) und steht; Papageitaucher steht und fliegt (Seitenansicht); unter Wasser (Unterwasser-Scheibe) schwimmen
+  // Robbe, Sattelrobbe und Walross in Seitenansicht
+  polarbear_walk: [152, 148, 20],
+  polarbear_walk_back: [168, 148, 22],
+  polarbear_idle: [152, 148, 24],
+  polarbear_idle_back: [152, 148, 20],
+  polarbear_eat: [152, 148, 24],
+  walrus_walk: [152, 128, 20],
+  walrus_idle: [136, 128, 24],
+  walrus_idle_back: [136, 128, 24],
+  walrus_underwater: [136, 128, 23],
+  seal_underwater: [160, 120, 35],
+  seal2_underwater: [200, 120, 39],
+  puffin_idle: [64, 68, 24],
+  puffin_idle_back: [64, 68, 24],
+  puffin_fly_anim: [112, 100, 14],
 };
 
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
@@ -798,6 +825,8 @@ export default class BootScene extends Phaser.Scene {
     // Zooauto (Schnellreise, in allen Gebieten): wird vergrößert gezeigt, daher in großer Fassung (tools/car-hd.py)
     const cz = this.useHd('car_zoo') ? hdFactor('car_zoo') : 1;
     load.spritesheet('car_zoo', `assets/${cz > 1 ? `${HD_DIR}/` : ''}car_zoo.png`, { frameWidth: CAR_FRAME.frameWidth * cz, frameHeight: CAR_FRAME.frameHeight * cz });
+    const cs = this.useHd('car_snow') ? hdFactor('car_snow') : 1; // Schneemobil (Eiswelt im Tierpark), so groß wie das Zooauto
+    load.spritesheet('car_snow', `assets/${cs > 1 ? `${HD_DIR}/` : ''}car_snow.png`, { frameWidth: CAR_FRAME.frameWidth * cs, frameHeight: CAR_FRAME.frameHeight * cs });
     const bz = this.useHd('boat_zoo') ? hdFactor('boat_zoo') : 1; // Zoo-U-Boot (Schnellreise in der Unterwasserwelt), groß wie der Wasserfall
     load.spritesheet('boat_zoo', `assets/${bz > 1 ? `${HD_DIR}/` : ''}boat_zoo.png`, { frameWidth: 240 * bz, frameHeight: 160 * bz });
     load.spritesheet('seaplane', 'assets/seaplane.png', CAR_FRAME); // Schnellreise im Dschungel (Wasserflugzeug)
@@ -848,7 +877,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['anteater', 'anteater2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 72 });
     for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
     // neue Eiswelt-Tiere (Standbilder mit 4 Ansichten, tools/static-sheet.py)
-    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['arcticwolf', 80, 80], ['arcticwolf_howl', 80, 80], ['snowowl', 72, 80], ['snowowl_fly', 88, 76], ['reindeer', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
+    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['snowowl', 72, 80], ['snowowl_fly', 88, 76], ['reindeer', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
     for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus
@@ -946,6 +975,8 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('fox_idle_back', 'assets/fox_idle_back.png', FOX_FRAME); // dasselbe von hinten
     load.spritesheet('fox_sleep', 'assets/fox_sleep.png', FOX_SLEEP_FRAME); // eingerollt vor der Höhle
     load.spritesheet('fox2_sleep', 'assets/fox2_sleep.png', FOX_SLEEP_FRAME); // ... Silberfuchs (aus fox_sleep umgefärbt)
+    load.spritesheet('arcticfox_eat', 'assets/arcticfox_eat.png', FOX_FRAME); // Polarfuchs (Eiswelt-Paket, tools/arctic-fox.py)
+    load.spritesheet('arcticfox_sleep', 'assets/arcticfox_sleep.png', FOX_SLEEP_FRAME);
     load.spritesheet('antelope', 'assets/antelope.png', ANTELOPE_FRAME);
     load.spritesheet('antelope_eat', 'assets/antelope_eat.png', ANTELOPE_FRAME);
     load.spritesheet('antelope2', 'assets/antelope2.png', ANTELOPE_FRAME); // Oryx (seltener Skin)
@@ -1070,8 +1101,9 @@ export default class BootScene extends Phaser.Scene {
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
     // Eiswelt: Henrik macht schnellere Schritte, sonst gleitet er vor dem hellen Schnee sichtbar über den Boden
     // Elch: große, ruhige Schritte – langsamer als im Video, sonst trippelt er
-    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30, elk_walk: 15, elk_walk_back: 15 };
-    const VIDEO_YOYO = ['heron2_flap']; // auch vor und zurück (nicht nur Stehen)
+    const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30, elk_walk: 15, elk_walk_back: 15,
+      reindeer_run: 18, reindeer_run_back: 18, snowhare_walk: 44, snowhare_walk_back: 42 }; // Rentier rennt etwas ruhiger, Schneehase hoppelt flink
+    const VIDEO_YOYO = ['heron2_flap', 'polarbear_eat']; // auch vor und zurück (nicht nur Stehen)
     for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? (VIDEO_HALF.includes(key) ? 12 : 24), repeat: -1, yoyo: key.includes('_idle') || VIDEO_YOYO.includes(key) });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)
     for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {
