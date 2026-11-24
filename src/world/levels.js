@@ -1200,6 +1200,7 @@ LEVELS.park = parkSection('park', {
   boothHint: { tx: 25, ty: 40 },
   // frühere feste Bauplätze für Buden (nur noch für alte Spielstände; Buden setzt man jetzt frei, siehe src/world/shops.js)
   legacySlots: [{ id: 'center1', tx: 25, ty: 43 }, { id: 'center2', tx: 33, ty: 40 }],
+  stable: { tx: 33, ty: 40 }, // Stall (Reittiere, E-Roller): rechts neben der Tür des Haupthauses (vorerst ein Schild)
   scooterSpot: { tx: 27, ty: 39 }, // E-Roller: abgestellt an der Hauswand links neben der Tür des Haupthauses
   // Riesenrad (vorerst gestrichen – es passte nicht zur isometrischen Ansicht; der Code in src/world/FerrisWheel.js bleibt):
   // großer Bauplatz auf der Wiese über dem Haupthaus, am Weg zur Savanne (2×2 Kacheln ab tx/ty; clear: dort stehen dann

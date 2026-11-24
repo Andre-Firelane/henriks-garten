@@ -3,13 +3,14 @@
 // Die Tierbilder kommen aus den Spritesheets des Spiels (src/ui/icons.js, Bilder unter /assets).
 //
 // POST { type: 'start', id, kind, lang, device }  neue Runde
-// POST { type: 'update', id, seconds, load, loaded, step, tut, catches, events, promos, exp, cards, chests, park }  Spieldauer bisher (ab dem Ende des
+// POST { type: 'update', id, seconds, load, loaded, step, tut, catches, events, promos, exp, cards, chests, park, trophies }  Spieldauer bisher (ab dem Ende des
 //                                                  Ladens; kommt mehrmals, die größte zählt), Ladezeit in Sekunden (loaded: fertig
 //                                                  geladen, sonst so lange wurde bis zum Aufgeben geladen), Fortschritt (siehe
 //                                                  progress in src/sessions.js; tut: Fassung des Tutorials) und gefangene Tiere, gestartete Events bzw.
 //                                                  Tafeln im Tierpark der Runde: { Art: Anzahl }; exp: geschaffte Expeditions-Maps
 //                                                  je Gebiet, cards: gewählte Karten vor den Maps, chests: gewählte Kistenkarten,
-//                                                  park: im Tierpark { named, decor, wishes } (benannt, Deko aufgestellt, Wünsche erfüllt)
+//                                                  park: im Tierpark { named, decor, wishes } (benannt, Deko aufgestellt, Wünsche erfüllt),
+//                                                  trophies: erreichte Trophäen { Id: 1 } (Ids wie in src/world/trophies.js)
 // GET  ?key=<SESSIONS_KEY>                         Tabelle; &format=csv für Excel; &range=today|7d|all (Zeitraum, ohne: heute)
 import { animalIcon } from '../../../src/ui/icons.js';
 
@@ -18,7 +19,7 @@ const DEVICES = { tablet: 'Tablet', phone: 'Handy', pc: 'PC' };
 const LANGS = ['de', 'en'];
 const ID = /^[\w-]{8,40}$/;
 const MAX_SECONDS = 24 * 60 * 60;
-const KEY = /^[a-zA-Z0-9]{1,24}$/; // (Boni und Glücksbringer heißen z. B. moreAnimals)
+const KEY = /^[a-zA-Z0-9_]{1,24}$/; // (Boni und Glücksbringer heißen z. B. moreAnimals, Trophäen z. B. world_meadow)
 // Events mit Symbol und Namen (Ids wie in src/world/events.js)
 const EVENTS = {
   babies: ['🍼', 'Tierbabys'],
@@ -130,6 +131,7 @@ async function record(req, store) {
     s.cards = merge(s.cards, msg.cards);
     s.chests = merge(s.chests, msg.chests);
     s.park = merge(s.park, msg.park);
+    s.trophies = merge(s.trophies, msg.trophies);
     s.last = new Date().toISOString();
     await store.setJSON(msg.id, s);
     return new Response(null, { status: 204 });
@@ -164,6 +166,7 @@ function catchTag(species, n) {
 const eventTag = (id, n) => `<span class="tag" title="${esc(EVENTS[id]?.[1] ?? id)}">${EVENTS[id]?.[0] ?? esc(id)}<b>${n}</b></span>`;
 const expTag = (id, n) => `<span class="tag">${esc(EXP_BIOMES[id] ?? id)}<b>${n}</b></span>`;
 const cardTag = (id, n) => `<span class="tag" title="${esc(cardName(id))}">${cardInfo(id)[0]}<b>${n}</b></span>`;
+const trophyTag = (id, n) => `<span class="tag">${esc(id)}<b>${n}</b></span>`;
 const parkTag = (id, n) => `<span class="tag">${esc(PARK[id] ?? id)}<b>${n}</b></span>`;
 const promoTag = (id, n) => `<span class="tag">${esc(PROMOS[id] ?? id)}<b>${n}</b></span>`;
 const tags = (map, tag) => sorted(map).map(([k, n]) => tag(k, n)).join('') || '<span class="none">–</span>';
@@ -194,6 +197,7 @@ async function show(req, store, secret) {
     cards: s.cards ?? {},
     chests: s.chests ?? {},
     park: s.park ?? {},
+    trophies: s.trophies ?? {},
     load: s.load ?? null, // ältere Runden haben keine Ladezeit
     loaded: !!s.loaded,
     step: s.step ?? null,
@@ -204,8 +208,8 @@ async function show(req, store, secret) {
   if (url.searchParams.get('format') === 'csv') {
     const list = (map, name = (k) => k) => sorted(map).map(([k, n]) => `${name(k)} ${n}`).join(', ');
     const lines = [
-      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Laden;Fortschritt;Gefangen;Events;Tafeln;Expeditions-Maps;Expeditions-Karten;Kisten;Tierpark',
-      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r), list(r.catches), list(r.events), list(r.promos), list(r.exp, (k) => EXP_BIOMES[k] ?? k), list(r.cards, cardName), list(r.chests, cardName), list(r.park, (k) => PARK[k] ?? k)].join(';')),
+      'Datum;Uhrzeit;Gerät;Sprache;Art;Spieldauer (Minuten);Laden;Fortschritt;Gefangen;Events;Tafeln;Expeditions-Maps;Expeditions-Karten;Kisten;Tierpark;Trophäen',
+      ...rows.map((r) => [r.day, r.time, r.device, r.lang, r.kind, (r.seconds / 60).toFixed(1).replace('.', ','), loadText(r), stepName(r), list(r.catches), list(r.events), list(r.promos), list(r.exp, (k) => EXP_BIOMES[k] ?? k), list(r.cards, cardName), list(r.chests, cardName), list(r.park, (k) => PARK[k] ?? k), list(r.trophies)].join(';')),
     ];
     return new Response('﻿' + lines.join('\r\n'), {
       headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="spielrunden.csv"' },
@@ -221,6 +225,7 @@ async function show(req, store, secret) {
   const expCards = sum(real.map((r) => r.cards));
   const chestPicks = sum(real.map((r) => r.chests));
   const parkDone = sum(real.map((r) => r.park));
+  const trophiesGot = sum(real.map((r) => r.trophies));
   // Laden je Gerät (nur Runden, die schon die Ladezeit melden): Median der Ladezeit, wie viele beim Laden aufgegeben haben
   const median = (xs) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : null);
   const loading = Object.values(DEVICES).map((device) => {
@@ -276,9 +281,11 @@ async function show(req, store, secret) {
 <div class="box">${tags(chestPicks, cardTag)}</div>
 <h2>Im Tierpark</h2>
 <div class="box">${Object.keys(PARK).map((k) => parkTag(k, parkDone[k] ?? 0)).join('')}</div>
+<h2>Erreichte Trophäen (${total(trophiesGot)})</h2>
+<div class="box">${tags(trophiesGot, trophyTag)}</div>
 <h2>Runden</h2>
-<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th><th>Expeditions-Maps</th><th>Expeditions-Karten</th><th>Kisten</th><th>Tierpark</th></tr>
-${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td><td class="tags">${tags(r.exp, expTag)}</td><td class="tags">${tags(r.cards, cardTag)}</td><td class="tags">${tags(r.chests, cardTag)}</td><td class="tags">${tags(r.park, parkTag)}</td></tr>`).join('\n')}
+<div class="wrap"><table><tr><th>Datum</th><th>Uhrzeit</th><th>Gerät</th><th>Sprache</th><th>Art</th><th>Spieldauer</th><th>Laden</th><th>Fortschritt</th><th>Gefangen</th><th>Events</th><th>Tafeln</th><th>Expeditions-Maps</th><th>Expeditions-Karten</th><th>Kisten</th><th>Tierpark</th><th>Trophäen</th></tr>
+${rows.map((r) => `<tr${r.kind === KINDS.test ? ' class="test"' : ''}><td>${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(r.device)}</td><td>${esc(r.lang)}</td><td>${esc(r.kind)}</td><td class="num">${minutes(r.seconds)}</td><td>${esc(loadText(r))}</td><td>${esc(stepName(r))}</td><td class="tags">${tags(r.catches, catchTag)}</td><td class="tags">${tags(r.events, eventTag)}</td><td class="tags">${tags(r.promos, promoTag)}</td><td class="tags">${tags(r.exp, expTag)}</td><td class="tags">${tags(r.cards, cardTag)}</td><td class="tags">${tags(r.chests, cardTag)}</td><td class="tags">${tags(r.park, parkTag)}</td><td class="tags">${tags(r.trophies, trophyTag)}</td></tr>`).join('\n')}
 </table></div></body></html>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

@@ -163,6 +163,7 @@ import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
 import { parkCap, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, penScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
+import { MOUNTS, MOUNT_COST, SCOOTER_COST, buyMount, buyScooter, ownsMount, ownsScooter } from '../world/mounts.js';
 import { EVENTS, babyFamily, babyPlan, eventState, eventsIn, formatTime, isActive, startEvent } from '../world/events.js';
 import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import LuckWorld, { rarePromiseHere } from '../world/LuckWorld.js';
@@ -207,7 +208,8 @@ import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
 import { openMenu, isMenuOpen } from '../ui/gameMenu.js';
 import { openTravelMap, isTravelMapOpen } from '../ui/travelMap.js';
 import { openToolChest, isToolChestOpen } from '../ui/toolChest.js';
-import { countCatch, countChestPick, countEvent, countExpCard, countExpStep, countPark, countPromo, sessionLoaded } from '../sessions.js';
+import { countCatch, countChestPick, countEvent, countExpCard, countExpStep, countPark, countPromo, countTrophy, sessionLoaded } from '../sessions.js';
+import { TROPHIES, TROPHY_GROUPS, checkTrophies, hasTrophy, noteExpedition, noteHearts, noteSectionFill, noteSectionFull, noteSkin, noteWish, setTrophySpecies, trophyBadge, trophyProgress } from '../world/trophies.js';
 import { isShowcaseOpen } from '../ui/featureTour.js';
 import { isGiftOpen, openGiftEvent } from '../ui/giftEvent.js';
 import { STEPS, seaReady } from '../story/steps.js';
@@ -729,6 +731,8 @@ const MAX_MACAQUES = 6; // so viele Japanmakaken baden höchstens in den wilden 
 const FLAMINGO_EVERY = [6, 12]; // Sekunden zwischen zwei Flamingos (Reiher: 50–110)
 const PROMISE_WAIT = 6; // so lange (höchstens) bis der versprochene Storch bzw. Ohrengeier aus der Kiste heranfliegt
 const FLAMINGO_LAND = 0.6; // so oft landen sie (am Wasser)
+let trophiesPrimed = false; // erste Prüfung nach dem Laden: ohne Meldung (siehe updateTrophies)
+const upFirst = (t) => t[0].toUpperCase() + t.slice(1);
 const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_savanna', asia: 'ride_asia', jungle: 'ride_jungle', reef: 'ride_reef' }; // Dschungel: Maultier, Riff: Seabob
 // Die Welten draußen (für das Tierbuch und das Regal: wo es welche Tiere gibt)
 const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
@@ -755,6 +759,8 @@ function worldsOf(s) {
   });
 }
 const caughtBefore = (s) => game.caughtSpecies.includes(s);
+// Trophäen "Alle Tiere": dieselben Arten wie im Tierbuch (je Welt wie der Filter dort)
+setTrophySpecies(SPECIES_ORDER, (w) => SPECIES_ORDER.filter((s) => worldsOf(s).some((x) => x.level === w)));
 const FINAL_HEARTS = 100; // Expedition: Schatz in der Abschlusskiste, wenn es keine neuen Glücksbringer (mehr) gibt
 const BOARD_PLANK_H = 70; // Expeditions-Tafel (exp_board): so hoch ist das Brett oben im Bild (tools/expedition-sprites.py)
 // Fang-Einheit eines wilden Tiers (Expedition): Herde, Kolonie, Trupp, Schwarm oder das Tier selbst
@@ -1337,6 +1343,7 @@ export default class GardenScene extends Phaser.Scene {
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
     this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
+    this.drawStable(); // Stall vor dem Haupthaus (Reittiere und E-Roller)
     this.jarFlies = 0; // so viele Glühwürmchen sind im Glas
     this.lantern = null; // abgestellte Moorlaterne (siehe placeLantern)
     this.hyenaPack = LEVEL.hyenas ? new HyenaPack(this, LEVEL.hyenas) : null; // Trockenzeit: das versteckte Hyänenrudel
@@ -1392,7 +1399,7 @@ export default class GardenScene extends Phaser.Scene {
     // Regen, Blitze, Pfützen, Staubteufel bzw. Nebel (erst nach Henrik: der Nebel richtet sich nach seiner Position)
     this.weather = SEASON_LEVELS.includes(LEVEL_ID) || (LEVEL.expedition && !LEVEL.camp && LEVEL.season !== 'normal') ? new Weather(this, LEVEL.season) : null; // Expedition: gewürfeltes Wetter
     // war Henrik beim Verlassen auf dem E-Roller (Tierpark-Abschnitt, Aquarium, Reptilienhaus, Ausbau): weiterfahren
-    if (game.scooterRiding && this.scooter) this.getOnScooter(true);
+    if (game.scooterRiding && this.scooter && ownsScooter()) this.getOnScooter(true);
     // Kanu (Dschungel): wer neu ankommt (nicht beim Wetterwechsel, nicht zurück aus einer kleinen Map), findet es am Inselsteg
     if (LEVEL.boat && !LEVEL.expedition && !LEVEL.side && !data.seasonNote && !data.keepBoat && game.boat) game.boat = null; // (zurück durch den Fluss-Durchgang: man sitzt noch im Kanu)
     this.boat = LEVEL.boat ? new Boat(this) : null;
@@ -1602,6 +1609,16 @@ export default class GardenScene extends Phaser.Scene {
       e.stopPropagation();
       this.showCharms();
     };
+    // Events-Knopf (nur im Tierpark, im Aquarium und im Reptilienhaus): dieselbe Tafel wie am Hauptrechner
+    const eventsBtn = document.getElementById('btn-events');
+    eventsBtn.innerHTML = '<span class="charms-icon">🎉</span><span class="btn-label">Events</span>'; // auf dem Handy nur das Bild
+    eventsBtn.setAttribute('aria-label', 'Events');
+    eventsBtn.classList.toggle('show', home);
+    eventsBtn.onclick = (e) => {
+      e.stopPropagation();
+      if (this.decor?.on) this.decor.toggle(); // (Setzen-Modus erst beenden)
+      this.openEventsPanel();
+    };
     document.getElementById('btn-campfire').onclick = (e) => {
       e.stopPropagation();
       this.luck.campfire();
@@ -1712,6 +1729,10 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearComputer && !this.leaving) {
         this.openEventsPanel(); // am Hauptrechner: Events
+        return;
+      }
+      if (this.nearStable && !this.leaving && !this.driving) {
+        this.openEventsPanel(null, null, 'mounts'); // am Stall: Reittiere und E-Roller
         return;
       }
       if (this.luck.nearChest && !this.leaving) {
@@ -1864,6 +1885,7 @@ export default class GardenScene extends Phaser.Scene {
     };
     this.riding = false;
     this.updateMount();
+    this.time.addEvent({ delay: 3000, loop: true, callback: () => this.updateTrophies() });
     this.hud.onclick = () => this.showJournal();
     touchHandlers.action = useTool;
     touchHandlers.tap = (cx, cy) => {
@@ -3623,16 +3645,16 @@ export default class GardenScene extends Phaser.Scene {
   // Abzeichen oben links: Gebiet und wie viele Tiere schon zuhause sind; die Einzelheiten zeigt die Übersicht (I)
   updateHud() {
     if (!this.hud) return; // beim ersten Aufbau noch nicht da (z. B. Herzen fürs Auswildern beim Ankommen, siehe moveFollowersIntoPens)
-    const total = Object.values(this.homeCounts()).reduce((s, n) => s + n, 0);
-    this.hud.innerHTML = `${LEVEL.name} · 🐾 <b>${total}</b> · <span class="hearts">♥ <b>${game.hearts}</b></span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
+    // nur die Herzen (erster Platz der Knopfreihe oben links)
+    this.hud.innerHTML = `<span class="hearts">♥ <b>${game.hearts}</b></span>${save.testMode ? '<span class="test">TEST</span>' : ''}`;
     this.updateQuestCard(); // (Fortschritt der Besucher-Aufgabe)
     this.layoutHudStack();
   }
 
-  // links oben untereinander: Tierbuch-Knopf und Zähler nebeneinander, darunter das laufende Event und die nächste Aufgabe
+  // links oben untereinander: die Knopfreihe, darunter das laufende Event und die nächste Aufgabe
   layoutHudStack() {
     if (!this.eventBanner || !this.questCard) return;
-    let y = Math.max(this.hud.getBoundingClientRect().bottom, document.getElementById('btn-book').getBoundingClientRect().bottom) + 6;
+    let y = document.getElementById('top-bar').getBoundingClientRect().bottom + 6;
     this.eventBanner.style.top = `${Math.round(y)}px`;
     if (this.eventBanner.classList.contains('show')) y = this.eventBanner.getBoundingClientRect().bottom + 6;
     this.questCard.style.top = `${Math.round(y)}px`;
@@ -3798,6 +3820,7 @@ export default class GardenScene extends Phaser.Scene {
     const s = w.species;
     const hearts = wishHearts(w);
     countPark('wishes'); // für die Statistik
+    noteWish(); // für die Wunsch-Trophäen
     this.addHearts(hearts, s);
     this.updateQuestCard();
     // die Tafel erst nach den Freudensprüngen (sonst verdeckt sie den Besucher)
@@ -3840,14 +3863,21 @@ export default class GardenScene extends Phaser.Scene {
 
   // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
   // focus: Gehege-Id – dann nur der Ausbau dieses Geheges (am Gehegeschild); slotId: nur die Buden für diesen Bauplatz
-  openEventsPanel(focus = null, slotId = null) {
+  // tab: 'mounts' öffnet gleich den Reiter Reittiere (am Stall bzw. am E-Roller, point: dieses Angebot vorauswählen)
+  openEventsPanel(focus = null, slotId = null, tab = null, point = null) {
     if (this.leaving || isEventsOpen() || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
     this.scene.pause();
+    if (tab === 'mounts' && !game.story.flags.stable) {
+      game.story.flags.stable = true; // Mavis Stall-Aufgabe
+      this.mavi?.check();
+    }
     openEvents(
       () => ({
         hearts: game.hearts,
         // den Eiswagen gibt es nur, solange nirgends ein fester Eisstand steht
-        events: [...EVENTS].sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, cost: price(ev.cost), ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
+        // (das Reittier leiht man im Reiter Reittiere)
+        events: [...EVENTS].filter((ev) => ev.id !== 'ride').sort((a, b) => a.cost - b.cost).map((ev) => ({ ...ev, cost: price(ev.cost), ...eventState(ev.id), blocked: this.eventBlocked(ev) })),
+        mounts: this.mountOffers(),
         pens: this.penUpgrades(),
         build: this.shopOffers(slotId),
       }),
@@ -3855,6 +3885,7 @@ export default class GardenScene extends Phaser.Scene {
         this.scene.resume();
         if (tab === 'pens') return this.upgradePen(id);
         if (tab === 'build') return this.buildShop(id, slotId);
+        if (tab === 'mounts' && id !== 'ride') return this.buyMountOffer(id);
         // Event mit Tieren, deren Bilder noch im Hintergrund laden: erst darauf warten, dann die Tafel noch einmal
         if (!groupsLoaded(EVENT_GROUPS[id] ?? [])) return this.afterGroupsLoaded(EVENT_GROUPS[id], () => this.openEventsPanel());
         this.beginEvent(id);
@@ -3864,7 +3895,9 @@ export default class GardenScene extends Phaser.Scene {
         ? slotId === wheelSlot()?.id
           ? { tab: 'build', single: true, title: WHEEL.name, note: tr('Die Besucher fahren eine Runde mit – jede Fahrt bringt Herzen. Mit dem Riesenrad kommen mehr Besucher in den Park.', 'Visitors take a ride – every ride brings hearts. With the Ferris wheel, more visitors come to the zoo.') }
           : { tab: 'build', single: true, point: activeId() === 'stands' ? 'icecream' : null } // Mavis Aufgabe: Pfeil auf den Eisstand
-        : focus
+        : tab
+          ? { tab, point }
+          : focus
           ? { tab: 'pens', only: focus }
           : activeId() === 'babies' // Mavis Aufgabe: Pfeil auf die Tierbabys
             ? { point: 'babies', hint: tr('Starte die Tierbabys – die Besucher lieben die Kleinen!', 'Start the animal babies – the visitors love the little ones!') }
@@ -3878,7 +3911,7 @@ export default class GardenScene extends Phaser.Scene {
     countEvent(id);
     this.updateHud();
     // für Mavis Event-Aufgabe (ganz am Ende): nicht der Eiswagen und nicht die Tierbabys aus ihrer eigenen Aufgabe
-    if (!free && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true;
+    if (!free && id !== 'ride' && !(id === 'babies' && activeId() === 'babies')) game.story.flags.event = true; // (Reittier leihen ist kein Event)
     this.mavi?.check();
     if (id === 'lanterns') this.showToast(tr('🏮 Laternenabend im Bambuswald!', '🏮 Lantern Evening in the bamboo forest!'));
     if (id === 'farm') this.showToast(tr('🐄 Bauernhof! Auf die Wiese kommen viele Kühe, Schweine und Ziegen – fang sie ein!', '🐄 Farm! Lots of cows, pigs and goats are coming to the meadow – catch them!'));
@@ -3900,20 +3933,26 @@ export default class GardenScene extends Phaser.Scene {
   // Reittier: in den Welten aufsitzen (in Gebäuden steigt Henrik ab), im Tierpark zu Fuß
   updateMount() {
     const key = this.rideOn() ? RIDES[biomeOf()] ?? null : null;
+    const rented = !!key && this.rentedRide(); // geliehen bzw. aus der Kiste: dazu Werkzeug wechseln überall
     const { tx, ty } = worldToTile(this.player.x, this.player.y);
     const mount = this.driving ? 'scooter' : key && !buildingAt(tx, ty) ? key : null; // auf dem E-Roller bleibt man stehen
-    if (mount && !this.player.mount && !this.riding) {
+    if (mount && !this.player.mount && !this.riding && rented) {
       this.showToast(tr('🐴 Du reitest! Schneller unterwegs – Werkzeug wechseln mit Q bzw. dem Werkzeug-Knopf.', '🐴 You are riding! You move faster – switch tools with Q or the tool button.'));
     }
     this.riding = !!key;
     this.player.setMount(mount);
-    // Werkzeug-Knopf: beim Reiten und mit dem Bonus "Werkzeug überall"
-    this.toolsAnywhere = !!key || (bonusActive('toolsEverywhere') && !!(LEVEL.chests ?? [])[0]);
+    // Werkzeug-Knopf: auf einem geliehenen Reittier und mit dem Bonus "Werkzeug überall" (das gekaufte macht nur schneller)
+    this.toolsAnywhere = rented || (bonusActive('toolsEverywhere') && !!(LEVEL.chests ?? [])[0]);
     document.body.classList.toggle('riding', this.toolsAnywhere);
   }
 
   // reitet man gerade? (Reittier-Event überall in den Welten, oder der Bonus aus einer Kiste in diesem Gebiet)
   rideOn() {
+    return this.rentedRide() || ownsMount(biomeOf());
+  }
+
+  // geliehen (Reittier im Reiter Reittiere, überall in den Welten) oder der Bonus aus einer Kiste in diesem Gebiet
+  rentedRide() {
     return isActive('ride') || bonusActive('ride');
   }
 
@@ -3930,7 +3969,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Werkzeug wechseln vom Reittier aus: dieselbe Auswahl wie am Regal dieser Welt
   openRideChest() {
-    if (!this.riding && !this.toolsAnywhere) return;
+    if (!this.toolsAnywhere) return;
     const chest = (LEVEL.chests ?? [])[0];
     if (chest) this.openChest(chest);
   }
@@ -3984,6 +4023,60 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // warum ein Event gerade nicht startbar ist (sonst null)
+  // Trophäen: alle paar Sekunden prüfen (siehe src/world/trophies.js); die erste Prüfung nach dem Laden ohne Meldung
+  updateTrophies() {
+    if (isPark(LEVEL_ID)) this.checkSectionFull();
+    const fresh = checkTrophies();
+    if (!trophiesPrimed) {
+      trophiesPrimed = true;
+      return;
+    }
+    if (!fresh.length) return;
+    for (const t of fresh) countTrophy(t.id);
+    this.showToast(fresh.map((t) => `🏆 ${tr('Trophäe', 'Trophy')}: ${t.name}`).join('<br>'));
+  }
+
+  // Tierpark-Abschnitt: sind alle Gehege mit Plätzen voll? (für die Trophäe "Volles Haus")
+  checkSectionFull() {
+    if (!isPark(LEVEL_ID)) return;
+    const pens = ENCLOSURES.filter((e) => penQuotas(e).length > 0);
+    const full = pens.filter((e) => isFull(this.animals, e)).length;
+    noteSectionFill(LEVEL_ID, full, pens.length);
+    if (pens.length && full === pens.length) noteSectionFull(LEVEL_ID);
+  }
+
+  // Reiter Reittiere: leihen (Event 'ride'), die Reittiere je Gebiet und der E-Roller
+  mountOffers() {
+    const rent = EVENTS.find((ev) => ev.id === 'ride');
+    const short = (cost) => (game.hearts < cost ? tr('zu wenig Herzen', 'not enough hearts') : null);
+    return [
+      { ...rent, name: tr('Reittier leihen', 'Rent a mount'), cost: price(rent.cost), ...eventState('ride'), blocked: this.eventBlocked(rent) },
+      { id: 'scooter', name: tr('E-Roller', 'E-Scooter'), text: tr('Im Tierpark schneller unterwegs, auch durch die Gehege.', 'Get around the zoo faster, even through the enclosures.'), cost: price(SCOOTER_COST), done: ownsScooter(), blocked: short(price(SCOOTER_COST)) },
+      ...Object.entries(MOUNTS).map(([area, m]) => ({
+        id: `mount_${area}`,
+        name: tr(`${m.name} · ${m.area}`, `${m.name} · ${m.area}`),
+        text: tr(`Für immer: ${upFirst(m.where)} reitest du ab jetzt immer.`, `Forever: from now on you always ride ${m.where}.`),
+        cost: price(MOUNT_COST),
+        done: ownsMount(area),
+        blocked: short(price(MOUNT_COST)),
+      })),
+    ];
+  }
+
+  buyMountOffer(id) {
+    if (id === 'scooter') {
+      if (!buyScooter()) return;
+      this.updateHud();
+      this.showToast(tr('🛴 Der E-Roller gehört dir! Er steht vor dem Haupthaus.', '🛴 The e-scooter is yours! It’s parked by the main building.'));
+      this.updateToolbar();
+      return;
+    }
+    const area = id.replace('mount_', '');
+    if (!buyMount(area)) return;
+    this.updateHud();
+    this.showToast(tr(`🐴 ${upFirst(MOUNTS[area].article)} ${MOUNTS[area].name} gehört dir! ${upFirst(MOUNTS[area].where)} reitest du jetzt immer.`, `🐴 The ${MOUNTS[area].name} is yours! You now always ride ${MOUNTS[area].where}.`));
+  }
+
   eventBlocked(ev) {
     if (ev.id === 'lanterns' && !isUnlocked('park3')) return tr('braucht den Bambuswald im Tierpark', 'needs the bamboo forest in the zoo');
     if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) {
@@ -4216,7 +4309,7 @@ export default class GardenScene extends Phaser.Scene {
   // Setzen-Modus: steht Henrik an etwas, dem die Aktionstaste gilt (Schild, Futterhaus, Tierfreund …)? Dann ist die
   // Vorschau rot, und die Taste bleibt bei der anderen Aktion
   decorBusy() {
-    return !!(this.nearFeeder || this.nearComputer || this.nearSlot || this.nearWish || this.nearNeed || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
+    return !!(this.nearFeeder || this.nearComputer || (this.nearStable && !this.driving) || this.nearSlot || this.nearWish || this.nearNeed || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
   }
 
   // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
@@ -4265,8 +4358,13 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // resume: nach einem Gebietswechsel bzw. Neuaufbau weiterfahren (Henrik bleibt, wo er ankommt; ohne Hinweis)
+  // noch nicht freigeschaltet: statt aufzusteigen der Reiter Reittiere mit dem E-Roller
   getOnScooter(resume = false) {
     if (!this.scooter || this.driving) return;
+    if (!ownsScooter()) {
+      if (!resume) this.openEventsPanel(null, null, 'mounts', 'scooter');
+      return;
+    }
     this.driving = true;
     game.scooterRiding = true;
     this.nearScooter = false;
@@ -4333,6 +4431,22 @@ export default class GardenScene extends Phaser.Scene {
       .setDepth(front + 0.2);
     this.tweens.add({ targets: plus, scale: 1.2, duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearSlot?.slot === slot && this.openEventsPanel(null, slot.id));
+  }
+
+  // Stall (LEVEL.stable): vorerst ein Schild mit dem E-Roller als Platzhalter (ein Stall-Bild fehlt noch); davor öffnet
+  // die Aktionstaste den Reiter Reittiere (leihen, kaufen, E-Roller)
+  drawStable() {
+    this.stable = null;
+    const spot = LEVEL.stable;
+    if (!spot) return;
+    const { x, y } = tileToWorld(spot.tx, spot.ty);
+    const front = y + 4;
+    this.add.rectangle(x, y - 14, 3, 26, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1);
+    const board = this.add.image(x, y - 38, 'esign_board').setScale(0.5).setDepth(front);
+    const icon = this.add.sprite(x, y - 36, 'scooter_empty', 1);
+    icon.setScale(0.42).setDepth(front + 0.1); // (der Roller füllt nur einen Teil seines Bildes)
+    board.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearStable && this.openEventsPanel(null, null, 'mounts'));
+    this.stable = { x, y };
   }
 
   // freie Bauplätze für diese Buden-Art (jede Art nur einmal je Abschnitt), die in diesem Abschnitt zuerst
@@ -4530,6 +4644,7 @@ export default class GardenScene extends Phaser.Scene {
         : `🌡️ ${tr('Wärme', 'Warmth')} ${bar}`);
     }
     lines.push(...(this.luck?.bannerLines() ?? [])); // Boni aus einer Kiste (nur in diesem Gebiet)
+    document.getElementById('btn-events')?.classList.toggle('on', EVENTS.some((ev) => isActive(ev.id)));
     this.eventBanner.classList.toggle('show', lines.length > 0);
     if (lines.length) this.eventBanner.innerHTML = lines.join('<br>');
     this.layoutHudStack(); // direkt unter den Zähler oben links (auf dem Tablet ist er größer und kann umbrechen)
@@ -4539,6 +4654,7 @@ export default class GardenScene extends Phaser.Scene {
   // source: Tierart (oder 'icecream') für die Statistik in der Übersicht; ohne Quelle (Cheat) zählt es dort nicht
   addHearts(n, source = null) {
     game.hearts += n;
+    noteHearts(n); // für die Herzen-Trophäen
     if (source) game.heartsBy[source] = (game.heartsBy[source] ?? 0) + n;
     this.updateHud();
     const el = this.hud?.querySelector('.hearts');
@@ -4564,6 +4680,7 @@ export default class GardenScene extends Phaser.Scene {
       { id: 'animals', label: `${tr('Tiere', 'Animals')}${dot(newAnimals)}`, html: () => this.bookAnimals() },
       { id: 'catch', label: tr('Fangen', 'Catching'), html: () => this.bookCatching() },
       { id: 'quests', label: `${tr('Aufgaben', 'Tasks')}${dot(newQuests)}`, html: () => this.bookQuests() },
+      { id: 'trophies', label: tr('Trophäen', 'Trophies'), html: () => this.bookTrophies() },
       { id: 'stats', label: tr('Statistik', 'Stats'), html: () => this.bookStats() },
     ];
     const start = newAnimals ? 'animals' : newQuests ? 'quests' : lastBookTab;
@@ -4662,6 +4779,23 @@ export default class GardenScene extends Phaser.Scene {
 
 
   // Reiter "Statistik": Herzen je Tierart (und vom Eisstand), die meisten zuerst
+  // Reiter "Trophäen": nach Gruppen, erreichte farbig, die anderen als Schatten mit ihrer Bedingung
+  bookTrophies() {
+    const got = TROPHIES.filter((t) => hasTrophy(t.id)).length;
+    const groups = Object.entries(TROPHY_GROUPS).map(([g, label]) => {
+      const cards = TROPHIES.filter((t) => t.group === g).map((t) => {
+        const on = hasTrophy(t.id);
+        const sub = t.id.startsWith('coats_') ? ` · ${(ANIMAL_INFO[t.animal] ?? [t.animal])[0]}` : '';
+        const [n, of] = trophyProgress(t);
+        const bar = `<span class="tr-bar"><span style="width:${of ? Math.round((100 * Math.min(n, of)) / of) : 0}%"></span></span>`;
+        const nums = on ? `<span class="tr-num on">${tr('geschafft', 'done')} ✓</span>` : `<span class="tr-num">${n.toLocaleString('de-DE')} / ${of ? of.toLocaleString('de-DE') : '?'}</span>`;
+        return `<div class="tr-card${on ? ' got' : ''}">${trophyBadge(t, animalIcon, on)}<b>${t.name}${sub}</b><small>${t.text}</small>${bar}${nums}</div>`;
+      });
+      return `<h3>${label}</h3><div class="tr-grid">${cards.join('')}</div>`;
+    });
+    return `<h2>${tr('Trophäen', 'Trophies')} · ${got} / ${TROPHIES.length}</h2>${groups.join('')}`;
+  }
+
   bookStats() {
     const hearts = Object.entries(game.heartsBy).filter(([, n]) => n > 0).sort((u, v) => v[1] - u[1]);
     const top = hearts[0]?.[1] ?? 1;
@@ -4710,7 +4844,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     if (this.nearScooter && !this.driving) {
       setTouchTool(null, 'assets/scooter_icon.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${this.driving ? tr('Absteigen', 'Get off') : tr('Aufsteigen', 'Get on')}</span></div>`;
+      const label = this.driving ? tr('Absteigen', 'Get off') : ownsScooter() ? tr('Aufsteigen', 'Get on') : tr('E-Roller freischalten', 'Unlock e-scooter');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/scooter_icon.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${label}</span></div>`;
       return;
     }
     if (this.nearSlot && !this.tool) {
@@ -4752,6 +4887,11 @@ export default class GardenScene extends Phaser.Scene {
       const done = isUpgraded(pen);
       setTouchTool(null, 'assets/esign_board.png');
       this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${done ? tr('Gehege ansehen', 'View enclosure') : tr('Gehege ausbauen', 'Upgrade enclosure')}</span></div>`;
+      return;
+    }
+    if (this.nearStable && !this.driving) {
+      setTouchTool(null, 'assets/esign_board.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/esign_board.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Stall', 'Stable')}</span></div>`;
       return;
     }
     if (this.nearComputer) {
@@ -4890,10 +5030,10 @@ export default class GardenScene extends Phaser.Scene {
   // text darf HTML enthalten (z. B. Tierbilder)
   showToast(text) {
     this.toast.innerHTML = text;
-    // zwischen dem Abzeichen oben links und den Knöpfen oben rechts, damit die Meldung nichts davon verdeckt.
+    // zwischen der Knopfreihe oben links und Menü/Vollbild oben rechts, damit die Meldung nichts davon verdeckt.
     // Ist dort zu wenig Platz (Handy hochkant), kommt sie darunter über die ganze Breite
-    const hud = this.hud.getBoundingClientRect();
-    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full, #btn-charms, #btn-campfire, #btn-decor')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
+    const hud = document.getElementById('top-bar').getBoundingClientRect();
+    const buttons = [...document.querySelectorAll('#btn-menu, #btn-full')].map((b) => b.getBoundingClientRect()).filter((r) => r.width);
     const left = hud.right + 10;
     const right = Math.min(window.innerWidth - 10, ...buttons.map((r) => r.left - 10));
     if (right - left >= TOAST_MIN_W) {
@@ -5352,7 +5492,7 @@ export default class GardenScene extends Phaser.Scene {
     const z = this.scale.zoom; // Spielpixel -> Seitenpixel (das Spiel zeichnet in Display-Auflösung, siehe main.js)
     const W = this.scale.width * z;
     const H = this.scale.height * z;
-    const top = Math.max(MARKER_MARGIN, this.hud.getBoundingClientRect().bottom + 26);
+    const top = Math.max(MARKER_MARGIN, document.getElementById('top-bar').getBoundingClientRect().bottom + 26);
     // links oben stehen Event, Mavis Aufgabe und die Wunschkarten: dort rutscht ein Hinweis darunter
     let stack = null;
     for (const el of [this.eventBanner, this.questCard, this.wishCards]) {
@@ -5893,6 +6033,7 @@ export default class GardenScene extends Phaser.Scene {
     const nowFull = [...(this.aquaNowFull ?? []), ...ENCLOSURES.filter((e) => isFull(this.animals, e) && !fullBefore.has(e))]; // auch volle Becken im Aquarium
     this.aquaNowFull = [];
     nowFull.forEach((e, i) => this.time.delayedCall(1400 + i * 3200, () => this.showPenFull(e)));
+    this.checkSectionFull();
     const tank = LEVEL_ID === 'aquarium';
     const home = moved.length === 1
       ? tr(`Dein Tier ist ${tank ? 'ins Becken' : 'in sein Gehege'} gezogen.`, `Your animal moved into its ${tank ? 'tank' : 'enclosure'}.`)
@@ -7140,6 +7281,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     this.hideEncounterBubble();
     countStoryCatch(animal.species, animal.origin); // für Mavis Aufgaben
+    noteSkin(animal.skin); // für die Fellfarben-Trophäen
     this.followers.push(animal);
     this.updateQuestCard();
     this.mavi.check();
@@ -7754,6 +7896,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!r || this.leaving) return;
     this.expRelease(r.stay);
     this.carryHome = r.wagon.map((a) => ({ ...a }));
+    if (isFinalCamp()) noteExpedition(r.biome); // bis zum Ziel geschafft (für die Expeditions-Trophäen)
     endRun();
     this.travelTo('park');
   }
@@ -8510,6 +8653,12 @@ export default class GardenScene extends Phaser.Scene {
     });
     if (computer !== this.nearComputer) {
       this.nearComputer = computer;
+      this.updateToolbar();
+    }
+    // am Stall: die Aktionstaste öffnet den Reiter Reittiere
+    const stable = !!this.stable && Math.hypot(this.player.x - this.stable.x, (this.player.y - this.stable.y) * 2) < CHEST_DIST * 1.6;
+    if (stable !== !!this.nearStable) {
+      this.nearStable = stable;
       this.updateToolbar();
     }
     // an einem leeren Bauplatz: die Aktionstaste öffnet den Buden-Katalog

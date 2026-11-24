@@ -19,6 +19,14 @@ export const game = {
   iceMap2: true, // neue Eiswelt-Karte mit Fjord und Tundra (siehe migrateIceMap in save.js)
   events: {},
   unlocked: [],
+  scooter: false, // E-Roller freigeschaltet (Herzen, siehe src/world/mounts.js)
+  trophies: {}, // erreichte Trophäen { id: Zeitpunkt } und was sie mitzählen (siehe src/world/trophies.js)
+  skinsCaught: [],
+  heartsEarned: 0,
+  wishesDone: 0,
+  expDone: {},
+  fullSections: [],
+  mounts: [], // dauerhaft gekaufte Reittiere: Gebiete, z. B. ['meadow'] (siehe src/world/mounts.js)
   scooterRiding: false, // fährt Henrik gerade E-Roller? (bleibt beim Wechsel in einen anderen Tierpark-Abschnitt, ins Aquarium bzw. Reptilienhaus und beim Neuaufbau nach einem Ausbau)
   builds: {}, // gebaute Buden: { Bauplatz-Id: Buden-Art } (siehe src/world/shops.js)
   booths: {}, // umgestellte Buden: { Id: { level, tx, ty, flip } } bzw. { level, stored } (siehe src/world/shops.js)
@@ -73,6 +81,14 @@ export function resetGame() {
   game.builds = {};
   game.booths = {};
   game.scooterRiding = false;
+  game.scooter = false;
+  game.mounts = [];
+  game.trophies = {};
+  game.skinsCaught = [];
+  game.heartsEarned = 0;
+  game.wishesDone = 0;
+  game.expDone = {};
+  game.fullSections = [];
   game.upgrades = 0;
   game.chests = {};
   game.charms = { owned: [], equipped: [] };

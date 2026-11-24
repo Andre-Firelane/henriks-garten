@@ -15,7 +15,8 @@ export function newStory(locks = true) {
 const STEP_RENAMES = { icecream: 'babies' };
 // (upgrade: die frühere Ausbau-Aufgabe; gibt es nicht mehr, syncStory springt zur nächsten. friend: der Tierfreund kam an ihre
 // Stelle; wer die Bude schon gebaut hat und nicht gerade bei dieser Aufgabe ist, muss nicht zurück)
-const DONE_WITH = { stands: 'upgrade', friend: 'stands' };
+// (stable: der Stall kam später dazu; wer die Bude schon hat, muss nicht zurück)
+const DONE_WITH = { stands: 'upgrade', friend: 'stands', stable: 'stands' };
 
 // beim Laden: die aktive Aufgabe steht auch mit Namen im Spielstand (id) – kommen Aufgaben dazu oder fallen weg, stimmt so
 // die Nummer wieder (eine weggefallene: die erste danach, die noch nicht erledigt ist)

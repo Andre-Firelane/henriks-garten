@@ -1,6 +1,7 @@
 // Spielstand im Browser (localStorage): alle 5 Minuten, beim Levelwechsel, wenn die Seite in den Hintergrund geht
 // und von Hand im Menü. Solange das Spiel zu ist, steht die Zeit still: Events, Pausen und die Herzen der Besucher
 // laufen beim Laden dort weiter, wo gespeichert wurde. Das Test-Spiel speichert nie.
+import { migrateTrophyStats } from './world/trophies.js';
 import { game, resetGame } from './state.js';
 import { tileToWorld, worldToTile } from './world/iso.js';
 import { migrateStory, syncStory } from './story/story.js';
@@ -89,6 +90,11 @@ export function loadSave() {
   if (!game.charms?.owned) game.charms = { owned: [], equipped: [] };
   for (const k of Object.keys(game.levelBonus?.boni ?? {})) game.levelBonus.boni[k] += shift;
   if (game.campfireAt) game.campfireAt += shift;
+  if (!s.game.trophies) { game.skinsCaught = null; game.heartsEarned = null; } // (ältere Spielstände: aus dem Stand ablesen)
+  migrateTrophyStats();
+  if (!Array.isArray(game.mounts)) game.mounts = []; // (ältere Spielstände: noch keine gekauften Reittiere)
+  game.scooter = !!game.scooter; // der E-Roller ist jetzt freizuschalten, auch in älteren Spielständen
+  if (!game.scooter) game.scooterRiding = false;
   delete game.events.icecream; // das Eiswagen-Event gibt es nicht mehr (feste Eisstände als Bude schon)
   migrateSkinSpecies();
   if (!s.game.parkSplit) splitPark();

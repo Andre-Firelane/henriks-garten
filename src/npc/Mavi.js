@@ -70,6 +70,7 @@ export default class Mavi {
     else if (at.spot === 'feeder' && LEVEL.feeders?.length) return this.freeTile(LEVEL.feeders[0], true); // mitten zwischen den Gehegen, auf dem Weg
     else if (at.spot === 'car' && LEVEL.car) return this.freeTile({ tx: Math.round(LEVEL.car.tx) - 2, ty: Math.round(LEVEL.car.ty) + 1 }, true); // neben dem Auto (dort kommt man an)
     else if (at.spot === 'hut' && LEVEL.hut) t = { tx: LEVEL.hut.tx1 + 1, ty: LEVEL.hut.ty1 + 1 };
+    else if (at.spot === 'stable' && LEVEL.stable) t = { tx: LEVEL.stable.tx + 1, ty: LEVEL.stable.ty + 1 }; // neben dem Stall
     else if (at.spot === 'computer' && LEVEL.computers?.length) t = { tx: LEVEL.computers[0].tx + 1, ty: LEVEL.computers[0].ty + 1 };
     else if (at.spot === 'sign') {
       // vor dem Schild auf dem Weg, nicht auf dem Zaun: nächste Kachel mit Abstand zu allen Gehegen

@@ -21,7 +21,7 @@ import { SHOP_IDS } from '../world/shops.js';
 // Tierarten einer Welt (alle Wetterphasen), ohne die überall häufigen Fische – wie im Tierbuch (livesIn in GardenScene):
 // Spawn und Wetter-Spawn, dazu die Tiere mit eigenem Auftritt (Reiher, Geier, Hyänen, Leguane am Wasserfall, Gorillas,
 // Schlangen und Vogelspinnen im Dickicht des Dschungels)
-function worldSpecies(id) {
+export function worldSpecies(id) {
   const all = [];
   for (const l of [LEVELS[id], ...Object.values(LEVELS[id].seasons ?? {})]) {
     for (const pool of [l.spawn, l.weatherSpawn]) all.push(...Object.keys(pool?.weights ?? {}));
@@ -185,6 +185,23 @@ export const STEPS = [
     already: [tr('Du hast ja schon eine Bude – lecker!', 'You’ve already got a stand – yummy!')],
     outro: [
       tr('Super! Die Besucher stehen schon an – jeder Verkauf bringt dir Herzen.', 'Great! The visitors are already queueing – every sale brings you hearts.'),
+      tr('Komm mit, gleich neben der Tür ist unser Stall!', 'Come along, our stable is right next to the door!'),
+    ],
+    reward: 20,
+  },
+  {
+    // Stall: Reittiere leihen oder kaufen, E-Roller freischalten (siehe src/world/mounts.js)
+    id: 'stable',
+    at: { level: 'park', spot: 'stable' },
+    goal: tr('Schau in den Stall neben dem Haupthaus', 'Look into the stable next to the main building'),
+    done: (game) => !!game.story.flags.stable,
+    intro: [
+      tr('Das ist unser Stall. Hier gibt es Reittiere – damit bist du in den Welten viel schneller!', 'This is our stable. It has mounts – they make you much faster in the worlds!'),
+      tr('Du kannst eins für 10 Minuten leihen oder für ein Gebiet für immer kaufen. Auch den E-Roller für den Park gibt es hier.', 'You can rent one for 10 minutes or buy one forever for an area. The e-scooter for the zoo is here too.'),
+    ],
+    already: [tr('Den Stall kennst du ja schon!', 'You already know the stable!')],
+    outro: [
+      tr('Spar deine Herzen – ein eigenes Reittier lohnt sich!', 'Save your hearts – your own mount is worth it!'),
       tr('Komm mit zum Streichelzoo, ich möchte dir noch etwas Schönes zeigen!', 'Come along to the petting zoo, I’d like to show you something lovely!'),
     ],
     reward: 20,
@@ -326,7 +343,7 @@ export const STEPS = [
     goal: tr('Starte am Computer ein Event (nicht die Tierbabys)', 'Start an event at the computer (not the animal babies)'),
     done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk, Überraschungs-Flamingos oder die Tierbabys aus ihrer Aufgabe)
     intro: [
-      tr('Da bist du ja! Am Computer gibt es noch viel mehr Events: Reittiere, Flamingos, seltene Tiere …', 'There you are! There are many more events at the computer: mounts, flamingos, rare animals …'),
+      tr('Da bist du ja! Am Computer gibt es noch viel mehr Events: Flamingos, seltene Tiere, die große Wanderung …', 'There you are! There are many more events at the computer: flamingos, rare animals, the great migration …'),
       tr('Manche bringen sogar ganz neue Tiere, wie Wölfe, Gnus oder Quallen. Such dir eins aus!', 'Some even bring brand-new animals, like wolves, wildebeest or jellyfish. Pick one!'),
     ],
     already: [tr('Du hast ja schon ein Event gestartet – prima!', 'You’ve already started an event – excellent!')],

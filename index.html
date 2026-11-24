@@ -26,30 +26,33 @@
         -webkit-tap-highlight-color: transparent;
       }
       #game { width: 100%; height: 100%; }
+      /* Knopfreihe oben links (Herzen, Tierbuch, Bauen, Glücksbringer, Lagerfeuer, Events); Menü und Vollbild bleiben oben rechts */
+      #top-bar { position: fixed; top: 16px; left: 12px; z-index: 5; display: flex; align-items: center; gap: 8px; }
       #hud {
-        position: fixed; top: 12px; left: 90px; padding: 5px 10px; z-index: 5;
-        font: bold 15px/1.2 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
-        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14; border-radius: 10px;
+        display: flex; align-items: center; box-sizing: border-box; height: 52px; padding: 0 14px; white-space: nowrap;
+        font: bold 20px/1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
+        background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14; border-radius: 12px;
         cursor: pointer; user-select: none;
       }
-      /* Tierbuch-Knopf oben links: groß und auffällig (roter Punkt: es gibt etwas Neues) */
+      /* Tierbuch-Knopf: hell und auffällig (roter Punkt: es gibt etwas Neues) */
       #btn-book {
-        position: fixed; top: 12px; left: 12px; z-index: 5; width: 68px; height: 68px; padding: 0; cursor: pointer;
-        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-        font: bold 12px/1 "Trebuchet MS", Arial, sans-serif; color: #3a2414;
-        background: #f4dcae; border: 3px solid #6b4224; border-radius: 14px; box-shadow: 0 4px 0 #8a5a30;
+        position: relative; box-sizing: border-box; height: 52px; padding: 0 12px; cursor: pointer;
+        display: flex; align-items: center; gap: 6px;
+        font: bold 15px/1.1 "Trebuchet MS", Arial, sans-serif; color: #3a2414;
+        background: #f4dcae; border: 3px solid #6b4224; border-radius: 12px; box-shadow: 0 3px 0 #8a5a30;
       }
       #btn-book:hover { background: #ffe8bc; }
-      #btn-book:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a5a30; }
-      #btn-book .book-icon { font-size: 32px; line-height: 1; }
+      #btn-book:active { transform: translateY(3px); box-shadow: 0 0 0 #8a5a30; }
+      #btn-book .book-icon { font-size: 24px; line-height: 1; }
       #btn-book.new::after {
         content: "!"; position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%;
         font: bold 15px/22px Arial, sans-serif; color: #fff; background: #e8483f; border: 2px solid #fff; animation: book-new 1.2s ease-in-out infinite;
       }
       @keyframes book-new { 50% { transform: scale(1.2); } }
       @media (max-width: 900px), (max-height: 500px) {
-        #btn-book { width: 56px; height: 56px; } #btn-book .book-icon { font-size: 26px; } #btn-book .book-label { font-size: 10px; }
-        #hud { left: 78px; }
+        #top-bar { gap: 6px; }
+        #hud { height: 48px; padding: 0 10px; font-size: 16px; }
+        #btn-book { height: 48px; padding: 0 10px; } #btn-book .book-label { display: none; }
       }
       /* erste Begegnung mit einer Tierart: kleine Blase mit dem Werkzeug über dem Tier (antippen: Fang-Tipp) */
       #encounter, #beaver-hint, #yak-hint, #oak-hint {
@@ -632,6 +635,21 @@
       }
       /* Übersicht: Herzen je Tierart */
       .hs-list { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 10px; }
+      /* Tierbuch, Reiter Trophäen (Plaketten sind Platzhalter bis zu den eigenen Bildern, siehe src/world/trophies.js) */
+      .tr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 4px 0 12px; }
+      .tr-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; padding: 8px 6px; border-radius: 10px; background: rgba(255, 255, 255, 0.35); font-size: 13px; }
+      .tr-card small { font-size: 11px; opacity: 0.8; }
+      .tr-card:not(.got) b, .tr-card:not(.got) small { opacity: 0.7; }
+      .tr-bar { display: block; width: 90%; height: 7px; margin-top: 3px; border-radius: 4px; background: rgba(0, 0, 0, 0.15); overflow: hidden; }
+      .tr-bar span { display: block; height: 100%; background: #e0a820; border-radius: 4px; }
+      .tr-num { font-size: 11px; font-weight: bold; }
+      .tr-num.on { color: #3f8a2a; }
+      .tr-badge { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(0, 0, 0, 0.25); }
+      .tr-badge.bronze { background: radial-gradient(circle at 35% 30%, #f3c79a, #b06d32); }
+      .tr-badge.silver { background: radial-gradient(circle at 35% 30%, #ffffff, #a9b0b8); }
+      .tr-badge.gold { background: radial-gradient(circle at 35% 30%, #fff2a8, #d49a12); }
+      .tr-badge.locked { background: #b9ad97; filter: grayscale(1) brightness(0.6); }
+      .tr-mark { font-size: 26px; font-weight: bold; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
       .hs-row { display: grid; grid-template-columns: 34px 120px 1fr 70px; align-items: center; gap: 8px; font-size: 14px; }
       .hs-row b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .hs-bar { height: 12px; border-radius: 6px; background: rgba(107, 66, 36, 0.18); overflow: hidden; }
@@ -721,7 +739,6 @@
       }
       .scroll-track.show { display: block; }
       .scroll-thumb { width: 100%; border-radius: 7px; background: #6b4224; box-shadow: inset 0 0 0 2px #a8743f; cursor: grab; }
-      body.touch #hud { max-width: calc(100% - 260px); }
       /* Hinweise am Bildschirmrand: in welcher Richtung eine ausgelegte Falle liegt */
       #markers { position: fixed; inset: 0; pointer-events: none; }
       .marker {
@@ -802,7 +819,7 @@
       #exp-counter.done { font-size: 18px; background: rgba(40, 110, 40, 0.85); animation: exp-done 1.2s ease-in-out infinite; }
       @keyframes exp-done { 50% { transform: translateX(-50%) scale(1.06); } }
       /* Handy: kleiner und weiter oben, direkt unter der Knopfreihe (steht oben eine Meldung, rückt er darunter, siehe layoutExpCounter) */
-      @media (max-width: 900px), (max-height: 500px) { #exp-counter { top: 64px; font-size: 12px; padding: 4px 10px; gap: 4px; border-radius: 12px; transition: top 0.25s; } #exp-counter.done { font-size: 13px; } }
+      @media (max-width: 900px), (max-height: 500px) { #exp-counter { top: 72px; font-size: 12px; padding: 4px 10px; gap: 4px; border-radius: 12px; transition: top 0.25s; } #exp-counter.done { font-size: 13px; } }
       /* Raster: alle Karten gleich hoch (grid-auto-rows: 1fr), auch über zwei Reihen; lange Wörter brechen um */
       .luck-box .luck-cards { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 150px)); grid-auto-rows: 1fr; justify-content: center; gap: 12px; padding-top: 12px; }
       .luck-card { width: auto; height: 100%; min-height: 170px; box-sizing: border-box; justify-content: flex-start; border-color: var(--luck, #a8743f); border-width: 4px; background: #f8e6c0; overflow-wrap: break-word; hyphens: auto; -webkit-hyphens: auto; }
@@ -855,16 +872,16 @@
       }
       /* hochkant: 2 Karten je Reihe */
       @media (max-width: 600px) { .luck-box .luck-cards { grid-template-columns: repeat(2, minmax(0, 150px)); } }
-      /* Glücksbringer- und Lagerfeuer-Knopf oben rechts links neben dem Menü (nur Text) */
-      #luck-btns { position: fixed; top: 16px; right: 76px; z-index: 5; display: flex; gap: 8px; }
-      body.touch #luck-btns { right: 136px; }
-      #btn-charms, #btn-campfire {
-        height: 52px; padding: 0 12px; border-radius: 12px; cursor: pointer;
+      /* Glücksbringer-, Lagerfeuer- und Events-Knopf in der Knopfreihe oben links (Events nur Text) */
+      #btn-charms, #btn-campfire, #btn-events {
+        height: 52px; padding: 0 12px; border-radius: 12px; cursor: pointer; white-space: nowrap;
         font: bold 15px/1.1 "Trebuchet MS", Arial, sans-serif; color: #fff8e6;
         background: rgba(60, 40, 20, 0.7); border: 2px solid #2b1d14;
       }
-      #btn-charms, #btn-campfire.show { display: flex; align-items: center; gap: 6px; }
-      #btn-charms .charms-icon, #btn-campfire .charms-icon { font-size: 24px; line-height: 1; }
+      #btn-charms, #btn-campfire.show, #btn-events.show { display: flex; align-items: center; gap: 6px; }
+      #btn-events { display: none; }
+      #btn-events.on { background: rgba(200, 80, 130, 0.85); } /* ein Event läuft (Farbe wie die Event-Zeile darunter) */
+      #btn-charms .charms-icon, #btn-campfire .charms-icon, #btn-events .charms-icon { font-size: 24px; line-height: 1; }
       #btn-campfire { display: none; }
       /* Deko-Taste (nur im Tierpark, nur Text); leuchtet, solange der Setzen-Modus an ist */
       #btn-decor {
@@ -961,7 +978,9 @@
       }
       #btn-campfire:disabled { opacity: 0.6; cursor: default; }
       /* Handy: nur das Symbol (sonst ragt der Knopf in die Meldungen oben in der Mitte) */
-      @media (max-width: 900px), (max-height: 500px) { #btn-charms, #btn-campfire { font-size: 12px; padding: 0 10px; } #btn-charms .btn-label, #btn-campfire .btn-label { display: none; } }
+      @media (max-width: 900px), (max-height: 500px) {
+        #btn-charms, #btn-campfire, #btn-events, #btn-decor { height: 48px; font-size: 12px; padding: 0 10px; } #btn-charms .btn-label, #btn-campfire .btn-label, #btn-events .btn-label { display: none; }
+      }
       /* Randpfeile zu Kisten und zum seltenen Tier aus der Kiste */
       .marker.luck { background-image: none; display: flex; align-items: center; justify-content: center; font: 22px/1 Arial, sans-serif; border-color: #ffd84a; }
       .marker.bino { width: 50px; height: 50px; margin: -27px 0 0 -27px; font-size: 26px; }
@@ -1195,7 +1214,15 @@
         document.documentElement.style.setProperty("--bg", "url(assets/bg/bg_" + bgs[Math.floor(Math.random() * bgs.length)] + ".jpg)");
       })();
     </script>
-    <div id="hud"></div>
+    <!-- Knopfreihe oben links: Herzen, Tierbuch, Bauen, Glücksbringer, (Lagerfeuer), Events -->
+    <div id="top-bar">
+      <div id="hud"></div>
+      <button id="btn-book" aria-label="Tierbuch"><span class="book-icon">📖</span><span class="book-label">Tierbuch</span></button>
+      <button id="btn-decor">Bauen</button>
+      <button id="btn-charms">Glücksbringer</button>
+      <button id="btn-campfire">Lagerfeuer</button>
+      <button id="btn-events">Events</button>
+    </div>
     <div id="tools"></div>
     <div id="toast"></div>
     <div id="sign"></div>
@@ -1225,11 +1252,9 @@
     <div id="stick-zone"></div>
     <div id="stick"><div id="stick-knob"></div></div>
     <button id="btn-action" aria-label="Aktion"></button>
-    <button id="btn-book" aria-label="Tierbuch"><span class="book-icon">📖</span><span class="book-label">Tierbuch</span></button>
     <button id="btn-menu" aria-label="Menü">☰</button>
     <div id="decor-bar"></div>
     <div id="decor-frame"></div>
-    <div id="luck-btns"><button id="btn-decor">Deko</button><button id="btn-campfire">Lagerfeuer</button><button id="btn-charms">Glücksbringer</button></div>
     <button id="btn-full" aria-label="Vollbild">⛶</button>
     <button id="btn-swap" aria-label="Werkzeug wechseln">🧰</button>
     <script>

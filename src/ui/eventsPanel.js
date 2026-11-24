@@ -18,6 +18,8 @@ const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nicht
 // (den Reiter für den Gehegeausbau nur, solange es ihn gibt, siehe PEN_UPGRADES in map.js)
 const TABS = [
   ['events', 'Events'],
+  ['mounts', tr('Reittiere', 'Mounts')], // leihen, dauerhaft kaufen, E-Roller (siehe src/world/mounts.js); auch im Stall
+
   ...(PEN_UPGRADES ? [['pens', tr('Gehege ausbauen', 'Upgrade enclosures')]] : []),
 ];
 // Katalog der Bauen-Taste (tab 'shop': eine Liste mit Zwischenüberschriften { head: true, name }; bestellen, die Tafel
@@ -99,6 +101,9 @@ const THUMBS = {
     ['ride_meadow', 160, 230, 0, 0.38, 2, 0],
     ['ride_savanna', 160, 230, 1, 0.4, 92, 0],
   ],
+  // Reittiere zum Kaufen: je ihr Bild (Henrik im Sattel), dazu der E-Roller
+  ...Object.fromEntries(['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef'].map((a) => [`mount_${a}`, [[`ride_${a}`, 160, 230, 0, a === 'savanna' ? 0.46 : 0.55, 30, a === 'savanna' ? -14 : -6]]])),
+  scooter: [['scooter_empty', 170, 170, 1, 0.62, 40, 0]],
 };
 
 // Bude: Verkäufer und Snack (wie beim Eiswagen)
@@ -154,6 +159,11 @@ function status(item) {
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
     return [`<span class="ev-status go">${tr('Ausbauen', 'Upgrade')}</span>`, true];
   }
+  if (state.tab === 'mounts' && item.id !== 'ride') {
+    if (item.done) return [`<span class="ev-status on">${tr('gehört dir', 'yours')} ✓</span>`, false];
+    if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
+    return [`<span class="ev-status go">${tr('Kaufen', 'Buy')}</span>`, true];
+  }
   if (SHOP_TABS.includes(state.tab)) {
     if (item.blocked) return [`<span class="ev-status wait">${item.blocked}</span>`, false];
     return [`<span class="ev-status go">${tr('Bestellen', 'Order')}</span>`, true];
@@ -185,6 +195,8 @@ function render() {
     : state.tabs.map(([id, label]) => `<button class="ev-tab${id === state.tab ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
   const hint = state.note ?? (state.tab === 'pens'
     ? tr('Ein ausgebautes Gehege hat mehr Plätze, neue Ausstattung und Spielzeug – die Tiere freuen sich, und es kommen mehr Besucher.', 'An upgraded enclosure has more spaces, new equipment and toys – the animals are happy and more visitors come.')
+    : state.tab === 'mounts'
+      ? tr('Leihen: 10 Minuten in allen Welten. Kaufen: In diesem Gebiet reitest du dann immer.', 'Rent: 10 minutes in all worlds. Buy: you always ride in that area.')
     : state.tab === 'build'
       ? tr('Die Besucher kaufen an den Buden ein – jeder Verkauf bringt Herzen. Jede Sorte gibt es einmal pro Bereich.', 'Visitors buy snacks at the stands – every sale brings hearts. Each kind once per area.')
       : state.tab === 'deco'

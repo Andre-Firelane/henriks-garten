@@ -1,6 +1,7 @@
 // Kisten, Boni und Lagerfeuer in einer Welt (Regeln und Daten siehe world/luck.js; die Datei heißt anders, weil Windows Luck.js und luck.js nicht unterscheidet). Die Szene ruft update(dt) auf und
 // fragt nearChest (Aktionstaste öffnet die Kiste), markerTargets() (Pfeile am Bildschirmrand) und bannerLines().
 import Phaser from 'phaser';
+import { ownsMount } from './mounts.js';
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { tileToWorld, worldToTile } from './iso.js';
@@ -185,7 +186,7 @@ export default class Luck {
       .concat(Object.entries(CALLED).filter(([sp, c]) => (LEVEL.expedition && LEVEL.home ? !weights[sp] && LEVEL.home[sp] : c.when(LEVEL))).map(([species]) => ({ species, skin: rareSkinHere(species)?.id, share: CALLED_SHARE })))
       .filter((c) => c.skin);
     const boni = Object.entries(BONI)
-      .filter(([id, b]) => (!b.available || b.available(LEVEL_ID)) && (id !== 'ride' || RIDE_LEVELS.includes(biomeOf())))
+      .filter(([id, b]) => (!b.available || b.available(LEVEL_ID)) && (id !== 'ride' || (RIDE_LEVELS.includes(biomeOf()) && !ownsMount(biomeOf()))))  // (gekauftes Reittier: hier reitet man schon)
       .filter(([id]) => !inExpedition() || (RUN_BONI.includes(id) && !game.expedition.boni.includes(id))) // Expedition: Boni bis zum Ende (kein Event-Ruf)
       .map(([id]) => id);
     const charms = Object.keys(CHARMS).filter((id) => !ownsCharm(id));

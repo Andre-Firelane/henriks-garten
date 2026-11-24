@@ -55,7 +55,7 @@ function progress() {
 function update(beacon) {
   if (!session) return;
   const load = Math.round(((session.loadedAt ?? Date.now()) - session.startedAt) / 1000);
-  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), tut: TUTORIAL_VERSION, catches: session.catches, events: session.events, promos: session.promos, exp: session.exp, cards: session.cards, chests: session.chests, park: session.park }, beacon);
+  send({ type: 'update', id: session.id, seconds: Math.round(played() / 1000), load, loaded: !!session.loadedAt, step: progress(), tut: TUTORIAL_VERSION, catches: session.catches, events: session.events, promos: session.promos, exp: session.exp, cards: session.cards, chests: session.chests, park: session.park, trophies: session.trophies }, beacon);
 }
 
 function count(map, key) {
@@ -99,9 +99,14 @@ export function countPark(key) {
   if (session) count(session.park, key);
 }
 
+// Trophäe erreicht (Id wie in src/world/trophies.js)
+export function countTrophy(id) {
+  if (session) count(session.trophies, id);
+}
+
 // neue Runde vom Startbildschirm aus; kind: 'continue', 'new' oder 'test'. Die Spieldauer läuft erst ab sessionLoaded
 export function startSession(kind) {
-  session = { id: randomId(), startedAt: Date.now(), loadedAt: null, played: 0, visibleSince: null, catches: {}, events: {}, promos: {}, exp: {}, cards: {}, chests: {}, park: {} };
+  session = { id: randomId(), startedAt: Date.now(), loadedAt: null, played: 0, visibleSince: null, catches: {}, events: {}, promos: {}, exp: {}, cards: {}, chests: {}, park: {}, trophies: {} };
   send({ type: 'start', id: session.id, kind, lang, device: device() });
 }
 
