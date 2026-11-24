@@ -28,6 +28,7 @@ const SPOTS_MAX = 10;
 const BUBBLE_EVERY = 0.45; // so oft blubbert eine Stelle
 const BUBBLE_VIEW = 700; // nur so nah an Henrik werden Blasen gezeichnet
 const NET_SIGN_UP = 20; // so hoch über der Blubberstelle schwebt das Kescher-Zeichen
+const SIGN_FADE = 3; // so schnell blendet das Schild ein und aus (pro Sekunde)
 const NET_HIT = 44; // so nah (Kachel-Proportionen) an der Mitte des Kescher-Schwungs muss die Stelle sein
 const ISLAND_CHECK = 4; // so oft (Sekunden) schaut es nach, ob auf jeder Insel ein Walross liegt ...
 const ISLAND_REFILL = 45; // ... ist keins mehr da (gefangen, weggeschwommen), kommt nach so vielen Sekunden ein neues ...
@@ -178,7 +179,12 @@ export default class IceCatch {
     }
     const p = this.scene.player;
     const bob = Math.sin(this.scene.time.now / 400) * 1.5;
+    // das Kescher-Schild nur, solange ein hungriges Walross in der Nähe auf Muscheln wartet (sonst lenkt es ab)
+    const hungry = this.walruses().filter((a) => a.hungry > 0).map((a) => worldToTile(a.x, a.y));
     for (const s of this.spots) {
+      const show = hungry.some((t) => Math.hypot(t.tx - s.tx, t.ty - s.ty) < SPOT_NEAR + 2);
+      s.sign.alpha = Phaser.Math.Clamp(s.sign.alpha + (show ? dt : -dt) * SIGN_FADE, 0, 1);
+      s.sign.setVisible(s.sign.alpha > 0);
       s.sign.y = s.y - NET_SIGN_UP + bob;
       s.bubbleIn -= dt;
       if (s.bubbleIn > 0) continue;
@@ -192,7 +198,7 @@ export default class IceCatch {
     const scene = this.scene;
     const g = scene.add.image(0, 0, 'ice_net_sign').setOrigin(SIGN_O / SIGN_W, SIGN_O / SIGN_H).setScale(1 / SIGN_RES);
     const icon = scene.add.image(0, 0, 'net').setDisplaySize(13, 13);
-    return scene.add.container(x, y - NET_SIGN_UP, [g, icon]).setDepth(99990);
+    return scene.add.container(x, y - NET_SIGN_UP, [g, icon]).setDepth(99990).setAlpha(0).setVisible(false);
   }
 
   bubble(s) {

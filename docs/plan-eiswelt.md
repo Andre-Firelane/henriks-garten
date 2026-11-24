@@ -247,7 +247,7 @@ Geschicklichkeit (kein Reaktionstest, nichts geht verloren).
   nicht.
 - **Walross: wecken, Muscheln holen, füttern.** Die Wärmflasche weckt ein dösendes Walross. Es ist dann hungrig und
   zeigt eine Muschel in der Sprechblase (eine Zeit lang, dann döst es wieder ein). Im flachen Wasser neben den Walrossen
-  blubbert es an ein paar Stellen. Über jeder Stelle schwebt ein Kescher-Zeichen. Ein Kescher-Schwung dort bringt eine Muschel. Mit 2 Muscheln füttert Henrik das
+  blubbert es an ein paar Stellen. Über jeder Stelle schwebt ein Kescher-Zeichen, aber nur, solange ein hungriges Walross in der Nähe wartet (Andre, 24.11.2026: sonst lenkt es ab). Ein Kescher-Schwung dort bringt eine Muschel. Mit 2 Muscheln füttert Henrik das
   hungrige Walross (Aktionstaste), dann kommt es mit. Die Muscheln kann man auch vorher sammeln. Ein Walross, das
   schläft, frisst nicht.
 - **Eisbär: Fisch ans Eisloch, mit dem Wind anschleichen.** Neben jedem Eisloch ist eine kleine Ablagestelle, darüber
