@@ -6,6 +6,8 @@ import { resetGame } from '../state.js';
 import { save, readSave, loadSave, deleteSave } from '../save.js';
 import { lang, locale, setLang, tr } from '../i18n.js';
 import { startSession } from '../sessions.js';
+import { DIAG } from '../diag.js';
+import { fillParkForDiag } from '../diagFill.js';
 
 let panel = null;
 // Test-Spiel nur mit ?test in der Adresse (für Spieler wäre es eine verwirrende dritte Wahl)
@@ -75,6 +77,7 @@ export function openStartScreen(onStart) {
     } else if (act === 'test') {
       save.testMode = true;
       resetGame();
+      if (DIAG) fillParkForDiag(); // mit ?diag: volles Zentrum zum Messen (diagFill.js)
       startSession('test');
       start({});
     }

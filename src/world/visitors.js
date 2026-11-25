@@ -127,9 +127,10 @@ export function splitHearts(animals, n) {
 
 // volle Gehege (alle Plätze belegt, Stern am Schild) sind besonders anziehend
 export const FULL_BONUS = 1.5;
-// key: nur die Tiere dieses Kontingents (Tierart, siehe quotaKey), null: alle im Gehege
+// key: nur die Tiere dieses Kontingents (Tierart, siehe quotaKey), null: alle im Gehege. Der beste Freund zählt mit, auch
+// wenn er gerade Henrik folgt (sein Platz bleibt frei); Herzen bringt er unterwegs keine
 export function penCount(animals, e, key = null) {
-  return animals.filter((a) => a.state === 'penned' && a.enclosure === e && !a.baby && (key === null || quotaKey(a.species) === key)).length;
+  return animals.filter((a) => (a.state === 'penned' || a.companion) && a.enclosure === e && !a.baby && (key === null || quotaKey(a.species) === key)).length;
 }
 // voll: alle Kontingente des Geheges belegt
 export function isFull(animals, e) {

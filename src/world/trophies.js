@@ -68,7 +68,7 @@ export const TROPHIES = [
     progress: () => [count(skinsOf(sp), (k) => game.skinsCaught?.includes(k.id)) + (caught(sp) ? 1 : 0), skinsOf(sp).length + 1], // (+1: das Grundbild)
     check: () => caught(sp) && skinsOf(sp).every((s) => game.skinsCaught?.includes(s.id)),
   })),
-  { id: 'friend_max', group: 'friends', tier: 'gold', mark: '♥', name: tr('Beste Freunde', 'Best friends'), text: tr('Ein Tierfreund auf der höchsten Stufe.', 'An animal friend at the highest level.'), progress: () => [Math.max(0, ...Object.values(game.bonds ?? {}).map((b) => friendLevel(b.points ?? 0))), FRIEND_LEVELS.length], check: () => Object.values(game.bonds ?? {}).some((b) => friendLevel(b.points ?? 0) >= FRIEND_LEVELS.length) },
+  { id: 'friend_max', group: 'friends', tier: 'gold', mark: '♥', name: tr('Beste Freunde', 'Best friends'), text: tr('Ein bester Freund (Stufe 4).', 'A best friend (level 4).'), progress: () => [Math.max(0, ...Object.values(game.bonds ?? {}).map((b) => friendLevel(b))), FRIEND_LEVELS.length], check: () => Object.values(game.bonds ?? {}).some((b) => friendLevel(b) >= FRIEND_LEVELS.length) },
   { id: 'friend_10', group: 'friends', tier: 'silver', mark: '♥', name: tr('10 Tierfreunde', '10 animal friends'), text: tr('10 Tieren einen Namen gegeben.', 'Named 10 animals.'), progress: () => [Math.min(10, bondsNamed().length), 10], check: () => bondsNamed().length >= 10 },
   ...SECTIONS.map(([s, name, animal]) => ({
     id: `full_${s}`, group: 'park', tier: 'gold', animal,

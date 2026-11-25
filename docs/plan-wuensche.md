@@ -10,7 +10,21 @@ Ab und zu wünscht sich ein Besucher ein Tier, das es im Tierpark noch nicht gib
 bringt es ins Gehege. Kommt man danach zum Gehege, erlebt man mit, wie sich der Besucher freut. Das schafft ein
 kleines Ziel, das Wildnis und Tierpark verbindet.
 
-Bewusst **ohne Stammgäste**: keine Namen, keine wiederkehrenden Figuren.
+## Stammgäste (2026-11-25)
+
+Wer sich am Gehege über seinen erfüllten Wunsch gefreut hat, wird **Stammgast** (src/world/regulars.js):
+
+- Er bekommt einen zufälligen Vornamen (passend zum Besucher-Bild: 1, 2, 5, 8 Mädchen, 3, 4, 6, 7 Jungen). Über seinem
+  Kopf steht immer ein Schild „★ Name“ (wie beim Tierfreund). Nach den Freudensprüngen sagt er „Ich komme jetzt öfter!“
+  und bleibt noch ein paar Gehege lang.
+- Er kommt regelmäßig wieder: 30 % der neu ankommenden Besucher im Tierpark sind ein Stammgast, der gerade nicht da ist
+  (frühestens 60 Sekunden, nachdem er gegangen ist).
+- Kommt man in seine Nähe, bleibt er kurz stehen, schaut einen an und grüßt („Hallo!“, „Hey! Toller Zoo!“ …), danach
+  90 Sekunden lang nicht noch einmal. Im Spiel wird der Name „Henrik“ nie genannt.
+- Er bringt doppelt so viele Herzen (Gehege, Streicheln, Buden, Riesenrad, Pfau, Schmetterling, Koi); die Herzen über
+  seinem Kopf erscheinen als ♥♥. Die Herzen der Abwesenheit zählen ihn nicht extra.
+- Stammgäste haben selbst keine neuen Wünsche.
+- Gespeichert in game.regulars: [{ id, name, look, since }].
 
 ## Grundsätze
 

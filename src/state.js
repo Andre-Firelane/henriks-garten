@@ -17,6 +17,7 @@ export const game = {
   jungleHall: true, // Tropenhalle statt Dschungel-Gehegen und Reptilienhaus (siehe migrateJungleHall in save.js)
   spiderSwap: true, // die goldene Spinne ist die normale, die pelzige Vogelspinne die seltene (siehe migrateSpiders in save.js)
   iceMap2: true, // neue Eiswelt-Karte mit Fjord und Tundra (siehe migrateIceMap in save.js)
+  iceParkBig: true, // vergrößerte Eiswelt im Tierpark (siehe migrateIcePark in save.js)
   events: {},
   unlocked: [],
   scooter: false, // E-Roller freigeschaltet (Herzen, siehe src/world/mounts.js)
@@ -55,6 +56,7 @@ export const game = {
   nextAnimalId: 1, // nächste freie feste Nummer für ein Tier
   namings: 0, // so oft wurde schon ein Tier benannt (ab dem zweiten Mal kostet es Herzen, siehe nameCost in friends.js)
   decor: null, // Deko im Tierpark: { owned, shop, placed } (siehe src/world/decor.js; fehlt sie, gibt es die Grundausstattung)
+  regulars: [], // Stammgäste: Besucher, deren Wunsch erfüllt wurde { id, name, look, since } (siehe src/world/regulars.js)
   wishes: { open: [] }, // Besucherwünsche: angenommene Wünsche { species, look, done } (siehe src/world/wishes.js)
   feedUnlocked: [], // Sorten im Futterhaus (erst, wenn man sie draußen kennengelernt hat)
   upgrades: 0, // so oft wurde schon ausgebaut (jeder Ausbau kostet 10 Herzen mehr) // freigeschaltete Teile des Tierparks (z. B. 'flamingo': Flamingo-Gehege nach dem ersten Flamingo) // gestartete Events (siehe src/world/events.js): { babies: { startsAt, endsAt, readyAt } }
@@ -75,6 +77,7 @@ export function resetGame() {
   game.jungleHall = true;
   game.spiderSwap = true;
   game.iceMap2 = true;
+  game.iceParkBig = true;
   game.events = {};
   game.unlocked = [];
   game.penLevel = {};
@@ -115,5 +118,6 @@ export function resetGame() {
   game.namings = 0;
   game.feedUnlocked = [];
   game.wishes = { open: [] };
+  game.regulars = [];
   game.decor = null;
 }

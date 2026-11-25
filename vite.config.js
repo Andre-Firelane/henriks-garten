@@ -6,6 +6,25 @@ import path from 'node:path';
 // offen, vergleicht sie beides und lädt neu, wenn es eine neuere Version gibt (siehe src/update.js).
 const BUILD = String(Date.now());
 
+function diagMiddleware(req, res) {
+  const id = (new URL(req.url, 'http://x').searchParams.get('id') ?? 'unbekannt').replace(/[^\w-]/g, '').slice(0, 40);
+  if (req.method !== 'POST' || !id) {
+    res.statusCode = 405;
+    return res.end();
+  }
+  let body = '';
+  req.on('data', (c) => {
+    body += c;
+    if (body.length > 20e6) req.destroy(); // (mehr kommt nie, auch nicht mit dem Spielstand)
+  });
+  req.on('end', () => {
+    fs.mkdirSync('diag', { recursive: true });
+    fs.appendFileSync(path.join('diag', `${id}.jsonl`), body);
+    res.statusCode = 204;
+    res.end();
+  });
+}
+
 export default defineConfig({
   define: { __BUILD__: JSON.stringify(BUILD) },
   plugins: [
@@ -26,6 +45,16 @@ export default defineConfig({
         }
         if (stale.length) this.warn(`WebP älter als das PNG (python tools/make-webp.py .): ${stale.join(', ')}`);
         if (missing.length) this.error(`WebP fehlt für Handy und Tablet – bitte python tools/make-webp.py . laufen lassen: ${missing.join(', ')}`);
+      },
+    },
+    {
+      // Diagnose vom Tablet (?diag, siehe src/diag.js): Messwerte kommen per POST /__diag?id=… und landen in diag/<id>.jsonl
+      name: 'diag',
+      configureServer(server) {
+        server.middlewares.use('/__diag', diagMiddleware);
+      },
+      configurePreviewServer(server) {
+        server.middlewares.use('/__diag', diagMiddleware);
       },
     },
     {

@@ -113,11 +113,13 @@ export function loadSave() {
   if (!s.game.nextAnimalId) game.nextAnimalId = 1;
   if (s.game.namings == null) game.namings = Object.keys(game.bonds).length; // jeder bisherige Freund zählt als ein Benennen
   if (!Array.isArray(game.wishes?.open)) game.wishes = { open: [] }; // (ältere Spielstände: noch keine Besucherwünsche)
+  if (!Array.isArray(game.regulars)) game.regulars = []; // (ältere Spielstände: noch keine Stammgäste)
   if (!s.game.monkeyIsland) migrateMonkeyIsland();
   if (!s.game.jungleHall) migrateJungleHall();
   if (!s.game.spiderSwap) migrateSpiders();
   if (!s.game.iceMap2) migrateIceMap();
   if (!s.game.fishing) migrateFishing();
+  if (!s.game.iceParkBig) migrateIcePark();
   syncStory();
   delete game.tutorial; // (aus älteren Spielständen)
   delete game.quests;
@@ -269,6 +271,22 @@ function migrateJungleHall() {
     if (b.level !== 'park3' || b.stored) continue;
     if ([[0, 0], [1, 0], [0, 1], [1, 1]].some(([dx, dy]) => rebuilt(b.tx + dx, b.ty + dy))) game.booths[id] = { level: 'park3', stored: true };
   }
+}
+
+// Eiswelt im Tierpark vergrößert (eigene Karte, 44 × 39 Kacheln, größere Halle und Gehege): Deko und Buden dort kommen
+// zurück in die Bauen-Leiste, liegengebliebene Sachen verschwinden. Die Tiere setzt GardenScene beim Betreten wieder in
+// ihre Gehege (sie stehen dann nicht mehr ganz in deren Innenfläche).
+function migrateIcePark() {
+  game.iceParkBig = true;
+  const placed = game.decor?.placed?.park4;
+  if (placed) {
+    for (const d of placed) if (DECOR[d.id]) giveDecor(d.id);
+    game.decor.placed.park4 = [];
+  }
+  for (const [id, b] of Object.entries(game.booths ?? {})) {
+    if (b.level === 'park4' && !b.stored) game.booths[id] = { level: 'park4', stored: true };
+  }
+  if (game.levels.park4) game.levels.park4.pickups = [];
 }
 
 // Spielstände von vor dem Tierbuch-Fortschritt: gefangene Arten aus den Gehegen, Begleitern und der Herz-Statistik

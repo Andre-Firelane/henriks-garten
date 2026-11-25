@@ -8,6 +8,10 @@ import { setupLoadingErrors } from './ui/loading.js';
 import { setupScrollbars } from './ui/scrollbar.js';
 import { gpu, watchGpuTextures } from './gpuTextures.js';
 import { game as gameState } from './state.js';
+import { setupDiag } from './diag.js';
+import { loadedGroupNames } from './scenes/BootScene.js';
+import { coatJobs } from './animals/coats.js';
+import { LEVEL_ID } from './world/map.js';
 
 setupTouchControls();
 setupUpdateCheck();
@@ -43,6 +47,7 @@ if (import.meta.env.DEV) {
   window.__state = gameState;
 }
 watchGpuTextures(game); // Bilder erst beim Malen auf die Grafikkarte (sonst friert das Tablet ein)
+setupDiag(game, { level: () => LEVEL_ID ?? null, groups: loadedGroupNames, coatJobs }); // nur mit ?diag: Messwerte an den Server (diag.js)
 window.addEventListener('resize', () => game.scale.resize(...size()));
 if (params.has('fps')) {
   const box = Object.assign(document.createElement('div'), { style: 'position:fixed;left:4px;bottom:4px;z-index:99;max-width:60vw;font:bold 14px monospace;color:#fff;background:#000a;padding:2px 6px;pointer-events:none' });

@@ -11,17 +11,42 @@
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 
-// Punkte, ab denen eine Stufe gilt (Stufe 1 bis 3). 1: Name über dem Tier; 2: kommt zum Zaun und läuft dort mit;
-// 3: die Besucher kennen es (Herz mehr), goldenes Namensschild, Eintrag im Tierbuch
-export const FRIEND_LEVELS = [0, 4, 10];
+// Punkte, ab denen eine Stufe gilt (Stufe 1 bis 4). 1: Name über dem Tier; 2: kommt zum Zaun und läuft dort mit;
+// 3: die Besucher kennen es (Herz mehr), goldenes Namensschild, Eintrag im Tierbuch; 4: kann der beste Freund werden und
+// folgt Henrik dann durch seinen Tierpark-Abschnitt. Stufe 4 dauert doppelt so lange wie Stufe 3 (12 statt 6 Punkte).
+// Bester Freund ist immer nur einer (bond.best): der erste auf Stufe 4, danach wechselt man ihn am Tier („mitnehmen“)
+export const FRIEND_LEVELS = [0, 4, 10, 22];
+export const BEST_LEVEL = 4;
+export const GOLD_LEVEL = 3;
 export const PET_POINTS = 1;
 // Pause nach dem Streicheln (echte Zeit: läuft auch weiter, wenn das Spiel zu ist, und neu laden setzt sie nicht zurück)
 export const PET_PAUSE = 5 * 60 * 1000;
 
-export function friendLevel(points) {
+// Stufe eines Tierfreunds (bond aus game.bonds, oder seine Punkte)
+export function friendLevel(bond) {
+  const points = typeof bond === 'number' ? bond : bond?.points ?? 0;
   let level = 1;
   FRIEND_LEVELS.forEach((p, i) => points >= p && (level = i + 1));
   return level;
+}
+
+// der beste Freund (folgt Henrik), oder null
+export const bestFriendBond = () => Object.values(game.bonds ?? {}).find((b) => b.best) ?? null;
+
+// kann dieser Freund (Stufe 4) gerade zum besten Freund werden? (ist es noch nicht)
+export const canBeBest = (bond) => !!bond && !bond.best && friendLevel(bond) >= BEST_LEVEL;
+
+// zum besten Freund machen (der bisherige ist es dann nicht mehr)
+export function makeBest(bond) {
+  for (const b of Object.values(game.bonds ?? {})) b.best = false;
+  bond.best = true;
+}
+
+// nach neuen Punkten: gibt es noch keinen besten Freund, wird der erste auf Stufe 4 es (gibt true zurück, wenn gerade)
+export function claimBest(bond) {
+  if (bond.best || bestFriendBond() || friendLevel(bond) < BEST_LEVEL) return false;
+  bond.best = true;
+  return true;
 }
 
 // Schlüssel für game.friends
@@ -32,6 +57,11 @@ export function ensureFriendState() {
   game.bonds ??= {};
   game.nextAnimalId ??= 1;
   game.namings ??= Object.keys(game.bonds).length; // (ältere Spielstände: jeder bisherige Freund zählt als ein Benennen)
+  // (ältere Spielstände: hat schon ein Tier genug Punkte für Stufe 4, wird das mit den meisten der beste Freund)
+  if (!bestFriendBond()) {
+    const top = Object.values(game.bonds).sort((p, q) => q.points - p.points)[0];
+    if (top) claimBest(top);
+  }
 }
 
 // Benennen: das erste Mal ist frei, danach kostet jedes Benennen (neuer Freund oder neuer Name) NAME_STEP Herzen mehr
@@ -101,6 +131,7 @@ export function levelText(name, level) {
     null,
     tr(`${name} kommt jetzt zum Zaun, wenn du in der Nähe bist, und läuft dir dort hinterher.`, `${name} now comes to the fence when you are nearby and follows you along it.`),
     tr(`Die Besucher kennen ${name} jetzt und freuen sich besonders. Dazu gibt es ein goldenes Namensschild und einen Eintrag im Tierbuch.`, `The visitors know ${name} now and are extra happy. Plus a golden name tag and an entry in the animal book.`),
+    tr(`${name} kann jetzt dein bester Freund werden und folgt dir dann überall in diesem Teil des Tierparks. Bester Freund ist immer nur einer, du kannst ihn am Tier wechseln.`, `${name} can now become your best friend and will then follow you everywhere in this part of the zoo. There is only one best friend at a time; you can switch at the animal.`),
   ][level];
 }
 
@@ -173,8 +204,9 @@ export function wantedSorts() {
 }
 
 // Fortschritt zur nächsten Stufe: { level, max, need (Punkte bis dahin), frac (0–1; auf der höchsten Stufe 1) }
-export function levelProgress(points) {
-  const level = friendLevel(points);
+export function levelProgress(bond) {
+  const points = bond.points ?? 0;
+  const level = friendLevel(bond);
   const max = FRIEND_LEVELS.length;
   if (level >= max) return { level, max, need: 0, frac: 1 };
   const from = FRIEND_LEVELS[level - 1];

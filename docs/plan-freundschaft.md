@@ -30,6 +30,19 @@ Abweichungen beim Bau von Schritt 1:
 - Im offenen Streichelzoo kommt der Freund ab Stufe 2 direkt zu Henrik statt an den Zaun.
 - Code: src/world/friends.js, dazu die Abschnitte „Tierfreunde“ in GardenScene und updateVisit in Animal.js.
 
+## Stufe 4: bester Freund (gebaut 25.11.2026, nicht committet)
+
+- Stufe 4 ab 22 Punkten (doppelt so lange wie Stufe 3: 12 statt 6 Punkte). Jeder Tierfreund kann sie erreichen.
+- **Bester Freund ist immer nur einer** (`bond.best`): automatisch der erste auf Stufe 4. Steht Henrik bei einem anderen
+  Tierfreund auf Stufe 4, heißt die Aktion „Lotta mitnehmen“: er wird der beste Freund, der bisherige läuft zurück in
+  sein Gehege. So geht kein Fortschritt verloren.
+- Der beste Freund folgt Henrik durch den ganzen Tierpark-Abschnitt, in dem er wohnt, genau wie gefangene Tiere
+  draußen (Zustand 'following', durch Zäune, hinten in der Reihe). Beim Speichern steht er an seinem Platz im Gehege
+  (`companion.home`), beim nächsten Besuch kommt er von dort wieder heraus.
+- Sein Platz im Gehege bleibt belegt (penCount), Herzen bringt er unterwegs keine.
+- Die Aktionstaste nimmt ihn nur, wenn Streicheln gerade geht oder Henrik passendes Futter hat (sonst blockiert er Schilder usw.).
+- Code: updateCompanion, stopCompanion, takeAlong in GardenScene; companion in Animal.update; makeBest/claimBest in friends.js.
+
 ## Bedürfnisse (gebaut 23.11.2026)
 
 - Über Tieren im Tierpark erscheinen ab und zu kleine Blasen (grüner Rand, wie die Besucherwünsche) mit einer Hand

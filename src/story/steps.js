@@ -50,7 +50,7 @@ export const seaReady = (game) => seaCatches(game) >= REEF_CATCHES;
 const SHEEP = 3;
 const MEADOW = { cat: 2, frog: 2, butterfly: 2 };
 const FOREST = { deer: 2, squirrel: 2 };
-const VISITOR_HEARTS = 10;
+const VISITOR_HEARTS = 5; // (wenige Tiere bringen jetzt wenige Besucher, siehe ANIMALS_PER_VISITOR)
 const SAVANNA_KINDS = 3;
 const ASIA_KINDS = 3;
 const JUNGLE_KINDS = 2;

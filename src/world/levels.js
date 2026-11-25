@@ -972,8 +972,8 @@ export const LEVELS = {
 // anderen Abschnitt liegt (siehe moveFollowersIntoPens in GardenScene).
 // Unten steht der ganze Tierpark als eine Karte (Savanne oben, Wald links, Wiese rechts, Asien unten); alle Angaben
 // sind in ihren Kacheln geschrieben, parkSection() schneidet daraus die Abschnitte und rechnet die Kacheln um.
-// Rechts neben dem Zentrum liegt die Eiswelt (park4, siehe docs/plan-eiswelt.md): man geht rechts am Streichelzoo
-// vorbei hinüber.
+// Rechts neben dem Zentrum liegt die Eiswelt (park4, siehe docs/plan-eiswelt.md, eigene Karte PARK_ICE_ROWS): man geht
+// rechts am Streichelzoo vorbei hinüber.
 export const PARK_LEVELS = ['park', 'park2', 'park3', 'park4'];
 export const isPark = (id) => PARK_LEVELS.includes(id);
 
@@ -1002,41 +1002,41 @@ const PARK_ROWS = [
       '.K..g.b..T..3........y..-------.#..R.....vA..y..#].ƚ..Ʋ...............ƚƚ....≠≠.........v.]3',
       'f.g..f..g.f.3..y........y...y..y#v...........R..#[[[[[[[[[[[[[[[[[[[[[[[[[[[GG[[[[[[[[[[[[3',
       '[[[[[[[[[[[[[[.........################################b33333333333333333333333333333333333',
-      '222k2DDk222]P;^^^^^^^;.#............###--------MMMMMMM|bṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩ',
-      '2D22kD222DD]P;.......;.#..y.y.v.....###|.%.....N.C...N|bṩ[[[[[[[[..[[[[[[[.[[[[[[[[[[[[[[[[[[[[ṩ',
-      '2kD2222k22k]D;.P...ɫ.;.#.D.y......v.###|.~~....N....CN|bṩ]......].[[Ṗ...ȓ].]wwwwwÊwwwwwwwwww..]ṩ',
-      '22k2k22k2D2]D;.......;.#...Av..A.A..###|.~~~...N.....N|bṩ].Ȟ..Ṗ.].]......].]wwwwwwwwwwwwwww...]ṩ',
-      'DkD222k2k2k]D;L...ww.;.#.......y....###|..~~...MMMGMMM|bṩ]......].[[[[[G[[.[[[[[[[[[[[[wwww.Ȓ.]ṩ',
-      '222D2k2k2k2]P;....ww.;.#......y.....###|...%.......g..|bṩ]...Ȓ.[[.........############]wwww...]ṩ',
-      '222k2Dk2222]n;.ɫ.....;.#b.........b.###|.....bb.......|bṩ].....].#####################]wwww...]ṩ',
-      'k2D22k2k2D2]D;......*;.#.MMMMMMMMM..###|g.....b..b....|bṩ]..ȓ..G###########.........##]wwww...]ṩ',
-      'D22DD222222]ḩ;^^^G^^^;.#.NZ...z.sN..###|b.b....g..g..b|bṩ].....].##.................##]w......]ṩ',
-      'kD222D22222]P..D.#.2DP]#.N...VYV.N..###|..............|bṩ]Ṗ...ȓ].##..ǩǩǩǩǩǩǩǩǩǩǩǩǩ..##G..ȓ...ȓ]ṩ',
-      '[[[[[[[[[[[[.....#.1P.]#.N.......N..###|..............|bṩ[[[[[[[.##..Ǩwwww.Ȓ.ƷȒ..ǩǩ.##].......]ṩ',
-      ']ḩmkP..###########..Ț.]#.NVt.....N..###|..............|bṩ]Ṗ....].##..Ǩwwww..ȓƷ..Ɵ.Ǩ.##[[[..Ȓ..]ṩ',
-      ']-----|#........#..DPD]#.Ndix....N..###|....T.........|bṩ].....].##..Ǩwwww...Ʒ....Ǩ.##..].....]ṩ',
-      ']....k|#........#..D..]#.Ns.....ZN..###|..............|bṩ]..U..G###..Ǩwwww.Ê.G...ṖǨ.##..[[[[[[[ṩ',
-      ']..Ø..|#g...ƃ...#....n]#.MMMMGGMMM.####|..@...........|bṩ].....].##..Ǩww.....Ʒ....Ǩ.##.........ṩ',
-      '].....|#..%...f.#.ḫ1..]#bg.#####.fb####G...f......T...|bṩ].Ȓ..ȓ].##..Ǩ..Ê.ȓ..Ʒ.Ȟ..Ǩ.##.ȓṖṖ....Ṗṩ',
-      '].n...|#.ooo...F#.....]#..f#####g..####G..............|Xṩ[[[[[[[.###.ǩǯǯǯǯǯǯǯǯ....Ǩ.##.........ṩ',
-      '].....G#.oooo...######G################|..............|bṩ.........##.Ǩ#########ȓ.ṖǨ.##.[[[[[[[[ṩ',
-      ']..ʬ..|#ƃ.ooo%..######G###############W|.........f....|bṩ.........##.Ǩ#########...Ǩ.##.]w.....]ṩ',
-      '].....|#...ooo..#.....]##........######|F.............|bṩ.........##.ǨṖ..ȓ.####.Ȟ.Ǩ.##.]w.....]ṩ',
-      '].m...|#.n...oo.#.P2nḩ]#.........######|..............|bṩ......F..##.ǩǩ.Ȓ..####..ǩǩ.##.]w.....]ṩ',
-      ']...L.|#f.....~~#.D.D.]#.........######----------------bṩ.......W.##..ǩǩǩǩǩGGǩǩǩǩǩ..##.]w..Ȓ..]ṩ',
-      ']-----|#....g..~B.PP1D]#......n.....###.....ff.b.b...g.bX###########.......###########.]w.....]ṩ',
-      '].PD...#........B~2Ɍ..]#.......n.n..###.b..gf.T.....bTbbX#############################.]w.....]ṩ',
-      ']ḫ.D.############~kP.n]#....m.m...m.########g^^^^^^^^^^bṩ.........###########..........]w....Ṗ]ṩ',
-      ']----G--|...|-G--ȹȹ-|P]#..D.........###..f.#.;........;bṩ.......#...[[[[[[[[[[....#....]w.....]ṩ',
-      '].......|..P|....ww.|.]#............###g.g.#.;........;bṩ[[[[[[[G[[[[........[[[[[G[[[[[wȓ....]ṩ',
-      '].n....m|P..|.ƀ.%wwn|n]#......mm..q.###....#g;........;bṩ]...................]wwww.wwwwww.....]ṩ',
-      '].......|..k|m...ww.|P]#.m.P..0K.K..###g..g#.;....b...;bṩ].........Ȓ.......ȓ.]................]ṩ',
-      ']...U...|P.ḫ|..Ƅwww.|P]#............###...b##G........;bṩ]...Ṗ...............].....ȓ......www.]ṩ',
-      '].......|D1.|...www.|D]#....n.q..l..###.bb.#.G.....*..;bṩ]...................].......Ȟ....www.]ṩ',
-      '].k...n.|1..|%...wwƀ|P]#..n.q.......###..T.##;...w.w..;bṩ]......ȓ.......Ṗ....]..Ṗ.........www.]ṩ',
-      ']..D....|.P.|....ww.|.]#....ll......###..fb.#;........;bṩ].ȓ.................].........Ê......]ṩ',
-      ']-------|P..|----ȹȹ-|.]#...q.qq.....###b.b..#;........;bṩ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[ṩ',
-      ']P..DḫP.n..ḫ..PDP~~ḩ.ḫ]#...........####..f..#^^^^^^^^^^bṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩ',
+      '222k2DDk222]P;^^^^^^^;.#............###--------MMMMMMM|b',
+      '2D22kD222DD]P;.......;.#..y.y.v.....###|.%.....N.C...N|b',
+      '2kD2222k22k]D;.P...ɫ.;.#.D.y......v.###|.~~....N....CN|b',
+      '22k2k22k2D2]D;.......;.#...Av..A.A..###|.~~~...N.....N|b',
+      'DkD222k2k2k]D;L...ww.;.#.......y....###|..~~...MMMGMMM|b',
+      '222D2k2k2k2]P;....ww.;.#......y.....###|...%.......g..|b',
+      '222k2Dk2222]n;.ɫ.....;.#b.........b.###|.....bb.......|b',
+      'k2D22k2k2D2]D;......*;.#.MMMMMMMMM..###|g.....b..b....|b',
+      'D22DD222222]ḩ;^^^G^^^;.#.NZ...z.sN..###|b.b....g..g..b|b',
+      'kD222D22222]P..D.#.2DP]#.N...VYV.N..###|..............|b',
+      '[[[[[[[[[[[[.....#.1P.]#.N.......N..###|..............|b',
+      ']ḩmkP..###########..Ț.]#.NVt.....N..###|..............|b',
+      ']-----|#........#..DPD]#.Ndix....N..###|....T.........|b',
+      ']....k|#........#..D..]#.Ns.....ZN..###|..............|b',
+      ']..Ø..|#g...ƃ...#....n]#.MMMMGGMMM.####|..@...........|b',
+      '].....|#..%...f.#.ḫ1..]#bg.#####.fb####G...f......T...|b',
+      '].n...|#.ooo...F#.....]#..f#####g..####G..............|X',
+      '].....G#.oooo...######G################|..............|b',
+      ']..ʬ..|#ƃ.ooo%..######G###############W|.........f....|b',
+      '].....|#...ooo..#.....]##........######|F.............|b',
+      '].m...|#.n...oo.#.P2nḩ]#.........######|..............|b',
+      ']...L.|#f.....~~#.D.D.]#.........######----------------b',
+      ']-----|#....g..~B.PP1D]#......n.....###.....ff.b.b...g.b',
+      '].PD...#........B~2Ɍ..]#.......n.n..###.b..gf.T.....bTbb',
+      ']ḫ.D.############~kP.n]#....m.m...m.########g^^^^^^^^^^b',
+      ']----G--|...|-G--ȹȹ-|P]#..D.........###..f.#.;........;b',
+      '].......|..P|....ww.|.]#............###g.g.#.;........;b',
+      '].n....m|P..|.ƀ.%wwn|n]#......mm..q.###....#g;........;b',
+      '].......|..k|m...ww.|P]#.m.P..0K.K..###g..g#.;....b...;b',
+      ']...U...|P.ḫ|..Ƅwww.|P]#............###...b##G........;b',
+      '].......|D1.|...www.|D]#....n.q..l..###.bb.#.G.....*..;b',
+      '].k...n.|1..|%...wwƀ|P]#..n.q.......###..T.##;...w.w..;b',
+      ']..D....|.P.|....ww.|.]#....ll......###..fb.#;........;b',
+      ']-------|P..|----ȹȹ-|.]#...q.qq.....###b.b..#;........;b',
+      ']P..DḫP.n..ḫ..PDP~~ḩ.ḫ]#...........####..f..#^^^^^^^^^^b',
       '][[[[[[[[[[[[[[[[ȸȸ[[[]################################b    555555555555555555555555555555555555',
       '            5QQooooooooooooooooooo.Q..#.QQQ............bbbbbǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧ5',
       '            TQoooooooooooooooooooo..K.I..QQ[[[[[[[[[[[[[[[[bǦľ.ľľ..n......ľŔŔŔŔŔŔŔŔŔn..ľ.Ḣ..ľ.Ǧ5',
@@ -1076,6 +1076,49 @@ const PARK_ROWS = [
       '            5]..n..].......].......]5K...............K......Ǧľq.ľqnnľľľ..ľ.ľľǦ.....ľľľnnľľľ..ľǦ5',
       '            5[[[[[[[[[[[[[[[[[[[[[[[5QQ.K..QQ...QQ..K.Q.....ǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧǧ5',
       '            555555555555555555555555555555555555555555555555555555555555555555555555555555555555',
+];
+
+// Eiswelt (park4): eigene Karte, gezeichnet von tools/park-ice-map.py
+const PARK_ICE_ROWS = [
+  'ṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩ',
+  'ṩ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[ṩ',
+  'ṩ]......Ṗ.]Ṗ.......ȓ]wwwwwwwwwwwwwwwww....]ṩ',
+  'ṩ].Ȟ......].........]wwwwwwÊwwwwwwwwww....]ṩ',
+  'ṩ]........].........]wwwwwwwwwwwwwwwww..Ȓ.]ṩ',
+  'ṩ]...Ṗ.Ȓ..]...Ȓ.....]wwwÊwwwwwwwwwwwww....]ṩ',
+  'ṩ]........].......Ṗ.]wwwwwwwwwwwwwwwww....]ṩ',
+  'ṩ]..ȓ.....[[[[[[G[[[[[[[[[[[[[[[[[wwww....]ṩ',
+  'ṩ]........G######################]wwww....]ṩ',
+  'ṩ]Ṗ.....ȓ.]#ǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩ.#]wwww.Ȓ..]ṩ',
+  'ṩ[[[[[[[[[[#Ǩwwwwww.Ȓ..Ʒ......ǩǩ#]........]ṩ',
+  'ṩ]Ṗ.......]#Ǩwwwwww....Ʒ..Ɵ....Ǩ#]........]ṩ',
+  'ṩ]......Ṗ.]#Ǩwwwwww..ȓ.ƷȒ....Ṗ.Ǩ#G........]ṩ',
+  'ṩ]...U....]#Ǩwwwwww....Ʒ.......Ǩ#].ȓ.....ȓ]ṩ',
+  'ṩ]........G#Ǩwwwwww....Ʒ.......Ǩ#]........]ṩ',
+  'ṩ]........]#Ǩwwwwww.Ê..G....Ȓ..Ǩ#[[[[[[[[[[ṩ',
+  'ṩ].Ȓ.....ȓ]#Ǩwww.......ƷȞ.....ṖǨ#..........ṩ',
+  'ṩ[[[[[[[[[[#Ǩwww.Ê.ȓ...Ʒ.......Ǩ#..........ṩ',
+  'ṩ..........#Ǩ.........ȒƷ..ȓ....Ǩ#..........ṩ',
+  'ṩ..........#ǩǯǯǯǯǯǯǯǯǯǯǯ.....Ṗ.Ǩ#..........ṩ',
+  'ṩ..........#Ǩ##############....Ǩ#[[[[[[[[[[ṩ',
+  'ṩ..........#Ǩ##############....Ǩ#]w.......]ṩ',
+  'ṩ......F...#Ǩ....ȓ..##......Ṗ..Ǩ#]w.......]ṩ',
+  'ṩ........W.#Ǩ.Ṗ.....##...Ȟ.....Ǩ#]w....Ȓ..]ṩ',
+  'X###########Ǩ...Ȓ...####....ȓ..Ǩ#]w.......]ṩ',
+  'X###########ǩǩ......####......ǩǩ#]w.......]ṩ',
+  'ṩ.......#..#.ǩǩǩǩǩǩǩGGǩǩǩǩǩǩǩǩǩ.#]w......Ṗ]ṩ',
+  'ṩ.......#..######################]w.ȓ.....]ṩ',
+  'ṩ[[[[[[[G[[[[[[[[[[[[[[[[[[G[[[[[[w.......]ṩ',
+  'ṩ]...................]wwwww.wwwwwww.......]ṩ',
+  'ṩ].........Ȓ.......ȓ.]....................]ṩ',
+  'ṩ]...Ṗ...............]...............wwww.]ṩ',
+  'ṩ]...................].....ȓ..Ȟ......wwww.]ṩ',
+  'ṩ]...........Ṗ.......]...............wwww.]ṩ',
+  'ṩ]......ȓ.......Ṗ....].............Ȓ.wwww.]ṩ',
+  'ṩ]...................]..Ṗ.................]ṩ',
+  'ṩ].ȓ.................]...........Ê........]ṩ',
+  'ṩ[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[ṩ',
+  'ṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩṩ',
 ];
 
 // ground/water: Boden und Teichwasser im Gehege, passend zur Welt, aus der die Tiere kommen
@@ -1173,25 +1216,26 @@ const PARK_PENS = [
       { id: 'snowleopards', name: tr('Schneeleoparden-Felsen', 'Snow Leopard Rocks'), species: ['snowleopard'], gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 31, ty: 91 }, slots: [2, 3], upgrade: tr('Ein zweiter Sonnenfelsen', 'A second sunning rock'), basic: [[33, 90, ':'], [32, 91, '<']] },
       // Koi-Teich: das Wasser rund um die Affeninsel samt der Brücke zum Glaspavillon (dort füttern die Besucher die Koi)
       { id: 'koipond', name: tr('Koi-Teich', 'Koi Pond'), seed: { tx: 31, ty: 65 }, species: ['koi'], pond: true, signAt: { tx: 34, ty: 70 }, signKey: 'koi', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'], slots: [6, 9] },
-      // Eiswelt (park4, siehe docs/plan-eiswelt.md; Karte aus tools/park-ice-map.py): die Polarhalle steht in der Mitte (Glas
+      // Eiswelt (park4, siehe docs/plan-eiswelt.md; eigene Karte PARK_ICE_ROWS aus tools/park-ice-map.py, Kacheln dieser
+      // Karte, daher section: 'park4'): die Polarhalle steht in der Mitte (Glas
       // wie die Tropenhalle, mit der großen Treppe hinunter zur Unterwasser-Scheibe), ein Rundweg führt um sie herum, außen
       // liegen die Gehege: Polarwölfe und Polarfüchse links, Schneehasen oben, Robben & Walrosse oben rechts, Eisbären
       // hinter einem Wassergraben unten rechts, Rentiere unten links. Kein Tag und keine Nacht: Eule und Eisbär sind einfach da.
       // Pinguinbecken in der Halle (Glas, Pflegertür); steht vor der Halle, damit seine Kacheln nicht zur Halle zählen
-      { id: 'penguins', name: tr('Pinguinbecken', 'Penguin Pool'), species: ['penguin'], gate: 'glasslow', world: 'ice', seed: { tx: 74, ty: 36 }, slots: [10, 10], signAt: { tx: 73.5, ty: 40.6 }, signOnGlass: true },
+      { id: 'penguins', name: tr('Pinguinbecken', 'Penguin Pool'), species: ['penguin'], gate: 'glasslow', world: 'ice', section: 'park4', seed: { tx: 20, ty: 13 }, slots: [10, 10], signAt: { tx: 18.5, ty: 19.6 }, signOnGlass: true },
       // Polarhalle: Papageitaucher und Schneeeulen fliegen frei unter dem Glasdach (zwischen Felsen und Tannen, siehe
       // hallFlight.js); Besucher gehen durch den Lamellenvorhang hinein und auf dem Holzsteg bis zur Treppe
-      { id: 'polarhall', name: tr('Polarhalle', 'Polar Hall'), species: ['puffin', 'snowowl'], open: true, visitors: true, gate: 'glassdoor', gateTiles: [{ tx: 75, ty: 45 }, { tx: 76, ty: 45 }],
-        world: 'ice', seed: { tx: 75, ty: 42 }, quota: { puffin: [8, 8], snowowl: [2, 2] } },
+      { id: 'polarhall', name: tr('Polarhalle', 'Polar Hall'), species: ['puffin', 'snowowl'], open: true, visitors: true, gate: 'glassdoor', gateTiles: [{ tx: 20, ty: 26 }, { tx: 21, ty: 26 }],
+        world: 'ice', section: 'park4', seed: { tx: 27, ty: 14 }, quota: { puffin: [8, 8], snowowl: [2, 2] } },
       // Robben und Walrosse zusammen im langen Außenbecken mit Kiesstrand; unter der Halle schwimmen sie hinter der
       // großen Scheibe vorbei (siehe UnderwaterWindow.js)
-      { id: 'sealpool', name: tr('Robben & Walrosse', 'Seals & Walruses'), species: ['seal', 'walrus'], gate: 'tall', world: 'ice', seed: { tx: 92, ty: 30 }, quota: { seal: [5, 5], walrus: [3, 3] } },
-      { id: 'arcticwolves', name: tr('Polarwölfe', 'Arctic Wolves'), species: ['arcticwolf'], gate: 'tall', world: 'ice', seed: { tx: 60, ty: 28 }, slots: [5, 5] },
-      { id: 'arcticfoxes', name: tr('Polarfuchsbau', 'Arctic Fox Den'), species: ['arcticfox'], gate: 'tall', world: 'ice', seed: { tx: 60, ty: 36 }, slots: [4, 4] },
-      { id: 'snowhares', name: tr('Schneehasen', 'Snowshoe Hares'), species: ['snowhare'], gate: 'tall', world: 'ice', seed: { tx: 69, ty: 27 }, slots: [6, 6] },
+      { id: 'sealpool', name: tr('Robben & Walrosse', 'Seals & Walruses'), species: ['seal', 'walrus'], gate: 'tall', world: 'ice', section: 'park4', seed: { tx: 39, ty: 6 }, quota: { seal: [5, 5], walrus: [3, 3] } },
+      { id: 'arcticwolves', name: tr('Polarwölfe', 'Arctic Wolves'), species: ['arcticwolf'], gate: 'tall', world: 'ice', section: 'park4', seed: { tx: 5, ty: 6 }, slots: [5, 5] },
+      { id: 'arcticfoxes', name: tr('Polarfuchsbau', 'Arctic Fox Den'), species: ['arcticfox'], gate: 'tall', world: 'ice', section: 'park4', seed: { tx: 4, ty: 12 }, slots: [4, 4] },
+      { id: 'snowhares', name: tr('Schneehasen', 'Snowshoe Hares'), species: ['snowhare'], gate: 'tall', world: 'ice', section: 'park4', seed: { tx: 16, ty: 4 }, slots: [6, 6] },
       // Eisbären: Tundra mit Badebecken, vorne ein Wassergraben (das Pflegertor hat eine Lücke im Graben)
-      { id: 'polarbears', name: tr('Eisbären-Anlage', 'Polar Bear Enclosure'), species: ['polarbear'], gate: 'tall', world: 'ice', seed: { tx: 86, ty: 54 }, slots: [3, 3] },
-      { id: 'reindeer', name: tr('Rentier-Gehege', 'Reindeer Enclosure'), species: ['reindeer'], gate: 'tall', world: 'ice', seed: { tx: 66, ty: 54 }, slots: [8, 8] },
+      { id: 'polarbears', name: tr('Eisbären-Anlage', 'Polar Bear Enclosure'), species: ['polarbear'], gate: 'tall', world: 'ice', section: 'park4', seed: { tx: 37, ty: 25 }, slots: [3, 3] },
+      { id: 'reindeer', name: tr('Rentier-Gehege', 'Reindeer Enclosure'), species: ['reindeer'], gate: 'tall', world: 'ice', section: 'park4', seed: { tx: 12, ty: 32 }, slots: [8, 8] },
 ];
 
 // freischaltbar: Gehege, die mit dem ersten Tier ihrer Art entstehen (je im Abschnitt, in dem ihre Kacheln liegen)
@@ -1202,8 +1246,8 @@ const PARK_UNLOCKS = [
   { id: 'flamingo', tx: 24, ty: 43, rows: ['#....##..###', '.....##..###', '.....##..###', '.....##.....', 'b^^^^GG^^^^^', '.;.........;', '.;.f.....g.;', '.;...www...;', '.;..wwwww..;', '.;..wwwww..;', '.;..wwwww..;', '.;...www...;', '.;.g.....f.;', '.;.........;', 'b^^^^^^^^^^^', '............'] },
 ];
 
-// in welchem Abschnitt eine Kachel der ganzen Karte liegt (die Eiswelt rechts neben dem Zentrum: Spalten ab 56)
-const sectionOf = (ty, tx = 0) => (ty <= 22 ? 'park2' : ty >= 60 ? 'park3' : tx >= 56 && ty >= 24 ? 'park4' : 'park');
+// in welchem Abschnitt eine Kachel der ganzen Karte liegt (die Eiswelt hat ihre eigene Karte, ihre Gehege sagen section)
+const sectionOf = (ty) => (ty <= 22 ? 'park2' : ty >= 60 ? 'park3' : 'park');
 
 // Kacheln einer Angabe um (dx, dy) verschieben: tx/ty, Rechtecke (tx0 … ty1), die Dreiergruppen in basic und at: [tx, ty]
 // (Richtungen wie dir bleiben, wie sie sind)
@@ -1227,9 +1271,9 @@ const edgeRow = (x0, fill, xs) => [...fill].map((c, i) => (xs.includes(x0 + i) ?
 
 // Ein Abschnitt: Ausschnitt x0..x1, y0..y1 der ganzen Karte. edits: [tx, ty, Zeichen] ändern die Karte vorher (Randzeilen,
 // zugemachte Ausgänge). Alle anderen Angaben in Kacheln der ganzen Karte, nur exits schon in Kacheln des Abschnitts
-// (ihr arrive gehört zum Ziel)
-function parkSection(id, { x0, x1, y0, y1, edits, exits, ...def }) {
-  const rows = [...PARK_ROWS];
+// (ihr arrive gehört zum Ziel). tiles: andere Kartentabelle als PARK_ROWS (die Eiswelt)
+function parkSection(id, { x0, x1, y0, y1, edits, exits, tiles = PARK_ROWS, ...def }) {
+  const rows = [...tiles];
   for (const [tx, ty, s] of edits) rows[ty] = rows[ty].slice(0, tx) + s + rows[ty].slice(tx + s.length);
   return {
     grass: ['grass0', 'grass1', 'grass2'],
@@ -1241,8 +1285,8 @@ function parkSection(id, { x0, x1, y0, y1, edits, exits, ...def }) {
     ...shiftDef(
       {
         ...def,
-        enclosures: PARK_PENS.filter((e) => (e.section ?? sectionOf(e.seed.ty, e.seed.tx)) === id),
-        unlocks: PARK_UNLOCKS.filter((u) => sectionOf(u.ty, u.tx) === id),
+        enclosures: PARK_PENS.filter((e) => (e.section ?? sectionOf(e.seed.ty)) === id),
+        unlocks: PARK_UNLOCKS.filter((u) => sectionOf(u.ty) === id),
       },
       -x0,
       -y0,
@@ -1317,8 +1361,8 @@ LEVELS.park = parkSection('park', {
     { tx: 38, ty: 38, to: 'park3', arrive: { tx: 26, ty: 1 }, label: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle') },
     { tx: 29, ty: 16, to: 'house', arrive: { tx: 7, ty: 10 }, label: tr('Haupthaus', 'Main Building') }, // Tür des Haupthauses
     { tx: 30, ty: 16, to: 'house', arrive: { tx: 8, ty: 10 }, label: tr('Haupthaus', 'Main Building') },
-    { tx: 55, ty: 24, to: 'park4', arrive: { tx: 1, ty: 22 }, label: tr('Eiswelt', 'Ice World') },
-    { tx: 55, ty: 25, to: 'park4', arrive: { tx: 1, ty: 23 }, label: tr('Eiswelt', 'Ice World') },
+    { tx: 55, ty: 24, to: 'park4', arrive: { tx: 1, ty: 24 }, label: tr('Eiswelt', 'Ice World') },
+    { tx: 55, ty: 25, to: 'park4', arrive: { tx: 1, ty: 25 }, label: tr('Eiswelt', 'Ice World') },
   ],
 });
 
@@ -1428,7 +1472,8 @@ LEVELS.park3 = parkSection('park3', {
 // rechts am Streichelzoo vorbei durch den Eis-Torbogen. Schneeboden, leichter Schneefall, eigener Wind-Ton; kein Tag und
 // keine Nacht. Schnellreise mit dem Schneemobil (Henrik fährt nicht selbst)
 LEVELS.park4 = parkSection('park4', {
-  x0: 56, x1: 95, y0: 24, y1: 58,
+  tiles: PARK_ICE_ROWS,
+  x0: 0, x1: 43, y0: 0, y1: 38,
   edits: [],
   name: tr('Tierpark: Eiswelt', 'Zoo: Ice World'),
   part: { name: tr('Eiswelt', 'Ice World'), icon: 'penguin' },
@@ -1441,38 +1486,38 @@ LEVELS.park4 = parkSection('park4', {
   stepSound: 'step_snow',
   snow: true, // es rieselt leicht Schnee (siehe Weather.js)
   // Schneemobil mit Anhänger (Bild von Andre, tools/snowmobile-cut.py) auf dem Platz am Eingang; der Anhänger ragt nach
-  // hinten rechts (kleinere Zeilen), dort ist bis zum Fuchsbau Platz
-  car: { tx: 60, ty: 45, texture: 'car_snow', frame: 0, scale: 1.26 },
-  start: { tx: 58, ty: 46 },
+  // hinten rechts (kleinere Zeilen), dort ist bis zum Fuchsgehege Platz
+  car: { tx: 4, ty: 23, texture: 'car_snow', frame: 0, scale: 1.26 },
+  start: { tx: 2, ty: 24 },
   grounds: [
     // Polarhalle: Holzsteg statt Schneeweg
-    { area: { tx0: 69, tx1: 82, ty0: 33, ty1: 45 }, ground: ['snow0', 'snow1', 'snow2'], path: 'planks_ice' },
+    { area: { tx0: 12, tx1: 31, ty0: 9, ty1: 26 }, ground: ['snow0', 'snow1', 'snow2'], path: 'planks_ice' },
     // Kiesstrand im Robbenbecken
-    { area: { tx0: 91, tx1: 93, ty0: 26, ty1: 36 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
-    { area: { tx0: 87, tx1: 90, ty0: 32, ty1: 36 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
+    { area: { tx0: 38, tx1: 41, ty0: 2, ty1: 14 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
+    { area: { tx0: 34, tx1: 37, ty0: 10, ty1: 14 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
     // Tundra bei Rentieren, Eisbären und Wölfen
-    { area: { tx0: 58, tx1: 76, ty0: 51, ty1: 56 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 2 },
-    { area: { tx0: 79, tx1: 93, ty0: 52, ty1: 56 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 2 },
-    { area: { tx0: 89, tx1: 93, ty0: 42, ty1: 50 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 1.5 },
-    { area: { tx0: 58, tx1: 63, ty0: 26, ty1: 33 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 1.5 },
+    { area: { tx0: 2, tx1: 20, ty0: 29, ty1: 36 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 2 },
+    { area: { tx0: 22, tx1: 41, ty0: 30, ty1: 36 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 2 },
+    { area: { tx0: 35, tx1: 41, ty0: 21, ty1: 29 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 1.5 },
+    { area: { tx0: 2, tx1: 9, ty0: 2, ty1: 9 }, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 1.5 },
   ],
   // Polarhalle: Glasdach mit Streben wie die Tropenhalle, aber ohne Sprühnebel (siehe JungleHall.js)
-  polarHall: { tx0: 69, tx1: 82, ty0: 33, ty1: 45 },
+  polarHall: { tx0: 12, tx1: 31, ty0: 9, ty1: 26 },
   // große Treppe in der Halle hinunter zur Unterwasser-Scheibe (flach im Boden, man läuft darüber; die Kacheln sind
   // Übergänge; Platzhalter-Bild aus tools/polar-stairs.py, stairs_ice)
-  props: [{ key: 'stairs_ice', tx: 77, ty: 43, size: 2, originY: 0.5, floor: true }],
-  feeders: [{ tx: 63, ty: 44, world: 'ice' }], // Fisch, am Platz beim Eingang
-  scooterSpot: { tx: 61, ty: 48 },
+  props: [{ key: 'stairs_ice', tx: 22, ty: 24, size: 2, originY: 0.5, floor: true }],
+  feeders: [{ tx: 7, ty: 22, world: 'ice' }], // Fisch, am Platz beim Eingang
+  scooterSpot: { tx: 5, ty: 26 },
   // Torbogen über dem Weg gleich hinter dem Übergang (Platzhalter: der Bogen des Wildparks, später aus Eisblöcken)
-  arches: [{ key: 'wildpark_arch', tx: 57, ty: 46.5, label: tr('Eiswelt', 'Ice World') }],
+  arches: [{ key: 'wildpark_arch', tx: 1, ty: 24.5, label: tr('Eiswelt', 'Ice World') }],
   sections: [
-    { label: tr('Polarhalle', 'Polar Hall'), tx: 75.5, ty: 45 },
-    { label: tr('Zentrum', 'Center'), tx: 56, ty: 46.5 },
+    { label: tr('Polarhalle', 'Polar Hall'), tx: 20.5, ty: 26 },
+    { label: tr('Zentrum', 'Center'), tx: 0, ty: 24.5 },
   ],
   exits: [
-    { tx: 0, ty: 22, to: 'park', arrive: { tx: 54, ty: 24 }, label: tr('Zentrum', 'Center') },
-    { tx: 0, ty: 23, to: 'park', arrive: { tx: 54, ty: 25 }, label: tr('Zentrum', 'Center') },
-    ...[[21, 19], [22, 19], [21, 20], [22, 20]].map(([tx, ty]) => ({ tx, ty, to: 'polarunder', arrive: { tx: 7, ty: 7 }, label: tr('Unterwasser-Scheibe', 'Underwater Window') })),
+    { tx: 0, ty: 24, to: 'park', arrive: { tx: 54, ty: 24 }, label: tr('Zentrum', 'Center') },
+    { tx: 0, ty: 25, to: 'park', arrive: { tx: 54, ty: 25 }, label: tr('Zentrum', 'Center') },
+    ...[[22, 24], [23, 24], [22, 25], [23, 25]].map(([tx, ty]) => ({ tx, ty, to: 'polarunder', arrive: { tx: 7, ty: 7 }, label: tr('Unterwasser-Scheibe', 'Underwater Window') })),
   ],
 });
 
@@ -1509,8 +1554,8 @@ LEVELS.polarunder = {
   // door: dort kommen die Besucher herein und gehen wieder
   underwater: { tx0: 1, tx1: 14, ty: 0, height: 240, pen: 'sealpool', level: 'park4', door: { tx: 7.5, ty: 8.6 } },
   exits: [
-    { tx: 7, ty: 9, to: 'park4', arrive: { tx: 19, ty: 17 }, label: tr('Polarhalle', 'Polar Hall') },
-    { tx: 8, ty: 9, to: 'park4', arrive: { tx: 19, ty: 17 }, label: tr('Polarhalle', 'Polar Hall') },
+    { tx: 7, ty: 9, to: 'park4', arrive: { tx: 21, ty: 21 }, label: tr('Polarhalle', 'Polar Hall') },
+    { tx: 8, ty: 9, to: 'park4', arrive: { tx: 21, ty: 21 }, label: tr('Polarhalle', 'Polar Hall') },
   ],
   spawn: { population: 0, weights: {} },
 };

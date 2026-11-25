@@ -213,6 +213,7 @@ const queued = new Set(); // Schlüssel in der Warteschlange
 const pending = new Map(); // Fellfarbe → so viele Bilder fehlen noch
 const started = new Set(); // Fellfarben, die schon ein Tier hatte (bekommen später geladene Vorlagen nachgereicht)
 let pumping = false;
+export const coatJobs = () => jobs.length; // (für die Diagnose, siehe diag.js)
 
 function enqueue(job) {
   if (queued.has(job.key)) return;

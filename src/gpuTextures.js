@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DIAG, diagUpload } from './diag.js';
 
 // Phaser legt jedes geladene Bild sofort auf die Grafikkarte. Alle Gebiete zusammen sind ausgepackt über 600 MB, daran
 // erstickt das Tablet (das Spiel friert nach ein paar Schritten ganz ein). Darum kommt ein Bild erst auf die
@@ -15,7 +16,7 @@ const touch = matchMedia('(pointer: coarse)').matches;
 const params = new URLSearchParams(location.search);
 const vram = Number(params.get('vram'));
 const diagnose = params.has('fps');
-export const gpu = { bytes: 0, budget: (vram || (touch ? 256 : 1536)) * MB, uploads: 0, errors: 0 };
+export const gpu = { bytes: 0, budget: (vram || (touch ? 256 : 1536)) * MB, uploads: 0, errors: 0, evicted: 0 };
 
 const uploaded = new Set();
 let now = 0;
@@ -27,6 +28,7 @@ const isImage = (p) => p instanceof HTMLImageElement || (typeof ImageBitmap !== 
 function upload(w) {
   const gl = w.gl;
   const unit = gl.getParameter(gl.ACTIVE_TEXTURE); // Phaser wählt die Einheit, bevor es die Textur abfragt
+  const start = DIAG ? performance.now() : 0;
   w._tex = gl.createTexture();
   w._processTexture();
   gl.activeTexture(unit);
@@ -35,6 +37,7 @@ function upload(w) {
   w._bytes = w.pixels.width * w.pixels.height * 4;
   uploaded.add(w);
   gpu.bytes += w._bytes;
+  if (DIAG) diagUpload(w.pixels, performance.now() - start, w._bytes); // (mit ?diag: wie lange das Hochladen gedauert hat)
 }
 
 function forget(w) {
@@ -110,6 +113,7 @@ function evict(renderer) {
     if (gpu.bytes <= gpu.budget * 0.8) break;
     if (!gl.isContextLost()) gl.deleteTexture(w._tex);
     forget(w);
+    gpu.evicted++;
   }
   // die Pipelines merken sich, was gebunden ist: sonst binden sie eine gelöschte Textur nicht neu
   renderer.pipelines.pipelines.each((key, pipeline) => {

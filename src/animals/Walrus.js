@@ -13,6 +13,7 @@ const WARM_TIME = 1.2; // so lange (Sekunden) wärmt die Flasche, bis es aufwach
 const HUNGRY_TIME = 150; // so lange (Sekunden) bleibt es danach wach und hungrig
 const WISH_EVERY = 3; // so oft zeigt es dabei die Muschel
 const SIZE = 0.5; // (Bild in voller Größe, 1,28-fach wie früher bei 0,64: ein Koloss, aber scharf)
+const SLEEP_GROW = 1.15; // dösend etwas größer (das Schlafbild füllt sein Feld weniger aus als die Videos)
 const RANGE = 110; // so weit darf es sich vom Platz entfernen, an dem es erschienen ist (Kachel-Proportionen, y doppelt)
 
 export default class Walrus extends Animal {
@@ -133,11 +134,12 @@ export default class Walrus extends Animal {
 
   render(moving) {
     super.render(moving);
-    this.sprite.setScale(this.baby ? 0.35 : SIZE);
     const sleepy = this.sleepy;
+    this.sprite.setScale((this.baby ? 0.35 : SIZE) * (sleepy ? SLEEP_GROW : 1));
     const f = this.kind.frames;
     const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
-    if (sleepy) this.sprite.setTexture('walrus_sleep', frame).setFlipX(false);
+    // dösend immer von vorne (nur links/rechts je nach Blickrichtung), nie die Rückenansicht
+    if (sleepy) this.sprite.setTexture('walrus_sleep', this.faceX < 0 ? f.downLeft : f.downRight).setFlipX(false);
     else if (this.sprite.texture.key === 'walrus_sleep') this.sprite.setTexture('walrus', frame);
   }
 }

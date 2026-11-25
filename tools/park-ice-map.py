@@ -1,22 +1,20 @@
-# Eiswelt im Tierpark (park4, siehe docs/plan-eiswelt.md): zeichnet den Abschnitt rechts neben dem Zentrum in die
-# ganze Tierpark-Karte (PARK_ROWS in src/world/levels.js, Zeilen 24 bis 58, Spalten 56 bis 95). Kann beliebig oft laufen:
-# die Zeilen werden vorher auf ihre 56 Zeichen (das Zentrum) gekürzt.
+# Eiswelt im Tierpark (park4, siehe docs/plan-eiswelt.md): zeichnet die Karte des Abschnitts in ihre eigene
+# Kartentabelle PARK_ICE_ROWS in src/world/levels.js (44 × 39 Kacheln). Kann beliebig oft laufen.
 #
 #   python tools/park-ice-map.py
 #
-# Aufbau: die Polarhalle steht in der Mitte (mit der großen Treppe hinunter zur Unterwasser-Scheibe), ein geschwungener
-# Rundweg führt um sie herum, außen liegen die Gehege in unregelmäßigen Formen. Gehege werden als Flächen (Vereinigung
-# von Rechtecken) angegeben; ihre Zäune ergeben sich von selbst (alle Kacheln rund um die Fläche).
+# Aufbau: die Polarhalle steht groß in der Mitte (mit der großen Treppe hinunter zur Unterwasser-Scheibe), ein schmaler
+# Rundweg (1 Kachel) führt um sie herum, außen liegen die Gehege. Gehege werden als Flächen (Vereinigung von Rechtecken)
+# angegeben; ihre Zäune ergeben sich von selbst (alle Kacheln rund um die Fläche). Die Lagen hier müssen zu den Angaben
+# der Eiswelt-Gehege (PARK_PENS) und von LEVELS.park4 in levels.js passen (Kacheln des Abschnitts).
 #
 # Zeichen: ṩ Füller (verschneite Tanne, ganze Kachel fest), ǩ Ǩ Glasfassade, ǯ Ʒ niedriges Glas, [ ] hoher Zaun, G Tor, # Weg (in der Halle
 # Holzsteg), w Wasser im Gehege, Ɵ Ȟ Ȓ ȓ Schneefelsen, Ê Eisblock, Ṗ verschneite Tanne, U Fuchsbau, F Futterautomat,
 # W Wegweiser, X Übergang ins Zentrum
 import random
-import re
 import sys
 
-W, H = 40, 35  # Breite und Höhe des Abschnitts
-X0, Y0 = 56, 24  # Lage in der ganzen Karte
+W, H = 44, 39  # Breite und Höhe des Abschnitts
 
 g = [['.'] * W for _ in range(H)]
 PAIRS = ['[]', 'ǩǨ', 'ǯƷ']  # Zaunarten: entlang tx, entlang ty (hoher Zaun, Glasfassade, niedriges Glas)
@@ -83,93 +81,90 @@ def fix_axes():
             put(x, y, pair[1] if vert else pair[0])
 
 
-# ---- Rand: Füller ringsum, links der Übergang ins Zentrum (Zeilen 22 und 23) ----
+# ---- Rand: Füller ringsum, links der Übergang ins Zentrum (Zeilen 24 und 25) ----
 rect(0, 0, W - 1, 0, 'ṩ')
 rect(0, H - 1, W - 1, H - 1, 'ṩ')
 rect(0, 0, 0, H - 1, 'ṩ')
 rect(W - 1, 0, W - 1, H - 1, 'ṩ')
 
-# ---- Polarhalle in der Mitte (Glas), Ecken abgerundet ----
-hall = area((14, 10, 25, 20), minus=[(25, 10), (14, 20), (25, 20)])
+# ---- Polarhalle in der Mitte (Glas, innen 18 × 16 Kacheln), Ecken abgerundet ----
+hall = area((13, 10, 30, 25), minus=[(30, 10), (13, 25), (30, 25)])
 fence(hall, 'ǩ', 'Ǩ')  # Glasfassade ohne Holz
-# Pinguinbecken in der Halle: die linke Hälfte (teilt sich die Hallenwand), Pflegertür rechts
-penguins = area((14, 10, 20, 15))
+# Pinguinbecken in der Halle: oben links (teilt sich die Hallenwand), Pflegertür rechts
+penguins = area((13, 10, 22, 18))
 fence(penguins, 'ǯ', 'Ʒ')  # niedriges Glas
-put(21, 13, 'G')  # Pflegertür
-rect(14, 10, 17, 13, 'w')
-rect(14, 14, 15, 14, 'w')
-items('19,10,Ȓ 18,15,ȓ 16,15,Ê 20,11,ȓ 19,13,Ê')
+put(23, 15, 'G')  # Pflegertür
+rect(13, 10, 18, 15, 'w')
+rect(13, 16, 15, 17, 'w')
+items('20,10,Ȓ 19,17,ȓ 17,17,Ê 21,12,ȓ 20,15,Ê 22,18,Ȓ')
 # Holzsteg: vom Eingang unten hinauf, quer vor der Pinguin-Scheibe
-rect(19, 19, 20, 20, '#')
-rect(14, 17, 22, 18, '#')
+rect(13, 20, 26, 21, '#')
+rect(20, 22, 21, 25, '#')
 # große Treppe hinunter zur Unterwasser-Scheibe (2×2 Kacheln, Bild stairs_ice; die Kacheln sind Übergänge)
-rect(21, 19, 22, 20, '#')
+rect(22, 24, 23, 25, '#')
 # Felsen und Tannen für Papageitaucher und Schneeeulen (frei in der Halle)
-items('24,11,Ɵ 23,15,Ȟ 25,13,Ṗ 22,10,Ȓ 24,19,Ȟ 25,17,Ṗ 14,19,Ṗ 16,20,Ȓ 17,19,ȓ 23,17,ȓ')
+items('26,11,Ɵ 29,12,Ṗ 24,16,Ȟ 28,15,Ȓ 26,18,ȓ 29,19,Ṗ 25,23,Ȟ 28,22,Ṗ 14,23,Ṗ 16,24,Ȓ 17,22,ȓ 28,24,ȓ 24,12,Ȓ 30,16,Ṗ')
 
-# ---- Rundweg um die Halle, mit Biegungen; vom Eingang links herüber ----
+# ---- schmaler Rundweg um die Halle; vom Eingang links herüber (2 breit) ----
 for r in [
-    (0, 22, 9, 23),  # vom Übergang zum Rundweg
-    (9, 7, 10, 16), (10, 16, 11, 24),  # links (knickt nach rechts)
-    (9, 6, 18, 7), (18, 5, 29, 6),  # oben (mit Stufe)
-    (28, 6, 29, 22),  # rechts
-    (10, 23, 20, 24), (19, 22, 29, 23),  # unten (mit Stufe), dort der Halleneingang
+    (0, 24, 10, 25),  # vom Übergang zum Rundweg
+    (11, 8, 11, 27),  # links
+    (11, 8, 32, 8),  # oben
+    (32, 8, 32, 27),  # rechts
+    (11, 27, 32, 27),  # unten, dort der Halleneingang
 ]:
     rect(*r, '#')
-put(0, 22, 'X')
-put(0, 23, 'X')
-put(19, 21, 'G')  # Lamellenvorhang der Halle
-put(20, 21, 'G')
+put(0, 24, 'X')
+put(0, 25, 'X')
+put(20, 26, 'G')  # Lamellenvorhang der Halle
+put(21, 26, 'G')
 
 # ---- Gehege rundherum ----
-# Polarwölfe oben links (großes L)
-wolves = area((2, 2, 7, 4), (2, 5, 6, 9))
+# Polarwölfe oben links
+wolves = area((2, 2, 9, 9))
 fence(wolves, '[', ']')
-put(7, 7, 'G')
-rect(8, 7, 8, 7, '#')
-items('3,3,Ȟ 6,3,Ṗ 4,7,ȓ 5,5,Ȓ 2,9,Ṗ 6,9,ȓ')
+put(10, 8, 'G')
+items('3,3,Ȟ 8,2,Ṗ 4,7,ȓ 7,5,Ȓ 2,9,Ṗ 8,9,ȓ 5,5,Ṗ')
 # Polarfüchse links unter den Wölfen, mit Bau
-foxes = area((2, 11, 6, 15))
+foxes = area((2, 11, 9, 16))
 fence(foxes, '[', ']')
-put(7, 13, 'G')
-rect(8, 13, 8, 13, '#')
-items('4,13,U 2,11,Ṗ 6,15,ȓ 3,15,Ȓ')
-# Schneehasen oben in der Mitte
-hares = area((12, 2, 16, 3), (11, 3, 13, 3))
+put(10, 14, 'G')
+items('5,13,U 2,11,Ṗ 9,16,ȓ 3,16,Ȓ 8,12,Ṗ')
+# Schneehasen oben, links von der Mitte
+hares = area((11, 2, 19, 6))
 fence(hares, '[', ']')
-put(15, 4, 'G')
-items('12,2,Ṗ 16,2,ȓ')
-# Robben & Walrosse oben rechts: lang gezogenes Becken mit Kiesstrand rechts (L-Form)
-seals = area((20, 2, 30, 3), (31, 2, 37, 10), (33, 11, 37, 12))
+put(16, 7, 'G')
+items('11,2,Ṗ 19,2,ȓ 14,5,Ȓ 18,6,Ṗ')
+# Robben & Walrosse oben rechts: langes Becken, rechts der Kiesstrand (L-Form)
+seals = area((21, 2, 41, 6), (34, 7, 41, 14))
 fence(seals, '[', ']')
-rect(20, 2, 30, 3, 'w')
-rect(31, 2, 34, 7, 'w')
-put(35, 2, 'w')
-put(31, 8, 'w')
-put(30, 9, 'G')
-items('25,2,Ê 36,4,Ȓ 37,9,ȓ 35,11,Ȓ 33,9,ȓ')
+rect(21, 2, 33, 6, 'w')
+rect(34, 2, 37, 9, 'w')
+put(33, 12, 'G')
+items('27,3,Ê 24,5,Ê 40,4,Ȓ 41,13,ȓ 39,9,Ȓ 35,13,ȓ')
 # Eisbären unten rechts: Tundra mit Badebecken, vorne ein Wassergraben (Pflegertor mit Lücke im Graben)
-bears = area((22, 27, 37, 32), (32, 18, 37, 26))
+bears = area((22, 29, 41, 36), (34, 21, 41, 28))
 fence(bears, '[', ']')
-rect(22, 27, 31, 27, 'w')
-rect(32, 18, 32, 27, 'w')
-put(26, 26, 'G')
-put(26, 27, '.')
-rect(26, 25, 26, 25, '#')
-rect(34, 29, 36, 31, 'w')
-items('29,30,Ȟ 35,21,Ȓ 33,26,ȓ 24,31,Ṗ 37,24,Ṗ 31,32,Ê 27,29,ȓ')
+rect(22, 29, 33, 29, 'w')
+rect(34, 21, 34, 29, 'w')
+put(27, 28, 'G')
+put(27, 29, '.')
+rect(37, 31, 40, 34, 'w')
+items('30,32,Ȟ 39,23,Ȓ 36,27,ȓ 24,35,Ṗ 41,26,Ṗ 33,36,Ê 27,32,ȓ 35,34,Ȓ')
 # Rentiere unten links: weite Tundra
-reindeer = area((2, 27, 20, 32), (13, 26, 20, 26))
+reindeer = area((2, 29, 20, 36))
 fence(reindeer, '[', ']')
-put(8, 26, 'G')
-rect(8, 25, 8, 25, '#')
-items('5,29,Ṗ 11,28,Ȓ 16,31,Ṗ 19,28,ȓ 3,32,ȓ 8,31,ȓ')
+put(8, 28, 'G')
+rect(8, 26, 8, 27, '#')
+items('5,31,Ṗ 11,30,Ȓ 16,34,Ṗ 19,30,ȓ 3,36,ȓ 8,34,ȓ 13,33,Ṗ')
 
 fix_axes()
 
-# ---- Platz am Eingang (Futterautomat, Wegweiser, Schneemobil) und Deko zwischen Weg und Halle ----
-put(7, 20, 'F')
-put(8, 21, 'W')
+# ---- Platz am Eingang (Futterautomat, Wegweiser, Schneemobil) ----
+put(7, 22, 'F')
+put(9, 23, 'W')
+
+
 # verstreute Tannen und Felsen auf freiem Schnee, nicht direkt an Wegen, Toren oder Zäunen
 def free_spot(x, y):
     if g[y][x] != '.':
@@ -181,7 +176,7 @@ def free_spot(x, y):
     return True
 
 
-keep_clear = area((1, 17, 8, 21), (34, 13, 37, 16))  # Platz am Eingang (Schneemobil mit Anhänger) und Budenplatz rechts
+keep_clear = area((1, 18, 10, 27), (33, 16, 42, 19))  # Platz am Eingang (Schneemobil mit Anhänger) und Budenplatz rechts
 pens = hall | wolves | foxes | hares | seals | bears | reindeer
 spots = [(x, y) for y in range(1, H - 1) for x in range(1, W - 1) if free_spot(x, y) and (x, y) not in keep_clear and (x, y) not in pens]
 rnd.shuffle(spots)
@@ -195,22 +190,12 @@ assert '?' not in ''.join(rows)
 
 path = 'src/world/levels.js'
 src = open(path, encoding='utf-8', newline='').read()
-i = src.index('const PARK_ROWS = [')
+nl = '\r\n' if '\r\n' in src else '\n'
+i = src.index('const PARK_ICE_ROWS = [')
 j = src.index('];', i)
-block = src[i:j]
-lines = block.split('\n')
-# Zeilen der Karte: jede beginnt mit Leerzeichen und einem '
-row_idx = [k for k, l in enumerate(lines) if re.match(r"^\s+'", l)]
-assert len(row_idx) == 98, len(row_idx)
-for y in range(H):
-    k = row_idx[Y0 + y]
-    m = re.match(r"^(\s+)'(.*)',(\r?)$", lines[k])
-    indent, row, cr = m.group(1), m.group(2), m.group(3)
-    row = row[:X0]
-    assert len(row) == X0, (Y0 + y, len(row))
-    lines[k] = f"{indent}'{row}{rows[y]}',{cr}"
-src = src[:i] + '\n'.join(lines) + src[j:]
+src = src[:i] + 'const PARK_ICE_ROWS = [' + nl + ''.join(f"  '{r}',{nl}" for r in rows) + src[j:]
 open(path, 'w', encoding='utf-8', newline='').write(src)
 sys.stdout.reconfigure(encoding='utf-8')
+print('   ' + ''.join(str(x % 10) for x in range(W)))
 for y, r in enumerate(rows):
     print(f'{y:2d} {r}')

@@ -1,3 +1,4 @@
+import { diagMark } from '../diag.js';
 import Phaser from 'phaser';
 import { openStartScreen } from '../ui/startScreen.js';
 import { openFeatureTour, tourSeen } from '../ui/featureTour.js';
@@ -81,6 +82,7 @@ let startBackground = null; // startet den Hintergrund sofort (falls jemand wart
 const waiting = []; // { groups, resolve, onProgress }
 
 export const groupsLoaded = (groups) => groups.every((g) => loaded.has(g));
+export const loadedGroupNames = () => [...loaded].join(','); // (für die Diagnose, siehe diag.js)
 
 // Pakete, die ein Gebiet braucht: seine eigenen und die der Tiere, die dort stehen bzw. einem folgen (Gehege im Tierpark)
 export function levelGroups(level) {
@@ -718,16 +720,19 @@ export default class BootScene extends Phaser.Scene {
     const menu = () => openStartScreen((data) => {
       // Startgebiet: gespeichert, zum Ausprobieren über die Adresse (?level=forest) oder der Tierpark
       const startGroups = levelGroups(data.level ?? new URLSearchParams(location.search).get('level') ?? 'park');
+      diagMark('load-start', { groups: startGroups.join(',') });
       showLoading(tr('Das Spiel wird geladen …', 'Loading the game …'), 0);
       this.load.on('progress', setLoadingProgress);
       this.load.once('complete', () => {
         this.load.off('progress', setLoadingProgress);
+        diagMark('load-done');
         this.setupAssets();
         // das erste Gebiet aufzubauen dauert einen Moment: solange die Ladeanzeige
         showLoading(tr('Das Spiel startet …', 'Starting the game …'));
         afterPaint(() => {
           // die Boot-Szene läuft weiter (ohne Bild), damit sie den Rest im Hintergrund laden kann
           this.scene.launch('Garden', data);
+          diagMark('garden-launch');
           startGroups.forEach((g) => loaded.add(g));
           queue = GROUP_ORDER.filter((g) => !loaded.has(g));
           const timer = this.time.delayedCall(REST_DELAY, () => this.loadNext());
@@ -749,6 +754,7 @@ export default class BootScene extends Phaser.Scene {
     startBackground = null;
     if (current || !queue.length) return;
     current = queue.shift();
+    diagMark('group-start', { group: current });
     currentProgress = 0;
     const onProgress = (p) => {
       currentProgress = p;
@@ -758,6 +764,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.once('complete', () => {
       this.load.off('progress', onProgress);
       this.setupAssets();
+      diagMark('group-done', { group: current });
       loaded.add(current);
       current = null;
       notify();

@@ -9,6 +9,7 @@ import { isActive } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { isPark } from '../world/levels.js';
 import { MAX_WISH_WALKERS, WISH_CHANCE, WISH_TALK_DIST, openWishes, thanksLine, wishIcon, wishKey, wishLine, wishSlotFree } from '../world/wishes.js';
+import { GREET_DIST, GREET_PAUSE, REGULAR_AWAY, REGULAR_CHANCE, REGULAR_HEARTS, addRegular, ensureRegulars, greetLine, welcomeLine } from '../world/regulars.js';
 import { MAX_BUYS, RIDE_CHANCE, SHOP_CHANCE, TEA, TEA_CHANCE, TEA_TIME, WHEEL, shopDef } from '../world/shops.js';
 import { LEVEL, LEVEL_ID } from '../world/map.js';
 import { BABY_BONUS, HOUSE_VISITORS, parkCap, heartSpecies, arrivalInterval, buildPathGrid, findRoute, maxVisitors, parkScore, penScore } from '../world/visitors.js';
@@ -90,6 +91,9 @@ export class Visitor {
     this.wishSkin = null; // ... bzw. diese seltene Variante davon
     this.wishEl = null; // ... die Blase dazu (HTML über dem Bild)
     this.chatTimer = 0; // angesprochen: so lange bleibt er noch stehen
+    this.regular = null; // Stammgast: { id, name, look } aus game.regulars (src/world/regulars.js)
+    this.regularTag = null; // ... sein Namensschild mit Stern
+    this.greetTimer = 0; // ... so lange grüßt er nicht noch einmal
     this.shadow = scene.add.ellipse(x, y, 22, 7, 0x14320a, 0.3);
     this.sprite = scene.add.sprite(x, y, `visitor${look}`, FRAMES.downRight).setOrigin(0.5, ORIGIN_Y).setScale(0.5);
   }
@@ -109,7 +113,9 @@ export class Visitor {
   }
 
   update(dt) {
+    this.placeTag();
     if (this.phase === 'ride') return this.placeWish(); // sitzt im Riesenrad (die Gondel zeigt ihn)
+    this.maybeGreet(dt);
     let moving = false;
     if (this.chatTimer > 0) {
       // angesprochen: stehen bleiben und Henrik anschauen
@@ -146,7 +152,7 @@ export class Visitor {
       if (this.heartPending && this.timer <= this.heartAt) {
         this.heartPending = false;
         this.popHeart();
-        this.scene.addHearts(1, this.watching?.species ?? 'peacock');
+        this.giveHearts(1, this.watching?.species ?? 'peacock');
       }
       if (this.timer <= 0) {
         this.watching = null;
@@ -190,7 +196,7 @@ export class Visitor {
         this.heartsLeft--;
         this.heartAt -= this.heartStep;
         this.popHeart();
-        this.scene.addHearts(1, heartSpecies(this.scene.animals, this.pen));
+        this.giveHearts(1, heartSpecies(this.scene.animals, this.pen));
       }
       if (this.timer <= 0) {
         if (Math.random() < FEED_CHANCE) this.crowd.feed(this);
@@ -207,7 +213,7 @@ export class Visitor {
       if (this.heartPending && this.timer <= this.heartAt) {
         this.heartPending = false;
         for (let i = 0; i < this.petHearts; i++) this.scene.time.delayedCall(250 * i, () => !this.gone && this.popHeart());
-        this.scene.addHearts(this.petHearts, a.species);
+        this.giveHearts(this.petHearts, a.species);
       }
       if (this.timer <= 0) {
         this.petsLeft--;
@@ -242,6 +248,48 @@ export class Visitor {
     this.walkTime += moving ? dt : 0;
     this.render(moving);
     this.placeWish();
+  }
+
+  // --- Stammgäste (src/world/regulars.js) ---
+
+  // wird zum Stammgast r: anderes Aussehen (falls nötig) und Namensschild
+  makeRegular(r) {
+    this.regular = r;
+    if (this.look !== r.look) {
+      this.look = r.look;
+      this.sprite.setTexture(`visitor${r.look}`, this.sprite.frame.name);
+    }
+    this.regularTag?.destroy();
+    this.regularTag = this.scene.add
+      .text(0, 0, `★ ${r.name}`, { fontFamily: 'Trebuchet MS, Arial', fontSize: '9px', fontStyle: 'bold', color: '#ffd966', backgroundColor: '#3c2814f0', padding: { x: 3, y: 1 }, resolution: 4 })
+      .setOrigin(0.5, 1);
+    this.greetTimer = 0;
+    this.placeTag();
+  }
+
+  // Namensschild über dem Kopf, immer obenauf (wie beim Tierfreund); im Riesenrad nicht
+  placeTag() {
+    const tag = this.regularTag;
+    if (!tag) return;
+    const s = this.sprite;
+    tag.setPosition(Math.round(s.x), Math.round(s.y - s.displayHeight * s.originY + 9)).setDepth(90000 + this.y / 1e4).setVisible(s.visible).setAlpha(s.alpha);
+  }
+
+  // Stammgast: kommt Henrik in die Nähe, bleibt er kurz stehen, schaut ihn an und grüßt
+  maybeGreet(dt) {
+    if (!this.regular) return;
+    this.greetTimer -= dt;
+    if (this.greetTimer > 0 || this.chatTimer > 0 || this.phase === 'cheer' || this.phase === 'pet') return;
+    const p = this.scene.player;
+    if (!p || Math.hypot(p.x - this.x, (p.y - this.y) * 2) > GREET_DIST) return;
+    this.greetTimer = GREET_PAUSE;
+    this.chatTimer = 1.5;
+    this.say(greetLine());
+  }
+
+  // Herzen, die dieser Besucher bringt (Stammgäste doppelt so viele)
+  giveHearts(n, source) {
+    this.scene.addHearts(this.regular ? n * REGULAR_HEARTS : n, source);
   }
 
   // --- Besucherwünsche ---
@@ -346,7 +394,7 @@ export class Visitor {
       if (this.gone) return;
       this.say('🦋');
       for (let i = 0; i < BUTTERFLY_HEARTS; i++) this.scene.time.delayedCall(300 * i, () => !this.gone && this.popHeart());
-      this.scene.addHearts(BUTTERFLY_HEARTS, 'butterfly');
+      this.giveHearts(BUTTERFLY_HEARTS, 'butterfly');
     });
     this.scene.time.delayedCall((time + 1) * 1000, () => (this.butterfly = null));
   }
@@ -374,7 +422,7 @@ export class Visitor {
     this.had.add(kind);
     this.bought++;
     for (let i = 0; i < def.hearts; i++) this.scene.time.delayedCall(250 * i, () => this.popHeart());
-    this.scene.addHearts(def.hearts, kind);
+    this.giveHearts(def.hearts, kind);
     if (kind === TEA.id) {
       // ausgetrunken: die Tasse bleibt am Tisch
       this.itemSprite?.destroy();
@@ -413,7 +461,7 @@ export class Visitor {
     this.phase = 'walk';
     this.route = [];
     for (let i = 0; i < WHEEL.hearts; i++) this.scene.time.delayedCall(250 * i, () => this.popHeart());
-    this.scene.addHearts(WHEEL.hearts, WHEEL.id);
+    this.giveHearts(WHEEL.hearts, WHEEL.id);
     if (!this.crowd.sendToPen(this)) this.crowd.sendHome(this);
   }
 
@@ -533,7 +581,7 @@ export class Visitor {
   // kurze Sprechblase über dem Kopf (Tierfreunde ab Stufe 3)
   say(text) {
     const bubble = this.scene.add
-      .text(this.x, this.y - 56, text, { fontFamily: 'Trebuchet MS, Arial', fontSize: '10px', fontStyle: 'bold', color: '#2b1d14', backgroundColor: '#fff8e6', padding: { x: 5, y: 3 }, resolution: 4 })
+      .text(this.x, this.y - (this.regular ? 68 : 56), text, { fontFamily: 'Trebuchet MS, Arial', fontSize: '10px', fontStyle: 'bold', color: '#2b1d14', backgroundColor: '#fff8e6', padding: { x: 5, y: 3 }, resolution: 4 })
       .setOrigin(0.5, 1)
       .setDepth(100000);
     this.scene.tweens.add({ targets: bubble, y: bubble.y - 6, alpha: { from: 1, to: 0 }, delay: 2600, duration: 600, onComplete: () => bubble.destroy() });
@@ -542,7 +590,7 @@ export class Visitor {
   // Bewunderungsherz über dem Kopf (rosa, wie im Zähler oben)
   popHeart() {
     const heart = this.scene.add
-      .text(this.x, this.y - 50, '♥', { fontFamily: 'Arial', fontSize: '16px', color: '#ff6fa8', stroke: '#ffffff', strokeThickness: 3 })
+      .text(this.x, this.y - (this.regular ? 64 : 50), this.regular ? '♥♥' : '♥', { fontFamily: 'Arial', fontSize: '16px', color: '#ff6fa8', stroke: '#ffffff', strokeThickness: 3 })
       .setOrigin(0.5)
       .setDepth(100000);
     this.scene.tweens.add({ targets: heart, y: heart.y - 16, alpha: 0, duration: 1100, ease: 'Quad.easeOut', onComplete: () => heart.destroy() });
@@ -551,6 +599,7 @@ export class Visitor {
   destroy() {
     this.gone = true;
     this.clearWish();
+    this.regularTag?.destroy();
     this.sprite.destroy();
     this.shadow.destroy();
     this.itemSprite?.destroy();
@@ -566,6 +615,7 @@ export class VisitorCrowd {
     this.lastFed = new Map(); // Gehege -> Spielzeit des letzten Fütterns
     this.time = 0;
     this.thanking = null; // Wunsch, dessen Besucher gerade zum Gehege läuft (immer nur einer)
+    this.regularLeft = new Map(); // Stammgast-id -> Spielzeit, zu der er gegangen ist (kommt erst nach REGULAR_AWAY wieder)
     scene.events.once('shutdown', () => this.visitors.forEach((v) => v.clearWish())); // Blasen sind HTML
     this.updateScore();
     this.arrivalTimer = Phaser.Math.FloatBetween(0.3, 1) * arrivalInterval(this.score);
@@ -813,6 +863,7 @@ export class VisitorCrowd {
     this.visitors.push(v);
     v.sprite.setAlpha(0);
     this.scene.tweens.add({ targets: v.sprite, alpha: 1, duration: 500 });
+    this.maybeRegular(v);
     this.maybeWish(v);
     if (this.maybeShop(v)) return; // erst zu einer Bude
     if (!this.sendToPen(v)) this.remove(v);
@@ -850,6 +901,7 @@ export class VisitorCrowd {
     v.pen = o.e;
     v.arrive();
     if (!partial) return v;
+    this.maybeRegular(v);
     this.maybeWish(v);
     // nicht alle gleichzeitig weitergehen; Herzen nur noch für die restliche Zeit
     const k = Math.random();
@@ -880,11 +932,22 @@ export class VisitorCrowd {
     return v;
   }
 
+  // --- Stammgäste (src/world/regulars.js) ---
+
+  // ab und zu ist ein neuer Besucher ein Stammgast, der gerade nicht im Park ist (und nicht eben erst gegangen)
+  maybeRegular(v) {
+    if (!isPark(LEVEL_ID) || Math.random() > REGULAR_CHANCE) return;
+    const here = new Set(this.visitors.map((u) => u.regular?.id));
+    const away = ensureRegulars().filter((r) => !here.has(r.id) && this.time - (this.regularLeft.get(r.id) ?? -Infinity) >= REGULAR_AWAY);
+    if (!away.length) return;
+    v.makeRegular(Phaser.Utils.Array.GetRandom(away));
+  }
+
   // --- Besucherwünsche (src/world/wishes.js) ---
 
   // ab und zu ist ein Besucher ein Wunsch-Besucher (nur im Tierpark, solange noch ein Wunsch angenommen werden kann)
   maybeWish(v) {
-    if (!isPark(LEVEL_ID) || !wishSlotFree() || Math.random() > WISH_CHANCE) return;
+    if (v.regular || !isPark(LEVEL_ID) || !wishSlotFree() || Math.random() > WISH_CHANCE) return;
     const walkers = this.visitors.filter((u) => u.wishOpen);
     if (walkers.length >= MAX_WISH_WALKERS) return;
     const taken = new Set([...walkers.map((u) => wishKey(u.wish, u.wishSkin)), ...openWishes().map((w) => wishKey(w.species, w.skin))]);
@@ -994,6 +1057,17 @@ export class VisitorCrowd {
     if (done) this.scene.wishThanked?.(v.thanks);
     v.thanks = null;
     this.thanking = null;
+    if (!done) return;
+    // er wird Stammgast: bekommt nach den Freudensprüngen sein Namensschild und bleibt noch eine Weile im Park
+    const r = addRegular(v.look);
+    v.visitsLeft = Phaser.Math.Between(...VISITS);
+    this.scene.time.delayedCall(CHEER_TIME * 1000, () => {
+      if (v.gone) return;
+      v.clearWish();
+      v.makeRegular(r);
+      v.greetTimer = GREET_PAUSE; // nicht gleich noch einmal grüßen
+      v.say(welcomeLine());
+    });
   }
 
   // steht er auf einer Brücke über einem Koi-Teich (und schaut den Koi zu)?
@@ -1009,7 +1083,7 @@ export class VisitorCrowd {
     this.lastFed.set(e, this.time);
     v.timer = Math.max(v.timer, 5); // noch etwas zuschauen, wie sie schnappen
     v.popHeart();
-    this.scene.addHearts(1, 'koi');
+    v.giveHearts(1, 'koi');
   }
 
   // Futter ins Gehege werfen, wenn dort gerade Tiere fressen können (nicht zu oft dasselbe Gehege).
@@ -1023,6 +1097,7 @@ export class VisitorCrowd {
   }
 
   remove(v) {
+    if (v.regular) this.regularLeft.set(v.regular.id, this.time);
     v.clearWish();
     if (v.thanks) this.thanked(v, false);
     this.release(v);

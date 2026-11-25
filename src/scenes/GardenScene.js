@@ -208,7 +208,7 @@ import TreatTool from '../tools/TreatTool.js';
 import Trap from '../world/Trap.js';
 import { animalIcon, animalIconFit, animalIconSquare, animalIcons, hasAnimalIcon } from '../ui/icons.js';
 import { touchHandlers, setTouchTool, IS_PHONE, isTouch } from '../ui/touch.js';
-import { ensureFriendState, animalUid, bondOf, isFriend, isFriendUid, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, FRIEND_LEVELS, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts, nameCost } from '../world/friends.js';
+import { ensureFriendState, animalUid, bondOf, isFriend, isFriendUid, friendKey, friendLevel, canPet, randomName, levelHearts, levelText, levelProgress, GOLD_LEVEL, BEST_LEVEL, claimBest, bestFriendBond, canBeBest, makeBest, PET_POINTS, FEED_SORTS, SPECIES_FOOD, FEED_POINTS, FAVORITE_POINTS, canFeed, favoriteOf, ensureFeedState, unlockFeedFor, wantedSorts, nameCost } from '../world/friends.js';
 import HandFoodTool from '../tools/HandFoodTool.js';
 import { closeWalkHint } from '../ui/walkHint.js';
 import { openBook, openJournal, isJournalOpen } from '../ui/journal.js';
@@ -1362,6 +1362,7 @@ export default class GardenScene extends Phaser.Scene {
     this.friendBars = new Map(); // Tier → Fortschrittsbalken (bis zur nächsten Stufe)
     this.friendVisitTimer = 0;
     this.nearFriend = null;
+    this.companion = null; // bester Freund, der Henrik gerade folgt (siehe updateCompanion)
     this.needs = new Map(); // Tier → Bedürfnis { kind: 'pet' | 'feed', el, left } (Blase über dem Tier)
     this.needTimer = 3;
     this.nearNeed = null; // Tier ohne Namen mit Bedürfnis, nah genug zum Erfüllen
@@ -1814,6 +1815,7 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearFriend && !this.leaving) {
         if (isTreat(this.toolId)) this.feedFriend(this.nearFriend); // am Zaun beim Tierfreund: mit Futter in der Hand füttern,
+        else if (canBeBest(bondOf(this.nearFriend))) this.takeAlong(this.nearFriend); // auf Stufe 4: zum besten Freund machen
         else this.petFriend(this.nearFriend); // sonst streicheln
         return;
       }
@@ -3098,7 +3100,48 @@ export default class GardenScene extends Phaser.Scene {
   // benannte Tiere in diesem Abschnitt (nur in den Gehegen des Tierparks; Aquarium und Reptilienhaus vorerst nicht)
   friendsHere() {
     if (!isPark(LEVEL_ID)) return [];
-    return this.animals.filter((a) => a.state === 'penned' && isFriend(a));
+    return this.animals.filter((a) => (a.state === 'penned' || a.companion) && isFriend(a));
+  }
+
+  // bester Freund (Stufe 4, nur ein Tier im Spiel): folgt Henrik durch den ganzen Abschnitt, in dem er wohnt, genau wie
+  // gefangene Tiere draußen (Zustand 'following', ohne Zäune). Er bleibt trotzdem ein Tier seines Geheges: beim Speichern
+  // steht er an seinem Platz dort (companion.home), und dort kommt er beim nächsten Besuch des Abschnitts wieder heraus
+  updateCompanion() {
+    const c = this.companion;
+    if (c && (!this.animals.includes(c) || !isFriend(c) || !bondOf(c)?.best)) this.stopCompanion(c); // (Freund gewechselt)
+    if (this.companion) return;
+    const a = this.friendsHere().find((f) => bondOf(f)?.best && !f.baby && f.state === 'penned' && f.sprite?.visible && !f.inCanopy?.());
+    if (!a) return;
+    const home = { x: a.x, y: a.y };
+    a.visit = null;
+    if (a.play) a.endToy?.();
+    a.catch(); // (räumt auf wie beim Fangen: Fressen, Spielen, Schlafplätze …)
+    a.companion = { home };
+    this.companion = a;
+  }
+
+  // folgt nicht mehr (ein anderes Tier ist jetzt der beste Freund, oder ein anderes Tier benannt): läuft zurück an seinen
+  // Platz im Gehege (siehe companion.back in Animal.update)
+  stopCompanion(a) {
+    this.companion = null;
+    if (!this.animals.includes(a) || !a.companion) return;
+    a.companion.back = true;
+  }
+
+  // am Tierfreund auf Stufe 4, der noch nicht der beste Freund ist: mitnehmen. Er wird der beste Freund und folgt Henrik,
+  // der bisherige läuft zurück in sein Gehege
+  takeAlong(a) {
+    const bond = bondOf(a);
+    const old = bestFriendBond();
+    makeBest(bond);
+    this.clearNeed(a);
+    this.friendHop(a, 2);
+    for (let i = 0; i < 3; i++) this.time.delayedCall(140 * i, () => a.sprite?.active && this.friendHeart(a, Phaser.Math.Between(-12, 12)));
+    if (this.cache.audio.exists(this.callOf(a))) this.sound.play(this.callOf(a), { volume: 0.5 });
+    this.showToast(old
+      ? tr(`${bond.name} ist jetzt dein bester Freund und kommt mit. ${old.name} geht zurück nach Hause.`, `${bond.name} is your best friend now and comes along. ${old.name} goes back home.`)
+      : tr(`${bond.name} ist jetzt dein bester Freund und kommt mit.`, `${bond.name} is your best friend now and comes along.`));
+    this.updateToolbar();
   }
 
   // Namensschild über jedem Tierfreund (Name und ein Herz je Stufe, auf Stufe 3 golden); ab Stufe 2 kommt er zum Zaun,
@@ -3115,7 +3158,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     for (const a of friends) {
       const bond = bondOf(a);
-      const level = friendLevel(bond.points);
+      const level = friendLevel(bond);
       let tag = this.friendTags.get(a);
       if (!tag) {
         tag = this.add.text(0, 0, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '9px', fontStyle: 'bold', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 1);
@@ -3124,7 +3167,7 @@ export default class GardenScene extends Phaser.Scene {
       const label = `${bond.name} ${levelHearts(level)}`;
       if (tag.text !== label) {
         tag.setText(label);
-        const gold = level >= FRIEND_LEVELS.length;
+        const gold = level >= GOLD_LEVEL;
         tag.setColor(gold ? '#3c2814' : '#fff8e6').setBackgroundColor(gold ? '#ffd966' : '#3c2814f0');
       }
       const spr = a.sprite;
@@ -3139,7 +3182,7 @@ export default class GardenScene extends Phaser.Scene {
       const near = spr.visible && Math.hypot(this.player.x - a.x, (this.player.y - a.y) * 2) < FRIEND_BAR_DIST;
       bar.setVisible(near);
       if (near) {
-        const { frac, level, max } = levelProgress(bond.points);
+        const { frac, level, max } = levelProgress(bond);
         const w = Math.max(30, tag.width);
         const x = Math.round(spr.x - w / 2);
         const y = Math.round(tag.y - tag.height - 6);
@@ -3154,8 +3197,8 @@ export default class GardenScene extends Phaser.Scene {
     const p = this.player;
     const { tx, ty } = worldToTile(p.x, p.y);
     for (const a of friends) {
-      const level = friendLevel(bondOf(a).points);
-      if (level < 2 || a.baby) continue;
+      const level = friendLevel(bondOf(a));
+      if (level < 2 || a.baby || a.companion) continue; // (der beste Freund läuft sowieso mit)
       const d = Math.hypot(p.x - a.x, (p.y - a.y) * 2);
       if (d > (a.visit ? FRIEND_STAY_DIST : FRIEND_CALL_DIST)) {
         if (a.visit) {
@@ -3184,7 +3227,7 @@ export default class GardenScene extends Phaser.Scene {
     for (const [a, need] of this.needs) {
       need.left -= dt;
       const bond = bondOf(a);
-      const gone = !a.sprite?.active || a.state !== 'penned' || need.left <= 0 || a.inCanopy?.();
+      const gone = !a.sprite?.active || (a.state !== 'penned' && !a.companion) || need.left <= 0 || a.inCanopy?.();
       const notReady = isFriend(a) && (need.kind === 'pet' ? !canPet(bond, now) : !canFeed(bond, now));
       const nowFriendless = !isFriend(a) && need.named; // (der Freund wurde gewechselt)
       if (gone || notReady || nowFriendless || (!isFriend(a) && this.friendOfAnimal(a))) this.clearNeed(a);
@@ -3342,7 +3385,7 @@ export default class GardenScene extends Phaser.Scene {
   creditFeed(a) {
     const bond = bondOf(a);
     if (!bond || !canFeed(bond)) return;
-    const before = friendLevel(bond.points);
+    const before = friendLevel(bond);
     bond.points += FEED_POINTS;
     bond.fedAt = Date.now();
     this.friendHeart(a);
@@ -3380,7 +3423,10 @@ export default class GardenScene extends Phaser.Scene {
     const p = this.player;
     const dist = (o) => Math.hypot(p.x - o.x, (p.y - o.y) * 2);
     let best = null;
-    for (const a of this.friendsHere()) if (!a.inCanopy?.() && dist(a) < FRIEND_PET_DIST && (!best || dist(a) < dist(best))) best = a; // (Brüllaffen oben in den Bäumen der Tropenhalle: nicht)
+    // der beste Freund läuft immer neben Henrik her: nur, wenn Streicheln gerade geht oder Henrik Futter für ihn hat (sonst
+    // nähme er der Aktionstaste alles andere weg)
+    const wanted = (a) => a !== this.companion || canPet(bondOf(a)) || (isTreat(this.toolId) && canFeed(bondOf(a)) && (SPECIES_FOOD[a.species] ?? []).includes(this.tool?.sort));
+    for (const a of this.friendsHere()) if (!a.inCanopy?.() && wanted(a) && dist(a) < FRIEND_PET_DIST && (!best || dist(a) < dist(best))) best = a; // (Brüllaffen oben in den Bäumen der Tropenhalle: nicht)
     if (best && this.shownSign && dist(this.shownSign) < dist(best)) return null;
     return best;
   }
@@ -3397,7 +3443,7 @@ export default class GardenScene extends Phaser.Scene {
       this.showToast(tr(`${bond.name} möchte gerade nicht gestreichelt werden. Versuch es später noch einmal.`, `${bond.name} doesn’t want to be petted right now. Try again later.`));
       return;
     }
-    const before = friendLevel(bond.points);
+    const before = friendLevel(bond);
     bond.points += PET_POINTS;
     bond.pettedAt = Date.now();
     this.clearNeed(a);
@@ -3419,7 +3465,8 @@ export default class GardenScene extends Phaser.Scene {
 
   // Aufstieg in eine neue Stufe: der Ruf des Tiers; gibt den Text für die Meldung zurück (was die Stufe bringt), sonst ''
   friendLevelUp(a, bond, before) {
-    const level = friendLevel(bond.points);
+    claimBest(bond); // das erste Tier mit genug Punkten für Stufe 4 wird der beste Freund
+    const level = friendLevel(bond);
     if (level <= before) return '';
     if (this.cache.audio.exists(this.callOf(a))) this.sound.play(this.callOf(a), { volume: 0.5 });
     return `${tr(`${bond.name} und du seid jetzt Freunde der Stufe ${level}!`, `${bond.name} and you are now level ${level} friends!`)}<br><small>${levelText(bond.name, level) ?? ''}</small>`;
@@ -3460,7 +3507,7 @@ export default class GardenScene extends Phaser.Scene {
     this.tool.destroy();
     this.tool = null;
     this.toolId = null;
-    const before = friendLevel(bond.points);
+    const before = friendLevel(bond);
     const favorite = favoriteOf(bond) === sort;
     bond.points += favorite ? FAVORITE_POINTS : FEED_POINTS;
     bond.fedAt = Date.now();
@@ -3583,7 +3630,7 @@ export default class GardenScene extends Phaser.Scene {
     let best = null;
     for (const a of this.friendsHere()) {
       if (a.enclosure !== pen) continue;
-      const level = friendLevel(bondOf(a).points);
+      const level = friendLevel(bondOf(a));
       if (!best || level > best.level) best = { animal: a, bond: bondOf(a), level };
     }
     return best;
@@ -5056,7 +5103,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Tierbuch: Tierfreunde dieser Art auf der höchsten Stufe (goldenes Namensschild), mit dem Tag, seit dem sie Freunde sind
   bookFriends(species) {
-    const best = Object.values(game.bonds ?? {}).filter((b) => b.species === species && b.name && friendLevel(b.points) >= FRIEND_LEVELS.length);
+    const best = Object.values(game.bonds ?? {}).filter((b) => b.species === species && b.name && friendLevel(b) >= GOLD_LEVEL);
     if (!best.length) return '';
     const day = (t) => new Date(t).toLocaleDateString(locale, { day: 'numeric', month: 'long' });
     const likes = (b) => (b.favoriteKnown && FEED_SORTS[b.favorite] ? tr(`, mag ${FEED_SORTS[b.favorite].name}`, `, loves ${FEED_SORTS[b.favorite].name.toLowerCase()}`) : '');
@@ -5208,7 +5255,8 @@ export default class GardenScene extends Phaser.Scene {
       const feed = isTreat(this.toolId);
       const img = feed ? `assets/${TOOLS[this.toolId].image}.png` : 'assets/hand.png';
       if (feed) setTouchTool(null, img);
-      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${feed ? tr(`${who} füttern`, `Feed ${who}`) : tr(`${who} streicheln`, `Pet ${who}`)}</span></div>`;
+      const take = !feed && canBeBest(bondOf(this.nearFriend)); // (Stufe 4, noch nicht der beste Freund)
+      this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${feed ? tr(`${who} füttern`, `Feed ${who}`) : take ? tr(`${who} mitnehmen`, `Take ${who} along`) : tr(`${who} streicheln`, `Pet ${who}`)}</span></div>`;
       return;
     }
     if (this.shownSign && this.toolId !== 'parkfood') {
@@ -6862,13 +6910,13 @@ export default class GardenScene extends Phaser.Scene {
     const warm = !!buildingAt(tx, ty, 1);
     const cold = warm ? Math.max(0, before - dt / c.warmSeconds) : Math.min(1, before + dt / (c.minutes * 60));
     game.cold = cold;
-    if (before < COLD_WARN && cold >= COLD_WARN) this.showToast(tr('🥶 Henrik wird kalt! Wärm dich bald in der Station auf.', '🥶 Henrik is getting cold! Warm up at the station soon.'));
+    if (before < COLD_WARN && cold >= COLD_WARN) this.showToast(tr('🥶 Dir wird kalt! Wärm dich bald in der Station auf.', '🥶 You’re getting cold! Warm up at the station soon.'));
     if (before < 1 && cold >= 1) {
-      this.showToast(tr('🥶 Henrik ist durchgefroren – mit klammen Fingern fängt er keine Tiere. Ab in die Station zum Aufwärmen!', '🥶 Henrik is frozen through – with numb fingers he cannot catch animals. Off to the station to warm up!'));
+      this.showToast(tr('🥶 Du bist durchgefroren – mit klammen Fingern fängst du keine Tiere. Ab in die Station zum Aufwärmen!', '🥶 You’re frozen through – with numb fingers you can’t catch animals. Off to the station to warm up!'));
       this.updateEventBanner();
     }
     if (before >= COLD_WARN && cold < COLD_WARN && warm) {
-      this.showToast(tr('☀️ Henrik ist wieder schön warm.', '☀️ Henrik is nice and warm again.'));
+      this.showToast(tr('☀️ Dir ist wieder schön warm.', '☀️ You’re nice and warm again.'));
       this.updateEventBanner();
     }
     // bläulich (ab der Hälfte), zittern und Atemwölkchen (durchgefroren)
@@ -6906,7 +6954,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!LEVEL.cold || (game.cold ?? 0) < 1) return false;
     if (this.coldHintIn <= 0) {
       this.coldHintIn = COLD_HINT_GAP;
-      this.showToast(tr('🥶 Zu kalt! Mit klammen Fingern fängt Henrik nichts – wärm dich erst in der Station auf.', '🥶 Too cold! With numb fingers Henrik cannot catch anything – warm up at the station first.'));
+      this.showToast(tr('🥶 Zu kalt! Mit klammen Fingern fängst du nichts – wärm dich erst in der Station auf.', '🥶 Too cold! With numb fingers you can’t catch anything – warm up at the station first.'));
     }
     return true;
   }
@@ -7399,7 +7447,7 @@ export default class GardenScene extends Phaser.Scene {
   // so viele Tiere dieser Art leben in einem Tierpark-Abschnitt (hier: die lebenden, sonst der gespeicherte Stand)
   speciesIn(level, species) {
     const list = level === LEVEL_ID ? this.animals : (game.levels[level]?.animals ?? []);
-    return list.filter((a) => a.state === 'penned' && !a.baby && quotaKey(a.species) === quotaKey(species)).length;
+    return list.filter((a) => (a.state === 'penned' || a.companion) && !a.baby && quotaKey(a.species) === quotaKey(species)).length;
   }
 
   // Aquarium: in welchen Tank ein Riff-Fisch zieht. Gleiche Arten sollen zusammen schwimmen: zuerst ein Tank mit Platz, in dem
@@ -8642,8 +8690,8 @@ export default class GardenScene extends Phaser.Scene {
   saveLevelState() {
     game.levels[LEVEL_ID] = {
       animals: this.animals
-        .filter((a) => a.state !== 'following' && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard', 'wolf', 'arcticwolf'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event; wilde Wölfe gehören zu einem Rudel (WolfNight legt es neu an)
-        .map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, ...(a.uid != null ? { uid: a.uid } : {}), since: a.penSince ?? 0, state: a.state, ...(a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })),
+        .filter((a) => (a.state !== 'following' || a.companion) && !a.baby && !(['heron', 'flamingo', 'vulture', 'hyena', 'redpanda', 'howler', 'snake', 'tarantula', 'macaw', 'toucan', 'piranha', 'iguana', 'jaguar', 'gorilla', 'beaver', 'yak', 'snowleopard', 'wolf', 'arcticwolf'].includes(a.species) && a.state === 'wild')) // wilde Reiher und Geier fliegen weiter, Hyänen ziehen weiter, Babys gibt es nur beim Event; wilde Wölfe gehören zu einem Rudel (WolfNight legt es neu an)
+        .map((a) => ({ species: a.species, variant: a.variant, skin: a.skin ?? null, ...(a.uid != null ? { uid: a.uid } : {}), since: a.penSince ?? 0, state: a.companion ? 'penned' : a.state, ...(a.companion?.home ?? a.savedSpot?.() ?? { x: a.x, y: a.y }), life: a.life })), // (der beste Freund: an seinem Platz im Gehege),
       pickups: this.pickups.filter((p) => !p.collected && !p.temporary).map((p) => ({ tool: p.tool, x: p.x, y: p.y })),
       ...(this.thicket ? { thicket: this.thicket.state() } : {}), // geschlagenes Dickicht (wächst nach der Uhr nach)
       season: LEVEL.season, // Wetterphase: wechselt sie bis zum nächsten Besuch, ziehen die wilden Tiere weiter
@@ -8935,15 +8983,19 @@ export default class GardenScene extends Phaser.Scene {
     const eats = fb && SPECIES_FOOD[fb.species];
     const ready = fb && canPet(fb) && (!eats || canFeed(fb));
     const fav = fb?.favoriteKnown && FEED_SORTS[fb.favorite] ? `<div class="sign-friend">${tr('Lieblingsfutter', 'Favorite food')}: <b>${FEED_SORTS[fb.favorite].name}</b></div>` : '';
-    const pr = fb && levelProgress(fb.points);
-    const next = pr && pr.level < pr.max
+    const pr = fb && levelProgress(fb);
+    const next = !pr
+      ? '' // (noch kein Tierfreund in diesem Gehege)
+      : pr.level < pr.max
       ? tr(`Noch ${pr.need} ${pr.need === 1 ? 'Punkt' : 'Punkte'} bis Stufe ${pr.level + 1}: ${levelText(fb.name, pr.level + 1)}`, `${pr.need} more ${pr.need === 1 ? 'point' : 'points'} to level ${pr.level + 1}: ${levelText(fb.name, pr.level + 1)}`)
-      : tr('Höchste Stufe erreicht!', 'Highest level reached!');
+      : fb.best
+        ? tr(`Höchste Stufe! ${fb.name} ist dein bester Freund und folgt dir in diesem Teil des Tierparks.`, `Highest level! ${fb.name} is your best friend and follows you in this part of the zoo.`)
+        : tr(`Höchste Stufe! Geh zu ${fb.name} und nimm es mit, dann folgt es dir statt ${bestFriendBond()?.name ?? ''}.`, `Highest level! Go to ${fb.name} and take it along; it will follow you instead of ${bestFriendBond()?.name ?? ''}.`);
     const progress = pr
       ? `<div class="friend-progress"><span class="friend-level">${tr(`Stufe ${pr.level} von ${pr.max}`, `Level ${pr.level} of ${pr.max}`)}</span><span class="friend-bar${pr.level >= pr.max ? ' max' : ''}"><i style="width:${Math.round(pr.frac * 100)}%"></i></span></div><small class="friend-next">${next}</small>`
       : '';
     const friendLine = fb
-      ? `<div class="sign-friend">${tr('Dein Freund', 'Your friend')}: <b>${fb.name}</b> <span class="hearts">${levelHearts(friendLevel(fb.points))}</span>${ready ? ` · ${tr(`${fb.name} freut sich über Besuch`, `${fb.name} would love a visit`)}` : ''}</div>${progress}${fav}`
+      ? `<div class="sign-friend">${tr('Dein Freund', 'Your friend')}: <b>${fb.name}</b> <span class="hearts">${levelHearts(friendLevel(fb))}</span>${ready ? ` · ${tr(`${fb.name} freut sich über Besuch`, `${fb.name} would love a visit`)}` : ''}</div>${progress}${fav}`
       : '';
     // kompakt: nur der Hinweis, wie man die Tafel öffnet
     if (!open) {
@@ -8992,7 +9044,7 @@ export default class GardenScene extends Phaser.Scene {
   updateGate(dt) {
     const inZoo = (v) => { const t = v.tile; return this.visitors.grid.petAll?.has(t.tx + ',' + t.ty); };
     const petting = (this.visitors?.visitors ?? []).filter((v) => v.goal === 'petenter' || inZoo(v));
-    const walkers = [this.player, ...this.followers, ...(this.safariCars?.walkers() ?? []), ...petting]; // (auch die Autos der Safari)
+    const walkers = [this.player, ...this.followers, ...(this.companion ? [this.companion] : []), ...(this.safariCars?.walkers() ?? []), ...petting]; // (auch die Autos der Safari)
     for (const group of this.gateGroups) {
       // Abstand in Kachel-Proportionen (Kacheln sind halb so hoch wie breit)
       const near = walkers.some((w) => group.sprites.some((g) => Math.hypot(w.x - g.x, (w.y - g.y) * 2) < GATE_OPEN_DIST));
@@ -9195,6 +9247,7 @@ export default class GardenScene extends Phaser.Scene {
     }
     // Tierfreunde: Namensschilder, zum Zaun kommen, und ob man gerade einen streicheln kann
     this.updateFriends(dt);
+    this.updateCompanion();
     const friend = this.friendToPet();
     if (friend !== this.nearFriend) {
       this.nearFriend = friend;
@@ -9311,6 +9364,7 @@ export default class GardenScene extends Phaser.Scene {
     // Angelfische sitzen im Eimer bei Henrik und zählen in der Reihe nicht mit
     let gapN = 0;
     for (const s of this.followers) s.followGap = s.inBucket?.() ? 0 : FOLLOW_GAP * ++gapN;
+    if (this.companion) this.companion.followGap = FOLLOW_GAP * ++gapN; // der beste Freund läuft hinten mit
 
     for (const a of this.animals) {
       // im Kanu: Tiere, die folgen, sitzen unsichtbar mit im Boot
@@ -9328,7 +9382,7 @@ export default class GardenScene extends Phaser.Scene {
         a.shadow?.setVisible(true);
       }
       // auf einer fahrenden Eisscholle: Tiere, die folgen, stehen mit darauf
-      if (a.state === 'following' && this.floes?.carrier) {
+      if (a.state === 'following' && this.floes?.carrier && !a.companion) {
         Object.assign(a, this.floes.seat(this.followers.indexOf(a)));
         a.render(false);
         continue;

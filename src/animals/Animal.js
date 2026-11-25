@@ -1461,7 +1461,18 @@ export default class Animal {
     let moving = false;
     const x0 = this.x;
     const y0 = this.y;
-    if (this.state === 'following') {
+    if (this.state === 'following' && this.companion && this.petted) {
+      this.petStill(); // bester Freund (folgt im Tierpark, siehe updateCompanion in GardenScene): wird gestreichelt oder gefüttert
+    } else if (this.state === 'following' && this.companion?.back) {
+      // war der beste Freund (ein anderes Tier ist es jetzt): zurück an seinen Platz im Gehege, dann wieder wie die anderen
+      const { x, y } = this.companion.home;
+      const d = Math.hypot(x - this.x, y - this.y);
+      if (d > 2) moving = this.move(((x - this.x) / d) * Math.min(FOLLOW_SPEED * dt, d), ((y - this.y) / d) * Math.min(FOLLOW_SPEED * dt, d));
+      else {
+        this.companion = null;
+        this.restore('penned');
+      }
+    } else if (this.state === 'following') {
       // Der Spur des Spielers folgen; ist sie noch zu kurz, einfach in die Nähe laufen
       const target = player.trailPoint(this.followGap);
       const tx = target ? target.x : player.x;
@@ -1478,7 +1489,7 @@ export default class Animal {
         // Die Spur ist begehbar, daher ohne Kollision: so bleibt es nirgends hängen
         moving = this.move((dx / d) * step, (dy / d) * step);
       }
-      if (this.arrivedHome()) this.enterPen();
+      if (!this.companion && this.arrivedHome()) this.enterPen(); // (der beste Freund bleibt bei Henrik)
     } else if (this.petted) {
       this.petStill(); // Streichelzoo: ein Besucher streichelt es (siehe Visitor.js), es bleibt stehen
     } else if (this.feed) {

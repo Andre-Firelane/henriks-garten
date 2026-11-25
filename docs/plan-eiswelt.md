@@ -156,8 +156,12 @@ bekommen keine Unterwasser-Animation.
 - **Aufbau (Andre, 24.11.2026):** Polarhalle in der Mitte, ein geschwungener Rundweg mit Knicken um sie herum, außen die
   Gehege in unregelmäßigen Formen (L-Formen): Polarwölfe und Polarfüchse links, Schneehasen oben, Robben & Walrosse
   oben rechts (langes Becken mit Kiesstrand), Eisbären unten rechts hinter einem Wassergraben, Rentiere unten links,
-  Platz mit Futterautomat und Schneemobil am Eingang. tools/park-ice-map.py zeichnet den Abschnitt (40 × 35 Kacheln,
-  Gehege als Flächen, die Zäune ergeben sich daraus) in PARK_ROWS rechts neben das Zentrum (Spalten 56–95, Zeilen 24–58).
+  Platz mit Futterautomat und Schneemobil am Eingang. tools/park-ice-map.py zeichnet den Abschnitt (Gehege als Flächen,
+  die Zäune ergeben sich daraus) in seine eigene Kartentabelle PARK_ICE_ROWS.
+- **Vergrößert (Andre, 25.11.2026):** 44 × 39 statt 40 × 35 Kacheln, eigene Kartentabelle statt eines Ausschnitts von
+  PARK_ROWS. Polarhalle innen 18 × 16 statt 12 × 11 (Pinguinbecken 10 × 9), alle Gehege größer, der Rundweg nur noch
+  1 Kachel breit (der Weg vom Eingang bleibt 2 breit). Deko und Buden dort kommen in alten Spielständen zurück in die
+  Bauen-Leiste (migrateIcePark in save.js).
 - **Eingang:** Weg unterhalb des Streichelzoos (Zeilen 46/47) zum rechten Rand des Zentrums, nicht bei 55/40 (dort liegt
   der Zaun direkt am Rand). Torbogen „Eiswelt“ gleich dahinter, vorerst der Bogen des Wildparks. Offen ist park4, sobald
   die Eiswelt offen ist (isUnlocked).
