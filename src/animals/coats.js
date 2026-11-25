@@ -17,10 +17,13 @@ const luma = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 // Masken: wie sehr ein Bildpunkt Fell ist (0 bis 1); v Helligkeit, s Sättigung (HSV, 0 bis 1), h Farbton in Grad
 const light = (v, s) => smooth(0.48, 0.64, v) * (1 - smooth(0.24, 0.3, s)); // hell und fast farblos (Wolle, weißes Fell)
 // Schafwolle: wie light, nur dürfen rötliche Schatten (unten am Bauch, vor allem von hinten) etwas kräftiger sein; Ohren und
-// Beine sind noch kräftiger, das Gesicht hat einen anderen Farbton (um 31°)
+// Beine sind noch kräftiger, das Gesicht hat einen anderen Farbton (um 31°). In den Lauf- und Steh-Animationen ist das
+// Gesicht aber blasser und rötlicher gemalt (Farbton um 20°, Sättigung um 0,32, sehr hell): hell und zugleich so kräftig
+// zählt nie als Wolle (die rötlichen Schatten sind dunkler oder blasser), sonst färbte sich das Gesicht je nach Richtung mit
 const wool = (v, s, h) => {
   const pink = 1 - smooth(22, 28, h);
-  return smooth(0.48, 0.64, v) * (1 - ((1 - pink) * smooth(0.24, 0.3, s) + pink * smooth(0.3, 0.35, s)));
+  const face = smooth(0.26, 0.29, s) * smooth(0.75, 0.78, v);
+  return smooth(0.48, 0.64, v) * (1 - ((1 - pink) * smooth(0.24, 0.3, s) + pink * smooth(0.3, 0.35, s))) * (1 - face);
 };
 // kräftig gefärbt in einem Farbtonbereich (Orange, Braun); sehr dunkle Stellen (Augen, Nase, Hufe) nicht
 // (Farbtöne über 300° zählen als negativ, so reicht ein Bereich auch über Rot hinweg, z. B. -24 bis 42)

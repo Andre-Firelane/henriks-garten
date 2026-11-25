@@ -1,12 +1,26 @@
 // Diagnose fürs Tablet: mit ?diag in der Adresse schreibt das Spiel alle 2 Sekunden auf, wie es läuft (Bilder pro Sekunde,
 // Hänger, belegter Speicher, welche Bilder wie lange zum Hochladen auf die Grafikkarte gebraucht haben, welche Pakete schon
 // geladen sind) und schickt das an den Server (vite preview/dev, siehe Plugin „diag“ in vite.config.js). Der legt es als
-// diag/<Zeitpunkt>.jsonl im Projekt ab. Ohne ?diag passiert hier nichts.
+// diag/<Zeitpunkt>.jsonl im Projekt ab; auf der echten Seite die Netlify Function netlify/functions/diag. Ohne ?diag passiert
+// hier nichts. ?diag=1 merkt sich der Browser (localStorage): jede weitere Runde wird aufgezeichnet, bis ?diag=0 kommt.
 import { gpu } from './gpuTextures.js';
 
-export const DIAG = new URLSearchParams(location.search).has('diag');
+const DIAG_KEY = 'my-little-zoo-diag';
+const param = new URLSearchParams(location.search).get('diag');
+try {
+  if (param === '0') localStorage.removeItem(DIAG_KEY);
+  else if (param != null) localStorage.setItem(DIAG_KEY, '1');
+} catch {}
+export const DIAG = param === '0' ? false : param != null || (() => {
+  try {
+    return localStorage.getItem(DIAG_KEY) === '1';
+  } catch {
+    return false;
+  }
+})();
 
-const EVERY = 2000;
+const EVERY = 2000; // so oft messen
+const SEND_EVERY = 10; // ... und jedes 10. Mal (alle 20 s) schicken, in den ersten 2 Minuten bei jedem Messen
 const t0 = performance.now();
 const id = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
 let buffer = [];
@@ -86,6 +100,7 @@ export function setupDiag(game, extra = {}) {
   } catch {}
 
   let resSeen = 0;
+  let ticks = 0;
   let lastUploads = gpu.uploads;
   let lastEvicted = gpu.evicted ?? 0;
   setInterval(() => {
@@ -118,7 +133,8 @@ export function setupDiag(game, extra = {}) {
     longMs = longMax = 0;
     lastUploads = gpu.uploads;
     lastEvicted = gpu.evicted ?? 0;
-    send();
+    ticks++;
+    if (ticks % SEND_EVERY === 0 || now - t0 < 120000) send();
   }, EVERY);
   // beim Schließen bzw. Wechseln in den Hintergrund: Rest sofort schicken
   document.addEventListener('visibilitychange', () => {

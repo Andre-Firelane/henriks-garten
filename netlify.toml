@@ -5,3 +5,15 @@
 
 [functions]
   directory = "netlify/functions"
+
+# Bilder und Töne mit Versionsstempel (v/<Prüfsumme>/assets/…, siehe src/assetVersions.js): auf die Datei umleiten und
+# dauerhaft im Browser behalten. Ändert sich eine Datei, ändert sich ihr Stempel und damit die Adresse.
+[[redirects]]
+  from = "/v/:hash/*"
+  to = "/:splat"
+  status = 200
+
+[[headers]]
+  for = "/v/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

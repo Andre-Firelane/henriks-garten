@@ -9,10 +9,12 @@ import { setupScrollbars } from './ui/scrollbar.js';
 import { gpu, watchGpuTextures } from './gpuTextures.js';
 import { game as gameState } from './state.js';
 import { setupDiag } from './diag.js';
+import { versionLoaderUrls } from './assetVersions.js';
 import { loadedGroupNames } from './scenes/BootScene.js';
 import { coatJobs } from './animals/coats.js';
 import { LEVEL_ID } from './world/map.js';
 
+versionLoaderUrls(); // Bilder und Töne über gestempelte Adressen laden (dürfen im Browser bleiben, siehe assetVersions.js)
 setupTouchControls();
 setupUpdateCheck();
 setupSessions();
