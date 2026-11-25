@@ -64,6 +64,11 @@ export default class Sheep extends Animal {
     return this.eatTexture() ?? `${this.baseTexture()}_eat`;
   }
 
+  // auch für Animal.render: mit Skin (Widder, Fellfarben) setzt es sonst gleich wieder das Standbild statt des Grase-Bilds
+  lookTexture() {
+    return this.grazing ? this.grazeTexture() : super.lookTexture();
+  }
+
   render(moving) {
     const key = this.grazing ? this.grazeTexture() : this.baseTexture();
     // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)

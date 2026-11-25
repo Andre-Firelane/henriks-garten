@@ -884,7 +884,7 @@ export default class BootScene extends Phaser.Scene {
     for (const k of ['anteater', 'anteater2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 104, frameHeight: 72 });
     for (const k of ['penguin', 'penguin2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 80 }); // Pinguin (Eiswelt)
     // neue Eiswelt-Tiere (Standbilder mit 4 Ansichten, tools/static-sheet.py)
-    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['snowowl', 72, 80], ['snowowl_fly', 88, 76], ['reindeer', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
+    for (const [k, w, h] of [['snowhare', 76, 82], ['arcticfox', 72, 72], ['snowowl', 72, 80], ['snowowl_fly', 88, 76], ['reindeer', 92, 128], ['reindeer2', 92, 128], ['walrus', 136, 128], ['walrus_sleep', 136, 128], ['polarbear', 152, 148], ['polarbear_wait', 152, 148], ['polarbear_sleep', 152, 148], ['puffin', 64, 68], ['puffin_fly', 84, 78]]) load.spritesheet(k, `assets/${k}.png`, { frameWidth: w, frameHeight: h });
     for (const k of ['seal', 'seal2_water']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 88 }); // Robbe (Eiswelt) im Wasser, mit Wasserring
     for (const k of ['seal_lie', 'seal2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 96, frameHeight: 72 }); // ... an Land (liegt)
     // Tapir und Okapi (Dschungel) mit ihren seltenen Varianten (Schabrackentapir, Streifen-Okapi): Standbilder aus

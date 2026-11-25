@@ -57,6 +57,7 @@ export function ensureFriendState() {
   game.bonds ??= {};
   game.nextAnimalId ??= 1;
   game.namings ??= Object.keys(game.bonds).length; // (ältere Spielstände: jeder bisherige Freund zählt als ein Benennen)
+  for (const b of Object.values(game.bonds)) b.trait ??= 'cuddly'; // (ältere Tierfreunde: verschmust, wie bisher)
   // (ältere Spielstände: hat schon ein Tier genug Punkte für Stufe 4, wird das mit den meisten der beste Freund)
   if (!bestFriendBond()) {
     const top = Object.values(game.bonds).sort((p, q) => q.points - p.points)[0];
@@ -91,6 +92,46 @@ export function isFriend(a) {
 export function canPet(bond, now = Date.now()) {
   return now - (bond.pettedAt ?? 0) >= PET_PAUSE;
 }
+
+// ---- Eigenschaften (siehe docs/plan-eigenschaften.md) ----
+// Jedes Tier im Tierpark hat eine: sie bestimmt, was es als Tierfreund außer Futter möchte. Verschmust: streicheln,
+// verspielt: Ball, eitel: bürsten (Bürste vom Futterhaus), verfressen: nur Futter, das bringt dafür mehr Punkte.
+// icon: Bild auf der Tafel und in der Bedürfnis-Blase
+export const TRAITS = {
+  cuddly: { icon: 'hand', name: tr('verschmust', 'cuddly') },
+  playful: { icon: 'ball', name: tr('verspielt', 'playful') },
+  vain: { icon: 'brush', name: tr('eitel', 'vain') },
+  greedy: { icon: 'parkfood', name: tr('verfressen', 'greedy') }, // Futterbeutel
+};
+export const TRAIT_IDS = Object.keys(TRAITS);
+// verfressen: nur füttern, dafür so viele Punkte wie sonst Futter und Streicheln zusammen
+export const GREEDY_FEED_POINTS = 2;
+export const GREEDY_FAVORITE_POINTS = 4;
+
+// Eigenschaften, die diese Art haben kann (ohne Futter, z. B. Erdmännchen: nie verfressen)
+export const traitsFor = (species) => TRAIT_IDS.filter((t) => t !== 'greedy' || (SPECIES_FOOD[species] ?? []).length > 0);
+
+// Eigenschaft eines Tiers: einmal zufällig, dann bleibt sie (steht am Tier im Spielstand). Ein Tierfreund hat die seiner
+// Bindung (ältere Freunde: verschmust)
+export function traitOf(a) {
+  const bond = bondOf(a);
+  if (bond?.trait) return (a.trait = bond.trait);
+  if (!a.trait || !traitsFor(a.species).includes(a.trait)) {
+    const list = traitsFor(a.species);
+    a.trait = list[Math.floor(Math.random() * list.length)];
+  }
+  return a.trait;
+}
+
+export const traitOfBond = (bond) => bond?.trait ?? 'cuddly';
+export const isGreedy = (bond) => traitOfBond(bond) === 'greedy';
+// Streicheln, Ball bzw. Bürsten geht gerade (verfressene wollen das nie)
+export const canCare = (bond, now = Date.now()) => !isGreedy(bond) && canPet(bond, now);
+// Punkte fürs Füttern (passend bzw. Lieblingsfutter)
+export const feedPoints = (bond, favorite) => (isGreedy(bond) ? (favorite ? GREEDY_FAVORITE_POINTS : GREEDY_FEED_POINTS) : favorite ? FAVORITE_POINTS : FEED_POINTS);
+
+// Tierbuch: welche Eigenschaften man bei dieser Art schon als Tierfreund hatte
+export const traitsBefriended = (species) => new Set(Object.values(game.bonds ?? {}).filter((b) => b.species === species).map(traitOfBond));
 
 // Namen für den Würfel: je Sprache eine Liste, dazu ein paar passende je Tierart
 const NAMES = tr(

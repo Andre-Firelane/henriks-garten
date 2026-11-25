@@ -785,7 +785,7 @@ export const SPECIES = {
     stepRate: 5,
     hop: 1,
     footW: 17,
-    shadowW: 64, // (Bild in voller Größe, siehe SIZE in Walrus.js)
+    shadowW: 48, // so breit wie der Körper (Bild in voller Größe, siehe SIZE in Walrus.js; Lage: Walrus.render)
     catchWith: ['warmer'],
   },
   // Eisbär (nachts auf dem Eis): Fisch ans Eisloch legen, er frisst eine Weile (Henrik bleibt weg) und schläft dann ein;
@@ -802,7 +802,7 @@ export const SPECIES = {
     stepRate: 8,
     hop: 1,
     footW: 18,
-    shadowW: 60, // (Bild in voller Größe, siehe SIZE in PolarBear.js)
+    shadowW: 50, // so breit wie der Körper (Bild in voller Größe, siehe SIZE in PolarBear.js; Lage: PolarBear.render)
     fleeDist: 110,
     fleeSpeed: 60,
     catchWith: ['touch'],
@@ -1334,6 +1334,8 @@ export const SKINS = {
   toucan: { id: 'toucan2', name: tr('Fischertukan', 'keel-billed toucan'), male: true, wild: 0.1, baby: 0.03 },
   penguin: { id: 'penguin2', name: tr('Felsenpinguin', 'rockhopper penguin'), male: true, wild: 0.1, baby: 0.03 }, // gilt für die ganze Gruppe
   seal: { id: 'seal2', name: tr('Sattelrobbe', 'harp seal'), male: false, wild: 0.1, baby: 0.03 }, // im Wasser: seal2_water
+  snowhare: { id: 'snowhare2', tex: 'snowhare', name: tr('Polarhase', 'arctic hare'), male: true, wild: 0.1, baby: 0, big: 1.25 }, // großes Exemplar mit den Bildern des Schneehasen (sizeK); der echte Polarhase ist deutlich größer
+  reindeer: { id: 'reindeer2', name: tr('weißes Rentier', 'white reindeer'), male: false, neuter: true, wild: 0.1, baby: 0.03 }, // mit großem Geweih (Standbild; trabt ohne Animation mit der Herde, bis die Videos kommen)
   seahorse: { id: 'seahorse2', name: tr('Fetzenfisch', 'leafy seadragon'), male: true, wild: 0.1, baby: 0.03 },
   turtle: { id: 'turtle2', name: tr('Karettschildkröte', 'hawksbill turtle'), male: false, wild: 0.1, baby: 0 },
   octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },
@@ -1461,7 +1463,10 @@ export default class Animal {
     let moving = false;
     const x0 = this.x;
     const y0 = this.y;
-    if (this.state === 'following' && this.companion && this.petted) {
+    if (this.fetch) {
+      if (this.play) this.endToy();
+      moving = this.updateFetch(dt); // Tierfreund (verspielt): läuft zum Ball bzw. bringt ihn zurück (siehe playBall in GardenScene)
+    } else if (this.state === 'following' && this.companion && this.petted) {
       this.petStill(); // bester Freund (folgt im Tierpark, siehe updateCompanion in GardenScene): wird gestreichelt oder gefüttert
     } else if (this.state === 'following' && this.companion?.back) {
       // war der beste Freund (ein anderes Tier ist es jetzt): zurück an seinen Platz im Gehege, dann wieder wie die anderen
@@ -1710,7 +1715,15 @@ export default class Animal {
     return this._skin ?? null;
   }
   set skin(id) {
+    const before = this.sizeK;
     this._skin = id ?? null;
+    // großes Exemplar (Skin mit big, z. B. großer Eisbär): größer zeichnen, auch den Schatten. Nur bei einem Wechsel der
+    // Größe anfassen (Unterklassen wie der Gorilla haben ihren eigenen Maßstab; Walross und Eisbär rechnen sizeK selbst ein)
+    const k = this.sizeK;
+    if (k !== before && this.sprite && !this.baby) {
+      this.sprite.setScale((this.sprite.scaleX / before) * k);
+      this.shadow?.setScale(k);
+    }
     if (id && skinInfo(this.species, id)?.coat) ensureCoat(this.scene, id); // Fellfarbe: Bilder erst jetzt umfärben
     const tint = id ? skinInfo(this.species, id)?.tint : null;
     if (tint) {
@@ -1720,6 +1733,10 @@ export default class Animal {
       this.sprite?.clearTint();
       this.skinTinted = false;
     }
+  }
+  // so viel größer gezeichnet als die Art (seltene große Exemplare der Eiswelt: Skin mit big), sonst 1
+  get sizeK() {
+    return (this._skin && skinInfo(this.species, this._skin)?.big) || 1;
   }
   // Skin mit eigenem Bild (Platzhalter-Skins nutzen das normale Bild der Art), oder null
   get texSkin() {
@@ -1838,6 +1855,28 @@ export default class Animal {
     return false;
   }
 
+  // Ball holen: schnell zu fetch.spot laufen (wie updateVisit, nur flotter); angekommen oder hängen geblieben: fetch.arrived
+  updateFetch(dt) {
+    const f = this.fetch;
+    const dx = f.spot.x - this.x;
+    const dy = f.spot.y - this.y;
+    const d = Math.hypot(dx, dy);
+    if (d > 4 && !f.arrived) {
+      const step = Math.min(d, Math.max(this.kind.speed * 2.2, 60) * dt);
+      const angle = Math.atan2(dy, dx);
+      for (const turn of [0, 0.5, -0.5, 1, -1]) {
+        if (this.move(Math.cos(angle + turn) * step, Math.sin(angle + turn) * step)) {
+          if (Math.abs(dx) > 1) this.faceX = dx < 0 ? -1 : 1;
+          this.faceY = dy < 0 ? -1 : 1;
+          return true;
+        }
+      }
+      f.stuck = true;
+    }
+    f.arrived = true;
+    return false;
+  }
+
   // Ist ein folgendes Tier an seinem Ziel angekommen? Nur in einem Gehege, das diese Tierart aufnimmt.
   arrivedHome() {
     const enclosure = this.enclosureFullyAt(this.x, this.y);
@@ -1933,7 +1972,8 @@ export default class Animal {
 
   // Animationen dieses Tiers: kind.anims, mit Skin die des Skins (kind.skinAnims) oder keine
   animSet() {
-    return this.texSkin ? this.kind.skinAnims?.[this.texSkin] ?? null : this.kind.anims ?? null;
+    const t = this.texSkin;
+    return t && t !== this.kind.texture ? this.kind.skinAnims?.[t] ?? null : this.kind.anims ?? null; // (Skin mit den Bildern der Art, z. B. der große Schneehase: deren Animationen)
   }
 
   // welche der Animationen (animSet) gerade läuft, oder keine (dann Standbild)

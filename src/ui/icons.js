@@ -115,6 +115,8 @@ const SHEETS = {
   arcticwolf2: [80, 80, 4, 0, 'wolf2'],
   snowowl: [72, 80, 4, 0],
   reindeer: [92, 128, 4, 0],
+  reindeer2: [92, 128, 4, 0],
+  snowhare2: [76, 82, 4, 0, 'snowhare'], // Polarhase: großer Schneehase, dasselbe Bild
   walrus: [136, 128, 4, 0],
   polarbear: [152, 148, 4, 0],
   puffin: [64, 68, 4, 0],

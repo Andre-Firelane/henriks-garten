@@ -10,7 +10,7 @@
 // Herzen (die gibt es oben an den Gehegen).
 import Phaser from 'phaser';
 import { tileToWorld } from './iso.js';
-import { SPECIES } from '../animals/Animal.js';
+import { SPECIES, skinInfo } from '../animals/Animal.js';
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
 
@@ -247,7 +247,7 @@ export default class UnderwaterWindow {
       return {
         species: a.species,
         img,
-        scale: SCALE[a.species] ?? 0.5,
+        scale: (SCALE[a.species] ?? 0.5) * ((a.skin && skinInfo(a.species, a.skin)?.big) || 1), // (großer Walrossbulle)
         // Schwimm-Animation der Variante (seal2_underwater), sonst der Art; fehlt sie, gleitet das Standbild
         anim: [`${a.skin}_underwater`, `${a.species}_underwater`].find((k) => this.scene.anims.exists(k)) ?? null,
         u: (i + 0.5) / list.length,

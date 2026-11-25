@@ -1100,13 +1100,13 @@ const PARK_ICE_ROWS = [
   'ṩ[[[[[[[[[[#Ǩwww.Ê.ȓ...Ʒ.......Ǩ#..........ṩ',
   'ṩ..........#Ǩ.........ȒƷ..ȓ....Ǩ#..........ṩ',
   'ṩ..........#ǩǯǯǯǯǯǯǯǯǯǯǯ.....Ṗ.Ǩ#..........ṩ',
-  'ṩ..........#Ǩ##############....Ǩ#[[[[[[[[[[ṩ',
-  'ṩ..........#Ǩ##############....Ǩ#]w.......]ṩ',
+  'ṩ..........#G##############....Ǩ#[[[[[[[[[[ṩ',
+  'ṩ..........#G##############....Ǩ#]w.......]ṩ',
   'ṩ......F...#Ǩ....ȓ..##......Ṗ..Ǩ#]w.......]ṩ',
   'ṩ........W.#Ǩ.Ṗ.....##...Ȟ.....Ǩ#]w....Ȓ..]ṩ',
   'X###########Ǩ...Ȓ...####....ȓ..Ǩ#]w.......]ṩ',
-  'X###########ǩǩ......####......ǩǩ#]w.......]ṩ',
-  'ṩ.......#..#.ǩǩǩǩǩǩǩGGǩǩǩǩǩǩǩǩǩ.#]w......Ṗ]ṩ',
+  'X###########Ǩ.......####......ǩǩ#]w.......]ṩ',
+  'ṩ.......#..#ǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩ.#]w......Ṗ]ṩ',
   'ṩ.......#..######################]w.ȓ.....]ṩ',
   'ṩ[[[[[[[G[[[[[[[[[[[[[[[[[[G[[[[[[w.......]ṩ',
   'ṩ]...................]wwwww.wwwwwww.......]ṩ',
@@ -1157,7 +1157,7 @@ const PARK_PENS = [
       // und Ufer zum Teich zählen und nicht zum Wildpark.
       { id: 'clearingpond', name: tr('Teich', 'Pond'), species: ['frog'], pond: true, shore: 1, signAt: { tx: 8, ty: 39 }, signKey: 'pond', world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 10, ty: 41 }, quota: { frog: [6, 9] }, upgrade: tr('Schilf am Teich', 'Reeds by the pond'), basic: [[10, 39, '.'], [13, 42, '.']] },
       { id: 'deerpark', name: tr('Wildpark', 'Wildlife Park'), species: ['deer', 'elk'], // Rehe und Elche laufen frei herum
-        open: true, decor: true, gate: 'tall', gateTiles: [{ tx: 22, ty: 41 }, { tx: 22, ty: 42 }], visitors: true, signAt: { tx: 18, ty: 40 }, toysAt: [{ tx: 9, ty: 37 }], // Schild an der Weggabelung hinter dem Tor, der Futterautomat gegenüber auf der anderen Seite des Waldwegs; Futterraufe auf der Lichtung
+        open: true, decor: true, gate: 'tall', gateTiles: [{ tx: 22, ty: 41 }, { tx: 22, ty: 42 }], visitors: true, toysAt: [{ tx: 9, ty: 37 }], // Schilder für Reh und Elch am Außenzaun neben dem Tor (nicht drinnen am Weg beim Futterautomaten); Futterraufe auf der Lichtung
         world: 'forest', ground: ['fgrass0', 'fgrass1', 'fgrass2'], seed: { tx: 18, ty: 41 }, quota: { deer: [6, 9], elk: [2, 3] }, upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[17, 36, '5'], [18, 36, 'D'], [17, 37, 'ḩ'], [18, 37, 'D'], [20, 37, 'D'], [21, 37, '5'], [17, 38, '5'], [18, 38, 'ḩ'], [19, 38, 'D'], [20, 38, 'ḩ'], [21, 38, 'k'], [17, 39, 'k'], [20, 39, 'D'], [21, 39, 'ḩ'], [17, 43, '5'], [18, 43, 'ḫ'], [19, 43, 'ḩ'], [20, 43, 'D'], [21, 43, 'k'], [17, 44, 'k'], [20, 44, '5'], [17, 45, 'k'], [19, 45, 'k'], [21, 45, 'k']] },
       // Wildschwein an der Lichtung: durchwühlter Boden, Eiche und ein großes Schlammloch zum Suhlen (siehe Boar.js)
       { id: 'boarpen', name: tr('Wildschweingehege', 'Wild Boar Enclosure'), species: ['boar'], world: 'forest', ground: ['boar_ground0', 'boar_ground1', 'boar_ground2'], seed: { tx: 3, ty: 40 }, slots: [4, 6], upgrade: tr('Dickicht lichten', 'Clear the thicket'), basic: [[2, 44, 'ḩ'], [3, 44, 'D'], [4, 44, 'ḫ'], [5, 44, 'ḫ'], [2, 45, 'k'], [3, 45, 'ḩ'], [5, 45, '5']] },
@@ -1224,8 +1224,8 @@ const PARK_PENS = [
       // Pinguinbecken in der Halle (Glas, Pflegertür); steht vor der Halle, damit seine Kacheln nicht zur Halle zählen
       { id: 'penguins', name: tr('Pinguinbecken', 'Penguin Pool'), species: ['penguin'], gate: 'glasslow', world: 'ice', section: 'park4', seed: { tx: 20, ty: 13 }, slots: [10, 10], signAt: { tx: 18.5, ty: 19.6 }, signOnGlass: true },
       // Polarhalle: Papageitaucher und Schneeeulen fliegen frei unter dem Glasdach (zwischen Felsen und Tannen, siehe
-      // hallFlight.js); Besucher gehen durch den Lamellenvorhang hinein und auf dem Holzsteg bis zur Treppe
-      { id: 'polarhall', name: tr('Polarhalle', 'Polar Hall'), species: ['puffin', 'snowowl'], open: true, visitors: true, gate: 'glassdoor', gateTiles: [{ tx: 20, ty: 26 }, { tx: 21, ty: 26 }],
+      // hallFlight.js); Besucher gehen durch die Glastür links oben hinein und auf dem Holzsteg bis zur Treppe
+      { id: 'polarhall', name: tr('Polarhalle', 'Polar Hall'), species: ['puffin', 'snowowl'], open: true, visitors: true, gate: 'glassdoor', gateTiles: [{ tx: 12, ty: 20 }, { tx: 12, ty: 21 }],
         world: 'ice', section: 'park4', seed: { tx: 27, ty: 14 }, quota: { puffin: [8, 8], snowowl: [2, 2] } },
       // Robben und Walrosse zusammen im langen Außenbecken mit Kiesstrand; unter der Halle schwimmen sie hinter der
       // großen Scheibe vorbei (siehe UnderwaterWindow.js)
@@ -1511,7 +1511,7 @@ LEVELS.park4 = parkSection('park4', {
   // Torbogen über dem Weg gleich hinter dem Übergang (Platzhalter: der Bogen des Wildparks, später aus Eisblöcken)
   arches: [{ key: 'wildpark_arch', tx: 1, ty: 24.5, label: tr('Eiswelt', 'Ice World') }],
   sections: [
-    { label: tr('Polarhalle', 'Polar Hall'), tx: 20.5, ty: 26 },
+    { label: tr('Polarhalle', 'Polar Hall'), tx: 12, ty: 20.5 }, // Glastür links oben, wo der Holzsteg an der Wand endet
     { label: tr('Zentrum', 'Center'), tx: 0, ty: 24.5 },
   ],
   exits: [

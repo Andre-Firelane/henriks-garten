@@ -14,6 +14,7 @@ const HUNGRY_TIME = 150; // so lange (Sekunden) bleibt es danach wach und hungri
 const WISH_EVERY = 3; // so oft zeigt es dabei die Muschel
 const SIZE = 0.5; // (Bild in voller Größe, 1,28-fach wie früher bei 0,64: ein Koloss, aber scharf)
 const SLEEP_GROW = 1.15; // dösend etwas größer (das Schlafbild füllt sein Feld weniger aus als die Videos)
+const SHADOW_UP = 9; // der Schatten liegt so weit hinter der Fußlinie, unter dem Bauch (nur die Vorderflossen reichen bis vorne an sie heran)
 const RANGE = 110; // so weit darf es sich vom Platz entfernen, an dem es erschienen ist (Kachel-Proportionen, y doppelt)
 
 export default class Walrus extends Animal {
@@ -135,11 +136,15 @@ export default class Walrus extends Animal {
   render(moving) {
     super.render(moving);
     const sleepy = this.sleepy;
-    this.sprite.setScale((this.baby ? 0.35 : SIZE) * (sleepy ? SLEEP_GROW : 1));
+    this.sprite.setScale((this.baby ? 0.35 : SIZE * this.sizeK) * (sleepy ? SLEEP_GROW : 1)); // (großer Bulle: sizeK)
     const f = this.kind.frames;
     const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
-    // dösend immer von vorne (nur links/rechts je nach Blickrichtung), nie die Rückenansicht
-    if (sleepy) this.sprite.setTexture('walrus_sleep', this.faceX < 0 ? f.downLeft : f.downRight).setFlipX(false);
-    else if (this.sprite.texture.key === 'walrus_sleep') this.sprite.setTexture('walrus', frame);
+    // dösend immer von vorne (nur links/rechts je nach Blickrichtung), nie die Rückenansicht (rosa Bulle: walrus2_sleep)
+    const base = this.texSkin ?? 'walrus';
+    if (sleepy) this.sprite.setTexture(`${base}_sleep`, this.faceX < 0 ? f.downLeft : f.downRight).setFlipX(false);
+    else if (this.sprite.texture.key.endsWith('_sleep')) this.sprite.setTexture(base, frame);
+    // Schatten: wächst mit dem Bild (dösend, großer Bulle, Tierbaby) und liegt etwas unter dem Körper statt davor
+    const k = (this.baby ? 0.7 : this.sizeK) * (sleepy ? SLEEP_GROW : 1);
+    this.shadow.setScale(k).setPosition(this.shadow.x, this.shadow.y - SHADOW_UP * k);
   }
 }

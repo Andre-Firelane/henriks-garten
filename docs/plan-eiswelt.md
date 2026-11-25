@@ -35,7 +35,7 @@ Im Tierpark gibt es noch keinen Eis-Bereich, für die Expedition keine Eis-Regel
 | **Schneehase** | immer | Standardtier wie die Katze, nur etwas schneller. |
 | Orca | Event | Nicht fangbar, siehe „Events“. |
 
-Seltene Varianten folgen später, Vorschläge: weißes Rentier, Blaufuchs.
+Seltene Varianten: siehe „Seltene Varianten (Andre, 25.11.2026)“ unten.
 
 ## Die Karte
 
@@ -232,7 +232,7 @@ Schritt 1 (Karte) und Schritt 2 (Tiere) sind gebaut und im Browser getestet.
 
 - **Eiswelt im Tierpark:** später, kommt erst nach der Eiswelt selbst.
 - **Wärmflasche:** liegt in den Kisten wie Hering und Ball.
-- **Seltene Varianten:** später.
+- **Seltene Varianten:** später (geplant 25.11.2026, siehe unten).
 - **Sprites:** Andre hat sie geliefert (Sprites/: Eisbär, Walross schläft, Papageientaucher + fliegt, Polarfuchs,
   Polarwolf + heult, Schneeeule + fliegt, Schneehase; public/assets/: Rentier, Walross). Von der fliegenden
   Schneeeule wird nur die Vorderansicht verwendet (die anderen Ansichten passen nicht zusammen).
@@ -298,6 +298,67 @@ leicht von rechts). Neu:
   aufgehellt (tools/arctic-fox.py, auch das Schlafbild: im Gehege schläft er wie der Fuchs). Der Polarwolf zeigt die
   Bilder des grauen Wolfs, selten den schwarzen Wolf (eigene Variante „schwarzer Polarwolf“); die Wolfsbilder sind ein
   eigenes Paket (wolves), das Wald und Eiswelt laden.
+
+## Seltene Varianten (Andre, 25.11.2026, gebaut 25.11.2026, nicht committet)
+
+Manche Arten gibt es in normaler Größe und selten als großes Exemplar. Nur zwei Stufen (normal und groß), keine
+Streuung der Größe und keine Gewichtsangabe. Groß kommt mit etwa **10 %** vor (wie der gefleckte Widder) und gilt als
+„selten“ (Meldung, Wünsche, Event).
+
+| Art | Seltene Variante | Unterschied |
+|---|---|---|
+| Eisbär | großer, alter Eisbär | etwa 1,25-mal so groß, Fell gelblich (alte Männchen sind wirklich gelblich) |
+| Schneehase | großes Exemplar (Vorschlag Name: Polarhase, der echte Polarhase ist deutlich größer) | etwa 1,25-mal so groß, gleiche Bilder; Vorschlag: etwas langsamer hoppeln |
+| Walross | großer Walrossbulle | etwa 1,25-mal so groß, **von Anfang an rosa** (Walrosse werden wirklich rosa, wenn sie warm sind; alte Bullen sind rosa-braun) |
+| Rentier | weißes Rentier mit großem Geweih (reindeer2) | eigenes Bild (Rentier2.webp), Animationen als Videos wie beim Rentier |
+| Pinguin, Robbe | haben schon seltene Varianten | bleibt |
+| Polarfuchs, Schneeeule, Papageitaucher | keine seltene Variante | bleibt so |
+
+- **Größe:** Skalierung je Variante. Schatten, Berührfläche, Abstand in der Folge-Reihe und Platz im Gehege wachsen mit.
+  Etwa 1,25 bis 1,3: weniger sieht man neben einem normalen Tier kaum, mehr sieht im Gehege komisch aus.
+- **Fangen:** wie beim normalen Tier, keine zusätzliche Geschicklichkeit. Beim großen Eisbär ist der Abstandsring
+  entsprechend größer.
+- **Rote Nase beim Rentier:** verworfen (keine natürliche Farbe, jeder denkt an Rudolph).
+- **Rentier2 (Andre, 25.11.2026):** Sprites/Rentier2.webp ist ein **weißes Rentier mit großem Geweih** (weiß und großes
+  Geweih in einem). Freigestellt nach „Tiersprites Test/views/reindeer2_v0–3“, Standbild public/assets/reindeer2.png
+  (92 × 128 wie reindeer, Körper gleich groß, nur das Geweih größer; Aufruf in tools/static-sheet.py). Im Spiel
+  eingebaut (25.11.2026, nicht committet) als seltene Variante „weißes Rentier“ (wild 10 %, Animal.js), vorerst nur als
+  Standbild: Es trabt ohne Animation mit der Herde. Lauf-, Steh- und Rennanimation folgen (Videos wie beim Rentier,
+  dann skinAnims beim Rentier eintragen).
+
+### Umsetzung (25.11.2026)
+
+- **Größe:** Skin mit `big` (1,25), Animal.sizeK; der Skin-Setter skaliert Bild und Schatten, Walross und Eisbär rechnen
+  sizeK in ihrem render ein, das Unterwasserfenster auch. Tierbabys sind nie groß (baby 0).
+- **Walross und Eisbär:** Fellfarben in coats.js (walrus2, polarbear2, wild 0.1), alle Bilder samt Schlafen, Fressen,
+  Warten und Unterwasser werden beim Spielen umgefärbt, kein Download. Bis die Bilder fertig sind (beim Eisbär 8 Bilder,
+  auf dem Tablet einige Sekunden), zeigt das Tier die Grundfarbe, aber schon groß. Walross.js und PolarBear.js nehmen
+  für Schlaf-, Warte- und Fressbilder den Namen der Variante.
+- **Schatten (Andre, 25.11.2026):** Walross und Eisbär hatten zu breite Schatten, die vor dem Körper lagen. Jetzt so breit
+  wie der Körper (shadowW 48 bzw. 50) und hinter der Fußlinie unter dem Bauch: Walross 9 Pixel, Eisbär stehend 3,
+  schlafend 11 (dort 1,15-mal so lang). Sie wachsen mit sizeK, beim dösenden Walross mit SLEEP_GROW.
+- **Großer Eisbär:** Ring und Uhr beim Fressen sind um sizeK größer bzw. höher (PolarBear.keepAway).
+- **Polarhase:** snowhare2 mit den Bildern des Schneehasen (tex: 'snowhare'); animSet nimmt dann die Animationen der Art.
+  Langsamer hoppeln: nicht gebaut.
+- Namen: großer rosa Walrossbulle, großer alter Eisbär, Polarhase, weißes Rentier. Besucher-Anziehung in visitors.js.
+- Kisten-Karte: keine eigenen großen Kartenbilder nötig (Andre, 25.11.2026). Eisbär und Walross erkennt man an der
+  Farbe, beim Polarhasen reicht der Name auf der Karte.
+
+### Einfärben (getestet 25.11.2026)
+
+Getestet als Nachbau von recolorPart (src/animals/coats.js) in Python: scratchpad `ice/recolor.py` und `ice/bear2.py`
+(Testbilder walrus.png, bear2.png). Am Spielcode ist noch nichts geändert.
+
+- **Walross rosa:** Die automatische Maske „hell und farblos“ passt nicht, das Walross ist mittelhell und leicht braun.
+  Eigene Maske: Helligkeit (V) über 0,20–0,30 weich ein (Konturen und Augen bleiben), sehr hell (V 0,72–0,80) und
+  farblos (S unter 0,12–0,20) weich aus (Stoßzähne und Barthaare bleiben weiß). Helligkeitsbereich aus dem Standbild
+  (Luma ca. 68–176). Farbskala „Lachs“ (132,70,64) → (232,160,146), Ausweichen: „rosa-braun“ (118,72,70) → (212,158,148),
+  zu kräftig war (142,66,74) → (240,156,160). Klappt auf Standbild, Rückansicht, Laufen und Schlafen.
+- **Eisbär gelblich:** Maske `light` (wie Schaf/weiße Katze). Farbskala (176,156,116) → (250,238,200), etwas heller:
+  (176,164,132) → (250,242,218). **Wichtig:** Das Laufbild ist schon im Original dunkler und gräulicher als das Standbild
+  (Luma 142–242 statt 158–250). Mit einem Helligkeitsbereich aus dem Standbild wird der laufende Bär braun. Darum braucht
+  der Eisbär einen eigenen Bereich je Bild (coats.js rechnet bisher einen Bereich je Gruppe aus dem Standbild).
+- Das Wasserbild des Walrosses (walrus_underwater) ist noch nicht getestet.
 
 ## Noch offen
 

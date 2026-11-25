@@ -32,6 +32,7 @@ So entstanden (V = "Tiersprites Test/views", A = public/assets):
     EIsbär schläft.webp -> polarbear_sleep: 152 148 90 144 (volle Größe statt scale 0.75 im Spiel, Platz für die Rückansicht)
   Walross.webp -> walrus: 136 128 108 123; Walross schläft.webp -> walrus_sleep: 136 128 77 123 (volle Größe)
   Rentier.webp -> reindeer: 92 128 114 123 (etwas größer als früher 100); Polarfuchs.webp -> arcticfox: 72 72 56 68
+  Rentier2.webp -> reindeer2 (weiß, großes Geweih): 92 128 122 123 (Körper so groß wie beim Rentier, nur das Geweih größer)
   Polarwolf.webp -> arcticwolf: 80 80 68 76; Polarwolf heult.webp -> arcticwolf_howl: 80 80 69 76
   Papageientaucher.webp -> puffin: 64 68 55 63 (_v3 gespiegelt); Papageientaucher fliegt.webp -> puffin_fly: 84 78 47 76
     (_v1 und _v3 gespiegelt: dort schaute der Schnabel nach rechts)

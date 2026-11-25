@@ -12,6 +12,9 @@ import { MAP_W, MAP_H, charAt } from '../world/map.js';
 
 const SIZE = 0.5; // (das Bild ist in voller Größe gezeichnet, 1,35-fach wie früher bei 0,75: so bleibt es scharf)
 const BABY_SIZE = 0.27;
+const SHADOW_UP = 3; // der Schatten liegt so weit hinter der Fußlinie ...
+const SLEEP_SHADOW_UP = 11; // ... liegend weiter, unter dem Bauch (die Pfoten liegen ganz vorne)
+const SLEEP_SHADOW = 1.15; // liegend ist er länger als stehend
 const TO_BAIT_SPEED = 1.6; // so viel schneller als sonst trottet er zum Fisch
 const ARRIVED = 10; // so nah am Fisch: angekommen
 const EAT_TIME = 18; // so lange frisst er (Sekunden, die Zeit läuft nur, solange Henrik weg bleibt)
@@ -197,7 +200,7 @@ export default class PolarBear extends Animal {
 
   // frisst: die Zeit läuft nur, solange Henrik draußen vor dem Ring bleibt; ist er zu nah, steht er auf, schaut und brummt
   updateEat(dt, player) {
-    const near = Math.hypot(player.x - this.x, (player.y - this.y) * 2) < KEEP_AWAY;
+    const near = Math.hypot(player.x - this.x, (player.y - this.y) * 2) < this.keepAway;
     this.growlIn -= dt;
     if (near) {
       this.faceX = player.x < this.x ? -1 : 1;
@@ -242,7 +245,7 @@ export default class PolarBear extends Animal {
       this.marksFor = this.disturbed;
       const col = this.disturbed ? 0xe0684a : 0x5b88b0; // ruhig: blaugrau (weiß sähe man auf dem Schnee nicht)
       const r = this.ring.clear();
-      r.fillStyle(col, this.disturbed ? 0.12 : 0.06).fillEllipse(0, 0, KEEP_AWAY * 2, KEEP_AWAY);
+      r.fillStyle(col, this.disturbed ? 0.12 : 0.06).fillEllipse(0, 0, this.keepAway * 2, this.keepAway);
       // gestrichelter Rand
       const n = 36;
       r.lineStyle(3, col, this.disturbed ? 0.85 : 0.7);
@@ -250,10 +253,10 @@ export default class PolarBear extends Animal {
         const a0 = (i / n) * Math.PI * 2;
         const a1 = ((i + 1) / n) * Math.PI * 2;
         r.beginPath();
-        r.moveTo(Math.cos(a0) * KEEP_AWAY, Math.sin(a0) * KEEP_AWAY * 0.5);
+        r.moveTo(Math.cos(a0) * this.keepAway, Math.sin(a0) * this.keepAway * 0.5);
         for (let k = 1; k <= 4; k++) {
           const a = a0 + ((a1 - a0) * k) / 4;
-          r.lineTo(Math.cos(a) * KEEP_AWAY, Math.sin(a) * KEEP_AWAY * 0.5);
+          r.lineTo(Math.cos(a) * this.keepAway, Math.sin(a) * this.keepAway * 0.5);
         }
         r.strokePath();
       }
@@ -261,7 +264,7 @@ export default class PolarBear extends Animal {
     this.ring.setPosition(this.x, this.y);
     // Uhr: am Anfang voll, beim Fressen wird sie leer
     const left = Phaser.Math.Clamp(this.modeTime / EAT_TIME, 0, 1);
-    const c = this.clock.clear().setPosition(this.x - CLOCK_SIDE * (this.eatFaceX ?? 1), this.y - CLOCK_UP);
+    const c = this.clock.clear().setPosition(this.x - CLOCK_SIDE * this.sizeK * (this.eatFaceX ?? 1), this.y - CLOCK_UP * this.sizeK);
     c.fillStyle(0x33465c, 0.35).fillCircle(0, 1, 10);
     c.fillStyle(0xfffaf0, 0.95).fillCircle(0, 0, 10);
     if (left > 0.01) {
@@ -313,22 +316,40 @@ export default class PolarBear extends Animal {
   // frisst er ungestört am Eisloch: Fress-Animation (liegt und knabbert am Fisch); schläft: Standbild
   animKey(moving) {
     if (this.state === 'wild' && this.mode === 'sleep') return null;
-    if (this.state === 'wild' && this.mode === 'eat' && !this.disturbed) return this.scene.anims.exists('polarbear_eat') ? 'polarbear_eat' : null;
+    if (this.state === 'wild' && this.mode === 'eat' && !this.disturbed) {
+      const eat = `${this.base}_eat`; // (großer Eisbär: polarbear2_eat)
+      return this.scene.anims.exists(eat) ? eat : null;
+    }
     return super.animKey(moving);
+  }
+
+  // so weit muss Henrik beim Fressen weg bleiben (der Ring); beim großen Eisbär entsprechend weiter
+  get keepAway() {
+    return KEEP_AWAY * this.sizeK;
+  }
+
+  // Grundname der Bilder: polarbear, beim großen Eisbär polarbear2 (sobald umgefärbt, siehe coats.js)
+  get base() {
+    return this.texSkin ?? 'polarbear';
   }
 
   render(moving) {
     super.render(moving);
-    this.sprite.setScale(this.baby ? BABY_SIZE : SIZE);
+    this.sprite.setScale(this.baby ? BABY_SIZE : SIZE * this.sizeK);
     const f = this.kind.frames;
     const frame = this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft;
     const wild = this.state === 'wild';
+    const base = this.base;
     // schläft: eigenes Bild, falls es das schon gibt (sonst sitzend wie beim Fressen); frisst: Animation (ohne sie
     // sitzt er); gestört: steht
-    const sleepKey = this.scene.textures.exists('polarbear_sleep') ? 'polarbear_sleep' : 'polarbear_wait';
-    const eating = wild && this.mode === 'eat' && !this.disturbed && !this.scene.anims.exists('polarbear_eat');
-    const key = wild && this.mode === 'sleep' ? sleepKey : eating ? 'polarbear_wait' : null;
+    const sleepKey = this.scene.textures.exists(`${base}_sleep`) ? `${base}_sleep` : `${base}_wait`;
+    const eating = wild && this.mode === 'eat' && !this.disturbed && !this.scene.anims.exists(`${base}_eat`);
+    const key = wild && this.mode === 'sleep' ? sleepKey : eating ? `${base}_wait` : null;
     if (key) this.sprite.setTexture(key, frame).setFlipX(false);
-    else if (this.sprite.texture.key === 'polarbear_sleep' || this.sprite.texture.key === 'polarbear_wait') this.sprite.setTexture('polarbear', frame);
+    else if (/_(sleep|wait)$/.test(this.sprite.texture.key)) this.sprite.setTexture(base, frame);
+    // Schatten: wächst mit dem Bild (großer Eisbär, Tierbaby); schlafend länger und weiter hinten unter dem Bauch
+    const k = this.baby ? BABY_SIZE / SIZE : this.sizeK;
+    const lying = this.sprite.texture.key.endsWith('_sleep');
+    this.shadow.setScale(k * (lying ? SLEEP_SHADOW : 1), k).setPosition(this.shadow.x, this.shadow.y - (lying ? SLEEP_SHADOW_UP : SHADOW_UP) * k);
   }
 }

@@ -87,8 +87,8 @@ rect(0, H - 1, W - 1, H - 1, 'ṩ')
 rect(0, 0, 0, H - 1, 'ṩ')
 rect(W - 1, 0, W - 1, H - 1, 'ṩ')
 
-# ---- Polarhalle in der Mitte (Glas, innen 18 × 16 Kacheln), Ecken abgerundet ----
-hall = area((13, 10, 30, 25), minus=[(30, 10), (13, 25), (30, 25)])
+# ---- Polarhalle in der Mitte (Glas, innen 18 × 16 Kacheln), rechts oben und rechts unten abgerundet (links unten eckig, dort hängen die Schilder neben der Tür) ----
+hall = area((13, 10, 30, 25), minus=[(30, 10), (30, 25)])
 fence(hall, 'ǩ', 'Ǩ')  # Glasfassade ohne Holz
 # Pinguinbecken in der Halle: oben links (teilt sich die Hallenwand), Pflegertür rechts
 penguins = area((13, 10, 22, 18))
@@ -97,7 +97,7 @@ put(23, 15, 'G')  # Pflegertür
 rect(13, 10, 18, 15, 'w')
 rect(13, 16, 15, 17, 'w')
 items('20,10,Ȓ 19,17,ȓ 17,17,Ê 21,12,ȓ 20,15,Ê 22,18,Ȓ')
-# Holzsteg: vom Eingang unten hinauf, quer vor der Pinguin-Scheibe
+# Holzsteg: vom Eingang links quer vor der Pinguin-Scheibe, dann hinunter zur Treppe
 rect(13, 20, 26, 21, '#')
 rect(20, 22, 21, 25, '#')
 # große Treppe hinunter zur Unterwasser-Scheibe (2×2 Kacheln, Bild stairs_ice; die Kacheln sind Übergänge)
@@ -111,13 +111,13 @@ for r in [
     (11, 8, 11, 27),  # links
     (11, 8, 32, 8),  # oben
     (32, 8, 32, 27),  # rechts
-    (11, 27, 32, 27),  # unten, dort der Halleneingang
+    (11, 27, 32, 27),  # unten
 ]:
     rect(*r, '#')
 put(0, 24, 'X')
 put(0, 25, 'X')
-put(20, 26, 'G')  # Lamellenvorhang der Halle
-put(21, 26, 'G')
+put(12, 20, 'G')  # Glastür der Halle: links oben, wo der Holzsteg an der Wand endet (vom Platz am Eingang her)
+put(12, 21, 'G')
 
 # ---- Gehege rundherum ----
 # Polarwölfe oben links

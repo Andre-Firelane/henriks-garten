@@ -473,6 +473,12 @@
       .book-note { margin: 0 0 8px; font-size: 14px; }
       .journal-box .tip-locked { color: #8a5a30; }
       .journal-box .book-friends { margin: 4px 0; font-size: 13px; color: #b03a6a; }
+      /* Eigenschaften der Tierfreunde dieser Art (verschmust, verspielt, eitel, verfressen): erst als Freund benannt, dann voll */
+      .journal-box .book-traits { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+      .journal-box .book-trait { display: inline-flex; align-items: center; gap: 3px; padding: 1px 6px 1px 2px; border-radius: 10px; font-size: 12px; background: #00000010; color: #8a7a66; }
+      .journal-box .book-trait img { width: 16px; height: 16px; object-fit: contain; opacity: 0.35; filter: grayscale(1); }
+      .journal-box .book-trait.got { background: #ffe3ec; color: #b03a6a; }
+      .journal-box .book-trait.got img { opacity: 1; filter: none; }
       /* Neues seit dem letzten Öffnen: Leuchtrand und Schild, am Reiter ein roter Punkt */
       .journal-box .card { position: relative; }
       .journal-box .card.new { opacity: 1; border-color: #e8a830; box-shadow: 0 0 0 3px #ffd34d, 0 0 16px rgba(255, 200, 60, 0.9); animation: book-glow 1.4s ease-in-out 3; }
@@ -607,6 +613,14 @@
       #sign .resident.friend small { font-weight: bold; }
       #sign .resident.friend small::after { content: '\00a0♥'; }
       #sign .resident-pic.big { width: 72px; height: 72px; font-size: 18px; }
+      /* Eigenschaft des Tiers (verschmust, verspielt, eitel, verfressen): kleines Bild unten rechts am Tierbild */
+      #sign .resident-pic { position: relative; }
+      #sign .trait-badge { position: absolute; right: -6px; bottom: -2px; width: 22px; height: 22px; object-fit: contain; background: #fff8e6; border: 1.5px solid #3c2814; border-radius: 50%; padding: 1px; box-sizing: border-box; }
+      #sign .sign-head .trait-badge { width: 26px; height: 26px; }
+      /* das Wort der Eigenschaft blasser unter dem Namen */
+      #sign .resident small.trait-word { min-height: 0; font-size: 9px; font-weight: normal; color: #9a8468; margin-top: -2px; }
+      #sign .resident.friend small.trait-word { font-weight: normal; }
+      #sign .resident.friend small.trait-word::after { content: none; }
       #sign .name-row { display: flex; gap: 8px; margin-top: 12px; }
       #sign .name-input {
         flex: 1; min-width: 0; font: bold 20px "Trebuchet MS", Arial, sans-serif; color: #2b1d14; padding: 6px 10px;

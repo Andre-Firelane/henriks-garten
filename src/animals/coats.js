@@ -18,13 +18,80 @@ const luma = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 const light = (v, s) => smooth(0.48, 0.64, v) * (1 - smooth(0.24, 0.3, s)); // hell und fast farblos (Wolle, weißes Fell)
 // Schafwolle: wie light, nur dürfen rötliche Schatten (unten am Bauch, vor allem von hinten) etwas kräftiger sein; Ohren und
 // Beine sind noch kräftiger, das Gesicht hat einen anderen Farbton (um 31°). In den Lauf- und Steh-Animationen ist das
-// Gesicht aber blasser und rötlicher gemalt (Farbton um 20°, Sättigung um 0,32, sehr hell): hell und zugleich so kräftig
-// zählt nie als Wolle (die rötlichen Schatten sind dunkler oder blasser), sonst färbte sich das Gesicht je nach Richtung mit
+// Gesicht aber blasser und rötlicher gemalt, fast wie die Wollschatten: dafür markFace (g.face). Nicht über die Farbe
+// allein ausschließen: unten am Bauch hat die Wolle genau die Gesichtsfarbe, dort blitzten sonst helle Punkte auf
 const wool = (v, s, h) => {
   const pink = 1 - smooth(22, 28, h);
-  const face = smooth(0.26, 0.29, s) * smooth(0.75, 0.78, v);
-  return smooth(0.48, 0.64, v) * (1 - ((1 - pink) * smooth(0.24, 0.3, s) + pink * smooth(0.3, 0.35, s))) * (1 - face);
+  return smooth(0.48, 0.64, v) * (1 - ((1 - pink) * smooth(0.24, 0.3, s) + pink * smooth(0.3, 0.35, s)));
 };
+
+// Gesicht über die Form finden (g.face): die Farbe allein reicht nicht, der schattige Gesichtsrand sieht aus wie die
+// rötlichen Schatten der Wolle. Das Gesicht ist aber eine große Fläche hell-kräftiger Punkte (mindestens 5×5, die
+// Wollschatten sind schmale Streifen); von ihr aus gehören noch bis zu 5 Schritte angrenzender, nicht ganz farbloser und
+// nicht dunkler Punkte dazu (der Rand bis zur Kontur). Je Bild des Spritesheets (Rechteck ab x0), Ergebnis in out (1 = Gesicht)
+function markFace(d, width, x0, fw, fh, out) {
+  const n = fw * fh;
+  const core = new Uint8Array(n);
+  const band = new Uint8Array(n);
+  for (let y = 0; y < fh; y++) {
+    for (let x = 0; x < fw; x++) {
+      const i = (y * width + x0 + x) * 4;
+      if (!d[i + 3]) continue;
+      const [v, s, h] = hsv(d[i], d[i + 1], d[i + 2]);
+      if (s >= 0.2 && v > 0.45) band[y * fw + x] = 1;
+      if (s >= 0.25 && v >= 0.76 && h < 32) core[y * fw + x] = 1;
+    }
+  }
+  // Fläche: nur Punkte, deren ganzes 5×5-Feld Kern ist (Erosion), dann wieder auf die volle Fläche (Dilatation)
+  const R = 2;
+  const filter = (src, all) => {
+    const t = new Uint8Array(n);
+    const o = new Uint8Array(n);
+    for (let y = 0; y < fh; y++) {
+      for (let x = 0; x < fw; x++) {
+        let hit = all ? 1 : 0;
+        for (let k = -R; k <= R; k++) {
+          const xx = x + k;
+          const val = xx >= 0 && xx < fw ? src[y * fw + xx] : 0;
+          if (all ? !val : val) {
+            hit = all ? 0 : 1;
+            break;
+          }
+        }
+        t[y * fw + x] = hit;
+      }
+    }
+    for (let y = 0; y < fh; y++) {
+      for (let x = 0; x < fw; x++) {
+        let hit = all ? 1 : 0;
+        for (let k = -R; k <= R; k++) {
+          const yy = y + k;
+          const val = yy >= 0 && yy < fh ? t[yy * fw + x] : 0;
+          if (all ? !val : val) {
+            hit = all ? 0 : 1;
+            break;
+          }
+        }
+        o[y * fw + x] = hit;
+      }
+    }
+    return o;
+  };
+  let f = filter(filter(core, true), false);
+  for (let j = 0; j < n; j++) f[j] &= core[j];
+  for (let step = 0; step < 5; step++) {
+    const g = f.slice();
+    for (let y = 0; y < fh; y++) {
+      for (let x = 0; x < fw; x++) {
+        const j = y * fw + x;
+        if (f[j] || !band[j]) continue;
+        if ((x > 0 && f[j - 1]) || (x < fw - 1 && f[j + 1]) || (y > 0 && f[j - fw]) || (y < fh - 1 && f[j + fw])) g[j] = 1;
+      }
+    }
+    f = g;
+  }
+  for (let y = 0; y < fh; y++) for (let x = 0; x < fw; x++) if (f[y * fw + x]) out[y * width + x0 + x] = 1;
+}
 // kräftig gefärbt in einem Farbtonbereich (Orange, Braun); sehr dunkle Stellen (Augen, Nase, Hufe) nicht
 // (Farbtöne über 300° zählen als negativ, so reicht ein Bereich auch über Rot hinweg, z. B. -24 bis 42)
 const warm = (h0, h1, smin = 0.25, vmin = 0.3) => (v, s, h) => {
@@ -36,6 +103,9 @@ const warm = (h0, h1, smin = 0.25, vmin = 0.3) => (v, s, h) => {
 const fawn = warm(-24, 42, 0.42, 0.14);
 const colored = (v, s) => smooth(0.3, 0.45, s) * smooth(0.3, 0.45, v); // alles Farbige (goldene Spinne), nicht die dunklen Konturen
 const allButEyes = (v, s) => (s > 0.45 && v > 0.24 ? 0 : 1); // die pelzige Vogelspinne ganz, nur farbige Augen nicht
+// Walross: der mittelhelle, leicht bräunliche Körper; nicht die dunklen Konturen und Augen, nicht die hellen, farblosen
+// Stoßzähne und Barthaare (getestet 25.11.2026, docs/plan-eiswelt.md)
+const walrusBody = (v, s) => smooth(0.2, 0.3, v) * (1 - smooth(0.72, 0.8, v) * (1 - smooth(0.12, 0.2, s)));
 
 // Wie die Helligkeit auf die Farbskala kommt: wool = fest wie beim Schaf (1 = Grundwolle); sonst aus dem Standbild der
 // Vorlage gemessen (lo/hi: dunkelste bzw. hellste Fellpunkte, ohne die äußersten Ausreißer)
@@ -50,12 +120,14 @@ const SHEETS = {
   yak2: ['', '_walk', '_walk_back', '_idle', '_idle_back'],
   snake: ['', '_walk', '_walk_back', '_idle'],
   spider: ['', '_walk', '_walk_back'],
+  walrus: ['', '_walk', '_idle', '_idle_back', '_sleep', '_underwater'],
+  polarbear: ['', '_walk', '_walk_back', '_idle', '_idle_back', '_eat', '_sleep', '_wait'],
 };
 
 // Gruppen gleicher Umfärbung: Vorlage (from), Bilder, Maske, Messung und wie weit über die Lichtfarbe hinaus (tMax)
 const G = {
-  sheep: { from: 'sheep', sheets: SHEETS.sheep, mask: wool, range: 'wool', tMax: 1.2 },
-  ram: { from: 'sheep2', sheets: SHEETS.sheep, mask: wool, range: 'wool', tMax: 1.2 },
+  sheep: { from: 'sheep', sheets: SHEETS.sheep, mask: wool, face: true, range: 'wool', tMax: 1.2 },
+  ram: { from: 'sheep2', sheets: SHEETS.sheep, mask: wool, face: true, range: 'wool', tMax: 1.2 },
   cat: { from: 'cat', sheets: SHEETS.cat, mask: warm(14, 44), tMax: 1.15 },
   bellcat: { from: 'cat2', sheets: SHEETS.cat, mask: light, tMax: 1.15 },
   deer: { from: 'deer', sheets: SHEETS.deer, mask: fawn, tMax: 1.15 },
@@ -65,6 +137,10 @@ const G = {
   snake: { from: 'snake', sheets: SHEETS.snake, mask: warm(2, 42, 0.32, 0.13), tMax: 1.15 }, // auch die dunklen Orangetöne an den Bändern (sonst bleibt ein rotbrauner Saum)
   spider: { from: 'tarantula2', sheets: SHEETS.spider, mask: colored, tMax: 1.1, hiCut: 0.01, loCut: 0.02 },
   fur: { from: 'tarantula', sheets: SHEETS.spider, mask: allButEyes, tMax: 1.3, hiCut: 0.005, loCut: 0.02, anims: { walkDown: 'tarantula_walk', walkUp: 'tarantula_walk_back' } },
+  walrus: { from: 'walrus', sheets: SHEETS.walrus, mask: walrusBody, tMax: 1.15 },
+  // Eisbär: die Videos sind dunkler und grauer gemalt als das Standbild; mit dessen Helligkeit würde der laufende Bär
+  // braun, darum misst jedes Bild seine eigene (range 'sheet')
+  polarbear: { from: 'polarbear', sheets: SHEETS.polarbear, mask: light, range: 'sheet', tMax: 1.15 },
 };
 
 // Farbskalen [Schatten, Licht]
@@ -132,6 +208,14 @@ export const COATS = {
     { id: 'tarantula_fur_grey', g: G.fur, ramp: [[38, 38, 42], [150, 150, 156]], name: f('graue Vogelspinne', 'grey tarantula'), share: 1.2, baby: 0 },
     { id: 'tarantula_fur_blue', g: G.fur, ramp: [[20, 24, 48], [80, 100, 170]], name: f('kobaltblaue Vogelspinne', 'cobalt blue tarantula'), share: 0.8, baby: 0 },
   ],
+  // Eiswelt: seltene große Exemplare (big: so viel größer gezeichnet, siehe sizeK in Animal.js), 10 % wie andere seltene
+  // Varianten; Tierbabys sind nie groß. Walrosse werden wirklich rosa, wenn sie warm sind, alte Eisbären gelblich
+  walrus: [
+    { id: 'walrus2', g: G.walrus, ramp: [[132, 70, 64], [232, 160, 146]], name: f('großer rosa Walrossbulle', 'big pink walrus bull'), male: true, wild: 0.1, baby: 0, big: 1.25 },
+  ],
+  polarbear: [
+    { id: 'polarbear2', g: G.polarbear, ramp: [[176, 156, 116], [250, 238, 200]], name: f('großer alter Eisbär', 'big old polar bear'), male: true, wild: 0.1, baby: 0, big: 1.25 },
+  ],
 };
 const BY_ID = new Map(Object.values(COATS).flat().map((c) => [c.id, c]));
 export const isCoat = (id) => BY_ID.has(id);
@@ -163,10 +247,12 @@ function pixelsOf(textures, key) {
 
 // Helligkeitsbereich des Fells (aus dem Standbild der Vorlage, einmal je Gruppe)
 const ranges = new Map();
-function rangeOf(textures, g) {
+function rangeOf(textures, g, src) {
   if (g.range === 'wool') return [0.62 * WOOL_LUMA, WOOL_LUMA];
-  if (ranges.has(g)) return ranges.get(g);
-  const d = pixelsOf(textures, g.from).data.data;
+  const from = g.range === 'sheet' ? src : g.from; // 'sheet': jedes Bild misst seine eigene Helligkeit (Eisbär)
+  const id = g.range === 'sheet' ? from : g;
+  if (ranges.has(id)) return ranges.get(id);
+  const d = pixelsOf(textures, from).data.data;
   const vals = [];
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] < 200) continue;
@@ -177,17 +263,17 @@ function rangeOf(textures, g) {
   const lo = vals[Math.floor(vals.length * (g.loCut ?? 0.025))] ?? 0;
   const hi = Math.max(lo + 10, vals[Math.max(0, vals.length - 1 - Math.floor(vals.length * (g.hiCut ?? 0.01)))] ?? 255);
   const r = [lo, hi];
-  ranges.set(g, r);
+  ranges.set(id, r);
   return r;
 }
 
 // Bildpunkte (RGBA) ab Stelle i umfärben, bis die Zeit um ist (until, performance.now); gibt die nächste Stelle zurück
-function recolorPart(data, coat, [lo, hi], i, until) {
+function recolorPart(data, coat, [lo, hi], i, until, face) {
   const { mask, tMax } = coat.g;
   const [shade, light] = coat.ramp;
   for (let n = 0; i < data.length; i += 4) {
     if (++n % 2048 === 0 && performance.now() > until) return i;
-    if (!data[i + 3]) continue;
+    if (!data[i + 3] || face?.[i >> 2]) continue;
     const r = data[i], g = data[i + 1], b = data[i + 2];
     const [v, s, h] = hsv(r, g, b);
     const w = mask(v, s, h);
@@ -237,9 +323,22 @@ function pump() {
   const until = performance.now() + BUDGET_MS;
   while (jobs.length && performance.now() < until) {
     const job = jobs[0];
-    if (!job.data) Object.assign(job, pixelsOf(job.textures, job.src), { i: 0, range: job.coat.ramp ? rangeOf(job.textures, job.coat.g) : null });
+    if (!job.data) Object.assign(job, pixelsOf(job.textures, job.src), { i: 0, range: job.coat.ramp ? rangeOf(job.textures, job.coat.g, job.src) : null });
+    // erst die Gesichter finden (g.face), Bild für Bild des Spritesheets, auch das in Stücken
+    if (job.coat.ramp && job.coat.g.face && !job.faceDone) {
+      const { width, height } = job.data;
+      const fw = job.textures.get(job.src).get(0).width;
+      job.face ??= new Uint8Array(width * height);
+      job.fx ??= 0;
+      while (job.fx < width && performance.now() < until) {
+        markFace(job.data.data, width, job.fx, Math.min(fw, width - job.fx), height, job.face);
+        job.fx += fw;
+      }
+      if (job.fx < width) break;
+      job.faceDone = true;
+    }
     const len = job.data.data.length;
-    job.i = job.coat.ramp ? recolorPart(job.data.data, job.coat, job.range, job.i, until) : len;
+    job.i = job.coat.ramp ? recolorPart(job.data.data, job.coat, job.range, job.i, until, job.face) : len;
     if (job.i < len) break;
     jobs.shift();
     queued.delete(job.key);
