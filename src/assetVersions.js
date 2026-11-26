@@ -15,11 +15,20 @@ export function versioned(url) {
   return v ? `v/${v}/${p}` : url;
 }
 
+// Adresse (samt Stempel) je geladenem Schlüssel: daran erkennen die gespeicherten Fellfarben (animals/coats.js), ob ihre
+// Vorlage noch dieselbe ist
+const urls = new Map();
+export const urlOf = (key) => urls.get(key) ?? null;
+export const hasVersions = !!VERSIONS;
+
 export function versionLoaderUrls() {
-  if (!VERSIONS) return;
   const addFile = Phaser.Loader.LoaderPlugin.prototype.addFile;
   Phaser.Loader.LoaderPlugin.prototype.addFile = function (file) {
-    for (const item of Array.isArray(file) ? file : [file]) if (typeof item?.url === 'string') item.url = versioned(item.url);
+    for (const item of Array.isArray(file) ? file : [file]) {
+      if (typeof item?.url !== 'string') continue;
+      item.url = versioned(item.url);
+      urls.set(item.key, item.url);
+    }
     return addFile.call(this, file);
   };
 }

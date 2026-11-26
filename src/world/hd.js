@@ -36,7 +36,7 @@ export const HD = [
   'gate_door_office_x', 'gate_door_office_y', 'gate_glass_x', 'gate_glass_y', 'gate_glassflap_x', 'gate_glassflap_y', 'gate_net_x',
   'gate_net_y', 'gate_tall_x', 'gate_tall_y', 'gate_x', 'gate_y', 'hammock', 'hay_rack', 'hay_shelter', 'heliconia', 'hibiscus', 'leaf_bush', 'leaf_bush_bare', 'leaf_branch',
   'hotspring', 'hutroof_cathouse', 'hutroof_office', 'hutwall_cathouse_x', 'hutwall_cathouse_y', 'hutwall_office_x', 'hutwall_office_y',
-  'hand', 'lantern', 'lasso', 'net', 'rod', // Werkzeuge (Bilder von Andre, tools/replace-sprites.py)
+  'hand', 'lantern', 'lasso', 'net', 'rod', 'drum', 'ball', // Werkzeuge (Bilder von Andre, tools/replace-sprites.py)
   'icecream', 'icecream2', 'icecream3', 'icecream_stand', 'popcorn', 'lemonade', 'cottoncandy', 'pretzel', 'popcorn_stand', 'lemonade_stand', 'cottoncandy_stand', 'pretzel_stand', 'jgrass0', 'jgrass1', 'jgrass2', 'jgrass_rain0', 'jgrass_rain1', 'jgrass_rain2',
   'jungle_plant', 'jungle_tree', 'lion_rock', 'mesh_x', 'mesh_y', 'nest_box', 'net_x', 'net_y', 'office_armchair', 'office_chair',
   'office_desk', 'office_plant_monstera', 'office_plant_strelitzia', 'office_rug', 'office_sofa', 'office_table', 'park_path', 'parkfood',
@@ -88,6 +88,11 @@ export const HD = [
   'glasswall_x', 'glasswall_y', 'post_glasswall', 'gate_glassdoor_x', 'gate_glassdoor_y', 'glasslow_x', 'glasslow_y', 'post_glasslow', 'gate_glasslow_x', 'gate_glasslow_y', // Glasfassade der Polarhalle (tools/glass-facade.py)
   'stairs_ice', 'seat_stone_ice', // Treppe und Sitzsteine (Tierpark, Eiswelt; tools/polar-stairs.py, tools/stone-seat-ice.py)
 ];
+
+// Bild für die Menüs (HTML, z. B. Werkzeugkiste, Aktionsknopf): die halb große Fassung aus hd2/, falls es eine gibt –
+// das kleine Bild ist dort zu unscharf (der Ball hat nur 32 Pixel)
+const HD_SET = new Set(HD);
+export const uiImg = (key) => `assets/${HD_SET.has(key) ? 'hd2/' : ''}${key}.png`;
 
 // sehr große Bilder (Dächer, Gebäude) sind nur 2- bzw. 1-mal so groß, sonst zu viel Speicher
 const SCALE = { hutroof_cathouse: 2, hutroof_office: 2, hutroof_savanna: 2, hutroof_asia: 2, hutroof_jungle: 2, hutroof_ice: 2, aquarium_facade: 1, reptile_facade: 1, savanna_grave_patch: 2, savanna_grave_patch_soft: 2 };

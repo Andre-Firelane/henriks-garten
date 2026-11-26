@@ -15,6 +15,7 @@ Mehr Möglichkeiten, Herzen auszugeben, ohne Inhalte zu sperren: Reittiere sind 
   - Esel (Wiese), Pferd (Wald), Elefant (Savanne), Wasserbüffel (Bambuswald), Maultier (Dschungel), Seabob (Riff),
     Hundeschlitten (Eiswelt, auch auf den Eis-Expeditionen). Bild aus Sprites/Hundeschlitten.webp mit
     tools/dogsled-cut.py: Fußpunkt unter Henrik statt mittig (die Hunde laufen voraus), Schatten im Bild, keine Schritte.
+    Animationen aus den Videos mit tools/dogsled-anim.py (Laufen vorne 12, hinten 20 Bilder; Stehen je 8, vor und zurück).
   - Hat man das Reittier eines Gebiets gekauft, kommt dort die Kisten-Karte „Reittier“ nicht mehr.
 - **E-Roller**: 300 Herzen, einmal freischalten. Er steht wie bisher vor dem Haupthaus; vorher öffnet die Aktionstaste
   am Roller den Reiter Reittiere. Gilt auch für ältere Spielstände (es gibt noch keine feste Spielerschaft).
@@ -38,7 +39,6 @@ Mehr Möglichkeiten, Herzen auszugeben, ohne Inhalte zu sperren: Reittiere sind 
 ## Offen
 
 - Stall-Bild (statt Schild), evtl. mit den gekauften Tieren davor.
-- Hundeschlitten: Lauf-Animation (bisher Standbild).
 - **Entschieden (2026-11-24): Aufsitzen am Ankunftsort.** Das gekaufte Reittier steht beim Betreten des Gebiets am
   Ankunftsort (Auto bzw. Spawnpunkt) bereit, man steigt mit der Aktionstaste auf. Einmal aufgestiegen, kann man im
   Gebiet nicht mehr absteigen (bis man es verlässt). Dafür liefert Andre Idle-Animationen der Reittiere ohne Reiter;

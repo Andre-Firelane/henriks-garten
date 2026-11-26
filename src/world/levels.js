@@ -122,9 +122,9 @@ const ICE_ROWS = [
   '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...~~~~~~~',
   '~~~~..........~~~~~~~~~~~~~~~~~~~~~......~~~~~',
   '~~~.............~~~~~~~~~~~~~~........ê...~~~~',
-  '~~~...ê...Ê.ê.ê.~~~~~~~~~~~~~~...Ê.ê......~~~~',
+  '~~~Ɵ..ê...Ê.ê.ê.~~~~~~~~~~~~~~...Ê.ê.....Ɵ~~~~',
   '~~~.....e.......~~~~~~~~~~~~~~.ê.....e.ê..~~~~',
-  '~~~~..Ê......ê..~~~~~~~~~~~~~~............~~~~',
+  '~~~~Ȟ.Ê......ê..~~~~~~~~~~~~~~...........Ȟ~~~~',
   '~~~~~....#.....~~~~~~~~~~~~~~~~.....#....~~~~~',
   '~~~~~....#...~~~~~~~~~~~~~~~~~~.....#.Ê..~~~~~',
   '~~~~~~...#...~~~~~~~~~~~~~~~~~~~~...#....~~~~~',
@@ -133,15 +133,15 @@ const ICE_ROWS = [
   '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
   '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~',
-  '~~~...~.~#........~..~......~...~..~#..~..~~~~',
+  '~~~Ɵ.Ȟ~.~#........~..~......~...~..~#..~..~~~~',
   '~~~......############################......~~~',
   '~~~.ê.ê............MMMMM#..............ê...~~~',
   '~~~................NɃ,,N#..................~~~',
   '~~~....Ê....Ê..ê...Nɓ,,G#...................~~~',
-  '~~~................MMMMM#..................~~~',
+  '~~~................MMMMM#.................Ɵ~~~',
   '~~~..................c..#...............ê..~~~',
   '~~~.....................#....ê.............~~~',
-  '~~~.....................#.Ê.........ê......~~~',
+  '~~~.....................#.Ê.........ê.....Ȟ~~~',
   '~~~.......###############..................~~~',
   '~~~..ê....#.........................ê......~~~',
   '~~~.......#..................ê.Ê...........~~~',
@@ -152,7 +152,7 @@ const ICE_ROWS = [
   'ÊÊ........#.............~~~~~~~Ɵ~~~~Ȟ~~~~~~~~~',
   'ȒȒ........#............Ê~~~~~~~~~~~~~~~~~~~~~~',
   'ÊÊ........#............Ê.~~~~~~~~...~~~~~~~~~~',
-  'ê.........#.................Ȟ.......Ɵ....Ȟ...Ȓ',
+  'ê.........#.................Ȟ.......Ɵ....Ȟ....',
   'Ȓ.........#..................................Ȓ',
   'ȒȒ........#.....................#...........ṖÊ',
   'ÊȒ........#....ȓ.....Ȓ..........#.e.......ȓ..Ê',
@@ -178,18 +178,23 @@ const ICE_ROWS = [
   'Ṗ...Ṗ......Ṗ.....Ṗ.ṖṖ...Ṗ..........Ṗ.Ṗ......ȒṖ',
   'Ê....Ṗ.Ṗ..ṖṖṖṖ..Ṗ.....ṖṖ.Ṗ.ṖṖ.......Ṗ.ṖṖ...Ṗ.Ṗ',
   'ȒṖ..ṖṖṖṖ.....Ṗ..ṖṖṖṖ..ṖṖṖ.ṖṖṖ.......ṖṖ.Ṗ.ṖṖ..Ṗ',
-  'ṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖ',
-  'ṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖ',
+  'ṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖ...ṖṖṖṖṖṖṖṖṖṖṖṖ',
+  'ṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖṖ.ṖṖṖṖṖṖṖṖṖṖṖṖṖ',
 ];
 
 // Nacht in der Eiswelt: das Meer zwischen Festland und Inseln friert zu (man läuft hinüber); nur das offene Meer am
 // Kartenrand (open Kacheln breit) und ein paar kleine Eislöcher (holes: [tx, ty] oben links, je 2 x 2 Kacheln) bleiben
-// Wasser – an denen tummeln sich nachts die Pinguine
-function freezeSea(rows, open, holes) {
+// Wasser – an denen tummeln sich nachts die Pinguine. lanes: Streifen, die auch im offenen Meer am Rand zufrieren
+// ({ tx0, tx1, ty0, ty1 }, z. B. der Weg von Insel B zum Durchgang oben)
+function freezeSea(rows, open, holes, lanes = []) {
   const h = rows.length;
   const hole = (x, y) => holes.some(([hx, hy]) => x >= hx && x <= hx + 1 && y >= hy && y <= hy + 1);
-  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && x >= open && y >= open && x < r.length - open && y < h - open && !hole(x, y) ? 'ɨ' : c)).join(''));
+  const lane = (x, y) => lanes.some((l) => x >= l.tx0 && x <= l.tx1 && y >= l.ty0 && y <= l.ty1);
+  const inner = (x, y, w) => x >= open && y >= open && x < w - open && y < h - open;
+  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && (inner(x, y, r.length) || lane(x, y)) && !hole(x, y) ? 'ɨ' : c)).join(''));
 }
+// nachts zugefrorener Weg von Insel B (oben rechts) übers offene Meer zum Durchgang am oberen Rand
+const ICE_SEA_LANE = { tx0: 36, tx1: 38, ty0: 0, ty1: 2 };
 // Eislöcher: in den Meeresarmen und im Fjord, abseits der Fähr-Bahnen (dort geht man nachts hinüber); daneben bleiben immer
 // mindestens zwei Kacheln Eis zum Vorbeigehen
 const ICE_HOLES = [[22, 6], [14, 14], [27, 14], [26, 32], [38, 32]]; // zwischen den Inseln, in den Meeresarmen, im Fjord
@@ -722,10 +727,21 @@ export const LEVELS = {
     stepSound: 'step_snow', // Schritte knirschen im Schnee (drinnen wie überall auf dem Flur)
     background: '#1f4f73',
     toolSpots: [],
-    exits: [], // hin und zurück nur mit dem Schneemobil
+    // Durchgänge in kleine Maps aus dem Expeditions-Baukasten (siehe sideMaps.js; Tag oder Nacht wie auf der großen Karte):
+    // unten durch die Tannen in die Tundra, rechts am Südufer der Fjordmündung an die Küste, oben übers offene Meer
+    // aufs Packeis (tagsüber mit der Scholle von Insel B, nachts zu Fuß über den zugefrorenen Streifen ICE_SEA_LANE);
+    // sonst nur mit dem Schneemobil
+    exits: [
+      { tx: 32, ty: 63, to: '@side', passage: 'south', back: { tx: 32, ty: 61 }, maps: ['ix_tundra', 'ix_creek', 'ix_taiga'], label: tr('Tiefer in die Tundra', 'Deeper into the tundra') },
+      { tx: 45, ty: 36, to: '@side', passage: 'east', back: { tx: 44, ty: 36 }, maps: ['ix_fjord', 'ix_birdcliff', 'ix_glacier'], label: tr('Die Küste entlang', 'Along the coast') },
+      ...[36, 37, 38].map((tx) => ({ tx, ty: 0, to: '@side', passage: 'north', back: { tx: 37, ty: 3 }, maps: ['ix_packice', 'ix_walrus', 'ix_skerries'], label: tr('Hinaus aufs Packeis', 'Out onto the pack ice') })),
+    ],
     snow: true, // es rieselt immer leicht Schnee (siehe Weather.js)
     // auf den beiden Inseln liegt fast immer mindestens ein Walross am Ufer (siehe updateIslands in IceCatch.js)
     walrusIslands: [{ tx0: 3, tx1: 16, ty0: 4, ty1: 12 }, { tx0: 30, tx1: 42, ty0: 3, ty1: 12 }],
+    // Papageitaucher-Zug (Event, docs/plan-papageitaucher.md): Felsformationen am Rand, auf denen die Schwärme landen
+    // (immer da, ohne Event leer): Westspitze Insel A, Nordwestecke und Ostküste des Festlands, Ostspitze Insel B
+    puffinRocks: [[[3, 6], [4, 8]], [[3, 17], [5, 17]], [[41, 6], [41, 8]], [[42, 22], [42, 25]]],
     // Bodenzonen: Gletscher, Tundra (unten und links am Gletscher vorbei) und die Kiesstrände der Walrosse (Westküste am offenen Meer und
     // am Südufer von Insel B); Platzhalter-Bilder aus tools/ice-grounds.py und tools/ice-placeholders2.py
     grounds: [
@@ -736,7 +752,7 @@ export const LEVELS = {
       { area: { tx0: 30, tx1: 41, ty0: 10, ty1: 12 }, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 },
     ],
     // Pinguine watscheln in Gruppen am Wasser (siehe Penguin.js); nachts am offenen Meer am Kartenrand und an den Eislöchern.
-    spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.7, arcticfox: 0.3, reindeer: 0.5, walrus: 0.45, puffin: 0.6 } }, // Robben schwimmen am Ufer (siehe Seal.js), Schneehasen vor allem in der Tundra
+    spawn: { population: 9, weights: { penguin: 1, seal: 0.6, snowhare: 0.7, arcticfox: 0.3, reindeer: 0.5, walrus: 0.45, puffin: 0.1 } }, // (Papageitaucher sehr selten: sie kommen vor allem beim Papageitaucher-Zug) Robben schwimmen am Ufer (siehe Seal.js), Schneehasen vor allem in der Tundra
     // Eisschollen (siehe Floes.js), Lage in Kacheln. ferries: tragen Henrik zwischen Festland (from) und Insel (to) hin
     // und her und liegen an beiden Ufern wait Sekunden an (travel: Sekunden für die Fahrt, shift: Versatz im Takt);
     // drift: kleine Schollen zur Zierde, die langsam über das offene Meer am Rand treiben (period: Sekunden hin und zurück)
@@ -747,6 +763,7 @@ export const LEVELS = {
       ferries: [
         { from: [9, 16], to: [9, 13], shift: 0 }, // Insel A (links)
         { from: [36, 16], to: [36, 12], shift: 6 }, // Insel B (rechts)
+        { from: [37, 2.1], to: [37, 0.3], shift: 3 }, // von Insel B hinaus zum Durchgang am oberen Rand (dort liegt sie im Durchgang an)
       ],
       drift: [
         { from: [1, 17], to: [1, 28], r: 0.55, period: 110 },
@@ -758,7 +775,7 @@ export const LEVELS = {
     seasons: {
       day: {},
       night: {
-        rows: freezeSea(ICE_ROWS, 3, ICE_HOLES),
+        rows: freezeSea(ICE_ROWS, 3, ICE_HOLES, [ICE_SEA_LANE]),
         iceHoles: ICE_HOLES, // dort erscheinen die Pinguine nachts meistens
         // nachts ruft die Schneeeule: immer genau eine, oben in einer Tanne (nicht über spawn, siehe updateOwl in IceCatch.js)
         // Schneehase und Rentier nur tagsüber (Ausgleich für Schneeeule und Eisbär, die es nur nachts gibt)
@@ -1193,12 +1210,12 @@ const PARK_PENS = [
       // Brüllaffen leben frei darin (open, wie im Wildpark). canopy: diese Arten bleiben oben in den Urwaldbäumen (die
       // Brüllaffen, eine zweite Gruppe neben der auf der Affeninsel). zones: Lieblingsorte (Tapire am Teich unter dem
       // Wasserfall, Okapis oben links, Ameisenbären unten links). mist: hier läuft der Sprühnebel (siehe JungleHall.js)
-      { id: 'junglehall', name: tr('Tropenhalle', 'Tropical Hall'), species: ['macaw', 'toucan', 'anteater', 'tapir', 'okapi', 'howler'],
+      { id: 'junglehall', name: tr('Tropenhalle', 'Tropical Hall'), species: ['macaw', 'toucan', 'anteater', 'tapir', 'okapi', 'howler', 'dartfrog'],
         open: true, visitors: true, gate: 'curtain', gateTiles: [{ tx: 60, ty: 71 }, { tx: 60, ty: 72 }, { tx: 60, ty: 84 }], canopy: ['howler'],
         toysAt: [{ tx: 64, ty: 89 }, { tx: 70, ty: 93 }, { tx: 78, ty: 74 }, { tx: 83, ty: 71 }, { tx: 74, ty: 68 }], // siehe PEN_TOYS
         zones: { tapir: { tx: 80, ty: 69, r: 5 }, okapi: { tx: 65, ty: 66, r: 6 }, anteater: { tx: 66, ty: 90, r: 7 } },
         world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 63, ty: 75 },
-        quota: { macaw: [9, 9], toucan: [6, 6], anteater: [5, 5], tapir: [4, 4], okapi: [4, 4], howler: [5, 5] } },
+        quota: { macaw: [9, 9], toucan: [6, 6], anteater: [5, 5], tapir: [4, 4], okapi: [4, 4], howler: [5, 5], dartfrog: [12, 12] } }, // Pfeilgiftfrösche (Leuchtnacht) krabbeln frei durch die ganze Halle
       // Jaguar hinter Glas unten rechts in der Halle (Glastür am Steg)
       { id: 'jaguars', name: tr('Jaguar-Gehege', 'Jaguar Enclosure'), species: ['jaguar'], gate: 'glass', world: 'jungle', ground: ['jgrass0', 'jgrass1', 'jgrass2'], seed: { tx: 86, ty: 90 }, slots: [4, 4] },
       // Terrarien und Piranha-Becken am unteren Steg (Glaskästen wie früher im Reptilienhaus, buildings beim Abschnitt)

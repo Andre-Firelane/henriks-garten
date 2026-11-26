@@ -7,6 +7,7 @@
 // des Spiels; vorab nur das kleine Bild für Tierbuch und Meldungen (makeCoatIcons). Plan und Seltenheitstabellen: docs/plan-sammeln.md
 import { tr } from '../i18n.js';
 import { registerAnimalIcon } from '../ui/icons.js';
+import { hasVersions, urlOf } from '../assetVersions.js';
 
 const smooth = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -105,6 +106,9 @@ const colored = (v, s) => smooth(0.3, 0.45, s) * smooth(0.3, 0.45, v); // alles 
 const allButEyes = (v, s) => (s > 0.45 && v > 0.24 ? 0 : 1); // die pelzige Vogelspinne ganz, nur farbige Augen nicht
 // Walross: der mittelhelle, leicht bräunliche Körper; nicht die dunklen Konturen und Augen, nicht die hellen, farblosen
 // Stoßzähne und Barthaare (getestet 25.11.2026, docs/plan-eiswelt.md)
+// Pfeilgiftfrosch: alles Kräftige (Körper samt dunkler Flecken und Kontur), nur die weißen Lichtpunkte in den Augen nicht;
+// die Skala geht von fast schwarz bis zur Leuchtfarbe, so werden die Flecken schwarz und der Körper bunt (getestet 26.11.2026)
+const frogSkin = (v, s) => smooth(0.2, 0.35, s);
 const walrusBody = (v, s) => smooth(0.2, 0.3, v) * (1 - smooth(0.72, 0.8, v) * (1 - smooth(0.12, 0.2, s)));
 
 // Wie die Helligkeit auf die Farbskala kommt: wool = fest wie beim Schaf (1 = Grundwolle); sonst aus dem Standbild der
@@ -121,6 +125,7 @@ const SHEETS = {
   snake: ['', '_walk', '_walk_back', '_idle'],
   spider: ['', '_walk', '_walk_back'],
   walrus: ['', '_walk', '_idle', '_idle_back', '_sleep', '_underwater'],
+  dartfrog: ['', '_walk', '_walk_back', '_idle', '_idle_back'],
   polarbear: ['', '_walk', '_walk_back', '_idle', '_idle_back', '_eat', '_sleep', '_wait'],
 };
 
@@ -140,6 +145,7 @@ const G = {
   walrus: { from: 'walrus', sheets: SHEETS.walrus, mask: walrusBody, tMax: 1.15 },
   // Eisbär: die Videos sind dunkler und grauer gemalt als das Standbild; mit dessen Helligkeit würde der laufende Bär
   // braun, darum misst jedes Bild seine eigene (range 'sheet')
+  dartfrog: { from: 'dartfrog', sheets: SHEETS.dartfrog, mask: frogSkin, tMax: 1.15 },
   polarbear: { from: 'polarbear', sheets: SHEETS.polarbear, mask: light, range: 'sheet', tMax: 1.15 },
 };
 
@@ -208,10 +214,17 @@ export const COATS = {
     { id: 'tarantula_fur_grey', g: G.fur, ramp: [[38, 38, 42], [150, 150, 156]], name: f('graue Vogelspinne', 'grey tarantula'), share: 1.2, baby: 0 },
     { id: 'tarantula_fur_blue', g: G.fur, ramp: [[20, 24, 48], [80, 100, 170]], name: f('kobaltblaue Vogelspinne', 'cobalt blue tarantula'), share: 0.8, baby: 0 },
   ],
+  // Pfeilgiftfrosch (Leuchtnacht): alles echte Farben von Pfeilgiftfröschen; das Grundbild ist blau (kind.baseShare 30)
+  dartfrog: [
+    { id: 'dartfrog_yellow', g: G.dartfrog, ramp: [[24, 20, 10], [255, 226, 60]], name: f('gelber Pfeilgiftfrosch', 'yellow poison dart frog'), share: 25, baby: 0, common: true },
+    { id: 'dartfrog_green', g: G.dartfrog, ramp: [[10, 30, 18], [120, 236, 120]], name: f('grüner Pfeilgiftfrosch', 'green poison dart frog'), share: 20, baby: 0, common: true },
+    { id: 'dartfrog_orange', g: G.dartfrog, ramp: [[40, 14, 4], [255, 150, 40]], name: f('orangener Pfeilgiftfrosch', 'orange poison dart frog'), share: 15, baby: 0, common: true },
+    { id: 'dartfrog_red', g: G.dartfrog, ramp: [[40, 6, 8], [255, 80, 56]], name: f('Erdbeerfröschchen', 'strawberry poison frog'), share: 10, baby: 0 },
+  ],
   // Eiswelt: seltene große Exemplare (big: so viel größer gezeichnet, siehe sizeK in Animal.js), 10 % wie andere seltene
   // Varianten; Tierbabys sind nie groß. Walrosse werden wirklich rosa, wenn sie warm sind, alte Eisbären gelblich
   walrus: [
-    { id: 'walrus2', g: G.walrus, ramp: [[132, 70, 64], [232, 160, 146]], name: f('großer rosa Walrossbulle', 'big pink walrus bull'), male: true, wild: 0.1, baby: 0, big: 1.25 },
+    { id: 'walrus2', g: G.walrus, ramp: [[132, 70, 64], [232, 160, 146]], name: f('rosa Walrossbulle', 'pink walrus bull'), male: true, wild: 0.1, baby: 0 },
   ],
   polarbear: [
     { id: 'polarbear2', g: G.polarbear, ramp: [[176, 156, 116], [250, 238, 200]], name: f('großer alter Eisbär', 'big old polar bear'), male: true, wild: 0.1, baby: 0, big: 1.25 },
@@ -313,16 +326,21 @@ function enqueue(job) {
     jobs.splice(firstIcon < 0 ? jobs.length : firstIcon, 0, job);
     pending.set(job.coat.id, (pending.get(job.coat.id) ?? 0) + 1);
   }
-  if (!pumping) {
-    pumping = true;
-    nextFrame();
-  }
+  job.ver = CACHE_ON ? versionOf(job) : null;
+  job.cache = job.ver ? 'lookup' : 'miss';
+  if (job.ver) lookup(job);
+  kick();
+}
+
+function kick() {
+  if (pumping || !jobs.some((j) => j.cache === 'miss')) return;
+  pumping = true;
+  nextFrame();
 }
 
 function pump() {
   const until = performance.now() + BUDGET_MS;
-  while (jobs.length && performance.now() < until) {
-    const job = jobs[0];
+  for (let job; (job = jobs.find((j) => j.cache === 'miss')) && performance.now() < until; ) {
     if (!job.data) Object.assign(job, pixelsOf(job.textures, job.src), { i: 0, range: job.coat.ramp ? rangeOf(job.textures, job.coat.g, job.src) : null });
     // erst die Gesichter finden (g.face), Bild für Bild des Spritesheets, auch das in Stücken
     if (job.coat.ramp && job.coat.g.face && !job.faceDone) {
@@ -340,30 +358,114 @@ function pump() {
     const len = job.data.data.length;
     job.i = job.coat.ramp ? recolorPart(job.data.data, job.coat, job.range, job.i, until, job.face) : len;
     if (job.i < len) break;
-    jobs.shift();
+    jobs.splice(jobs.indexOf(job), 1);
     queued.delete(job.key);
     finish(job);
   }
-  if (jobs.length) nextFrame();
-  else pumping = false;
+  if (jobs.some((j) => j.cache === 'miss')) nextFrame();
+  else pumping = false; // (noch nachschauende Aufträge stoßen die Warteschlange wieder an, falls nichts gespeichert ist)
 }
 
 function finish(job) {
-  const { textures, anims, coat, src, key, canvas, ctx, data } = job;
+  const { textures, coat, src, key, canvas, ctx, data } = job;
   if (coat.ramp) ctx.putImageData(data, 0, 0);
   const frame = textures.get(src).get(0);
-  if (job.icon) {
-    // als PNG verpacken läuft im Hintergrund (toBlob), nicht im Spiel
-    canvas.toBlob((blob) => blob && registerAnimalIcon(coat.id, URL.createObjectURL(blob), frame.width, frame.height, Math.round(canvas.width / frame.width)));
-    return;
+  // als PNG verpacken läuft im Hintergrund (toBlob), nicht im Spiel; fürs nächste Mal auf dem Gerät speichern
+  if (job.icon || job.ver) {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      if (job.ver) cachePut(key, { ver: job.ver, blob, w: canvas.width });
+      if (job.icon) registerAnimalIcon(coat.id, URL.createObjectURL(blob), frame.width, frame.height, Math.round(canvas.width / frame.width));
+    });
   }
+  if (job.icon) return;
+  canvas.lazyGpu = true;
+  addSheet(job, canvas);
+}
+
+// fertiges Bild einer Fellfarbe (umgefärbt oder aus dem Speicher) als Spritesheet samt Animation anlegen
+function addSheet(job, source) {
+  const { textures, anims, coat, src, key } = job;
+  const frame = textures.get(src).get(0);
   pending.set(coat.id, pending.get(coat.id) - 1);
   if (textures.exists(key)) return;
-  canvas.lazyGpu = true;
-  const tex = textures.addSpriteSheet(key, canvas, { frameWidth: frame.width, frameHeight: frame.height });
+  const tex = textures.addSpriteSheet(key, source, { frameWidth: frame.width, frameHeight: frame.height });
   Object.assign(tex.customData, textures.get(src).customData);
   const anim = anims.get(src);
   if (anim && !anims.exists(key)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: anim.frameRate, repeat: anim.repeat, yoyo: anim.yoyo });
+}
+
+// ---- Fertige Fellfarben auf dem Gerät speichern ----
+// Umfärben kostet am Tablet bei einem vollen Tierpark über eine Minute (zusammen mit dem Nachladen ruckelte es so nach jedem
+// Start). Darum kommt jedes fertige Bild als PNG in die IndexedDB des Browsers, beim nächsten Start von dort (das Auspacken
+// macht der Browser nebenher, createImageBitmap). Erkennungszeichen (ver): Adresse der Vorlage samt Prüfsumme (assetVersions.js),
+// Farbskala, Maske und der Programmtext des Umfärbens; ändert sich davon etwas, wird neu umgefärbt und überschrieben (je
+// Bild nur ein Eintrag). Beim Entwickeln (vite dev, Adressen ohne Prüfsumme) aus, außer mit ?coatcache
+const CACHE_ON = hasVersions || /[?&]coatcache/.test(location.search);
+const COAT_CACHE = 1; // hochzählen, wenn sich am Umfärben etwas ändert, das unten nicht erfasst ist (z. B. Zahlen in warm(…))
+const hashStr = (str) => {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return (h >>> 0).toString(36) + str.length.toString(36);
+};
+let code = null;
+function versionOf(job) {
+  const g = job.coat.g;
+  const url = urlOf(job.src);
+  if (!url || typeof indexedDB === 'undefined' || typeof createImageBitmap === 'undefined') return null;
+  code ??= [COAT_CACHE, WOOL_LUMA, smooth, luma, hsv, pixelsOf, rangeOf, recolorPart, markFace].map(String).join('|');
+  return hashStr([code, url, urlOf(g.from), String(g.mask), JSON.stringify(job.coat.ramp), g.tMax, g.loCut, g.hiCut, g.range, !!g.face].join('|'));
+}
+
+let dbOpen = null;
+function db() {
+  dbOpen ??= new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('my-little-zoo-coats', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('sheets');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = req.onblocked = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+  return dbOpen;
+}
+async function cacheGet(key) {
+  const d = await db();
+  if (!d) return null;
+  return new Promise((resolve) => {
+    try {
+      const req = d.transaction('sheets').objectStore('sheets').get(key);
+      req.onsuccess = () => resolve(req.result ?? null);
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+async function cachePut(key, value) {
+  const d = await db();
+  try {
+    d?.transaction('sheets', 'readwrite').objectStore('sheets').put(value, key);
+  } catch {}
+}
+
+// gespeichertes Bild nachschauen: da und passend: gleich fertig; sonst wird umgefärbt (cache 'miss')
+async function lookup(job) {
+  const rec = await cacheGet(job.key);
+  if (rec?.ver === job.ver && rec.blob) {
+    try {
+      const frame = job.textures.get(job.src).get(0);
+      if (job.icon) registerAnimalIcon(job.coat.id, URL.createObjectURL(rec.blob), frame.width, frame.height, Math.round(rec.w / frame.width));
+      else addSheet(job, await createImageBitmap(rec.blob));
+      jobs.splice(jobs.indexOf(job), 1);
+      queued.delete(job.key);
+      return;
+    } catch {}
+  }
+  job.cache = 'miss';
+  kick();
 }
 
 // alle Bilder einer Fellfarbe in die Warteschlange (sobald ein Tier sie bekommt; jedes Bild nur einmal). Die Animationen

@@ -255,11 +255,17 @@ export default class Seal extends Animal {
     return this.texSkin ? `${this.texSkin}_water` : 'seal';
   }
 
+  // Wipp-Animation aufgetaucht: seal_swim_idle, bei der Sattelrobbe seal2_swim_idle
+  peekAnim() {
+    return this.texSkin ? `${this.texSkin}_swim_idle` : PEEK_ANIM;
+  }
+
   waterLook() {
     const s = this.sprite;
-    const peek = this.mode === 'peek' && !this.texSkin && this.scene.anims.exists(PEEK_ANIM); // Sattelrobbe: noch ohne Wipp-Animation
+    const anim = this.peekAnim();
+    const peek = this.mode === 'peek' && this.scene.anims.exists(anim);
     if (peek) {
-      if (s.anims.currentAnim?.key !== PEEK_ANIM || !s.anims.isPlaying) s.play(PEEK_ANIM);
+      if (s.anims.currentAnim?.key !== anim || !s.anims.isPlaying) s.play(anim);
       s.setFlipX(this.faceX < 0);
     } else {
       s.stop();
@@ -276,7 +282,7 @@ export default class Seal extends Animal {
     else {
       // an Land: von den Wasserbildern zurück auf die liegende Robbe (robben übernimmt Animal.render)
       const key = this.sprite.texture.key;
-      if (key === this.waterTexture() || key === PEEK_ANIM) this.sprite.stop().setFlipX(false).setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
+      if (key === this.waterTexture() || key === this.peekAnim()) this.sprite.stop().setFlipX(false).setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
       if (this.sprite.isCropped) this.sprite.setCrop();
       super.render(moving);
     }

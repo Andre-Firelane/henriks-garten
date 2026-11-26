@@ -46,6 +46,7 @@ const WORDS = {
   yak: ['einen Yak', 'Ein Yak', 'a yak'],
   tanuki: ['einen Tanuki', 'Ein Tanuki', 'a tanuki'],
   redpanda: ['einen Roten Panda', 'Ein Roter Panda', 'a red panda'],
+  dartfrog: ['einen Pfeilgiftfrosch', 'Ein Pfeilgiftfrosch', 'a poison dart frog'],
   gnu: ['ein Gnu', 'Ein Gnu', 'a wildebeest'],
   wolf: ['einen Wolf', 'Ein Wolf', 'a wolf'],
   jellyfish: ['eine Qualle', 'Eine Qualle', 'a jellyfish'],

@@ -109,6 +109,7 @@ Event-Karte: **Orcas** (offenes Meer, siehe unten).
 - **Orcas ziehen vorbei** (Eiswelt und Event-Karte der Expedition): Eine Orca-Gruppe schwimmt durchs offene Meer am
   Rand, die Robben retten sich auf Schollen. Es ist nur zum Anschauen, die Orcas sind nicht fangbar, eventuell
   bekommen sie einen Eintrag im Tierbuch.
+- **Papageitaucher-Zug** (abgestimmt 26.11.2026): siehe docs/plan-papageitaucher.md.
 - Weitere Ideen, noch nicht abgestimmt: Polarlicht-Nacht (stärkeres Polarlicht, Tiere zeigen sich öfter), große
   Rentierwanderung über das Eis, Rückkehr der Papageitaucher am Morgen.
 
@@ -342,7 +343,7 @@ Streuung der Größe und keine Gewichtsangabe. Groß kommt mit etwa **10 %** vor
 - **Großer Eisbär:** Ring und Uhr beim Fressen sind um sizeK größer bzw. höher (PolarBear.keepAway).
 - **Polarhase:** snowhare2 mit den Bildern des Schneehasen (tex: 'snowhare'); animSet nimmt dann die Animationen der Art.
   Langsamer hoppeln: nicht gebaut.
-- Namen: großer rosa Walrossbulle, großer alter Eisbär, Polarhase, weißes Rentier. Besucher-Anziehung in visitors.js.
+- Namen: rosa Walrossbulle (seit 26.11.2026 normal groß, nur rosa), großer alter Eisbär, Polarhase, weißes Rentier. Besucher-Anziehung in visitors.js.
 - Kisten-Karte: keine eigenen großen Kartenbilder nötig (Andre, 25.11.2026). Eisbär und Walross erkennt man an der
   Farbe, beim Polarhasen reicht der Name auf der Karte.
 

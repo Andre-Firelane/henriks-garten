@@ -1,7 +1,7 @@
 """Symbole der Boni (Kisten-Karten, Meldungen, Anzeige oben links): public/assets/bonus_<id>.png, SIZE × SIZE Pixel,
 zusammengesetzt aus Bildern, die es im Spiel schon gibt (Tiere, Reittier, Kescher, Lasso, Hochstand, Jeep mit Anhänger), die Trommel aus
 Expeditions-Sprites/Trommel.png; Herzen und Fernglas sind gezeichnet. Wie die Glücksbringer-Bilder (tools/charm-icons.py) – nur die Teile, ohne Hintergrund.
-Aufruf: python tools/bonus-icons.py   (danach python tools/make-webp.py . für Handy und Tablet)"""
+Aufruf: python tools/bonus-icons.py [Namen …]   (danach python tools/make-webp.py . für Handy und Tablet)"""
 from PIL import Image, ImageDraw
 
 SIZE = 128
@@ -52,8 +52,8 @@ def more_animals():
 def tools_everywhere():
     # Kescher und Lasso nebeneinander (Bonus der Erkundung)
     c = canvas()
-    place(c, fit(trimmed('net.png'), (70, 110)), 42, 120)
-    place(c, fit(trimmed('lasso.png'), (70, 80)), 88, 118)
+    place(c, fit(trimmed('hd/net.png'), (70, 110)), 42, 120) # große Fassungen: Andres Werkzeug-Bilder
+    place(c, fit(trimmed('hd/lasso.png'), (70, 80)), 88, 118)
     return c
 
 
@@ -99,13 +99,17 @@ ICONS = {
     'ride': lambda: single('ride_meadow.png', (160, 230, 0)),
     'toolsEverywhere': tools_everywhere, # nur Erkundung
     'stands': lambda: single('forest_stand.png'), # nur Erkundung
-    'binoculars': binoculars,
+    'binoculars': binoculars, # inzwischen Andres Bild (Sprites/Andre, tools/replace-sprites.py): nicht neu erzeugen
     'bigWagon': lambda: single('car_zoo.png', (240, 140, 0)),
-    'bigCatch': lambda: single('lasso.png'),
-    'heartRain': heart_rain,
+    'bigCatch': lambda: single('hd/lasso.png'),
+    'heartRain': heart_rain, # ebenso
     'eventCall': lambda: single('/Expeditions-Sprites/Trommel.png'), # gemalte Trommel
 }
 
+# optional: nur diese Symbole neu machen, z. B. python tools/bonus-icons.py bigCatch toolsEverywhere
+import sys
 for name, make in ICONS.items():
+    if sys.argv[1:] and name not in sys.argv[1:]:
+        continue
     make().save(f'{A}/bonus_{name}.png')
     print('bonus_' + name)

@@ -135,6 +135,7 @@ export default class IceCatch {
       return;
     }
     if (scene.expMap && !scene.expWants('snowowl')) return; // Expedition: nur, solange sie auf der Tierliste steht
+    if (LEVEL.side && !LEVEL.features?.includes('taiga')) return; // hinter einem Durchgang: nur auf Maps mit Tannenwald
     this.owlEmptyFor = (this.owlEmptyFor ?? OWL_REFILL) + dt;
     if (this.owlEmptyFor < OWL_REFILL) return;
     const p = scene.player;

@@ -69,7 +69,7 @@ export const SPECIES_RULES = {
     arcticfox: { needs: 'tundra', units: [1, 1] }, // Spur, Laterne
     arcticwolf: { needs: 'tundra', units: [1, 1] }, // ein Rudel ("Ochs am Berg")
     walrus: { needs: 'beach', units: [1, 2] }, // tagsüber am Kiesstrand, nachts an den Eislöchern
-    puffin: { needs: 'birdrocks', seasons: ['day'], units: [1, 2] },
+    puffin: { needs: 'birdrocks', seasons: ['day'], units: [1, 2], rare: 0.25 }, // selten (rare: so oft darf die Art auf eine Map); viele bringt die Event-Karte Vogelfelsen (docs/plan-papageitaucher.md)
     polarbear: { needs: 'sea', seasons: ['night'], units: [1, 1] }, // Fisch ans Eisloch
     snowowl: { needs: 'taiga', seasons: ['night'], units: [1, 1] }, // in einer verschneiten Tanne, Laterne
   },

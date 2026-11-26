@@ -28,13 +28,14 @@ export const MORE_UNITS = 1; // Bonus "Mehr Tiere": so viele Tiere mehr je Art a
 export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWagon', 'heartRain'];
 const NO_RIDE = ['ice']; // in diesen Welten gibt es kein Reittier: keine Bonus-Karte "Reittier"
 // Tiere, die nicht beim Betreten dastehen, sondern auf ihre Weise kommen (Geier fliegen heran, Hyänen kommen zu Knochen)
-export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf', 'arcticwolf', 'snowowl']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht; Polarwölfe: ihr Rudel in der Tundra; Schneeeule: setzt sich selbst in eine Tanne)
+export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf', 'arcticwolf', 'snowowl', 'dartfrog']; // (Pfeilgiftfrösche: kommen mit der Leuchtnacht; Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht; Polarwölfe: ihr Rudel in der Tundra; Schneeeule: setzt sich selbst in eine Tanne)
 // Anteil der Kartenarten
 const KINDS = { animal: 0.45, rare: 0.2, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend, Wolfsnacht)
 // Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnus aus der Großen Wanderung, rote Pandas in
 // den Kirschbäumen am Glühwürmchen-Abend, Wolfsrudel in der Wolfsnacht). Immer mindestens 4 (Gnus, Pandas bzw. Rudel);
-// alone: auf der Map gibt es dann nur diese Tiere, das Wetter bleibt normal
-export const MAP_EVENTS = { migration: { species: 'gnu', units: 4, alone: true }, fireflies: { species: 'redpanda', units: 4, alone: true }, wolfNight: { species: 'wolf', units: 4, alone: true } };
+// alone: auf der Map gibt es dann nur diese Tiere, das Wetter bleibt normal (season: bzw. dieses, z. B. Tag in der Eiswelt).
+// Eiswelt: Papageitaucher-Zug auf den Vogelfelsen (docs/plan-papageitaucher.md)
+export const MAP_EVENTS = { migration: { species: 'gnu', units: 4, alone: true }, fireflies: { species: 'redpanda', units: 4, alone: true }, wolfNight: { species: 'wolf', units: 4, alone: true }, puffins: { species: 'puffin', units: 4, alone: true, season: 'day' }, glowNight: { species: 'dartfrog', units: 4, alone: true } };
 export const mapEvent = (map) => Object.keys(MAP_EVENTS).find((k) => LEVELS[map]?.[k]) ?? null;
 
 // --- Tiere und Wetter einer Map (werden vor jeder Map neu gewürfelt) ---
@@ -56,7 +57,9 @@ export function planMap(map, biome, must = null) {
   const rules = SPECIES_RULES[biome] ?? {};
   const all = BIOME_SEASONS[biome] ?? ['normal'];
   const feats = LEVELS[map]?.features ?? [];
-  const fits = (sp) => !rules[sp].needs || feats.includes(rules[sp].needs);
+  // seltene Arten (rare in speciesRules.js, z. B. der Papageitaucher) dürfen nur bei Glück auf diese Map (außer als must)
+  const unlucky = new Set(Object.keys(rules).filter((sp) => rules[sp].rare && sp !== must && Math.random() >= rules[sp].rare));
+  const fits = (sp) => !unlucky.has(sp) && (!rules[sp].needs || feats.includes(rules[sp].needs));
   const allowed = (sp) => rules[sp].seasons ?? all;
   let seasons = [...all];
   const home = {};
@@ -181,7 +184,7 @@ export function rollRunCards(n) {
     } else if (kind === 'bonus') cards.push({ map, plan, kind, id: pick(freeBoni) });
     else if (kind === 'event' && MAP_EVENTS[mapEvent(map)].alone) {
       const ev = MAP_EVENTS[mapEvent(map)];
-      cards.push({ map, plan: { home: { [ev.species]: ev.units }, season: 'normal' }, kind }); // (nur die Tiere des Events)
+      cards.push({ map, plan: { home: { [ev.species]: ev.units }, season: ev.season ?? 'normal' }, kind }); // (nur die Tiere des Events)
     } else cards.push({ map, plan, kind }); // Kiste oder Event
   }
   return cards;

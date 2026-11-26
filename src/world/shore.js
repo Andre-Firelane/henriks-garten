@@ -171,8 +171,10 @@ export function shoreTexture(scene, tx, ty, groundKey) {
       const a = (px + py) / 2, b = (py - px) / 2;
       if (a < -BLEED || b < -BLEED || a > 1 + BLEED || b > 1 + BLEED) continue; // außerhalb der Raute (etwas darüber hinaus, sonst feine Nahtlinien)
       const A = tx + a, B = ty + b;
-      if (waterAt(A, B)) continue;
+      // erst der billige Abstand (die meisten Punkte liegen weit vom Wasser: gleich weiter), dann erst die Prüfung aufs Wasser
       const dist = distAt(dg, a, b);
+      if (dist > style.width * 1.3 + 0.05) continue; // (breiter wird der Streifen nie, siehe width)
+      if (waterAt(A, B)) continue;
       // Breite schwankt sanft entlang des Ufers
       const width = style.width * (0.7 + 0.6 * noise(A * 1.6, B * 1.6, 7));
       if (dist > width + 0.05) continue;

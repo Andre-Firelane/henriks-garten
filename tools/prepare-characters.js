@@ -64,6 +64,10 @@ const CHARACTERS = [
   { src: 'Sprites/Frosch.png', out: 'frog.png', frameW: 56, frameH: 52, feetY: 48, figureH: 44 },
   // seltener blauer Frosch mit bunten Punkten: gleiches Format und gleicher Maßstab
   { src: 'Sprites/Frosch2.png', out: 'frog2.png', frameW: 56, frameH: 52, feetY: 48, scale: 0.167 },
+  // Pfeilgiftfrosch (Leuchtnacht im Dschungel, docs/plan-leuchtnacht.md): unten-rechts, unten-links, oben-rechts, oben-links;
+  // freigestellt mit tools/dartfrog-cut.py (weißer Hintergrund und blaugrauer Schatten). Etwas kleiner als der grüne Frosch,
+  // die anderen Farben färbt das Spiel um (coats.js)
+  { src: 'Sprites/Pfeilgiftfrosch.png', out: 'dartfrog.png', frameW: 56, frameH: 52, feetY: 48, figureH: 38 },
   // Maulwurf im Erdhügel (wild) und zu Fuß (gefangen); jeweils unten-rechts, unten-links, oben-rechts, oben-links
   { src: 'Sprites/Maulwurf.png', out: 'mole_mound.png', frameW: 64, frameH: 52, feetY: 48, figureH: 44 },
   { src: 'Sprites/Maulwurf2.png', out: 'mole.png', frameW: 56, frameH: 52, feetY: 48, figureH: 44 },
@@ -588,6 +592,13 @@ const ANIMATIONS = [
   { src: 'Animation/Frosch2_hüpft_hinten.png', out: 'frog2_hop_back.png', cols: 5, rows: 7, count: 32, scale: 0.168, frameW: 56, frameH: 78, feetY: 72 },
   // Frosch sitzt (atmet, blinzelt, quakt), von vorne und hinten: steht im Original genau wie im ersten Sprung-Bild,
   // daher mit Rahmen und Maßstab der Sprung-Sheets (kein Versatz beim Wechsel zwischen Sitzen und Springen)
+  // Pfeilgiftfrosch (Leuchtnacht, docs/plan-leuchtnacht.md): Videos auf Greenscreen, krabbelt eher als er hüpft. Maßstab:
+  // sitzend so groß wie dartfrog.png (38 px bei 337 px im Video); Loops mit tools/find-loop.py, Stehen ganz (blinzelt).
+  // Die anderen Farben färbt das Spiel um (coats.js, G.dartfrog)
+  { src: 'Animation/Pfeilgiftfrosch läuft vorne.mp4', out: 'dartfrog_walk.png', range: [27, 58], scale: 0.113, frameW: 56, frameH: 60, feetY: 56 },
+  { src: 'Animation/Pfeilgiftfrosch läuft hinten.mp4', out: 'dartfrog_walk_back.png', range: [48, 86], scale: 0.113, frameW: 56, frameH: 60, feetY: 56 },
+  { src: 'Animation/Pfeilgiftfrosch idle vorne.mp4', out: 'dartfrog_idle.png', every: 2, scale: 0.113, frameW: 56, frameH: 60, feetY: 56 },
+  { src: 'Animation/Pfeilgiftfrosch idle hinten.mp4', out: 'dartfrog_idle_back.png', every: 2, scale: 0.113, frameW: 56, frameH: 60, feetY: 56 },
   { src: 'Animation/Frosch_idle_vorne.png', out: 'frog_idle.png', cols: 5, rows: 4, boxOf: 'frog_hop.png', frameW: 56, frameH: 78, feetY: 72 },
   { src: 'Animation/Frosch_idle_hinten.png', out: 'frog_idle_back.png', cols: 5, rows: 4, boxOf: 'frog_hop_back.png', frameW: 56, frameH: 78, feetY: 72 },
   // Wald-Kleidung (Pfadfinder) läuft, von vorne und von hinten
@@ -1083,7 +1094,7 @@ const ANIMATIONS = [
   { src: 'Animation/Rentier idle hinten.mp4', out: 'reindeer_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.357, frameW: 88, frameH: 128, feetY: 123 },
   // Schneehase: Figur so hoch wie das Standbild (68 px); höherer Rahmen, beim Hoppeln springt er hoch
   { src: 'Animation/Schneehase läuft vorne.mp4', out: 'snowhare_walk.png', range: [18, 38], scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
-  { src: 'Animation/Schneehase läuft hinten.mp4', out: 'snowhare_walk_back.png', range: [45, 82], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  { src: 'Animation/Schneehase läuft hinten.mp4', out: 'snowhare_walk_back.png', range: [45, 82], every: 2, scale: 0.216, frameW: 56, frameH: 100, feetY: 94 },
   { src: 'Animation/Schneehase idle vorne.mp4', out: 'snowhare_idle.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   { src: 'Animation/Schneehase idle hinten.mp4', out: 'snowhare_idle_back.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   // Schneeeule: Stehen (nur von vorne, sitzt wie das Standbild auf einem Schneefleck; ohne Atemwolke) so hoch wie das
@@ -1146,6 +1157,35 @@ const ANIMATIONS = [
   { src: 'Animation/Rentier2 rennt hinten.mp4', out: 'reindeer2_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [67, 78], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
   { src: 'Animation/Rentier2 idle vorne.mp4', out: 'reindeer2_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
   { src: 'Animation/Rentier2 idle hinten.mp4', out: 'reindeer2_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  // Zwergflusspferd, Pinselohrschwein, Fischertukan: Rahmen und Figurhöhe wie beim normalen Tier (das Zwergflusspferd
+  // verkleinert das Spiel selbst, PYGMY_SCALE in Hippo.js). Überall der kürzeste nahtlose Loop (tools/find-loop.py),
+  // auch beim Stehen: alle Bilder, aber langsam abgespielt (VIDEO_RATE in BootScene). Nilpferd läuft: Videos ohne Loop,
+  // ein Überblendbild. Tukan fliegt hinten: nur der Flügelschlag von hinten (danach dreht er sich zur Seite);
+  // Tukan sitzt und Pinselohrschwein steht nur von vorne (von hinten das Standbild)
+  { src: 'Animation/Nilpferd2 läuft vorne.mp4', out: 'hippo2_walk.png', loopBlend: 1, figureH: 81, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Nilpferd2 läuft hinten.mp4', out: 'hippo2_walk_back.png', loopBlend: 1, figureH: 82, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Nilpferd2 idle vorne.mp4', out: 'hippo2_idle.png', range: [15, 28], figureH: 80, frameW: 96, frameH: 88, feetY: 84 },
+  { src: 'Animation/Nilpferd2 läuft idle hinten.mp4', out: 'hippo2_idle_back.png', range: [14, 37], figureH: 81, frameW: 96, frameH: 88, feetY: 84 }, // (Stehen von hinten, trotz „läuft“ im Namen)
+  { src: 'Animation/Warzenschwein2 läuft vorne.mp4', out: 'warthog2_walk.png', range: [1, 40], figureH: 73, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Warzenschwein2 läuft hinten.mp4', out: 'warthog2_walk_back.png', range: [16, 27], figureH: 71, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Warzenschwein2 idle vorne.mp4', out: 'warthog2_idle.png', range: [16, 26], figureH: 74, frameW: 80, frameH: 88, feetY: 84 },
+  { src: 'Animation/Tucan2 idle.mp4', out: 'toucan2_idle.png', range: [74, 92], figureH: 52, frameW: 64, frameH: 80, feetY: 76 },
+  { src: 'Animation/Tucan2 fliegt vorne.mp4', out: 'toucan2_flap.png', range: [9, 24], figureH: 62, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Tucan2 fliegt hinten.mp4', out: 'toucan2_flap_back.png', range: [28, 38], figureH: 63, frameW: 104, frameH: 96, feetY: 92 },
+  // Felsenpinguin, Sattelrobbe, Fetzenfisch, Karettschildkröte: Rahmen, Fußlinie und Figurhöhe wie die Animationen des
+  // normalen Tiers (Karettschildkröte so breit wie die normale); überall der kürzeste nahtlose Loop (tools/find-loop.py), Tempo in VIDEO_RATE (BootScene). Pinguin von
+  // vorne, Robbe von vorne und im Wasser, Fetzenfisch schauen im Video nach links: gespiegelt. Fetzenfisch
+  // nur ein Video (auch nach oben); Karettschildkröte von hinten ohne Loop: ganz, ein Überblendbild
+  { src: 'Animation/Pinguin2 läuft vorne.mp4', out: 'penguin2_walk.png', range: [0, 19], mirror: 'all', figureH: 70, frameW: 72, frameH: 80, feetY: 80 },
+  { src: 'Animation/Pinguin2 läuft hinten.mp4', out: 'penguin2_walk_back.png', range: [71, 93], figureH: 67, frameW: 72, frameH: 80, feetY: 79 },
+  { src: 'Animation/Pinguin2 idle vorne.mp4', out: 'penguin2_idle.png', range: [6, 16], mirror: 'all', figureH: 68, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Pinguin2 idle hinten.mp4', out: 'penguin2_idle_back.png', range: [23, 35], figureH: 68, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Robbe2 läuft vorne.mp4', out: 'seal2_walk.png', range: [6, 16], mirror: 'all', figureH: 55, frameW: 96, frameH: 80, feetY: 80 },
+  { src: 'Animation/Robbe2 läuft hinten.mp4', out: 'seal2_walk_back.png', range: [0, 25], figureH: 60, frameW: 96, frameH: 72, feetY: 69 },
+  { src: 'Animation/Robbe2 wartet.mp4', out: 'seal2_swim_idle.png', range: [16, 32], mirror: 'all', figureH: 82, frameW: 72, frameH: 88, feetY: 84 },
+  { src: 'Animation/Seepferdchen2 schwimmt.mp4', out: 'seahorse2_swim.png', range: [33, 42], mirror: 'all', figureH: 57, frameW: 48, frameH: 64, feetY: 60 },
+  { src: 'Animation/Meeresschildkröte2 schwimmt vorne.mp4', out: 'turtle2_swim.png', range: [0, 30], figureH: 63, frameW: 112, frameH: 88, feetY: 84 },
+  { src: 'Animation/Meeresschildkröte2 schwimmt hinten.mp4', out: 'turtle2_swim_back.png', loopBlend: 1, figureH: 74, frameW: 112, frameH: 88, feetY: 84 },
   // Zooauto mit Anhänger (Schnellreise, in allen Gebieten): ein Bild, Fahrtrichtung unten-links wie bisher Bild 0/1 der
   // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
   // (ca. 199,183,172) in der unteren Hälfte entfernt

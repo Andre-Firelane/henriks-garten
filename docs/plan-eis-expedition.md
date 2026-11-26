@@ -109,7 +109,7 @@ gewählt (eine Nacht-Art nur mit 40 %).
 
 - **Tierkarten** wie immer. Bei Nacht-Karten kommen nur Nacht-Tiere vor (Eisbär, Eule, dazu Fuchs, Wolf, Walross,
   Pinguin, Robbe), bei Tag-Karten nur Tag-Tiere (Hase, Rentier, Papageitaucher …).
-- **Seltene Karten:** großer alter Eisbär (nur nachts), großer rosa Walrossbulle, Polarhase (nur tags), weißes Rentier
+- **Seltene Karten:** großer alter Eisbär (nur nachts), rosa Walrossbulle, Polarhase (nur tags), weißes Rentier
   (nur tags), schwarzer Polarwolf, dazu die vorhandenen seltenen Pinguine und Robben. Das regelt rareSkinFor schon über
   das Wetter.
 - **Bonus-Karten:** die vorhandenen. „Reittier“ fällt in der Eiswelt weg (es gibt dort keins). Das **Fernglas** zeigt
@@ -169,12 +169,11 @@ große Karte bestimmt Tag oder Nacht.
 
 - Event-Karte (kommt später).
 - Bilder: Fahnenstangen am Camp-Ausgang (jetzt zwei Eisblöcke).
-- Durchgänge der großen Eiswelt (Schritt 5).
 
 ## Umsetzung (26.11.2026, nicht committet)
 
 Schritte 1 bis 4 und 7 sind gebaut und im Browser getestet (Camp, Tag- und Nacht-Maps, Tiere im Camp an Land).
-Durchgänge der großen Karte (Schritt 5) und Event-Karte (Schritt 6) fehlen noch.
+Event-Karte (Schritt 6) fehlt noch. Durchgänge (Schritt 5) siehe unten.
 
 - **Regeln:** `SPECIES_RULES.ice`, `BIOME_SEASONS.ice`, `SEASON_WEIGHTS.ice` in speciesRules.js. planMap würfelt mit
   Gewichten erst Tag oder Nacht, dann eine seltene Art, die es dabei gibt (sonst zöge z. B. der Eisbär auf dem Packeis
@@ -191,9 +190,29 @@ Durchgänge der großen Karte (Schritt 5) und Event-Karte (Schritt 6) fehlen noc
   Liste steht (beide in CALLED_UNITS). Kiste: Fisch beim Eisbären, Laterne bei Fuchs und Eule (EXP_HELPERS). Kurze
   Hinweise beim Ankommen (Nacht, Eisbär, Eule, Fuchs). Bonus-Karte „Reittier“ gibt es in der Eiswelt nicht (NO_RIDE).
 
+- **Nach dem ersten Spielen (26.11.2026):** Robben saßen nachts „schwimmend“ im Schnee (ein kleiner Tümpel hat nur ein
+  Eisloch; war dort kein Platz mit Abstand frei, kamen sie auf irgendeine freie Kachel). Jetzt immer ins Wasser, notfalls
+  dicht neben andere. Papageitaucher landeten an zufälligen Uferplätzen, oft weit weg von Henrik, man sah nur das Hin und
+  Her zwischen Meer und Inselfelsen. Jetzt landen sie an einem der 6 Uferplätze nahe bei Henrik, auf Expeditions-Maps
+  öfter (50 % statt 30 % der Flüge); die Schärenküste hat mehr Uferfelsen.
+
 ## Entschieden (Andre, 26.11.2026)
 
 - Keine Kälte auf Expeditionen.
 - Event kommt später.
 - 60 % Tag, 40 % Nacht.
 - Käfige nicht artspeziell; im Eis-Camp laufen alle Tiere an Land herum (auch Robbe, Walross, Pinguin).
+
+## Durchgänge der großen Eiswelt (gebaut 26.11.2026, nicht committet)
+
+Drei Durchgänge in `LEVELS.ice.exits` (sideMaps.js, Tag oder Nacht wie auf der großen Karte beim Betreten):
+
+- **Unten (32, 63):** Lücke in den Tannen am Südrand, „Tiefer in die Tundra“ → ix_tundra, ix_creek, ix_taiga.
+- **Rechts (45, 36):** am Südufer der Fjordmündung, „Die Küste entlang“ → ix_fjord, ix_birdcliff, ix_glacier.
+- **Oben (36–38, 0):** „Hinaus aufs Packeis“ → ix_packice, ix_walrus, ix_skerries (eine Map ix_icebergs gibt es
+  nicht, daher die Walross-Bucht und die Schärenküste). Tagsüber eine dritte Fähre von Insel B zum Rand
+  (floes.ferries, liegt im Durchgang an), nachts friert der Streifen ICE_SEA_LANE (36–38, 0–2) im offenen Meer zu
+  (freezeSea mit lanes). Zurück kommt man auf Insel B (37, 3).
+- **Mechaniken hinter den Durchgängen:** IceCatch läuft jetzt auch dort (Eisbär-Köder, Hasenbau, Blubberstellen);
+  Polarwolf-Rudel nur auf Maps mit Tundra, kleiner (EXP_GROUP); die Schneeeule nachts nur auf Maps mit Taiga.
+  Keine Kälte. Zurück-Text: „Zurück zur Station“.

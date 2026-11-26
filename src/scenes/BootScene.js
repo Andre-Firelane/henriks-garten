@@ -50,8 +50,8 @@ const GROUPS = {
     art: /asia|^agrass|^(hotspring|bamboo|hammock|peacock_perch|sun_rock|torii|prayer_pole|stupa|salt_stone|salttool|brush)$/,
   },
   jungle: {
-    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'tapir', 'okapi', 'snake', 'tarantula', 'piranha'],
-    keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|tapir|okapi|snake|tarantula|piranha|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
+    species: ['macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'howler', 'anteater', 'tapir', 'okapi', 'snake', 'tarantula', 'piranha', 'dartfrog'],
+    keys: /^(macaw|toucan|iguana|jaguar|panther|gorilla|howler|gibbon|anteater|tapir|okapi|snake|tarantula|piranha|dartfrog|canoe|waterfall|seaplane|hero_jungle|ride_jungle|tree_rustle)/,
     art: /jungle(?!_tree$)|reptile|terrarium|^jgrass|^thicket|^(cliff|mangrove|heliconia|hibiscus|spider_web|leaf_bush|leaf_bush_bare|leaf_branch)$/, // der Urwaldbaum steht auch im Bambuswald (Orang-Utans): gleich mitladen
   },
   reef: {
@@ -381,8 +381,13 @@ const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle arcticfox
   snowleopard_idle snowleopard_idle_back reindeer_idle reindeer_idle_back snowhare_idle snowhare_idle_back
   polarbear_idle polarbear_idle_back polarbear_eat walrus_idle walrus_idle_back puffin_idle puffin_idle_back
   elk2_idle elk2_idle_back meerkat2_idle meerkat2_idle_back vulture2_idle hyena2_idle hyena2_idle_back gorilla2_idle gorilla2_idle_back
-  reindeer2_idle reindeer2_idle_back snowowl_idle`.split(/\s+/);
+  reindeer2_idle reindeer2_idle_back snowowl_idle ride_ice_idle ride_ice_idle_back dartfrog_idle dartfrog_idle_back`.split(/\s+/);
 const VIDEO_ANIMS = {
+  // Pfeilgiftfrosch (Leuchtnacht im Dschungel): krabbelt und sitzt (blinzelt); Farben über coats.js
+  dartfrog_walk: [56, 60, 32],
+  dartfrog_walk_back: [56, 60, 39],
+  dartfrog_idle: [56, 60, 49],
+  dartfrog_idle_back: [56, 60, 49],
   // seltene Varianten aus Videos (Schaf2: gefleckter Widder, Reiher2: Storch, Fuchs2: Silberfuchs, Eichhörnchen2:
   // Streifenhörnchen, Biber2: Nutria, Affe2: Goldstumpfnase); gleiche Größe wie die normalen Tiere
   sheep2_walk: [80, 88, 23],
@@ -519,6 +524,11 @@ const VIDEO_ANIMS = {
   ride_reef_walk_back: [160, 230, 31],
   ride_reef_idle: [160, 230, 45],
   ride_reef_idle_back: [160, 230, 25],
+  // Hundeschlitten (Eiswelt, tools/dogsled-anim.py): breite Bilder, Henrik in der Mitte, die Hunde voraus
+  ride_ice_walk: [464, 250, 12],
+  ride_ice_walk_back: [464, 250, 20],
+  ride_ice_idle: [464, 250, 8],
+  ride_ice_idle_back: [464, 250, 8],
   // Riff-Tiere schwimmen (auch im Stillhalten)
   ray_swim: [112, 80, 50],
   ray_swim_back: [112, 80, 47],
@@ -643,7 +653,7 @@ const VIDEO_ANIMS = {
   reindeer_idle: [88, 128, 24],
   reindeer_idle_back: [88, 128, 12],
   snowhare_walk: [56, 88, 21],
-  snowhare_walk_back: [56, 88, 19], // (jedes zweite Videobild)
+  snowhare_walk_back: [56, 100, 19], // (jedes zweite Videobild; höher, sonst sind die Ohren beim Sprung oben abgeschnitten)
   snowhare_idle: [56, 88, 24],
   snowhare_idle_back: [56, 88, 24],
   // Eiswelt: Eisbär läuft, steht und frisst (vor und zurück, VIDEO_YOYO); Walross robbt (von hinten mit dem Video von
@@ -682,6 +692,28 @@ const VIDEO_ANIMS = {
   hyena2_walk_back: [80, 80, 24],
   hyena2_idle: [80, 80, 17],
   hyena2_idle_back: [80, 80, 15],
+  // Zwergflusspferd, Pinselohrschwein, Fischertukan (Tempo siehe VIDEO_RATE)
+  hippo2_walk: [96, 88, 25],
+  hippo2_walk_back: [96, 88, 25],
+  hippo2_idle: [96, 88, 14],
+  hippo2_idle_back: [96, 88, 24],
+  warthog2_walk: [80, 88, 40],
+  warthog2_walk_back: [80, 88, 12],
+  warthog2_idle: [80, 88, 11],
+  toucan2_idle: [64, 80, 19],
+  toucan2_flap: [104, 96, 16],
+  toucan2_flap_back: [104, 96, 11],
+  // Felsenpinguin, Sattelrobbe, Fetzenfisch, Karettschildkröte (Tempo siehe VIDEO_RATE)
+  penguin2_walk: [72, 80, 20],
+  penguin2_walk_back: [72, 80, 23],
+  penguin2_idle: [72, 80, 11],
+  penguin2_idle_back: [72, 80, 13],
+  seal2_walk: [96, 80, 11],
+  seal2_walk_back: [96, 72, 26],
+  seal2_swim_idle: [72, 88, 17],
+  seahorse2_swim: [48, 64, 10],
+  turtle2_swim: [112, 88, 31],
+  turtle2_swim_back: [112, 88, 33],
   gorilla2_walk: [104, 96, 32],
   gorilla2_walk_back: [104, 96, 31],
   gorilla2_idle: [104, 96, 49],
@@ -855,7 +887,7 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('mavi', 'assets/mavi.png', HERO_FRAME); // Mavi die Tierpflegerin (führt durch die Geschichte)
     for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
-    load.spritesheet('ride_ice', 'assets/ride_ice.png', { frameWidth: 464, frameHeight: 230 }); // Hundeschlitten (Eiswelt, breit: Hunde voraus, tools/dogsled-cut.py)
+    load.spritesheet('ride_ice', 'assets/ride_ice.png', { frameWidth: 464, frameHeight: 250 }); // Hundeschlitten (Eiswelt, breit: Hunde voraus, tools/dogsled-cut.py)
     // Esel, Pferd und Elefant laufen und stehen (Test)
     for (const w of ['meadow', 'forest']) {
       for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) load.spritesheet(`ride_${w}_${k}`, `assets/ride_${w}_${k}.png`, { frameWidth: 160, frameHeight: 230 });
@@ -977,6 +1009,7 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('freshfish_swim', 'assets/freshfish_swim.png', { frameWidth: 192, frameHeight: 128 });
     for (const k of ['seahorse', 'seahorse2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 48, frameHeight: 64 }); // Seepferdchen (Riff) und Fetzenfisch
     for (const k of ['octopus', 'octopus2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 72, frameHeight: 72 }); // Krake (Riff) und Kalmar (seltene Variante)
+    load.spritesheet('dartfrog', 'assets/dartfrog.png', FROG_FRAME); // Pfeilgiftfrosch (Leuchtnacht), Standbild
     for (const k of ['jellyfish', 'jellyfish2']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 64, frameHeight: 96 }); // Qualle und Goldqualle (Quallen-Schwarm)
     load.spritesheet('gnu', 'assets/gnu.png', { frameWidth: 88, frameHeight: 96 }); // Gnu (Große Wanderung)
     for (const k of ['wolf', 'wolf_howl', 'wolf_eat', 'wolf2', 'wolf2_howl', 'wolf2_eat']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 80, frameHeight: 80 }); // Wolf und schwarzer Wolf (Wolfsnacht)
@@ -1148,7 +1181,15 @@ export default class BootScene extends Phaser.Scene {
       // seltene Varianten: ein Schrittzyklus dauert so lange wie beim normalen Tier (ihre Loops sind anders lang). Das
       // weiße Rentier galoppiert im Video viel gemächlicher (14 statt 10 Bilder je Sprung), daher deutlich schneller
       elk2_walk: 14, elk2_walk_back: 18, meerkat2_walk: 23, meerkat2_walk_back: 21, hyena2_walk: 26, hyena2_walk_back: 23, gorilla2_walk: 20, gorilla2_walk_back: 18,
-      reindeer2_walk: 18, reindeer2_walk_back: 20, reindeer2_run: 25, reindeer2_run_back: 17 };
+      reindeer2_walk: 18, reindeer2_walk_back: 20, reindeer2_run: 25, reindeer2_run_back: 17,
+      hippo2_walk: 21, hippo2_walk_back: 26, warthog2_walk_back: 15,
+      // Stehen als kurzer Loop mit allen Videobildern: deutlich langsamer als im Video, sonst wirkt es hektisch
+      dartfrog_walk: 36, dartfrog_walk_back: 36, dartfrog_idle: 18, dartfrog_idle_back: 18, // Pfeilgiftfrosch: flinker als im Video
+      hippo2_idle: 10, hippo2_idle_back: 10, warthog2_idle: 10, toucan2_idle: 10,
+      // Felsenpinguin, Sattelrobbe, Fetzenfisch, Karettschildkröte: so lange je Zyklus wie beim normalen Tier; Fetzenfisch und
+      // Karettschildkröte gemächlicher (das Seepferdchen wedelt im Video hektisch)
+      penguin2_walk: 21, penguin2_idle: 11, penguin2_idle_back: 12, seal2_walk: 13, seal2_walk_back: 30, seal2_swim_idle: 16,
+      seahorse2_swim: 8, turtle2_swim: 22, turtle2_swim_back: 16 };
     const VIDEO_YOYO = ['heron2_flap', 'polarbear_eat']; // auch vor und zurück (nicht nur Stehen)
     for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? (VIDEO_HALF.includes(key) ? 12 : 24), repeat: -1, yoyo: key.includes('_idle') || VIDEO_YOYO.includes(key) });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)

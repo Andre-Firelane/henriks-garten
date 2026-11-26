@@ -1,4 +1,4 @@
-// Durchgänge der großen Erkundungs-Maps (Savanne, Dschungel, Bambuswald, Wald): an den Rändern liegen je 3 bis 4 Durchgänge (passages in
+// Durchgänge der großen Erkundungs-Maps (Savanne, Dschungel, Bambuswald, Wald, Eiswelt): an den Rändern liegen je 3 bis 4 Durchgänge (passages in
 // levels.js, als Ausgänge mit to: '@side'). Dahinter wartet eine kleine Map aus dem Expeditions-Baukasten
 // (expeditionMaps.js) – ohne Karten, Camp und feste Tierliste: die Tiere kommen wie auf der großen Map (dasselbe Wetter),
 // nur Arten, die zur kleinen Map passen (SPECIES_RULES), und etwas weniger. Der Ausgang führt zurück zum Durchgang.
@@ -89,5 +89,6 @@ const BACK = {
   asia: () => tr('Zurück in den Bambuswald', 'Back to the bamboo forest'),
   forest: () => tr('Zurück in den Wald', 'Back to the forest'),
   savanna: () => tr('Zurück in die Savanne', 'Back to the savanna'),
+  ice: () => tr('Zurück zur Station', 'Back to the station'),
 };
 const backLabel = (biome) => (BACK[biome] ?? BACK.savanna)();

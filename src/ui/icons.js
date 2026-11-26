@@ -48,6 +48,7 @@ const SHEETS = {
   octopus: [72, 72, 4, 0],
   turtle: [112, 88, 4, 0],
   jellyfish: [64, 96, 4, 0],
+  dartfrog: [56, 52, 4, 0],
   ray: [112, 80, 4, 0],
   wolf: [80, 80, 4, 0],
   // seltene Varianten (eigene Bilder, gleiche Maße wie die Art; z. B. für die Kisten-Karten in world/LuckWorld.js)

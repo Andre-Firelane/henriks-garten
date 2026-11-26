@@ -62,6 +62,12 @@ function setAnchor(level, t) {
 // Phase jetzt: { id, left (ms bis zum Wechsel), next (id der nächsten Phase), index (Platz in der Runde) }
 export function seasonState(level = 'savanna', now = Date.now()) {
   const cycle = CYCLES[level] ?? CYCLES.savanna;
+  // Papageitaucher-Zug (Event, docs/plan-papageitaucher.md): in der Eiswelt ist Tag, solange er läuft; danach gilt
+  // wieder die Phase nach der Uhr (die läuft unbeirrt weiter)
+  const ev = level === 'ice' ? game.events?.puffins : null;
+  if (ev && now >= ev.startsAt && now < ev.endsAt) {
+    return { id: 'day', left: ev.endsAt - now, next: seasonState('ice', ev.endsAt + 1).id, index: 0, event: true };
+  }
   const round = cycle.reduce((n, [, ms]) => n + ms, 0);
   let t = (((now - anchor(level, now)) % round) + round) % round;
   for (let i = 0; i < cycle.length; i++) {

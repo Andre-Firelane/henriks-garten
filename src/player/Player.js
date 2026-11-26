@@ -40,7 +40,7 @@ const MOUNT_ANIMS = {
   ride_asia: { walkDown: 'ride_asia_walk', walkUp: 'ride_asia_walk_back', idleDown: 'ride_asia_idle', idleUp: 'ride_asia_idle_back' }, // Videos
   ride_jungle: { walkDown: 'ride_jungle_walk', walkUp: 'ride_jungle_walk_back', idleDown: 'ride_jungle_idle', idleUp: 'ride_jungle_idle_back' }, // Maultier
   ride_reef: { walkDown: 'ride_reef_walk', walkUp: 'ride_reef_walk_back', idleDown: 'ride_reef_idle', idleUp: 'ride_reef_idle_back' }, // Seabob
-  // ride_ice (Hundeschlitten): noch keine Animation, Standbild
+  ride_ice: { walkDown: 'ride_ice_walk', walkUp: 'ride_ice_walk_back', idleDown: 'ride_ice_idle', idleUp: 'ride_ice_idle_back' }, // Hundeschlitten
   scooter: { walkDown: 'scooter_walk', walkUp: 'scooter_walk_back', stand: { down: 0, up: 0 } }, // E-Roller (im Stand: erstes Bild vom Fahren)
 };
 // Reittier (Event): 30 % schneller, ruhigeres Wippen, Fußpunkt im Bild; die Kollision bleibt so klein wie zu Fuß
@@ -60,7 +60,7 @@ const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asi
 // Hundeschlitten (Eiswelt): Fußpunkt unter Henrik hinten auf den Kufen, die Hunde laufen voraus; der Schatten ist ins Bild
 // gemalt (kein eigener), er gleitet fast ohne Wippen und ohne Hufschritte
 const MOUNT_SPEED = { scooter: 1.7 };
-const MOUNT_ORIGIN_Y = { scooter: 164 / 170, ride_ice: 166 / 230 };
+const MOUNT_ORIGIN_Y = { scooter: 164 / 170, ride_ice: 186 / 250 };
 const MOUNT_SHADOW = { scooter: [46, 13], ride_ice: [0, 0] };
 const MOUNT_SHADOW_UP = { scooter: 9 };
 const MOUNT_SHADOW_TILT = { scooter: 26.6 };

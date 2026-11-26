@@ -15,7 +15,7 @@ export const CHEST_RESPAWN = [5 * MINUTE, 10 * MINUTE]; // so lange, bis nach de
 export const CHEST_COUNT = 1; // Kisten je Welt
 
 // Event, das zu einem Gebiet gehört (für den Bonus "Event-Ruf")
-export const LEVEL_EVENT = { meadow: 'farm', forest: 'wolves', savanna: 'migration', asia: 'fireflies', reef: 'jellyfish' };
+export const LEVEL_EVENT = { meadow: 'farm', forest: 'wolves', savanna: 'migration', asia: 'fireflies', jungle: 'glownight', reef: 'jellyfish', ice: 'puffins' };
 
 // Symbole der Boni und Glücksbringer: kleine Bilder (tools/charm-icons.py) als HTML; Handy und Tablet laden die
 // WebP-Fassung (wie die Spielbilder, siehe webpUrl in scenes/BootScene.js)

@@ -2,6 +2,7 @@
 // Tablet: antippen. Laptop: mit A/D (oder Pfeiltasten) wählen, mit E, Enter oder Leertaste nehmen. Esc schließt.
 import { CLOSE_BUTTON, isCloseClick } from './closeButton.js';
 import { tr } from '../i18n.js';
+import { uiImg } from '../world/hd.js';
 
 let panel = null;
 let state = null;
@@ -22,7 +23,7 @@ export function openToolChest(items, current, onPick, onClose, tutorial = null) 
         .map(
           (it, i) => `<button class="chest-item${it.id === current ? ' carried' : ''}" data-i="${i}">
             ${tutorial && it.id === tutorial.id ? '<span class="chest-pointer">▼</span>' : ''}
-            <img src="assets/${it.image}.png" alt=""><span>${it.name}</span>${it.id === current ? `<small>${tr('in der Hand', 'in your hand')}</small>` : ''}
+            <img src="${uiImg(it.image)}" alt=""><span>${it.name}</span>${it.id === current ? `<small>${tr('in der Hand', 'in your hand')}</small>` : ''}
             ${it.animals ? `<span class="chest-animals">${it.animals}</span>` : ''}
           </button>`,
         )

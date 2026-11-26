@@ -447,6 +447,7 @@ export const SPECIES = {
   hippo: {
     texture: 'hippo',
     anims: { walkDown: 'hippo_walk', walkUp: 'hippo_walk_back', idleDown: 'hippo_idle', idleUp: 'hippo_idle_back' }, // Savanne
+    skinAnims: { hippo2: { walkDown: 'hippo2_walk', walkUp: 'hippo2_walk_back', idleDown: 'hippo2_idle', idleUp: 'hippo2_idle_back' } }, // Zwergflusspferd
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 14,
@@ -504,6 +505,7 @@ export const SPECIES = {
   warthog: {
     texture: 'warthog',
     anims: { walkDown: 'warthog_walk', walkUp: 'warthog_walk_back', idleDown: 'warthog_idle', idleUp: 'warthog_idle_back' }, // Savanne
+    skinAnims: { warthog2: { walkDown: 'warthog2_walk', walkUp: 'warthog2_walk_back', idleDown: 'warthog2_idle' } }, // Pinselohrschwein (steht nur von vorne animiert)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 84 / 88,
     speed: 18,
@@ -524,6 +526,8 @@ export const SPECIES = {
     // Videos: sitzt (vorne und hinten); fliegt mit Flügelschlag
     anims: { idleDown: 'toucan_idle', idleUp: 'toucan_idle_back' },
     flyAnims: { down: 'toucan_flap', up: 'toucan_flap_back' },
+    skinAnims: { toucan2: { idleDown: 'toucan2_idle', idleUp: 'toucan2_idle' } }, // Fischertukan: sitzt immer von vorne (kein Video von hinten)
+    skinFlyAnims: { toucan2: { down: 'toucan2_flap', up: 'toucan2_flap_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 18,
@@ -653,6 +657,7 @@ export const SPECIES = {
   penguin: {
     texture: 'penguin',
     anims: { walkDown: 'penguin_walk', walkUp: 'penguin_walk_back', idleDown: 'penguin_idle', idleUp: 'penguin_idle_back' }, // Videos
+    skinAnims: { penguin2: { walkDown: 'penguin2_walk', walkUp: 'penguin2_walk_back', idleDown: 'penguin2_idle', idleUp: 'penguin2_idle_back' } }, // Felsenpinguin
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
     speed: 14, // gemütliches Watscheln
@@ -672,6 +677,7 @@ export const SPECIES = {
   seal: {
     texture: 'seal_lie', // an Land (gefangen, im Gehege); im Wasser zeichnet Seal.js das Bild "seal"
     anims: { walkDown: 'seal_walk', walkUp: 'seal_walk_back' }, // Videos; im Stehen liegt sie (Standbild)
+    skinAnims: { seal2: { walkDown: 'seal2_walk', walkUp: 'seal2_walk_back' } }, // Sattelrobbe (wippt im Wasser: seal2_swim_idle, Seal.js)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 68 / 72,
     speed: 16,
@@ -1156,6 +1162,7 @@ export const SPECIES = {
   seahorse: {
     texture: 'seahorse',
     anims: { walkDown: 'seahorse_swim', walkUp: 'seahorse_swim_back' }, // schwimmt (auch im Stillhalten), siehe ReefFish.render
+    skinAnims: { seahorse2: { walkDown: 'seahorse2_swim', walkUp: 'seahorse2_swim' } }, // Fetzenfisch: nur ein Video (auch nach oben)
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -1196,6 +1203,7 @@ export const SPECIES = {
   turtle: {
     texture: 'turtle',
     anims: { walkDown: 'turtle_swim', walkUp: 'turtle_swim_back' }, // im Netz das Standbild (siehe ReefFish.swimAnim)
+    skinAnims: { turtle2: { walkDown: 'turtle2_swim', walkUp: 'turtle2_swim_back' } }, // Karettschildkröte
     swimFrames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     bagTexture: 'fishbag',
     frames: { downRight: 0, downLeft: 1, upLeft: 2, upRight: 3 },
@@ -1209,6 +1217,24 @@ export const SPECIES = {
     footW: 4,
     shadowW: 34,
     catchWith: ['scissors'], // mit der Schere freischneiden (dreimal die Aktionstaste)
+  },
+  // Pfeilgiftfrosch (Dschungel, nur bei der Leuchtnacht): krabbelt langsam, leuchtet in seiner Farbe, giftig – nur mit dem
+  // Froschglas (siehe DartFrog.js). Grundbild blau, die anderen Farben färbt coats.js um; im Tierpark frei in der Tropenhalle
+  dartfrog: {
+    texture: 'dartfrog',
+    anims: { walkDown: 'dartfrog_walk', walkUp: 'dartfrog_walk_back', idleDown: 'dartfrog_idle', idleUp: 'dartfrog_idle_back' }, // Videos
+    baseShare: 30, // blau: Anteil an den Fängen neben den Farben (share in COATS.dartfrog)
+    frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
+    originY: 48 / 52,
+    speed: 18,
+    restChance: 0.55,
+    restTime: [1.5, 4],
+    walkTime: [1, 2.5],
+    stepRate: 10,
+    hop: 0.5,
+    footW: 5,
+    shadowW: 18,
+    catchWith: ['frogjar'],
   },
   // Qualle (Riff, nur beim Quallen-Schwarm): pulsiert, mit dem Quallenglas nur beim Sinken fangbar (siehe Jellyfish.js);
   // swimFrames: Bilder im Spritesheet "jellyfish", frames/originY gelten für den Beutel an Land
@@ -1342,7 +1368,7 @@ export const SKINS = {
   toucan: { id: 'toucan2', name: tr('Fischertukan', 'keel-billed toucan'), male: true, wild: 0.1, baby: 0.03 },
   penguin: { id: 'penguin2', name: tr('Felsenpinguin', 'rockhopper penguin'), male: true, wild: 0.1, baby: 0.03 }, // gilt für die ganze Gruppe
   seal: { id: 'seal2', name: tr('Sattelrobbe', 'harp seal'), male: false, wild: 0.1, baby: 0.03 }, // im Wasser: seal2_water
-  snowhare: { id: 'snowhare2', tex: 'snowhare', name: tr('Polarhase', 'arctic hare'), male: true, wild: 0.1, baby: 0, big: 1.25 }, // großes Exemplar mit den Bildern des Schneehasen (sizeK); der echte Polarhase ist deutlich größer
+  snowhare: { id: 'snowhare2', tex: 'snowhare', name: tr('Polarhase', 'arctic hare'), male: true, wild: 0.1, baby: 0, big: 1.25, animUpK: 0.82 }, // großes Exemplar mit den Bildern des Schneehasen (sizeK); der echte Polarhase ist deutlich größer. animUpK: hoppelt nach hinten etwas ruhiger
   reindeer: { id: 'reindeer2', name: tr('weißes Rentier', 'white reindeer'), male: false, neuter: true, wild: 0.1, baby: 0.03 }, // mit großem Geweih (eigene Videos, auch Rennen)
   seahorse: { id: 'seahorse2', name: tr('Fetzenfisch', 'leafy seadragon'), male: true, wild: 0.1, baby: 0.03 },
   turtle: { id: 'turtle2', name: tr('Karettschildkröte', 'hawksbill turtle'), male: false, wild: 0.1, baby: 0 },
@@ -1937,7 +1963,9 @@ export default class Animal {
           const below = this.scene.textures.getFrame(this.baseTexture(), 0).height * (1 - this.kind.originY);
           this.sprite.setOrigin(0.5, feetY ? feetY / this.sprite.frame.height : 1 - below / this.sprite.frame.height);
         }
-        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed, this.kind.animMax) : 1;
+        // animUpK: seltene Variante hoppelt nach hinten im selben Video ruhiger (großer Polarhase; von vorne passt es)
+        const animK = (moving && key === anims.walkUp && this._skin && skinInfo(this.species, this._skin)?.animUpK) || 1;
+        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed, this.kind.animMax) * animK : 1;
         this.sprite.setFlipX(this.faceX < 0);
         this.placeSprite(false);
         return;

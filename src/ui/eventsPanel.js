@@ -82,6 +82,16 @@ const THUMBS = {
     ['jellyfish2', 64, 96, 0, 0.6, 84, 8],
     ['jellyfish', 64, 96, 2, 0.5, 132, 14],
   ],
+  puffins: [
+    ['puffin', 64, 68, 0, 0.8, 12, 0],
+    ['puffin', 64, 68, 1, 0.65, 70, 14],
+    ['puffin', 64, 68, 0, 0.55, 118, 22],
+  ],
+  glownight: [
+    ['dartfrog', 56, 52, 0, 0.85, 10, 0],
+    ['emoji', '🍄', 26, 70, 30],
+    ['dartfrog', 56, 52, 1, 0.7, 104, 6],
+  ],
   // Wetterwechsel: Wettersymbole statt Tieren ([Zeichen, Schriftgröße in px, links, unten])
   fireflies: [
     ['emoji', '🏮', 32, 8, 10],
@@ -103,7 +113,7 @@ const THUMBS = {
   ],
   // Reittiere zum Kaufen: je ihr Bild (Henrik im Sattel), dazu der E-Roller
   ...Object.fromEntries(['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef'].map((a) => [`mount_${a}`, [[`ride_${a}`, 160, 230, 0, a === 'savanna' ? 0.46 : 0.55, 30, a === 'savanna' ? -14 : -6]]])),
-  mount_ice: [['ride_ice', 464, 230, 0, 0.4, -40, 2]], // Hundeschlitten: breites Bild, Henrik nicht in der Mitte (Inhalt rechts der Bildmitte)
+  mount_ice: [['ride_ice', 464, 250, 0, 0.4, -40, 2]], // Hundeschlitten: breites Bild, Henrik nicht in der Mitte (Inhalt rechts der Bildmitte)
   scooter: [['scooter_empty', 170, 170, 1, 0.62, 40, 0]],
 };
 

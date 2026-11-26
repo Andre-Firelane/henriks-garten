@@ -73,6 +73,9 @@ import Player from '../player/Player.js';
 import Animal, { SPECIES, CATCH_DIST, FOLLOW_GAP, isCatchable, skinInfo, SKINS } from '../animals/Animal.js';
 import Squirrel from '../animals/Squirrel.js';
 import Frog from '../animals/Frog.js';
+import DartFrog from '../animals/DartFrog.js';
+import GlowNight, { FRONT, isTall } from '../world/GlowNight.js';
+import PuffinFlocks from '../world/PuffinFlocks.js';
 import Heron from '../animals/Heron.js';
 import Antelope from '../animals/Antelope.js';
 import Zebra from '../animals/Zebra.js';
@@ -131,7 +134,7 @@ import Walrus from '../animals/Walrus.js';
 import SnowHare from '../animals/SnowHare.js';
 import IceCatch from '../world/IceCatch.js';
 import PolarBear from '../animals/PolarBear.js';
-import Puffin from '../animals/Puffin.js';
+import Puffin, { puffinFormations } from '../animals/Puffin.js';
 import WarmerTool from '../tools/WarmerTool.js';
 import Vulture from '../animals/Vulture.js';
 import Hyena, { HyenaPack } from '../animals/Hyena.js';
@@ -189,7 +192,7 @@ import Crocodile from '../animals/Crocodile.js';
 import { blockedAt } from '../world/collision.js';
 import Pickup from '../world/Pickup.js';
 import { roundedTexture } from '../world/roundedTiles.js';
-import { HD, HD_DIR, hdScale } from '../world/hd.js';
+import { HD, HD_DIR, hdScale, uiImg } from '../world/hd.js';
 import Net from '../tools/Net.js';
 import Lasso from '../tools/Lasso.js';
 import TrapTool from '../tools/TrapTool.js';
@@ -256,7 +259,7 @@ const POLAR_PACK_SIZE = [3, 4]; // ... mit so vielen Wölfen
 const POLAR_HOWL_HEAR = 450; // ihr Geheul hört man nur so weit (Kachel-Proportionen, y doppelt; in der Wolfsnacht 900)
 const TUNDRA_SPECIES = ['snowhare', 'reindeer', 'arcticwolf', 'arcticfox', 'snowowl']; // Eiswelt: erscheinen meist in der Tundra
 const AT_HOME_CHANCE = 0.85; // ... so oft dort, sonst irgendwo
-const ALL_SPECIES = ['seal', 'penguin', 'polarbear', 'walrus', 'reindeer', 'puffin', 'arcticfox', 'arcticwolf', 'snowowl', 'snowhare', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cow', 'goat', 'pig', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
+const ALL_SPECIES = ['seal', 'penguin', 'polarbear', 'walrus', 'reindeer', 'puffin', 'arcticfox', 'arcticwolf', 'snowowl', 'snowhare', 'macaw', 'toucan', 'iguana', 'jaguar', 'gorilla', 'snake', 'tarantula', 'piranha', 'howler', 'anteater', 'tapir', 'okapi', 'redpanda', 'tanuki', 'yak', 'snowleopard', 'gnu', 'hippo', 'hyena', 'warthog', 'vulture', 'wolf', 'peacock', 'butterfly', 'orangutan', 'tiger', 'sheep', 'cow', 'goat', 'pig', 'cat', 'deer', 'elk', 'hedgehog', 'boar', 'fish', 'koi', 'reeffish', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'frog', 'dartfrog', 'heron', 'flamingo', 'squirrel', 'fox', 'beaver', 'antelope', 'zebra', 'meerkat', 'lion', 'crocodile', 'giraffe', 'panda', 'macaque'];
 const GATE_OPEN_DIST = 44; // so nah muss man ans Tor, damit es aufgeht
 const GATE_CLOSE_DELAY = 0.5; // Sekunden, bis es nach dem Durchgehen wieder erscheint
 const SIGN_DIST = 50; // so nah muss man an den Wegweiser, damit er etwas anzeigt
@@ -289,6 +292,8 @@ const TOAST_MIN_W = 260; // so breit (CSS-Pixel) muss der Platz neben dem Abzeic
 const WRONG_HOME_HINT = 6; // Sekunden zwischen zwei Hinweisen "falsches Gehege"
 const SIGN_INNER_W = 38; // helle Tafel des Torschilds (Welt-Pixel), darauf die Tierbilder
 const SIGN_ICON_H = 22;
+const ISO_SIGNS = true; // Test: Schilder am Zaun schräg (isometrisch) entlang des Zauns statt flach zur Kamera
+const ISO_SIGN_R = 4; // Auflösung der schrägen Schilder (Leinwand-Pixel je Welt-Pixel)
 const FLOOR_PROP_DEPTH = -99900; // flache Bilder im Boden (LEVEL.props mit floor): über dem gebackenen Boden, unter allem anderen
 
 // Für die Übersicht: womit man fängt (Bild, Name) und besondere Tipps je Tierart
@@ -300,6 +305,7 @@ const CATCH_TOOLS = {
   food: ['food', tr('Grünfutter', 'Leafy greens')],
   scissors: ['scissors', tr('Schere', 'Scissors')],
   jar: ['jar', tr('Quallenglas', 'Jellyfish jar')],
+  frogjar: ['jar', tr('Froschglas', 'Frog jar')],
   swim: ['hand', tr('Mitschwimmen', 'Swim along')],
   rod: ['rod', tr('Angel', 'Fishing rod')],
   herring: ['herring', tr('Fisch', 'Fish')],
@@ -328,6 +334,7 @@ const CATCH_TIPS = {
   yak: tr('Auf der Hochebene im Bambuswald. Die Herde grast am Steinhaufen. Such den Salzstein, der irgendwo im Schnee liegt, und leg ihn auf den Steinhaufen – dann kommt ein Yak zum Lecken. Bürste es dreimal, dann kommt es mit.', 'On the high plateau of the bamboo forest. The herd grazes by the cairn. Find the salt lick lying somewhere in the snow and put it on the cairn – a yak will come to lick it. Brush it three times and it comes along.'),
   tanuki: tr('Im Bambuswald bei den Steinlaternen. Er verkleidet sich als Laterne, Busch oder Grasbüschel – nur sein buschiger Schwanz schaut heraus, und manchmal wackelt die Verkleidung. Berühre sie: Puff! Dann sitzt er verdutzt da – berühre ihn schnell noch einmal.', 'In the bamboo forest by the stone lanterns. It disguises itself as a lantern, a bush or a tuft of grass – only its bushy tail peeks out, and sometimes the disguise wobbles. Touch it: poof! Then it sits there, baffled – touch it again quickly.'),
   redpanda: tr('Nur beim Glühwürmchen-Abend im Bambuswald. Er sitzt oben im Kirschbaum: fang 3 Glühwürmchen mit dem Glas, stell das leuchtende Glas vor den Baum – dann kommt er herunter und du kannst ihn berühren.', 'Only during the Firefly Evening in the bamboo forest. It sits up in a cherry tree: catch 3 fireflies with the jar, put the glowing jar in front of the tree – then it comes down and you can touch it.'),
+  dartfrog: tr('Nur bei der Leuchtnacht im Dschungel. Die Frösche sitzen am Wasser und leuchten in ihrer Farbe. Sie sind giftig: nicht anfassen, sondern mit dem Froschglas aus der Kiste fangen. Es gibt sie in Blau, Gelb, Grün, Orange und selten in Rot.', 'Only during the Glowing Night in the jungle. The frogs sit by the water and glow in their color. They are poisonous: don’t touch them, catch them with the frog jar from the chest. They come in blue, yellow, green, orange and, rarely, red.'),
   gnu: tr('Nur bei der Großen Wanderung in der Savanne. Ab und zu läuft ein Gnu aus der Staubwolke heraus – fang es mit dem Lasso, bevor es wieder hineinläuft!', 'Only during the Great Migration in the savanna. Now and then a wildebeest runs out of the dust cloud – catch it with the lasso before it runs back in!'),
   wolf: tr('Nur in der Wolfsnacht im Wald. Folge den leuchtenden Spuren. Heulen die Wölfe, darfst du laufen – hören sie auf und schauen sich um (👀), bleib sofort stehen! Erreichst du einen, berühre ihn.', 'Only during the Wolf Night in the forest. Follow the glowing tracks. While the wolves howl, you may walk – when they stop and look around (👀), stand still at once! When you reach one, touch it.'),
   jellyfish: tr('Nur beim Quallen-Schwarm im Riff. Mit dem Quallenglas – aber nur, wenn sie langsam sinkt! Beim Aufsteigen flutscht sie davon. Nicht anfassen, sie brennt!', 'Only during the Jellyfish Swarm in the reef. Use the jellyfish jar – but only while it slowly sinks! When it rises, it slips away. Don’t touch it, it stings!'),
@@ -367,7 +374,7 @@ const CATCH_TIPS = {
   reindeer: tr('Nur tagsüber. Die Herde trabt ständig im Kreis auf ihrem Pfad – schneller als du. Folge den Trampelspuren, stell dich an den Pfad und warte still. Wer stillsteht, wird nicht bemerkt: Wirf das Lasso, wenn sie vorbeikommen.', 'Only by day. The herd keeps trotting in a circle on its trail – faster than you. Follow the hoof tracks, stand by the trail and wait quietly. Standing still, you go unnoticed: throw the lasso as they pass.'),
   walrus: tr('Am Kiesstrand und an der Eiskante. Weck ein dösendes Walross mit der Wärmflasche – dann hat es Hunger. Kescher 2 Muscheln, wo es im Wasser blubbert (Kescher-Zeichen), und füttere es: Dann kommt es mit.', 'On the pebble beach and at the ice edge. Wake a dozing walrus with the hot-water bottle – then it is hungry. Net 2 mussels where the water bubbles (net sign) and feed it: then it comes along.'),
   polarbear: tr('Nur nachts auf dem Eis. Leg einen Fisch aus der Kiste an ein Eisloch und geh ein Stück weg. Der Bär kommt und frisst eine Weile: Bleib draußen vor dem Ring, sonst hört er auf. Ist er satt, schläft er ein. Dann hingehen und streicheln.', 'Only at night on the ice. Put a fish from the chest by an ice hole and step away. The bear comes and eats for a while: stay outside the ring, or it stops. Once full, it falls asleep. Then go over and pet it.'),
-  puffin: tr('Nur tagsüber an den Vogelfelsen im Fjord. Sie fliegen aufs Meer und kommen mit Fisch zurück – wer gerade am Ufer landet: Kescher!', 'Only by day at the bird rocks in the fjord. They fly out to sea and come back with fish – one that just landed by the shore: net!'),
+  puffin: tr('Selten: tagsüber an den Vogelfelsen im Fjord. Viele kommen beim Papageitaucher-Zug: Sie landen auf den Felsen am Rand der Eiswelt – wer unten am Felsen steht, lässt sich keschern!', 'Rare: by day at the bird rocks in the fjord. Many come during Puffin Season: they land on the rocks at the edge of the Ice World – whoever stands at the foot of a rock can be caught with the net!'),
   anteater: tr('Er ist scheu und rennt weg – fang ihn mit dem Lasso. Ab und zu stellt er sich an einen Urwaldbaum und schleckt Ameisen: dann kannst du ihn sogar berühren. Durchs Dickicht läuft er einfach hindurch!', 'It is shy and runs away – catch it with the lasso. Now and then it stands up against a jungle tree and licks up ants: then you can even touch it. It simply walks straight through the thicket!'),
   howler: tr('Er sitzt unsichtbar oben im Urwaldbaum – nur wenn er springt, raschelt es und er brüllt. Merk dir den Baum, leg eine Banane unten hin, und wenn er herunterkommt und frisst: schnell das Lasso! Mit etwas Glück ist es ein seltener Gibbon.', 'It sits unseen high up in a jungle tree – only when it jumps do the leaves rustle and it howls. Remember the tree, put a banana at its foot, and when it comes down to eat: quick, the lasso! With a bit of luck it is a rare gibbon.'),
   macaque: tr('Aus der heißen Quelle kriegst du ihn nicht. Warte, bis er herausspringt – dann schnell das Lasso!', 'You can’t get it out of the hot spring. Wait until it jumps out – then quick, the lasso!'),
@@ -394,6 +401,7 @@ const CATCH_TIPS_SHORT = {
   yak: tr('Salzstein auf den Steinhaufen, dann 3× bürsten.', 'Salt lick on the cairn, then brush it 3×.'),
   tanuki: tr('Wackelnde Verkleidung berühren, dann ihn!', 'Touch the wobbling disguise, then touch it!'),
   redpanda: tr('Leuchtendes Glas vor den Kirschbaum stellen.', 'Put the glowing jar by the cherry tree.'),
+  dartfrog: tr('Mit dem Froschglas – giftig!', 'Use the frog jar – poisonous!'),
   gnu: tr('Lasso, wenn eins aus der Staubwolke läuft!', 'Lasso one that runs out of the dust!'),
   wolf: tr('Laufen beim Heulen, stehen bei 👀!', 'Walk while they howl, freeze at 👀!'),
   jellyfish: tr('Mit dem Quallenglas, wenn sie sinkt!', 'Use the jar while it sinks!'),
@@ -520,6 +528,7 @@ const ANIMAL_INFO = {
   yak: tr(['Yak', 'Zweigeteilte Hufe wie beim Rind, mit harten Rändern – damit steht es sicher auf Fels und Eis.'], ['Yak', 'Split hooves like cattle, with hard edges – perfect for standing safely on rock and ice.']),
   tanuki: tr(['Tanuki', 'Vier Zehen mit Krallen wie beim Fuchs – er gehört zu den Hundeartigen, auch wenn er wie ein Waschbär aussieht.'], ['Tanuki', 'Four clawed toes like a fox – it belongs to the dog family, even though it looks like a raccoon.']),
   redpanda: tr(['Roter Panda', 'Fünf Zehen mit Krallen und behaarten Sohlen – damit klettert er sicher durch die Bäume.'], ['Red panda', 'Five clawed toes with furry soles – perfect for climbing safely through the trees.']),
+  dartfrog: tr(['Pfeilgiftfrosch', 'Winzige Finger mit Haftscheiben. Die bunten Farben warnen: Vorsicht, giftig! Im Zoo sind sie harmlos – das Gift kommt aus ihrem Futter im Regenwald.'], ['Poison dart frog', 'Tiny fingers with sticky pads. The bright colors warn: careful, poisonous! In a zoo they are harmless – the poison comes from their food in the rainforest.']),
   gnu: tr(['Gnu', 'Paarhufer wie die Antilope, aber mit breiteren Hufhälften – Tausende davon hinterlassen eine riesige Staubspur.'], ['Wildebeest', 'Cloven hooves like an antelope, but wider – thousands of them leave a huge trail of dust.']),
   wolf: tr(['Wolf', 'Vier Zehen mit Krallen und ein großer Ballen – wie beim Hund, nur größer. Wölfe laufen oft genau in der Spur des Vordermanns.'], ['Wolf', 'Four toes with claws and a big pad – like a dog, only bigger. Wolves often step right into the tracks of the wolf in front.']),
   jellyfish: tr(['Qualle', 'Hat weder Füße noch Flossen – sie schwimmt, indem sie ihren Schirm zusammenzieht und wieder entspannt.'], ['Jellyfish', 'No feet and no fins – it swims by squeezing its bell together and letting it go again.']),
@@ -598,7 +607,7 @@ const PEN_FEED_DIST = 80; // so nah vor dem Spieler muss ein Gehege sein, um Fut
 const FEED_TIME = [8, 12]; // so lange fressen die Tiere
 const FEED_GAP = 22; // so viel Abstand halten die Tiere beim Fressen voneinander
 // Diese Tiere kommen nicht zum Futter (Wasser- und Flugtiere)
-const NO_PEN_FEED = ['anteater', 'butterfly', 'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
+const NO_PEN_FEED = ['dartfrog', 'anteater', 'butterfly', 'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'crocodile', 'heron', 'flamingo', 'frog'];
 const HUT_ROOF_ALPHA = 0.12; // so durchsichtig wird das Dach, wenn man in der Hütte ist
 const HUT_FRONT_ALPHA = 0.3; // ... und die vorderen Wände
 const ROOF_ALPHA = { cathouse: 0.55 };
@@ -659,13 +668,13 @@ const PEN_CALLS = { lion: 'lion_roar', deer: null, peacock: null }; // Pfauen ru
 // (Panda, Orang-Utan) oder rufen schon selbst (Affen und Vögel beim Springen bzw. Losfliegen, Pfau, Nilpferd, Gnu, Pinguin)
 const WILD_SILENT = [
   'lion', 'tiger', 'jaguar', 'crocodile', 'warthog',
-  'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish',
+  'fish', 'koi', 'reeffish', 'piranha', 'seahorse', 'octopus', 'turtle', 'ray', 'jellyfish', 'dartfrog',
   'gorilla', 'meerkat', 'hyena', 'wolf', 'panda', 'orangutan',
   'howler', 'macaw', 'toucan', 'peacock', 'hippo', 'gnu', 'penguin',
   'arcticfox', 'arcticwolf', 'snowowl', 'polarbear', 'puffin', // Eiswelt: unsichtbar, Rudel wie der Wolf, Eule ruft selbst (SnowOwl.js), Eisbär lauert, Vögel fliegen
 ];
 // Tierarten ohne eigenen Ton nehmen diesen (beim Fangen und als Ruf aus dem Gehege)
-const CALL_FALLBACK = { arcticwolf: 'animal_wolf', reindeer: 'animal_elk', walrus: 'animal_hippo', polarbear: 'animal_wolf', tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig', boar: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
+const CALL_FALLBACK = { dartfrog: 'animal_frog', arcticwolf: 'animal_wolf', reindeer: 'animal_elk', walrus: 'animal_hippo', polarbear: 'animal_wolf', tiger: 'lion_roar', jaguar: 'lion_roar', snowleopard: 'lion_roar', okapi: 'animal_zebra', gorilla: 'gorilla_beat', warthog: 'animal_pig', boar: 'animal_pig' }; // Warzenschweine grunzen wie die Schweine vom Bauernhof
 const WHOOSH_VOLUME = 0.35; // Lautstärke des Schwungs beim Einsetzen eines Werkzeugs
 const TRAP_VOLUME = 0.5; // Lautstärke, wenn die Falle zuschnappt
 const CAR_VOLUME = 0.6; // Lautstärke des Autos bei der Schnellreise
@@ -690,7 +699,7 @@ let ambient = null; // nur so weit weg vom Spieler verschwinden Tiere (nicht vor
 const SPECIES_ORDER = ALL_SPECIES.filter(
   (s) =>
     isCatchable(SPECIES[s]) &&
-    s === 'flamingo' || s === 'jellyfish' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || s === 'beaver' || s === 'yak' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
+    s === 'flamingo' || s === 'jellyfish' || s === 'dartfrog' || s === 'wolf' || s === 'gnu' || s === 'hyena' || s === 'vulture' || s === 'redpanda' || s === 'snake' || s === 'tarantula' || s === 'iguana' || s === 'gorilla' || s === 'beaver' || s === 'yak' || Object.values(LEVELS).some((level) => [level, ...Object.values(level.seasons ?? {})].some((l) => spawnWeights(l)[s] || (s === 'heron' && l.herons))),
 );
 
 // Werkzeuge: wie sie erzeugt werden und was die Anzeige dazu sagt. Man trägt immer nur eins.
@@ -736,6 +745,17 @@ const JELLY_MAX = 14;
 const JELLY_EVERY = [1.5, 3];
 const JELLY_START = 8;
 const STING_DIST = 16;
+// Leuchtnacht im Dschungel (docs/plan-leuchtnacht.md): so viele Pfeilgiftfrösche sitzen gleichzeitig da, so lange nach
+// einem Fang kommt ein neuer dazu; berührt man einen ohne Froschglas, gibt es (höchstens so oft) einen Hinweis
+const DARTFROGS = 8;
+// Papageitaucher-Zug (docs/plan-papageitaucher.md): so oft kommt eine Gruppe vom Meer zu einer Felsformation, so viele
+// Vögel hat sie, höchstens so viele sind zugleich da
+const PUFFIN_GROUP_EVERY = [6, 12];
+const PUFFIN_GROUP = [3, 5];
+const PUFFIN_MAX = 12;
+const DARTFROG_REFILL = [4, 8];
+const DARTFROG_TOUCH = 18;
+const DARTFROG_HINT_EVERY = 15000;
 const STING_HINT_EVERY = 20000; // Millisekunden zwischen zwei Hinweisen zum Brennen
 const AQUA_FISH = ['reeffish', 'seahorse', 'octopus']; // nur diese verdrängen die Zierfische aus ihrem Becken (Schildkröten nicht) // Meerestiere: ziehen ins Aquarium (in dessen Becken)
 const REEF_SOLO = 0.35; // so viele Riff-Fische schwimmen allein ...
@@ -766,8 +786,8 @@ const RIDES = { meadow: 'ride_meadow', forest: 'ride_forest', savanna: 'ride_sav
 // Die Welten draußen (für das Tierbuch und das Regal: wo es welche Tiere gibt)
 const WILD_WORLDS = ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef', 'ice'];
 // Tiere, die nur während eines Events kommen: Event und Welten
-const EVENT_SPECIES = { flamingo: ['flamingo', FLAMINGO_WORLDS], jellyfish: ['jellyfish', ['reef']], wolf: ['wolves', ['forest']], gnu: ['migration', ['savanna']], redpanda: ['fireflies', ['asia']] };
-const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨', lanterns: '🏮' };
+const EVENT_SPECIES = { flamingo: ['flamingo', FLAMINGO_WORLDS], jellyfish: ['jellyfish', ['reef']], wolf: ['wolves', ['forest']], gnu: ['migration', ['savanna']], redpanda: ['fireflies', ['asia']], dartfrog: ['glownight', ['jungle']] };
+const EVENT_ICONS = { babies: '🍼', ride: '🐴', flamingo: '🦩', farm: '🐄', icecream: '🍦', rare: '✨', jellyfish: '🪼', wolves: '🐺', migration: '🦬', weather: '🌦️', fireflies: '✨', glownight: '🐸', puffins: '🐦', lanterns: '🏮' };
 // lebt diese Art in diesem Level (bzw. dieser Wetterphase eines Levels)?
 const livesIn = (l, s) => !!spawnWeights(l)[s] || (s === 'heron' && !!l.herons) || (s === 'vulture' && !!l.vultures) || (s === 'hyena' && !!l.hyenas) || (s === 'iguana' && !!l.waterfallSun) || (s === 'gorilla' && !!l.gorillas) || (s === 'beaver' && !!l.beavers) || (s === 'yak' && !!l.yaks) || ((s === 'snake' || s === 'tarantula') && l.name === LEVELS.jungle.name); // im Dickicht des Dschungels
 // Welten, in denen es eine Tierart gibt: [{ level, extra }]; extra = { icon, name }, wenn nur bei einem Wetter oder Event
@@ -852,6 +872,14 @@ const TOOLS = {
     name: tr('Quallenglas', 'Jellyfish jar'),
     catches: ['jellyfish'],
     hint: (list) => tr(`Damit fängst du ${animalIcons(list)} – aber nur, wenn sie langsam sinken!`, `Catches ${animalIcons(list)} – but only while they slowly sink!`),
+  },
+  // Froschglas (Leuchtnacht im Dschungel): geschwungen wie der Kescher, fängt die giftigen Pfeilgiftfrösche
+  frogjar: {
+    create: (scene, player) => new Net(scene, player, { id: 'frogjar', texture: 'jar', origin: [32 / 64, 58 / 64] }),
+    name: tr('Froschglas', 'Frog jar'),
+    image: 'jar',
+    catches: ['dartfrog'],
+    hint: (list) => tr(`Damit fängst du ${animalIcons(list)} – nicht mit der Hand, sie sind giftig!`, `Catches ${animalIcons(list)} – not by hand, they are poisonous!`),
   },
   koifood: {
     create: (scene, player) => new KoiFoodTool(scene, player),
@@ -1077,15 +1105,12 @@ export default class GardenScene extends Phaser.Scene {
     // fließender Fluss (LEVEL.flow): seine Wasserkacheln sind eigene Bilder, deren Bild reihum wechselt (siehe animateFlow)
     const river = LEVEL.flow ? riverTiles() : null;
     this.flowTiles = [];
-    // Uferstreifen (Sand, Kies, heller Schlamm) zwischen Gras und Wasser, siehe shore.js: wird mit dem Boden gemalt
-    const shoreKeys = [];
-    const shore = (x, y, tx, ty, key) => {
-      const k = shoreTexture(this, tx, ty, key);
-      if (k) {
-        ground.push([x, y, k]);
-        shoreKeys.push(k);
-      }
-    };
+    // Uferstreifen (Sand, Kies, heller Schlamm) zwischen Gras und Wasser, siehe shore.js: erst nach dem Start in den Boden
+    // gemalt, Stück für Stück (paintShores). Alle auf einmal hielten den Aufbau am Tablet mehrere Sekunden an. Der Streifen
+    // liegt nur auf Land, die Wasserkachel deckt ihn nicht ab: nachträglich obenauf sieht er gleich aus
+    const shoreKeys = []; // (Übergänge zwischen Bodenarten, gleich mit dem Boden gemalt)
+    const shores = [];
+    const shore = (x, y, tx, ty, key) => shores.push([x, y, tx, ty, key]);
     // weicher Übergang zwischen Bodenarten (siehe groundBlend.js): vor dem Ufer gemalt, damit das Ufer obenauf liegt
     const blend = (x, y, tx, ty) => {
       for (const k of [blendTexture(this, tx, ty), mudTexture(this, tx, ty)]) {
@@ -1257,8 +1282,9 @@ export default class GardenScene extends Phaser.Scene {
       this.withParkBrush(() => img.active && img.setTexture(PARK_BRUSH).setScale(25 / img.width).setVisible(true));
     }
     this.cullView = null;
-    this.bakeGround(ground);
-    removeShoreTextures(this, shoreKeys); // sind jetzt im Boden gemalt (auch die Übergänge zwischen Bodenarten)
+    const paintGround = this.bakeGround(ground);
+    removeShoreTextures(this, shoreKeys); // sind jetzt im Boden gemalt (die Übergänge zwischen Bodenarten)
+    this.paintShores(shores, paintGround);
     clearBlendCache();
 
     // Tore der Gehege: jedes verschwindet kurz, solange jemand hindurchgeht
@@ -1353,21 +1379,29 @@ export default class GardenScene extends Phaser.Scene {
       if (!onFence && !house && !e.signOnGlass) {
         parts.push(this.add.rectangle(sx, sy - 6, 3, 18, 0x8a5a30).setStrokeStyle(1, 0x3c2814).setDepth(front - 0.1));
       }
-      parts.push(this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front));
-      // das Bild der Tierart auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
       const list = only ?? e.species ?? [];
-      const step = SIGN_INNER_W / list.length;
-      list.forEach((s, i) => {
-        const icon = this.add.image(sx - SIGN_INNER_W / 2 + step * (i + 0.5), sy - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
-        icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
-        parts.push(icon);
-      });
+      // isometrisch: am Zaun (nicht auf dem Dach, an der Hauswand oder im Dunkeln) liegt das Schild schräg wie der Zaun
+      const axis = ISO_SIGNS && onFence && !house && !wall && !e.dark ? fenceAxisAt(at.tx, at.ty) : null;
+      const slope = axis === 'x' ? 0.5 : axis === 'y' ? -0.5 : 0;
+      if (slope) {
+        if (shift) sy += shift * slope; // nebeneinander am Zaun: der Schräge nach versetzt
+        parts.push(this.add.image(sx, sy - 20, this.isoSignTexture(list, slope)).setScale(1 / ISO_SIGN_R).setDepth(front));
+      } else {
+        parts.push(this.add.image(sx, sy - 20, 'esign_board').setScale(0.5).setDepth(front));
+        // das Bild der Tierart auf der hellen Tafel (38×22 Pixel, Mitte etwas unter der Bildmitte)
+        const step = SIGN_INNER_W / list.length;
+        list.forEach((s, i) => {
+          const icon = this.add.image(sx - SIGN_INNER_W / 2 + step * (i + 0.5), sy - 18, SPECIES[s].texture, s === 'fish' ? 1 : 0);
+          icon.setScale(Math.min(SIGN_ICON_H / icon.height, (step - 2) / icon.width)).setDepth(front + 0.1);
+          parts.push(icon);
+        });
+      }
       // Plätze dieser Tierart: "4 / 6", voll mit Stern (teilen sich mehrere Arten die Plätze, steht auf jedem Schild die Summe)
       const quotas = penQuotas(e);
       const quota = (list.length && quotas.find(({ key }) => key === quotaKey(list[0]))) || quotas.find(({ key }) => key === null);
-      const counts = quota
-        ? [{ key: quota.key, text: this.add.text(sx, sy + 2, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '8px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 0).setDepth(front + 0.2) }]
-        : [];
+      const counts = !quota ? [] : slope
+        ? [{ key: quota.key, slope, text: this.add.image(sx, sy + 4, '__DEFAULT').setScale(1 / ISO_SIGN_R).setDepth(front + 0.2) }]
+        : [{ key: quota.key, text: this.add.text(sx, sy + 2, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '8px', fontStyle: 'bold', color: '#fff8e6', backgroundColor: '#3c2814cc', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 0).setDepth(front + 0.2) }];
       parts.push(...counts.map((c) => c.text));
       // nur Schilder, die wegen eines Tors nach vorn gerückt sind (nicht im Dunkeln, an der Hauswand oder auf dem Dach)
       const lift = !e.dark && !wall && !house && own < front ? { parts: parts.map((p) => [p, p.depth]), drop: own - front } : null;
@@ -1403,6 +1437,11 @@ export default class GardenScene extends Phaser.Scene {
     this.iceCatch = null; // Eiswelt: Hasenbau, Muscheln, Eisbär-Köder (siehe updatePolarWolves)
     this.migration = null; // Große Wanderung in der Savanne (siehe updateMigration)
     this.fireflies = null; // Glühwürmchen-Abend im Bambuswald (siehe updateFireflies)
+    this.glowNight = null; // Leuchtnacht im Dschungel (siehe updateGlowNight)
+    this.puffinFlocks = null; // Papageitaucher-Zug in der Eiswelt (siehe updatePuffinEvent)
+    this.puffinTimer = 0;
+    this.dartFrogsStarted = false;
+    this.dartFrogTimer = 0;
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
     this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
@@ -2523,6 +2562,8 @@ export default class GardenScene extends Phaser.Scene {
           ? new Turtle(this, x, y)
         : species === 'jellyfish'
           ? new Jellyfish(this, x, y)
+        : species === 'dartfrog'
+          ? new DartFrog(this, x, y)
         : species === 'ray'
           ? new Ray(this, x, y)
         : species === 'hippo'
@@ -4263,15 +4304,54 @@ export default class GardenScene extends Phaser.Scene {
       }
       return chunks.get(k);
     };
-    for (const [x, y, key] of list) {
-      // eine Kachel kann über den Rand einer Fläche (samt Überlappung) reichen: dann in alle betroffenen malen
-      const i0 = Math.floor((x - TILE_W / 2 - PAD - minX) / CHUNK), i1 = Math.floor((x + TILE_W / 2 + PAD - minX) / CHUNK);
-      const j0 = Math.floor((y - TILE_H / 2 - PAD - minY) / CHUNK), j1 = Math.floor((y + TILE_H / 2 + PAD - minY) / CHUNK);
-      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
-        const rt = chunk(i, j);
-        rt.stamp(key, undefined, (x - rt.x) * res, (y - rt.y) * res, { scale: res });
+    // erst je Fläche sammeln (Reihenfolge bleibt), dann jede Fläche in einem Zug malen: einzeln richtet jedes stamp die
+    // Zeichenfläche auf der Grafikkarte neu ein, das kostete beim Aufbau des Tierparks am Tablet mehrere Sekunden
+    // (gibt die Malfunktion zurück: damit kommen später die Uferstreifen dazu, siehe paintShores)
+    const paint = (items) => {
+      const todo = new Map(); // Fläche → [[x, y, key], ...]
+      for (const item of items) {
+        const [x, y] = item;
+        // eine Kachel kann über den Rand einer Fläche (samt Überlappung) reichen: dann in alle betroffenen malen
+        const i0 = Math.floor((x - TILE_W / 2 - PAD - minX) / CHUNK), i1 = Math.floor((x + TILE_W / 2 + PAD - minX) / CHUNK);
+        const j0 = Math.floor((y - TILE_H / 2 - PAD - minY) / CHUNK), j1 = Math.floor((y + TILE_H / 2 + PAD - minY) / CHUNK);
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+          const rt = chunk(i, j);
+          if (!todo.has(rt)) todo.set(rt, []);
+          todo.get(rt).push(item);
+        }
       }
-    }
+      for (const [rt, batch] of todo) {
+        rt.beginDraw();
+        for (const [x, y, key] of batch) rt.stamp(key, undefined, (x - rt.x) * res, (y - rt.y) * res, { scale: res, skipBatch: true });
+        rt.endDraw();
+      }
+    };
+    paint(list);
+    return paint;
+  }
+
+  // Uferstreifen nach dem Start nachmalen: je Bild des Spiels nur ein paar Millisekunden rechnen (shoreTexture), die
+  // fertigen Kacheln in den Boden malen (paint aus bakeGround) und ihre Bilder gleich wieder freigeben
+  paintShores(list, paint) {
+    if (!list.length) return;
+    const budget = isTouch() ? 3 : 5;
+    let i = 0;
+    const step = () => {
+      const until = performance.now() + budget;
+      const done = [];
+      while (i < list.length && performance.now() < until) {
+        const [x, y, tx, ty, key] = list[i++];
+        const k = shoreTexture(this, tx, ty, key);
+        if (k) done.push([x, y, k]);
+      }
+      if (done.length) {
+        paint(done);
+        removeShoreTextures(this, done.map(([, , k]) => k));
+      }
+      if (i >= list.length) this.events.off('postupdate', step);
+    };
+    this.events.on('postupdate', step);
+    this.events.once('shutdown', () => this.events.off('postupdate', step));
   }
 
   // feste Dinge (Bäume, Zäune, Büsche ...) außerhalb des Bildausschnitts ausblenden, damit sie nicht gezeichnet werden.
@@ -4602,6 +4682,8 @@ export default class GardenScene extends Phaser.Scene {
     if (id === 'migration') this.showToast(tr('🦬 Große Wanderung! Unten links in der Savanne zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing through the lower left of the savanna – keep your lasso ready.'));
     if (id === 'wolves') this.showToast(tr('🐺 Wolfsnacht! Im Wald ist es dunkel – folge mit der Laterne den leuchtenden Spuren zu den Wölfen.', '🐺 Wolf Night! It is dark in the forest – follow the glowing tracks to the wolves with your lantern.'));
     if (id === 'jellyfish') this.showToast(tr('🪼 Quallen-Schwarm! Im Riff treiben jetzt Quallen – das Quallenglas liegt im Sack am Anker.', '🪼 Jellyfish Swarm! Jellyfish are drifting through the reef – the jellyfish jar is in the bag at the anchor.'));
+    if (id === 'puffins') this.showToast(tr('🐦 Papageitaucher-Zug! In der Eiswelt landen Schwärme auf den Felsen am Rand.', '🐦 Puffin Season! In the Ice World flocks are landing on the rocks at the edge.'));
+    if (id === 'glownight') this.showToast(tr('🐸 Leuchtnacht! Im Dschungel ist es Nacht – in den Kisten liegt ein Froschglas.', '🐸 Glowing Night! It is night in the jungle – there is a frog jar in the chests.'));
     if (id === 'ride') this.showToast(tr('🐴 Dein Reittier wartet in den Welten! Dort sitzt du 10 Minuten lang im Sattel.', '🐴 Your mount is waiting in the worlds! There you ride for 10 minutes.'));
     if (id === 'babies') {
       this.spawnBabies(true);
@@ -5557,6 +5639,61 @@ export default class GardenScene extends Phaser.Scene {
     return spots.length < n ? row() : spots.map((at) => ({ at, shift: 0, fence: true }));
   }
 
+  // Schräges Gehegeschild (ISO_SIGNS): Tafel samt Tierbildern auf eine eigene Leinwand gezeichnet und senkrecht geschert
+  // (slope: so viel tiefer pro Pixel nach rechts, ±0.5 wie der Zaun). Die Bildmitte ist die Mitte der Tafel.
+  isoSignTexture(list, slope) {
+    const key = `esign_iso_${list.join('+')}_${slope}`;
+    if (this.textures.exists(key)) return key;
+    const R = ISO_SIGN_R;
+    const bw = 48, bh = 36; // Tafel in Welt-Pixeln (esign_board in halber Größe)
+    const ch = bh + Math.abs(slope) * bw;
+    const tex = this.textures.createCanvas(key, bw * R, Math.ceil(ch * R));
+    const ctx = tex.getContext();
+    ctx.setTransform(R, R * slope, 0, R, (R * bw) / 2, (R * ch) / 2);
+    ctx.imageSmoothingQuality = 'high';
+    const draw = (texKey, frame, x, y, w, h) => {
+      const f = this.textures.getFrame(texKey, frame);
+      if (f) ctx.drawImage(f.source.image, f.cutX, f.cutY, f.cutWidth, f.cutHeight, x, y, w, h);
+    };
+    draw('esign_board', undefined, -bw / 2, -bh / 2, bw, bh);
+    const step = SIGN_INNER_W / list.length;
+    list.forEach((s, i) => {
+      const frame = s === 'fish' ? 1 : 0;
+      const f = this.textures.getFrame(SPECIES[s].texture, frame);
+      if (!f) return;
+      const k = Math.min(SIGN_ICON_H / f.height, (step - 2) / f.width);
+      const w = f.width * k, h = f.height * k;
+      draw(SPECIES[s].texture, frame, -SIGN_INNER_W / 2 + step * (i + 0.5) - w / 2, 2 - h / 2, w, h);
+    });
+    tex.refresh();
+    return key;
+  }
+
+  // Platz-Zähler eines schrägen Schilds: kleines dunkles Feld mit der Zahl, geschert wie das Schild
+  isoCountTexture(text, color, slope) {
+    const key = `esign_count_${text}_${color}_${slope}`;
+    if (this.textures.exists(key)) return key;
+    const R = ISO_SIGN_R;
+    const font = `bold ${6 * R}px "Trebuchet MS", Arial`;
+    const probe = document.createElement('canvas').getContext('2d');
+    probe.font = font;
+    const w = probe.measureText(text).width / R + 4, h = 8;
+    const ch = h + Math.abs(slope) * w;
+    const tex = this.textures.createCanvas(key, Math.ceil(w * R), Math.ceil(ch * R));
+    const ctx = tex.getContext();
+    ctx.setTransform(R, R * slope, 0, R, (R * w) / 2, (R * ch) / 2);
+    ctx.fillStyle = '#3c2814cc';
+    ctx.fillRect(-w / 2, -h / 2, w, h);
+    ctx.font = font;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.setTransform(1, slope, 0, 1, (R * w) / 2, (R * ch) / 2 + R * 0.5);
+    ctx.fillText(text, 0, 0);
+    tex.refresh();
+    return key;
+  }
+
   // Platz-Zähler an den Gehegeschildern
   updatePenSigns() {
     if (!this.animals) return; // beim Aufbau sind die Tiere noch nicht da (danach jede halbe Sekunde)
@@ -5567,8 +5704,10 @@ export default class GardenScene extends Phaser.Scene {
         const n = penCount(this.animals, sign.enclosure, c.key);
         const full = n >= cap;
         const text = `${n} / ${cap}${full ? ' ⭐' : ''}`;
-        if (c.text.text === text) continue;
-        c.text.setText(text).setColor(full ? '#ffd966' : '#fff8e6');
+        if (c.shown === text) continue;
+        c.shown = text;
+        if (c.slope) c.text.setTexture(this.isoCountTexture(text, full ? '#ffd966' : '#fff8e6', c.slope));
+        else c.text.setText(text).setColor(full ? '#ffd966' : '#fff8e6');
         if (sign === this.shownSign) this.showSignPanel(sign); // Tafel offen: Liste der Tiere auffrischen
       }
     }
@@ -5645,7 +5784,7 @@ export default class GardenScene extends Phaser.Scene {
   // Schatten, und den Fang-Tipp gibt es erst, wenn man dem Tier draußen begegnet ist (sonst wird es zu viel Text)
   bookAnimals() {
     const home = this.homeCounts();
-    const toolImg = (t) => `<img class="tool-img" src="assets/${CATCH_TOOLS[t][0]}.png" alt="">`;
+    const toolImg = (t) => `<img class="tool-img" src="${uiImg(CATCH_TOOLS[t][0])}" alt="">`;
     const cards = SPECIES_ORDER.map((s) => {
       const [name] = ANIMAL_INFO[s] ?? [s];
       const worlds = worldsOf(s);
@@ -5692,7 +5831,7 @@ export default class GardenScene extends Phaser.Scene {
 
   // Reiter "Fangen": die Fangarten kurz erklärt, seltene Varianten und welches Werkzeug welche Tiere fängt
   bookCatching() {
-    const img = (key) => `<img class="tool-img" src="assets/${key}.png" alt="">`;
+    const img = (key) => `<img class="tool-img" src="${uiImg(key)}" alt="">`;
     const ways = [
       [img('hand'), tr('<b>Berühren:</b> Manche Tiere wie Schafe und Katzen laufen dir einfach hinterher, wenn du sie berührst.', '<b>Touch:</b> Some animals like sheep and cats simply follow you when you touch them.')],
       [img('net'), tr('<b>Kescher:</b> für kleine und flinke Tiere – geh nah heran und schwing ihn.', '<b>Net:</b> for small and quick animals – get close and swing it.')],
@@ -5987,9 +6126,9 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
     const id = this.toolId;
-    setTouchTool(id, id && TOOLS[id].image ? `assets/${TOOLS[id].image}.png` : undefined);
+    setTouchTool(id, id ? uiImg(TOOLS[id].image ?? id) : undefined);
     this.toolbar.innerHTML = id
-      ? `<div class="tool"><img src="assets/${TOOLS[id].image ?? id}.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${TOOLS[id].name}</span></div>`
+      ? `<div class="tool"><img src="${uiImg(TOOLS[id].image ?? id)}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${TOOLS[id].name}</span></div>`
       : '';
   }
 
@@ -6598,7 +6737,7 @@ export default class GardenScene extends Phaser.Scene {
   // Werkzeug-Kiste öffnen: Werkzeuge dieses Gebiets und "Hände frei"; das Spiel pausiert so lange
   openChest(chest) {
     if (!chest || this.leaving || isToolChestOpen() || isTravelMapOpen() || isJournalOpen()) return;
-    const tools = [...new Set([...(this.expMap || LEVEL.side ? this.expTools() : chest.tools), ...(this.sideWolfNight() ? ['lantern'] : []), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(this.fireflyEvening() && !this.expMap ? ['fireflyjar'] : [])])]; // (Wolfsnacht hinter einem Durchgang: die Laterne für die Spuren) beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
+    const tools = [...new Set([...(this.expMap || LEVEL.side ? this.expTools() : chest.tools), ...(this.sideWolfNight() ? ['lantern'] : []), ...(LEVEL.sea && isActive('jellyfish') ? ['jar'] : []), ...(this.fireflyEvening() && !this.expMap ? ['fireflyjar'] : []), ...(this.glowNightOn() ? ['frogjar'] : [])])]; // (Wolfsnacht hinter einem Durchgang: die Laterne für die Spuren) beim Quallen-Schwarm liegt das Quallenglas im Sack, beim Glühwürmchen-Abend das Glas in der Hütte
     const items = [...tools, null].map((id) => ({
       id,
       name: id ? TOOLS[id].name : tr('Hände frei', 'Empty hands'),
@@ -6675,7 +6814,7 @@ export default class GardenScene extends Phaser.Scene {
             this.markNew(`seen:${best.species}`);
           }
           const tools = [...new Set([...SPECIES[best.species].catchWith.map((t) => CATCH_TOOLS[t][0]), ...Object.keys(TOOL_LURES).filter((id) => TOOL_LURES[id].includes(best.species) && id !== 'glowjar').map((id) => TOOLS[id].image ?? id)])];
-          el.innerHTML = `${tools.slice(0, 3).map((t) => `<img src="assets/${t}.png" alt="">`).join('')}`;
+          el.innerHTML = `${tools.slice(0, 3).map((t) => `<img src="${uiImg(t)}" alt="">`).join('')}`;
           el.onclick = (e) => {
             e.stopPropagation();
             this.showCatchTip(best.species);
@@ -7274,6 +7413,117 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Leuchtnacht im Dschungel: läuft sie hier? (nicht in der Expedition)
+  glowNightOn() {
+    return (LEVEL_ID === 'jungle' && !this.expMap && isActive('glownight')) || this.expGlowNight();
+  }
+
+  // Expedition: Event-Karte Leuchtnacht (Flussbiegung): so viele Frösche, wie auf der Tierliste noch frei sind
+  expGlowNight() {
+    return !!(this.expMap && LEVEL.glowNight && expRun()?.event === LEVEL_ID);
+  }
+
+  // Papageitaucher-Zug in der Eiswelt: Gruppen fliegen vom Meer zu den Felsformationen am Rand (Puffin.arriveFromSea),
+  // Schwärme ziehen zur Stimmung über die Karte (PuffinFlocks). Danach fliegen die Vögel von selbst fort (mode 'gone')
+  updatePuffinEvent(dt) {
+    // (Expedition: auf der Event-Karte nur die Schwärme, die Vögel selbst stehen in der Tierliste der Karte)
+    if (this.expPuffins()) {
+      this.puffinFlocks ??= new PuffinFlocks(this);
+      this.puffinFlocks.update(dt);
+      return;
+    }
+    const on = LEVEL_ID === 'ice' && !this.expMap && isActive('puffins');
+    if (LEVEL_ID === 'ice') for (const a of this.animals.filter((x) => x.species === 'puffin' && x.mode === 'gone')) this.despawn(a);
+    if (!on) {
+      if (this.puffinFlocks) {
+        this.puffinFlocks.destroy();
+        this.puffinFlocks = null;
+        this.showToast(tr('🐦 Der Papageitaucher-Zug ist vorbei – die Vögel fliegen hinaus aufs Meer.', '🐦 Puffin Season is over – the birds are flying out to sea.'));
+      }
+      return;
+    }
+    this.puffinFlocks ??= new PuffinFlocks(this);
+    this.puffinFlocks.update(dt);
+    this.puffinTimer -= dt;
+    if (this.puffinTimer > 0) return;
+    this.puffinTimer = Phaser.Math.FloatBetween(...PUFFIN_GROUP_EVERY);
+    const formations = puffinFormations();
+    if (!formations.length) return;
+    const here = this.animals.filter((a) => a.species === 'puffin' && a.formation && a.state === 'wild');
+    const n = Math.min(Phaser.Math.Between(...PUFFIN_GROUP), PUFFIN_MAX - here.length);
+    if (n <= 0) return;
+    // zur Formation mit den wenigsten Vögeln (bei Gleichstand zufällig)
+    const count = (f) => here.filter((a) => a.formation === f).length + Math.random() * 0.5;
+    const f = [...formations].sort((p, q) => count(p) - count(q))[0];
+    for (let i = 0; i < n; i++) {
+      const a = this.createAnimal('puffin', 0, 0);
+      this.finishSpawn([a], false);
+      a.life = Infinity; // bleibt bis zum Ende des Events
+      a.arriveFromSea(f, i * Phaser.Math.FloatBetween(0.3, 0.8));
+    }
+  }
+
+  // Plätze für Pfeilgiftfrösche: am Wasser, aber nicht hinter etwas Hohem (Baum, Hütte, Wasserflugzeug), denn in der
+  // Nacht werden sie über der Dunkelheit gezeichnet und schienen sonst darauf zu sitzen
+  dartFrogTiles() {
+    if (this._dartFrogTiles?.level === LEVEL) return this._dartFrogTiles.tiles; // (die Szene bleibt beim Kartenwechsel dieselbe)
+    const car = LEVEL.car;
+    const tiles = NEAR_WATER.filter(({ tx, ty }) =>
+      !FRONT.some(([dx, dy]) => isTall(tx + dx, ty + dy)) && (!car || Math.hypot(tx - car.tx, ty - car.ty) > 4));
+    this._dartFrogTiles = { level: LEVEL, tiles };
+    return tiles;
+  }
+
+  // Leuchtnacht: Nacht und Leuchtpilze (GlowNight.js), Pfeilgiftfrösche am Wasser (gefangene kommen nach einer Weile
+  // nach), Hinweis beim Anfassen ohne Froschglas; danach wird es hell, die wilden Frösche und das Glas sind fort
+  updateGlowNight(dt) {
+    const on = this.glowNightOn();
+    const wild = this.animals.filter((a) => a.species === 'dartfrog' && a.state === 'wild');
+    if (on && !this.glowNight) {
+      this.glowNight = new GlowNight(this);
+      this.startAmbient();
+      this.dartFrogTimer = 0;
+    }
+    if (!on) {
+      for (const a of wild) this.despawn(a);
+      if (!this.glowNight) return;
+      this.glowNight.destroy();
+      this.glowNight = null;
+      this.startAmbient();
+      if (this.toolId === 'frogjar') {
+        this.tool.destroy();
+        this.tool = null;
+        this.toolId = null;
+        this.updateToolbar();
+      }
+      this.showToast(tr('🐸 Die Leuchtnacht ist vorbei – im Dschungel wird es wieder hell.', '🐸 The Glowing Night is over – the jungle is getting light again.'));
+      return;
+    }
+    this.glowNight.update(dt);
+    // Frösche: beim Ankommen gleich alle, danach je einer, wenn einer fehlt
+    this.dartFrogTimer -= dt;
+    const want = this.expMap ? Math.min(DARTFROGS, expRun()?.left?.dartfrog ?? 0) : DARTFROGS;
+    if (wild.length < want && this.dartFrogTimer <= 0) {
+      const first = !this.dartFrogsStarted;
+      this.dartFrogsStarted = true;
+      this.dartFrogTimer = Phaser.Math.FloatBetween(...DARTFROG_REFILL);
+      const taken = [worldToTile(this.player.x, this.player.y), ...wild.map((a) => worldToTile(a.x, a.y))];
+      for (let i = wild.length; i < (first ? want : wild.length + 1); i++) {
+        const t = this.tileFrom(this.dartFrogTiles(), taken) ?? this.randomFreeTile(taken);
+        taken.push(t);
+        const p = tileToWorld(t.tx, t.ty);
+        const [a] = this.finishSpawn([this.createAnimal('dartfrog', p.x, p.y)], true);
+        a.life = Infinity; // bleibt bis zum Ende des Events
+      }
+    }
+    // giftig: anfassen geht nicht, nur ein Hinweis (ohne Strafe)
+    const p = this.player;
+    if (this.toolId !== 'frogjar' && wild.some((a) => Math.hypot(a.x - p.x, (a.y - p.y) * 2) < DARTFROG_TOUCH) && this.time.now - (this.dartFrogHintAt ?? -Infinity) > DARTFROG_HINT_EVERY) {
+      this.dartFrogHintAt = this.time.now;
+      this.showToast(`${animalIcon('dartfrog', 3)} ${tr('Giftig! Nimm das Froschglas aus der Kiste.', 'Poisonous! Take the frog jar from the chest.')}`);
+    }
+  }
+
   // Aquarium: abgedunkelte Räume (Gebäude mit dark, außer den Becken darin). Eine dunkle Fläche über Boden und Wänden;
   // die Quallen im Becken dort leuchten darüber (siehe Jellyfish.js), die Schilder liegen ebenfalls darüber
   drawDarkRooms() {
@@ -7451,7 +7701,7 @@ export default class GardenScene extends Phaser.Scene {
     this.saveLevelState();
     game.levels[LEVEL_ID].animals = game.levels[LEVEL_ID].animals.filter((a) => a.state !== 'wild');
     const arrive = worldToTile(this.player.x, this.player.y);
-    const text = LEVEL_ID === 'ice' ? {
+    let text = LEVEL_ID === 'ice' ? {
       night: tr('🌙 Es wird Nacht. Das Meer friert zu – jetzt kommst du zu Fuß auf die Inseln. Aber es ist eisig kalt: wärm dich zwischendurch in der Forschungsstation auf!', '🌙 Night is falling. The sea is freezing over – now you can walk to the islands. But it is icy cold: warm up at the station now and then!'),
       day: tr('☀️ Es wird Tag. Das Eis bricht auf – zu den Inseln fahren jetzt wieder die Eisschollen.', '☀️ Day is breaking. The ice is breaking up – ice floes ferry you to the islands again.'),
     }[now.id] : LEVEL_ID === 'jungle' ? {
@@ -7463,6 +7713,8 @@ export default class GardenScene extends Phaser.Scene {
       dry: tr('☀️ Trockenzeit! Die Wasserlöcher trocknen aus – Geier kreisen, Warzenschweine graben, und am Elefantenfriedhof kichern Hyänen.', '☀️ Dry season! The waterholes are drying up – vultures circle, warthogs dig, and hyenas are giggling at the elephant graveyard.'),
       normal: tr('🌿 In der Savanne ist wieder normales Wetter.', '🌿 The savanna is back to normal weather.'),
     }[now.id];
+    // Papageitaucher-Zug: es wird Tag, weil die Vögel kommen (sonst wäre Nacht)
+    if (LEVEL_ID === 'ice' && now.event && LEVEL.season === 'night') text = tr('☀️ Die Papageitaucher kommen – in der Eiswelt wird es Tag!', '☀️ The puffins are coming – day is breaking in the Ice World!');
     writeSave(LEVEL_ID);
     // nach dem Schlafen: langsam dunkel, und beim Aufwachen steht dabei, dass man ausgeschlafen hat
     const restart = () => {
@@ -7966,13 +8218,15 @@ export default class GardenScene extends Phaser.Scene {
   updatePolarWolves(dt) {
     // (Expedition: auf jeder Map der Eiswelt; das Rudel nur, wenn es auf der Tierliste steht, kleiner, und es zieht fort,
     // sobald man einen hat – ein Rudel ist eine Einheit wie in der Wolfsnacht)
-    const on = biomeOf() === 'ice' && !LEVEL.camp && !LEVEL.side;
-    if (on && !this.polarWolves) {
+    // (hinter einem Durchgang der großen Eiswelt: Fangen wie dort; ein kleineres Rudel nur auf Maps mit Tundra)
+    const on = biomeOf() === 'ice' && !LEVEL.camp;
+    const wolves = on && (!LEVEL.side || !!LEVEL.features?.includes('tundra'));
+    if (wolves && !this.polarWolves) {
       const tundra = new Set(this.groundTiles('tundra').map(({ tx, ty }) => tx + ',' + ty));
-      const exp = this.expMap ? { packs: () => expRun()?.left?.arcticwolf ?? 0, size: EXP_GROUP, leave: true } : { packs: () => POLAR_PACKS, size: POLAR_PACK_SIZE };
+      const exp = this.expMap ? { packs: () => expRun()?.left?.arcticwolf ?? 0, size: EXP_GROUP, leave: true } : LEVEL.side ? { packs: () => POLAR_PACKS, size: EXP_GROUP } : { packs: () => POLAR_PACKS, size: POLAR_PACK_SIZE };
       this.polarWolves = new WolfNight(this, { species: 'arcticwolf', night: false, tracks: false, alone: false, hear: POLAR_HOWL_HEAR, where: (tx, ty) => tundra.has(tx + ',' + ty), ...exp });
     }
-    if (!on && this.polarWolves) {
+    if (!wolves && this.polarWolves) {
       this.polarWolves.destroy();
       this.polarWolves = null;
     }
@@ -8299,6 +8553,11 @@ export default class GardenScene extends Phaser.Scene {
     if (animal.species === 'jellyfish' && !game.unlocked.includes('jellyfish')) {
       game.unlocked.push('jellyfish');
       this.time.delayedCall(1200, () => this.showToast(`${animalIcon('jellyfish', 3.2)} ${tr('Erste Qualle! Im Aquarium ist der Quallenraum offen (Raum 2, unten rechts).', 'First jellyfish! The jellyfish room is open (aquarium room 2, bottom right).')}`));
+    }
+    // der erste Pfeilgiftfrosch: er wohnt frei in der Tropenhalle
+    if (animal.species === 'dartfrog' && !game.unlocked.includes('dartfrog')) {
+      game.unlocked.push('dartfrog');
+      this.time.delayedCall(1200, () => this.showToast(`${animalIcon('dartfrog', 3.2)} ${tr('Erster Pfeilgiftfrosch! Er hüpft frei in der Tropenhalle herum.', 'First poison dart frog! It hops around freely in the Tropical Hall.')}`));
     } // aus welcher Welt es kommt: im Tierpark zieht es in das Gehege dieser Welt
     // Gehege im Tierpark schon voll? Dann vorher Bescheid sagen (es zieht dann eins ins Naturreservat)
     const full = !isPark(LEVEL_ID) && this.parkPenFull(animal.species, animal.origin);
@@ -8612,6 +8871,11 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // ... bzw. der Glühwürmchen-Abend (Bambuswald: Koi-Garten, Kirschblütenhang)
+  // Expedition: Event-Karte Papageitaucher-Zug auf den Vogelfelsen (Schwärme, die Vögel stehen länger am Ufer, siehe Puffin.js)
+  expPuffins() {
+    return !!(this.expMap && LEVEL.puffins && expRun()?.event === LEVEL_ID);
+  }
+
   expFireflies() {
     return !!(this.expMap && LEVEL.fireflies && expRun()?.event === LEVEL_ID);
   }
@@ -9044,6 +9308,12 @@ export default class GardenScene extends Phaser.Scene {
     if (c.kind === 'event' && LEVELS[c.map]?.fireflies) {
       return { icon: animalIcon('redpanda', 3), title: tr('Glühwürmchen-Abend', 'Firefly Evening'), text: tr('Es wird Abend, Glühwürmchen schweben umher – rote Pandas sitzen in den Kirschbäumen!', 'Evening falls and fireflies drift about – red pandas sit in the cherry trees!') + where, color: '#7a5ad0', tag: tr('Event', 'Event') };
     }
+    if (c.kind === 'event' && LEVELS[c.map]?.glowNight) {
+      return { icon: animalIcon('dartfrog', 3), title: tr('Leuchtnacht', 'Glowing Night'), text: tr('Es wird Nacht am Fluss: Pilze leuchten, bunte Pfeilgiftfrösche sitzen am Ufer. Giftig – nur mit dem Froschglas!', 'Night falls by the river: mushrooms glow, colorful poison dart frogs sit on the shore. Poisonous – only with the frog jar!') + where, color: '#1f6f6a', tag: tr('Event', 'Event') };
+    }
+    if (c.kind === 'event' && LEVELS[c.map]?.puffins) {
+      return { icon: animalIcon('puffin', 3), title: tr('Papageitaucher-Zug', 'Puffin Season'), text: tr('Schwärme kehren vom Meer zurück und landen auf den Vogelfelsen – keschere sie am Ufer!', 'Flocks return from the sea and land on the bird rocks – net them on the shore!') + where, color: '#2f7fa8', tag: tr('Event', 'Event') };
+    }
     if (c.kind === 'event' && LEVELS[c.map]?.wolfNight) {
       return { icon: animalIcon('wolf', 3), title: tr('Wolfsnacht', 'Wolf Night'), text: tr('Es wird Nacht im Wald – Wolfsrudel ruhen auf den Lichtungen. Folge ihren leuchtenden Spuren!', 'Night falls in the forest – wolf packs rest in the clearings. Follow their glowing tracks!') + where, color: '#3a4a8a', tag: tr('Event', 'Event') };
     }
@@ -9143,7 +9413,7 @@ export default class GardenScene extends Phaser.Scene {
   // Hintergrundgeräusch: das des Levels, in der Wolfsnacht im Wald der Wald bei Nacht
   ambientKey() {
     if ((LEVEL_ID === 'savanna' && isActive('migration')) || this.expEvent?.()) return 'ambient_migration';
-    if (this.fireflyEvening?.() || this.lanternEvening?.()) return 'ambient_forest_night'; // Glühwürmchen- und Laternenabend: Abendgeräusche
+    if (this.fireflyEvening?.() || this.lanternEvening?.() || this.glowNightOn?.()) return 'ambient_forest_night'; // (auch die Leuchtnacht im Dschungel) // Glühwürmchen- und Laternenabend: Abendgeräusche
     return (LEVEL_ID === 'forest' && isActive('wolves')) || this.expWolfNight() || this.sideWolfNight() ? 'ambient_forest_night' : LEVEL.ambient;
   }
 
@@ -9313,24 +9583,43 @@ export default class GardenScene extends Phaser.Scene {
       return [p.x, p.y - H];
     };
     const maxY = Math.max(...e.tiles.map(({ tx, ty }) => tileToWorld(tx, ty).y));
-    const g = this.add.graphics().setDepth(maxY + TILE_H + 1);
-    g.lineStyle(1, 0xd8c89a, 0.55);
+    const segs = [];
+    const dots = [];
     const drawn = new Set();
     const edge = (a0, b0, a1, b1) => {
       const key = [a0, b0, a1, b1].join(',');
       if (drawn.has(key)) return;
       drawn.add(key);
-      g.lineBetween(...corner(a0, b0), ...corner(a1, b1));
+      segs.push([...corner(a0, b0), ...corner(a1, b1)]);
     };
-    g.fillStyle(0x8a7a5a, 0.6);
     for (const key of cells) {
       const [a, b] = key.split(',').map(Number);
       edge(a, b, a + 1, b);
       edge(a, b, a, b + 1);
       edge(a + 1, b, a + 1, b + 1);
       edge(a, b + 1, a + 1, b + 1);
-      g.fillRect(...corner(a, b), 1, 1);
+      dots.push(corner(a, b));
     }
+    // einmal als Bild malen (doppelt fein, höchstens 4096 Pixel breit wie am Tablet erlaubt): als Zeichnung mit Hunderten
+    // Linien wurde das Netz in jedem Bild neu zerlegt, das kostete am Tablet beim Start und beim Spielen viel Zeit
+    const xs = segs.flatMap((s) => [s[0], s[2]]);
+    const ys = segs.flatMap((s) => [s[1], s[3]]);
+    const PAD = 2;
+    const x0 = Math.min(...xs) - PAD, y0 = Math.min(...ys) - PAD;
+    const spanX = Math.max(...xs) + PAD - x0, spanY = Math.max(...ys) + PAD - y0;
+    const RES = Math.min(2, 4096 / spanX, 4096 / spanY);
+    const X = (x) => (x - x0) * RES, Y = (y) => (y - y0) * RES;
+    const g = this.make.graphics({ x: 0, y: 0 }, false);
+    g.lineStyle(RES, 0xd8c89a, 0.55);
+    for (const [ax, ay, bx, by] of segs) g.lineBetween(X(ax), Y(ay), X(bx), Y(by));
+    g.fillStyle(0x8a7a5a, 0.6);
+    for (const [x, y] of dots) g.fillRect(X(x), Y(y), RES, RES);
+    const key = `netroof_${e.id}`;
+    if (this.textures.exists(key)) this.textures.remove(key); // (nach einem Ausbau kann das Netz anders sein)
+    g.generateTexture(key, Math.ceil(spanX * RES), Math.ceil(spanY * RES));
+    g.destroy();
+    this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
+    this.add.image(x0, y0, key).setOrigin(0).setScale(1 / RES).setDepth(maxY + TILE_H + 1);
   }
 
   // Tafel am Gehegeschild (die einzige: sie erscheint, sobald man davorsteht): erst das Tier, dann die Tiere dieser Art
@@ -9581,7 +9870,7 @@ export default class GardenScene extends Phaser.Scene {
       })
       .join('') || `<b>${sign.name ?? enclosure.name}</b>`;
     const c = sign.counts[0];
-    const slots = c ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: <b>${c.text.text}</b></div>` : '';
+    const slots = c ? `<div class="pen-slots">${tr('Plätze', 'Spaces')}: <b>${c.shown ?? ''}</b></div>` : '';
     // der Tierfreund hier: Name, Stufe, und ob er sich gerade über Besuch freut (Streicheln geht wieder)
     const friend = isPark(LEVEL_ID) ? this.friendOfSign(sign) : null;
     const fb = friend && bondOf(friend);
@@ -10004,6 +10293,8 @@ export default class GardenScene extends Phaser.Scene {
     this.wheel?.update(dt);
     this.updateScooter();
     this.updateJellies(dt);
+    this.updateGlowNight(dt);
+    this.updatePuffinEvent(dt);
     if (!this.leaving) for (const h of Object.keys(HOUSES)) if (h !== LEVEL_ID) this.houseIncome(h, dt);
     if (!this.leaving) this.parkIncome(dt); // die anderen Tierpark-Abschnitte
     this.updateNearCalls(dt);

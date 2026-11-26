@@ -80,6 +80,22 @@ export const EVENTS = [
     cooldown: 5 * MINUTE,
   },
   {
+    id: 'puffins',
+    name: tr('Papageitaucher-Zug', 'Puffin Season'),
+    text: tr('5 Minuten lang kehren die Papageitaucher zurück: Schwärme ziehen über die Eiswelt und landen auf den Felsen am Rand. Wer unten am Felsen steht, lässt sich keschern!', 'For 5 minutes the puffins return: flocks fly over the Ice World and land on the rocks at the edge. Whoever stands at the foot of a rock can be caught with the net!'),
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
+    id: 'glownight',
+    name: tr('Leuchtnacht', 'Glowing Night'),
+    text: tr('5 Minuten lang ist Nacht im Dschungel: Pilze leuchten, bunte Pfeilgiftfrösche sitzen am Wasser. Sie sind giftig – fang sie mit dem Froschglas aus der Kiste!', 'For 5 minutes it is night in the jungle: mushrooms glow and colorful poison dart frogs sit by the water. They are poisonous – catch them with the frog jar from the chest!'),
+    cost: 100,
+    duration: 5 * MINUTE,
+    cooldown: 5 * MINUTE,
+  },
+  {
     id: 'lanterns',
     name: tr('Laternenabend', 'Lantern Evening'),
     text: tr('5 Minuten lang wird es im Bambuswald im Tierpark Abend: Laternen und Teehaus leuchten, Glühwürmchen schweben, die Tanukis werden munter. Die Besucher geben dort mehr Herzen.', 'For 5 minutes it is evening in the zoo’s bamboo forest: lanterns and the tea house glow, fireflies drift, the tanukis wake up. Visitors there give more hearts.'),
@@ -101,6 +117,8 @@ const EVENT_AREAS = {
   migration: ['savanna'],
   wolves: ['forest'],
   fireflies: ['asia'],
+  glownight: ['jungle'],
+  puffins: ['ice'],
   lanterns: ['park3'],
 };
 

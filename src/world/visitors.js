@@ -60,6 +60,7 @@ export const APPEAL = {
   octopus: 4.5,
   turtle: 6,
   jellyfish: 3,
+  dartfrog: 3,
   ray: 5,
   wolf: 5,
   gnu: 3.5,

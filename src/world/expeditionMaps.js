@@ -1122,6 +1122,7 @@ const ICE_LEVELS = {
     features: ['birdrocks', 'sea'],
     rows: makeRows({ seed: 627, palette: 'ice', sea: { ty1: 8, wave: 1.2 }, shoreRocks: 4, islets: 4, scatter: { Ȓ: 6, ȓ: 12, ê: 3, Ṗ: 2 } }),
     openSea: true,
+    puffins: true, // Event-Karte Papageitaucher-Zug (MAP_EVENTS in expedition.js): dann kommen Schwärme, sie stehen länger am Ufer
     tools: ['net', 'lasso'],
   }),
 
@@ -1178,7 +1179,7 @@ const ICE_LEVELS = {
   ix_skerries: imap({
     name: tr('Schärenküste', 'Skerry Coast'),
     features: ['sea', 'birdrocks'],
-    rows: makeRows({ seed: 709, palette: 'ice', sea: { ty1: 11, wave: 2 }, islets: 6, shoreRocks: 2, scatter: { Ȓ: 5, ȓ: 12, ê: 4, Ṗ: 2 } }),
+    rows: makeRows({ seed: 709, palette: 'ice', sea: { ty1: 11, wave: 2 }, islets: 6, shoreRocks: 4, scatter: { Ȓ: 5, ȓ: 12, ê: 4, Ṗ: 2 } }),
     openSea: true,
     tools: ['net', 'lasso'],
   }),
@@ -1354,6 +1355,7 @@ export const EXPEDITION_LEVELS = {
     features: ['river', 'thicket'],
     rows: makeRows({ seed: 239, creeks: 1, mangroves: 8, palette: 'jungle', riverInlet: RIVER_J, exitY: 6, docks: [[13, 's'], [20, 'n']], shoreTrees: 8, masses: 5, thickets: 4, scatter: { J: 18, k: 20, Ḣ: 7, ḟ: 5, n: 42, ľ: 26, f: 8, r: 2 }, grass: 6 }),
     ...EDGE_JR,
+    glowNight: true, // Event-Karte Leuchtnacht (MAP_EVENTS in expedition.js): Nacht, Leuchtpilze, Pfeilgiftfrösche am Ufer
     tools: ['net', 'lasso'],
   }),
 

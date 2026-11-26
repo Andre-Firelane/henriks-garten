@@ -200,7 +200,7 @@ export const SPECIES_FOOD = {
   sheep: ['greens', 'leaves'], cow: ['greens', 'leaves'], goat: ['greens', 'leaves'], pig: ['acorns', 'banana', 'greens'],
   cat: ['herring'], deer: ['greens', 'acorns', 'leaves'], elk: ['leaves', 'greens'], boar: ['acorns', 'banana'],
   hedgehog: ['acorns'], fox: ['bone', 'herring'], beaver: ['leaves', 'greens'], wolf: ['bone', 'herring'], squirrel: ['acorns'],
-  frog: ['fishfood'], fish: ['fishfood'], koi: ['fishfood'], heron: ['herring', 'fishfood'], flamingo: ['fishfood'],
+  frog: ['fishfood'], dartfrog: ['fishfood'], fish: ['fishfood'], koi: ['fishfood'], heron: ['herring', 'fishfood'], flamingo: ['fishfood'],
   lion: ['bone'], tiger: ['bone'], jaguar: ['bone', 'herring'], snowleopard: ['bone'], hyena: ['bone'], vulture: ['bone'],
   crocodile: ['herring', 'bone'], hippo: ['greens', 'leaves'], giraffe: ['leaves', 'greens'], zebra: ['greens'],
   antelope: ['greens', 'leaves'], gnu: ['greens'], warthog: ['greens', 'acorns'], panda: ['greens', 'leaves'],
