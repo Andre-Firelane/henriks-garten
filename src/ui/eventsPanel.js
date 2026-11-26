@@ -1,4 +1,4 @@
-// Hauptrechner im Haupthaus: Reiter "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown), "Gehege" (gegen
+// Events-Knopf oben (Tierpark, Aquarium, Haupthaus): Reiter "Events" (gegen Herzen starten; Kosten, läuft, Pause mit Countdown), "Gehege" (gegen
 // Herzen ausbauen: mehr Plätze und neue Ausstattung; vorerst abgeschaltet) und "Buden" (auf einem freien Bauplatz bauen).
 // Am Gehegeschild bzw. am Bauplatz nur dieser eine Reiter. Dieselbe Tafel ist auch der Katalog der Bauen-Taste (tabs 'deco' und 'booths', siehe
 // openCatalog in GardenScene): bestellen, die Tafel bleibt dabei offen. Tablet: Reiter und Kacheln antippen.

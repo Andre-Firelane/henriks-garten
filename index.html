@@ -928,10 +928,11 @@
         background: #e8b84a; color: #3a2414; font: bold 14px/1 "Trebuchet MS", Arial, sans-serif;
       }
       /* Mavis Buden-Aufgabe: der nächste Knopf pulsiert rot */
-      #btn-decor.tut, #decor-bar .tut { animation: tut-pulse 1s ease-in-out infinite; }
-      #btn-decor, #decor-bar .decor-order, #decor-bar .decor-done { position: relative; }
-      /* unter dem Bauen-Knopf zeigt der Pfeil nach oben */
-      #btn-decor .tut-pointer { top: auto; bottom: -34px; transform: translateX(-50%) rotate(180deg); animation-name: tut-pointer-up; }
+      /* (dazu Mavis Event-Aufgaben: der Events-Knopf) */
+      #btn-decor.tut, #decor-bar .tut, #btn-events.tut { animation: tut-pulse 1s ease-in-out infinite; }
+      #btn-decor, #decor-bar .decor-order, #decor-bar .decor-done, #btn-events { position: relative; }
+      /* unter dem Bauen- und dem Events-Knopf zeigt der Pfeil nach oben */
+      #btn-decor .tut-pointer, #btn-events .tut-pointer { top: auto; bottom: -34px; transform: translateX(-50%) rotate(180deg); animation-name: tut-pointer-up; }
       @keyframes tut-pointer-up { 0%, 100% { transform: translateX(-50%) rotate(180deg); } 50% { transform: translate(-50%, 8px) rotate(180deg); } }
       #decor-bar .tut-pointer { left: auto; right: calc(100% + 4px); top: 50%; transform: translateY(-50%) rotate(-90deg); animation-name: tut-pointer-left; }
       @keyframes tut-pointer-left { 50% { transform: translate(-8px, -50%) rotate(-90deg); } }

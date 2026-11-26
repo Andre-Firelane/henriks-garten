@@ -122,7 +122,7 @@ Erreichte Trophäen zählen auch in der Statistik (sessions.js).
   Tisch, Sockel, Vitrine: 1). Fußpunkt genau in der Bildmitte; Größe, Fußpunkt und Trophäen-Plätze stehen in
   `src/world/furnitureArt.js`. Grundflächen: Sofa, Schreibtische, Regale 1 × 2, Betten 2 × 1, Teppich 2 × 2, sonst 1 × 1;
   „Drehen“ geht im Haus eine Vierteldrehung weiter (die Grundfläche dreht mit), draußen wird weiter gespiegelt.
-- **Computer**: ein Möbel (`computer_desk`, `computer: true`); Events dort, wo er steht (`houseComputers`).
+- **Computer**: ein Möbel (`computer_desk`, `computer: true`). Seit 2026-11-26 startet man dort keine Events mehr, nur noch über den Events-Knopf oben; Mavis Aufgaben `babies` und `event` lassen den Knopf pulsieren (`updateEventsHint`), Mavi steht vor dem Haupthaus.
 - **Grundausstattung** (neue Spielstände): der Computer steht schon, dazu 4 Möbel in der Bauen-Leiste (`HOUSE_KIT`: Sofa,
   Sessel, Tisch, Monstera). Ältere Stände behalten ihre aufgestellten Möbel bzw. bekommen einmal Computer mit Bürostuhl am
   alten Platz (`game.decor.houseComputer`). Beim ersten Besuch blinkt die Bauen-Taste, bis man sie drückt

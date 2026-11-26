@@ -1,7 +1,7 @@
 // Mavi die Tierpflegerin: steht dort, wo die aktive Aufgabe ihrer Geschichte stattfindet (at in src/story/steps.js),
 // spricht einen an, sobald man in ihre Nähe kommt und sie etwas Neues zu sagen hat, und hakt die Aufgaben ab.
 // Ob eine Aufgabe erledigt ist, prüft sie laufend am Spielstand – auch das, was man schon vorher geschafft hat.
-// Ein roter Pfeil zeigt, wohin es als Nächstes geht (zu ihr, zum Computer, zum Gehegeschild oder zum Auto). Soll man
+// Ein roter Pfeil zeigt, wohin es als Nächstes geht (zu ihr, zum Gehegeschild oder zum Auto; Events-Knopf: siehe updateEventsHint in GardenScene). Soll man
 // als Nächstes mit ihr sprechen, winkt sie ab und zu.
 import { game } from '../state.js';
 import { tr } from '../i18n.js';
@@ -31,7 +31,7 @@ const SETTLE = 1200; // so lange nach dem Aufbau des Gebiets fängt sie noch nic
 // Aufgaben, die im Tierpark erledigt werden (egal, in welchem Abschnitt Mavi steht)
 const PARK_TASKS = ['visitors', 'babies', 'event', 'stands', 'friend'];
 // Aufgaben, bei denen der Pfeil auf etwas zeigt, wenn man dort ist
-const POINT = { babies: 'computer', event: 'computer', stands: 'build', friend: 'sign' };
+const POINT = { babies: 'events', event: 'events', stands: 'build', friend: 'sign' }; // events: der Events-Knopf oben pulsiert (kein Pfeil im Bild)
 
 export default class Mavi {
   constructor(scene) {
@@ -72,10 +72,6 @@ export default class Mavi {
     else if (at.spot === 'hut' && LEVEL.hut) t = { tx: LEVEL.hut.tx1 + 1, ty: LEVEL.hut.ty1 + 1 };
     else if (at.spot === 'stable' && LEVEL.stable) t = { tx: LEVEL.stable.tx + 1, ty: LEVEL.stable.ty + 1 }; // neben dem Stall
     else if (at.spot === 'door' && LEVEL.houseDoor) t = { tx: LEVEL.houseDoor.tx + 1.5, ty: LEVEL.houseDoor.ty + 1 }; // vor dem Haupthaus, rechts neben der Tür
-    else if (at.spot === 'computer' && this.scene.computers().length) {
-      const c = this.scene.computers()[0]; // (im Haupthaus ein Möbel: dort, wo es gerade steht)
-      t = { tx: Math.round(c.tx) + 1, ty: Math.round(c.ty) + 1 };
-    }
     else if (at.spot === 'sign') {
       // vor dem Schild auf dem Weg, nicht auf dem Zaun: nächste Kachel mit Abstand zu allen Gehegen
       const s = this.scene.sheepSign();
@@ -283,7 +279,7 @@ export default class Mavi {
     const meet = (!game.story.heard && (!step.introWhen || step.introWhen(game))) || (step.talk && (!step.done || stepDone(step)));
     if (meet) return step.also?.level === LEVEL_ID ? LEVEL_ID : step.at.level;
     if (step.id === 'reef') return seaReady(game) ? 'park2' : 'reef';
-    if (POINT[step.id] === 'computer' && LEVEL_ID === 'house') return LEVEL_ID; // (der Computer steht im Haupthaus)
+    if (POINT[step.id] === 'events' && LEVEL_ID === 'house') return LEVEL_ID; // (der Events-Knopf ist auch im Haupthaus)
     if (PARK_TASKS.includes(step.id)) return isPark(LEVEL_ID) ? LEVEL_ID : 'park';
     return step.at.level;
   }
@@ -297,7 +293,6 @@ export default class Mavi {
       const goal = this.taskLevel(step);
       if (this.hasNews()) target = { x: this.sprite.x, y: this.sprite.y - this.sprite.displayHeight * this.sprite.originY - ARROW_GAP };
       else if (goal !== LEVEL_ID) target = this.carPoint();
-      else if (POINT[step.id] === 'computer' && game.story.heard) target = this.computerPoint();
       else if (this.needsNet(step)) target = this.scene.chestPoint(); // Wiesen-Aufgabe: zum Regal, dort liegt der Kescher
       else if (POINT[step.id] === 'build' && game.story.heard) {
         // Buden-Aufgabe: die Knöpfe zeigt die Bauen-Leiste (updateBuildHint); liegt die bestellte Bude in der Leiste, zeigt
@@ -370,13 +365,6 @@ export default class Mavi {
   carPoint() {
     const car = this.scene.car;
     return car ? { x: car.img.x, y: car.img.getBounds().top + 4 } : null;
-  }
-
-  // Computer im Haupthaus: drinnen zum Computer, im Zentrum zur Tür des Haupthauses (sonst kein Pfeil)
-  computerPoint() {
-    const pc = this.scene.computerSprite;
-    if (pc) return { x: pc.x, y: pc.y - pc.displayHeight * pc.originY + 4 };
-    return this.scene.officeDoor ?? null;
   }
 
   // Weltkarte: Pfeil zu dem Gebiet, in dem es weitergeht, und der Hinweis dazu

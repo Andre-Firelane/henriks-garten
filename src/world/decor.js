@@ -83,7 +83,7 @@ export const FURNITURE_STYLES = [
 const FURNITURE_CHARS = [...'⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽⑾⑿⒀⒁⒂⒃⒄⒅⒆⒇⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒱⒲⒳⒴⒵ⒶⒷⒸⒹⒺ'];
 // Bilder aus tools/furniture-sprites.py (FURNITURE_ART: Grundfläche, Ansichten, Fußpunkt). showcase: so viele Trophäen
 // passen darauf (Plätze je Ansicht in FURNITURE_ART); welche darauf stehen, steht an der gesetzten Deko (trophies: [Ids]).
-// computer: dort startet man Events (wie früher am festen Hauptrechner)
+// computer: der Computer im Haupthaus (nur noch ein Möbel; Events startet man über den Events-Knopf oben)
 const furniture = {
   trophy_plinth: { name: tr('Sockel', 'Plinth'), cost: 60, style: 'trophies', showcase: 1 },
   trophy_shelf: { name: tr('Wandregal', 'Wall shelf'), cost: 120, style: 'trophies', showcase: 4 },
@@ -152,7 +152,7 @@ const HOUSE_COMPUTER = [
   { id: 'computer_desk', tx: 5, ty: 1, rot: 1 },
   { id: 'office_chair', tx: 6, ty: 2, rot: 3 },
 ];
-// Mitte der gesetzten Computer im Haupthaus (Kachel, auch halbe): dort startet man Events
+// Mitte der gesetzten Computer im Haupthaus (Kachel, auch halbe)
 export const houseComputers = () =>
   (game.decor?.placed?.house ?? []).filter((d) => DECOR[d.id]?.computer).map((d) => {
     const [w, h] = footprint(d.id, decorRot(d));

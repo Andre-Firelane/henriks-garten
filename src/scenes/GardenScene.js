@@ -64,7 +64,7 @@ import { raiseAt, raisedEdgeFloor,
   groundZoneAt,
 } from '../world/map.js';
 import DecorMode from '../world/DecorMode.js';
-import { DECOR, FURNITURE_STYLES, decorKey, isRug, decorRot, ensureDecor, footprint, furnitureLook, giveDecor, houseComputers, placedIn, shopDecor, finalChestDecor } from '../world/decor.js';
+import { DECOR, FURNITURE_STYLES, decorKey, isRug, decorRot, ensureDecor, footprint, furnitureLook, giveDecor, placedIn, shopDecor, finalChestDecor } from '../world/decor.js';
 import { LEVELS, PARK_LEVELS, isPark } from '../world/levels.js';
 import { game } from '../state.js';
 import { tr, locale } from '../i18n.js';
@@ -435,20 +435,20 @@ const CONTROLS = `<h3>${tr('Steuerung', 'Controls')}</h3>
   <div class="controls">
     <div class="ctl-box"><b>💻 PC</b>${controlRows([
       [tr('<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> oder Pfeiltasten', '<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys'), tr('laufen', 'walk')],
-      ['<kbd>E</kbd> / <kbd>Enter</kbd>', tr('Werkzeug benutzen, Regal, Auto, Computer oder Gehegeschild benutzen', 'use your tool, the shelf, car, computer or enclosure sign')],
+      ['<kbd>E</kbd> / <kbd>Enter</kbd>', tr('Werkzeug benutzen, Regal, Auto oder Gehegeschild benutzen', 'use your tool, the shelf, car or enclosure sign')],
       ['<kbd>I</kbd>', tr('Tierbuch', 'Animal Book')],
       ['<kbd>Q</kbd>', tr('Werkzeug wechseln (beim Reiten)', 'switch tool (while riding)')],
       ['<kbd>Esc</kbd>', tr('Menü', 'menu')],
-      [tr('Linksklick', 'Left click'), tr('wie <kbd>E</kbd>: Werkzeug benutzen; Regal, Auto, Computer oder Schild anklicken, wenn du direkt daneben stehst', 'like <kbd>E</kbd>: use your tool; click the shelf, car, computer or a sign when you stand right next to it')],
+      [tr('Linksklick', 'Left click'), tr('wie <kbd>E</kbd>: Werkzeug benutzen; Regal, Auto oder Schild anklicken, wenn du direkt daneben stehst', 'like <kbd>E</kbd>: use your tool; click the shelf, car or a sign when you stand right next to it')],
     ])}</div>
     <div class="ctl-box"><b>📱 ${tr('Tablet und Handy', 'Tablet and phone')}</b>${controlRows([
       [tr('linke Hälfte', 'left half'), tr('Finger aufsetzen und ziehen: laufen', 'put your finger down and drag: walk')],
-      [tr('Knopf unten rechts', 'button bottom right'), tr('Werkzeug benutzen, Regal, Auto, Computer oder Gehegeschild benutzen', 'use your tool, the shelf, car, computer or enclosure sign')],
+      [tr('Knopf unten rechts', 'button bottom right'), tr('Werkzeug benutzen, Regal, Auto oder Gehegeschild benutzen', 'use your tool, the shelf, car or enclosure sign')],
       ['📖', tr('Tierbuch (oben links)', 'Animal Book (top left)')],
       ['☰', tr('Menü', 'menu')],
       ['⛶', tr('Vollbild an oder aus', 'full screen on or off')],
       ['🧰', tr('Werkzeug wechseln (beim Reiten)', 'switch tool (while riding)')],
-      [tr('Antippen', 'Tap'), tr('Regal, Auto, Computer oder Schild, wenn du direkt daneben stehst', 'the shelf, car, computer or a sign when you stand right next to it')],
+      [tr('Antippen', 'Tap'), tr('Regal, Auto oder Schild, wenn du direkt daneben stehst', 'the shelf, car or a sign when you stand right next to it')],
     ])}</div>
   </div>`;
 
@@ -695,7 +695,6 @@ const SOIL_UP = 6; // der Erdfleck unter der Biberburg liegt so viel über der K
 const SOIL_DEPTH = -99996; // flach auf dem Boden, unter allem, was steht (wie der Friedhofsboden der Savanne)
 const BEAVER_HINT_DIST = 240; // so nah muss ein großer Stock sein, dann schwebt über ihm die Biber-Blase
 const ENCOUNTER_FLEES = 2; // so oft darf es fliehen, dann kommt der Fang-Tipp einmal von selbst
-const OFFICE_DOOR_H = 62; // so hoch über der Türkachel steht Mavis Pfeil am Haupthaus (oberer Rand der Glastür)
 const SHEEP_QUEST = 3; // so viele Schafe verlangt Mavis erste Aufgabe
 const TUT_SHEEP = 2; // bei Mavis Schaf-Aufgabe grasen auf der Wiese immer so viele Schafe ...
 const TUT_SHEEP_R = 360; // ... so nah am Auto ...
@@ -1203,8 +1202,6 @@ export default class GardenScene extends Phaser.Scene {
               if (chest && this.nearChest === chest) this.openChest(chest);
             });
           }
-          if (obj.computer) this.computerSprite = img; // für Mavis Pfeil
-          if (obj.computer) img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearComputer && this.openEventsPanel());
         }
       }
     }
@@ -1270,10 +1267,6 @@ export default class GardenScene extends Phaser.Scene {
       };
       this.gateGroups.push(group);
       front.push(...group.sprites);
-      // Tür des Haupthauses (nur noch Fassade, die Tür führt ins Level house): dorthin zeigt Mavis Pfeil, wenn es drinnen
-      // am Computer weitergeht
-      const door = group.sprites[0];
-      if (h.facade && door) this.officeDoor = { x: (door.x + (group.sprites[1]?.x ?? door.x)) / 2, y: door.y - OFFICE_DOOR_H };
       // obere Ecke der Grundfläche liegt im Dachbild bei ROOF_ANCHOR (Hütten: 184, 100)
       const top = tileToWorld(h.tx0, h.ty0);
       const bottom = tileToWorld(h.tx1, h.ty1);
@@ -1661,7 +1654,7 @@ export default class GardenScene extends Phaser.Scene {
       e.stopPropagation();
       this.showCharms();
     };
-    // Events-Knopf (nur im Tierpark, im Aquarium und im Haupthaus): dieselbe Tafel wie am Hauptrechner
+    // Events-Knopf (nur im Tierpark, im Aquarium und im Haupthaus): nur hier startet man Events (nicht mehr am Computer)
     const eventsBtn = document.getElementById('btn-events');
     eventsBtn.innerHTML = '<span class="charms-icon">🎉</span><span class="btn-label">Events</span>'; // auf dem Handy nur das Bild
     eventsBtn.setAttribute('aria-label', 'Events');
@@ -1671,6 +1664,8 @@ export default class GardenScene extends Phaser.Scene {
       if (this.decor?.on) this.decor.toggle(); // (Setzen-Modus erst beenden)
       this.openEventsPanel();
     };
+    this.lastEventsHint = null;
+    this.updateEventsHint(); // (Mavis Event-Aufgaben: Knopf pulsiert)
     document.getElementById('btn-campfire').onclick = (e) => {
       e.stopPropagation();
       this.luck.campfire();
@@ -1780,10 +1775,6 @@ export default class GardenScene extends Phaser.Scene {
       }
       if (this.nearFeeder && !this.leaving && this.toolId !== 'parkfood') {
         this.openFeeder(); // am Futterautomaten: Futterhaus (Futtersack oder Futter für die Tierfreunde)
-        return;
-      }
-      if (this.nearComputer && !this.leaving) {
-        this.openEventsPanel(); // am Hauptrechner: Events
         return;
       }
       if (this.nearShowcase && !this.leaving && !this.decor?.on) {
@@ -1904,7 +1895,7 @@ export default class GardenScene extends Phaser.Scene {
     };
     this.input.keyboard.on(`keydown-${ACTION_KEY}`, useTool);
     this.input.keyboard.on('keydown-ENTER', useTool);
-    // am PC: Linksklick ins Bild wie die Aktionstaste (Regal, Auto, Computer und Schilder haben ihre eigenen Klicks;
+    // am PC: Linksklick ins Bild wie die Aktionstaste (Regal, Auto und Schilder haben ihre eigenen Klicks;
     // auf Tablet und Handy gibt es dafür den Aktionsknopf)
     // Bauen: Antippen bzw. Anklicken einer Kachel in Henriks Nähe setzt dort bzw. hebt auf (Tablet: viel leichter, als
     // Henrik genau davorzustellen); die linke Bildschirmhälfte (Joystick) meldet kurzes Tippen über touchHandlers.tap
@@ -4307,7 +4298,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateQuestCard();
   }
 
-  // Events am Hauptrechner: Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
+  // Events (Knopf oben): Tafel mit allen Events, ihren Kosten und ihrem Zustand; das Spiel pausiert so lange
   // focus: Gehege-Id – dann nur der Ausbau dieses Geheges (am Gehegeschild); slotId: nur die Buden für diesen Bauplatz
   // tab: 'mounts' öffnet gleich den Reiter Reittiere (am Stall bzw. am E-Roller, point: dieses Angebot vorauswählen)
   openEventsPanel(focus = null, slotId = null, tab = null, point = null) {
@@ -4351,7 +4342,7 @@ export default class GardenScene extends Phaser.Scene {
     );
   }
 
-  // Event starten (am Computer oder geschenkt, free: kostet keine Herzen) und Bescheid sagen
+  // Event starten (über den Events-Knopf oder geschenkt, free: kostet keine Herzen) und Bescheid sagen
   beginEvent(id, free = false) {
     startEvent(id, Date.now(), free);
     countEvent(id);
@@ -4526,11 +4517,27 @@ export default class GardenScene extends Phaser.Scene {
 
   eventBlocked(ev) {
     if (ev.id === 'lanterns' && !isUnlocked('park3')) return tr('braucht den Bambuswald im Tierpark', 'needs the bamboo forest in the zoo');
-    if (ev.id === 'babies' && !babyPlan(this.animals.filter((a) => a.state === 'penned')).length && !this.aquariumBabyPair()) {
+    if (ev.id === 'babies' && !this.babyPossible()) {
       return tr('braucht 2 gleiche größere Tiere in einem Gehege', 'needs 2 matching grown-up animals in one enclosure');
     }
     if (game.hearts < price(ev.cost)) return tr('zu wenig Herzen', 'not enough hearts');
     return null;
+  }
+
+  // Kann das Tierbaby-Event irgendwo Babys bringen? Hier (die Tiere dieses Gebiets), in den anderen Abschnitten des
+  // Tierparks (gespeicherter Stand: 2 Tiere einer Familie im Gehege, egal welche Fellfarbe oder Seltenheit) oder im
+  // Aquarium. (Früher zählte nur das Gebiet, in dem man gerade stand: im Haupthaus ging es also nie.)
+  babyPossible() {
+    if (babyPlan(this.animals.filter((a) => a.state === 'penned')).length) return true;
+    for (const level of PARK_LEVELS) {
+      if (level === LEVEL_ID) continue;
+      const count = {};
+      for (const s of game.levels[level]?.animals ?? []) {
+        const family = s.state === 'penned' ? babyFamily(s.species) : null;
+        if (family && (count[family] = (count[family] ?? 0) + 1) >= 2) return true;
+      }
+    }
+    return this.aquariumBabyPair();
   }
 
   // Gibt es im Aquarium (gespeicherter Stand) zwei Tiere einer Familie im selben Becken? Dann kann das Tierbaby-Event dort Babys bringen
@@ -4675,6 +4682,24 @@ export default class GardenScene extends Phaser.Scene {
   // der nächste Knopf pulsiert und bekommt den roten Pfeil (wie beim Tierfreund): Bauen-Taste, „Bestellen“, beim Setzen
   // die Bude in der Leiste (solange sie nicht ausgewählt ist), danach „Fertig“; Mavis Pfeil zeigt beim Setzen auf einen
   // guten Platz
+  // Mavis Event-Aufgaben (Tierbabys, später ein eigenes Event): der Events-Knopf oben pulsiert und bekommt den roten Pfeil,
+  // solange die Tafel zu ist (Events startet man nur dort, nicht mehr am Computer)
+  eventsHintOn() {
+    const id = storyActiveId();
+    return (id === 'babies' || id === 'event') && game.story.heard && !isEventsOpen() && !!document.getElementById('btn-events')?.classList.contains('show');
+  }
+
+  updateEventsHint() {
+    const on = this.eventsHintOn();
+    this.lastEventsHint = on;
+    const el = document.getElementById('btn-events');
+    if (!el) return;
+    el.classList.toggle('tut', on);
+    const ptr = el.querySelector(':scope > .tut-pointer');
+    if (on && !ptr) el.insertAdjacentHTML('beforeend', TUT_POINTER);
+    else if (!on) ptr?.remove();
+  }
+
   updateBuildHint() {
     const stage = this.buildHintStage();
     const booth = this.decor?.booths()[0];
@@ -4750,10 +4775,6 @@ export default class GardenScene extends Phaser.Scene {
     // vordere Ebene (Glas, Kanten) über Plaketten und Fischen
     if (entry && look.frontKey) (this.decorFronts ??= new Map()).set(`${tx},${ty}`, this.add.image(x, y, look.frontKey).setOrigin(look.originX, look.originY).setDepth(depth + 0.05));
     if (entry && DECOR[obj.decor].tank) this.drawTankFish(entry, img, look);
-    if (entry && DECOR[obj.decor].computer) {
-      this.computerSprite = img; // für Mavis Pfeil
-      img.setInteractive({ useHandCursor: true }).on('pointerdown', () => this.nearComputer && this.openEventsPanel());
-    }
     if (obj.sway) this.sway.plants.set(`${tx},${ty}`, { img, deg: obj.sway, obj });
     if (obj.decor && DECOR[obj.decor].showcase) this.drawShowcase(tx, ty);
     return img;
@@ -4800,11 +4821,6 @@ export default class GardenScene extends Phaser.Scene {
       if (Math.abs(du - dv) > 1e-5) f.right = du - dv > 0; // Blickrichtung im Bild
       f.sprite.setPosition(x, y).setFrame(f.kind * 2 + (f.right === false ? 1 : 0)).setDepth(f.img.depth + 0.01 + (f.pos.u + f.pos.v) * 0.001);
     }
-  }
-
-  // Hauptrechner, an denen man Events startet: im Haupthaus die gesetzten Computer-Möbel, sonst die festen des Levels
-  computers() {
-    return LEVEL_ID === ROOM ? houseComputers() : LEVEL.computers ?? [];
   }
 
   // Trophäen-Möbel im Haupthaus (Vitrine, Wandregal, Sockel; showcase in decor.js): die gesetzten mit ihren Trophäen
@@ -4985,7 +5001,6 @@ export default class GardenScene extends Phaser.Scene {
     this.decorFronts?.delete(k);
     this.homeFish = (this.homeFish ?? []).filter((f) => (f.key === k ? (f.sprite.destroy(), false) : true));
     this.time.delayedCall(0, () => this.updateShowcaseHints());
-    if (img === this.computerSprite) this.computerSprite = null; // (Computer aufgehoben)
     this.showcaseBadges?.delete(k);
     this.decorImages.delete(k);
     const plant = this.sway.plants.get(k);
@@ -4998,7 +5013,7 @@ export default class GardenScene extends Phaser.Scene {
   // Setzen-Modus: steht Henrik an etwas, dem die Aktionstaste gilt (Schild, Futterhaus, Tierfreund …)? Dann ist die
   // Vorschau rot, und die Taste bleibt bei der anderen Aktion
   decorBusy() {
-    return !!(this.nearFeeder || this.nearComputer || (this.nearStable && !this.driving) || this.nearSlot || this.nearWish || this.nearNeed || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
+    return !!(this.nearFeeder ||(this.nearStable && !this.driving) || this.nearSlot || this.nearWish || this.nearNeed || this.nearFriend || this.shownSign || (this.nearScooter && !this.driving) || this.nearChest || this.luck?.nearChest || this.nearBed || this.nearStand);
   }
 
   // Bauplätze dieses Abschnitts: gebaute Buden mit Verkäufer (wie der Eiswagen), leere zeigen Baupflöcke (Karte)
@@ -5148,9 +5163,9 @@ export default class GardenScene extends Phaser.Scene {
       .sort((a, b) => (b.level === LEVEL_ID) - (a.level === LEVEL_ID));
   }
 
-  // Buden-Katalog: am Bauplatz für diesen einen Platz (slotId), am Computer für den nächsten freien Platz
+  // Buden-Katalog: am Bauplatz für diesen einen Platz (slotId), über den Events-Knopf für den nächsten freien Platz
   shopOffers(slotId = null) {
-    // Riesenrad: am eigenen Bauplatz nur das, am Computer zusätzlich zu den Buden
+    // Riesenrad: am eigenen Bauplatz nur das, über den Events-Knopf zusätzlich zu den Buden
     const ws = wheelSlot();
     const wheel = ws && {
       id: WHEEL.id,
@@ -5439,7 +5454,7 @@ export default class GardenScene extends Phaser.Scene {
       [img('trap'), tr('<b>Falle:</b> im Wald auslegen und weggehen – irgendwann geht ein Tier hinein.', '<b>Trap:</b> set it in the forest and walk away – sooner or later an animal walks in.')],
       [img('banana'), tr('<b>Locken:</b> Grünfutter, Bananen, Knochen, ein Ball … locken besondere Tiere an.', '<b>Lure:</b> leafy greens, bananas, bones, a ball … lure special animals.')],
       ['<span class="way-icon">🌦️</span>', tr('<b>Wetter:</b> In der Savanne und im Dschungel wechselt das Wetter, in der Eiswelt Tag und Nacht – manche Tiere kommen nur bei Regen, Nebel oder Trockenzeit.', '<b>Weather:</b> In the savanna and the jungle the weather changes, in the ice world day and night – some animals only appear in rain, fog or the dry season.')],
-      ['<span class="way-icon">🎉</span>', tr('<b>Events:</b> Am Computer im Haupthaus startest du mit Herzen Events. Manche bringen ganz neue Tiere: Flamingos, Wölfe, Gnus, Quallen, rote Pandas.', '<b>Events:</b> Start events with hearts at the computer in the main building. Some bring brand-new animals: flamingos, wolves, wildebeest, jellyfish, red pandas.')],
+      ['<span class="way-icon">🎉</span>', tr('<b>Events:</b> Oben über den Knopf „Events“ startest du mit Herzen Events. Manche bringen ganz neue Tiere: Flamingos, Wölfe, Gnus, Quallen, rote Pandas.', '<b>Events:</b> Start events with hearts using the “Events” button at the top. Some bring brand-new animals: flamingos, wolves, wildebeest, jellyfish, red pandas.')],
       ['<span class="way-icon">✨</span>', tr('<b>Selten:</b> Viele Tiere gibt es ab und zu in einer seltenen Variante – etwa einen Hirsch statt eines Rehs. Sie locken besonders viele Besucher an. Mit dem Event „Seltene Tiere“ triffst du sie viel öfter.', '<b>Rare:</b> Many animals now and then come in a rare variant – like a stag instead of a deer. They attract lots of visitors. With the “Rare Animals” event you meet them much more often.')],
       ['<span class="way-icon">🎁</span>', tr('<b>Schatzkisten:</b> In jeder Welt steht eine Kiste. Hast du sie geöffnet, kommt nach ein paar Minuten eine neue. Darin wählst du 1 von 3 Karten: ein seltenes Tier, einen Bonus für 5 Minuten oder einen Glücksbringer. Für Herzen darfst du neu würfeln.', '<b>Treasure chests:</b> Every world has a chest. Once you open it, a new one comes after a few minutes. Inside you pick 1 of 3 cards: a rare animal, a 5-minute bonus or a lucky charm. You can reroll for hearts.')],
       ['<span class="way-icon">🍀</span>', tr('<b>Glücksbringer:</b> Du kannst 2 gleichzeitig tragen (Knopf „Glücksbringer“ oben rechts oder Taste G). Wechseln geht nur im Tierpark.', '<b>Lucky charms:</b> You can wear 2 at a time (“Lucky Charms” button at the top right or key G). You can only switch them in the zoo.')],
@@ -5602,11 +5617,6 @@ export default class GardenScene extends Phaser.Scene {
       const img = `assets/${DECOR[this.nearShowcase.id].key}.png`;
       setTouchTool(null, img);
       this.toolbar.innerHTML = `<div class="tool"><img src="${img}" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Trophäen zeigen', 'Show trophies')}</span></div>`;
-      return;
-    }
-    if (this.nearComputer) {
-      setTouchTool(null, 'assets/fn_computer_desk_0.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/fn_computer_desk_0.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Computer benutzen', 'Use computer')}</span></div>`;
       return;
     }
     if (this.luck?.nearChest) {
@@ -8946,11 +8956,11 @@ export default class GardenScene extends Phaser.Scene {
     if (!game.promos.includes('gift') && this.giftReady()) this.showGift();
   }
 
-  // Geschenk erst nach dem Tutorial, im Hauptabschnitt (Schafgehege, Computer), und wenn beide Events gerade startbar sind
+  // Geschenk erst nach dem Tutorial, im Hauptabschnitt (Schafgehege), und wenn beide Events gerade startbar sind
   giftReady() {
     if (game.parkReturns < 2 || !storyAt('stands') || LEVEL_ID !== 'park') return false;
     if (eventState('babies').state !== 'ready' || eventState('ride').state !== 'ready') return false;
-    return babyPlan(this.animals.filter((a) => a.state === 'penned')).length > 0 || this.aquariumBabyPair();
+    return this.babyPossible();
   }
 
   showGift() {
@@ -8964,7 +8974,7 @@ export default class GardenScene extends Phaser.Scene {
         // das Reittier braucht Bilder, die nach dem Start im Hintergrund laden (siehe BootScene)
         if (!groupsLoaded(EVENT_GROUPS[id] ?? [])) this.afterGroupsLoaded(EVENT_GROUPS[id], () => this.beginEvent(id, true));
         else this.beginEvent(id, true);
-        this.time.delayedCall(4000, () => this.showToast(tr('Alle Events findest du am Computer im Haupthaus.', 'You can find all events at the computer in the main building.')));
+        this.time.delayedCall(4000, () => this.showToast(tr('Alle Events findest du oben unter „Events“.', 'You can find all events under “Events” at the top.')));
       },
       () => this.scene.resume(),
     );
@@ -9479,15 +9489,6 @@ export default class GardenScene extends Phaser.Scene {
       this.nearFeeder = feeder;
       this.updateToolbar();
     }
-    // am Hauptrechner: die Aktionstaste zeigt die Events
-    const computer = this.computers().some((c) => {
-      const p = tileToWorld(c.tx, c.ty);
-      return Math.hypot(this.player.x - p.x, (this.player.y - p.y) * 2) < CHEST_DIST * 1.6;
-    });
-    if (computer !== this.nearComputer) {
-      this.nearComputer = computer;
-      this.updateToolbar();
-    }
     // vor einem Trophäen-Möbel (Haupthaus, nicht im Setzen-Modus): die Aktionstaste wählt die Trophäen darauf
     const showcase = this.decor?.on ? null : this.showcases().find((d) => {
       const p = tileToWorld(d.tx, d.ty);
@@ -9614,6 +9615,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateHouseSounds(dt); // ... Brunnen und Ara
     // Mavis Buden-Aufgabe: sobald sie erklärt ist (oder sich der Stand ändert), leuchtet der nächste Knopf
     if (this.decor && this.buildHintStage() !== this.lastBuildHint) this.updateBuildHint();
+    if (this.eventsHintOn() !== !!this.lastEventsHint) this.updateEventsHint();
     // am Gehegeschild oder im Gehege: die Werkzeugleiste zeigt "Gehege ausbauen"
     const penHere = this.penAtSign();
     if (penHere !== this.penHere) {

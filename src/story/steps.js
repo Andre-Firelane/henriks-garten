@@ -2,7 +2,7 @@
 // Ob eine Aufgabe erledigt ist, steht immer im Spielstand (done) – nicht in dem, was seit ihrem Start passiert ist.
 // So merkt das Spiel auch, wenn man etwas schon vorher (in anderer Reihenfolge) geschafft hat.
 //
-// at:      wo Mavi steht, solange die Aufgabe läuft: Gebiet und Platz ('start', 'car', 'hut', 'computer', 'door', 'sign',
+// at:      wo Mavi steht, solange die Aufgabe läuft: Gebiet und Platz ('start', 'car', 'hut', 'door', 'sign',
 //          'aquarium', 'entry'; siehe spot in src/npc/Mavi.js); also: ein zweiter Platz (z. B. im Aquarium)
 // intro:   was sie zur Aufgabe sagt (Seiten der Sprechblase)
 // already: kurz, wenn die Aufgabe schon erledigt ist, bevor man mit ihr gesprochen hat
@@ -131,19 +131,18 @@ export const STEPS = [
     already: [tr('Die Besucher haben dir ja schon viele Herzen geschenkt!', 'The visitors have already given you lots of hearts!')],
     outro: [
       tr('Siehst du? Herzen! Und von mir gibt es noch ein paar dazu.', 'See? Hearts! And here are a few more from me.'),
-      tr('Mit Herzen kannst du im Haupthaus am Computer tolle Sachen starten.', 'With hearts you can start great things at the computer in the main building.'),
+      tr('Mit Herzen kannst du oben bei „Events“ tolle Sachen starten.', 'With hearts you can start great things under “Events” at the top.'),
     ],
     reward: 30,
   },
   {
     // (früher an dieser Stelle: der Eiswagen, siehe STEP_RENAMES in story.js)
     id: 'babies',
-    at: { level: 'park', spot: 'door' }, // vor dem Haupthaus …
-    also: { level: 'house', spot: 'computer' }, // … und drinnen am Computer
-    goal: tr('Starte am Computer im Haupthaus die Tierbabys', 'Start the animal babies at the computer in the main building'),
+    at: { level: 'park', spot: 'door' }, // vor dem Haupthaus (gestartet wird oben über den Events-Knopf, nicht am Computer)
+    goal: tr('Starte oben bei „Events“ die Tierbabys', 'Start the animal babies under “Events” at the top'),
     done: (game) => !!game.events.babies,
     intro: [
-      tr('Hier am Computer startest du Events. Fangen wir mit den Tierbabys an!', 'Here at the computer you start events. Let’s begin with the animal babies!'),
+      tr('Drück oben auf „Events“ – dort startest du mit Herzen tolle Sachen. Fangen wir mit den Tierbabys an!', 'Press “Events” at the top – that’s where you start great things with hearts. Let’s begin with the animal babies!'),
       tr('Wo zwei gleiche Tiere in einem Gehege wohnen, bekommen sie ein Baby. Die Besucher lieben die Kleinen und schenken dir mehr Herzen.', 'Where two matching animals live in one enclosure, they get a baby. The visitors love the little ones and give you more hearts.'),
     ],
     already: [tr('Die Tierbabys hast du ja schon gestartet – wie süß!', 'You’ve already started the animal babies – how cute!')],
@@ -332,7 +331,7 @@ export const STEPS = [
       tr('Super, zwei Dschungeltiere – du hast es geschafft!', 'Great, two jungle animals – you did it!'),
       tr('Ein Tipp noch: Hier wechselt das Wetter. Bei Regen oder Nebel zeigen sich ganz andere Tiere.', 'One more tip: the weather changes here. In rain or fog completely different animals appear.'),
       tr('Leg dich in der Hütte ins Bett, dann ist das Wetter nach einem Nickerchen weiter. Das klappt auch in der Savanne.', 'Lie down in the bed in the hut and the weather moves on after a nap. That works in the savanna too.'),
-      tr('Fahr jetzt mit deinen Tieren zurück in den Tierpark. Ich warte am Computer im Haupthaus – ich zeige dir noch etwas Tolles!', 'Now take your animals back to the zoo. I’ll wait at the computer in the main building – I’ve got one more great thing to show you!'),
+      tr('Fahr jetzt mit deinen Tieren zurück in den Tierpark. Ich warte vor dem Haupthaus – ich zeige dir noch etwas Tolles!', 'Now take your animals back to the zoo. I’ll wait in front of the main building – I’ve got one more great thing to show you!'),
     ],
     reward: 30,
     unlocks: ['ice'],
@@ -340,12 +339,11 @@ export const STEPS = [
   {
     // ganz zum Schluss (vorher unterbrach es zwischen Aquarium und Bambuswald den Ablauf)
     id: 'event',
-    at: { level: 'park', spot: 'door' }, // vor dem Haupthaus …
-    also: { level: 'house', spot: 'computer' }, // … und drinnen am Computer
-    goal: tr('Starte am Computer ein Event (nicht die Tierbabys)', 'Start an event at the computer (not the animal babies)'),
-    done: (game) => !!game.story.flags.event, // selbst am Computer gestartet (nicht Eiswagen, Geschenk, Überraschungs-Flamingos oder die Tierbabys aus ihrer Aufgabe)
+    at: { level: 'park', spot: 'door' }, // vor dem Haupthaus (gestartet wird oben über den Events-Knopf)
+    goal: tr('Starte oben bei „Events“ ein Event (nicht die Tierbabys)', 'Start an event under “Events” at the top (not the animal babies)'),
+    done: (game) => !!game.story.flags.event, // selbst über den Events-Knopf gestartet (nicht Eiswagen, Geschenk, Überraschungs-Flamingos oder die Tierbabys aus ihrer Aufgabe)
     intro: [
-      tr('Da bist du ja! Am Computer gibt es noch viel mehr Events: Flamingos, seltene Tiere, die große Wanderung …', 'There you are! There are many more events at the computer: flamingos, rare animals, the great migration …'),
+      tr('Da bist du ja! Oben bei „Events“ gibt es noch viel mehr: Flamingos, seltene Tiere, die große Wanderung …', 'There you are! Under “Events” at the top there’s much more: flamingos, rare animals, the great migration …'),
       tr('Manche bringen sogar ganz neue Tiere, wie Wölfe, Gnus oder Quallen. Such dir eins aus!', 'Some even bring brand-new animals, like wolves, wildebeest or jellyfish. Pick one!'),
     ],
     already: [tr('Du hast ja schon ein Event gestartet – prima!', 'You’ve already started an event – excellent!')],
