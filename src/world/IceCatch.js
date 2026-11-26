@@ -134,6 +134,7 @@ export default class IceCatch {
       this.owlEmptyFor = 0;
       return;
     }
+    if (scene.expMap && !scene.expWants('snowowl')) return; // Expedition: nur, solange sie auf der Tierliste steht
     this.owlEmptyFor = (this.owlEmptyFor ?? OWL_REFILL) + dt;
     if (this.owlEmptyFor < OWL_REFILL) return;
     const p = scene.player;

@@ -3,10 +3,19 @@
 Stand: 25.11.2026. Schritte 1 bis 3 gebaut (noch nicht committet), Schritt 4 (Leben im Gehege) offen.
 
 Abweichungen beim Bau:
-- **Bürsten ohne Werkzeug** (nach Versuchen mit Bürste im Futterhaus und Bürstenständer: zu viele Dinge zum Anklicken
-  nebeneinander): Aktionstaste 3× drücken, je Strich fährt die Bürste über das Tier, drei Punkte unter dem Namensschild
-  füllen sich (nach 6 Sekunden ohne Strich von vorn). **Streicheln** dagegen einmal drücken, dauert dann gut eine Sekunde
-  (eine Hand streicht zweimal über das Tier). Der Salzleckstein der Weide bleibt.
+- **Umbau 26.11.2026: jede Eigenschaft fühlt sich anders an** (vorher waren Streicheln = 1× und Bürsten = 3× drücken zu
+  ähnlich). Gedacht ist es im Gehege, geht aber auch vom Zaun aus (Terrarien, Becken kann man nicht betreten):
+  - **Verschmust: schmusen** (wie beim Rochen): einmal drücken, dann still neben dem Tier stehen; eine Hand krault, eine
+    rosa Leiste unter dem Namen füllt sich (3,5 s). Laufen hält sie an, weggehen beendet nach 4 s. Kürzere Pause
+    (2 statt 5 Minuten, CUDDLE_PAUSE), also oft machbar.
+  - **Verspielt: Ball** in die eigene Laufrichtung, so weit es geht (45–130 px), nie aus dem Gehege, ins Wasser oder
+    dorthin, wo das Tier nicht hinkommt (sonst etwas schräger, sonst eine freie Stelle). Nach dem Zurückbringen spielt
+    es 16 s allein weiter (stupst den Ball, läuft hinterher). Besucher am Gehege freuen sich (⚽) und geben 1 Herz extra.
+  - **Eitel: bürsten mit der Bürste vom Futterautomaten** (hängt sichtbar am Automaten, Auswahl im Futterhaus; ohne
+    Bürste ein Hinweis). Erster Strich da, wo man steht; danach glitzert eine Stelle auf einer anderen Seite des Tiers
+    (Ring am Boden, blasse Bürste darüber), dort wieder drücken. 3 Striche, 14 s Zeit je Strich. Danach glänzt es,
+    solange die Pause läuft: Besucher am Gehege geben 2 Herzen extra (penBonus, cheerPen).
+  - Mavis Tierfreund-Aufgabe heißt jetzt „benennen und schmusen“; solange sie läuft, gibt es nur Streichel-Blasen.
 - Wildpark: die Schilder für Reh und Elch hängen jetzt am Außenzaun neben dem Tor (vorher drinnen beim Futterautomaten).
 - **Mavis Tierfreund-Aufgabe** („benennen und streicheln“): solange noch kein Tier benannt ist, gelten alle unbenannten
   Tiere als verschmust (Tafel, Blasen), und das benannte bleibt es (traitIn in GardenScene). Danach zeigen die anderen
@@ -14,8 +23,8 @@ Abweichungen beim Bau:
 - Symbole: Hand, Ball, Bürste, Futterbeutel (verfressen); unter dem Namen auf der Tafel steht das Wort blasser.
 - Eigenschaft steht im Spielstand am Tier (`trait` bei den gespeicherten Tieren) und an der Bindung (`bond.trait`),
   nicht als eigene Liste.
-- Code: TRAITS, traitOf, canCare, feedPoints in src/world/friends.js; careFriend, petFriend, startBrushing/brushStroke,
-  playBall, updateBall, updateShine, bookTraits in GardenScene; fetch/updateFetch in Animal.js.
+- Code: TRAITS, traitOf, canCare, feedPoints in src/world/friends.js; careFriend, startCuddle/updateCuddle, startBrushing/brushStroke/nextBrushSpot,
+  playBall, ballTarget, cheerPen, penBonus, updateBall, updateShine, bookTraits in GardenScene; fetch/updateFetch in Animal.js.
 
 ## Ziel
 

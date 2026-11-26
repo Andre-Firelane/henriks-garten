@@ -83,6 +83,8 @@ gibt es nur noch zwei kleine.
 
 ## Expedition
 
+**Veraltet, neuer Plan in docs/plan-eis-expedition.md (26.11.2026).** Der Stand unten ist vom 23.11.2026.
+
 Statt Wetter würfelt jede Map **Tag oder Nacht**. Nachts sind Meer und Fjord zugefroren (Packeis), und die
 Kälte gilt wie auf der großen Karte. Merkmale (`features`) und Regeln (`SPECIES_RULES.ice`):
 

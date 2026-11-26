@@ -42,9 +42,10 @@ function close(e) {
 let book = null;
 const OPEN_GRACE = 400; // Millisekunden nach dem Öffnen, in denen Klicks nichts tun (Tablet: Klick nach dem Antippen)
 
-export function openBook(tabs, start, closed, onTab) {
+// filter: Start-Filter (z. B. das Gebiet, in dem man gerade ist), sonst 'all'
+export function openBook(tabs, start, closed, onTab, filter = 'all') {
   panel = document.getElementById('journal');
-  book = { tabs, current: Math.max(0, tabs.findIndex((t) => t.id === start)), filter: 'all', onTab, openedAt: performance.now() };
+  book = { tabs, current: Math.max(0, tabs.findIndex((t) => t.id === start)), filter, onTab, openedAt: performance.now() };
   panel.innerHTML = `<div class="journal-box book-box">${CLOSE_BUTTON}<div class="book-tabs"></div><div class="book-page"></div></div>`;
   showTab();
   panel.classList.add('show');

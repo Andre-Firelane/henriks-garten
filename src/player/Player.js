@@ -40,6 +40,7 @@ const MOUNT_ANIMS = {
   ride_asia: { walkDown: 'ride_asia_walk', walkUp: 'ride_asia_walk_back', idleDown: 'ride_asia_idle', idleUp: 'ride_asia_idle_back' }, // Videos
   ride_jungle: { walkDown: 'ride_jungle_walk', walkUp: 'ride_jungle_walk_back', idleDown: 'ride_jungle_idle', idleUp: 'ride_jungle_idle_back' }, // Maultier
   ride_reef: { walkDown: 'ride_reef_walk', walkUp: 'ride_reef_walk_back', idleDown: 'ride_reef_idle', idleUp: 'ride_reef_idle_back' }, // Seabob
+  // ride_ice (Hundeschlitten): noch keine Animation, Standbild
   scooter: { walkDown: 'scooter_walk', walkUp: 'scooter_walk_back', stand: { down: 0, up: 0 } }, // E-Roller (im Stand: erstes Bild vom Fahren)
 };
 // Reittier (Event): 30 % schneller, ruhigeres Wippen, Fußpunkt im Bild; die Kollision bleibt so klein wie zu Fuß
@@ -53,15 +54,17 @@ const WADE_SINK = 14; // so tief steht der Wasserbüffel im Wasser (bis zum halb
 const WADE_EASE = 6; // so schnell sinkt er ein bzw. taucht wieder auf
 const WADE_SPEED = 0.6; // im Wasser watet er langsamer
 // so viel höher als zu Fuß hält Henrik auf dem Reittier seine Hände (dort sitzen die Werkzeuge)
-const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31, ride_jungle: 21, ride_reef: 14, scooter: 14 };
+const HAND_LIFT = { ride_meadow: 19, ride_forest: 23, ride_savanna: 46, ride_asia: 31, ride_jungle: 21, ride_reef: 14, ride_ice: 8, scooter: 14 };
 // E-Roller (im Tierpark, Bilder 170×170): schneller als das Reittier, Fußpunkt, Schatten und kaum Wippen (er gleitet).
 // Der Schatten liegt schräg in Fahrtrichtung (wie die Iso-Kacheln) und unter der Mitte des Rollers (SHADOW_UP über dem Fußpunkt)
+// Hundeschlitten (Eiswelt): Fußpunkt unter Henrik hinten auf den Kufen, die Hunde laufen voraus; der Schatten ist ins Bild
+// gemalt (kein eigener), er gleitet fast ohne Wippen und ohne Hufschritte
 const MOUNT_SPEED = { scooter: 1.7 };
-const MOUNT_ORIGIN_Y = { scooter: 164 / 170 };
-const MOUNT_SHADOW = { scooter: [46, 13] };
+const MOUNT_ORIGIN_Y = { scooter: 164 / 170, ride_ice: 166 / 230 };
+const MOUNT_SHADOW = { scooter: [46, 13], ride_ice: [0, 0] };
 const MOUNT_SHADOW_UP = { scooter: 9 };
 const MOUNT_SHADOW_TILT = { scooter: 26.6 };
-const MOUNT_HOP = { scooter: 0.3 };
+const MOUNT_HOP = { scooter: 0.3, ride_ice: 0.4 };
 const RIDE_SHADOW_UP = 5; // Schatten unter der Mitte der Hufe statt unter dem vordersten Huf
 // Schwimmen (Unterwasserwelt): Henrik schwebt über dem Meeresboden, wippt langsam auf und ab und neigt sich in Schwimmrichtung
 const SWIM_LIFT = 16; // so hoch über dem Boden
@@ -292,7 +295,7 @@ export default class Player {
     );
     if (this.swim) this.sprite.setAngle(moving ? this.faceX * SWIM_TILT * Math.min(1, len) : 0);
     else if (this.boat) this.sprite.setAngle(Math.sin(this.scene.time.now / 420) * 2); // paddelt und schaukelt
-    else this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount === 'scooter' ? 0.5 : this.mount ? 1.5 : 3) : 0);
+    else this.sprite.setAngle(moving && !animated ? Math.sin(phase) * (this.mount === 'scooter' || this.mount === 'ride_ice' ? 0.5 : this.mount ? 1.5 : 3) : 0);
     this.shadow.setPosition(this.x, this.y - lift - (this.mount ? MOUNT_SHADOW_UP[this.mount] ?? RIDE_SHADOW_UP : 0)).setVisible(!sink); // im Wasser kein Schatten
     // E-Roller: der Schatten liegt schräg wie der Roller (unten rechts/oben links bzw. unten links/oben rechts)
     const tilt = MOUNT_SHADOW_TILT[this.mount] ?? 0;
@@ -322,7 +325,7 @@ export default class Player {
   }
 
   playStep() {
-    if (this.swim || this.boat || this.mount === 'scooter') return; // unter Wasser, im Kanu und auf dem E-Roller keine Schritte
+    if (this.swim || this.boat || this.mount === 'scooter' || this.mount === 'ride_ice') return; // unter Wasser, im Kanu, auf dem E-Roller und dem Schlitten keine Schritte
     // drinnen (Haupthaus, Hütten, Aquarium) klingen die Schritte wie auf einem Flur, draußen wie auf Gras
     const { tx, ty } = worldToTile(this.x, this.y);
     // (in Gebieten mit eigenem Schritt-Geräusch draußen dieses, z. B. Schnee in der Eiswelt)

@@ -538,6 +538,12 @@ export class Visitor {
       this.heartStep = (this.timer * 0.75) / this.heartsLeft;
       if (Math.random() < FRIEND_SAY_CHANCE) this.scene.time.delayedCall(Phaser.Math.Between(400, 1600), () => !this.gone && this.say(tr(`Guck mal, da ist ${friend.bond.name}!`, `Look, there’s ${friend.bond.name}!`)));
     }
+    // ein Tierfreund spielt hier gerade mit dem Ball bzw. glänzt frisch gebürstet (siehe penBonus in GardenScene)
+    const show = score > 0 ? this.scene.penBonus?.(this.pen) ?? 0 : 0;
+    if (show) {
+      this.heartsLeft += show;
+      this.heartStep = (this.timer * 0.75) / this.heartsLeft;
+    }
     this.faceTowardsPen();
     if (this.crowd.koiBridge(this) && Math.random() < KOI_FEED_CHANCE) {
       this.scene.time.delayedCall(KOI_FEED_DELAY, () => !this.gone && this.phase === 'look' && this.crowd.feedKoi(this));

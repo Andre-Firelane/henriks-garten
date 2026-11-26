@@ -191,6 +191,7 @@ const CHARACTERS = [
   { src: 'Sprites/Character Pferd.png', out: 'ride_forest.png', frameW: 160, frameH: 230, feetY: 224, figureH: 150 },
   { src: 'Sprites/Character Elefant.png', out: 'ride_savanna.png', frameW: 160, frameH: 230, feetY: 224, figureH: 196 },
   { src: 'Sprites/Character Wasserbüffel.png', out: 'ride_asia.png', frameW: 160, frameH: 230, feetY: 224, figureH: 160 },
+  // (Hundeschlitten, Reittier Eiswelt: ride_ice.png entsteht mit tools/dogsled-cut.py, Fußpunkt unter Henrik statt mittig)
   // Flamingo (Event „Flamingo-Flug“): stehend wie der Reiher, fliegend, und das graue Küken (Tierbabys). Freigestellt mit npm run cutout
   // Bauernhof-Event: Kuh, Schwein, Ziege im Format des Schafs (80x88, Füße bei 84). Beide Rückansichten schauen im Bild
   // nach rechts, daher oben-links = oben-rechts gespiegelt. Fress-Bild nur für die Kuh; Schwein und Ziege grasen im
@@ -1085,6 +1086,12 @@ const ANIMATIONS = [
   { src: 'Animation/Schneehase läuft hinten.mp4', out: 'snowhare_walk_back.png', range: [45, 82], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   { src: 'Animation/Schneehase idle vorne.mp4', out: 'snowhare_idle.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
   { src: 'Animation/Schneehase idle hinten.mp4', out: 'snowhare_idle_back.png', range: [0, 47], every: 2, scale: 0.216, frameW: 56, frameH: 88, feetY: 82 },
+  // Schneeeule: Stehen (nur von vorne, sitzt wie das Standbild auf einem Schneefleck; ohne Atemwolke) so hoch wie das
+  // Standbild (68 px), jedes zweite Bild; Fliegen (folgt Henrik, Polarhalle) ein Flügelschlag (tools/find-loop.py), die
+  // Eule so groß wie im Sitzen (im Flug-Video ist sie 1,45-mal kleiner gefilmt: Kopf 20 statt 29 px), großer Rahmen für
+  // die Flügel; im Video fliegt sie nach links: gespiegelt
+  { src: 'Animation/Schneeeule idle.mp4', out: 'snowowl_idle.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [0, 47], every: 2, figureH: 68, frameW: 72, frameH: 80, feetY: 76 },
+  { src: 'Animation/Schneeeule fliegt.mp4', out: 'snowowl_flap.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [9, 30], mirror: 'all', scale: 0.26, frameW: 152, frameH: 128, feetY: 124 },
   // Eisbär: Figur so hoch wie das Standbild (vorne 124, hinten 137 px im Bogen, im Spiel halb so groß, SIZE in
   // PolarBear.js); Laufen je ein Schrittzyklus, Stehen und Fressen jedes zweite Bild (vor und zurück). Frisst: nur der
   // Teil, in dem er liegt und am Fisch knabbert (ohne onlyFigure, sonst fällt der Fisch weg)
@@ -1108,6 +1115,37 @@ const ANIMATIONS = [
   { src: 'Animation/Papageientaucher idle vorne.mp4', out: 'puffin_idle.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [0, 47], every: 2, scale: 0.137, frameW: 64, frameH: 68, feetY: 62 },
   { src: 'Animation/Papageientaucher idle hinten.mp4', out: 'puffin_idle_back.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [0, 47], every: 2, scale: 0.137, frameW: 64, frameH: 68, feetY: 62 },
   { src: 'Animation/Papageientaucher fliegt.mp4', out: 'puffin_fly_anim.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [46, 59], scale: 0.3, frameW: 112, frameH: 100, feetY: 92 },
+  // seltene Varianten aus Videos (Elch2, Erdmännchen2, Geier2, Hyäne2, Gorilla2, Rentier2): Rahmen und Fußlinie wie beim
+  // normalen Tier, figureH = Höhe der Figur in dessen Bogen (so groß wie das Original); Elch2 mit den Maßstäben des Elchs,
+  // Rentier2 mit einem Maßstab für alle Videos (Geweih größer: höherer Rahmen 136, Fußlinie 131). Laufen genau ein
+  // Schrittzyklus (tools/find-loop.py; Tempo siehe VIDEO_RATE in BootScene), kurze Videos ohne Loop ganz; Stehen jedes
+  // zweite Bild. Fuchsmanguste breiter (langer Schwanz), Ohrengeier im Flug so breit wie der Geier (höherer Rahmen)
+  { src: 'Animation/Elch2 läuft vorne.mp4', out: 'elk2_walk.png', range: [60, 82], mirror: 'all', scale: 0.28, frameW: 136, frameH: 128, feetY: 124 },
+  { src: 'Animation/Elch2 läuft hinten.mp4', out: 'elk2_walk_back.png', scale: 0.39, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Elch2 idle vorne.mp4', out: 'elk2_idle.png', every: 2, mirror: 'all', scale: 0.28, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Elch2 idle hinten.mp4', out: 'elk2_idle_back.png', every: 2, scale: 0.39, frameW: 128, frameH: 128, feetY: 124 },
+  { src: 'Animation/Erdmännchen2 läuft vorne.mp4', out: 'meerkat2_walk.png', range: [34, 52], figureH: 52, frameW: 56, frameH: 56, feetY: 52 },
+  { src: 'Animation/Erdmännchen2 läuft hinten.mp4', out: 'meerkat2_walk_back.png', range: [58, 78], figureH: 51, frameW: 56, frameH: 56, feetY: 52 },
+  { src: 'Animation/Erdmännchen2 idle vorne.mp4', out: 'meerkat2_idle.png', every: 2, figureH: 52, frameW: 56, frameH: 56, feetY: 52 },
+  { src: 'Animation/Erdmännchen2 idle hinten.mp4', out: 'meerkat2_idle_back.png', every: 2, figureH: 51, frameW: 56, frameH: 56, feetY: 52 },
+  { src: 'Animation/Geier2 idle vorne.mp4', out: 'vulture2_idle.png', every: 2, figureH: 61, frameW: 88, frameH: 108, feetY: 104 },
+  { src: 'Animation/Geier2 fliegt vorne.mp4', out: 'vulture2_flap.png', dropShadowGreen: 18, range: [12, 31], scale: 0.251, frameW: 126, frameH: 124, feetY: 120 },
+  { src: 'Animation/Hyäne2 läuft vorne.mp4', out: 'hyena2_walk.png', figureH: 73, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Hyäne2 läuft hinten.mp4', out: 'hyena2_walk_back.png', figureH: 77, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Häyne2 idle hinten.mp4', out: 'hyena2_idle_back.png', every: 2, figureH: 77, frameW: 80, frameH: 80, feetY: 76 }, // (Dateiname mit vertauschten Buchstaben)
+  { src: 'Animation/Hyäne2 idle vorne.mp4', out: 'hyena2_idle.png', every: 2, figureH: 75, frameW: 80, frameH: 80, feetY: 76 },
+  { src: 'Animation/Gorilla2 läuft vorne.mp4', out: 'gorilla2_walk.png', range: [27, 58], figureH: 82, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla2 läuft hinten.mp4', out: 'gorilla2_walk_back.png', figureH: 85, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla2 idle vorne.mp4', out: 'gorilla2_idle.png', every: 2, figureH: 80, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Gorilla2 idle hinten.mp4', out: 'gorilla2_idle_back.png', every: 2, figureH: 81, frameW: 104, frameH: 96, feetY: 92 },
+  // trommelt: Bild 0–14 anfangen, 15–27 durchgehend trommeln (Loop), 66–81 aufhören (Bild 65 gleicht Bild 15); siehe GORILLA2_DRUM in BootScene
+  { src: 'Animation/Gorilla2 trommelt.mp4', out: 'gorilla2_drum.png', skip: [...Array(38).keys()].map((i) => i + 28).concat([...Array(13).keys()].map((i) => i + 82)), figureH: 82, frameW: 104, frameH: 96, feetY: 92 },
+  { src: 'Animation/Rentier2 läuft vorne.mp4', out: 'reindeer2_walk.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [13, 29], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 läuft hinten.mp4', out: 'reindeer2_walk_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [65, 91], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 rennt vorne.mp4', out: 'reindeer2_run.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [46, 59], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 rennt hinten.mp4', out: 'reindeer2_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [67, 78], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 idle vorne.mp4', out: 'reindeer2_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 idle hinten.mp4', out: 'reindeer2_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
   // Zooauto mit Anhänger (Schnellreise, in allen Gebieten): ein Bild, Fahrtrichtung unten-links wie bisher Bild 0/1 der
   // alten Autos, so hoch wie diese. Quelle freigestellt mit npm run cutout, danach der warm-graue Bodenschatten
   // (ca. 199,183,172) in der unteren Hälfte entfernt

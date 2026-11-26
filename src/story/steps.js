@@ -41,6 +41,9 @@ const caught = (game, s) => game.catches?.[s] ?? 0;
 const kinds = (game, world) => new Set([...worldSpecies(world).filter((s) => caught(game, s) > 0), ...(game.caughtIn?.[world] ?? [])].filter((s) => s !== 'fish')).size;
 // Herzen der Besucher (ohne Eiswagen und Buden)
 const visitorHearts = (game) => Object.entries(game.heartsBy).reduce((n, [k, v]) => n + (SHOP_IDS.includes(k) ? 0 : v), 0);
+// Herzen seit Beginn der Besucher-Aufgabe (die Schafe bringen schon Besucher, während man noch auf der Wiese fängt;
+// sonst wäre die Aufgabe gleich erledigt). Ohne Merkwert (ältere Spielstände): alle Herzen
+const newVisitorHearts = (game) => visitorHearts(game) - (game.story.flags?.heartsFrom ?? 0);
 const count = (n, of) => ` (${Math.min(n, of)} / ${of})`;
 // schon Tiere aus dem Riff gefangen (ab dann zeigt Mavi das Aquarium)
 export const seaCatches = (game) => worldSpecies('reef').reduce((n, s) => n + caught(game, s), 0);
@@ -121,8 +124,9 @@ export const STEPS = [
     id: 'visitors',
     at: { level: 'park', spot: 'sign' },
     goal: tr('Sammle Herzen von den Besuchern', 'Collect hearts from the visitors'),
-    progress: (game) => count(visitorHearts(game), VISITOR_HEARTS),
-    done: (game) => visitorHearts(game) >= VISITOR_HEARTS,
+    progress: (game) => count(newVisitorHearts(game), VISITOR_HEARTS),
+    done: (game) => newVisitorHearts(game) >= VISITOR_HEARTS,
+    begin: (game) => ((game.story.flags ??= {}).heartsFrom = visitorHearts(game)),
     intro: [
       tr('Schau, die ersten Besucher sind da!', 'Look, the first visitors are here!'),
       tr('Sie lieben unsere Tiere. Wenn ihnen ein Gehege gefällt, schenken sie dir Herzen.', 'They love our animals. When they like an enclosure, they give you hearts.'),
@@ -210,13 +214,13 @@ export const STEPS = [
     // Tierfreund (an der Stelle der früheren Ausbau-Aufgabe, siehe DONE_WITH in story.js und src/world/friends.js)
     id: 'friend',
     at: { level: 'park', spot: 'sign' },
-    goal: tr('Gib einem Tier am Gehegeschild einen Namen und streichle es', 'Name an animal at an enclosure sign and pet it'),
+    goal: tr('Gib einem Tier am Gehegeschild einen Namen und schmuse mit ihm', 'Name an animal at an enclosure sign and cuddle it'),
     progress: (game) => count(friendSteps(game), 2),
     done: (game) => friendSteps(game) >= 2,
     intro: [
       tr('Hier am Schild siehst du, wer bei uns wohnt. Jede Tierart hat ihr eigenes Schild.', 'This sign shows who lives here. Every kind of animal has its own sign.'),
       tr('Drück davor die Aktionstaste und such dir ein Tier aus. Gib ihm einen Namen – dann ist es dein Freund!', 'Press the action button in front of it and pick an animal. Give it a name – then it’s your friend!'),
-      tr('Danach geh zu ihm an den Zaun und streichle es.', 'Then go to it at the fence and pet it.'),
+      tr('Danach geh zu ihm, drück die Aktionstaste und bleib still neben ihm stehen – so schmust ihr.', 'Then go to it, press the action button and stand still next to it – that’s how you cuddle.'),
     ],
     already: [tr('Du hast ja schon einen Tierfreund! Wie schön.', 'You already have an animal friend! How lovely.')],
     outro: [

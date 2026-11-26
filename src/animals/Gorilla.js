@@ -73,11 +73,10 @@ export default class Gorilla extends Animal {
   // Trommeln beginnen: aufrichten, dann durchgehend auf die Brust trommeln (bis stopDrum)
   startDrum() {
     this.drum = 'in';
-    this.playDrum('gorilla_drum_in');
-    this.sprite.once('animationcomplete-gorilla_drum_in', () => {
+    this.playDrum('drum_in', () => {
       if (this.drum === 'in') {
         this.drum = 'loop';
-        this.playDrum('gorilla_drum_loop');
+        this.playDrum('drum_loop');
       }
     });
   }
@@ -86,20 +85,20 @@ export default class Gorilla extends Animal {
   stopDrum() {
     if (!this.drum || this.drum === 'out') return;
     this.drum = 'out';
-    this.playDrum('gorilla_drum_out');
-    this.sprite.once('animationcomplete-gorilla_drum_out', () => {
+    this.playDrum('drum_out', () => {
       if (this.drum === 'out') this.drum = null;
     });
   }
 
-  playDrum(key) {
-    // Albino-Gorilla: noch ohne eigene Trommel-Animation, er bleibt im Standbild (Aufrichten und Absetzen sind sofort fertig)
-    if (this.texSkin) {
-      if (this.drum === 'in') this.drum = 'loop';
-      else if (this.drum === 'out') this.drum = null;
+  // Stück der Trommel-Animation (drum_in, drum_loop, drum_out) des Gorillas bzw. des Albino-Gorillas (gorilla2_drum_…);
+  // done: wenn das Stück zu Ende ist (ohne Animation sofort, dann bleibt er im Standbild)
+  playDrum(part, done) {
+    const key = `${this.texSkin || 'gorilla'}_${part}`;
+    if (!this.scene.anims.exists(key)) {
+      done?.();
       return;
     }
-    if (!this.scene.anims.exists(key)) return;
+    if (done) this.sprite.once(`animationcomplete-${key}`, done);
     this.sprite.play(key);
     const feetY = this.sprite.texture.customData.feetY;
     this.sprite.setOrigin(0.5, feetY ? feetY / this.sprite.frame.height : this.kind.originY);
@@ -160,7 +159,7 @@ export default class Gorilla extends Animal {
       return;
     }
     // nach dem Trommeln zurück aufs normale Bild, dann greift wieder die Steh- bzw. Laufanimation
-    if (this.sprite.texture.key === 'gorilla_drum') this.sprite.stop().setFlipX(false).setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
+    if (this.sprite.texture.key.endsWith('_drum')) this.sprite.stop().setFlipX(false).setTexture(this.baseTexture(), 0).setOrigin(0.5, this.kind.originY);
     super.render(moving);
     this.sprite.setScale(this.baby ? 0.3 : SIZE);
   }

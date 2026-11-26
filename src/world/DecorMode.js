@@ -262,6 +262,17 @@ export default class DecorMode {
     if (!this.on) return;
     const p = this.scene.player;
     if (this.hover && p.moving && !this.drag) this.hover = null; // (beim Ziehen mit dem Finger bleibt die Vorschau am Finger)
+    // Tablet und Handy: keine Vorschau vor der Figur (sonst fummelt man mit dem Joystick, statt zu tippen oder zu ziehen);
+    // sie erscheint nur unter dem Finger
+    if (isTouch() && !this.hover) {
+      const key = `touch,${this.sel},${this.picking},${this.count(this.sel)}`;
+      if (key === this.key) return;
+      this.key = key;
+      this.state = { kind: 'none' };
+      this.drawPreview();
+      this.scene.updateToolbar();
+      return;
+    }
     const here = worldToTile(p.x, p.y);
     const [dx, dy] = this.hover ? [0, 0] : AHEAD[`${p.faceX},${p.faceY}`] ?? [0, 1]; // (Maus: große Teile wachsen von der Kachel unter dem Zeiger nach hinten)
     const { tx, ty } = this.hover ? worldToTile(this.hover.x, this.hover.y) : { tx: here.tx + dx, ty: here.ty + dy };
@@ -326,7 +337,7 @@ export default class DecorMode {
     if (kind === 'place') this.place(tx, ty, this.sel);
     else if (kind === 'pick') this.pickUp(entry);
     else if (kind === 'no' && this.ghost) this.scene.tweens.add({ targets: this.ghost, x: this.ghost.x + 3, duration: 50, yoyo: true, repeat: 2 });
-    else if (kind === 'none' && isTouch()) this.scene.showToast(tr('Teil antippen oder gedrückt halten und ziehen', 'Tap an item, or hold and drag it'));
+    else if (kind === 'none' && isTouch()) this.scene.showToast(this.sel ? tr('Aufs Bild tippen oder hinziehen', 'Tap the spot or drag it there') : tr('Teil antippen oder gedrückt halten und ziehen', 'Tap an item, or hold and drag it'));
     return true;
   }
 
@@ -561,6 +572,10 @@ export default class DecorMode {
     const { kind, entry, full, why } = this.state;
     const img = (id) => `assets/${itemDef(id).key}.png`;
     const name = (id) => itemDef(id).name;
+    if (kind === 'none' && isTouch()) {
+      if (this.sel) return { image: img(this.sel), label: tr('Aufs Bild tippen oder hinziehen', 'Tap the spot or drag it there') };
+      return { image: 'assets/hand.png', label: tr('Teil antippen oder ziehen', 'Tap or drag an item') };
+    }
     if (kind === 'pick') return { image: img(entry.id), label: tr(`${name(entry.id)} aufheben`, `Pick up ${name(entry.id)}`) };
     if (kind === 'place') return { image: img(this.sel), label: tr(`${name(this.sel)} setzen (${this.count(this.sel)})`, `Place ${name(this.sel)} (${this.count(this.sel)})`) };
     if (kind === 'no' && why) return { image: img(this.sel), label: why };

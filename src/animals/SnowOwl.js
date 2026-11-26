@@ -4,7 +4,8 @@
 // aus der es kommt (zeigt die Richtung, auch für das Spielen ohne Ton); ist er nah, ruft sie öfter und das "Huu ♪"
 // steigt genau an ihrem Platz auf (neben einem Felsen, Eisblock oder einer Tanne). Beim ersten Ruf eine kurze Meldung. Stellt Henrik die Laterne in ihrer Nähe ab, sieht man
 // sie im Licht – dann fängt man sie mit dem Kescher oder durch Berühren (wie beim Hyänen-Hörspiel und der Elch-Laterne).
-// Folgt sie Henrik, fliegt sie (snowowl_fly, nur die Vorderansicht, siehe tools/static-sheet.py).
+// Folgt sie Henrik, fliegt sie (Video snowowl_flap, nach rechts, nach links gespiegelt); sitzend von vorne das Video
+// snowowl_idle, von hinten das Standbild.
 import Phaser from 'phaser';
 import Animal from './Animal.js';
 import { tileToWorld, worldToTile } from '../world/iso.js';
@@ -132,32 +133,47 @@ export default class SnowOwl extends Animal {
     this.spot = null;
   }
 
+  // Sitzen (nur von vorne) und Fliegen sind Videos (kind.anims): in der Tanne und in der Polarhalle immer die
+  // Vorderansicht; fliegen nur, wenn sie Henrik folgt bzw. in der Halle zum nächsten Platz fliegt (im Gehege zu Fuß das Standbild)
+  animKey(moving) {
+    const anims = this.animSet();
+    if (!anims) return null;
+    if (this.state === 'wild') return anims.idleDown;
+    if (inHall(this) && this.hallUp) return this.hallFlight ? anims.walkDown : anims.idleDown;
+    if (moving) return this.state === 'following' ? anims.walkDown : null;
+    return this.faceY > 0 ? anims.idleDown : null;
+  }
+
   render(moving) {
     super.render(moving);
+    const anim = this.sprite.anims.isPlaying && this.sprite.anims.currentAnim?.key;
+    const flapping = anim === this.kind.anims.walkDown;
     if (this.state === 'wild') {
       // nur im Laternenlicht zu sehen, oben in der Tanne (vor den Zweigen)
       this.sprite.setVisible(this.lit);
       this.shadow.setVisible(false);
-      if (this.sprite.texture.key !== 'snowowl') this.sprite.setTexture('snowowl', this.faceX < 0 ? 1 : 0);
+      if (!anim && this.sprite.texture.key !== 'snowowl') this.sprite.setTexture('snowowl', this.faceX < 0 ? 1 : 0);
       if (this.spot) this.sprite.setY(this.y - PERCH_UP).setDepth(this.y + 2);
       return;
     }
-    // in der Polarhalle: oben auf einem Felsen bzw. einer Tanne, im Flug zum nächsten Platz (Vorderansicht)
+    // in der Polarhalle: oben auf einem Felsen bzw. einer Tanne, im Flug zum nächsten Platz
     if (inHall(this) && this.hallUp) {
-      const f = this.kind.frames;
-      const flying = !!this.hallFlight && this.scene.textures.exists('snowowl_fly');
-      if (flying) this.sprite.setTexture('snowowl_fly', this.faceX < 0 ? 1 : 0).setFlipX(false);
-      else this.sprite.setTexture('snowowl', this.faceX < 0 ? f.downLeft : f.downRight).setFlipX(false);
+      if (!anim) {
+        // ohne Videos: Standbilder (Flugbild: Bild 0 schaut nach links, Bild 1 nach rechts)
+        const f = this.kind.frames;
+        const flying = !!this.hallFlight && this.scene.textures.exists('snowowl_fly');
+        if (flying) this.sprite.setTexture('snowowl_fly', this.faceX < 0 ? 0 : 1).setFlipX(false);
+        else this.sprite.setTexture('snowowl', this.faceX < 0 ? f.downLeft : f.downRight).setFlipX(false);
+      }
       this.sprite.setY(this.sprite.y - this.hallUp).setDepth(this.y + 60);
       this.shadow.setVisible(!!this.hallFlight);
       return;
     }
-    // folgt sie Henrik und ist unterwegs: fliegen (nur Vorderansicht, nach links bzw. rechts)
-    const fly = this.state === 'following' && moving && this.scene.textures.exists('snowowl_fly');
-    if (fly) {
-      this.sprite.setTexture('snowowl_fly', this.faceX < 0 ? 1 : 0).setFlipX(false);
-      this.sprite.setY(this.sprite.y - FLY_LIFT - Math.sin(this.scene.time.now / 160) * FLY_BOB);
-    } else if (this.sprite.texture.key === 'snowowl_fly') {
+    // folgt sie Henrik und ist unterwegs: fliegen, etwas über dem Boden
+    const fly = this.state === 'following' && moving;
+    if (fly && !flapping && this.scene.textures.exists('snowowl_fly')) this.sprite.setTexture('snowowl_fly', this.faceX < 0 ? 0 : 1).setFlipX(false); // (ohne Video)
+    if (fly) this.sprite.setY(this.sprite.y - FLY_LIFT - Math.sin(this.scene.time.now / 160) * FLY_BOB);
+    else if (this.sprite.texture.key === 'snowowl_fly') {
       const f = this.kind.frames;
       this.sprite.setTexture('snowowl', this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
     }

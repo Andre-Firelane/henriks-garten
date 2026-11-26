@@ -179,14 +179,15 @@ export default class Reindeer extends Antelope {
 
   // wild rennt es (auf dem Rundweg, auf der Flucht), gefangen, folgend und im Gehege läuft es
   animKey(moving) {
-    if (!moving || this.state !== 'wild' || this.texSkin) return super.animKey(moving);
-    return this.faceY > 0 ? 'reindeer_run' : 'reindeer_run_back';
+    const anims = this.animSet(); // (das weiße Rentier rennt mit seinen eigenen Videos)
+    if (!moving || this.state !== 'wild' || !anims?.runDown) return super.animKey(moving);
+    return this.faceY > 0 ? anims.runDown : anims.runUp;
   }
 
   // Rennen: Tempo der Animation am Tempo auf dem Pfad messen (nicht am Gehtempo kind.speed, sonst wirbeln die Beine)
   render(moving) {
     super.render(moving);
-    if (this.sprite.anims.isPlaying && this.sprite.anims.currentAnim?.key.startsWith('reindeer_run')) {
+    if (this.sprite.anims.isPlaying && this.sprite.anims.currentAnim?.key.includes('_run')) {
       this.sprite.anims.timeScale = Phaser.Math.Clamp(Math.pow((this.moveSpeed ?? RUN_SPEED) / RUN_SPEED, 0.6), 0.7, 1.8);
     }
   }

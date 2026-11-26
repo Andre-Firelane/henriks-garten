@@ -61,7 +61,7 @@ const GROUPS = {
   },
   ice: {
     species: ['penguin', 'seal', 'snowhare', 'arcticfox', 'snowowl', 'reindeer', 'walrus', 'polarbear', 'puffin'],
-    keys: /^(hero_ice|car_snow|penguin|seal|step_snow|snowhare|arcticfox|arcticwolf|snowowl|reindeer|walrus|polarbear|puffin|warmer)/,
+    keys: /^(hero_ice|ride_ice|car_snow|penguin|seal|step_snow|snowhare|arcticfox|arcticwolf|snowowl|reindeer|walrus|polarbear|puffin|warmer)/,
     art: /^snow\d$|^snow_path$|^snowman$|^snow_pine$|_ice|^ice_|^tundra|^glacier/, // die verschneiten Felsen (snow_kopje ...) stehen in Bambuswald und Eiswelt: Paket misc
   },
 };
@@ -366,6 +366,8 @@ const SAVANNA_ANIMS = {
 // Stücke der Trommel-Animation des Gorillas: [erstes Bild, letztes Bild, Wiederholungen (-1: endlos)]. Das Aufrichten
 // dauert 1 Sekunde, so lange wie die Pause vor seinem ersten Schlag (siehe DrumTool.js)
 const GORILLA_DRUM = { gorilla_drum_in: [0, 23, 0], gorilla_drum_loop: [24, 92, -1], gorilla_drum_out: [93, 101, 0] };
+// Albino-Gorilla: der Bogen hat nur Anfang, einen Trommel-Loop (13 Bilder) und das Ende (tools/prepare-characters.js)
+const GORILLA2_DRUM = { gorilla2_drum_in: [0, 14, 0], gorilla2_drum_loop: [15, 27, -1], gorilla2_drum_out: [28, 43, 0] };
 // Stehen mit nur jedem zweiten Videobild (every: 2 in tools/prepare-characters.js): läuft mit 12 statt 24 Bildern pro
 // Sekunde, also genauso schnell wie im Video. Die Bewegungen im Stehen sind langsam, die Bögen werden so halb so groß
 const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle arcticfox_idle hyena_idle hyena_idle_back panda_idle tiger_idle_back tiger2_idle
@@ -377,7 +379,9 @@ const VIDEO_HALF = `sheep2_idle sheep2_idle_back heron2_idle fox2_idle arcticfox
   piglet_idle_back okapi_idle okapi_idle_back tapir_idle tapir_idle_back tanuki_idle tanuki_idle_back yak_idle yak_idle_back
   anteater2_idle okapi2_idle okapi2_idle_back tanuki2_idle tanuki2_idle_back yak2_idle yak2_idle_back
   snowleopard_idle snowleopard_idle_back reindeer_idle reindeer_idle_back snowhare_idle snowhare_idle_back
-  polarbear_idle polarbear_idle_back polarbear_eat walrus_idle walrus_idle_back puffin_idle puffin_idle_back`.split(/\s+/);
+  polarbear_idle polarbear_idle_back polarbear_eat walrus_idle walrus_idle_back puffin_idle puffin_idle_back
+  elk2_idle elk2_idle_back meerkat2_idle meerkat2_idle_back vulture2_idle hyena2_idle hyena2_idle_back gorilla2_idle gorilla2_idle_back
+  reindeer2_idle reindeer2_idle_back snowowl_idle`.split(/\s+/);
 const VIDEO_ANIMS = {
   // seltene Varianten aus Videos (Schaf2: gefleckter Widder, Reiher2: Storch, Fuchs2: Silberfuchs, Eichhörnchen2:
   // Streifenhörnchen, Biber2: Nutria, Affe2: Goldstumpfnase); gleiche Größe wie die normalen Tiere
@@ -659,6 +663,36 @@ const VIDEO_ANIMS = {
   puffin_idle: [64, 68, 24],
   puffin_idle_back: [64, 68, 24],
   puffin_fly_anim: [112, 100, 14],
+  // Schneeeule: sitzt (nur von vorne) und fliegt (Flügelschlag, nach rechts; nach links gespiegelt)
+  snowowl_idle: [72, 80, 24],
+  snowowl_flap: [152, 128, 22],
+  // seltene Varianten: Rotbrauner Elch, Fuchsmanguste, Ohrengeier (nur von vorne), Streifenhyäne,
+  // Albino-Gorilla (mit Trommeln, siehe GORILLA2_DRUM), weißes Rentier (höherer Rahmen wegen des großen Geweihs)
+  elk2_walk: [136, 128, 23],
+  elk2_walk_back: [128, 128, 29],
+  elk2_idle: [128, 128, 32],
+  elk2_idle_back: [128, 128, 22],
+  meerkat2_walk: [56, 56, 19],
+  meerkat2_walk_back: [56, 56, 21],
+  meerkat2_idle: [56, 56, 12],
+  meerkat2_idle_back: [56, 56, 43],
+  vulture2_idle: [88, 108, 49],
+  vulture2_flap: [126, 124, 20],
+  hyena2_walk: [80, 80, 26],
+  hyena2_walk_back: [80, 80, 24],
+  hyena2_idle: [80, 80, 17],
+  hyena2_idle_back: [80, 80, 15],
+  gorilla2_walk: [104, 96, 32],
+  gorilla2_walk_back: [104, 96, 31],
+  gorilla2_idle: [104, 96, 49],
+  gorilla2_idle_back: [104, 96, 49],
+  gorilla2_drum: [104, 96, 44],
+  reindeer2_walk: [96, 136, 17],
+  reindeer2_walk_back: [96, 136, 27],
+  reindeer2_run: [96, 136, 14],
+  reindeer2_run_back: [96, 136, 12],
+  reindeer2_idle: [96, 136, 49],
+  reindeer2_idle_back: [96, 136, 49],
 };
 
 const ZEBRA_FRAME = { frameWidth: 80, frameHeight: 104 };
@@ -821,6 +855,7 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('mavi', 'assets/mavi.png', HERO_FRAME); // Mavi die Tierpflegerin (führt durch die Geschichte)
     for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
+    load.spritesheet('ride_ice', 'assets/ride_ice.png', { frameWidth: 464, frameHeight: 230 }); // Hundeschlitten (Eiswelt, breit: Hunde voraus, tools/dogsled-cut.py)
     // Esel, Pferd und Elefant laufen und stehen (Test)
     for (const w of ['meadow', 'forest']) {
       for (const k of ['walk', 'walk_back', 'idle', 'idle_back']) load.spritesheet(`ride_${w}_${k}`, `assets/ride_${w}_${k}.png`, { frameWidth: 160, frameHeight: 230 });
@@ -1109,12 +1144,19 @@ export default class BootScene extends Phaser.Scene {
     // Eiswelt: Henrik macht schnellere Schritte, sonst gleitet er vor dem hellen Schnee sichtbar über den Boden
     // Elch: große, ruhige Schritte – langsamer als im Video, sonst trippelt er
     const VIDEO_RATE = { ride_asia_walk: 31, ride_asia_walk_back: 31, hero_ice_walk: 30, hero_ice_walk_back: 30, elk_walk: 15, elk_walk_back: 15,
-      reindeer_run: 18, reindeer_run_back: 18, snowhare_walk: 44, snowhare_walk_back: 42 }; // Rentier rennt etwas ruhiger, Schneehase hoppelt flink
+      reindeer_run: 18, reindeer_run_back: 18, snowhare_walk: 44, snowhare_walk_back: 42, // Rentier rennt etwas ruhiger, Schneehase hoppelt flink
+      // seltene Varianten: ein Schrittzyklus dauert so lange wie beim normalen Tier (ihre Loops sind anders lang). Das
+      // weiße Rentier galoppiert im Video viel gemächlicher (14 statt 10 Bilder je Sprung), daher deutlich schneller
+      elk2_walk: 14, elk2_walk_back: 18, meerkat2_walk: 23, meerkat2_walk_back: 21, hyena2_walk: 26, hyena2_walk_back: 23, gorilla2_walk: 20, gorilla2_walk_back: 18,
+      reindeer2_walk: 18, reindeer2_walk_back: 20, reindeer2_run: 25, reindeer2_run_back: 17 };
     const VIDEO_YOYO = ['heron2_flap', 'polarbear_eat']; // auch vor und zurück (nicht nur Stehen)
     for (const key of Object.keys(VIDEO_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: VIDEO_RATE[key] ?? (VIDEO_HALF.includes(key) ? 12 : 24), repeat: -1, yoyo: key.includes('_idle') || VIDEO_YOYO.includes(key) });
     // Gorilla beim Trommel-Duell: dasselbe Video in drei Stücken (aufrichten, durchgehend trommeln, zurück)
     for (const [key, [start, end, repeat]] of Object.entries(GORILLA_DRUM)) {
       anims.create({ key, frames: anims.generateFrameNumbers('gorilla_drum', { start, end }), frameRate: 24, repeat });
+    }
+    for (const [key, [start, end, repeat]] of Object.entries(GORILLA2_DRUM)) {
+      anims.create({ key, frames: anims.generateFrameNumbers('gorilla2_drum', { start, end }), frameRate: 24, repeat });
     }
     // Fellfarben (z. B. graue und schwarze Schafe): vorab nur die kleinen Bilder fürs Tierbuch; die Spritesheets entstehen,
     // sobald ein Tier die Farbe bekommt (ensureCoat in animals/coats.js)

@@ -103,6 +103,7 @@ const THUMBS = {
   ],
   // Reittiere zum Kaufen: je ihr Bild (Henrik im Sattel), dazu der E-Roller
   ...Object.fromEntries(['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef'].map((a) => [`mount_${a}`, [[`ride_${a}`, 160, 230, 0, a === 'savanna' ? 0.46 : 0.55, 30, a === 'savanna' ? -14 : -6]]])),
+  mount_ice: [['ride_ice', 464, 230, 0, 0.4, -40, 2]], // Hundeschlitten: breites Bild, Henrik nicht in der Mitte (Inhalt rechts der Bildmitte)
   scooter: [['scooter_empty', 170, 170, 1, 0.62, 40, 0]],
 };
 

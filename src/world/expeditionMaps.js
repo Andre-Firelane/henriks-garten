@@ -112,6 +112,7 @@ const PALETTE = {
   plateau: { edge: 'Ȓ', edgeMix: [['Ȟ', 0.6], ['ȓ', 1]], edgeChance: 0.3, grass: 'q' }, // verschneite Felsen (Hochebene)
   forest: { edge: 'D', edgeMix: [['P', 0.5], ['k', 0.85], ['Ɍ', 1]], edgeChance: 0.5, grass: 'n' }, // Wald: Laubbäume, Tannen, Büsche; Farn statt hohem Gras
   moor: { edge: 'Ɋ', edgeMix: [['P', 0.4], ['k', 0.8], ['D', 1]], edgeChance: 0.5, grass: 'ẉ' }, // Moor: Birken am Rand, Wollgras
+  ice: { edge: 'Ȓ', edgeMix: [['Ṗ', 0.45], ['Ê', 0.8], ['ê', 1]], edgeChance: 0.45, grass: 'ȓ' }, // Eiswelt: verschneite Felsen, Tannen, Eisblöcke; Geröll statt hohem Gras
 };
 // river: Fluss quer durch die Map (Zeilen ty0 bis ty1, ganze Breite); clearing: freie Lichtung (Rechteck) mit Dickicht-Rand
 // (Lücken bleiben); stamp: festes Kartenstück { tx, ty, rows } (z. B. Wasserfall mit Felskante); shoreTrees: so viele
@@ -123,7 +124,11 @@ const PALETTE = {
 // (Wald) vriver: Bach von oben nach unten { x, bridgeY, damY, rocks } (siehe unten); bogTrees: so viele Moorbäume (ǒ) im
 // Wasser; walks: Holzstege [[tx, ty0, ty1], ...] entlang ty; gnawed: so viele angenagte Bäume (ƀ) direkt am Wasser;
 // lodge: Biberburg (Ƅ) am Ufer, möglichst nah an [tx, ty]
-function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13, springs = [], groves = 0, snowRows = -1, vriver = null, bogTrees = 0, walks = [], gnawed = 0, lodge = null }) {
+// (Eiswelt) sea: Meer oben über die ganze Breite bis Zeile ty1 (Küste leicht gewellt, wave Kacheln); fjord: Meeresarm von
+// rechts { ty0, ty1, x0 } (bis zur Spalte x0, das Ende abgerundet); band: Streifen ab Zeile ty0 nach unten, dicht mit c
+// (Taiga: verschneite Tannen, Anteil p); shoreRocks: so viele Vogelfelsen (Ɵ/Ȟ) am Ufer; islets: so viele im Wasser
+// (rundum Wasser, nah am Ufer: dort sitzt die Kolonie der Papageitaucher); vriver.to: der Bach endet in dieser Zeile
+function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFree = () => false, palette = 'savanna', inlet = false, thickets = 0, river = null, clearing = null, stamp = null, shoreTrees = 0, riverInlet = null, docks = [], masses = 0, creeks = 0, mangroves = 0, exitY = 13, springs = [], groves = 0, snowRows = -1, vriver = null, bogTrees = 0, walks = [], gnawed = 0, lodge = null, sea = null, fjord = null, band = null, shoreRocks = 0, islets = 0 }) {
   const P0 = PALETTE[palette];
   const PS = PALETTE.plateau;
   const N = 28;
@@ -153,6 +158,19 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   for (const p of ponds) ellipse(p, '~');
   for (const s of springs) ellipse(s, 'h');
   if (river) for (let y = river.ty0; y <= river.ty1; y++) for (let x = 0; x < N; x++) g[y][x] = '~';
+  if (sea) {
+    const ph = rnd() * 6.3;
+    for (let x = 0; x < N; x++) {
+      const coast = sea.ty1 + Math.round((sea.wave ?? 1) * Math.sin(x * 0.33 + ph));
+      for (let y = 0; y <= coast; y++) g[y][x] = '~';
+    }
+  }
+  if (fjord) {
+    const { ty0, ty1, x0 } = fjord;
+    const cy = (ty0 + ty1) / 2;
+    const ry = (ty1 - ty0) / 2 + 0.5;
+    for (let y = ty0; y <= ty1; y++) for (let x = x0; x < N; x++) if (x >= x0 + ry || ((x - x0 - ry) / ry) ** 2 + ((y - cy) / ry) ** 2 <= 1) g[y][x] = '~';
+  }
   // Bach von oben nach unten (Wald): 3 Kacheln breit (ab Spalte x), leicht geschwungen; an der Brücke (bridgeY) und am
   // Biberdamm (damY) genau gerade, damit Brückenbild und Damm passen. Die Brücke (E) liegt quer darüber, rocks: so viele
   // Felsen im Bach (ř, Schaum drumherum)
@@ -163,6 +181,7 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
     const bank = [];
     for (let y = 0; y < N; y++) {
       bank[y] = vriver.x + (nearFixed(y) ? 0 : Math.round(1.2 * Math.sin(y * 0.3 + ph))); // je Zeile höchstens eine Kachel versetzt
+      if (y > (vriver.to ?? N)) continue; // (endet hier: darunter kommt man trocken hinüber)
       for (let x = bank[y]; x < bank[y] + 3; x++) g[y][x] = '~';
     }
     if (vriver.bridgeY != null) for (let x = vriver.x; x < vriver.x + 3; x++) g[vriver.bridgeY][x] = 'E';
@@ -260,7 +279,32 @@ function makeRows({ seed, ponds = [], muds = [], scatter = {}, grass = 0, keepFr
   // Bäche (Dschungel): kurze, gewundene Wasserläufe (2 Kacheln breit), wie die Kanäle im offenen Dschungel
   // würde etwas Hohes auf (x, y) Wasser verdecken? (Wasser dahinter, also bis 2 Kacheln nach links oder oben)
   const hidesWater = (x, y) => [0, 1, 2].some((a) => [0, 1, 2].some((b) => (a || b) && g[y - b]?.[x - a] === '~'));
-  const HIGH = 'JṀḢQKƟȞPDØɊǒĦ';
+  const HIGH = 'JṀḢQKƟȞPDØɊǒĦṖ';
+  // Vogelfelsen (Eiswelt): am Ufer (Land direkt am Wasser) bzw. im Wasser (rundum Wasser, höchstens 3 Kacheln vom Land),
+  // verteilt; abwechselnd großer und kleiner Felsen
+  const nearC = (x, y, r, test) => [...Array(2 * r + 1)].some((_, i) => [...Array(2 * r + 1)].some((__, j) => test(x + i - r, y + j - r)));
+  const isWater = (x, y) => g[y]?.[x] === '~';
+  const isLand = (x, y) => g[y]?.[x] !== undefined && g[y][x] !== '~';
+  const rocksAt = [];
+  const spaced = (x, y, d) => rocksAt.every(([a, b]) => Math.max(Math.abs(a - x), Math.abs(b - y)) >= d);
+  for (let i = 0, tries = 0; i < shoreRocks && tries < 400; tries++) {
+    const x = 2 + Math.floor(rnd() * (N - 4));
+    const y = 2 + Math.floor(rnd() * (N - 4));
+    if (g[y][x] !== '.' || nearEnd(x, y) || keepFree(x, y) || ![[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isWater(x + dx, y + dy)) || !spaced(x, y, 4)) continue;
+    g[y][x] = i % 2 ? 'Ȟ' : 'Ɵ';
+    rocksAt.push([x, y]);
+    i++;
+  }
+  for (let i = 0, tries = 0; i < islets && tries < 400; tries++) {
+    const x = 1 + Math.floor(rnd() * (N - 2));
+    const y = 1 + Math.floor(rnd() * (N - 2));
+    if (!nearC(x, y, 1, isWater) || !isWater(x, y) || nearC(x, y, 1, (a, b) => !isWater(a, b)) || !nearC(x, y, 3, isLand) || !spaced(x, y, 3)) continue;
+    g[y][x] = i % 2 ? 'Ȟ' : 'Ɵ';
+    rocksAt.push([x, y]);
+    i++;
+  }
+  // Taiga: dichter Streifen verschneiter Tannen am unteren Rand
+  if (band) for (let y = band.ty0; y < N - 1; y++) for (let x = 1; x < N - 1; x++) if (free(x, y) && rnd() < band.p) g[y][x] = band.c;
   for (let i = 0; i < creeks; i++) {
     const s = spot();
     if (!s) continue;
@@ -392,12 +436,12 @@ const ROUTE_OVER = 'E'; // ... und über Brücken (die bleiben, wie sie sind)
 const TURN = 3; // so viel teurer ist ein Knick als ein gerades Stück
 const SHORE_COST = 4; // nicht am Wasser entlang (sonst ist unklar, ob man laufen oder fahren soll)
 const THICKET_COST = 6; // durch Dickicht nur, wenn es sonst einen großen Umweg gäbe (der Weg schneidet es dann frei)
-const TALL = 'AǍRƲƦŢuJkṀḢḟĎQKƟȞȨƩPDØɊǒḩḫɌƀĦ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue, Bambus, Stupa): davor wird die Kiste verdeckt
+const TALL = 'AǍRƲƦŢuJkṀḢḟĎQKƟȞȨƩPDØɊǒḩḫɌƀĦṖÊ'; // hohe Dinge (Bäume, Felsen, Termitenhügel, Baue, Bambus, Stupa; Eiswelt: verschneite Tanne, Eisblock): davor wird die Kiste verdeckt
 // steht vor der Kachel (zur Kamera hin, bis 2 Kacheln) etwas Hohes, das die Kiste verdecken würde?
 // Ein Objekt auf (x + i, y + j) steht vor der Kachel (x, y), wenn i + j > 0; es verdeckt sie, wenn es schmal genug
 // daneben steht (|i − j| ≤ 1, eine Kachel sind 32 Pixel zur Seite) und hoch genug ist (i + j Kacheln sind (i + j) · 16
 // Pixel tiefer im Bild). REACH: bis zu welcher Summe i + j das Objekt (Krone) eine Kiste noch verdeckt
-const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4, Q: 6, K: 5, Ɵ: 6, Ȟ: 4, Ȩ: 4, Ʃ: 3, P: 7, D: 7, Ø: 8, Ɋ: 6, ǒ: 7, ḩ: 3, ḫ: 3, Ɍ: 3, ƀ: 5, Ħ: 8 };
+const REACH = { q: 2, J: 9, A: 8, Ǎ: 8, Ʋ: 8, Ṁ: 6, Ḣ: 5, Ʀ: 5, Ţ: 4, ḟ: 4, Q: 6, K: 5, Ɵ: 6, Ȟ: 4, Ȩ: 4, Ʃ: 3, P: 7, D: 7, Ø: 8, Ɋ: 6, ǒ: 7, ḩ: 3, ḫ: 3, Ɍ: 3, ƀ: 5, Ħ: 8, Ṗ: 6, Ê: 3 };
 export const coveredAt = (get, x, y) => {
   for (let i = -1; i <= 9; i++) for (let j = -1; j <= 9; j++) {
     if (i + j <= 0 || Math.abs(i - j) > 1) continue;
@@ -934,9 +978,216 @@ const FOREST_LEVELS = {
   }),
 };
 
+// --- Eiswelt (Expedition, docs/plan-eis-expedition.md) ---
+
+// Grundlage wie die Eiswelt in levels.js. Statt Wetter Tag oder Nacht (looks.day/night, gewürfelt mit 60/40, siehe
+// SEASON_WEIGHTS): nachts ist das Wasser zugefroren (nur die Eislöcher bleiben offen, auf Meer-Maps auch die oberste
+// Reihe), dunkel mit Polarlicht. Keine Kälte auf Expeditionen (Andre, 26.11.2026)
+const ICE = {
+  hero: 'hero_ice',
+  background: '#1f4f73',
+  ambient: 'ambient_ice',
+  ambientVolume: 0.4,
+  stepSound: 'step_snow',
+  path: 'snow_path',
+  grass: ['snow0', 'snow1', 'snow2'],
+  water: ['ice_water0', 'ice_water0', 'ice_water1'],
+  roundShore: true,
+  snow: true, // es rieselt leicht Schnee
+  enclosures: [],
+  toolSpots: [],
+};
+const SEA_ICE = ['sea_ice0', 'sea_ice1', 'sea_ice2'];
+const TUNDRA_GROUND = (area) => ({ area, ground: ['tundra0', 'tundra1', 'tundra2'], soft: 3 });
+const BEACH_GROUND = (area) => ({ area, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 });
+const GLACIER_GROUND = (area) => ({ area, ground: ['glacier0', 'glacier1', 'glacier2'], soft: 2 });
+
+// Eislöcher für die Nacht ([tx, ty] oben links, je 2 × 2 Kacheln): in jedem Gewässer mindestens eins, in großen bis zu
+// drei, möglichst mit Eis ringsum (zwei Kacheln, sonst eine; in kleinen Tümpeln notfalls ohne), verteilt. open: so viele
+// Reihen oben bleiben offenes Meer (dort keine Löcher)
+function iceHoles(rows, open) {
+  const H = rows.length;
+  const W = rows[0].length;
+  const wet = (x, y) => y > open && rows[y]?.[x] === '~';
+  const seen = new Set();
+  const holes = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!wet(x, y) || seen.has(`${x},${y}`)) continue;
+    // ein Gewässer (zusammenhängendes Wasser)
+    const comp = [];
+    const todo = [[x, y]];
+    seen.add(`${x},${y}`);
+    while (todo.length) {
+      const [a, b] = todo.pop();
+      comp.push([a, b]);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const k = `${a + dx},${b + dy}`;
+        if (wet(a + dx, b + dy) && !seen.has(k)) {
+          seen.add(k);
+          todo.push([a + dx, b + dy]);
+        }
+      }
+    }
+    const inComp = new Set(comp.map(([a, b]) => `${a},${b}`));
+    const ring = (a, b, k) => {
+      for (let j = b - k; j <= b + 1 + k; j++) for (let i = a - k; i <= a + 1 + k; i++) if (!inComp.has(`${i},${j}`)) return false;
+      return true;
+    };
+    const blocks = comp.filter(([a, b]) => ring(a, b, 0) && a > 0 && a < W - 2 && b < H - 2).map(([a, b]) => ({ a, b, m: ring(a, b, 2) ? 2 : ring(a, b, 1) ? 1 : 0 }));
+    blocks.sort((p, q) => q.m - p.m || Math.hypot(p.a - W / 2, p.b - H / 2) - Math.hypot(q.a - W / 2, q.b - H / 2)); // (gleich gut: die zur Mitte hin)
+    const want = comp.length >= 80 ? 3 : comp.length >= 30 ? 2 : 1;
+    let n = 0;
+    for (const { a, b } of blocks) {
+      if (n >= want) break;
+      if (holes.some(([c, d]) => Math.max(Math.abs(c - a), Math.abs(d - b)) < 6)) continue;
+      holes.push([a, b]);
+      n++;
+    }
+  }
+  return holes;
+}
+// Zeilen bei Nacht: Wasser wird Eis (ɨ), außer den Löchern und den offenen Reihen oben
+function frozen(rows, holes, open) {
+  const hole = (x, y) => holes.some(([hx, hy]) => x >= hx && x <= hx + 1 && y >= hy && y <= hy + 1);
+  return rows.map((r, y) => [...r].map((c, x) => (c === '~' && y > open && !hole(x, y) ? 'ɨ' : c)).join(''));
+}
+// Map der Eiswelt: Weg und Kiste (withRoute), dazu die Nacht aus den fertigen Zeilen (open: offene Reihen oben, nur bei
+// Meer-Maps)
+const imap = (def) => {
+  const d = withRoute({ ...ICE, expedition: 'ice', ...EDGE, ...def });
+  if (d.camp) return d;
+  const open = d.openSea ? 1 : -1;
+  const holes = iceHoles(d.rows, open);
+  return { ...d, looks: { day: {}, night: { rows: frozen(d.rows, holes, open), iceHoles: holes, seaIce: SEA_ICE, night: true } } };
+};
+
+// Eis-Camp: wie das der Savanne, ringsum verschneite Felsen, Tannen und Eisblöcke; rechts zwischen zwei Eisblöcken geht
+// es weiter. Kein Wassertrog: im Eis-Camp laufen alle Tiere an Land herum, auch Robbe, Walross und Pinguin (Andre, 26.11.2026)
+function iceCampRows() {
+  const sub = { v: 'Ȓ', A: 'Ṗ', R: 'Ê', y: 'ȓ', o: '.' };
+  const g = campRows().map((r) => [...r].map((c) => sub[c] ?? c));
+  for (const [x, y] of [[0, 3], [0, 9], [3, 0], [11, 0], [0, 15], [10, 0]]) g[y][x] = 'Ṗ'; // Tannen hinten (oben und links)
+  for (const [x, y] of [[16, 8], [16, 10]]) g[y][x] = 'Ê'; // Eisblöcke am Weg
+  for (const [x, y] of [[12, 1], [1, 5], [9, 1]]) if (g[y][x] === '.') g[y][x] = 'ȓ';
+  return g.map((r) => r.join(''));
+}
+
+const ICE_LEVELS = {
+  ice_camp: imap({
+    name: tr('Eis-Expedition', 'Ice Expedition'),
+    camp: true,
+    car: { tx: 15.6, ty: 12, texture: 'car_snow', frame: 0, scale: 1.26, arrive: { tx: 14, ty: 7 } }, // Schneemobil mit Anhänger
+    map: { x: 40, y: 17, icon: 'penguin' },
+    unlockWith: 'ice',
+    rows: iceCampRows(),
+    start: { tx: 14, ty: 7 },
+    campfire: { tx: 12, ty: 9 },
+    tent: { tx: 14, ty: 4 },
+    board: { tx: 16, ty: 17 },
+    enclosures: [
+      ...CAGES.map(([tx, ty], i) => ({ id: `cage${i}`, name: tr('Käfig', 'Cage'), species: null, seed: { tx, ty }, cage: i })),
+      { id: 'corral', name: tr('Sammelgehege', 'Holding pen'), species: null, seed: { tx: 4, ty: 14 }, corral: true },
+      { id: 'cage4', name: tr('Käfig', 'Cage'), species: null, seed: { tx: 9, ty: 13 }, cage: 4, when: BIG_WAGON },
+    ],
+    runPatches: [{ tx: 8, ty: 12, rows: ['_____', '!...!', '!...!', '!...!', '_____'], when: BIG_WAGON }],
+    cageAreas: [{ tx0: 1, ty0: 1, tx1: 11, ty1: 11 }, { tx0: 7, ty0: 11, tx1: 13, ty1: 17 }],
+    cageCenter: { tx: 8, ty: 8 },
+    exits: [{ tx: 17, ty: 9, to: '@next', label: tr('Tiefer ins Eis', 'Deeper into the ice') }],
+    campHint: tr('⛺ Willkommen im Eis-Camp! Rechts zwischen den Eisblöcken geht es weiter. Die Tafel zeigt deinen Weg.', '⛺ Welcome to the ice camp! Between the ice blocks on the right you go on. The board shows your route.'),
+    spawn: { population: 0, weights: {} },
+  }),
+
+  // Packeis: oben das Meer (nachts ein großes Eisfeld mit Löchern: dort lauert der Eisbär), unten ein Streifen Schnee
+  ix_packice: imap({
+    name: tr('Packeis', 'Pack Ice'),
+    features: ['sea'],
+    rows: makeRows({ seed: 601, palette: 'ice', sea: { ty1: 10, wave: 1.5 }, scatter: { Ȓ: 5, ȓ: 12, ê: 5, Ê: 3, Ṗ: 2 } }),
+    openSea: true,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Walross-Bucht: runde Bucht mit langem Kiesstrand (Walrosse dösen dort, Blubberstellen im flachen Wasser)
+  ix_walrus: imap({
+    name: tr('Walross-Bucht', 'Walrus Bay'),
+    features: ['beach', 'sea'],
+    rows: makeRows({ seed: 613, palette: 'ice', sea: { ty1: 4, wave: 0.6 }, ponds: [[15, 6, 8, 4]], scatter: { Ȓ: 4, ȓ: 12, ê: 4, Ê: 2, Ṗ: 3 } }),
+    grounds: [BEACH_GROUND({ tx0: 3, tx1: 26, ty0: 4, ty1: 12 })],
+    openSea: true,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Vogelfelsen: Felsküste mit großen Schneefelsen am Ufer und im Wasser – die Kolonie der Papageitaucher
+  ix_birdcliff: imap({
+    name: tr('Vogelfelsen', 'Bird Rocks'),
+    features: ['birdrocks', 'sea'],
+    rows: makeRows({ seed: 627, palette: 'ice', sea: { ty1: 8, wave: 1.2 }, shoreRocks: 4, islets: 4, scatter: { Ȓ: 6, ȓ: 12, ê: 3, Ṗ: 2 } }),
+    openSea: true,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Fjordufer: ein Meeresarm von rechts quer ins Land, ohne Brücke (tagsüber ums Fjordende herum, nachts übers Eis);
+  // Vogelfelsen an den Ufern, am Südufer ein Kiesstrand
+  ix_fjord: imap({
+    name: tr('Fjordufer', 'Fjord Shore'),
+    features: ['birdrocks', 'beach'],
+    rows: makeRows({ seed: 641, palette: 'ice', fjord: { ty0: 9, ty1: 14, x0: 9 }, exitY: 21, shoreRocks: 4, islets: 2, scatter: { Ȓ: 6, ȓ: 12, ê: 3, Ṗ: 3 } }),
+    grounds: [BEACH_GROUND({ tx0: 12, tx1: 27, ty0: 15, ty1: 17 })],
+    exits: BACK(27, 21),
+    tools: ['net', 'lasso'],
+  }),
+
+  // Weite Tundra: fast nur Tundra mit Felsen und Flechten, ein kleiner Tümpel – Rentiere, Hasen, Fuchs und Wölfe
+  ix_tundra: imap({
+    name: tr('Weite Tundra', 'Open Tundra'),
+    features: ['tundra'],
+    rows: makeRows({ seed: 653, palette: 'ice', ponds: [[20, 5, 3, 2]], scatter: { Ȓ: 6, ȓ: 16, ê: 3, Ṗ: 2 } }),
+    grounds: [TUNDRA_GROUND(WHOLE)],
+    tools: ['net', 'lasso'],
+  }),
+
+  // Tundra-Bach: ein Bach von oben, der in einem Tümpel endet (unten herum kommt man trocken hinüber, nachts übers Eis);
+  // unten verschneite Tannen
+  ix_creek: imap({
+    name: tr('Tundra-Bach', 'Tundra Creek'),
+    features: ['tundra', 'taiga'],
+    rows: makeRows({ seed: 667, palette: 'ice', vriver: { x: 13, to: 16 }, ponds: [[14, 18, 2.8, 1.7]], band: { ty0: 23, c: 'Ṗ', p: 0.45 }, scatter: { Ȓ: 5, ȓ: 14, ê: 2, Ṗ: 2 } }),
+    grounds: [TUNDRA_GROUND({ tx0: -4, tx1: 31, ty0: -4, ty1: 22 })],
+    tools: ['net', 'lasso'],
+  }),
+
+  // Taigarand: oben Tundra mit einem Tümpel, unten dichter Tannenwald – nachts ruft dort die Schneeeule
+  ix_taiga: imap({
+    name: tr('Taigarand', 'Taiga Edge'),
+    features: ['tundra', 'taiga'],
+    rows: makeRows({ seed: 683, palette: 'ice', ponds: [[8, 5, 3, 2]], band: { ty0: 19, c: 'Ṗ', p: 0.55 }, scatter: { Ṗ: 4, Ȓ: 4, ȓ: 12, ê: 2 } }),
+    grounds: [TUNDRA_GROUND({ tx0: -4, tx1: 31, ty0: -4, ty1: 18 })],
+    tools: ['net', 'lasso'],
+  }),
+
+  // Gletscherzunge: rechts eine Gletscherfläche mit Eisblöcken, die ans Meer stößt; links daneben ein Kiesstrand
+  ix_glacier: imap({
+    name: tr('Gletscherzunge', 'Glacier Tongue'),
+    features: ['glacier', 'sea', 'beach'],
+    rows: makeRows({ seed: 697, palette: 'ice', sea: { ty1: 7, wave: 1 }, scatter: { Ê: 8, ê: 6, Ȓ: 3, ȓ: 10 } }),
+    grounds: [BEACH_GROUND({ tx0: 1, tx1: 12, ty0: 5, ty1: 11 }), GLACIER_GROUND({ tx0: 15, tx1: 31, ty0: 5, ty1: 31 })],
+    openSea: true,
+    tools: ['net', 'lasso'],
+  }),
+
+  // Schärenküste: viele kleine Felsinseln vor der Küste – Papageitaucher; nachts friert das Meer zwischen ihnen zu
+  ix_skerries: imap({
+    name: tr('Schärenküste', 'Skerry Coast'),
+    features: ['sea', 'birdrocks'],
+    rows: makeRows({ seed: 709, palette: 'ice', sea: { ty1: 11, wave: 2 }, islets: 6, shoreRocks: 2, scatter: { Ȓ: 5, ȓ: 12, ê: 4, Ṗ: 2 } }),
+    openSea: true,
+    tools: ['net', 'lasso'],
+  }),
+};
+
 export const EXPEDITION_LEVELS = {
   ...ASIA_LEVELS,
   ...FOREST_LEVELS,
+  ...ICE_LEVELS,
   // Camp (provisorisch, zieht mit: nach jeder Map steht es weiter vorn): Zelt mit der Fortschritts-Tafel, Lagerfeuer,
   // das Auto (Jeep mit Anhänger: Expedition beenden) und der Wagen als 6 kleine Gitterkäfige (je ein Tier, siehe CAGES);
   // wer nicht mehr hineinpasst, wartet im Sammelgehege. Man kommt vor dem Zelt an, rechts daneben geht es weiter

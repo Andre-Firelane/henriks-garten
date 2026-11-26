@@ -76,6 +76,7 @@ export function completeStep() {
   game.story.id = STEPS[game.story.step]?.id ?? null;
   game.story.heard = false;
   game.story.readyShown = false;
+  if (game.story.locks !== false) activeStep()?.begin?.(game); // (nicht beim stillen Durchlaufen in migrateStory)
   return s;
 }
 

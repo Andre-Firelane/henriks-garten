@@ -1,4 +1,4 @@
-// Expeditionen (Roguelike-Modus: Savanne, Dschungel, Bambuswald): ein Durchlauf (Run) ist eine Kette aus höchstens RUN_LENGTH
+// Expeditionen (Roguelike-Modus: Savanne, Dschungel, Bambuswald, Wald, Eiswelt): ein Durchlauf (Run) ist eine Kette aus höchstens RUN_LENGTH
 // kleinen Maps, dazwischen das Camp. Vor jeder Map wählt man 1 aus 3 Karten (wie in einer Kiste): jede Karte zeigt die
 // nächste Map und was dort dazukommt (sicher diese Tierart, eine seltene Variante, ein Bonus bis zum Ende des Runs oder eine
 // Kiste). Auf der Map lebt eine feste Tierliste (kein Nachspawnen), oben zählt sie herunter. Gefangene laufen hinterher; im
@@ -26,8 +26,9 @@ export const wagonCageCount = () => WAGON_CAGES + (runHas('bigWagon') ? 1 : 0);
 export const MORE_UNITS = 1; // Bonus "Mehr Tiere": so viele Tiere mehr je Art auf jeder Map (gilt ab sofort, auch auf der laufenden)
 // Boni, die es als Karte gibt (vorhandene Kisten-Boni; sie gelten bis zum Ende des Runs)
 export const RUN_BONI = ['moreAnimals', 'ride', 'binoculars', 'bigCatch', 'bigWagon', 'heartRain'];
+const NO_RIDE = ['ice']; // in diesen Welten gibt es kein Reittier: keine Bonus-Karte "Reittier"
 // Tiere, die nicht beim Betreten dastehen, sondern auf ihre Weise kommen (Geier fliegen heran, Hyänen kommen zu Knochen)
-export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht)
+export const CALLED_UNITS = ['vulture', 'hyena', 'heron', 'gnu', 'redpanda', 'yak', 'beaver', 'wolf', 'arcticwolf', 'snowowl']; // (Gnus: aus der Großen Wanderung; rote Pandas: Glühwürmchen-Abend; Yaks: die Herde am Steinhaufen; Biber: die Kolonie am Damm; Wölfe: Rudel der Wolfsnacht; Polarwölfe: ihr Rudel in der Tundra; Schneeeule: setzt sich selbst in eine Tanne)
 // Anteil der Kartenarten
 const KINDS = { animal: 0.45, rare: 0.2, bonus: 0.25, chest: 0.15, event: 0.12 }; // event: nur zu Maps mit Event (Gnu-Furt, Glühwürmchen-Abend, Wolfsnacht)
 // Event-Karten: Kennzeichen der Map → Event und die Tiere, die es bringt (Gnus aus der Großen Wanderung, rote Pandas in
@@ -39,7 +40,7 @@ export const mapEvent = (map) => Object.keys(MAP_EVENTS).find((k) => LEVELS[map]
 // --- Tiere und Wetter einer Map (werden vor jeder Map neu gewürfelt) ---
 
 export { SPECIES_RULES, BIOME_SEASONS } from './speciesRules.js';
-import { SPECIES_RULES, BIOME_SEASONS } from './speciesRules.js';
+import { SPECIES_RULES, BIOME_SEASONS, SEASON_WEIGHTS } from './speciesRules.js';
 const SPECIES_PER_MAP = [2, 3];
 const MIN_UNITS = 4; // so viele Tiere (Fang-Einheiten) hat jede Map mindestens
 // Seltene Merkmale (Wasserfall, Lichtung, Fluss, Dickicht, Elefantenfriedhof): auf ihren Maps kommt meist (SPECIAL_CHANCE)
@@ -64,14 +65,24 @@ export function planMap(map, biome, must = null) {
     const [a, b] = rules[sp].units;
     home[sp] = a + Math.floor(Math.random() * (b - a + 1));
   };
+  const weights = SEASON_WEIGHTS[biome];
+  // Wetter auswürfeln (mit Gewichten, z. B. Eiswelt: öfter Tag als Nacht)
+  const pickSeason = (list) => {
+    if (!weights) return pick(list);
+    let x = Math.random() * list.reduce((s, k) => s + (weights[k] ?? 1), 0);
+    return list.find((k) => (x -= weights[k] ?? 1) <= 0) ?? list[0];
+  };
   const specials = Object.keys(rules).filter((sp) => rules[sp].needs && !COMMON_FEATURES.includes(rules[sp].needs) && fits(sp));
+  // nur ein Wetter, bei dem überhaupt eine Art dieser Map vorkommt (sonst bliebe z. B. die Stupa-Weide bei Nebel leer)
+  const possible = all.filter((x) => Object.keys(rules).some((sp) => fits(sp) && allowed(sp).includes(x)));
+  // mit Gewichten (Eiswelt): erst das Wetter, dann – wenn es eine gibt – eine seltene Art, die es dabei gibt (sonst zöge
+  // z. B. der Eisbär auf dem Packeis die Nacht viel zu oft fest)
+  const w = weights && !(must && rules[must] && fits(must)) ? pickSeason(possible.length ? possible : all) : null;
+  const anchors = w ? specials.filter((sp) => allowed(sp).includes(w)) : specials;
   if (must && rules[must] && fits(must)) add(must);
-  else if (specials.length && Math.random() < SPECIAL_CHANCE) add(pick(specials));
-  else {
-    // nur ein Wetter, bei dem überhaupt eine Art dieser Map vorkommt (sonst bliebe z. B. die Stupa-Weide bei Nebel leer)
-    const possible = all.filter((x) => Object.keys(rules).some((sp) => fits(sp) && allowed(sp).includes(x)));
-    seasons = [pick(possible.length ? possible : all)];
-  }
+  else if (anchors.length && Math.random() < SPECIAL_CHANCE) add(pick(anchors));
+  if (w) seasons = [w];
+  else if (!Object.keys(home).length) seasons = [pickSeason(possible.length ? possible : all)];
   const n = SPECIES_PER_MAP[0] + Math.floor(Math.random() * (SPECIES_PER_MAP[1] - SPECIES_PER_MAP[0] + 1));
   while (Object.keys(home).length < n) {
     const pool = Object.keys(rules).filter((sp) => !home[sp] && fits(sp) && allowed(sp).some((x) => seasons.includes(x)));
@@ -97,7 +108,7 @@ export function planMap(map, biome, must = null) {
     if (!list.length) break;
     home[pick(list)]++;
   }
-  return { home, season: pick(seasons.length ? seasons : all) };
+  return { home, season: pickSeason(seasons.length ? seasons : all) };
 }
 
 export const run = () => game.expedition ?? null;
@@ -144,7 +155,7 @@ export function rollRunCards(n) {
   if (!pool.length) pool = all.filter((m) => m !== last);
   if (!pool.length) pool = all;
   const maps = shuffle(pool);
-  const boni = RUN_BONI.filter((id) => !r.boni.includes(id));
+  const boni = RUN_BONI.filter((id) => !r.boni.includes(id) && !(id === 'ride' && NO_RIDE.includes(r.biome)));
   // nichts doppelt in einer Auswahl: höchstens eine Kiste, jedes Tier (auch als seltene Variante) und jeder Bonus nur
   // einmal; gibt es nicht genug verschiedene Karten, werden es weniger
   const cards = [];

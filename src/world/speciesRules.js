@@ -1,4 +1,4 @@
-// Ansprüche der Tierarten in Savanne und Dschungel: für die Expeditionen (planMap in expedition.js) und die kleinen Maps
+// Ansprüche der Tierarten in Savanne, Dschungel, Bambuswald, Wald und Eiswelt: für die Expeditionen (planMap in expedition.js) und die kleinen Maps
 // hinter den Durchgängen der großen Erkundungs-Maps (sideMaps.js). Ohne Importe, damit es überall verwendbar ist.
 // Ansprüche der Tierarten: needs = Merkmal, das die Map haben muss (features in expeditionMaps.js), seasons = bei welchem
 // Wetter sie vorkommen (ohne Angabe: bei jedem), units = so viele Fang-Einheiten [min, max] (Herde, Kolonie, Rudel = eine)
@@ -58,5 +58,22 @@ export const SPECIES_RULES = {
     heron: { needs: 'water', seasons: ['rain'], units: [1, 1] },
     beaver: { needs: 'dam', units: [1, 1] }, // nur auf Maps mit Biberdamm (beavers): Stock ins Loch, dann kommt einer mit
   },
+  // Eiswelt (docs/plan-eis-expedition.md): statt Wetter Tag oder Nacht. Nachts ist das Wasser zugefroren (Eislöcher bleiben).
+  // Jede Map hat Wasser (Pinguine, Robben); Rentiere laufen als Herde (eine Einheit), das Polarwolf-Rudel ist eine Einheit
+  // (siehe updatePolarWolves), die Schneeeule sitzt in einer Tanne (updateOwl in IceCatch.js)
+  ice: {
+    penguin: { plain: true, units: [1, 2] },
+    seal: { plain: true, units: [1, 2] },
+    snowhare: { plain: true, needs: 'tundra', seasons: ['day'], units: [1, 2] }, // Bau mit 2 bis 3 Löchern
+    reindeer: { needs: 'tundra', seasons: ['day'], units: [1, 1] }, // Herde auf ihrem Rundweg
+    arcticfox: { needs: 'tundra', units: [1, 1] }, // Spur, Laterne
+    arcticwolf: { needs: 'tundra', units: [1, 1] }, // ein Rudel ("Ochs am Berg")
+    walrus: { needs: 'beach', units: [1, 2] }, // tagsüber am Kiesstrand, nachts an den Eislöchern
+    puffin: { needs: 'birdrocks', seasons: ['day'], units: [1, 2] },
+    polarbear: { needs: 'sea', seasons: ['night'], units: [1, 1] }, // Fisch ans Eisloch
+    snowowl: { needs: 'taiga', seasons: ['night'], units: [1, 1] }, // in einer verschneiten Tanne, Laterne
+  },
 };
-export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'], asia: ['normal', 'snow', 'fog'], forest: ['normal', 'rain', 'fog'] };
+export const BIOME_SEASONS = { savanna: ['normal', 'rain', 'dry'], jungle: ['normal', 'rain', 'fog'], asia: ['normal', 'snow', 'fog'], forest: ['normal', 'rain', 'fog'], ice: ['day', 'night'] };
+// so oft kommt jedes Wetter beim Würfeln (ohne Angabe: alle gleich oft); Eiswelt: 60 % Tag, 40 % Nacht (Andre, 26.11.2026)
+export const SEASON_WEIGHTS = { ice: { day: 0.6, night: 0.4 } };

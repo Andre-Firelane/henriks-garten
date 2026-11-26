@@ -164,6 +164,7 @@ export const SPECIES = {
   meerkat: {
     texture: 'meerkat',
     anims: { walkDown: 'meerkat_walk', walkUp: 'meerkat_walk_back', idleDown: 'meerkat_idle', idleUp: 'meerkat_idle_back' }, // Savanne
+    skinAnims: { meerkat2: { walkDown: 'meerkat2_walk', walkUp: 'meerkat2_walk_back', idleDown: 'meerkat2_idle', idleUp: 'meerkat2_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 52 / 56,
     speed: 22,
@@ -464,7 +465,9 @@ export const SPECIES = {
   vulture: {
     texture: 'vulture',
     anims: { idleDown: 'vulture_idle', idleUp: 'vulture_idle_back' }, // steht
+    skinAnims: { vulture2: { idleDown: 'vulture2_idle' } },
     flyAnims: { down: 'vulture_flap', up: 'vulture_flap_back' }, // Flügelschlag (nach links gespiegelt)
+    skinFlyAnims: { vulture2: { down: 'vulture2_flap' } }, // Ohrengeier: nur von vorne, von hinten das Flugbild
     followFlies: true,
     flyTexture: 'vulture_fly',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
@@ -483,6 +486,7 @@ export const SPECIES = {
   hyena: {
     texture: 'hyena',
     anims: { walkDown: 'hyena_walk', walkUp: 'hyena_walk_back', idleDown: 'hyena_idle', idleUp: 'hyena_idle_back' }, // Savanne
+    skinAnims: { hyena2: { walkDown: 'hyena2_walk', walkUp: 'hyena2_walk_back', idleDown: 'hyena2_idle', idleUp: 'hyena2_idle_back' } },
     eatTexture: 'hyena_eat',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80,
@@ -631,6 +635,7 @@ export const SPECIES = {
   gorilla: {
     texture: 'gorilla',
     anims: { walkDown: 'gorilla_walk', walkUp: 'gorilla_walk_back', idleDown: 'gorilla_idle', idleUp: 'gorilla_idle_back' }, // Videos
+    skinAnims: { gorilla2: { walkDown: 'gorilla2_walk', walkUp: 'gorilla2_walk_back', idleDown: 'gorilla2_idle', idleUp: 'gorilla2_idle_back' } }, // trommelt auch (Gorilla.playDrum)
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 92 / 96,
     speed: 14,
@@ -739,6 +744,7 @@ export const SPECIES = {
   // (siehe SnowOwl.js)
   snowowl: {
     texture: 'snowowl',
+    anims: { walkDown: 'snowowl_flap', walkUp: 'snowowl_flap', idleDown: 'snowowl_idle' }, // Videos: sitzt (von vorne) bzw. fliegt; wann was, siehe SnowOwl.animKey
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 76 / 80, // (Bild so groß wie der Schneehase, 24.11.2026)
     speed: 20,
@@ -756,6 +762,7 @@ export const SPECIES = {
     texture: 'reindeer',
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     anims: { walkDown: 'reindeer_walk', walkUp: 'reindeer_walk_back', idleDown: 'reindeer_idle', idleUp: 'reindeer_idle_back', runDown: 'reindeer_run', runUp: 'reindeer_run_back' }, // Videos; wild rennt es (Reindeer.animKey)
+    skinAnims: { reindeer2: { walkDown: 'reindeer2_walk', walkUp: 'reindeer2_walk_back', idleDown: 'reindeer2_idle', idleUp: 'reindeer2_idle_back', runDown: 'reindeer2_run', runUp: 'reindeer2_run_back' } },
     originY: 123 / 128, // (Bild 1,14-fach so groß wie früher: ein Ticken größer, trotzdem scharf)
     speed: 24,
     restChance: 0.55,
@@ -871,6 +878,7 @@ export const SPECIES = {
   elk: {
     texture: 'elk',
     anims: { walkDown: 'elk_walk', walkUp: 'elk_walk_back', idleDown: 'elk_idle', idleUp: 'elk_idle_back' }, // Videos (gefangen, folgend, im Gehege; wild im Moorwasser das Standbild elk_water)
+    skinAnims: { elk2: { walkDown: 'elk2_walk', walkUp: 'elk2_walk_back', idleDown: 'elk2_idle', idleUp: 'elk2_idle_back' } },
     frames: { downRight: 0, downLeft: 1, upRight: 2, upLeft: 3 },
     originY: 124 / 128,
     speed: 18,
@@ -1335,7 +1343,7 @@ export const SKINS = {
   penguin: { id: 'penguin2', name: tr('Felsenpinguin', 'rockhopper penguin'), male: true, wild: 0.1, baby: 0.03 }, // gilt für die ganze Gruppe
   seal: { id: 'seal2', name: tr('Sattelrobbe', 'harp seal'), male: false, wild: 0.1, baby: 0.03 }, // im Wasser: seal2_water
   snowhare: { id: 'snowhare2', tex: 'snowhare', name: tr('Polarhase', 'arctic hare'), male: true, wild: 0.1, baby: 0, big: 1.25 }, // großes Exemplar mit den Bildern des Schneehasen (sizeK); der echte Polarhase ist deutlich größer
-  reindeer: { id: 'reindeer2', name: tr('weißes Rentier', 'white reindeer'), male: false, neuter: true, wild: 0.1, baby: 0.03 }, // mit großem Geweih (Standbild; trabt ohne Animation mit der Herde, bis die Videos kommen)
+  reindeer: { id: 'reindeer2', name: tr('weißes Rentier', 'white reindeer'), male: false, neuter: true, wild: 0.1, baby: 0.03 }, // mit großem Geweih (eigene Videos, auch Rennen)
   seahorse: { id: 'seahorse2', name: tr('Fetzenfisch', 'leafy seadragon'), male: true, wild: 0.1, baby: 0.03 },
   turtle: { id: 'turtle2', name: tr('Karettschildkröte', 'hawksbill turtle'), male: false, wild: 0.1, baby: 0 },
   octopus: { id: 'octopus2', name: tr('Kalmar', 'squid'), male: true, wild: 0.1, baby: 0.03 },

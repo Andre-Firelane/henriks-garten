@@ -6,7 +6,7 @@ import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { price } from './luck.js';
 
-// Gebiete mit eigenem Reittier (Bilder ride_<Gebiet>, siehe RIDES in GardenScene; die Eiswelt hat noch keins)
+// Gebiete mit eigenem Reittier (Bilder ride_<Gebiet>, siehe RIDES in GardenScene; Eiswelt: Hundeschlitten)
 // name: das Reittier (Esel, Pferd, Elefant, Wasserbüffel, Maultier, Seabob – wie auf den Bildern); article: der/die/das
 export const MOUNTS = {
   meadow: { article: 'der', name: tr('Esel', 'Donkey'), area: tr('Wiese', 'Meadow'), where: tr('auf der Wiese', 'on the meadow') },
@@ -15,6 +15,7 @@ export const MOUNTS = {
   asia: { article: 'der', name: tr('Wasserbüffel', 'Water Buffalo'), area: tr('Bambuswald', 'Bamboo Forest'), where: tr('im Bambuswald', 'in the bamboo forest') },
   jungle: { article: 'das', name: tr('Maultier', 'Mule'), area: tr('Dschungel', 'Jungle'), where: tr('im Dschungel', 'in the jungle') },
   reef: { article: 'der', name: tr('Seabob', 'Seabob'), area: tr('Riff', 'Reef'), where: tr('im Riff', 'on the reef') },
+  ice: { article: 'der', name: tr('Hundeschlitten', 'Dog Sled'), area: tr('Eiswelt', 'Ice World'), where: tr('in der Eiswelt', 'in the ice world') },
 };
 export const MOUNT_COST = 500; // dauerhaft, je Gebiet
 export const SCOOTER_COST = 300; // E-Roller im Tierpark

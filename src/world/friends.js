@@ -21,6 +21,8 @@ export const GOLD_LEVEL = 3;
 export const PET_POINTS = 1;
 // Pause nach dem Streicheln (echte Zeit: läuft auch weiter, wenn das Spiel zu ist, und neu laden setzt sie nicht zurück)
 export const PET_PAUSE = 5 * 60 * 1000;
+// verschmust: Schmusen ist schnell gemacht und geht öfter (Ball und Bürste machen mehr Arbeit, bringen dafür Besucherherzen)
+export const CUDDLE_PAUSE = 2 * 60 * 1000;
 
 // Stufe eines Tierfreunds (bond aus game.bonds, oder seine Punkte)
 export function friendLevel(bond) {
@@ -90,12 +92,12 @@ export function isFriend(a) {
 }
 
 export function canPet(bond, now = Date.now()) {
-  return now - (bond.pettedAt ?? 0) >= PET_PAUSE;
+  return now - (bond.pettedAt ?? 0) >= ((bond.trait ?? 'cuddly') === 'cuddly' ? CUDDLE_PAUSE : PET_PAUSE);
 }
 
 // ---- Eigenschaften (siehe docs/plan-eigenschaften.md) ----
 // Jedes Tier im Tierpark hat eine: sie bestimmt, was es als Tierfreund außer Futter möchte. Verschmust: streicheln,
-// verspielt: Ball, eitel: bürsten (Bürste vom Futterhaus), verfressen: nur Futter, das bringt dafür mehr Punkte.
+// verspielt: Ball, eitel: bürsten (Bürste hängt am Futterautomaten), verfressen: nur Futter, das bringt dafür mehr Punkte.
 // icon: Bild auf der Tafel und in der Bedürfnis-Blase
 export const TRAITS = {
   cuddly: { icon: 'hand', name: tr('verschmust', 'cuddly') },
