@@ -6,6 +6,7 @@ import { tileToWorld } from '../world/iso.js';
 // Leben im Gehege (docs/plan-gehege-leben.md, Schritt 1): Lieblingsplätze, Herden, Ruhephasen und kleine Momente
 // (hüpfen, rennen, schütteln, trinken). Nur Tweens und vorhandene Bilder, kein Bonus, nur zum Anschauen.
 // Animal.pickWander fragt zuerst penWander, Animal.update zuerst updateLife.
+// Der laufende Moment steht in a.penMoment – nicht a.life: das ist die Lebenszeit wilder Tiere (GardenScene.updateSpawner).
 
 // Herdentiere: folgen im Gehege einem Leittier (zusätzlich zu kind.herd)
 const HERD = new Set(['sheep', 'goat', 'cow', 'deer', 'antelope', 'zebra', 'gnu', 'yak', 'reindeer', 'elk', 'flamingo']);
@@ -253,7 +254,7 @@ function onScreen(a) {
 // jedes Bild: gibt zurück, ob es sich bewegt (rennt), oder null, wenn es gerade nichts Besonderes macht
 export function updateLife(a, dt) {
   if (a.state !== 'penned') {
-    if (a.life) endLife(a);
+    if (a.penMoment) endLife(a);
     return null;
   }
   // Herde: hat das Leittier neu entschieden, zieht das Tier kurz danach nach
@@ -267,8 +268,8 @@ export function updateLife(a, dt) {
       a.wanderTime = Math.min(a.wanderTime, Phaser.Math.FloatBetween(0.2, 1.0));
     }
   }
-  if (a.life?.type === 'run') return updateRun(a, dt);
-  if (a.life) return null; // hüpft oder schüttelt sich gerade (Tween), steht dabei
+  if (a.penMoment?.type === 'run') return updateRun(a, dt);
+  if (a.penMoment) return null; // hüpft oder schüttelt sich gerade (Tween), steht dabei
   if (!onScreen(a) || !isFree(a)) return null;
   // am Wasser: trinken (Kopf nickt), dabei ab und zu ein Ring auf dem Wasser
   if (a.atSpot?.type === 'water') {
@@ -303,14 +304,14 @@ export function updateLife(a, dt) {
 }
 
 function endLife(a) {
-  a.life = null;
+  a.penMoment = null;
   a.lifeAngle = 0;
   a.jumpLift = 0;
 }
 
 // Freudensprung: kleine Hüpfer (jumpLift, siehe placeSprite), Staub bei der Landung
 export function hop(a, n = 1, onDone) {
-  a.life = { type: 'hop' };
+  a.penMoment = { type: 'hop' };
   a.jumpLift = 0;
   const h = Math.min(10, 4 + (a.sprite.displayHeight ?? 30) * 0.12);
   a.scene.tweens.add({
@@ -331,7 +332,7 @@ export function hop(a, n = 1, onDone) {
 
 // sich schütteln: schnelles Hin und Her, ein paar Tropfen
 export function shake(a) {
-  a.life = { type: 'shake' };
+  a.penMoment = { type: 'shake' };
   const o = { k: 0 };
   a.scene.tweens.add({
     targets: o,
@@ -358,11 +359,11 @@ export function shake(a) {
 
 // Rennen: ein kurzer Spurt in eine Richtung, an Hindernissen schräg daran vorbei, am Ende manchmal ein Hüpfer
 function startRun(a) {
-  a.life = { type: 'run', time: Phaser.Math.FloatBetween(1.2, 2.2), angle: Math.random() * Math.PI * 2, dust: 0 };
+  a.penMoment = { type: 'run', time: Phaser.Math.FloatBetween(1.2, 2.2), angle: Math.random() * Math.PI * 2, dust: 0 };
 }
 
 function updateRun(a, dt) {
-  const r = a.life;
+  const r = a.penMoment;
   r.time -= dt;
   if (r.time <= 0) {
     endLife(a);

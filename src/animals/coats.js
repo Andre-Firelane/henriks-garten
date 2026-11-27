@@ -232,6 +232,7 @@ export const COATS = {
 };
 const BY_ID = new Map(Object.values(COATS).flat().map((c) => [c.id, c]));
 export const isCoat = (id) => BY_ID.has(id);
+export const coatFrom = (id) => BY_ID.get(id)?.g.from ?? null; // Vorlage einer Fellfarbe (z. B. schwarzer Widder → sheep2)
 
 // HSV eines Bildpunkts: [Helligkeit, Sättigung, Farbton in Grad]
 function hsv(r, g, b) {

@@ -17,6 +17,7 @@
 import { tr } from '../i18n.js';
 import { LEVELS } from '../world/levels.js';
 import { SHOP_IDS } from '../world/shops.js';
+import { game } from '../state.js';
 
 // Tierarten einer Welt (alle Wetterphasen), ohne die überall häufigen Fische – wie im Tierbuch (livesIn in GardenScene):
 // Spawn und Wetter-Spawn, dazu die Tiere mit eigenem Auftritt (Reiher, Geier, Hyänen, Leguane am Wasserfall, Gorillas,
@@ -39,11 +40,15 @@ export function worldSpecies(id) {
 const caught = (game, s) => game.catches?.[s] ?? 0;
 // so viele verschiedene Arten dieser Welt schon gefangen (dazu alles, was dort gefangen wurde, siehe countStoryCatch)
 const kinds = (game, world) => new Set([...worldSpecies(world).filter((s) => caught(game, s) > 0), ...(game.caughtIn?.[world] ?? [])].filter((s) => s !== 'fish')).size;
-// Herzen der Besucher (ohne Eiswagen und Buden)
-const visitorHearts = (game) => Object.entries(game.heartsBy).reduce((n, [k, v]) => n + (SHOP_IDS.includes(k) ? 0 : v), 0);
-// Herzen seit Beginn der Besucher-Aufgabe (die Schafe bringen schon Besucher, während man noch auf der Wiese fängt;
-// sonst wäre die Aufgabe gleich erledigt). Ohne Merkwert (ältere Spielstände): alle Herzen
-const newVisitorHearts = (game) => visitorHearts(game) - (game.story.flags?.heartsFrom ?? 0);
+// Herzen, die Besucher direkt geben (ohne Buden), erst ab Mavis Erklärung der Besucher-Aufgabe. Nicht über heartsBy:
+// dort landen auch die Herzen vom Auswildern beim Ankommen und die laufenden Herzen anderer Abschnitte – damit war die
+// Aufgabe gleich erledigt (Aufruf in Visitor.giveHearts)
+export function noteVisitorHearts(n, source) {
+  if (game.story?.id !== 'visitors' || !game.story.heard || SHOP_IDS.includes(source)) return;
+  game.story.flags ??= {};
+  game.story.flags.visitorHearts = (game.story.flags.visitorHearts ?? 0) + n;
+}
+const newVisitorHearts = (game) => game.story.flags?.visitorHearts ?? 0;
 const count = (n, of) => ` (${Math.min(n, of)} / ${of})`;
 // schon Tiere aus dem Riff gefangen (ab dann zeigt Mavi das Aquarium)
 export const seaCatches = (game) => worldSpecies('reef').reduce((n, s) => n + caught(game, s), 0);
@@ -126,7 +131,7 @@ export const STEPS = [
     goal: tr('Sammle Herzen von den Besuchern', 'Collect hearts from the visitors'),
     progress: (game) => count(newVisitorHearts(game), VISITOR_HEARTS),
     done: (game) => newVisitorHearts(game) >= VISITOR_HEARTS,
-    begin: (game) => ((game.story.flags ??= {}).heartsFrom = visitorHearts(game)),
+    begin: (game) => ((game.story.flags ??= {}).visitorHearts = 0),
     intro: [
       tr('Schau, die ersten Besucher sind da!', 'Look, the first visitors are here!'),
       tr('Sie lieben unsere Tiere. Wenn ihnen ein Gehege gefällt, schenken sie dir Herzen.', 'They love our animals. When they like an enclosure, they give you hearts.'),

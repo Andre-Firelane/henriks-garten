@@ -7,6 +7,7 @@ import { ENCLOSURES, objectAt, inJungleHall } from '../world/map.js';
 import { SPRITE_SINK } from '../animals/Animal.js';
 import { isActive } from '../world/events.js';
 import { tr } from '../i18n.js';
+import { noteVisitorHearts } from '../story/steps.js';
 import { isPark } from '../world/levels.js';
 import { MAX_WISH_WALKERS, WISH_CHANCE, WISH_TALK_DIST, openWishes, thanksLine, wishIcon, wishKey, wishLine, wishSlotFree } from '../world/wishes.js';
 import { GREET_DIST, GREET_PAUSE, REGULAR_AWAY, REGULAR_CHANCE, REGULAR_HEARTS, addRegular, ensureRegulars, greetLine, welcomeLine } from '../world/regulars.js';
@@ -289,7 +290,9 @@ export class Visitor {
 
   // Herzen, die dieser Besucher bringt (Stammgäste doppelt so viele)
   giveHearts(n, source) {
-    this.scene.addHearts(this.regular ? n * REGULAR_HEARTS : n, source);
+    const hearts = this.regular ? n * REGULAR_HEARTS : n;
+    this.scene.addHearts(hearts, source);
+    noteVisitorHearts(hearts, source); // für Mavis Besucher-Aufgabe
   }
 
   // --- Besucherwünsche ---

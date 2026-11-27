@@ -6,7 +6,7 @@ import { TOY_PLAY, TOYS } from '../world/toys.js';
 import { rareChance } from '../world/events.js';
 import { tr } from '../i18n.js';
 import { game } from '../state.js';
-import { COATS, coatAnims, coatReady, ensureCoat } from './coats.js';
+import { COATS, coatAnims, coatFrom, coatReady, ensureCoat } from './coats.js';
 import { FRESH_FISH } from '../world/fishing.js';
 import { penWander, updateLife } from './penLife.js';
 
@@ -1782,9 +1782,11 @@ export default class Animal {
     const id = this._skin;
     const info = id ? skinInfo(this.species, id) : null;
     if (info?.coat && !coatReady(this.scene, id)) {
-      // Fellfarbe, deren Bilder noch umgefärbt werden (in kleinen Stücken, coats.js): bis dahin die Grundfarbe
+      // Fellfarbe, deren Bilder noch umgefärbt werden (in kleinen Stücken, coats.js): bis dahin die Vorlage in ihrer
+      // Grundfarbe, also schon die richtige Gestalt (schwarzer Widder: weißer Widder, nicht das weiße Schaf)
       ensureCoat(this.scene, id);
-      return null;
+      const from = coatFrom(id);
+      return from && from !== this.kind.texture && this.scene.textures.exists(from) ? from : null;
     }
     return info && !info.placeholder ? info.tex ?? id : null; // (tex: Bilder einer anderen Art, z. B. Polarwolf → wolf2)
   }
