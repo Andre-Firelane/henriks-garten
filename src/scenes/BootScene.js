@@ -24,7 +24,7 @@ const webpUrl = (url) => (USE_WEBP && /^assets\/(hd2?\/)?[^/]+\.png$/.test(url) 
 // Bilder der Tiere in Tierpark und Wiese (von Reh, Fuchs, Eichhörnchen, Elch, Wildschwein, Igel und Biber nur das Grundbild, das
 // der Tierpark zeigt, z. B. auf den Gehegeschildern),
 // Spielfigur in Wiesen-Kleidung, Besucher, Auto
-const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|freshfish|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|car_zoo)$/;
+const FIRST_SHEETS = /^(hero|hero_walk|hero_walk_back|hero_idle|(sheep|cat|cat2|frog|frog2|heron|fish|fish2|butterfly)(_.+)?|deer|fox|squirrel|elk|boar|hedgehog|beaver|fishbag|freshfish|koi\d|visitor\d|(icecream|popcorn|lemonade|cottoncandy|pretzel)_seller|scooter|scooter_empty|scooter_walk|scooter_walk_back|mavi|mavi_idle|mavi_wave|nuggets|car_zoo)$/;
 const FIRST_SOUNDS = ['step', 'step_indoor', 'whoosh', 'trap', 'car', 'animal_sheep', 'animal_cat', 'animal_frog', 'animal_fish', 'animal_koi'];
 // Pakete je Welt: Tierarten (auch für ihre Gehege im Tierpark), weitere Bilder und Töne (keys, Anfang des Namens; Töne
 // der Tiere als Name der Tierart) und Pixel-Art (art). Pixel-Art ohne Paket steht in Tierpark oder Wiese und kommt gleich
@@ -885,6 +885,7 @@ export default class BootScene extends Phaser.Scene {
     // E-Roller im Tierpark: mit Henrik und abgestellt (tools/scooter-cut.py), fährt von vorne und hinten (tools/scooter-anim.py)
     for (const k of ['scooter', 'scooter_empty', 'scooter_walk', 'scooter_walk_back']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 170, frameHeight: 170 });
     load.spritesheet('mavi', 'assets/mavi.png', HERO_FRAME); // Mavi die Tierpflegerin (führt durch die Geschichte)
+    load.image('nuggets', 'assets/nuggets.png'); // Mr. Nuggets der Expeditionsleiter (steht im Camp, src/npc/Nuggets.js)
     for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
     load.spritesheet('ride_ice', 'assets/ride_ice.png', { frameWidth: 464, frameHeight: 250 }); // Hundeschlitten (Eiswelt, breit: Hunde voraus, tools/dogsled-cut.py)

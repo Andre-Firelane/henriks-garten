@@ -15,7 +15,7 @@
 //   --port 5181         Test-Port; läuft dort kein Server, startet das Skript selbst einen (vite) und beendet ihn danach
 //   --keep-mavi         Mavis Sprechblasen nicht wegklicken
 //   --eval "js"         nach Mavi im Spiel ausführen (window.__game, window.__state), z. B. Möbel setzen und die Szene
-//                       neu starten; danach 3 s warten
+//                       neu starten; danach 3 s warten. console.log('[shot] …') erscheint in der Ausgabe
 //
 // Ablauf: Vorschau gilt als gesehen (localStorage), Startbildschirm → Test-Spiel (speichert nie), warten bis die
 // Herzen oben links stehen, Mavis Sprechblasen wegdrücken, Klicks/Tasten, Bild. Fehler der Seite landen in der Konsole.
@@ -66,6 +66,7 @@ const up = () => new Promise((res) => http.get(url, (r) => (r.resume(), res(true
   try {
     const page = await browser.newPage({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch });
     page.on('pageerror', (e) => console.log('Seitenfehler:', e.message));
+    page.on('console', (m) => m.text().startsWith('[shot]') && console.log(m.text())); // Ausgaben aus --eval: console.log('[shot] …')
     await page.addInitScript(() => localStorage.setItem('my-little-zoo-tour', '1')); // Vorschau überspringen
     await page.goto(`${url}?test&level=${args.level}${touch ? '&touch' : ''}`);
     await (await page.waitForSelector('[data-act=test]', { timeout: 60000 })).click();

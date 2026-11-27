@@ -32,6 +32,7 @@ export const game = {
   builds: {}, // gebaute Buden: { Bauplatz-Id: Buden-Art } (siehe src/world/shops.js)
   booths: {}, // umgestellte Buden: { Id: { level, tx, ty, flip } } bzw. { level, stored } (siehe src/world/shops.js)
   penLevel: {}, // ausgebaute Gehege: { pasture: 1, ... } (am Hauptrechner, siehe upgradeCost)
+  guide: { done: [], biomes: [] }, // Mr. Nuggets im Expeditions-Camp: erklärte Schritte und Welten (siehe src/npc/Nuggets.js)
   story: newStory(), // Geschichte mit Mavi: aktive Aufgabe, freigeschaltete Gebiete (siehe src/story/story.js)
   catches: {}, // so oft wurde jede Tierart schon gefangen (für Mavis Aufgaben)
   caughtIn: {}, // ... und welche Arten in welcher Welt: { jungle: ['tarantula', ...] }
@@ -100,6 +101,7 @@ export function resetGame() {
   game.campfireAt = 0;
   game.sides = {};
   game.side = null;
+  game.guide = { done: [], biomes: [] };
   game.story = newStory();
   game.catches = {};
   game.caughtIn = {};

@@ -1,4 +1,4 @@
-// Sprechblasen für Mavi: über ihrem Kopf (say) oder klein am Bildschirmrand mit ihrem Gesicht (sayToast), wenn sie
+// Sprechblasen für Mavi (und Mr. Nuggets im Expeditions-Camp, opts.name): über ihrem Kopf (say) oder klein am Bildschirmrand mit ihrem Gesicht (sayToast), wenn sie
 // gerade nicht zu sehen ist. Der Text erscheint Buchstabe für Buchstabe; Antippen (irgendwo) oder eine beliebige Taste
 // zeigt ihn ganz bzw. die nächste Seite (unten in der Blase steht, wie es weitergeht). Solange die Blase offen ist, läuft
 // die Spielfigur nicht.
@@ -11,7 +11,7 @@ const TOAST_TIME = 6500; // so lange bleibt die kleine Blase am Rand (Millisekun
 let bubble = null;
 let catcher = null;
 let toastEl = null;
-let state = null; // { pages, page, shown, timer, onDone }
+let state = null; // { pages, page, shown, timer, onDone, name, choices }
 let toastTimer = null;
 let toastQueue = []; // weitere Sätze für die kleine Blase am Rand (einer nach dem anderen)
 
@@ -37,11 +37,27 @@ function ensure() {
       if (!state || e.repeat || ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) return;
       e.preventDefault();
       e.stopPropagation();
+      // Frage mit Knöpfen (letzte Seite, ganz zu sehen): E/Enter/J/Y = erster Knopf, Esc/N = zweiter
+      if (asking()) {
+        const k = e.key.toLowerCase();
+        if (['e', 'enter', ' ', 'j', 'y'].includes(k)) return choose(0);
+        if (['escape', 'n'].includes(k)) return choose(1);
+        return;
+      }
       speechNext();
     },
     true,
   );
-  bubble.addEventListener('pointerdown', next);
+  bubble.addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('[data-choice]');
+    if (b) {
+      e.stopPropagation();
+      e.preventDefault();
+      return choose(Number(b.dataset.choice));
+    }
+    if (asking()) return e.stopPropagation(); // (die Frage bleibt, bis man einen Knopf nimmt)
+    next(e);
+  });
   toastEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     hideToast(); // (antippen: gleich der nächste Satz)
@@ -52,12 +68,13 @@ export function isSpeaking() {
   return !!state;
 }
 
-// pages: Texte (je eine Seite); onDone nach der letzten
-export function say(pages, onDone = null) {
+// pages: Texte (je eine Seite); onDone nach der letzten. opts.name: wer spricht (sonst Mavi); opts.choices: Knöpfe auf der
+// letzten Seite (z. B. Ja/Nein) – dann bekommt onDone die Nummer des Knopfs, und nur ein Knopf schließt die Blase
+export function say(pages, onDone = null, opts = {}) {
   ensure();
   hideToast();
   clearInterval(state?.timer);
-  state = { pages, page: 0, shown: 0, timer: null, onDone };
+  state = { pages, page: 0, shown: 0, timer: null, onDone, name: opts.name ?? 'Mavi', choices: opts.choices ?? null };
   bubble.classList.add('show');
   catcher.classList.add('show');
   showPage();
@@ -70,7 +87,9 @@ function showPage() {
   const hint = isTouch()
     ? tr(last ? 'Antippen zum Schließen' : 'Zum Weiterlesen antippen', last ? 'Tap to close' : 'Tap to continue')
     : tr(last ? 'Schließen mit beliebiger Taste' : 'Weiter mit beliebiger Taste', last ? 'Press any key to close' : 'Press any key to continue');
-  bubble.innerHTML = `<b class="speech-name">Mavi</b><span class="speech-text"></span><span class="speech-more">${hint} ${last ? '' : '▶'}</span>`;
+  const buttons = last && state.choices ? `<span class="speech-choices">${state.choices.map((c, i) => `<button type="button" data-choice="${i}">${c}</button>`).join('')}</span>` : '';
+  bubble.classList.toggle('ask', !!buttons);
+  bubble.innerHTML = `<b class="speech-name">${state.name}</b><span class="speech-text"></span>${buttons}${buttons ? '' : `<span class="speech-more">${hint} ${last ? '' : '▶'}</span>`}`;
   const el = bubble.querySelector('.speech-text');
   clearInterval(state.timer);
   state.timer = setInterval(() => {
@@ -82,6 +101,19 @@ function showPage() {
     }
   }, 1000 / CHARS_PER_SECOND);
   bubble.classList.remove('done');
+}
+
+// letzte Seite einer Frage, ganz zu sehen: jetzt zählen nur die Knöpfe
+function asking() {
+  return !!state?.choices && state.page === state.pages.length - 1 && state.shown >= state.pages[state.page].length;
+}
+
+function choose(i) {
+  if (!state?.choices) return;
+  if (!asking()) return speechNext(); // (erst den ganzen Text zeigen)
+  const done = state.onDone;
+  closeSpeech();
+  done?.(i);
 }
 
 // Antippen bzw. Aktionstaste: erst den ganzen Text, dann die nächste Seite, nach der letzten schließen
@@ -100,6 +132,7 @@ export function speechNext() {
     showPage();
     return;
   }
+  if (state.choices) return; // (Frage: nur die Knöpfe schließen)
   const done = state.onDone;
   closeSpeech();
   done?.();
@@ -126,8 +159,11 @@ export function placeSpeech(x, y) {
 
 // kleine Blase am Rand mit Mavis Gesicht (sie ist gerade nicht zu sehen); geht von selbst wieder weg
 // text: ein Satz oder mehrere (Liste) – mehrere kommen nacheinander, jeder als eigene kurze Blase (antippen: weiter)
-export function sayToast(text) {
+// opts.name / opts.face: wer spricht (Name und CSS-Klasse fürs Gesicht, z. B. 'nuggets'; sonst Mavi)
+let toastWho = { name: 'Mavi', face: '' };
+export function sayToast(text, opts = {}) {
   ensure();
+  toastWho = { name: opts.name ?? 'Mavi', face: opts.face ?? '' };
   if (Array.isArray(text)) {
     toastQueue = text.slice(1);
     if (!text.length) return;
@@ -137,7 +173,7 @@ export function sayToast(text) {
 }
 
 function showToastLine(text) {
-  toastEl.innerHTML = `<span class="speech-face"></span><span><b class="speech-name">Mavi</b>${text}</span>`;
+  toastEl.innerHTML = `<span class="speech-face ${toastWho.face}"></span><span><b class="speech-name">${toastWho.name}</b>${text}</span>`;
   toastEl.classList.remove('show');
   void toastEl.offsetWidth; // Animation neu starten
   toastEl.classList.add('show');

@@ -104,6 +104,13 @@ export function loadSave() {
   if (!s.game.caughtSpecies) migrateCaught();
   if (!Array.isArray(game.bookNew)) game.bookNew = [];
   if (!s.game.seenSpecies) game.seenSpecies = [...game.caughtSpecies]; // gefangene hat man natürlich auch schon gesehen
+  // Mr. Nuggets (Expeditions-Camp): wer schon Expeditionen gemacht hat, bekommt das Tutorial nicht mehr von selbst, nur die
+  // Hinweise zu Welten, in denen er noch keine Expedition beendet hat
+  if (!s.game.guide?.done) {
+    const veteran = Object.values(game.expDone ?? {}).some((n) => n > 0) || !!game.expedition;
+    game.guide = { done: veteran ? ['camp', 'cards', 'wagon', 'full', 'home'] : [], biomes: Object.keys(game.expDone ?? {}).filter((b) => game.expDone[b] > 0) };
+    if (game.expedition && !game.guide.biomes.includes(game.expedition.biome)) game.guide.biomes.push(game.expedition.biome);
+  }
   if (!s.game.story) migrateStory(); // Spielstand von vor Mavi: alles bleibt offen
   if (!s.game.pettingZoo) migratePettingZoo();
   migrateLegacySlots(); // Buden auf den früheren festen Bauplätzen: bleiben stehen, jetzt frei umstellbar

@@ -179,7 +179,7 @@ import { isEventsOpen, openEvents } from '../ui/eventsPanel.js';
 import LuckWorld, { rarePromiseHere } from '../world/LuckWorld.js';
 import { CHARMS, HEART_RAIN, MORE_ANIMALS, bonusActive, cardCount, chestState, hasCharm, iconImg, ownsCharm, price, rerollCost, rollCards } from '../world/luck.js';
 import { enterPassage } from '../world/sideMaps.js';
-import { CALLED_UNITS, RUN_LENGTH, planMap, wagonCageCount, cageSize, fitsWagon, wagonCages, isWaterAnimal, campLevel, caughtUnit, endRun, isFinalCamp, mapName, rollRunCards, run as expRun, sortWagon, startRun, takeRunCard, unitsLeft } from '../world/expedition.js';
+import { CALLED_UNITS, RUN_LENGTH, planMap, wagonCageCount, cageSize, fitsWagon, wagonCages, isWaterAnimal, campLevel, caughtUnit, endRun, isFinalCamp, mapName, rollRunCards, firstRunCards, run as expRun, sortWagon, startRun, takeRunCard, unitsLeft } from '../world/expedition.js';
 import { isWagonOpen, openChoice, openConfirm, openWagon } from '../ui/wagon.js';
 import { isCharmsOpen, openCharms } from '../ui/charms.js';
 import { isLuckPickerOpen, openLuckPicker } from '../ui/luckPicker.js';
@@ -227,6 +227,7 @@ import { STEPS, seaReady } from '../story/steps.js';
 import { activeId, activeStep, countStoryCatch, isUnlocked, skipStory, storyAt } from '../story/story.js';
 import { RARE_WISH_CHANCE, THANK_DIST, canWish, canWishSkin, ensureWishes, openWishes, wishHearts, wishIcon, wishKey, wishName } from '../world/wishes.js';
 import Mavi from '../npc/Mavi.js';
+import Nuggets, { cardTip, markGuide } from '../npc/Nuggets.js';
 import { isSpeaking, speechNext } from '../ui/speech.js';
 
 const MAP_REROLLS = 3; // Expedition: so oft darf man die Karten für die nächste Map neu würfeln
@@ -1768,9 +1769,11 @@ export default class GardenScene extends Phaser.Scene {
     if (LEVEL.campfire) this.drawCampfire(LEVEL.campfire);
     this.expArrow = null;
     this.expCampAnimals = [];
+    this.nuggets = null;
     if (this.expCamp) {
       this.expDrawCamp();
       if (LEVEL.canoe) this.drawCampCanoe(LEVEL.canoe);
+      this.nuggets = new Nuggets(this); // der Expeditionsleiter (erklärt bei der ersten Expedition, siehe src/npc/Nuggets.js)
       this.expArriveCamp(campArrivals);
     }
     if (this.expMap) this.expTopUp(worldToTile(this.player.x, this.player.y), false); // (Dickicht gibt es erst jetzt)
@@ -1787,7 +1790,7 @@ export default class GardenScene extends Phaser.Scene {
         this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.built)); // gleich kauft jemand ein
       }
       if (data.seasonNote) this.showToast(data.seasonNote); // Wetterwechsel in der Savanne
-      else this.showToast(`${LEVEL.name}${this.expMap ? ` · ${tr(`Map ${expRun().step} von ${RUN_LENGTH}`, `Map ${expRun().step} of ${RUN_LENGTH}`)}` : ''}${this.expHiddenHint()}${this.expEvent() ? `<br><small>${tr('🦬 Große Wanderung! Unten links zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing by on the lower left – keep your lasso ready.')}</small>` : ''}${back}${moved}${LEVEL.wip ? `<br><small>${tr('🚧 Dieses Gebiet ist noch nicht fertig – hier kommen bald weitere Tiere dazu.', '🚧 This area is still under construction – more animals are coming soon.')}</small>` : ''}`);
+      else this.showToast(`${LEVEL.name}${this.expMap ? ` · ${tr(`Map ${expRun().step} von ${RUN_LENGTH}`, `Map ${expRun().step} of ${RUN_LENGTH}`)}` : ''}${this.expHiddenHint()}${this.expEvent() ? `<br><small>${tr('🦬 Große Wanderung! Unten links zieht eine riesige Gnu-Herde vorbei – halte das Lasso bereit.', '🦬 Great Migration! A huge herd of wildebeest is passing by on the lower left – keep your lasso ready.')}</small>` : ''}${back}${moved}`);
     }
 
     const cam = this.cameras.main;
@@ -7078,7 +7081,6 @@ export default class GardenScene extends Phaser.Scene {
         y: l.map.y,
         status: l.seasons ? this.seasonStatus(id) : null,
         events: eventsIn(id).map((e) => `${e.name} ${formatTime(e.left)}`), // laufende Events: leuchtender Rahmen
-        wip: !!l.wip, // noch in Arbeit (Hinweis auf dem Schild)
         locked: !isUnlocked(l.unlockWith ?? id), // noch nicht freigeschaltet (Mavis Geschichte; das Expeditions-Camp mit seiner Welt)
         parts: isPark(id) ? PARK_LEVELS.map((p) => ({ id: p, name: LEVELS[p].part.name, icon: LEVELS[p].part.icon, main: p === id, locked: !isUnlocked(p), event: eventsIn(p).length > 0 })) : null,
       }));
@@ -8986,6 +8988,7 @@ export default class GardenScene extends Phaser.Scene {
     r.stay = [...stay, ...release]; // (ausgewildert wird erst bei der Heimfahrt, siehe expGoHome)
     this.expWagonNote = null;
     this.expPlaceCampAnimals();
+    const guided = !!this.nuggets?.arrive(arrivals.length); // Mr. Nuggets erklärt etwas: dann keine Meldung am Rand
     // für die Statistik: geschaffte Maps (je Map nur einmal, auch wenn das Camp neu aufgebaut wird)
     // (Runs aus älteren Spielständen haben noch keinen Zähler: nur die letzte Map zählt)
     r.counted ??= Math.max(0, r.step - 1);
@@ -8998,11 +9001,16 @@ export default class GardenScene extends Phaser.Scene {
       later(700, () => this.expFinalChest(() => this.showToast(tr('🏁 Ziel erreicht! Sieh dir deinen Wagen an – mit dem Auto geht es zurück in den Zoo.', '🏁 Goal reached! Look at your wagon – the car takes you back to the zoo.') + released)));
     } else if (arrivals.length) {
       this.expPoint('cages');
-      later(900, () => this.showToast(tr('⛺ Neues Camp! Deine Tiere sind in den Käfigen – sieh nach, wen du mitnimmst.', '⛺ New camp! Your animals are in the cages – check who comes along.') + released));
+      if (!guided) later(900, () => this.showToast(tr('⛺ Neues Camp! Deine Tiere sind in den Käfigen – sieh nach, wen du mitnimmst.', '⛺ New camp! Your animals are in the cages – check who comes along.') + released));
     } else if (r.step === 0) {
       this.expPoint('exit');
-      later(900, () => this.showToast(LEVEL.campHint ?? tr('⛺ Willkommen im Expeditions-Camp! Folge rechts dem Weg tiefer in die Savanne – die Tafel am Zelt zeigt deinen Weg.', '⛺ Welcome to the expedition camp! Follow the path on the right deeper into the savanna – the board at the tent shows your route.')));
-    } else this.expPoint(isFinalCamp() ? 'car' : 'exit');
+      if (!guided) later(900, () => this.showToast(LEVEL.campHint ?? tr('⛺ Willkommen im Expeditions-Camp! Folge rechts dem Weg tiefer in die Savanne – die Tafel am Zelt zeigt deinen Weg.', '⛺ Welcome to the expedition camp! Follow the path on the right deeper into the savanna – the board at the tent shows your route.')));
+    } else this.expPoint(this.expNextPoint());
+  }
+
+  // wohin der Pfeil im Camp zeigt, wenn nichts anderes dran ist: zum Weg nach vorn, im Ziel-Camp aufs Auto
+  expNextPoint() {
+    return isFinalCamp() ? 'car' : 'exit';
   }
 
   // Angelfische aus dem Expeditions-Camp gleich in die Süßwasserhalle bringen. Gibt den Text für die Meldung zurück
@@ -9057,7 +9065,7 @@ export default class GardenScene extends Phaser.Scene {
     if (!what) return;
     let at;
     if (what === 'cages') at = { ...tileToWorld(LEVEL.cageCenter.tx, LEVEL.cageCenter.ty), lift: 30 };
-    else if (what === 'car') at = { ...tileToWorld(LEVEL.car.tx, LEVEL.car.ty), lift: 110 };
+    else if (what === 'car') at = this.car?.img ? { x: this.car.img.x, y: this.car.img.getBounds().top + 4, lift: 0 } : { ...tileToWorld(LEVEL.car.tx, LEVEL.car.ty), lift: 110 }; // über dem Autobild (wie Mavis Pfeil)
     else if (LEVEL.canoe) at = { ...tileToWorld(LEVEL.canoe.tx, LEVEL.canoe.ty), lift: 46 }; // Dschungel: weiter mit dem Kanu
     else {
       const e = EXITS.find((x) => x.to === '@next');
@@ -9186,7 +9194,8 @@ export default class GardenScene extends Phaser.Scene {
       const cages = Array.from({ length: wagonCageCount() }, (_, i) => (list[i] ? { cap: cageSize(list[i].species), animals: list[i].animals.map((a) => ({ icon: wagonIcon(a), badge: place(a) })) } : null));
       const stay = r.stay.map((a) => ({ icon: wagonIcon(a), badge: place(a) }));
       const note = [this.expWagonNote, r.stay.length ? tr('Wer nicht im Wagen ist, wartet im Sammelgehege bis zum Ende der Expedition – bei der Heimfahrt wird er im Naturreservat ausgewildert (bringt Herzen).', 'Animals not in the wagon wait in the holding pen until the expedition ends – when you head home they are released into the nature reserve (earns hearts).') : null].filter(Boolean).join('<br>');
-      return { cages, stay, note };
+      const tip = this.nuggets?.wagonTip(r.stay.length > 0); // Mr. Nuggets: Pfeil und Satz beim ersten Öffnen
+      return { cages, stay, note, tip };
     };
     openWagon(view, {
       tap: (where, i, j) => {
@@ -9206,8 +9215,9 @@ export default class GardenScene extends Phaser.Scene {
       close: () => {
         this.scene.resume();
         this.expWagonNote = null;
+        this.nuggets?.wagonClosed();
         this.expPlaceCampAnimals();
-        this.expPoint(isFinalCamp() ? 'car' : 'exit');
+        this.expPoint(this.expNextPoint());
       },
     });
   }
@@ -9264,18 +9274,23 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
     let rerolls = 0;
-    let cards = rollRunCards(cardCount());
+    // allererste Kartenwahl: feste Karten, Mr. Nuggets empfiehlt die Tierkarte (Pfeil darauf); neu würfeln geht dann nicht
+    const tip = cardTip();
+    const first = tip ? firstRunCards() : null;
+    let cards = first ?? rollRunCards(cardCount());
     this.scene.pause();
     openLuckPicker(
       () => ({
         title: tr(`Wohin geht es? (Map ${r.step + 1} von ${RUN_LENGTH})`, `Where to? (Map ${r.step + 1} of ${RUN_LENGTH})`),
-        cards: cards.map((c) => this.expCardView(c)),
+        cards: cards.map((c, i) => ({ ...this.expCardView(c), point: !!first && i === 0 })),
         cost: rerollCost(rerolls),
         hearts: game.hearts,
-        left: MAP_REROLLS - rerolls,
+        left: first ? 0 : MAP_REROLLS - rerolls,
+        tut: tip,
       }),
       (i) => {
         this.scene.resume();
+        if (tip) markGuide('cards');
         this.expTake(cards[i]);
       },
       () => {
@@ -10326,6 +10341,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateGate(dt);
     this.updateSign();
     this.mavi.update(dt);
+    this.nuggets?.update();
     this.updateEncounter(dt);
     this.updateBeaverHint();
     this.updateYakHint();

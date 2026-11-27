@@ -18,7 +18,9 @@ export function isWagonOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// view(): { cages: [{ cap, animals: [{ icon, badge }] } | null], stay: [{ icon, badge }], note }
+// view(): { cages: [{ cap, animals: [{ icon, badge }] } | null], stay: [{ icon, badge }], note, tip? }
+// tip: { point: 'done' | 'stay', text } – Tutorial (Mr. Nuggets): roter Pfeil am Fertig-Knopf bzw. am ersten Tier, das im
+// Camp bleibt, dazu sein Satz
 // handlers: { tap(where, i, j), close() } – where 'cage' (Käfig i, Tier j) oder 'stay' (Tier i)
 export function openWagon(view, handlers) {
   panel = document.getElementById('wagon');
@@ -32,8 +34,10 @@ export function openWagon(view, handlers) {
   }, 0);
 }
 
-function animal(a, where, i, j = 0) {
-  return `<button class="wagon-animal" data-where="${where}" data-i="${i}" data-j="${j}">${a.icon}<span class="wagon-badge">${BADGE[a.badge] ?? ''}</span></button>`;
+const POINTER = '<span class="chest-pointer tut-pointer">▼</span>';
+
+function animal(a, where, i, j = 0, point = false) {
+  return `<button class="wagon-animal" data-where="${where}" data-i="${i}" data-j="${j}">${point ? POINTER : ''}${a.icon}<span class="wagon-badge">${BADGE[a.badge] ?? ''}</span></button>`;
 }
 
 // Rückfrage (z. B. am Auto: Expedition beenden?): html, Knöpfe yesText / noText; handlers: { yes(), close() }
@@ -75,15 +79,16 @@ function render() {
       : `<small>${tr('frei', 'empty')}</small>`}</div>`)
     .join('');
   const stay = v.stay.length
-    ? `<h3>${tr('Bleibt im Camp', 'Stays at camp')}</h3><div class="wagon-stay">${v.stay.map((a, i) => animal(a, 'stay', i)).join('')}</div>`
+    ? `<h3>${tr('Bleibt im Camp', 'Stays at camp')}</h3><div class="wagon-stay">${v.stay.map((a, i) => animal(a, 'stay', i, 0, v.tip?.point === 'stay' && i === 0)).join('')}</div>`
     : '';
   panel.innerHTML = `<div class="chest-box wagon-box">${CLOSE_BUTTON}
       <h2>${tr('Wagen', 'Wagon')} <small>${v.cages.filter(Boolean).length} / ${v.cages.length} ${tr('Käfige', 'cages')}</small></h2>
       <div class="wagon-cages">${cages}</div>
       ${stay}
       ${v.note ? `<p class="chest-hint">${v.note}</p>` : ''}
+      ${v.tip ? `<p class="chest-tut"><b>Mr. Nuggets:</b> ${v.tip.text}</p>` : ''}
       <p class="chest-hint wagon-legend">⭐ ${tr('neu im Zoo oder selten', 'new to the zoo or rare')} · 🏠 ${tr('freier Gehege-Platz', 'free enclosure spot')} · 🌳 ${tr('Gehege voll', 'enclosure full')}</p>
-      <div class="wagon-btns"><button class="start-btn small wagon-done">${tr('Fertig', 'Done')}</button></div>
+      <div class="wagon-btns"><button class="start-btn small wagon-done">${tr('Fertig', 'Done')}${v.tip?.point === 'done' ? POINTER : ''}</button></div>
     </div>`;
 }
 

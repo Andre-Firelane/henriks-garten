@@ -162,6 +162,11 @@
         flex: none; width: 44px; height: 44px; border-radius: 50%; background: #f4dcae url(assets/mavi.png) -41px -37px / 403px 162px no-repeat; /* Gesicht mittig (1,4-fach) */
         border: 2px solid #6b4224;
       }
+      #speech-toast .speech-face.nuggets { background: #f4dcae url(assets/nuggets.png) -50px -45px / 121px 224px no-repeat; } /* Mr. Nuggets (Expeditions-Camp) */
+      #speech.ask { cursor: default; padding-bottom: 10px; }
+      #speech .speech-choices { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+      #speech .speech-choices button { font: bold 14px "Trebuchet MS", Arial, sans-serif; padding: 5px 16px; border-radius: 10px; border: 2px solid #6b4224; background: #f4dcae; color: #3a2414; cursor: pointer; }
+      #speech .speech-choices button:first-child { background: #5fae4a; color: #fff; }
       @media (max-width: 900px), (max-height: 500px) { #speech { font-size: 14px; padding: 8px 12px 20px; } #speech-toast { font-size: 12px; top: 64px; } }
       /* gesperrte Gebiete auf der Weltkarte */
       .travel-map .place.locked { filter: grayscale(1); opacity: 0.55; cursor: not-allowed; }
@@ -822,6 +827,9 @@
       .choice-item small { font-size: 14px; }
       .wagon-btns { display: flex; gap: 10px; justify-content: center; margin-top: 12px; }
       .wagon-btns .start-btn { width: auto; padding: 8px 22px; }
+      /* Tutorial (Mr. Nuggets): Pfeil am Fertig-Knopf bzw. über einem Tier, das im Camp bleibt */
+      .wagon-btns .start-btn { position: relative; }
+      .wagon-stay:has(.tut-pointer), .wagon-btns:has(.tut-pointer) { padding-top: 26px; }
       #exp-counter {
         position: fixed; top: 150px; left: 50%; transform: translateX(-50%); z-index: 4; display: none; align-items: center; gap: 12px;
         padding: 12px 24px; border-radius: 18px; background: rgba(60, 40, 20, 0.8); color: #fff8e6; pointer-events: none;

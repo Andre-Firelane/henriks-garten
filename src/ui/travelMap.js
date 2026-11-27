@@ -32,7 +32,7 @@ export function openTravelMap(places, current, onTravel, onClose, opts = {}) {
   panel = document.getElementById('travel');
   const eventTag = (p) => (p.events?.length ? `<span class="event-tag">${p.events.join('<br>')}</span>` : '');
   const button = (p, style = '') => `<button class="place${p.id === current ? ' here' : ''}${p.main ? ' main' : ''}${p.locked ? ' locked' : ''}${p.events?.length || p.event ? ' event' : ''}" data-id="${p.id}"${style}>
-        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.locked ? `<small>${tr('gesperrt', 'locked')}</small>` : p.wip ? `<small>🚧 ${tr('in Arbeit', 'in progress')}</small>` : ''}</span>
+        ${animalIconSquare(p.icon, 3.4)}<span>${p.name}${p.id === current ? `<small>${tr('Du bist hier', 'You are here')}</small>` : p.locked ? `<small>${tr('gesperrt', 'locked')}</small>` : ''}</span>
         ${p.status ? `<span class="season-tag">${p.status}</span>` : ''}${p.parts ? '' : eventTag(p)}
         ${p.id === opts.point ? (opts.side === 'left' ? '<span class="tut-arrow left">▶</span>' : '<span class="tut-arrow">◀</span>') : ''}
       </button>`;

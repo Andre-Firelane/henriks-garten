@@ -702,7 +702,6 @@ export const LEVELS = {
   // Tiere mehr fangen kann, bis er sich in der Forschungsstation aufgewärmt hat (cold). Es schneit immer leicht (siehe Weather.js).
   ice: {
     name: tr('Eiswelt', 'Ice World'),
-    wip: true, // noch nicht fertig: Hinweis beim Ankommen und auf der Weltkarte
     // Schnellreise: Schneemobil (wie im Eiswelt-Abschnitt des Tierparks) rechts neben der Forschungsstation
     car: { tx: 27.5, ty: 21.5, texture: 'car_snow', frame: 0, scale: 1.26, arrive: { tx: 25, ty: 22 } },
     map: { x: 40, y: 17, icon: 'penguin' }, // Grönland

@@ -5,7 +5,7 @@ ganz unten.
 
 ## Ausgangslage
 
-Die Eiswelt (`ice` in levels.js) ist als `wip` markiert. Es gibt das Festland mit der Forschungsstation, vier große
+Die Eiswelt (`ice` in levels.js) war anfangs als `wip` markiert (Hinweis entfernt 27.11.2026, sie ist fertig). Es gibt das Festland mit der Forschungsstation, vier große
 Inseln mit Schollen-Fähren, den Wechsel von Tag und Nacht alle 8 Minuten (nachts friert das Meer zu, Polarlicht,
 Kälte nach 3 Minuten) und nur zwei Tierarten: Pinguin (Lasso aus Abstand) und Robbe (wünscht sich Hering oder Ball).
 Im Tierpark gibt es noch keinen Eis-Bereich, für die Expedition keine Eis-Regeln.

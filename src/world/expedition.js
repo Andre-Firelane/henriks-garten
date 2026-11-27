@@ -190,6 +190,28 @@ export function rollRunCards(n) {
   return cards;
 }
 
+// Allererste Kartenwahl (Tutorial von Mr. Nuggets, src/npc/Nuggets.js): fest eine Tierkarte mit einer leicht zu fangenden
+// Art (kein Event, keine Nacht), eine Bonus-Karte und eine Kiste, jede auf einer anderen Map. Die Tierkarte liegt vorn
+// (er empfiehlt sie). null, wenn es in dieser Welt keine passende Map gibt (dann wie sonst gewürfelt)
+const FIRST_ANIMALS = { savanna: ['giraffe'], jungle: ['tapir', 'jaguar'], asia: ['panda', 'peacock'], forest: ['hedgehog', 'boar'], ice: ['walrus', 'arcticfox'] };
+const FIRST_BONUS = 'moreAnimals';
+export function firstRunCards() {
+  const r = run();
+  const rules = SPECIES_RULES[r.biome] ?? {};
+  const maps = shuffle(expeditionMaps(r.biome));
+  const fitsMap = (sp, m) => !!rules[sp] && (!rules[sp].needs || (LEVELS[m]?.features ?? []).includes(rules[sp].needs));
+  const species = (FIRST_ANIMALS[r.biome] ?? []).find((sp) => maps.some((m) => fitsMap(sp, m)));
+  if (!species) return null;
+  const first = maps.find((m) => fitsMap(species, m));
+  const rest = maps.filter((m) => m !== first);
+  const other = (i) => rest[i % Math.max(1, rest.length)] ?? first;
+  return [
+    { map: first, plan: planMap(first, r.biome, species), kind: 'animal', species },
+    { map: other(0), plan: planMap(other(0), r.biome), kind: 'bonus', id: FIRST_BONUS },
+    { map: other(1), plan: planMap(other(1), r.biome), kind: 'chest' },
+  ];
+}
+
 // Karte gewählt: die nächste Map vorbereiten (Tierliste, Bonus, Kiste, seltenes Tier). Gibt die Map zurück.
 export function takeRunCard(card) {
   const r = run();

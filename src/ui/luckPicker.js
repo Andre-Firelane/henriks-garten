@@ -12,8 +12,9 @@ export function isLuckPickerOpen() {
   return !!panel?.classList.contains('show');
 }
 
-// view(): { cards: [{ icon, title, text, color, tag }], cost, hearts, title?, left? } (title: Überschrift statt "Eine Kiste!";
-// left: so oft darf man noch neu würfeln, ohne Angabe beliebig oft) (wird nach dem Neuwürfeln neu geholt)
+// view(): { cards: [{ icon, title, text, color, tag, point? }], cost, hearts, title?, left?, tut? } (title: Überschrift statt "Eine Kiste!";
+// left: so oft darf man noch neu würfeln, ohne Angabe beliebig oft; tut: Satz aus einem Tutorial – dann ohne Neuwürfeln;
+// point: roter Pfeil an dieser Karte) (wird nach dem Neuwürfeln neu geholt)
 // onPick(i): Karte i genommen; onReroll(): neu würfeln (der Aufrufer zieht die Herzen ab und würfelt)
 export function openLuckPicker(view, onPick, onReroll) {
   panel = document.getElementById('luck');
@@ -39,13 +40,16 @@ function render() {
       <div class="chest-items luck-cards" style="--n:${v.cards.length}">${v.cards
         .map(
           (c, i) => `<button class="chest-item luck-card" data-i="${i}" style="--luck:${c.color}">
-            ${c.tag ? `<span class="luck-tag">${c.tag}</span>` : ''}
+            ${c.point ? '<span class="chest-pointer tut-pointer">▼</span>' : ''}${c.tag ? `<span class="luck-tag">${c.tag}</span>` : ''}
             <span class="luck-icon">${c.icon}</span><b>${c.title}</b><small>${c.text}</small>
           </button>`,
         )
         .join('')}</div>
-      <button class="start-btn small luck-reroll"${short ? ' disabled' : ''}>🎲 ${tr('Neu würfeln', 'Reroll')}${left} <span class="heart">♥</span> ${v.cost}</button>
-      <p class="chest-hint">${tr('Tippe auf eine Karte – oder wähle mit <b>A</b>/<b>D</b> und nimm sie mit <b>E</b>. <b>R</b> würfelt neu.', 'Tap a card – or choose with <b>A</b>/<b>D</b> and take it with <b>E</b>. <b>R</b> rerolls.')}</p>
+      ${v.tut
+        ? `<p class="chest-tut">${v.tut}</p>
+      <p class="chest-hint">${tr('Tippe auf eine Karte – oder wähle mit <b>A</b>/<b>D</b> und nimm sie mit <b>E</b>.', 'Tap a card – or choose with <b>A</b>/<b>D</b> and take it with <b>E</b>.')}</p>`
+        : `<button class="start-btn small luck-reroll"${short ? ' disabled' : ''}>🎲 ${tr('Neu würfeln', 'Reroll')}${left} <span class="heart">♥</span> ${v.cost}</button>
+      <p class="chest-hint">${tr('Tippe auf eine Karte – oder wähle mit <b>A</b>/<b>D</b> und nimm sie mit <b>E</b>. <b>R</b> würfelt neu.', 'Tap a card – or choose with <b>A</b>/<b>D</b> and take it with <b>E</b>. <b>R</b> rerolls.')}</p>`}
     </div>`;
   highlight();
 }
@@ -66,6 +70,7 @@ function onKey(e) {
   e.stopPropagation(); // die Taste soll im Spiel nichts auslösen
   const k = e.key.toLowerCase();
   const n = state.n;
+  if (k === 'r' && state.view().tut) return;
   if (k === 'a' || k === 'arrowleft' || k === 'w' || k === 'arrowup') state.selected = (state.selected + n - 1) % n;
   else if (k === 'd' || k === 'arrowright' || k === 's' || k === 'arrowdown') state.selected = (state.selected + 1) % n;
   else if (k === 'e' || k === 'enter' || k === ' ') return pick(state.selected);

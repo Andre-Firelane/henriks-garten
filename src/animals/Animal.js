@@ -8,6 +8,7 @@ import { tr } from '../i18n.js';
 import { game } from '../state.js';
 import { COATS, coatAnims, coatReady, ensureCoat } from './coats.js';
 import { FRESH_FISH } from '../world/fishing.js';
+import { penWander, updateLife } from './penLife.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -1461,6 +1462,7 @@ export default class Animal {
 
   // Entweder eine Pause einlegen oder in eine zufällige Richtung loslaufen
   pickWander() {
+    if (penWander(this)) return; // im Gehege: Lieblingsplätze, Herde, Ruhephase (siehe penLife.js)
     const { restChance, restTime, walkTime } = this.kind;
     if (Math.random() < restChance) {
       this.dirX = 0;
@@ -1537,7 +1539,9 @@ export default class Animal {
       if (this.play) this.endToy(); // spielt bzw. frisst es gerade an der Raufe: erst aufhören (sonst läuft es mit dem Fress-Bild los)
       moving = this.updateVisit(dt, player); // Tierfreund: zum Zaun, an dem Henrik steht (siehe src/world/friends.js)
     } else {
-      const play = this.updateToy(dt); // im Gehege mit Spielzeug (zweite Ausbaustufe): ab und zu damit spielen
+      // Leben im Gehege (penLife.js): rennt es gerade, macht es sonst nichts; sonst Spielzeug oder wie immer
+      const life = this.play ? null : updateLife(this, dt);
+      const play = life ?? this.updateToy(dt); // im Gehege mit Spielzeug (zweite Ausbaustufe): ab und zu damit spielen
       moving = play ?? this.updateFree(dt, player);
     }
 
@@ -1723,6 +1727,7 @@ export default class Animal {
   // zum Futterplatz laufen und dort time Sekunden fressen; food: Mitte des Futters (dorthin schaut es)
   eatAt(spot, food, time) {
     this.endToy(); // spielt es gerade: aufhören
+    this.lifeAngle = 0; // trinkt es gerade (penLife.js): Kopf gerade
     this.startFeed();
     this.feed = { spot, food, time, phase: 'walk', timeout: FEED_WALK_TIMEOUT };
   }
@@ -2030,7 +2035,7 @@ export default class Animal {
     const toy = this.toyLift ?? 0; // auf dem Spielzeug (Wachposten, Rutsche): höher, der Schatten bleibt am Boden
     const jump = this.jumpLift ?? 0; // Freudenhüpfer eines Tierfreunds (siehe friendHop in GardenScene)
     this.sprite.setPosition(this.x, this.y - hop - lift - toy - jump + SPRITE_SINK);
-    this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : this.toyAngle ?? 0);
+    this.sprite.setAngle(wobble ? Math.sin(phase) * 2 : (this.toyAngle ?? 0) + (this.lifeAngle ?? 0)); // lifeAngle: schütteln, trinken (penLife.js)
     this.shadow.setPosition(this.x, this.y - lift);
     this.sprite.setDepth(this.y);
     this.shadow.setDepth(this.y - 0.5);
