@@ -11,6 +11,8 @@ import { BIG_CHANCE, BIG_SCALE, canFishHere } from './fishing.js';
 
 const COUNT = 5; // so viele Stellen gleichzeitig (Expedition: EXP_COUNT)
 const EXP_COUNT = 3;
+const ICE_COUNT = 2; // Eis-Expedition bei Nacht: Wasser gibt es nur in den kleinen Eislöchern – höchstens so viele Stellen, je Loch
+// höchstens eine und ohne Schwärme (sonst wimmelte es in den paar Löchern von Fischen)
 const SCHOOL_CHANCE = 0.5; // so oft sind kleine Fische ein Schwarm ...
 const SCHOOL_SIZE = [2, 4]; // ... aus so vielen
 const LIFE = [25, 50]; // so lange bleibt eine Stelle, dann tauchen sie ab
@@ -33,7 +35,7 @@ export default class FishShadows {
     this.list = [];
     this.spots = canFishHere() ? this.findSpots() : [];
     if (!this.spots.length) return;
-    const n = LEVEL.expedition ? EXP_COUNT : COUNT;
+    const n = Math.min(LEVEL.expedition ? EXP_COUNT : COUNT, LEVEL.expedition && LEVEL.iceHoles ? ICE_COUNT : Infinity);
     for (let i = 0; i < n; i++) this.spawn(true);
   }
 
@@ -59,11 +61,18 @@ export default class FishShadows {
   }
 
   spawn(now = false) {
-    const free = this.spots.filter((s) => this.list.every((f) => Math.hypot(f.tx - s.tx, f.ty - s.ty) >= GAP));
+    const free = this.spots.filter((s) => this.list.every((f) => Math.hypot(f.tx - s.tx, f.ty - s.ty) >= GAP && (this.holeOf(s) < 0 || this.holeOf(f) !== this.holeOf(s))));
+    // kein freier Platz: in den Eislöchern nicht noch einen dazu (später nochmal versuchen), sonst wie bisher irgendwo
+    if (!free.length && LEVEL.iceHoles) {
+      this.scene.time.delayedCall(Phaser.Math.FloatBetween(...AWAY) * 1000, () => {
+        if (this.scene.fishShadows === this && !this.destroyed) this.spawn();
+      });
+      return null;
+    }
     const spot = Phaser.Utils.Array.GetRandom(free.length ? free : this.spots);
     const c = tileToWorld(spot.tx, spot.ty);
     const big = Math.random() < BIG_CHANCE;
-    const n = !big && Math.random() < SCHOOL_CHANCE ? Phaser.Math.Between(...SCHOOL_SIZE) : 1;
+    const n = !big && this.holeOf(spot) < 0 && Math.random() < SCHOOL_CHANCE ? Phaser.Math.Between(...SCHOOL_SIZE) : 1;
     const dir = Math.random() < 0.5 ? -1 : 1; // ein Schwarm kreist gemeinsam in eine Richtung
     const members = [];
     for (let i = 0; i < n; i++) {
@@ -74,6 +83,11 @@ export default class FishShadows {
     const f = { tx: spot.tx, ty: spot.ty, spot, x: c.x, y: c.y, big, members, life: Phaser.Math.FloatBetween(...LIFE) * (now ? Math.random() + 0.3 : 1), hooked: false, gone: false };
     this.list.push(f);
     return f;
+  }
+
+  // Eisloch (Index in LEVEL.iceHoles), in dem diese Kachel liegt; sonst -1 (anderes Wasser)
+  holeOf(t) {
+    return (LEVEL.iceHoles ?? []).findIndex(([hx, hy]) => t.tx >= hx && t.tx <= hx + 1 && t.ty >= hy && t.ty <= hy + 1);
   }
 
   // nächste Stelle, die man von hier aus erreicht (Abstand mit doppeltem y wie überall)

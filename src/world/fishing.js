@@ -5,6 +5,7 @@
 // Im Tierpark ziehen die Fische in die Süßwasserhalle des Aquariums, je Welt in ein eigenes Becken (tank).
 import { tr } from '../i18n.js';
 import { LEVEL, biomeOf } from './map.js';
+import { registerSheetIcon } from '../ui/icons.js';
 
 // Seltenheit: Gewicht im Pool; in Expeditionen kommen Seltene öfter (EXPEDITION_WEIGHT)
 export const RARITY = { common: 6, rare: 2, epic: 0.5 };
@@ -53,6 +54,9 @@ export const FRESH_FISH = [
   { id: 'fish_polarcod', name: tr('Polardorsch', 'polar cod'), male: true, world: 'ice', rarity: 'common' },
 ];
 const BY_ID = Object.fromEntries(FRESH_FISH.map((f, i) => [f.id, { ...f, index: i }]));
+// Bild jeder Fischart (Tafeln, Tierbuch): ihr eigenes Bild aus freshfish.png (192 × 128, 20 Bilder je Zeile, 3 Zeilen; je
+// Art zwei Bilder, das erste schwimmt nach links) statt des allgemeinen Fischbilds
+FRESH_FISH.forEach((f, i) => registerSheetIcon(f.id, [192, 128, 20, (i * 2) % 20, 'freshfish', 3, Math.floor((i * 2) / 20)]));
 const GOLDFISH = 'fish_gold';
 
 // Fischart eines Skins (ohne Skin: der orange Fisch früherer Spielstände = Goldfisch)

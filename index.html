@@ -55,16 +55,16 @@
         #btn-book { height: 48px; padding: 0 10px; } #btn-book .book-label { display: none; }
       }
       /* erste Begegnung mit einer Tierart: kleine Blase mit dem Werkzeug über dem Tier (antippen: Fang-Tipp) */
-      #encounter, #beaver-hint, #yak-hint, #oak-hint, #bear-hint {
+      #encounter, #beaver-hint, #yak-hint, #oak-hint, #bear-hint, #hare-hint {
         position: fixed; z-index: 4; display: none; align-items: center; gap: 2px; padding: 3px 6px 3px 4px; cursor: pointer;
         transform: translate(-50%, calc(-100% - 10px)); background: rgba(255, 248, 230, 0.82); border: 2px solid rgba(107, 66, 36, 0.7); border-radius: 12px;
       }
-      #encounter::after, #beaver-hint::after, #yak-hint::after, #oak-hint::after, #bear-hint::after {
+      #encounter::after, #beaver-hint::after, #yak-hint::after, #oak-hint::after, #bear-hint::after, #hare-hint::after {
         content: ""; position: absolute; left: 50%; bottom: -8px; margin-left: -6px;
         border: 6px solid transparent; border-top-color: rgba(107, 66, 36, 0.7); border-bottom: 0;
       }
-      #encounter.show, #beaver-hint.show, #yak-hint.show, #oak-hint.show, #bear-hint.show { display: flex; animation: enc-in 0.3s ease-out; }
-      #encounter img, #beaver-hint img, #yak-hint img, #oak-hint img, #bear-hint img { width: 28px; height: 28px; object-fit: contain; }
+      #encounter.show, #beaver-hint.show, #yak-hint.show, #oak-hint.show, #bear-hint.show, #hare-hint.show { display: flex; animation: enc-in 0.3s ease-out; }
+      #encounter img, #beaver-hint img, #yak-hint img, #oak-hint img, #bear-hint img, #hare-hint img { width: 28px; height: 28px; object-fit: contain; }
       #beaver-hint .animal, #yak-hint .animal { margin: 0; }
       @keyframes enc-in { from { opacity: 0; } }
       /* nächste Starter-Aufgabe oben links unter dem Zähler (antippen öffnet das Tierbuch) */
@@ -1268,6 +1268,7 @@
     <div id="beaver-hint"></div>
     <div id="yak-hint"></div>
     <div id="bear-hint"></div>
+    <div id="hare-hint"></div>
     <div id="oak-hint"></div>
     <div id="tip"></div>
     <div id="success"></div>

@@ -120,6 +120,12 @@ export default class ArcticFox extends Fox {
     return this.state === 'wild' && this.lit;
   }
 
+  // unsichtbar im Schnee (Fernglas: Bild über dem Versteck, LuckWorld.binocularTargets); vor dem ersten Verstecken noch
+  // gar nicht da
+  unseen() {
+    return this.state === 'wild' && !this.lit;
+  }
+
   canDespawn() {
     return !this.lit;
   }

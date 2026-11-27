@@ -534,9 +534,10 @@ export default class Luck {
       .sort((u, v) => u.d - v.d)
       .slice(0, BINO_MAX)
       .map(({ a }) => {
-        // versteckt (oben in der Krone bzw. im Dickicht): das Bild steht auch im Bild über der Stelle (here)
+        // versteckt (oben in der Krone, im Dickicht, unsichtbar im Schnee wie der Polarfuchs, im Bau wie der Schneehase):
+        // das Bild steht auch im Bild über der Stelle (here), sonst verschwände der Pfeil, ohne dass man etwas sieht
         const up = a.inTree?.() ? CROWN_MARK : 10;
-        return { id: `bino-${(a.binoId ??= ++binoId)}`, x: a.x, y: a.y - up, icon: animalIconFit(a.species, 1.5), bino: true, here: !!(a.hidden || a.inTree?.()) };
+        return { id: `bino-${(a.binoId ??= ++binoId)}`, x: a.x, y: a.y - up, icon: animalIconFit(a.species, 1.5), bino: true, here: !!(a.hidden || a.inTree?.() || a.unseen?.()) };
       });
   }
 

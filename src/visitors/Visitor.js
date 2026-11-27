@@ -714,7 +714,7 @@ export class VisitorCrowd {
     const inside = this.grid.pets?.get(e)?.inside;
     if (!inside) return [];
     return this.scene.animals.filter((a) => {
-      if (a.state !== 'penned' || a.enclosure !== e || a.petted || a.feed || a.play || a.tree || a.jumping || a.sleeping || !a.sprite?.active) return false;
+      if (a.state !== 'penned' || a.enclosure !== e || a.petted || a.feed || a.play || a.tree || a.jumping || a.sleeping || a.napping || !a.sprite?.active) return false; // (schlafende nicht wecken)
       const t = worldToTile(a.x, a.y);
       return inside.has(t.tx + ',' + t.ty);
     });

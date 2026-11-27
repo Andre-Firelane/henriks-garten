@@ -1,4 +1,4 @@
-// Wagen im Expeditions-Camp: oben die Käfige (je einer pro Tierart, mit ein paar Plätzen; vom Spiel vorbelegt), darunter
+// Wagen im Expeditions-Camp: oben die Käfige (je Käfig eine Tierart, eine Art auch in mehreren, mit ein paar Plätzen; vom Spiel vorbelegt), darunter
 // die Tiere, die im Camp bleiben würden. Antippen tauscht: ein Tier im Wagen kommt heraus, ein Tier aus dem Camp in den
 // Käfig seiner Art (oder einen freien). Über jedem Tier zeigt ein
 // Zeichen, was im Zoo mit ihm passiert: Stern (neu im Zoo oder seltene Variante), Haus (freier Gehege-Platz),

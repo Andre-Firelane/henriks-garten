@@ -18,6 +18,7 @@ const SAVANNA = {
   ambientVolume: 0.35,
   path: 'savanna_path',
   flies: true,
+  roundShore: true, // Landecken, die ins Wasser ragen, abgerundet (keine eckigen Küsten)
   enclosures: [],
   toolSpots: [],
 };
@@ -602,6 +603,7 @@ const ASIA = {
   ambient: 'ambient_asia',
   path: 'asia_path',
   water: ['asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water0', 'asia_water1', 'asia_water2'],
+  roundShore: true, // Landecken, die ins Wasser ragen, abgerundet (keine eckigen Küsten)
   enclosures: [],
   toolSpots: [],
 };
@@ -1002,7 +1004,7 @@ const TUNDRA_GROUND = (area) => ({ area, ground: ['tundra0', 'tundra1', 'tundra2
 const BEACH_GROUND = (area) => ({ area, ground: ['ice_beach0', 'ice_beach1', 'ice_beach2'], soft: 1.5 });
 const GLACIER_GROUND = (area) => ({ area, ground: ['glacier0', 'glacier1', 'glacier2'], soft: 2 });
 
-// Eislöcher für die Nacht ([tx, ty] oben links, je 2 × 2 Kacheln): in jedem Gewässer mindestens eins, in großen bis zu
+// Eislöcher für die Nacht ([tx, ty] oben links, je 2 × 2 Kacheln): in jedem Gewässer möglichst zwei, in großen bis zu
 // drei, möglichst mit Eis ringsum (zwei Kacheln, sonst eine; in kleinen Tümpeln notfalls ohne), verteilt. open: so viele
 // Reihen oben bleiben offenes Meer (dort keine Löcher)
 function iceHoles(rows, open) {
@@ -1011,6 +1013,7 @@ function iceHoles(rows, open) {
   const wet = (x, y) => y > open && rows[y]?.[x] === '~';
   const seen = new Set();
   const holes = [];
+  const comps = []; // Gewässer mit ihren möglichen Löchern (für MIN_HOLES)
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!wet(x, y) || seen.has(`${x},${y}`)) continue;
     // ein Gewässer (zusammenhängendes Wasser)
@@ -1035,13 +1038,27 @@ function iceHoles(rows, open) {
     };
     const blocks = comp.filter(([a, b]) => ring(a, b, 0) && a > 0 && a < W - 2 && b < H - 2).map(([a, b]) => ({ a, b, m: ring(a, b, 2) ? 2 : ring(a, b, 1) ? 1 : 0 }));
     blocks.sort((p, q) => q.m - p.m || Math.hypot(p.a - W / 2, p.b - H / 2) - Math.hypot(q.a - W / 2, q.b - H / 2)); // (gleich gut: die zur Mitte hin)
-    const want = comp.length >= 80 ? 3 : comp.length >= 30 ? 2 : 1;
+    const want = comp.length >= 80 ? 3 : 2;
+    // Abstand zwischen zwei Löchern (Ecke oben links): in großen Gewässern weit, in kleinen Tümpeln dichter, damit auch
+    // dort zwei Löcher Platz haben (sonst drängen sich alle Tiere der Map an einem Loch)
+    const gap = comp.length >= 30 ? 6 : 4;
     let n = 0;
     for (const { a, b } of blocks) {
       if (n >= want) break;
-      if (holes.some(([c, d]) => Math.max(Math.abs(c - a), Math.abs(d - b)) < 6)) continue;
+      if (holes.some(([c, d]) => Math.max(Math.abs(c - a), Math.abs(d - b)) < gap)) continue;
       holes.push([a, b]);
       n++;
+    }
+    comps.push({ blocks, size: comp.length });
+  }
+  // zu wenige Löcher auf der ganzen Map (nur ein kleiner Tümpel): im größten Gewässer noch dichter dazu (mindestens eine
+  // Kachel Eis dazwischen)
+  const MIN_HOLES = 3;
+  for (const { blocks } of comps.sort((p, q) => q.size - p.size)) {
+    for (const { a, b } of blocks) {
+      if (holes.length >= MIN_HOLES) break;
+      if (holes.some(([c, d]) => Math.max(Math.abs(c - a), Math.abs(d - b)) < 3)) continue;
+      holes.push([a, b]);
     }
   }
   return holes;
@@ -1137,11 +1154,12 @@ const ICE_LEVELS = {
     tools: ['net', 'lasso'],
   }),
 
-  // Weite Tundra: fast nur Tundra mit Felsen und Flechten, ein kleiner Tümpel – Rentiere, Hasen, Fuchs und Wölfe
+  // Weite Tundra: fast nur Tundra mit Felsen und Flechten, zwei kleine Tümpel (nachts mehrere Eislöcher, damit sich die
+  // Tiere verteilen) – Rentiere, Hasen, Fuchs und Wölfe
   ix_tundra: imap({
     name: tr('Weite Tundra', 'Open Tundra'),
     features: ['tundra'],
-    rows: makeRows({ seed: 653, palette: 'ice', ponds: [[20, 5, 3, 2]], scatter: { Ȓ: 6, ȓ: 16, ê: 3, Ṗ: 2 } }),
+    rows: makeRows({ seed: 653, palette: 'ice', ponds: [[20, 5, 3, 2], [11, 21, 3, 2]], scatter: { Ȓ: 6, ȓ: 16, ê: 3, Ṗ: 2 } }),
     grounds: [TUNDRA_GROUND(WHOLE)],
     tools: ['net', 'lasso'],
   }),
@@ -1156,11 +1174,12 @@ const ICE_LEVELS = {
     tools: ['net', 'lasso'],
   }),
 
-  // Taigarand: oben Tundra mit einem Tümpel, unten dichter Tannenwald – nachts ruft dort die Schneeeule
+  // Taigarand: oben Tundra mit zwei Tümpeln (nachts mehrere Eislöcher), unten dichter Tannenwald – nachts ruft dort die
+  // Schneeeule
   ix_taiga: imap({
     name: tr('Taigarand', 'Taiga Edge'),
     features: ['tundra', 'taiga'],
-    rows: makeRows({ seed: 683, palette: 'ice', ponds: [[8, 5, 3, 2]], band: { ty0: 19, c: 'Ṗ', p: 0.55 }, scatter: { Ṗ: 4, Ȓ: 4, ȓ: 12, ê: 2 } }),
+    rows: makeRows({ seed: 683, palette: 'ice', ponds: [[8, 5, 3, 2], [21, 5, 3, 2]], band: { ty0: 19, c: 'Ṗ', p: 0.55 }, scatter: { Ṗ: 4, Ȓ: 4, ȓ: 12, ê: 2 } }),
     grounds: [TUNDRA_GROUND({ tx0: -4, tx1: 31, ty0: -4, ty1: 18 })],
     tools: ['net', 'lasso'],
   }),

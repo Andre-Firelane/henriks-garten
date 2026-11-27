@@ -1102,12 +1102,12 @@ const ANIMATIONS = [
   // Eule so groß wie im Sitzen (im Flug-Video ist sie 1,45-mal kleiner gefilmt: Kopf 20 statt 29 px), großer Rahmen für
   // die Flügel; im Video fliegt sie nach links: gespiegelt
   { src: 'Animation/Schneeeule idle.mp4', out: 'snowowl_idle.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [0, 47], every: 2, figureH: 68, frameW: 72, frameH: 80, feetY: 76 },
-  { src: 'Animation/Schneeeule fliegt.mp4', out: 'snowowl_flap.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [9, 30], mirror: 'all', scale: 0.26, frameW: 152, frameH: 128, feetY: 124 },
+  { src: 'Animation/Schneeeule fliegt.mp4', out: 'snowowl_flap.png', darkShadow: true, dropShadowGreen: 18, onlyFigure: true, range: [9, 30], mirror: 'all', scale: 0.23, frameW: 152, frameH: 128, feetY: 124 },
   // Eisbär: Figur so hoch wie das Standbild (vorne 124, hinten 137 px im Bogen, im Spiel halb so groß, SIZE in
   // PolarBear.js); Laufen je ein Schrittzyklus, Stehen und Fressen jedes zweite Bild (vor und zurück). Frisst: nur der
   // Teil, in dem er liegt und am Fisch knabbert (ohne onlyFigure, sonst fällt der Fisch weg)
   { src: 'Animation/Eisbär läuft vorne.mp4', out: 'polarbear_walk.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [23, 42], scale: 0.335, frameW: 152, frameH: 148, feetY: 143 },
-  { src: 'Animation/EIsbär läuft hinten.mp4', out: 'polarbear_walk_back.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [41, 62], scale: 0.418, frameW: 168, frameH: 148, feetY: 143 },
+  { src: 'Animation/EIsbär läuft hinten.mp4', out: 'polarbear_walk_back.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [14, 39], scale: 0.418, frameW: 168, frameH: 148, feetY: 143 },
   { src: 'Animation/Eisbär idle vorne.mp4', out: 'polarbear_idle.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, range: [0, 47], every: 2, scale: 0.335, frameW: 152, frameH: 148, feetY: 143 },
   { src: 'Animation/Eisbär idle hinten.mp4', out: 'polarbear_idle_back.png', darkShadow: true, dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, every: 2, scale: 0.418, frameW: 152, frameH: 148, feetY: 143 },
   { src: 'Animation/Eisbär frisst.mp4', out: 'polarbear_eat.png', brownToGrey: true, dropShadowGreen: 18, dropGreyHalo: true, range: [24, 71], every: 2, scale: 0.335, frameW: 152, frameH: 148, feetY: 143 },
@@ -1136,7 +1136,9 @@ const ANIMATIONS = [
   { src: 'Animation/Elch2 idle vorne.mp4', out: 'elk2_idle.png', every: 2, mirror: 'all', scale: 0.28, frameW: 128, frameH: 128, feetY: 124 },
   { src: 'Animation/Elch2 idle hinten.mp4', out: 'elk2_idle_back.png', every: 2, scale: 0.39, frameW: 128, frameH: 128, feetY: 124 },
   { src: 'Animation/Erdmännchen2 läuft vorne.mp4', out: 'meerkat2_walk.png', range: [34, 52], figureH: 52, frameW: 56, frameH: 56, feetY: 52 },
-  { src: 'Animation/Erdmännchen2 läuft hinten.mp4', out: 'meerkat2_walk_back.png', range: [58, 78], figureH: 51, frameW: 56, frameH: 56, feetY: 52 },
+  // (von hinten hängt der Schwanz unter die Füße: größer gerechnet, damit der Körper so groß ist wie von vorne; die Füße
+  // stehen im Spiel auf Zeile 48 (BootScene), darunter liegt im höheren Rahmen der Schwanz)
+  { src: 'Animation/Erdmännchen2 läuft hinten.mp4', out: 'meerkat2_walk_back.png', range: [58, 78], figureH: 61, frameW: 56, frameH: 64, feetY: 62 },
   { src: 'Animation/Erdmännchen2 idle vorne.mp4', out: 'meerkat2_idle.png', every: 2, figureH: 52, frameW: 56, frameH: 56, feetY: 52 },
   { src: 'Animation/Erdmännchen2 idle hinten.mp4', out: 'meerkat2_idle_back.png', every: 2, figureH: 51, frameW: 56, frameH: 56, feetY: 52 },
   { src: 'Animation/Geier2 idle vorne.mp4', out: 'vulture2_idle.png', every: 2, figureH: 61, frameW: 88, frameH: 108, feetY: 104 },

@@ -70,6 +70,7 @@ export default class Sheep extends Animal {
   }
 
   render(moving) {
+    if (this.napping) return super.render(moving); // Schläfchen im Gehege (penLife.js)
     const key = this.grazing ? this.grazeTexture() : this.baseTexture();
     // eine laufende Animation setzt ihr Bild selbst (siehe Animal.render)
     const onAnim = !this.grazing && Object.values(this.animSet() ?? {}).includes(this.sprite.texture.key);

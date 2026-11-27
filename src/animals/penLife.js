@@ -27,6 +27,15 @@ const QUIET_EVERY = [180, 360]; // Ruhephase im Gehege ungefähr so oft (Sekunde
 const QUIET_TIME = [35, 60]; // ... und so lang
 const SPOTS_TTL = 30; // Lieblingsplätze so lange merken (Deko kann sich ändern)
 
+// Schläfchen: diese Arten legen sich beim Ausruhen hin (Standbild <Bild>_sleep aus tools/sleep-sheets.py), über ihnen
+// steigen „ZzZz“ auf. Andere Arten mit eigenem Schlafen (Fuchs, Katze, Löwe, Walross, Eisbär) machen das selbst.
+// Varianten ohne eigenes Schlafbild (z. B. Oryx, schwarzer Wolf) bleiben stehen
+const NAP = new Set(['deer', 'sheep', 'antelope', 'zebra', 'okapi', 'penguin', 'reindeer', 'tanuki', 'wolf']);
+const NAP_AFTER = 1.2; // so lange (Sekunden) still stehen, dann hinlegen ...
+const NAP_SHADE = 0.4; // ... in der Ruhephase immer, am Schattenplatz sonst mit dieser Wahrscheinlichkeit
+const NAP_TIME = [10, 18]; // Sekunden (in der Ruhephase bis zu deren Ende)
+const ZZZ_EVERY = 0.9; // so oft steigt ein Buchstabe auf (Z und z abwechselnd)
+
 let nextId = 1;
 const pens = new WeakMap(); // Gehege -> { spots, spotsAt, quietFrom, quietUntil }
 
@@ -270,6 +279,8 @@ export function updateLife(a, dt) {
   }
   if (a.penMoment?.type === 'run') return updateRun(a, dt);
   if (a.penMoment) return null; // hüpft oder schüttelt sich gerade (Tween), steht dabei
+  const nap = updateNap(a, dt);
+  if (nap !== null) return nap;
   if (!onScreen(a) || !isFree(a)) return null;
   // am Wasser: trinken (Kopf nickt), dabei ab und zu ein Ring auf dem Wasser
   if (a.atSpot?.type === 'water') {
@@ -301,6 +312,83 @@ export function updateLife(a, dt) {
   else if (what === 'shake') shake(a);
   else if (what === 'run') startRun(a);
   return null;
+}
+
+// ---- Schläfchen ----
+// Bild zum Schlafen (mit Fellfarbe deren umgefärbtes, siehe coats.js) oder null, wenn es keins gibt
+export function napKey(a) {
+  if (!NAP.has(a.species)) return null;
+  const key = `${a.baseTexture()}_sleep`;
+  return a.scene.textures.exists(key) ? key : null;
+}
+
+// darf es (weiter) schlafen? Alles, was es anspricht (Futter, Besucher, Henrik, Spielzeug), weckt es
+export function napOk(a) {
+  if (a.state !== 'penned' || a.feed || a.visit || a.fetch || a.play || a.petted || a.companion || a.toyLift || a.penMoment || a.phase) return false;
+  return !BUSY.some((k) => a[k]) && !!napKey(a);
+}
+
+// gibt false zurück, solange es schläft (dann läuft sonst nichts), sonst null
+function updateNap(a, dt) {
+  if (a.napping) {
+    a.napTime -= dt;
+    if (!napOk(a) || a.napTime <= 0) {
+      wakeUp(a);
+      a.pickWander();
+      return null;
+    }
+    a.zzzIn = (a.zzzIn ?? 0) - dt;
+    if (a.zzzIn <= 0 && onScreen(a)) {
+      a.zzzIn = ZZZ_EVERY;
+      a.zzzBig = !a.zzzBig;
+      zzz(a, a.zzzBig);
+    }
+    return false;
+  }
+  // steht es eine Weile still (Ruhephase oder Schattenplatz): hinlegen
+  if (a.dirX || a.dirY || (a.moveSpeed ?? 0) >= 3 || a.atSpot?.type === 'water' || !NAP.has(a.species) || !isFree(a)) {
+    a.stillFor = 0;
+    a.napAsked = false;
+    return null;
+  }
+  a.stillFor = (a.stillFor ?? 0) + dt;
+  if (a.stillFor < NAP_AFTER || a.napAsked) return null;
+  a.napAsked = true; // je Pause nur einmal fragen
+  const quiet = isQuiet(a);
+  if (!quiet && !(a.atSpot?.type === 'shade' && Math.random() < NAP_SHADE)) return null;
+  if (!napOk(a)) return null;
+  const left = quiet ? penState(a.scene, a.enclosure).quietUntil - now(a.scene) : 0;
+  a.napping = true;
+  a.napTime = Math.max(Phaser.Math.FloatBetween(...NAP_TIME), left + Phaser.Math.FloatBetween(0, 5));
+  a.zzzIn = Phaser.Math.FloatBetween(0.3, 1);
+  a.lifeAngle = 0;
+  return false;
+}
+
+export function wakeUp(a) {
+  a.napping = false;
+  a.stillFor = 0;
+}
+
+// ein Z steigt über dem Kopf auf und verblasst (abwechselnd groß und klein: ZzZz)
+function zzz(a, big) {
+  const h = (a.sprite.displayHeight ?? 30) * a.sprite.originY * 0.72;
+  const x = a.x + a.faceX * 6 + (big ? 0 : a.faceX * 4);
+  const y = a.y - h;
+  const z = a.scene.add
+    .text(x, y, big ? 'Z' : 'z', { fontFamily: 'Trebuchet MS, Arial', fontSize: big ? '12px' : '10px', fontStyle: 'bold', color: '#ffffff', stroke: '#2b1d14', strokeThickness: 3, resolution: 4 })
+    .setOrigin(0.5)
+    .setDepth(100000);
+  a.scene.tweens.add({
+    targets: z,
+    x: x + a.faceX * 8,
+    y: y - 16,
+    scale: 1.4,
+    alpha: 0,
+    duration: 1800,
+    ease: 'Sine.easeOut',
+    onComplete: () => z.destroy(),
+  });
 }
 
 function endLife(a) {

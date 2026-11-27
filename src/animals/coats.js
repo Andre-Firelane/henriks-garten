@@ -117,9 +117,9 @@ const WOOL_LUMA = luma(248, 240, 219);
 
 // Bilder einer Vorlage (Grundname + diese Endungen), die mit umgefärbt werden
 const SHEETS = {
-  sheep: ['', '_eat', '_walk', '_walk_back', '_idle', '_idle_back'],
+  sheep: ['', '_eat', '_sleep', '_walk', '_walk_back', '_idle', '_idle_back'],
   cat: ['', '_eat', '_sleep', '_walk', '_walk_back', '_idle', '_idle_back'],
-  deer: ['', '_eat', '_walk', '_walk_back', '_idle', '_idle_back'],
+  deer: ['', '_eat', '_sleep', '_walk', '_walk_back', '_idle', '_idle_back'],
   giraffe: ['', '_eat', '_walk', '_walk_back', '_idle', '_idle_back', '_eating', '_eating_back'],
   yak2: ['', '_walk', '_walk_back', '_idle', '_idle_back'],
   snake: ['', '_walk', '_walk_back', '_idle'],

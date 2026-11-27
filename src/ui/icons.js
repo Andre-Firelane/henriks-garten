@@ -135,33 +135,39 @@ export function registerAnimalIcon(key, url, w, h, count) {
   URLS[key] = url;
 }
 
+// Bild aus einem Raster-Spritesheet anmelden (z. B. die Angelfische: je Art ein Bild in freshfish.png):
+// [Bildbreite, Bildhöhe, Bilder je Zeile, Spalte, Datei, Zeilen, Zeile]
+export function registerSheetIcon(key, entry) {
+  SHEETS[key] = entry;
+}
+
 // gibt es für diesen Schlüssel (Tierart oder Skin) ein eigenes Bild?
 export const hasAnimalIcon = (key) => !!SHEETS[key];
 
 // HTML für ein Tierbild; size in em (passt sich der Schriftgröße drumherum an)
 export function animalIcon(species, size = 2.6) {
-  const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];
+  const [w, h, count, frame, file = species, rows = 1, row = 0] = SHEETS[species];
   const k = size / h;
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${size}em`,
     `background-image:url(${sheetUrl(file)})`,
     `background-size:${(w * count * k).toFixed(3)}em ${(size * rows).toFixed(3)}em`,
-    `background-position:${(-w * frame * k).toFixed(3)}em 0`,
+    `background-position:${(-w * frame * k).toFixed(3)}em ${(-size * row).toFixed(3)}em`,
   ].join(';');
   return `<span class="animal" style="${style}"></span>`;
 }
 
 // Tierbild in einem quadratischen Feld (size em): breite und hohe Tiere passen gleichermaßen hinein
 export function animalIconSquare(species, size = 3) {
-  const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];
+  const [w, h, count, frame, file = species, rows = 1, row = 0] = SHEETS[species];
   const k = size / Math.max(w, h);
   const style = [
     `width:${(w * k).toFixed(3)}em`,
     `height:${(h * k).toFixed(3)}em`,
     `background-image:url(${sheetUrl(file)})`,
     `background-size:${(w * count * k).toFixed(3)}em ${(h * rows * k).toFixed(3)}em`,
-    `background-position:${(-w * frame * k).toFixed(3)}em 0`,
+    `background-position:${(-w * frame * k).toFixed(3)}em ${(-h * row * k).toFixed(3)}em`,
   ].join(';');
   return `<span class="animal-box" style="width:${size}em;height:${size}em"><span class="animal" style="${style}"></span></span>`;
 }
@@ -177,14 +183,14 @@ export function animalIconFit(species, size = 2, onReady = null) {
     measureVisible(species, onReady);
     return animalIconSquare(species, size);
   }
-  const [w, h, count, frame, file = species, rows = 1] = SHEETS[species];
+  const [w, h, count, frame, file = species, rows = 1, row = 0] = SHEETS[species];
   const k = size / Math.max(box.w, box.h);
   const style = [
     `width:${(box.w * k).toFixed(3)}em`,
     `height:${(box.h * k).toFixed(3)}em`,
     `background-image:url(${sheetUrl(file)})`,
     `background-size:${(w * count * k).toFixed(3)}em ${(h * rows * k).toFixed(3)}em`,
-    `background-position:${(-(w * frame + box.x) * k).toFixed(3)}em ${(-box.y * k).toFixed(3)}em`,
+    `background-position:${(-(w * frame + box.x) * k).toFixed(3)}em ${(-(h * row + box.y) * k).toFixed(3)}em`,
   ].join(';');
   return `<span class="animal-box" style="width:${size}em;height:${size}em"><span class="animal" style="${style}"></span></span>`;
 }
@@ -195,7 +201,7 @@ function measureVisible(species, onReady) {
     return;
   }
   measuring[species] = onReady ? [onReady] : [];
-  const [w, h, count, frame, file = species] = SHEETS[species];
+  const [w, h, count, frame, file = species, , row = 0] = SHEETS[species];
   const img = new Image();
   img.onload = () => {
     const scale = img.naturalWidth / (w * count); // (falls das Bild größer gespeichert ist als im Spritesheet angegeben)
@@ -203,7 +209,7 @@ function measureVisible(species, onReady) {
     c.width = Math.round(w * scale);
     c.height = Math.round(h * scale);
     const ctx = c.getContext('2d');
-    ctx.drawImage(img, w * frame * scale, 0, w * scale, h * scale, 0, 0, c.width, c.height);
+    ctx.drawImage(img, w * frame * scale, h * row * scale, w * scale, h * scale, 0, 0, c.width, c.height);
     const a = ctx.getImageData(0, 0, c.width, c.height).data;
     let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
     for (let y = 0; y < c.height; y++) {

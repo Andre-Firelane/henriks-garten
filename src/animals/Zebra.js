@@ -237,6 +237,7 @@ export default class Zebra extends Antelope {
   }
 
   render(moving) {
+    if (this.napping) return super.render(moving); // Schläfchen im Gehege (penLife.js)
     const down = (this.drinking && (this.state === 'wild' || this.state === 'penned')) || this.eatingLook;
     // Trinken als Animation (zebra_drinking, mit Skin zebra2_drinking; nach links gespiegelt)
     const drinkAnim = `${this.skin ?? 'zebra'}_drinking${this.faceY > 0 ? '' : '_back'}`;

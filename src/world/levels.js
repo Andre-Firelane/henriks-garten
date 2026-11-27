@@ -409,6 +409,7 @@ export const LEVELS = {
     rows: SAVANNA_ROWS,
     grass: ['sgrass0', 'sgrass1', 'sgrass2'],
     path: 'savanna_path',
+    roundShore: true, // Landecken, die ins Wasser ragen, abgerundet
     start: { tx: 2, ty: 19 },
     enclosures: [], // die Gehege sind im Tierpark
     // begehbare Hütte (Wände, Tür zum Weg, Dach wird beim Betreten durchsichtig); die Werkzeuge liegen in der Kiste
@@ -470,6 +471,7 @@ export const LEVELS = {
 
   asia: {
     name: tr('Bambuswald', 'Bamboo Forest'),
+    roundShore: true, // Landecken, die ins Wasser ragen, abgerundet
     // Schnellreise: Auto (Kachel, Bild) und Lage auf der Weltkarte (in Prozent)
     car: { tx: 13.16, ty: 57.54, texture: 'car_zoo', frame: 0, scale: 1.3 },
     map: { x: 78, y: 37, icon: 'panda' },
@@ -1112,17 +1114,17 @@ const PARK_ICE_ROWS = [
   'ṩ]...U....]#Ǩwwwwww....Ʒ.......Ǩ#].ȓ.....ȓ]ṩ',
   'ṩ]........G#Ǩwwwwww....Ʒ.......Ǩ#]........]ṩ',
   'ṩ]........]#Ǩwwwwww.Ê..G....Ȓ..Ǩ#[[[[[[[[[[ṩ',
-  'ṩ].Ȓ.....ȓ]#Ǩwww.......ƷȞ.....ṖǨ#..........ṩ',
+  'ṩ].Ȓ.....ȓ]#Ǩwww.......ƷȞ.....ṖǨ#F.........ṩ',
   'ṩ[[[[[[[[[[#Ǩwww.Ê.ȓ...Ʒ.......Ǩ#..........ṩ',
   'ṩ..........#Ǩ.........ȒƷ..ȓ....Ǩ#..........ṩ',
-  'ṩ..........#ǩǯǯǯǯǯǯǯǯǯǯǯ.....Ṗ.Ǩ#..........ṩ',
+  'ṩ..........#ǩǯǯǯǯǯǯǯǯǯǯǯF....Ṗ.Ǩ#..........ṩ',
   'ṩ..........#G##############....Ǩ#[[[[[[[[[[ṩ',
   'ṩ..........#G##############....Ǩ#]w.......]ṩ',
   'ṩ......F...#Ǩ....ȓ..##......Ṗ..Ǩ#]w.......]ṩ',
   'ṩ........W.#Ǩ.Ṗ.....##...Ȟ.....Ǩ#]w....Ȓ..]ṩ',
   'X###########Ǩ...Ȓ...####....ȓ..Ǩ#]w.......]ṩ',
   'X###########Ǩ.......####......ǩǩ#]w.......]ṩ',
-  'ṩ.......#..#ǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩǩ.#]w......Ṗ]ṩ',
+  'ṩ.......#..#ǩǩǩǩǩǩǩǩGGǩǩǩǩǩǩǩǩǩ.#]w......Ṗ]ṩ',
   'ṩ.......#..######################]w.ȓ.....]ṩ',
   'ṩ[[[[[[[G[[[[[[[[[[[[[[[[[[G[[[[[[w.......]ṩ',
   'ṩ]...................]wwwww.wwwwwww.......]ṩ',
@@ -1240,8 +1242,9 @@ const PARK_PENS = [
       // Pinguinbecken in der Halle (Glas, Pflegertür); steht vor der Halle, damit seine Kacheln nicht zur Halle zählen
       { id: 'penguins', name: tr('Pinguinbecken', 'Penguin Pool'), species: ['penguin'], gate: 'glasslow', world: 'ice', section: 'park4', seed: { tx: 20, ty: 13 }, slots: [10, 10], signAt: { tx: 18.5, ty: 19.6 }, signOnGlass: true },
       // Polarhalle: Papageitaucher und Schneeeulen fliegen frei unter dem Glasdach (zwischen Felsen und Tannen, siehe
-      // hallFlight.js); Besucher gehen durch die Glastür links oben hinein und auf dem Holzsteg bis zur Treppe
-      { id: 'polarhall', name: tr('Polarhalle', 'Polar Hall'), species: ['puffin', 'snowowl'], open: true, visitors: true, gate: 'glassdoor', gateTiles: [{ tx: 12, ty: 20 }, { tx: 12, ty: 21 }],
+      // hallFlight.js); Besucher gehen durch die Glastür links oben hinein und auf dem Holzsteg bis zur Treppe; eine zweite
+      // Glastür unten, wo der Steg vor der Treppe an der Wand endet, führt auf den Rundweg unten
+      { id: 'polarhall', name: tr('Polarhalle', 'Polar Hall'), species: ['puffin', 'snowowl'], open: true, visitors: true, gate: 'glassdoor', gateTiles: [{ tx: 12, ty: 20 }, { tx: 12, ty: 21 }, { tx: 20, ty: 26 }, { tx: 21, ty: 26 }],
         world: 'ice', section: 'park4', seed: { tx: 27, ty: 14 }, quota: { puffin: [8, 8], snowowl: [2, 2] } },
       // Robben und Walrosse zusammen im langen Außenbecken mit Kiesstrand; unter der Halle schwimmen sie hinter der
       // großen Scheibe vorbei (siehe UnderwaterWindow.js)
@@ -1324,6 +1327,8 @@ LEVELS.park = parkSection('park', {
     // Haupthaus: nur noch Fassade (das Innere ist ein eigenes Level, siehe LEVELS.house); innen gesperrt und leer
     ...[32, 33, 34, 35, 36, 37].map((ty) => [26, ty, 'VVVVVVV']),
     ...[28, 29, 30].map((ty) => [34, ty, 'VV']), // Stall (stableBox) rechts hinter dem Haupthaus: gesperrt
+    [51, 30, 'F'], // Futterautomat im Streichelzoo neben dem Katzenhaus
+    [32, 44, 'F'], // ... und am Weg unten rechts beim Haupthaus (Richtung Voliere)
   ],
   name: tr('Tierpark', 'Zoo'),
   part: { name: tr('Zentrum', 'Center'), icon: 'hero' }, // Feld im Tierpark-Schild der Weltkarte
@@ -1359,7 +1364,8 @@ LEVELS.park = parkSection('park', {
   // keine Bäume und Büsche). Zum Wiederaufnehmen diese Zeile einschalten und die Bilder in BootScene wieder laden.
   // wheelSlot: { id: 'wheel', tx: 29, ty: 25, clear: { tx0: 25, tx1: 34, ty0: 24, ty1: 29 } },
   houseDoor: { tx: 29.5, ty: 38 }, // Tür des Haupthauses (Mavis Pfeil, wenn es drinnen weitergeht)
-  feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 15, ty: 40, world: 'forest' }],
+  // Futterautomaten: von jedem Gehege höchstens etwa 20 Kacheln Fußweg (Andre, 27.11.2026)
+  feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 15, ty: 40, world: 'forest' }, { tx: 51, ty: 30, world: 'meadow' }, { tx: 32, ty: 44, world: 'meadow' }],
   // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
   signScale: 1.25,
   sections: [
@@ -1390,6 +1396,8 @@ LEVELS.park2 = parkSection('park2', {
     [8, 23, edgeRow(8, '3'.repeat(47), [32, 48])],
     [8, 24, ' '.repeat(83)], // (rechts daneben beginnt die Eiswelt)
     [33, 21, 'W'], // Wegweiser an der Kreuzung beim Auto
+    [29, 2, 'F'], // Futterautomat in der Safari an der Piste, beim Tor der Hyänen
+    [47, 8, 'F'], // ... und an der Piste Richtung Wasserloch
   ],
   name: tr('Tierpark: Savanne & Aquarium', 'Zoo: Savanna & Aquarium'),
   background: '#b89a52', // Farbe außerhalb der Karte (trockenes Gras)
@@ -1402,7 +1410,8 @@ LEVELS.park2 = parkSection('park2', {
   ],
   // Fische im Pflaster: von der Wegkreuzung oben bei der Savanne bis zum Aquarium, die Nasen zeigen dorthin
   pathMarks: [31, 28, 25, 22, 19, 16, 13].map((tx) => ({ tx, ty: 15, dir: { tx: -1, ty: 0 } })),
-  feeders: [{ tx: 44, ty: 16, world: 'savanna' }], // am Vorplatz, neben dem Tor in die Safari
+  // am Vorplatz neben dem Tor in die Safari; in der Safari an der Piste bei den Hyänen und Richtung Wasserloch (kurze Wege)
+  feeders: [{ tx: 44, ty: 16, world: 'savanna' }, { tx: 29, ty: 2, world: 'savanna' }, { tx: 47, ty: 8, world: 'savanna' }],
   // Torbogen über dem Fußweg in die Safari (der Weg geht durch den Zaun, ohne Tor)
   arches: [{ key: 'wildpark_arch', tx: 49, ty: 17.5, label: tr('Safari', 'Safari') }],
   // Besucherautos auf der Piste (siehe SafariCars.js): Einfahrt hinten, Ausfahrt vorne rechts. Das Auto-Bild gibt es nur von
@@ -1434,13 +1443,15 @@ LEVELS.park3 = parkSection('park3', {
     [35, 82, '#'], // Weg vom Bambuswald hinunter zu Tanuki-, Yak- und Schneeleoparden-Gehege
     [41, 67, 'F'], // Futterautomat am Weg neben dem Teehaus
     [58, 73, 'F'], // ... und am Weg vor der Tropenhalle
+    [32, 83, 'F'], // ... am Weg unten bei Affeninsel, Tanukis, Yaks und Schneeleoparden
+    [68, 83, 'F'], // ... und hinten in der Tropenhalle (zwischen den Terrarien, Richtung Jaguar)
   ],
   name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
   // mit dem Auto (Schnellreise) und beim Laden kommt man am Teehaus an, auf dem Weg neben der Terrasse
   car: { tx: 37.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26, arrive: { tx: 37, ty: 65 } }, // das Auto steht im Garten am Weg zum Teich
   start: { tx: 37, ty: 65 },
-  feeders: [{ tx: 41, ty: 67, world: 'asia' }, { tx: 58, ty: 73, world: 'jungle' }],
+  feeders: [{ tx: 41, ty: 67, world: 'asia' }, { tx: 58, ty: 73, world: 'jungle' }, { tx: 32, ty: 83, world: 'asia' }, { tx: 68, ty: 83, world: 'jungle' }],
   scooterSpot: { tx: 34, ty: 77 }, // E-Roller: im Gras neben dem Auto
   legacySlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // (frühere Bauplätze: im Garten am Weg)
   grounds: [
@@ -1522,7 +1533,7 @@ LEVELS.park4 = parkSection('park4', {
   // große Treppe in der Halle hinunter zur Unterwasser-Scheibe (flach im Boden, man läuft darüber; die Kacheln sind
   // Übergänge; Platzhalter-Bild aus tools/polar-stairs.py, stairs_ice)
   props: [{ key: 'stairs_ice', tx: 22, ty: 24, size: 2, originY: 0.5, floor: true }],
-  feeders: [{ tx: 7, ty: 22, world: 'ice' }], // Fisch, am Platz beim Eingang
+  feeders: [{ tx: 7, ty: 22, world: 'ice' }, { tx: 33, ty: 16, world: 'ice' }, { tx: 24, ty: 19, world: 'ice' }], // Fisch: am Platz beim Eingang, rechts am Rundweg unter dem Robbenbecken (kurze Wege zu Robben, Walrossen und Eisbären) und in der Polarhalle am Steg vor dem Pinguinbecken
   scooterSpot: { tx: 5, ty: 26 },
   // Torbogen über dem Weg gleich hinter dem Übergang (Platzhalter: der Bogen des Wildparks, später aus Eisblöcken)
   arches: [{ key: 'wildpark_arch', tx: 1, ty: 24.5, label: tr('Eiswelt', 'Ice World') }],

@@ -15,6 +15,12 @@ Schritt 1 beim Bau (src/animals/penLife.js, eingehängt in Animal.pickWander und
 - Momente (nur sichtbar, alle 25–70 s je Tier): hüpfen, rennen (Staub), schütteln (nur im Stehen); welche Art was darf,
   steht in HOP, RUN, SHAKE. Nicht, solange das Tier etwas Eigenes macht (BUSY: schlafen, grasen, klettern …).
 - Schlafen: Fuchs, Polarfuchs, Katze, Löwe, Eisbär, Walross schlafen schon mit eigenem Bild (deren Klassen).
+- Schläfchen (gebaut 27.11.2026, penLife.js NAP): Reh/Hirsch, Schaf/Widder, Antilope, Zebra, Okapi, Pinguin, Rentier,
+  Tanuki, Wolf legen sich nach 1,2 s Stillstand hin – in der Ruhephase immer (bis zu deren Ende), am Schattenplatz sonst
+  zu 40 % (10–18 s). Liegendes Standbild <Bild>_sleep (tools/sleep-sheets.py), darüber steigen abwechselnd Z und z auf.
+  Futter, Spielzeug, Besucher, Henrik wecken es; Streichelzoo-Besucher lassen Schlafende in Ruhe. Fellfarben von Schaf
+  und Reh färben das Schlafbild mit um. Varianten ohne eigenes Bild (Oryx, Schoko-Zebra, Streifen-Okapi, Felsenpinguin,
+  weißes Rentier, Fuchs-Tanuki, schwarzer Wolf, Polarwolf) ruhen weiter im Stehen.
 
 ## Ziel
 

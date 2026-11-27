@@ -84,11 +84,29 @@ export default class Meerkat extends Animal {
     return false;
   }
 
+  // eingegraben im Gehege, aber es soll etwas tun (Ball holen, zum Zaun kommen, gestreichelt werden, mit Spielzeug spielen
+  // – das läuft in Animal.update vor updatePen): erst ausgraben, sonst liefe es im Loch-Bild herum
+  update(dt, player) {
+    if (this.state === 'penned' && this.digging && (this.fetch || this.visit || this.petted || this.play)) this.digOut();
+    const x0 = this.x;
+    const y0 = this.y;
+    super.update(dt, player);
+    if (this.state === 'penned' && this.digging && (this.x !== x0 || this.y !== y0 || this.play)) this.digOut(); // (z. B. Leben im Gehege, penLife.js)
+  }
+
+  // aus dem Loch heraus: Erdkrümel, wieder stehend; gräbt sich erst nach einer Weile wieder ein
+  digOut() {
+    this.digging = false;
+    this.digTime = Phaser.Math.FloatBetween(...DIG_EVERY);
+    this.useStandLook();
+    this.dustPuff();
+  }
+
   // Im Gehege: herumlaufen, dann eine Weile eingegraben aus dem Loch schauen
   updatePen(dt, player) {
     this.digTime = (this.digTime ?? Phaser.Math.FloatBetween(2, DIG_EVERY[1])) - dt;
     if (!this.digging) {
-      if (this.digTime > 0) return super.updateFree(dt, player);
+      if (this.digTime > 0 || this.fetch || this.visit || this.petted || this.play) return super.updateFree(dt, player);
       this.digging = true;
       this.digTime = Phaser.Math.FloatBetween(...DIG_TIME);
       this.lookTime = 0;
@@ -158,10 +176,7 @@ export default class Meerkat extends Animal {
   }
 
   startFeed() {
-    if (this.digging) {
-      this.digging = false;
-      this.useStandLook(); // kommt aus dem Loch
-    }
+    if (this.digging) this.digOut(); // kommt aus dem Loch
   }
 
   catch() {

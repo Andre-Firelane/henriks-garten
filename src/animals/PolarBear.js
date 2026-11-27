@@ -10,7 +10,8 @@ import Animal from './Animal.js';
 import { worldToTile, tileToWorld } from '../world/iso.js';
 import { MAP_W, MAP_H, charAt } from '../world/map.js';
 
-const SIZE = 0.5; // (das Bild ist in voller Größe gezeichnet, 1,35-fach wie früher bei 0,75: so bleibt es scharf)
+const SIZE = 0.43; // (das Bild ist in voller Größe gezeichnet; bei 0,5 war er zu groß und leicht verpixelt, Andre 27.11.2026)
+const SLEEP_K = 0.5 / SIZE; // schlafend (Standbild polarbear_sleep, liegt flacher im Bild) so viel größer: bleibt wie bisher
 const BABY_SIZE = 0.27;
 const SHADOW_UP = 3; // der Schatten liegt so weit hinter der Fußlinie ...
 const SLEEP_SHADOW_UP = 11; // ... liegend weiter, unter dem Bauch (die Pfoten liegen ganz vorne)
@@ -348,8 +349,10 @@ export default class PolarBear extends Animal {
     if (key) this.sprite.setTexture(key, frame).setFlipX(false);
     else if (/_(sleep|wait)$/.test(this.sprite.texture.key)) this.sprite.setTexture(base, frame);
     // Schatten: wächst mit dem Bild (großer Eisbär, Tierbaby); schlafend länger und weiter hinten unter dem Bauch
-    const k = this.baby ? BABY_SIZE / SIZE : this.sizeK;
     const lying = this.sprite.texture.key.endsWith('_sleep');
+    if (lying && !this.baby) this.sprite.setScale(this.sprite.scaleX * SLEEP_K);
+    // (Schatten gemessen am früheren Maßstab 0,5: stehend schrumpft er mit, liegend bleibt er)
+    const k = this.baby ? BABY_SIZE / 0.5 : this.sizeK * (lying ? 1 : SIZE / 0.5);
     this.shadow.setScale(k * (lying ? SLEEP_SHADOW : 1), k).setPosition(this.shadow.x, this.shadow.y - (lying ? SLEEP_SHADOW_UP : SHADOW_UP) * k);
   }
 }

@@ -16,7 +16,12 @@ const CORNERS = [
 
 export function roundedTexture(scene, key, mask) {
   const newKey = `${key}_round${mask}`;
-  if (scene.textures.exists(newKey)) return newKey;
+  if (scene.textures.exists(newKey)) {
+    // (eine Leinwand, die wieder in Phasers Vorrat ging, ist nur noch 1 × 1 Pixel groß: dann neu zeichnen, sonst sähe man
+    // an der Stelle nur den Boden darunter, z. B. Eis statt eines Eislochs)
+    if (scene.textures.get(newKey).getSourceImage()?.width > 1) return newKey;
+    scene.textures.remove(newKey);
+  }
 
   const src = scene.textures.get(key).getSourceImage();
   const w = src.width;

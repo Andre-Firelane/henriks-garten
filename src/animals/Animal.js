@@ -8,7 +8,7 @@ import { tr } from '../i18n.js';
 import { game } from '../state.js';
 import { COATS, coatAnims, coatFrom, coatReady, ensureCoat } from './coats.js';
 import { FRESH_FISH } from '../world/fishing.js';
-import { penWander, updateLife } from './penLife.js';
+import { napKey, napOk, penWander, updateLife, wakeUp } from './penLife.js';
 
 // Tierarten: alle verhalten sich gleich, nur Aussehen, Tempo und Rhythmus unterscheiden sich.
 // frames: Bild-Nummer im Spritesheet je Blickrichtung; originY: Fußlinie im Bild (siehe tools/prepare-characters.js)
@@ -1943,6 +1943,14 @@ export default class Animal {
 
   // Bild, Blickrichtung und Wippen beim Laufen
   render(moving) {
+    // Schläfchen im Gehege (penLife.js): liegendes Standbild in Blickrichtung; danach zurück aufs normale Bild
+    if (this.napping && !napOk(this)) wakeUp(this);
+    if (this.napping) {
+      this.renderNap();
+      return;
+    }
+    if (this.napShown && this.sprite.texture.key === this.napShown) this.sprite.setTexture(this.lookTexture(), 0).setOrigin(0.5, this.kind.originY);
+    this.napShown = null;
     // Aussehen gewechselt, während schon ein Bild bzw. eine Animation läuft (z. B. ist die Fellfarbe eben fertig
     // umgefärbt, siehe coats.js; bis dahin zeigte es die Grundfarbe): aufs neue Bild umschalten, die passende Animation
     // startet dann gleich unten
@@ -1972,7 +1980,10 @@ export default class Animal {
         }
         // animUpK: seltene Variante hoppelt nach hinten im selben Video ruhiger (großer Polarhase; von vorne passt es)
         const animK = (moving && key === anims.walkUp && this._skin && skinInfo(this.species, this._skin)?.animUpK) || 1;
-        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed, this.kind.animMax) * animK : 1;
+        // folgt es Henrik auf dem Reittier (oder E-Roller), läuft es viel schneller: dann ohne die engere Grenze der Art
+        // (animMax, z. B. Elch), sonst glitte es mit zu langsamen Schritten hinterher
+        const riding = this.state === 'following' && !!this.scene.player?.mount;
+        this.sprite.anims.timeScale = moving ? walkAnimSpeed(this.moveSpeed, this.kind.speed, riding ? undefined : this.kind.animMax) * animK : 1;
         this.sprite.setFlipX(this.faceX < 0);
         this.placeSprite(false);
         return;
@@ -1997,6 +2008,19 @@ export default class Animal {
         : this.faceX > 0 ? this.kind.frames.upRight : this.kind.frames.upLeft,
     );
     this.placeSprite(moving);
+  }
+
+  // schlafend: Bild <Bild>_sleep (tools/sleep-sheets.py), gleich hoch und mit gleicher Fußlinie wie das Grundbild
+  renderNap() {
+    const key = napKey(this);
+    if (this.sprite.texture.key !== key) {
+      this.sprite.stop().setFlipX(false);
+      this.sprite.setTexture(key, 0).setOrigin(0.5, this.kind.originY);
+      this.napShown = key;
+    }
+    const f = this.kind.frames;
+    this.sprite.setFrame(this.faceY > 0 ? (this.faceX < 0 ? f.downLeft : f.downRight) : this.faceX > 0 ? f.upRight : f.upLeft);
+    this.placeSprite(false);
   }
 
   // ein Bild der Unterklasse zeigen (Standbild, Fressen, Baden …). useLook lässt eine laufende Animation weiterlaufen

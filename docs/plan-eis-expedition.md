@@ -95,8 +95,8 @@ gewählt (eine Nacht-Art nur mit 40 %).
 - Schneemobil mit Anhänger statt Auto (car_snow wie in der Eiswelt und im Tierpark); man kommt davor an.
 - Lagerfeuer im Camp nur als Kulisse (es gibt keine Kälte).
 - **Käfige nicht artspeziell (Andre, 26.11.2026):** Jeder Käfig nimmt jede Art, sonst könnte man bestimmte
-  Kombinationen nicht mitnehmen. Es bleibt bei der Regel aller Expeditionen: ein Käfig je Art, aber welcher Käfig, ist
-  egal. **Im Eis-Camp laufen alle Tiere an Land herum**, auch Robbe, Walross und Pinguin: Sie liegen, dösen und
+  Kombinationen nicht mitnehmen. In jedem Käfig nur eine Art, welcher Käfig, ist egal; eine Art darf auch mehrere
+  Käfige füllen (z. B. 6 Pinguine auf 2 Käfigen, Andre, 27.11.2026). **Im Eis-Camp laufen alle Tiere an Land herum**, auch Robbe, Walross und Pinguin: Sie liegen, dösen und
   watscheln im Käfig wie am Strand (vorhandene Land-Bilder: Robbe am Strand, dösendes Walross, laufender Pinguin).
   Kein Wassertrog nötig, kein Schwimmen im Camp. Im Eis-Camp fällt der Trog daher weg (oder bleibt als gefrorene
   Kulisse). Wichtig beim Bauen: Robbe und Walross dürfen im Camp nicht nach Wasser suchen (sonst stehen sie

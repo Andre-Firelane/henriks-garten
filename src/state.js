@@ -41,6 +41,7 @@ export const game = {
   boat: null, // Kanu im Dschungel: { x, y, riding } (wo es liegt bzw. ob Henrik darin sitzt)
   caughtSpecies: [], // Tierarten, die man schon einmal gefangen hat (Regal und Tierbuch zeigen die anderen als Schatten)
   seenSpecies: [], // Tierarten, denen man draußen schon begegnet ist (erst dann steht ihr Fang-Tipp im Tierbuch)
+  hareHolesClosed: 0, // so viele Hasenlöcher hat man schon zugeschoben (bis HARE_HINT_UNTIL zeigt eine Blase, dass es geht)
   tipsSeen: [], // Tierarten, zu denen der Fang-Tipp nach Fehlversuchen schon von selbst kam
   parkReturns: 0, // so oft ist man aus einer Welt zurück in den Tierpark gekommen (für die Tafeln in promos)
   promos: [], // schon gezeigte Tafeln im Tierpark: 'gift' (geschenktes Event); 'worlds' (die anderen Welten) nur in älteren Spielständen
@@ -111,6 +112,7 @@ export function resetGame() {
   game.caughtSpecies = [];
   game.seenSpecies = [];
   game.tipsSeen = [];
+  game.hareHolesClosed = 0;
   game.bookNew = [];
   game.parkReturns = 0;
   game.promos = [];

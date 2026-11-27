@@ -284,7 +284,7 @@ const PARK_BRUSH = 'park_brush'; // Bild der Bürste beim Bürsten eitler Tierfr
 // Bedürfnisse der Tiere (Blasen mit Hand oder Futter, siehe updateNeeds): höchstens so viele gleichzeitig, so lange
 // bleibt eine stehen (Sekunden), so oft schaut das Spiel nach einer neuen (Sekunden)
 const NEED_MAX = 3;
-const NEED_TIME = 45;
+const NEED_TIME = 150; // (war 45: bis man das Nötige am Futterautomaten geholt hatte, war die Blase oft schon weg)
 const NEED_EVERY = [5, 10];
 const FRIEND_BAR_DIST = 180; // so nah, dann zeigt ein Balken über dem Tierfreund, wie weit es bis zur nächsten Stufe ist
 const NAME_MAX = 14; // so lang darf der Name eines Tierfreunds sein
@@ -493,8 +493,12 @@ const capFor = (e, species) => penQuotas(e).find((q) => q.key === (e.quota ? quo
 // Brüllaffen auf der Affeninsel und in der Tropenhalle, Schmetterlinge im Zentrum und in der Halle), zuerst eins mit
 // freiem Platz. count(level): so viele Tiere dieser Art leben schon in diesem Abschnitt (ohne count: Platz egal)
 const parkPenFor = (species, origin, count = null) => {
-  const pens = parkPens().filter((e) => accepts(e, species));
-  const room = (e) => !count || pens.length < 2 || count(e.level) < pens.filter((p) => p.level === e.level).reduce((n, p) => n + capFor(p, species), 0);
+  let pens = parkPens().filter((e) => accepts(e, species));
+  const capIn = (level) => pens.filter((p) => p.level === level).reduce((n, p) => n + capFor(p, species), 0);
+  const room = (e) => !count || pens.length < 2 || count(e.level) < capIn(e.level);
+  // Schmetterlinge: nach Füllstand verteilt (Zentrum 4, Tropenhalle 8 Plätze: etwa 2/3 flattern in der Halle), statt
+  // erst das Zentrum ganz zu füllen
+  if (species === 'butterfly' && count) pens = [...pens].sort((p, q) => count(p.level) / capIn(p.level) - count(q.level) / capIn(q.level) || capIn(q.level) - capIn(p.level));
   return pens.find((e) => room(e) && e.world === origin) ?? pens.find(room) ?? pens.find((e) => e.world === origin) ?? pens[0] ?? null;
 };
 // Gibt es im Tierpark (samt Aquarium und Reptilienhaus) gar kein Gehege für diese Art? (z. B. Pinguine, solange es dort
@@ -714,6 +718,7 @@ const ENCOUNTER_DIST = 200; // so nah muss ein Tier einer noch nie gefangenen Ar
 const SOIL_UP = 6; // der Erdfleck unter der Biberburg liegt so viel über der Kachelmitte (die Äste sind hinten höher)
 const SOIL_DEPTH = -99996; // flach auf dem Boden, unter allem, was steht (wie der Friedhofsboden der Savanne)
 const BEAVER_HINT_DIST = 240; // so nah muss ein großer Stock sein, dann schwebt über ihm die Biber-Blase
+const FED_NEAR = 260; // so nah (Kachel-Proportionen, y doppelt) muss ein Tier fressen, damit geworfenes Futter beim Tierfreund zählt
 const ENCOUNTER_FLEES = 2; // so oft darf es fliehen, dann kommt der Fang-Tipp einmal von selbst
 const SHEEP_QUEST = 3; // so viele Schafe verlangt Mavis erste Aufgabe
 const TUT_SHEEP = 2; // bei Mavis Schaf-Aufgabe grasen auf der Wiese immer so viele Schafe ...
@@ -1086,6 +1091,7 @@ export default class GardenScene extends Phaser.Scene {
     this.onStand = null;
     this.resting = false;
     this.chestSprites = new Map(); // Bilder der Regale und Kisten je Kachel ("tx,ty")
+    this.canvasKeys = new Set(); // in diesem Gebiet gezeichnete Schrift- und Schildbilder (canvasReady)
     this.houseFront = new Map(); // je Gebäude die vorderen Wände (werden durchsichtig, wenn man drin ist)
 
     const ground = []; // Bodenkacheln [x, y, Bild]: werden unten in wenige große Flächen gemalt (schneller auf dem Tablet)
@@ -1673,6 +1679,8 @@ export default class GardenScene extends Phaser.Scene {
     this.yakHintEl.classList.remove('show');
     this.bearHintEl = document.getElementById('bear-hint'); // Eiswelt: Fisch über der Ablagestelle am Eisloch (IceCatch.js)
     this.bearHintEl.classList.remove('show');
+    this.hareHintEl = document.getElementById('hare-hint'); // Eiswelt: zugeschobenes Loch über einem offenen Hasenloch (IceCatch.js)
+    this.hareHintEl.classList.remove('show');
     this.yakHintFor = null;
     this.oakHintEl = document.getElementById('oak-hint');
     this.oakHintEl.classList.remove('show');
@@ -2452,7 +2460,7 @@ export default class GardenScene extends Phaser.Scene {
   signLabel(label, k, slope) {
     const R = 8;
     const key = `signlabel_${label}_${k}_${slope}`;
-    if (!this.textures.exists(key)) {
+    if (!this.canvasReady(key)) {
       const size = Math.round(7 * k) * R;
       const font = `bold ${size}px "Trebuchet MS", Arial`;
       const probe = document.createElement('canvas').getContext('2d');
@@ -2469,6 +2477,7 @@ export default class GardenScene extends Phaser.Scene {
       ctx.fillText(label, 0, 0);
       tex.refresh();
       tex.customData.width = w / R;
+      this.canvasKeys.add(key);
     }
     return this.add.image(0, 0, key).setScale(1 / R);
   }
@@ -3309,7 +3318,9 @@ export default class GardenScene extends Phaser.Scene {
         this.clearNeed(a);
         continue;
       }
-      need.left -= dt;
+      // mit Futter, Leckerli oder Bürste in der Hand ist Henrik gerade dabei, den Wunsch zu erfüllen: die Zeit steht
+      const busy = this.toolId === 'parkfood' || this.toolId === 'parkbrush' || isTreat(this.toolId);
+      if (!busy) need.left -= dt;
       const bond = bondOf(a);
       const gone = !a.sprite?.active || (a.state !== 'penned' && !a.companion) || need.left <= 0 || a.inCanopy?.();
       const notReady = isFriend(a) && (need.kind === 'pet' ? !canCare(bond, now) : !canFeed(bond, now));
@@ -3458,6 +3469,23 @@ export default class GardenScene extends Phaser.Scene {
     this.clearNeed(a);
     this.nearNeed = null;
     this.openSign(sign, { mode: 'name', animal: a, name: randomName(a.species), free: true, then, kind });
+  }
+
+  // Futter geworfen, das Tier mit dem Futter-Bedürfnis läuft hin: erst wenn es wirklich frisst, und nur, wenn Henrik dann
+  // in seiner Nähe ist (FED_NEAR), zählt es (vorher zählte es sofort – auch ein Reh ganz hinten im großen Gehege)
+  watchFedByThrow(a) {
+    let waited = 0;
+    const ev = this.time.addEvent({
+      delay: 300,
+      loop: true,
+      callback: () => {
+        waited += 0.3;
+        if (!a.feed || !this.animals.includes(a) || waited > 12) return ev.remove();
+        if (a.feed.phase !== 'eat') return;
+        ev.remove();
+        if (Math.hypot(a.x - this.player.x, (a.y - this.player.y) * 2) < FED_NEAR) this.fedByThrow(a);
+      },
+    });
   }
 
   // Henrik hat Futter ins Gehege geworfen und das Tier mit dem Futter-Bedürfnis frisst davon: beim Tierfreund zählt das
@@ -5646,7 +5674,7 @@ export default class GardenScene extends Phaser.Scene {
   // (slope: so viel tiefer pro Pixel nach rechts, ±0.5 wie der Zaun). Die Bildmitte ist die Mitte der Tafel.
   isoSignTexture(list, slope) {
     const key = `esign_iso_${list.join('+')}_${slope}`;
-    if (this.textures.exists(key)) return key;
+    if (this.canvasReady(key)) return key;
     const R = ISO_SIGN_R;
     const bw = 48, bh = 36; // Tafel in Welt-Pixeln (esign_board in halber Größe)
     const ch = bh + Math.abs(slope) * bw;
@@ -5654,28 +5682,30 @@ export default class GardenScene extends Phaser.Scene {
     const ctx = tex.getContext();
     ctx.setTransform(R, R * slope, 0, R, (R * bw) / 2, (R * ch) / 2);
     ctx.imageSmoothingQuality = 'high';
+    // (fehlt ein Bild, z. B. noch nicht geladen, bleibt die Stelle leer; im nächsten Gebiet wird ohnehin neu gezeichnet)
     const draw = (texKey, frame, x, y, w, h) => {
-      const f = this.textures.getFrame(texKey, frame);
+      const f = this.textures.exists(texKey) ? this.textures.getFrame(texKey, frame) : null;
       if (f) ctx.drawImage(f.source.image, f.cutX, f.cutY, f.cutWidth, f.cutHeight, x, y, w, h);
     };
     draw('esign_board', undefined, -bw / 2, -bh / 2, bw, bh);
     const step = SIGN_INNER_W / list.length;
     list.forEach((s, i) => {
       const frame = s === 'fish' ? 1 : 0;
-      const f = this.textures.getFrame(SPECIES[s].texture, frame);
+      const f = this.textures.exists(SPECIES[s].texture) ? this.textures.getFrame(SPECIES[s].texture, frame) : null;
       if (!f) return;
       const k = Math.min(SIGN_ICON_H / f.height, (step - 2) / f.width);
       const w = f.width * k, h = f.height * k;
       draw(SPECIES[s].texture, frame, -SIGN_INNER_W / 2 + step * (i + 0.5) - w / 2, 2 - h / 2, w, h);
     });
     tex.refresh();
+    this.canvasKeys.add(key);
     return key;
   }
 
   // Platz-Zähler eines schrägen Schilds: kleines dunkles Feld mit der Zahl, geschert wie das Schild
   isoCountTexture(text, color, slope) {
     const key = `esign_count_${text}_${color}_${slope}`;
-    if (this.textures.exists(key)) return key;
+    if (this.canvasReady(key)) return key;
     const R = ISO_SIGN_R;
     const font = `bold ${6 * R}px "Trebuchet MS", Arial`;
     const probe = document.createElement('canvas').getContext('2d');
@@ -5694,7 +5724,20 @@ export default class GardenScene extends Phaser.Scene {
     ctx.setTransform(1, slope, 0, 1, (R * w) / 2, (R * ch) / 2 + R * 0.5);
     ctx.fillText(text, 0, 0);
     tex.refresh();
+    this.canvasKeys.add(key);
     return key;
+  }
+
+  // Gezeichnete Schrift- und Schildbilder (Wegweiser, Gehegeschilder) gelten nur im laufenden Gebiet: beim Betreten eines
+  // Gebiets werden sie einmal neu gezeichnet. Ältere konnten leer sein (manchmal waren Wegweiser oder Gehegeschilder
+  // beim Betreten unsichtbar – z. B. eine Leinwand, die nach Speicherdruck verloren ging oder wiederverwendet wurde).
+  // true: das Bild ist da und in diesem Gebiet schon gezeichnet; sonst ist das alte weg und es muss neu gezeichnet werden
+  canvasReady(key) {
+    if (!this.textures.exists(key)) return false;
+    const src = this.textures.get(key).getSourceImage();
+    if (this.canvasKeys?.has(key) && src?.width > 1) return true;
+    this.textures.remove(key);
+    return false;
   }
 
   // Platz-Zähler an den Gehegeschildern
@@ -6100,8 +6143,8 @@ export default class GardenScene extends Phaser.Scene {
       return;
     }
     if (this.nearCages) {
-      setTouchTool(null, 'assets/treasure_chest0.png');
-      this.toolbar.innerHTML = `<div class="tool"><img src="assets/treasure_chest0.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Wagen ansehen', 'View wagon')}</span></div>`;
+      setTouchTool(null, 'assets/charm_bigCage.png');
+      this.toolbar.innerHTML = `<div class="tool"><img src="assets/charm_bigCage.png" alt=""><span><b>${ACTION_KEY}</b><b>Enter</b>${tr('Wagen ansehen', 'View wagon')}</span></div>`;
       return;
     }
     if (this.nearCar && LEVEL.camp) {
@@ -6484,7 +6527,7 @@ export default class GardenScene extends Phaser.Scene {
       if (!free.length) break;
       free.sort((u, v) => Math.hypot(u.x - a.x, u.y - a.y) - Math.hypot(v.x - a.x, v.y - a.y));
       a.eatAt(free.shift(), food, Phaser.Math.FloatBetween(...FEED_TIME));
-      if (from === this.player && a.feed && this.needs?.get(a)?.kind === 'feed') this.time.delayedCall(700, () => this.fedByThrow(a)); // Futter-Bedürfnis erfüllt
+      if (from === this.player && a.feed && this.needs?.get(a)?.kind === 'feed') this.watchFedByThrow(a); // Futter-Bedürfnis erfüllt (wenn es nah bei Henrik frisst)
     }
     return eaters.length;
   }
@@ -6797,7 +6840,11 @@ export default class GardenScene extends Phaser.Scene {
       let best = null;
       let bestD = ENCOUNTER_DIST;
       for (const a of this.animals) {
-        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || a.species === 'ray' || a.species === 'beaver' || caughtBefore(a.species) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will; über Rochen keine Blase
+        // Walross: die Wärmflasche nur, solange es döst – dann immer, auch wenn man schon eins gefangen hat (wach oder
+        // hungrig zeigt es selbst die Muschel); siehe walrusBubble
+        const walrus = a.species === 'walrus';
+        if (a.state !== 'wild' || a.species === 'sheep' || a.species === 'seal' || a.species === 'ray' || a.species === 'beaver' || (caughtBefore(a.species) && !walrus) || !CATCH_TIPS[a.species]) continue; // die Robbe zeigt selbst, was sie will; über Rochen keine Blase
+        if (walrus && !this.walrusBubble(a)) continue;
         if (a.fleeing && !a.wasFleeing) this.countFlee(a.species);
         a.wasFleeing = a.fleeing;
         // getarnte Krake: erst, wenn sie sich zeigt; Gorilla im Trommel-Duell (und auf dem Weg dorthin): die Blase läge über der Trommelanzeige
@@ -6829,7 +6876,7 @@ export default class GardenScene extends Phaser.Scene {
     // jedes Bild mitwandern, über dem Kopf des Tiers
     const a = this.encounterAnimal;
     if (!a) return;
-    if (a.state !== 'wild' || !this.animals.includes(a)) return this.hideEncounterBubble();
+    if (a.state !== 'wild' || !this.animals.includes(a) || (a.species === 'walrus' && !this.walrusBubble(a))) return this.hideEncounterBubble();
     const cam = this.cameras.main;
     const z = this.scale.zoom;
     const top = a.sprite.y - a.sprite.displayHeight * a.sprite.originY;
@@ -7049,6 +7096,11 @@ export default class GardenScene extends Phaser.Scene {
     }
   }
 
+  // Blase mit der Wärmflasche über einem Walross: nur, solange es döst (nicht, wenn es wach ist oder Muscheln will)
+  walrusBubble(a) {
+    return a.dozing && !a.hungry && !a.warming;
+  }
+
   hideEncounterBubble() {
     this.encounterAnimal = null;
     this.encounterEl?.classList.remove('show');
@@ -7249,7 +7301,14 @@ export default class GardenScene extends Phaser.Scene {
   // Tierpark: Tiere, deren Gehege in einem anderen Abschnitt liegt, ziehen gleich dorthin (in dessen gespeicherten Stand,
   // noch ohne Platz: pending; beim nächsten Besuch kommen sie ins Gehege, siehe create). Gibt den Text für die Meldung zurück.
   sendToSection(level) {
-    const sent = this.followers.filter((a) => !houseOf(a.species) && parkPenFor(a.species, a.origin, (l) => this.speciesIn(l, a.species))?.level === level);
+    // (der Reihe nach: wer schon verteilt ist, zählt mit – sonst kämen z. B. drei Schmetterlinge alle an denselben Ort)
+    const extra = {};
+    const sent = this.followers.filter((a) => {
+      if (houseOf(a.species)) return false;
+      const to = parkPenFor(a.species, a.origin, (l) => this.speciesIn(l, a.species) + (extra[`${l}:${a.species}`] ?? 0))?.level;
+      if (to) extra[`${to}:${a.species}`] = (extra[`${to}:${a.species}`] ?? 0) + 1;
+      return to === level;
+    });
     if (!sent.length) return '';
     const saved = (game.levels[level] ??= { animals: [], pickups: [] });
     for (const a of sent) {
@@ -7470,8 +7529,29 @@ export default class GardenScene extends Phaser.Scene {
   dartFrogTiles() {
     if (this._dartFrogTiles?.level === LEVEL) return this._dartFrogTiles.tiles; // (die Szene bleibt beim Kartenwechsel dieselbe)
     const car = LEVEL.car;
+    // nicht auf kleinen Inseln (z. B. der mit der Station in der Mitte des Dschungels): nur auf Landstücken mit
+    // mindestens ISLAND_MAX Kacheln (Ufer und Wald, nicht durch Wasser abgetrennt)
+    const ISLAND_MAX = 120;
+    const main = new Set();
+    const seen = new Set();
+    const water = (x, y) => charAt(x, y) === '~';
+    for (let y0 = 0; y0 < MAP_H; y0++) for (let x0 = 0; x0 < MAP_W; x0++) {
+      if (water(x0, y0) || seen.has(`${x0},${y0}`)) continue;
+      const comp = [`${x0},${y0}`];
+      seen.add(comp[0]);
+      for (let i = 0; i < comp.length; i++) {
+        const [x, y] = comp[i].split(',').map(Number);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const k = `${x + dx},${y + dy}`;
+          if (x + dx < 0 || y + dy < 0 || x + dx >= MAP_W || y + dy >= MAP_H || seen.has(k) || water(x + dx, y + dy)) continue;
+          seen.add(k);
+          comp.push(k);
+        }
+      }
+      if (comp.length >= ISLAND_MAX) comp.forEach((k) => main.add(k));
+    }
     const tiles = NEAR_WATER.filter(({ tx, ty }) =>
-      !FRONT.some(([dx, dy]) => isTall(tx + dx, ty + dy)) && (!car || Math.hypot(tx - car.tx, ty - car.ty) > 4));
+      (!main.size || main.has(`${tx},${ty}`)) && !FRONT.some(([dx, dy]) => isTall(tx + dx, ty + dy)) && (!car || Math.hypot(tx - car.tx, ty - car.ty) > 4));
     this._dartFrogTiles = { level: LEVEL, tiles };
     return tiles;
   }
@@ -9054,7 +9134,7 @@ export default class GardenScene extends Phaser.Scene {
       }
       this.expCampAnimals.push(a);
     };
-    wagonCages(r.wagon).forEach((c, i) => c.animals.forEach((d) => put(d, cages[i]))); // je Art ein Käfig
+    wagonCages(r.wagon).forEach((c, i) => c.animals.forEach((d) => put(d, cages[i]))); // je Käfig eine Art
     for (const d of r.stay) put(d, corral);
   }
 
@@ -9204,10 +9284,7 @@ export default class GardenScene extends Phaser.Scene {
           if (a) r.stay.push(...r.wagon.splice(r.wagon.indexOf(a), 1));
         } else if (fitsWagon(r.wagon, r.stay[i])) r.wagon.push(...r.stay.splice(i, 1));
         else {
-          const own = wagonCages(r.wagon).some((c) => c.species === r.stay[i].species);
-          this.expWagonNote = own
-            ? tr('Der Käfig für diese Tiere ist voll – tippe erst eins davon im Wagen an.', 'The cage for these animals is full – tap one of them in the wagon first.')
-            : tr('Alle Käfige sind belegt – mach erst einen Käfig frei (tippe seine Tiere an).', 'All cages are taken – free a cage first (tap its animals).');
+          this.expWagonNote = tr('Alle Käfige sind voll – mach erst Platz (tippe Tiere im Wagen an).', 'All cages are full – make room first (tap animals in the wagon).');
           return;
         }
         this.expWagonNote = null;

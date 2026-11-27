@@ -14,7 +14,7 @@ import { rareSkinFor } from '../animals/Animal.js';
 import { hasCharm } from './luck.js';
 
 export const RUN_LENGTH = 4; // so viele Maps hat ein Run höchstens
-export const WAGON_CAGES = 4; // Käfige im Wagen: je einer pro Tierart
+export const WAGON_CAGES = 4; // Käfige im Wagen: je Käfig nur eine Tierart (eine Art darf auch mehrere Käfige füllen)
 export const CAGE_SIZE = 3; // so viele Tiere einer Art passen in einen Käfig ...
 const BIG_CAGE = { fish: 5, reeffish: 5, koi: 5, piranha: 5, seahorse: 5 }; // ... Fische und andere kleine Wassertiere: Tank mit mehr Plätzen
 // mit dem Bonus "Mehr Tiere" ein Platz mehr in jedem Käfig, mit "Größerer Wagen" ein Käfig mehr
@@ -58,7 +58,8 @@ export function planMap(map, biome, must = null) {
   const all = BIOME_SEASONS[biome] ?? ['normal'];
   const feats = LEVELS[map]?.features ?? [];
   // seltene Arten (rare in speciesRules.js, z. B. der Papageitaucher) dürfen nur bei Glück auf diese Map (außer als must)
-  const unlucky = new Set(Object.keys(rules).filter((sp) => rules[sp].rare && sp !== must && Math.random() >= rules[sp].rare));
+  // eventOnly (Papageitaucher): nur über ihre Event-Karte, nie im normalen Würfeln
+  const unlucky = new Set(Object.keys(rules).filter((sp) => sp !== must && (rules[sp].eventOnly || (rules[sp].rare && Math.random() >= rules[sp].rare))));
   const fits = (sp) => !unlucky.has(sp) && (!rules[sp].needs || feats.includes(rules[sp].needs));
   const allowed = (sp) => rules[sp].seasons ?? all;
   let seasons = [...all];
@@ -287,21 +288,27 @@ export function sortWagon(animals, place) {
   return { wagon, stay, release };
 }
 
-// Tiere im Wagen nach Käfigen: [{ species, animals }] (je Art ein Käfig, in der Reihenfolge, in der die Arten dazukamen)
+// Tiere im Wagen nach Käfigen: [{ species, animals }] (in jedem Käfig nur eine Art, in der Reihenfolge, in der die Arten
+// dazukamen; sind es mehr als cageSize, kommen sie auf mehrere Käfige, z. B. 6 Pinguine auf 2 Käfige)
 export function wagonCages(wagon) {
-  const cages = new Map();
+  const bySpecies = new Map();
   for (const a of wagon) {
-    if (!cages.has(a.species)) cages.set(a.species, []);
-    cages.get(a.species).push(a);
+    if (!bySpecies.has(a.species)) bySpecies.set(a.species, []);
+    bySpecies.get(a.species).push(a);
   }
-  return [...cages].map(([species, animals]) => ({ species, animals }));
+  const cages = [];
+  for (const [species, animals] of bySpecies) {
+    const size = cageSize(species);
+    for (let i = 0; i < animals.length; i += size) cages.push({ species, animals: animals.slice(i, i + size) });
+  }
+  return cages;
 }
 
-// passt dieses Tier noch in den Wagen? (in den Käfig seiner Art, oder es ist noch ein Käfig frei)
+// passt dieses Tier noch in den Wagen? (in einen nicht vollen Käfig seiner Art, oder es ist noch ein Käfig frei)
 export function fitsWagon(wagon, a) {
   const cages = wagonCages(wagon);
-  const own = cages.find((c) => c.species === a.species);
-  return own ? own.animals.length < cageSize(a.species) : cages.length < wagonCageCount();
+  if (cages.some((c) => c.species === a.species && c.animals.length < cageSize(a.species))) return true;
+  return cages.length < wagonCageCount();
 }
 
 // --- Texte ---

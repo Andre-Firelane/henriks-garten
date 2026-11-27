@@ -24,6 +24,9 @@ const dist = (t, player) => {
   const p = tileToWorld(t.tx, t.ty);
   return Math.hypot(p.x - player.x, (p.y - player.y) * 2);
 };
+// so weit (Kachel-Proportionen, y doppelt) bleibt ein landender Papageitaucher von den anderen am Ufer (und denen, die
+// gerade dorthin fliegen) weg: sonst landeten sie dicht an dicht und ein Kescherschwung (Radius 36) fing gleich mehrere
+const LAND_GAP = 90;
 const FLY_TIME = 2.2; // so lange dauert ein Flug
 const FLY_ARC = 60; // so hoch steigt er dabei zusätzlich
 const SEA_DIST = 420; // so weit fliegt er hinaus (Welt-Pixel)
@@ -215,7 +218,7 @@ export default class Puffin extends Animal {
       colony();
       // Besuch am Ufer: an einem der Plätze nahe bei Henrik (sonst landet er oft dort, wo man gerade nicht ist, und man
       // sieht nur das Hin und Her zwischen Meer und Inselfelsen); auf den kleinen Expeditions-Maps öfter
-      const near = [...landings].sort((a, b) => dist(a, player) - dist(b, player)).slice(0, NEAR_LANDINGS);
+      const near = [...landings].filter((t) => this.landingFree(t)).sort((a, b) => dist(a, player) - dist(b, player)).slice(0, NEAR_LANDINGS);
       const chance = this.scene.expPuffins?.() ? EVENT_VISIT + 0.2 : LEVEL.expedition ? VISIT_CHANCE_SMALL : VISIT_CHANCE; // (Event-Karte: noch öfter)
       const spot = Math.random() < chance && Phaser.Utils.Array.GetRandom(near);
       if (spot) {
@@ -234,6 +237,16 @@ export default class Puffin extends Animal {
     return false;
   }
 
+  // Uferplatz (Kachel) frei: kein anderer Papageitaucher steht dort in der Nähe oder fliegt gerade dorthin (LAND_GAP)
+  landingFree(t) {
+    const p = tileToWorld(t.tx, t.ty);
+    return !this.scene.animals.some((o) => {
+      if (o === this || o.species !== 'puffin' || o.state !== 'wild') return false;
+      const at = o.mode === 'landed' ? o : o.mode === 'fly' && o.fly?.then === 'landed' ? o.fly.to : null;
+      return at && Math.hypot(at.x - p.x, (at.y - p.y) * 2) < LAND_GAP;
+    });
+  }
+
   // Papageitaucher-Zug: sitzt oben auf seiner Formation, fliegt oft an deren Fuß (dort fangbar), selten kurz aufs Meer;
   // nach dem Event fliegt er fort
   updateEvent(dt) {
@@ -246,7 +259,12 @@ export default class Puffin extends Animal {
     if (this.mode === 'perch') {
       const r = Math.random();
       if (r < EVENT_VISIT) {
-        const spot = Phaser.Utils.Array.GetRandom(this.formation.spots);
+        // an den Fuß, aber nicht dicht neben einen anderen (ist keiner frei, bleibt er noch oben sitzen)
+        const spot = Phaser.Utils.Array.GetRandom(this.formation.spots.filter((t) => this.landingFree(t)));
+        if (!spot) {
+          this.left = Phaser.Math.FloatBetween(...EVENT_PERCH);
+          return false;
+        }
         const p = tileToWorld(spot.tx, spot.ty);
         this.startFly({ x: p.x + Phaser.Math.Between(-6, 6), y: p.y + Phaser.Math.Between(-3, 3), h: 0 }, 'landed');
       } else if (r < EVENT_VISIT + EVENT_AWAY) this.flySea('away');

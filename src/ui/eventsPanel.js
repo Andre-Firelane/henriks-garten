@@ -92,6 +92,13 @@ const THUMBS = {
     ['emoji', '🍄', 26, 70, 30],
     ['dartfrog', 56, 52, 1, 0.7, 104, 6],
   ],
+  // Laternenabend im Bambuswald des Tierparks: Steinlaterne, Glühwürmchen, munterer Tanuki
+  lanterns: [
+    ['stone_lantern', 40, 64, 0, 1.1, 14, 2, 1],
+    ['emoji', '✨', 26, 72, 40],
+    ['tanuki', 72, 72, 0, 0.85, 92, 0],
+    ['tanuki', 72, 72, 1, 0.55, 64, 10],
+  ],
   // Wetterwechsel: Wettersymbole statt Tieren ([Zeichen, Schriftgröße in px, links, unten])
   fireflies: [
     ['emoji', '🏮', 32, 8, 10],

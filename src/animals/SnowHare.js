@@ -125,6 +125,11 @@ export default class SnowHare extends Animal {
     return this.mode === 'in';
   }
 
+  // im Bau (Fernglas: Bild über dem Loch, LuckWorld.binocularTargets)
+  unseen() {
+    return this.state === 'wild' && this.mode === 'in';
+  }
+
   blocked(x, y) {
     if (this.state === 'wild' && this.mode === 'run') return false; // geradewegs ins Loch
     return super.blocked(x, y);

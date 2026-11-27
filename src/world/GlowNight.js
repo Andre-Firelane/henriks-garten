@@ -4,7 +4,7 @@
 // der laufenden Map wie der Glühwürmchen-Abend (Fireflies.js), nichts wird neu geladen. Pilze sind nur Bild.
 import Phaser from 'phaser';
 import { tileToWorld } from './iso.js';
-import { MAP_W, MAP_H, charAt, inPen, isBlocked } from './map.js';
+import { MAP_W, MAP_H, buildingAt, charAt, inPen, isBlocked } from './map.js';
 import { NIGHT_DEPTH } from '../animals/Wolf.js';
 import { glowTexture } from './Fireflies.js';
 
@@ -12,12 +12,35 @@ const NIGHT = 0x081a24; // tiefes Nachtblau mit etwas Grün
 const NIGHT_ALPHA = 0.72;
 const FADE_MS = 1800;
 const PLANTS = 'nqľfḟḢĎJk'; // neben diesen Pflanzen (Büsche, Farne, Dickicht, Bäume) wachsen die Leuchtpilze
-const SPOTS = 120; // so viele Pilzgruppen (über die ganze Karte verteilt)
+const SPOTS = 220; // so viele Pilzgruppen (über die ganze Karte verteilt, auch im Wald an den Seiten)
 // Kacheln vor einer Stelle (näher am Betrachter): steht dort etwas, verdeckt es die Stelle (auch für die Frösche)
 export const FRONT = [];
 // steht hier etwas Hohes (Baum, Busch, Hütte …)? Wasser zählt nicht, es ist flach
 export const isTall = (tx, ty) => isBlocked(tx, ty) && charAt(tx, ty) !== '~';
 for (let dy = 0; dy <= 4; dy++) for (let dx = 0; dx <= 4; dx++) if (dx || dy) FRONT.push([dx, dy]);
+// für die Pilze: verdeckt nur, was auf dem Bildschirm wirklich darüber steht – ein Ding ein paar Kacheln davor (näher
+// am Betrachter) steht unter der Stelle; sein Bild reicht seitlich side (|dx − dy|) und nach oben up (dx + dy) Kacheln
+// weit (Urwaldbaum 96 × 160, Mangrove 96 × 112, Dickicht 64 × 64, Busch 56 × 44). Vorher galt für alles ein Feld von
+// 4 × 4 Kacheln: im Wald gab es dann kaum Pilze, nur am Ufer
+const PILZ_COVER = { J: [1, 9], Ṁ: [1, 6], Ď: [1, 3] };
+const PILZ_COVER_OTHER = [0, 2];
+const pilzCovered = (tx, ty) => {
+  for (let dy = 0; dy <= 9; dy++) {
+    for (let dx = 0; dx <= 9; dx++) {
+      if (!dx && !dy) continue;
+      const x = tx + dx;
+      const y = ty + dy;
+      if (!isTall(x, y)) continue;
+      if (buildingAt(x, y)) {
+        if (dx <= 4 && dy <= 4) return true; // Hütten wie bisher
+        continue;
+      }
+      const [side, up] = PILZ_COVER[charAt(x, y)] ?? PILZ_COVER_OTHER;
+      if (Math.abs(dx - dy) <= side && dx + dy <= up) return true;
+    }
+  }
+  return false;
+};
 const PILZ_COLORS = [0x5cf2d6, 0x7dff9a, 0x48d8ff, 0xb0ff6a];
 
 export default class GlowNight {
@@ -77,7 +100,7 @@ function plantEdges() {
     for (let tx = 1; tx < MAP_W - 1; tx++) {
       if (isBlocked(tx, ty) || inPen(tx, ty)) continue;
       // nicht hinter Bäumen und Büschen (die Pilze liegen über der Dunkelheit und schienen sonst auf den Kronen)
-      if (FRONT.some(([dx, dy]) => isTall(tx + dx, ty + dy))) continue; // (Urwaldbäume sind hoch: bis 4 Kacheln davor)
+      if (pilzCovered(tx, ty)) continue; // (Urwaldbäume sind hoch: bis 4 Kacheln davor)
       if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => PLANTS.includes(charAt(tx + dx, ty + dy)))) out.push({ tx, ty });
     }
   }

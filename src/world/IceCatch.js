@@ -8,6 +8,7 @@
 //   hin, dropBearBait in GardenScene); der Eisbär kommt (PolarBear.js).
 import Phaser from 'phaser';
 import { tr } from '../i18n.js';
+import { game } from '../state.js';
 import { tileToWorld, worldToTile } from './iso.js';
 import { LEVEL, charAt, isBlocked } from './map.js';
 
@@ -19,6 +20,9 @@ const BAIT_REACH = 80; // ... an der Ablagestelle neben einem Eisloch
 const BAIT_THROW = 75; // ein geworfener Fisch, der so nah an einer Ablagestelle landet, bleibt dort liegen
 const BAIT_HINT_DIST = 300; // so nah: über der nächsten Ablagestelle schwebt die Hinweisblase
 const BAIT_HINT_UP = 22; // so hoch über der Stelle
+const HARE_HINT_DIST = 260; // Hase im Bau, Henrik so nah: über dem nächsten offenen Loch schwebt eine Blase (Loch zuschieben)
+const HARE_HINT_UP = 16; // so hoch über dem Loch
+const HARE_HINT_UNTIL = 4; // ... bis man so viele Löcher zugeschoben hat (dann weiß man es)
 const SPOT_RES = 3; // Bild der Ablagestelle so viel feiner gezeichnet
 const SPOTS_PER_WALRUS = 3; // so viele Blubberstellen hält es um jedes wilde Walross bereit
 const SPOT_NEAR = 8; // ... im Umkreis von so vielen Kacheln
@@ -72,6 +76,7 @@ export default class IceCatch {
     this.updateOwl(dt);
     this.updateSpots(dt);
     this.updateBaitHint();
+    this.updateHareHint();
     const near = this.findNear();
     const key = near ? `${near.kind}:${near.kind === 'feed' ? this.mussels : ''}` : '';
     if (near?.target !== this.near?.target || key !== this.nearKey) {
@@ -351,6 +356,45 @@ export default class IceCatch {
     el.style.top = `${(what.y - BAIT_HINT_UP - cam.worldView.y) * cam.zoom * z}px`;
   }
 
+  // Hinweisblase mit dem zugeschobenen Loch über dem nächsten offenen Loch, das man zuschieben kann, solange ein Hase in
+  // seinem Bau sitzt oder hineinflitzt (sonst kommt man nicht darauf, dass das geht); nur bis man es ein paar Mal getan hat
+  updateHareHint() {
+    const scene = this.scene;
+    const el = scene.hareHintEl;
+    if (!el) return;
+    const p = scene.player;
+    let what = null;
+    if ((game.hareHolesClosed ?? 0) < HARE_HINT_UNTIL && !scene.leaving) {
+      let best = HARE_HINT_DIST;
+      for (const a of scene.animals) {
+        if (a.species !== 'snowhare' || a.state !== 'wild' || (a.mode !== 'in' && a.mode !== 'run')) continue;
+        for (const h of a.openHoles()) {
+          const d = Math.hypot(h.x - p.x, (h.y - p.y) * 2);
+          if (d < best && a.canClose(h)) {
+            best = d;
+            what = h;
+          }
+        }
+      }
+    }
+    if (what !== this.hareHintFor) {
+      if (what && !this.hareHintFor) {
+        el.innerHTML = `<img src="${scene.textures.getBase64('hare_hole_closed')}" alt="">`;
+        el.onclick = (e) => {
+          e.stopPropagation();
+          scene.showCatchTip('snowhare');
+        };
+      }
+      this.hareHintFor = what;
+      el.classList.toggle('show', !!what);
+    }
+    if (!what) return;
+    const cam = scene.cameras.main;
+    const z = scene.scale.zoom;
+    el.style.left = `${(what.x - cam.worldView.x) * cam.zoom * z}px`;
+    el.style.top = `${(what.y - HARE_HINT_UP - cam.worldView.y) * cam.zoom * z}px`;
+  }
+
   // für die Werkzeugleiste: Bild und Text (oder null)
   toolbar() {
     const n = this.near;
@@ -369,6 +413,7 @@ export default class IceCatch {
     if (n.kind === 'hole') {
       if (n.hare.closeHole(n.target)) {
         const scene = this.scene;
+        game.hareHolesClosed = (game.hareHolesClosed ?? 0) + 1;
         if (scene.cache.audio.exists('step_snow')) scene.sound.play('step_snow', { volume: 0.5 });
         if (n.hare.openHoles().length === 1) scene.showToast(tr('Nur noch ein Loch offen – dort muss der Hase heraus!', 'Only one hole left – the hare has to come out there!'));
       }
@@ -409,6 +454,7 @@ export default class IceCatch {
     for (const o of this.bait ?? []) o.img.destroy();
     this.bait = [];
     this.scene.bearHintEl?.classList.remove('show');
+    this.scene.hareHintEl?.classList.remove('show');
     for (const s of this.spots) s.sign.destroy();
     this.spots = [];
   }

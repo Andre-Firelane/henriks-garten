@@ -118,6 +118,8 @@ put(0, 24, 'X')
 put(0, 25, 'X')
 put(12, 20, 'G')  # Glastür der Halle: links oben, wo der Holzsteg an der Wand endet (vom Platz am Eingang her)
 put(12, 21, 'G')
+put(20, 26, 'G')  # zweite Glastür unten, wo der Holzsteg vor der Treppe an der Wand endet (zum Rundweg unten)
+put(21, 26, 'G')
 
 # ---- Gehege rundherum ----
 # Polarwölfe oben links
@@ -163,6 +165,10 @@ fix_axes()
 # ---- Platz am Eingang (Futterautomat, Wegweiser, Schneemobil) ----
 put(7, 22, 'F')
 put(9, 23, 'W')
+# zweiter Futterautomat rechts am Rundweg, gleich unter dem Robben- und Walrossbecken (auch nah bei den Eisbären)
+put(33, 16, 'F')
+# dritter in der Polarhalle am Holzsteg vor dem Pinguinbecken (die Pinguine erreicht man nur durch die Halle)
+put(24, 19, 'F')
 
 
 # verstreute Tannen und Felsen auf freiem Schnee, nicht direkt an Wegen, Toren oder Zäunen

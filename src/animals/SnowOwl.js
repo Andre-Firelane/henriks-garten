@@ -14,10 +14,10 @@ import { tr } from '../i18n.js';
 import { inHall, resetHallFlight, updateHallFlight } from './hallFlight.js';
 
 const LIGHT_DIST = 110; // so nah (Kachel-Proportionen, y doppelt) muss die abgestellte Laterne stehen
-const CALL_EVERY = [9, 16]; // so oft ruft sie (Sekunden)
+const CALL_EVERY = [6, 10]; // so oft ruft sie (Sekunden)
 const HEAR = 650; // so weit hört man sie (Kachel-Proportionen, y doppelt) ...
-const NEAR = 300; // ... und so nah steigt an ihrem Platz ein "Huu ♪" auf (weiter weg zeigt eins neben Henrik die Richtung)
-const CALL_NEAR = [4, 7]; // so oft ruft sie, wenn Henrik nah ist
+const NEAR = 460; // ... und so nah steigt an ihrem Platz ein "Huu ♪" auf (weiter weg zeigt eins neben Henrik die Richtung; war 300, da fand man den Baum schwer)
+const CALL_NEAR = [3, 5]; // so oft ruft sie, wenn Henrik nah ist
 const HINT_R = 46; // so weit neben Henrik erscheint das Richtungs-"Huu ♪"
 const CALL_VOLUME = 0.6;
 const PINE = 'Ṗ'; // in solchen verschneiten Tannen sitzt sie ...
@@ -99,9 +99,9 @@ export default class SnowOwl extends Animal {
     if (scene.cache.audio.exists('animal_snowowl')) scene.sound.play('animal_snowowl', { volume: CALL_VOLUME * Phaser.Math.Clamp(1 - d / HEAR, 0.12, 1), detune: Phaser.Math.Between(-80, 80) });
     const style = { fontFamily: 'Trebuchet MS, Arial', fontSize: '12px', fontStyle: 'bold', color: '#fff8e6', stroke: '#1a2040', strokeThickness: 3, resolution: 4 };
     if (d < NEAR) {
-      // nah: genau an ihrem Platz
-      const t = scene.add.text(this.x, this.y - 30 - PERCH_UP, tr('Huu ♪', 'Hoo ♪'), style).setOrigin(0.5).setDepth(100000).setAlpha(0);
-      scene.tweens.add({ targets: t, alpha: { from: 0, to: 0.9 }, y: t.y - 16, duration: 900, yoyo: true, hold: 600, onComplete: () => t.destroy() });
+      // nah: genau an ihrem Platz, etwas größer und gleich deutlich (schnell eingeblendet, bleibt länger stehen)
+      const t = scene.add.text(this.x, this.y - 30 - PERCH_UP, tr('Huu ♪', 'Hoo ♪'), { ...style, fontSize: '15px' }).setOrigin(0.5).setDepth(100000).setAlpha(0);
+      scene.tweens.add({ targets: t, alpha: { from: 0, to: 1 }, y: t.y - 16, duration: 350, yoyo: true, hold: 1500, onComplete: () => t.destroy() });
     } else {
       // weiter weg: neben Henrik, in ihrer Richtung (leiser, je weiter weg)
       const a = Math.atan2(this.y - player.y, this.x - player.x);

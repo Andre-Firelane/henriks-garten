@@ -660,7 +660,7 @@ const VIDEO_ANIMS = {
   // vorne) und steht; Papageitaucher steht und fliegt (Seitenansicht); unter Wasser (Unterwasser-Scheibe) schwimmen
   // Robbe, Sattelrobbe und Walross in Seitenansicht
   polarbear_walk: [152, 148, 20],
-  polarbear_walk_back: [168, 148, 22],
+  polarbear_walk_back: [168, 148, 26],
   polarbear_idle: [152, 148, 24],
   polarbear_idle_back: [152, 148, 20],
   polarbear_eat: [152, 148, 24],
@@ -683,7 +683,7 @@ const VIDEO_ANIMS = {
   elk2_idle: [128, 128, 32],
   elk2_idle_back: [128, 128, 22],
   meerkat2_walk: [56, 56, 19],
-  meerkat2_walk_back: [56, 56, 21],
+  meerkat2_walk_back: [56, 64, 21, 48], // höherer Rahmen: von hinten liegt der Schwanz unter den Füßen (Fußlinie 48, Schwanzspitze bis 62)
   meerkat2_idle: [56, 56, 12],
   meerkat2_idle_back: [56, 56, 43],
   vulture2_idle: [88, 108, 49],
@@ -1058,6 +1058,11 @@ export default class BootScene extends Phaser.Scene {
     load.spritesheet('antelope2', 'assets/antelope2.png', ANTELOPE_FRAME); // Oryx (seltener Skin)
     load.spritesheet('antelope2_eat', 'assets/antelope2_eat.png', ANTELOPE_FRAME);
     load.spritesheet('zebra', 'assets/zebra.png', ZEBRA_FRAME);
+    // Schläfchen im Gehege (tools/sleep-sheets.py, siehe penLife.js): liegend, je Ansicht ein Bild, so hoch wie das Grundbild.
+    // Jedes Bild kommt mit dem Paket seiner Art (Name beginnt mit dem Tier)
+    for (const [k, w, h] of [['deer', 72, 96], ['stag', 80, 112], ['sheep', 80, 88], ['sheep2', 80, 88], ['antelope', 72, 100], ['zebra', 80, 104], ['okapi', 80, 104], ['penguin', 72, 80], ['reindeer', 92, 128], ['tanuki', 72, 72], ['wolf', 80, 80]]) {
+      load.spritesheet(`${k}_sleep`, `assets/${k}_sleep.png`, { frameWidth: w, frameHeight: h });
+    }
     load.spritesheet('zebra_drink', 'assets/zebra_drink.png', ZEBRA_FRAME); // trinkt mit gesenktem Kopf
     // Schoko-Zebra (seltener Skin, umgefärbt mit tools/recolor.js)
     load.spritesheet('zebra2', 'assets/zebra2.png', ZEBRA_FRAME);
@@ -1172,7 +1177,7 @@ export default class BootScene extends Phaser.Scene {
     // 5 Bilder, schnell abgespielt flackert er
     // Gnu: rennt mit der Herde fast doppelt so schnell wie sein Gehtempo (die Animation wird dafür schneller), daher langsamer angesetzt
     const SAVANNA_RATE = { giraffe_walk: 7, giraffe_walk_back: 7, giraffe2_walk: 7, giraffe2_walk_back: 7, vulture_flap: 7, vulture_flap_back: 7, gnu_walk: 7, gnu_walk_back: 7 };
-    for (const [key, [, , , feetY]] of Object.entries(SAVANNA_ANIMS)) if (feetY && this.textures.exists(key)) this.textures.get(key).customData.feetY = feetY;
+    for (const [key, [, , , feetY]] of [...Object.entries(SAVANNA_ANIMS), ...Object.entries(VIDEO_ANIMS)]) if (feetY && this.textures.exists(key)) this.textures.get(key).customData.feetY = feetY;
     for (const key of Object.keys(SAVANNA_ANIMS)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: SAVANNA_RATE[key] ?? (key.includes('_walk') || key.includes('_flap') ? 12 : 10), repeat: -1 });
     // schneller als im Video: der Wasserbüffel läuft sonst zu gemächlich für das Reittier-Tempo
     // Eiswelt: Henrik macht schnellere Schritte, sonst gleitet er vor dem hellen Schnee sichtbar über den Boden
