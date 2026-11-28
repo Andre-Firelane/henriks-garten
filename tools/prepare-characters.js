@@ -1153,12 +1153,12 @@ const ANIMATIONS = [
   { src: 'Animation/Gorilla2 idle hinten.mp4', out: 'gorilla2_idle_back.png', every: 2, figureH: 81, frameW: 104, frameH: 96, feetY: 92 },
   // trommelt: Bild 0–14 anfangen, 15–27 durchgehend trommeln (Loop), 66–81 aufhören (Bild 65 gleicht Bild 15); siehe GORILLA2_DRUM in BootScene
   { src: 'Animation/Gorilla2 trommelt.mp4', out: 'gorilla2_drum.png', skip: [...Array(38).keys()].map((i) => i + 28).concat([...Array(13).keys()].map((i) => i + 82)), figureH: 82, frameW: 104, frameH: 96, feetY: 92 },
-  { src: 'Animation/Rentier2 läuft vorne.mp4', out: 'reindeer2_walk.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [13, 29], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
-  { src: 'Animation/Rentier2 läuft hinten.mp4', out: 'reindeer2_walk_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [65, 91], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
-  { src: 'Animation/Rentier2 rennt vorne.mp4', out: 'reindeer2_run.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [46, 59], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
-  { src: 'Animation/Rentier2 rennt hinten.mp4', out: 'reindeer2_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, range: [67, 78], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
-  { src: 'Animation/Rentier2 idle vorne.mp4', out: 'reindeer2_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
-  { src: 'Animation/Rentier2 idle hinten.mp4', out: 'reindeer2_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.02, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 läuft vorne.mp4', out: 'reindeer2_walk.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.004, despill: true, range: [13, 29], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 läuft hinten.mp4', out: 'reindeer2_walk_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.004, despill: true, range: [65, 91], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 rennt vorne.mp4', out: 'reindeer2_run.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.004, despill: true, range: [46, 59], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 rennt hinten.mp4', out: 'reindeer2_run_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.004, despill: true, range: [67, 78], scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 idle vorne.mp4', out: 'reindeer2_idle.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.004, despill: true, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
+  { src: 'Animation/Rentier2 idle hinten.mp4', out: 'reindeer2_idle_back.png', dropShadowGreen: 18, dropGreyHalo: true, onlyFigure: true, keepParts: 0.004, despill: true, every: 2, scale: 0.4, frameW: 96, frameH: 136, feetY: 131 },
   // Zwergflusspferd, Pinselohrschwein, Fischertukan: Rahmen und Figurhöhe wie beim normalen Tier (das Zwergflusspferd
   // verkleinert das Spiel selbst, PYGMY_SCALE in Hippo.js). Überall der kürzeste nahtlose Loop (tools/find-loop.py),
   // auch beim Stehen: alle Bilder, aber langsam abgespielt (VIDEO_RATE in BootScene). Nilpferd läuft: Videos ohne Loop,
@@ -1220,6 +1220,7 @@ const ANIMATIONS = [
 // darkShadow: dunkelgrüne Schattenreste am Rand der Figur weg (siehe readVideo);
 // dropGreyHalo: halb durchsichtiges Dunkelgrau ohne Rotstich weg (Schatten, Rand eines Lichtscheins; Schneeleopard von hinten);
 // onlyFigure: Grünstichiges weg und je Bild nur das größte zusammenhängende Stück behalten (z. B. ohne die Atemwolke);
+// despill: grünen Schimmer auf hellem Fell neutralisieren, statt die Pixel wegzuwerfen (weißes Rentier);
 // keepParts: dazu auch Stücke ab diesem Anteil am größten (Geweihhälfte am dünnen Steg, Rentier);
 // dropSteel: neutral graue, helle Pixel weg (eine Messerklinge; Kleidung und Fell sind wärmer getönt), den Umriss danach
 // entfernt onlyFigure
@@ -1286,7 +1287,7 @@ function keepLargestPart(data, W, ox, oy, w, h, keepParts = 0) {
   for (let p = 0; p < w * h; p++) if (!keep[p]) data[((oy + Math.floor(p / w)) * W + ox + (p % w)) * 4 + 3] = 0;
 }
 
-function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false, dropGreyHalo = false, darkShadow = false, keepParts = 0 }) {
+function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror = [], dropGreen = false, saturate = 1, brightness = 1, evenBrightness = false, steady = false, degreen = false, stabilize = false, clipBelow, clipAbove, keyPerFrame = false, dropShadowGreen, whiteBreath = false, onlyFigure = false, dropSteel = false, dropGreyHalo = false, darkShadow = false, keepParts = 0, despill = false }) {
   const video = /\.(mp4|mov|webm)$/i.test(src);
   const img = video ? readVideo(src, keyPerFrame, darkShadow) : PNG.sync.read(fs.readFileSync(path.resolve(src)));
   if (video) [cols, rows] = [img.frames, 1];
@@ -1315,6 +1316,14 @@ function loadGrid({ src, cols, rows, count, range, every = 1, skip = [], mirror 
   }
   if (clipBelow !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (Math.floor(k / 4 / W) % ch > clipBelow) data[k + 3] = 0;
+  }
+  if (despill) {
+    // helles Fell mit grünem Schimmer vom Greenscreen (weißes Rentier: Beine, Geweihspitzen) zurück auf neutral, bevor
+    // dropShadowGreen und onlyFigure grünstichige Pixel wegwerfen; dunkelgrüne Schattenreste (wenig Rot/Blau) bleiben grün
+    for (let k = 0; k < data.length; k += 4) {
+      const rb = Math.max(data[k], data[k + 2]);
+      if (data[k + 3] && rb >= 110 && data[k + 1] > rb) data[k + 1] = rb;
+    }
   }
   if (dropShadowGreen !== undefined) {
     for (let k = 0; k < data.length; k += 4) if (data[k + 1] - Math.max(data[k], data[k + 2]) > dropShadowGreen) data[k + 3] = 0;

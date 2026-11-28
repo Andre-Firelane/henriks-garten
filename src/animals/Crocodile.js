@@ -51,6 +51,10 @@ export default class Crocodile extends Fish {
     const { swim: SWIM, land: LAND } = this.penTimes();
     this.penTime = (this.penTime ?? Phaser.Math.FloatBetween(3, SWIM[1])) - dt;
     if (!this.onLand) {
+      // (steht es gar nicht im Teich, z. B. alter Platz oder ein Gehege ohne Teich in der Nähe: an Land bleiben, sonst
+      // sähe man es mit dem Schwimm-Bild mitten auf der Wiese)
+      const here = worldToTile(this.x, this.y);
+      if (!isFishpond(here.tx, here.ty)) return this.stayOnLand(LAND);
       if (this.penTime > 0) return super.updateFree(dt, player); // schwimmt im Teich
       // ans Ufer klettern
       const shore = this.nearestShore();
@@ -79,10 +83,9 @@ export default class Crocodile extends Fish {
     const d = Math.hypot(dx, dy);
     if (!b || d < 3 || this.penTime < -BACK_TIMEOUT) {
       const water = b ? b.water : this.nearestShore()?.water;
-      if (water) {
-        this.x = water.x;
-        this.y = water.y;
-      }
+      if (!water) return this.stayOnLand(LAND); // kein Teich erreichbar: weiter an Land
+      this.x = water.x;
+      this.y = water.y;
       this.onLand = false;
       this.penTime = Phaser.Math.FloatBetween(...SWIM);
       this.useWaterLook();
@@ -92,6 +95,16 @@ export default class Crocodile extends Fish {
     }
     const step = Math.min(d, this.kind.speed * dt);
     return this.move((dx / d) * step, (dy / d) * step);
+  }
+
+  // an Land (weiter)laufen, ohne Sprung ins Wasser
+  stayOnLand(LAND) {
+    this.onLand = true;
+    this.backTo = null;
+    this.penTime = Phaser.Math.FloatBetween(...LAND);
+    this.useBagLook();
+    this.pickWander();
+    return false;
   }
 
   // an Land gelten die normalen Regeln (im Gehege bleiben, nicht ins Wasser laufen), im Wasser die des Fischs

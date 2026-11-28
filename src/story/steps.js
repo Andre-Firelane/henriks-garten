@@ -194,23 +194,6 @@ export const STEPS = [
     already: [tr('Du hast ja schon eine Bude – lecker!', 'You’ve already got a stand – yummy!')],
     outro: [
       tr('Super! Die Besucher stehen schon an – jeder Verkauf bringt dir Herzen.', 'Great! The visitors are already queueing – every sale brings you hearts.'),
-      tr('Komm mit, gleich hinter dem Haupthaus ist unser Stall!', 'Come along, our stable is right behind the main building!'),
-    ],
-    reward: 20,
-  },
-  {
-    // Stall: Reittiere leihen oder kaufen, E-Roller freischalten (siehe src/world/mounts.js)
-    id: 'stable',
-    at: { level: 'park', spot: 'stable' },
-    goal: tr('Schau in den Stall hinter dem Haupthaus', 'Look into the stable behind the main building'),
-    done: (game) => !!game.story.flags.stable,
-    intro: [
-      tr('Das ist unser Stall. Hier gibt es Reittiere – damit bist du in den Welten viel schneller!', 'This is our stable. It has mounts – they make you much faster in the worlds!'),
-      tr('Du kannst eins für 10 Minuten leihen oder für ein Gebiet für immer kaufen. Auch den E-Roller für den Park gibt es hier.', 'You can rent one for 10 minutes or buy one forever for an area. The e-scooter for the zoo is here too.'),
-    ],
-    already: [tr('Den Stall kennst du ja schon!', 'You already know the stable!')],
-    outro: [
-      tr('Spar deine Herzen – ein eigenes Reittier lohnt sich!', 'Save your hearts – your own mount is worth it!'),
       tr('Komm mit zum Streichelzoo, ich möchte dir noch etwas Schönes zeigen!', 'Come along to the petting zoo, I’d like to show you something lovely!'),
     ],
     reward: 20,
@@ -232,7 +215,24 @@ export const STEPS = [
       tr('Schau, wie es sich freut! Je öfter du es besuchst, desto enger wird eure Freundschaft.', 'Look how happy it is! The more often you visit, the closer you become.'),
       tr('Der Balken über dem Namen zeigt, wie weit es bis zur nächsten Stufe ist.', 'The bar above the name shows how far it is to the next level.'),
       tr('Im Futterhaus gibt es auch Futter für deine Freunde. Was frisst deiner am liebsten?', 'The food house also has food for your friends. What does yours like best?'),
-      tr('Und jetzt geht die Reise los: Die Savanne ist offen!', 'And now the journey begins: the savanna is open!'),
+      tr('Komm mit, gleich hinter dem Haupthaus ist unser Stall!', 'Come along, our stable is right behind the main building!'),
+    ],
+    reward: 20,
+  },
+  {
+    // Stall: Reittiere leihen oder kaufen, E-Roller freischalten (siehe src/world/mounts.js)
+    id: 'stable',
+    at: { level: 'park', spot: 'stable' },
+    goal: tr('Schau in den Stall hinter dem Haupthaus', 'Look into the stable behind the main building'),
+    done: (game) => !!game.story.flags.stable,
+    intro: [
+      tr('Das ist unser Stall. Hier gibt es Reittiere – damit bist du in den Welten viel schneller!', 'This is our stable. It has mounts – they make you much faster in the worlds!'),
+      tr('Du kannst eins für 10 Minuten leihen oder für ein Gebiet für immer kaufen. Auch den E-Roller für den Park gibt es hier.', 'You can rent one for 10 minutes or buy one forever for an area. The e-scooter for the zoo is here too.'),
+    ],
+    already: [tr('Den Stall kennst du ja schon!', 'You already know the stable!')],
+    outro: [
+      tr('Spar deine Herzen – ein eigenes Reittier lohnt sich!', 'Save your hearts – your own mount is worth it!'),
+      tr('Und jetzt geht die Reise los: Die Savanne ist offen! Dort hilft dir ein Reittier.', 'And now the journey begins: the savanna is open! A mount helps you there.'),
       tr('Fahr mit dem Auto hin – ich warte dort an der Hütte auf dich.', 'Drive there by car – I’ll wait for you at the hut.'),
     ],
     reward: 20,
@@ -241,6 +241,8 @@ export const STEPS = [
   {
     id: 'savanna',
     at: { level: 'savanna', spot: 'hut' },
+    // (alte Spielstände: dort kam der Stall vor dem Tierfreund, die Savanne öffnet sonst erst der Stall)
+    begin: (game) => game.story.unlocked.includes('savanna') || game.story.unlocked.push('savanna'),
     goal: tr('Fang 3 verschiedene Tierarten in der Savanne', 'Catch 3 different kinds of animals in the savanna'),
     progress: (game) => count(kinds(game, 'savanna'), SAVANNA_KINDS),
     done: (game) => kinds(game, 'savanna') >= SAVANNA_KINDS,

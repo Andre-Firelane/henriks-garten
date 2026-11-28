@@ -25,6 +25,7 @@ import { isEventsOpen } from '../ui/eventsPanel.js';
 import { boothTiles, builtOn, pickUpBooth, placeBooth, shopsIn, slotsIn, storedBooths } from './shops.js';
 import { isFriend } from './friends.js';
 import { isTouch } from '../ui/touch.js';
+import { activeId as storyActiveId } from '../story/story.js';
 
 const OK = 0x5fd05a;
 const NO = 0xe0503c;
@@ -636,7 +637,10 @@ export default class DecorMode {
       // Bude: an den neuen Platz, dann den Abschnitt neu aufbauen (gleich kauft dort jemand ein)
       const b = this.block(tx, ty, id);
       placeBooth(def.booth, LEVEL_ID, b.tx, b.ty, this.flip);
-      this.scene.rebuildForDecor({ sel: null, pick: false }, def.booth); // (danach nichts in der Hand, auch nicht die Hand)
+      // (danach nichts in der Hand, auch nicht die Hand). Mavis Buden-Aufgabe: die Bauen-Leiste bleibt nach dem Neuaufbau
+      // zu, dann ist die Aufgabe gleich erledigt und Mavi wieder ansprechbar (statt erst „Fertig“ suchen zu müssen)
+      const tut = storyActiveId() === 'stands' && game.story.heard;
+      this.scene.rebuildForDecor(tut ? null : { sel: null, pick: false }, def.booth);
       return;
     }
     giveDecor(id, -1);

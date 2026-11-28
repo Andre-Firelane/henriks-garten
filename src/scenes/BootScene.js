@@ -1187,7 +1187,7 @@ export default class BootScene extends Phaser.Scene {
       // seltene Varianten: ein Schrittzyklus dauert so lange wie beim normalen Tier (ihre Loops sind anders lang). Das
       // weiße Rentier galoppiert im Video viel gemächlicher (14 statt 10 Bilder je Sprung), daher deutlich schneller
       elk2_walk: 14, elk2_walk_back: 18, meerkat2_walk: 23, meerkat2_walk_back: 21, hyena2_walk: 26, hyena2_walk_back: 23, gorilla2_walk: 20, gorilla2_walk_back: 18,
-      reindeer2_walk: 18, reindeer2_walk_back: 20, reindeer2_run: 25, reindeer2_run_back: 17,
+      reindeer2_walk: 18, reindeer2_walk_back: 20, reindeer2_run: 16, reindeer2_run_back: 13, // Rennen ruhiger (war 25 bzw. 17, wirkte hektisch)
       hippo2_walk: 21, hippo2_walk_back: 26, warthog2_walk_back: 15,
       // Stehen als kurzer Loop mit allen Videobildern: deutlich langsamer als im Video, sonst wirkt es hektisch
       dartfrog_walk: 36, dartfrog_walk_back: 36, dartfrog_idle: 18, dartfrog_idle_back: 18, // Pfeilgiftfrosch: flinker als im Video

@@ -70,6 +70,13 @@ export function sideOverrides(base, side) {
     side: true,
     exits: side.canoe ? riverExits(base) : (base.exits ?? []).map((e) => ({ ...e, to: '@back', label: backLabel(base.expedition) })),
   };
+  // zu Fuß hereingekommen: auch gleich hinter einem wieder zurück (Ausgang am linken Rand neben dem Start, ein Stück Weg
+  // dorthin), nicht nur am Ausgang auf der anderen Seite. Nicht im Dschungel: dort liegt links vom Steg der Fluss
+  if (!side.canoe && !base.inlet && base.start.tx <= 3) {
+    const { ty } = base.start;
+    out.rows = base.rows.map((r, y) => (y === ty ? '#'.repeat(base.start.tx) + r.slice(base.start.tx) : r));
+    out.exits = [...out.exits, { tx: 0, ty, to: '@back', label: backLabel(base.expedition) }];
+  }
   for (const [key, sp] of Object.entries(SPECIAL_CONFIGS)) if (base[key] && !(fits(sp) && inSeason(sp))) out[key] = undefined;
   return out;
 }

@@ -653,7 +653,7 @@ const FEED_DIST = 60; // so nah muss man an einer Giraffe stehen, um sie zu füt
 const CARRIED = ['stick', 'leaves', 'salt', 'brush'];
 const LEAF_BUSHES = 3; // so viele Futtersträucher stehen dort, wo Tapire oder Okapis leben
 const LEAF_BUSH_GAP = 7; // so weit (Kacheln) stehen sie mindestens auseinander
-const FEED_CHANCE = 1 / 3; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
+const FEED_CHANCE = 0.5; // so wahrscheinlich läuft sie einem nach dem Füttern hinterher
 const KOI_FEED_DIST = 50; // so nah muss Wasser vor dem Spieler sein, um Fischfutter zu streuen
 const KOI_CALLED = 3; // höchstens so viele wilde Koi kommen zum Futter (die nächsten)
 const KOI_CALL_DIST = 170; // nur Koi in diesem Umkreis (Welt-Pixel, etwa 5 Kacheln) riechen das Futter
@@ -4954,7 +4954,7 @@ export default class GardenScene extends Phaser.Scene {
     this.cameras.main.fadeOut(200);
     this.cameras.main.once('camerafadeoutcomplete', () => {
       showLoading(tr('Die Bude wird umgestellt …', 'Moving the stand …'));
-      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, decorResume: { ...resume, face }, boothMoved: booth }));
+      afterPaint(() => this.scene.restart({ level: LEVEL_ID, arrive, decorResume: resume && { ...resume, face }, boothMoved: booth }));
     });
   }
 

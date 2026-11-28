@@ -1328,7 +1328,7 @@ LEVELS.park = parkSection('park', {
     ...[32, 33, 34, 35, 36, 37].map((ty) => [26, ty, 'VVVVVVV']),
     ...[28, 29, 30].map((ty) => [34, ty, 'VV']), // Stall (stableBox) rechts hinter dem Haupthaus: gesperrt
     [51, 30, 'F'], // Futterautomat im Streichelzoo neben dem Katzenhaus
-    [32, 44, 'F'], // ... und am Weg unten rechts beim Haupthaus (Richtung Voliere)
+    [39, 49, 'F'], // ... und unten am Weg zwischen Flamingos und Reiher-Voliere (nicht neben dem Auto)
   ],
   name: tr('Tierpark', 'Zoo'),
   part: { name: tr('Zentrum', 'Center'), icon: 'hero' }, // Feld im Tierpark-Schild der Weltkarte
@@ -1365,7 +1365,7 @@ LEVELS.park = parkSection('park', {
   // wheelSlot: { id: 'wheel', tx: 29, ty: 25, clear: { tx0: 25, tx1: 34, ty0: 24, ty1: 29 } },
   houseDoor: { tx: 29.5, ty: 38 }, // Tür des Haupthauses (Mavis Pfeil, wenn es drinnen weitergeht)
   // Futterautomaten: von jedem Gehege höchstens etwa 20 Kacheln Fußweg (Andre, 27.11.2026)
-  feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 15, ty: 40, world: 'forest' }, { tx: 51, ty: 30, world: 'meadow' }, { tx: 32, ty: 44, world: 'meadow' }],
+  feeders: [{ tx: 40, ty: 43, world: 'meadow' }, { tx: 15, ty: 40, world: 'forest' }, { tx: 51, ty: 30, world: 'meadow' }, { tx: 39, ty: 49, world: 'meadow' }],
   // Themenbereiche: am großen Wegweiser in der Mitte zeigen die Bretter dorthin
   signScale: 1.25,
   sections: [
@@ -1445,13 +1445,14 @@ LEVELS.park3 = parkSection('park3', {
     [58, 73, 'F'], // ... und am Weg vor der Tropenhalle
     [32, 83, 'F'], // ... am Weg unten bei Affeninsel, Tanukis, Yaks und Schneeleoparden
     [68, 83, 'F'], // ... und hinten in der Tropenhalle (zwischen den Terrarien, Richtung Jaguar)
+    [76, 71, 'F'], // ... und vorne in der Tropenhalle am Steg (bei Tapiren, Teich und Obsttisch)
   ],
   name: tr('Tierpark: Bambuswald & Dschungel', 'Zoo: Bamboo Forest & Jungle'),
   part: { name: tr('Bambuswald & Dschungel', 'Bamboo Forest & Jungle'), icon: 'panda' },
   // mit dem Auto (Schnellreise) und beim Laden kommt man am Teehaus an, auf dem Weg neben der Terrasse
   car: { tx: 37.16, ty: 78.32, texture: 'car_zoo', frame: 0, scale: 1.26, arrive: { tx: 37, ty: 65 } }, // das Auto steht im Garten am Weg zum Teich
   start: { tx: 37, ty: 65 },
-  feeders: [{ tx: 41, ty: 67, world: 'asia' }, { tx: 58, ty: 73, world: 'jungle' }, { tx: 32, ty: 83, world: 'asia' }, { tx: 68, ty: 83, world: 'jungle' }],
+  feeders: [{ tx: 41, ty: 67, world: 'asia' }, { tx: 58, ty: 73, world: 'jungle' }, { tx: 32, ty: 83, world: 'asia' }, { tx: 68, ty: 83, world: 'jungle' }, { tx: 76, ty: 71, world: 'jungle' }],
   scooterSpot: { tx: 34, ty: 77 }, // E-Roller: im Gras neben dem Auto
   legacySlots: [{ id: 'asia1', tx: 37, ty: 74 }, { id: 'asia2', tx: 40, ty: 77 }], // (frühere Bauplätze: im Garten am Weg)
   grounds: [

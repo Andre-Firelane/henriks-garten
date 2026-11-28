@@ -1239,7 +1239,7 @@
         document.documentElement.lang = l;
         if (l === "en") document.querySelector("#loading .loading-text").textContent = "Loading the game …";
         // Hintergrund für Lade- und Startbildschirm: ein Bildschirmfoto aus einer zufälligen Welt
-        var bgs = ["park", "meadow", "forest", "savanna", "asia", "jungle", "reef", "aquarium"];
+        var bgs = ["park", "park2", "park3", "park4", "meadow", "forest", "savanna", "asia", "jungle", "ice", "reef", "aquarium"];
         document.documentElement.style.setProperty("--bg", "url(assets/bg/bg_" + bgs[Math.floor(Math.random() * bgs.length)] + ".jpg)");
       })();
     </script>
