@@ -10,13 +10,14 @@ import { game } from '../state.js';
 import { tr } from '../i18n.js';
 import { LEVELS, PARK_LEVELS } from './levels.js';
 
+// hearts: je Verkauf (28.11.2026 halbiert: der Eisstand allein brachte mehr als doppelt so viel wie das beste Tier)
 // stand/seller/items: Bilder (Bude, Verkäufer als 72×116-Bildstreifen, Snack in der Hand); icon für Statistik und Tafel
 export const SHOPS = [
-  { id: 'icecream', name: tr('Eisstand', 'Ice Cream Stand'), cost: 40, hearts: 2, icon: '🍦', stand: 'icecream_stand', seller: 'icecream_seller', items: ['icecream', 'icecream2', 'icecream3'] },
-  { id: 'popcorn', name: tr('Popcorn', 'Popcorn'), cost: 80, hearts: 2, icon: '🍿', stand: 'popcorn_stand', seller: 'popcorn_seller', items: ['popcorn'] },
-  { id: 'lemonade', name: tr('Limonade', 'Lemonade'), cost: 100, hearts: 2, icon: '🍋', stand: 'lemonade_stand', seller: 'lemonade_seller', items: ['lemonade'] },
-  { id: 'cottoncandy', name: tr('Zuckerwatte', 'Cotton Candy'), cost: 120, hearts: 3, icon: '🍭', stand: 'cottoncandy_stand', seller: 'cottoncandy_seller', items: ['cottoncandy'], blueprint: true },
-  { id: 'pretzel', name: tr('Brezeln', 'Pretzels'), cost: 150, hearts: 3, icon: '🥨', stand: 'pretzel_stand', seller: 'pretzel_seller', items: ['pretzel'], blueprint: true },
+  { id: 'icecream', name: tr('Eisstand', 'Ice Cream Stand'), cost: 40, hearts: 1, icon: '🍦', stand: 'icecream_stand', seller: 'icecream_seller', items: ['icecream', 'icecream2', 'icecream3'] },
+  { id: 'popcorn', name: tr('Popcorn', 'Popcorn'), cost: 80, hearts: 1, icon: '🍿', stand: 'popcorn_stand', seller: 'popcorn_seller', items: ['popcorn'] },
+  { id: 'lemonade', name: tr('Limonade', 'Lemonade'), cost: 100, hearts: 1, icon: '🍋', stand: 'lemonade_stand', seller: 'lemonade_seller', items: ['lemonade'] },
+  { id: 'cottoncandy', name: tr('Zuckerwatte', 'Cotton Candy'), cost: 120, hearts: 2, icon: '🍭', stand: 'cottoncandy_stand', seller: 'cottoncandy_seller', items: ['cottoncandy'], blueprint: true },
+  { id: 'pretzel', name: tr('Brezeln', 'Pretzels'), cost: 150, hearts: 2, icon: '🥨', stand: 'pretzel_stand', seller: 'pretzel_seller', items: ['pretzel'], blueprint: true },
   // Marktstand (Andres Bild, tools/deco-stand.py): 2×2 Kacheln, ohne Verkäufer-Figur und ohne Snack in der Hand
   { id: 'souvenir', name: tr('Blumen & Andenken', 'Flowers & Souvenirs'), cost: 120, hearts: 1, icon: '🌸', stand: 'deco_stand', seller: null, items: [], size: 2, originY: 0.778, scale: 1 },
 ];
@@ -42,7 +43,7 @@ export const sourceDef = (id) => shopDef(id) ?? (id === TEA.id ? TEA : id === WH
 // so viele Sachen kauft ein Besucher höchstens, und so wahrscheinlich geht er (beim Ankommen bzw. nach einem Gehege)
 // zu einer Bude, deren Sorte er noch nicht hatte
 export const MAX_BUYS = 2;
-export const SHOP_CHANCE = 0.4;
+export const SHOP_CHANCE = 0.3; // (war 0,4: zusammen mit 2 Herzen je Verkauf brachten die Buden mehr als jedes Tier)
 // solange man woanders ist: so oft kauft jeder Besucher pro Minute an jeder Bude seines Abschnitts
 export const AWAY_BUYS_PER_VISITOR_MINUTE = 0.25;
 

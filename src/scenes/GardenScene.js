@@ -1794,7 +1794,7 @@ export default class GardenScene extends Phaser.Scene {
       if (data.built) {
         const def = sourceDef(builtOn(data.built));
         if (def === WHEEL) this.time.delayedCall(350, () => this.showToast(tr(`${def.icon} Das Riesenrad dreht sich! Jede Fahrt bringt ${def.hearts} Herzen, und es kommen mehr Besucher.`, `${def.icon} The Ferris wheel is turning! Every ride brings ${def.hearts} hearts, and more visitors come.`)));
-        else if (def) this.time.delayedCall(350, () => this.showToast(tr(`${def.icon} ${def.name} ist fertig! Jeder Verkauf bringt ${def.hearts} Herzen.`, `${def.icon} ${def.name} is open! Every sale brings ${def.hearts} hearts.`)));
+        else if (def) this.time.delayedCall(350, () => this.showToast(tr(`${def.icon} ${def.name} ist fertig! Jeder Verkauf bringt ${def.hearts === 1 ? 'ein Herz' : `${def.hearts} Herzen`}.`, `${def.icon} ${def.name} is open! Every sale brings ${def.hearts === 1 ? 'one heart' : `${def.hearts} hearts`}.`)));
         this.time.delayedCall(1200, () => this.visitors?.sendToShop(data.built)); // gleich kauft jemand ein
       }
       if (data.seasonNote) this.showToast(data.seasonNote); // Wetterwechsel in der Savanne
@@ -5002,7 +5002,7 @@ export default class GardenScene extends Phaser.Scene {
       name: def.name,
       image: def.stand,
       cost: price(def.cost),
-      text: tr(`Jeder Verkauf bringt ${def.hearts} Herzen.`, `Every sale brings ${def.hearts} hearts.`),
+      text: tr(`Jeder Verkauf bringt ${def.hearts === 1 ? 'ein Herz' : `${def.hearts} Herzen`}.`, `Every sale brings ${def.hearts === 1 ? 'one heart' : `${def.hearts} hearts`}.`),
       blocked: storedBooths(LEVEL_ID).some((b) => b.kind === def.id)
         ? tr('liegt in der Bauen-Leiste', 'in your build bar')
         : hasShop(LEVEL_ID, def.id)
@@ -5543,7 +5543,7 @@ export default class GardenScene extends Phaser.Scene {
         name: def.name,
         icon: def.icon,
         cost: price(def.cost),
-        text: tr(`Jeder Verkauf bringt ${def.hearts} Herzen.`, `Every sale brings ${def.hearts} hearts.`),
+        text: tr(`Jeder Verkauf bringt ${def.hearts === 1 ? 'ein Herz' : `${def.hearts} Herzen`}.`, `Every sale brings ${def.hearts === 1 ? 'one heart' : `${def.hearts} hearts`}.`),
         blocked: here
           ? tr('steht hier schon', 'already in this area')
           : !where.length

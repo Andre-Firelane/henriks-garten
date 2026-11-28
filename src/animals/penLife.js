@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { blockedAt } from '../world/collision.js';
 import { charAt, objectAt } from '../world/map.js';
-import { tileToWorld } from '../world/iso.js';
+import { tileToWorld, worldToTile } from '../world/iso.js';
 
 // Leben im Gehege (docs/plan-gehege-leben.md, Schritt 1): Lieblingsplätze, Herden, Ruhephasen und kleine Momente
 // (hüpfen, rennen, schütteln, trinken). Nur Tweens und vorhandene Bilder, kein Bonus, nur zum Anschauen.
@@ -19,6 +19,8 @@ const SHAKE = new Set(['sheep', 'goat', 'pig', 'cow', 'deer', 'antelope', 'zebra
 const BUSY = ['digging', 'sit', 'grazing', 'sleeping', 'jumping', 'tree', 'eating', 'drinking', 'dozing', 'perched', 'flying', 'penFlight', 'penClimb', 'penDrink', 'penPile', 'mudSpot', 'lick', 'noseBall', 'fly', 'trip', 'jump', 'plop', 'running', 'scared', 'toPerch', 'bed'];
 
 const HERD_R = 70; // so weit (Kachelmaß, y doppelt) darf sich ein Herdentier vom Leittier entfernen
+const HERD_SPACE = 34; // so viel Abstand (Kachelmaß, y doppelt) halten Herdentiere im Stehen mindestens zueinander
+const HERD_SLOT = [36, 62]; // Abstand des eigenen Platzes ums Leittier (jedes Tier hat seine Richtung, siehe herdSlot)
 const BABY_R = 34; // Tierbaby bleibt dicht bei einem Erwachsenen
 const SPOT_CHANCE = 0.5; // so oft geht ein Tier zu einem Lieblingsplatz statt irgendwohin
 const SPOT_REST = 1.8; // am Lieblingsplatz so viel länger stehen
@@ -139,6 +141,67 @@ function goToward(a, x, y, maxTime) {
   a.wanderTime = Math.max(0.3, Math.min(maxTime, d / a.kind.speed));
 }
 
+// eigener Platz eines Herdentiers ums Leittier (Richtung und Abstand, bleibt für das Tier gleich)
+function herdSlot(a) {
+  return (a.herdSlot ??= { ang: Math.random() * Math.PI * 2, r: Phaser.Math.Between(...HERD_SLOT) });
+}
+
+// kommt es in gerader Linie hin (alle 12 Pixel geprüft)?
+function clearLine(a, x, y) {
+  const d = Math.hypot(x - a.x, y - a.y);
+  const n = Math.ceil(d / 12);
+  for (let i = 1; i < n; i++) if (a.blocked(a.x + ((x - a.x) * i) / n, a.y + ((y - a.y) * i) / n)) return false;
+  return true;
+}
+
+// nächster Zwischenpunkt auf dem Weg durchs Gehege (Breitensuche über die Kacheln, auf denen es laufen darf): die
+// fernste Kachel des Wegs, die es noch in gerader Linie erreicht; null, wenn es keinen Weg gibt
+const PATH_MAX = 1500; // so viele Kacheln höchstens absuchen (Tablet)
+function waypoint(a, x, y) {
+  const from = worldToTile(a.x, a.y);
+  const to = worldToTile(x, y);
+  const key = (t) => t.tx + ',' + t.ty;
+  const prev = new Map([[key(from), null]]);
+  const queue = [from];
+  let found = null;
+  for (let i = 0; i < queue.length && i < PATH_MAX; i++) {
+    const t = queue[i];
+    if (t.tx === to.tx && t.ty === to.ty) {
+      found = t;
+      break;
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const n = { tx: t.tx + dx, ty: t.ty + dy };
+      const k = key(n);
+      if (prev.has(k)) continue;
+      const w = tileToWorld(n.tx, n.ty);
+      if (a.blocked(w.x, w.y) && !(n.tx === to.tx && n.ty === to.ty)) continue;
+      prev.set(k, t);
+      queue.push(n);
+    }
+  }
+  if (!found) return null;
+  const path = [];
+  for (let t = found; t; t = prev.get(key(t))) path.unshift(t);
+  for (let i = path.length - 1; i > 0; i--) {
+    const w = tileToWorld(path[i].tx, path[i].ty);
+    if (i === 1 || clearLine(a, w.x, w.y)) return w;
+  }
+  return null;
+}
+
+// steht ein anderes Tier der Herde zu dicht daneben? Dann dieses (sonst null)
+function crowdedBy(a) {
+  let best = null;
+  let bd = HERD_SPACE;
+  for (const b of a.scene.animals ?? []) {
+    if (b === a || b.species !== a.species || b.state !== 'penned' || b.enclosure !== a.enclosure || b.baby) continue;
+    const d = Math.hypot(b.x - a.x, (b.y - a.y) * 2);
+    if (d < bd) [best, bd] = [b, d];
+  }
+  return best;
+}
+
 function rest(a, time) {
   a.dirX = 0;
   a.dirY = 0;
@@ -176,9 +239,21 @@ export function penWander(a) {
       a.herdSeen = lead.herdTick;
       const d = Math.hypot(lead.x - a.x, (lead.y - a.y) * 2);
       if (d > HERD_R) {
-        goToward(a, lead.x + Phaser.Math.Between(-20, 20), lead.y + Phaser.Math.Between(-10, 10), 2.5);
+        // nicht alle auf denselben Fleck: jedes Tier zu seinem eigenen Platz rund ums Leittier
+        // (liegt etwas Großes dazwischen, z. B. der Teich: den Weg drumherum gehen, sonst bleibt es am Ufer hängen)
+        const s = herdSlot(a);
+        const tx = lead.x + Math.cos(s.ang) * s.r;
+        const ty = lead.y + (Math.sin(s.ang) * s.r) / 2;
+        const via = clearLine(a, lead.x, lead.y) ? null : waypoint(a, lead.x, lead.y);
+        if (via) goToward(a, via.x, via.y, 1.5);
+        else goToward(a, tx, ty, 2.5);
       } else if (!lead.dirX && !lead.dirY) {
-        rest(a, Math.max(0.5, lead.wanderTime + Phaser.Math.FloatBetween(-0.3, 1.2)));
+        // steht es zu dicht an einem anderen (z. B. alle am Wasser), ein Stück zur Seite rücken, sonst ausruhen
+        const c = crowdedBy(a);
+        if (c) {
+          const ang = c.x === a.x && c.y === a.y ? Math.random() * Math.PI * 2 : Math.atan2((a.y - c.y) * 2, a.x - c.x) + Phaser.Math.FloatBetween(-0.6, 0.6);
+          goToward(a, a.x + Math.cos(ang) * HERD_SPACE, a.y + (Math.sin(ang) * HERD_SPACE) / 2, 0.9);
+        } else rest(a, Math.max(0.5, lead.wanderTime + Phaser.Math.FloatBetween(-0.3, 1.2)));
       } else {
         const angle = Math.atan2(lead.dirY, lead.dirX) + Phaser.Math.FloatBetween(-0.35, 0.35);
         a.dirX = Math.cos(angle);
