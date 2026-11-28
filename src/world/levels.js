@@ -1204,7 +1204,8 @@ const PARK_PENS = [
       // zones: Lieblingsorte (Makaken an der heißen Quelle, Orang-Utans bei den Urwaldbäumen, Gorillas im Süden)
       { id: 'monkeys', name: tr('Affeninsel', 'Monkey Island'), species: ['macaque', 'orangutan', 'howler', 'gorilla'], moat: true, gate: 'tall', world: 'asia', ground: ['agrass0', 'agrass1', 'agrass2'], seed: { tx: 16, ty: 62 },
         quota: { macaque: [6, 6], orangutan: [5, 5], howler: [13, 13], gorilla: [5, 5] }, // (Gibbons zählen zu den Brüllaffen)
-        zones: { macaque: { tx: 17, ty: 64, r: 4 }, orangutan: { tx: 26, ty: 74, r: 5 }, gorilla: { tx: 19, ty: 75, r: 5 } } },
+        zones: { macaque: { tx: 17, ty: 64, r: 4 }, orangutan: { tx: 26, ty: 74, r: 5 }, gorilla: { tx: 19, ty: 75, r: 5 } },
+        watchArea: { tx0: 20, tx1: 29, ty0: 68, ty1: 71 } }, // Besucher schauen vom Glaspavillon und dem Glasgang aus zu (nicht unten am Zaun)
       // Tropenhalle (siehe docs/plan-dschungel.md): der ganze Dschungel-Teil ist eine große Glashalle mit Glasdach, voller
       // Dschungelpflanzen. Durch die beiden Eingänge mit Lamellenvorhang (gate 'curtain') gehen auch die Besucher, auf dem
       // Holzsteg (Weg der Bodenzone) durch die Halle. Aras, Tukane, Ameisenbären, Tapire, Okapis und eine kleine Gruppe

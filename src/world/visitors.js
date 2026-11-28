@@ -247,6 +247,10 @@ export function buildPathGrid() {
         continue;
       }
       if (!list.length && fewest) list.push(...fewest);
+      // watchArea (Affeninsel): nur von dort aus zuschauen (Glaspavillon), sofern es dort Plätze gibt
+      const a = e.watchArea;
+      const inArea = a ? list.filter((s) => s.tx >= a.tx0 && s.tx <= a.tx1 && s.ty >= a.ty0 && s.ty <= a.ty1) : [];
+      if (inArea.length) list.splice(0, list.length, ...inArea);
       if (list.length) {
         // zum Hinschauen: die nächste Gehegekachel
         for (const s of list) {

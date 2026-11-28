@@ -819,6 +819,8 @@ setTrophySpecies(SPECIES_ORDER, (w) => SPECIES_ORDER.filter((s) => worldsOf(s).s
 const FINAL_HEARTS = 100; // Expedition: Schatz in der Abschlusskiste, wenn es keine neuen Glücksbringer (mehr) gibt
 const BOARD_PLANK_H = 70; // Expeditions-Tafel (exp_board): so hoch ist das Brett oben im Bild (tools/expedition-sprites.py)
 // Fang-Einheit eines wilden Tiers (Expedition): Herde, Kolonie, Trupp, Schwarm oder das Tier selbst
+// Heimfahrt von einer Expedition: in diesen Zoo-Abschnitt (der Wald hat seinen Wildpark im Zentrum)
+const EXP_HOME_SECTION = { savanna: 'park2', asia: 'park3', jungle: 'park3', ice: 'park4', forest: 'park' };
 const unitOf = (a) => a.herd ?? a.colony ?? a.troop ?? a.school ?? a;
 // Bild eines Tiers im Wagen (seltene Variante mit eigenem Bild bzw. eingefärbt)
 function wagonIcon(a) {
@@ -1449,6 +1451,7 @@ export default class GardenScene extends Phaser.Scene {
     this.puffinTimer = 0;
     this.dartFrogsStarted = false;
     this.dartFrogTimer = 0;
+    this.leopardShown = false; // Expedition/Durchgang: auf dieser Map kam schon ein Schneeleopard (höchstens einer je Map)
     this.iceStand = null; // Eiswagen (siehe updateIceStand): nach einem Gebietswechsel neu aufbauen, die alten Bilder sind weg
     this.drawShops(); // feste Buden und leere Bauplätze (Tierpark)
     this.drawScooter(); // E-Roller neben dem Auto (Tierpark)
@@ -2779,8 +2782,13 @@ export default class GardenScene extends Phaser.Scene {
     // Schneeleopard (selten): döst auf einem großen Felsen der Hochebene, seine Spur führt dorthin (höchstens einer)
     if (species === 'snowleopard') {
       if (this.animals.some((a) => a.species === 'snowleopard' && a.state === 'wild')) return group;
+      // auf einer Expeditions-Map bzw. hinter einem Durchgang nur einer je Map (auch nach dem Fang kein zweiter): er ist selten
+      if ((this.expMap || LEVEL.side) && this.leopardShown) return group;
       const [a] = this.finishSpawn([this.createAnimal('snowleopard', 0, 0)], false);
-      if (a.lieDownSomewhere(worldToTile(this.player.x, this.player.y))) return [a];
+      if (a.lieDownSomewhere(worldToTile(this.player.x, this.player.y))) {
+        this.leopardShown = true;
+        return [a];
+      }
       this.despawn(a);
       return group;
     }
@@ -4397,6 +4405,7 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   despawn(a) {
+    if (a.species === 'snowleopard' && a.state === 'wild') this.leopardShown = false; // (ungefangen wieder weg: er darf neu kommen)
     // dieselbe Liste behalten: Fische und Eichhörnchen schauen darin nach freien Plätzen
     this.animals.splice(this.animals.indexOf(a), 1);
     this.tweens.add({ targets: a.sprite, alpha: 0, duration: 800, onComplete: () => a.destroy() });
@@ -7158,11 +7167,10 @@ export default class GardenScene extends Phaser.Scene {
     openChoice(
       `<h2>${LEVELS[world].name}</h2>`,
       [
-        { icon: iconImg('trip_explore'), label: tr('Erkundung', 'Explore'), text: tr('Frei herumstreifen – bleib, so lange du willst.', 'Roam freely – stay as long as you like.') },
-        // erst nach Mavis Tutorial (bis dahin als Vorschau ausgegraut)
-        activeStep()
-          ? { icon: iconImg('trip_expedition'), label: tr('Expedition', 'Expedition'), text: tr('Erst Tutorial abschließen', 'Finish the tutorial first'), disabled: true }
-          : { icon: iconImg('trip_expedition'), label: tr('Expedition', 'Expedition'), text: tr(`${RUN_LENGTH} Maps hintereinander, mit Wagen und Belohnung am Ziel.`, `${RUN_LENGTH} maps in a row, with a wagon and a reward at the end.`) },
+        // während Mavis Tutorial: roter Pfeil über der Erkundung (dort geht es mit ihren Aufgaben weiter); die Expedition
+        // ist trotzdem wählbar
+        { icon: iconImg('trip_explore'), label: tr('Erkundung', 'Explore'), text: tr('Frei herumstreifen – bleib, so lange du willst.', 'Roam freely – stay as long as you like.'), point: !!activeStep() },
+        { icon: iconImg('trip_expedition'), label: tr('Expedition', 'Expedition'), text: tr(`${RUN_LENGTH} Maps hintereinander, mit Wagen und Belohnung am Ziel.`, `${RUN_LENGTH} maps in a row, with a wagon and a reward at the end.`) },
       ],
       (i) => {
         this.scene.resume();
@@ -9325,7 +9333,9 @@ export default class GardenScene extends Phaser.Scene {
     this.carryHome = r.wagon.map((a) => ({ ...a }));
     if (isFinalCamp()) noteExpedition(r.biome); // bis zum Ziel geschafft (für die Expeditions-Trophäen)
     endRun();
-    this.travelTo('park');
+    // in den Zoo-Abschnitt dieser Welt (Bambuswald-Expedition: zum Bambuswald im Zoo), sonst ins Zentrum
+    const section = EXP_HOME_SECTION[r.biome];
+    this.travelTo(section && LEVELS[section]?.car && isUnlocked(section) ? section : 'park');
   }
 
   // Beschriftung über einem Übergang (Expedition: welche Map als Nächstes kommt)
@@ -10071,8 +10081,9 @@ export default class GardenScene extends Phaser.Scene {
     this.moorFog?.update(dt);
     this.savannaLife?.update(dt);
     this.safariCars?.update(dt);
-    // Gorilla-Trommelduell: der Tier-Zähler oben läge über den Trommelpunkten – solange es läuft, ist er ausgeblendet
-    const duel = this.tool instanceof DrumTool && !!this.tool.duel;
+    // Gorilla-Trommelduell: der Tier-Zähler oben läge über den Trommelpunkten – solange es läuft, ist er ausgeblendet.
+    // Ebenso auf Expeditions-Maps unter dem Baum eines Orang-Utans: er sitzt oben in der Krone, sein Winken läge darunter
+    const duel = (this.tool instanceof DrumTool && !!this.tool.duel) || (!!this.expMap && this.animals.some((a) => a.species === 'orangutan' && a.inTree?.() && Math.hypot(a.x - this.player.x, (a.y - this.player.y) * 2) < WAVE_DIST));
     if (duel !== this.counterDuelHidden) {
       this.counterDuelHidden = duel;
       document.getElementById('exp-counter')?.classList.toggle('duel', duel);

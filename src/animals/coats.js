@@ -17,6 +17,10 @@ const luma = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 
 // Masken: wie sehr ein Bildpunkt Fell ist (0 bis 1); v Helligkeit, s Sättigung (HSV, 0 bis 1), h Farbton in Grad
 const light = (v, s) => smooth(0.48, 0.64, v) * (1 - smooth(0.24, 0.3, s)); // hell und fast farblos (Wolle, weißes Fell)
+// gefleckter Yak: in den Lauf- und Steh-Videos ist das helle Fell wärmer (rosa-beige) als im Standbild – mit light blieb
+// es dort zum Großteil in der Grundfarbe (von hinten fast ganz); darum auch etwas kräftigere helle Töne. Die Flecken
+// (dunkler) und Hörner bleiben
+const yakFur = (v, s) => smooth(0.5, 0.62, v) * (1 - smooth(0.4, 0.48, s));
 // Schafwolle: wie light, nur dürfen rötliche Schatten (unten am Bauch, vor allem von hinten) etwas kräftiger sein; Ohren und
 // Beine sind noch kräftiger, das Gesicht hat einen anderen Farbton (um 31°). In den Lauf- und Steh-Animationen ist das
 // Gesicht aber blasser und rötlicher gemalt, fast wie die Wollschatten: dafür markFace (g.face). Nicht über die Farbe
@@ -138,7 +142,7 @@ const G = {
   deer: { from: 'deer', sheets: SHEETS.deer, mask: fawn, tMax: 1.15 },
   stag: { from: 'stag', sheets: SHEETS.deer, mask: fawn, tMax: 1.15 },
   giraffe: { from: 'giraffe', sheets: SHEETS.giraffe, mask: warm(16, 52, 0.2, 0.3), tMax: 1.15 },
-  yak: { from: 'yak2', sheets: SHEETS.yak2, mask: light, tMax: 1.15 },
+  yak: { from: 'yak2', sheets: SHEETS.yak2, mask: yakFur, range: 'sheet', tMax: 1.15 }, // (jedes Bild misst seine Helligkeit: die Videos sind dunkler als das Standbild)
   snake: { from: 'snake', sheets: SHEETS.snake, mask: warm(2, 42, 0.32, 0.13), tMax: 1.15 }, // auch die dunklen Orangetöne an den Bändern (sonst bleibt ein rotbrauner Saum)
   spider: { from: 'tarantula2', sheets: SHEETS.spider, mask: colored, tMax: 1.1, hiCut: 0.01, loCut: 0.02 },
   fur: { from: 'tarantula', sheets: SHEETS.spider, mask: allButEyes, tMax: 1.3, hiCut: 0.005, loCut: 0.02, anims: { walkDown: 'tarantula_walk', walkUp: 'tarantula_walk_back' } },

@@ -55,12 +55,12 @@ export function openConfirm(html, yesText, noText, handlers) {
   }, 0);
 }
 
-// Auswahl mit großen Knöpfen (z. B. Weltkarte: Erkundung oder Expedition): choices [{ label, text, icon?, disabled? }] (disabled: ausgegraut, nicht wählbar – z. B. noch gesperrt); onPick(i), onClose()
+// Auswahl mit großen Knöpfen (z. B. Weltkarte: Erkundung oder Expedition): choices [{ label, text, icon?, disabled?, point? }] (disabled: ausgegraut, nicht wählbar – z. B. noch gesperrt; point: roter Tutorial-Pfeil darüber); onPick(i), onClose()
 export function openChoice(html, choices, onPick, onClose) {
   panel = document.getElementById('wagon');
   state = { choice: true, handlers: { pick: onPick, close: onClose } };
   panel.innerHTML = `<div class="chest-box wagon-box">${CLOSE_BUTTON}${html}
-      <div class="chest-items choice-items">${choices.map((c, i) => `<button class="chest-item choice-item${c.disabled ? ' locked' : ''}" data-c="${i}"${c.disabled ? ' disabled' : ''}>${c.icon ? `<span class="luck-icon">${c.icon}</span>` : ''}<b>${c.label}</b><small>${c.text}</small></button>`).join('')}</div>
+      <div class="chest-items choice-items">${choices.map((c, i) => `<button class="chest-item choice-item${c.disabled ? ' locked' : ''}" data-c="${i}"${c.disabled ? ' disabled' : ''}>${c.point ? POINTER : ''}${c.icon ? `<span class="luck-icon">${c.icon}</span>` : ''}<b>${c.label}</b><small>${c.text}</small></button>`).join('')}</div>
     </div>`;
   panel.classList.add('show');
   openedAt = performance.now();

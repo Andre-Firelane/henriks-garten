@@ -172,7 +172,13 @@ export default class Howler extends Animal {
       (t) => !taken.has(t.tx + ',' + t.ty) && (t.tx !== this.tree.tx || t.ty !== this.tree.ty) && Math.hypot(t.tx - this.tree.tx, t.ty - this.tree.ty) <= JUMP_RANGE && Math.hypot(t.tx - center.tx, t.ty - center.ty) <= TROOP_SPREAD,
     );
     const next = Phaser.Utils.Array.GetRandom(options);
-    if (!next) return; // kein freier Baum in Sprungweite: er bleibt still sitzen
+    if (!next) {
+      // kein freier Baum in Sprungweite: er bleibt sitzen, brüllt aber trotzdem und seine Krone raschelt – sonst bliebe er
+      // unsichtbar und unhörbar, und man fände ihn nie (Expedition: „einer fehlt noch“)
+      this.call();
+      this.scene.rustleCrown?.(this.tree);
+      return;
+    }
     this.call();
     this.scene.rustleCrown?.(this.tree);
     const from = { x: this.x, y: this.y };

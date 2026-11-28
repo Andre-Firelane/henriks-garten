@@ -107,8 +107,9 @@ export function planMap(map, biome, must = null) {
       add(pick(pool));
       continue;
     }
+    // (Schneeleopard nie mehr als einer: er ist selten, auch wenn auf der Map sonst nichts mehr passt)
     const many = Object.keys(home).filter((sp) => rules[sp].units[1] > 1);
-    const list = many.length ? many : Object.keys(home);
+    const list = many.length ? many : Object.keys(home).filter((sp) => sp !== 'snowleopard');
     if (!list.length) break;
     home[pick(list)]++;
   }
