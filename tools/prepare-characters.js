@@ -218,6 +218,10 @@ const CHARACTERS = [
   { src: 'Sprites/Zuckerwatteverkäufer.png', out: 'cottoncandy_seller.png', frameW: 72, frameH: 116, feetY: 112, figureH: 100 },
   // Mavi die Tierpflegerin (führt durch die Geschichte), Format wie die Besucher. Freigestellt mit npm run cutout
   { src: 'Sprites/Mavi.png', out: 'mavi.png', frameW: 72, frameH: 116, feetY: 112, figureH: 102 },
+  // Tierpflegerin und Tierpfleger mit Futtereimer (füttern abwechselnd die Tiere, src/visitors/KeeperFeeder.js), so groß wie
+  // Mavi. Freigestellt mit npm run cutout (aus der .webp über .jpg)
+  { src: 'Sprites/Tierpflegerin1.png', out: 'keeper1.png', frameW: 72, frameH: 116, feetY: 112, figureH: 102 },
+  { src: 'Sprites/Tierpfleger2.png', out: 'keeper2.png', frameW: 72, frameH: 116, feetY: 112, figureH: 102 },
   // Panda (Asien): laufend und sitzend mit Bambus, gleicher Maßstab; beide Rückansichten schauen nach rechts,
   // daher oben-links = oben-rechts gespiegelt. Freigestellt mit npm run cutout
   { src: 'Sprites/Panda.png', out: 'panda.png', frameW: 88, frameH: 96, feetY: 92, scale: PANDA_SCALE * 1.2, copyMirror: { 3: 2 } }, // laufend etwas größer

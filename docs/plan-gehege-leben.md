@@ -78,7 +78,15 @@ Ab und zu, selten genug, dass es besonders bleibt. Nur Tiere derselben Art im se
 - **Verfressen:** geht öfter zum Trog und bleibt dort, ist beim Auffüllen als Erstes da und drängelt die anderen etwas
   zur Seite; bettelt am Zaun, wenn man vorbeigeht.
 
-## 4. Mavi füllt die Tröge auf (Ausnahme von der NPC-Regel)
+## 4. Tierpfleger füttern (gebaut 28.11.2026, statt Mavi)
+
+**Geändert (Andre, 28.11.2026):** Nicht Mavi, sondern eine Tierpflegerin und ein Tierpfleger mit Futtereimer
+(Sprites/Tierpflegerin1, Tierpfleger2 → keeper1.png, keeper2.png) kommen abwechselnd alle 1–2 Minuten vom nächsten
+Ausgang herein, gehen durchs Tor ins Gehege, schütten Futter aus (die Tiere kommen und fressen) und gehen wieder.
+Von Anfang an, auch während des Tutorials; nur in den Parkabschnitten. Besucher füttern nicht mehr (die Koi auf der
+Brücke schon). Umsetzung: src/visitors/KeeperFeeder.js. Tröge gibt es (noch) nicht. Der alte Plan dazu:
+
+### (alt) Mavi füllt die Tröge auf (Ausnahme von der NPC-Regel)
 
 Normalerweise bewegen sich NPCs nicht. **Mavi ist dafür die einzige Ausnahme:** Sie läuft mit einem Eimer in der Hand
 zu einem Trog und füllt ihn auf.

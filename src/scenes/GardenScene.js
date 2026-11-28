@@ -171,6 +171,7 @@ import RodTool from '../tools/RodTool.js';
 import DrumTool from '../tools/DrumTool.js';
 import KoiFoodTool from '../tools/KoiFoodTool.js';
 import ParkFoodTool from '../tools/ParkFoodTool.js';
+import { KeeperFeeder } from '../visitors/KeeperFeeder.js';
 import { VisitorCrowd } from '../visitors/Visitor.js';
 import { parkCap, ANIMALS_PER_VISITOR, AWAY_ICE_PER_VISITOR_MINUTE, AWAY_HEARTS_PER_VISITOR_MINUTE, BABY_APPEAL, BABY_BONUS, FULL_BONUS, HOUSE_VISITORS, appeal, maxVisitors, parkScore, penScore, splitHearts, penCount, isFull, releaseHearts } from '../world/visitors.js';
 import { MOUNTS, MOUNT_COST, SCOOTER_COST, buyMount, buyScooter, ownsMount, ownsScooter } from '../world/mounts.js';
@@ -1660,6 +1661,7 @@ export default class GardenScene extends Phaser.Scene {
     if (BABY_LEVELS.includes(LEVEL_ID) && isActive('babies')) this.spawnBabies(false);
     // Besucher im Tierpark (wie viele, hängt von den Tieren in den Gehegen ab)
     this.visitors = home ? new VisitorCrowd(this) : null; // auch im Aquarium und im Reptilienhaus (eigene Besucher)
+    this.keeperFeeder = this.visitors ? new KeeperFeeder(this, this.visitors, NO_PEN_FEED) : null; // Tierpfleger füttern (nur in den Parkabschnitten)
     this.eventTimer = 0;
     this.eventBanner = document.getElementById('event-banner');
 
@@ -2046,7 +2048,7 @@ export default class GardenScene extends Phaser.Scene {
     this.riding = false;
     this.updateMount();
     this.time.addEvent({ delay: 3000, loop: true, callback: () => this.updateTrophies() });
-    this.hud.onclick = () => this.showJournal();
+    this.hud.onclick = () => this.showJournal('stats'); // Herzanzeige: gleich die Statistik (woher die Herzen kommen)
     touchHandlers.action = useTool;
     touchHandlers.tap = (cx, cy) => {
       if (!this.decor?.on || this.leaving) return;
@@ -5811,7 +5813,8 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Tierbuch (Taste I oder der Knopf oben links): Reiter für die Tiere, das Fangen, die Starter-Aufgaben und die Statistik
-  showJournal() {
+  // tab: diesen Reiter aufschlagen (z. B. 'stats' von der Herzanzeige), sonst Neues bzw. den zuletzt offenen
+  showJournal(tab = null) {
     if (isJournalOpen() || this.leaving) return;
     // was seit dem letzten Öffnen neu ist, leuchtet auf (und der Reiter dazu ist markiert und wird gleich aufgeschlagen)
     this.bookFresh = new Set(game.bookNew);
@@ -5828,7 +5831,7 @@ export default class GardenScene extends Phaser.Scene {
       { id: 'trophies', label: tr('Trophäen', 'Trophies'), html: () => this.bookTrophies() },
       { id: 'stats', label: tr('Statistik', 'Stats'), html: () => this.bookStats() },
     ];
-    const start = newAnimals ? 'animals' : newQuests ? 'quests' : lastBookTab;
+    const start = tab ?? (newAnimals ? 'animals' : newQuests ? 'quests' : lastBookTab);
     this.scene.pause();
     // in einem Außengebiet ist der Tiere-Filter schon auf dieses Gebiet gestellt
     const filter = WILD_WORLDS.includes(LEVEL_ID) ? LEVEL_ID : 'all';
@@ -10393,6 +10396,7 @@ export default class GardenScene extends Phaser.Scene {
     this.updateZoneAmbient();
     this.waterfallSun?.update(dt);
     this.visitors?.update(dt);
+    this.keeperFeeder?.update(dt);
     this.wheel?.update(dt);
     this.updateScooter();
     this.updateJellies(dt);

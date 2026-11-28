@@ -22,7 +22,6 @@ const ORIGIN_Y = 112 / 116;
 const SPEED = [34, 44]; // Pixel pro Sekunde
 const LOOK_TIME = [6, 10]; // Sekunden vor einem Gehege, dazu mehr bei Gehegen mit vielen seltenen Tieren
 const VISITS = [2, 4]; // so viele Gehege schaut sich ein Besucher an, bevor er geht
-const FEED_CHANCE = 0.25; // so oft füttert er am Ende des Schauens
 const PEN_FEED_PAUSE = 40; // Sekunden, bevor dasselbe Gehege wieder gefüttert wird
 // Koi-Teich (Bambuswald): wer auf der Brücke steht, füttert oft die Koi (sie kommen herbei), das bringt ein Herz mehr
 const KOI_FEED_CHANCE = 0.6;
@@ -199,10 +198,7 @@ export class Visitor {
         this.popHeart();
         this.giveHearts(1, heartSpecies(this.scene.animals, this.pen));
       }
-      if (this.timer <= 0) {
-        if (Math.random() < FEED_CHANCE) this.crowd.feed(this);
-        this.next();
-      }
+      if (this.timer <= 0) this.next(); // (füttern tut nur noch Mavi, siehe MaviFeeder.js)
     } else if (this.phase === 'pet') {
       // im Streichelzoo: streicheln, nach der halben Zeit ein Herz, dann zum nächsten Tier
       const a = this.petAnimal;

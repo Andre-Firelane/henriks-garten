@@ -1150,7 +1150,7 @@ const PARK_PENS = [
       // Raubtierbereich: Löwen (rechts) und Hyänen mit den Geiern am Elefantenfriedhof (links), dazwischen ein Zaun. Wie im
       // ganzen Tierpark gilt immer das normale Wetter.
       // Wasserloch ohne Zaun (steht vor der Safari, damit Wasser und Ufer zum Wasserloch zählen): Nilpferde und Krokodile
-      { id: 'waterhole', name: tr('Wasserloch', 'Watering Hole'), species: ['hippo', 'crocodile'], pond: true, shore: 1, signAt: { tx: 75, ty: 17 }, world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 66, ty: 17 }, quota: { hippo: [3, 4], crocodile: [2, 3] } }, // Schild an der Haltebucht der Piste
+      { id: 'waterhole', name: tr('Wasserloch', 'Watering Hole'), species: ['hippo', 'crocodile'], pond: true, shore: 1, noSign: true, signs: [{ spot: { tx: 57, ty: 19 }, species: ['hippo'] }, { spot: { tx: 59, ty: 19 }, species: ['crocodile'] }], world: 'savanna', ground: ['sgrass0', 'sgrass1', 'sgrass2'], seed: { tx: 66, ty: 17 }, quota: { hippo: [3, 4], crocodile: [2, 3] } }, // je ein Schild am unteren Zaun des Fußwegs (gegenüber den Safari-Schildern)
       // das offene Gelände: Tore sind nur die eigenen (gateTiles: Einfahrt, äußere Schleusentore, Tor am Vorplatz, Ausfahrt), nicht
       // die der Gehege darin. lookOver: Besucher schauen auch von Wegen außerhalb über den Zaun (Vorplatz, Fußweg).
       // noSign: keine große Tafel; signs: Schilder mit einem Teil der Tiere (spot: Kachel; am Zaun hängen sie am Zaun). Hier

@@ -885,6 +885,7 @@ export default class BootScene extends Phaser.Scene {
     // E-Roller im Tierpark: mit Henrik und abgestellt (tools/scooter-cut.py), fährt von vorne und hinten (tools/scooter-anim.py)
     for (const k of ['scooter', 'scooter_empty', 'scooter_walk', 'scooter_walk_back']) load.spritesheet(k, `assets/${k}.png`, { frameWidth: 170, frameHeight: 170 });
     load.spritesheet('mavi', 'assets/mavi.png', HERO_FRAME); // Mavi die Tierpflegerin (führt durch die Geschichte)
+    for (const k of ['keeper1', 'keeper2']) load.spritesheet(k, `assets/${k}.png`, HERO_FRAME); // Tierpflegerin und Tierpfleger mit Eimer (füttern, KeeperFeeder.js)
     load.image('nuggets', 'assets/nuggets.png'); // Mr. Nuggets der Expeditionsleiter (steht im Camp, src/npc/Nuggets.js)
     for (let n = 1; n <= 8; n++) load.spritesheet(`visitor${n}`, `assets/visitor${n}.png`, HERO_FRAME); // Besucher im Tierpark
     for (const w of ['meadow', 'forest', 'savanna', 'asia', 'jungle', 'reef']) load.spritesheet(`ride_${w}`, `assets/ride_${w}.png`, { frameWidth: 160, frameHeight: 230 }); // Reittiere
