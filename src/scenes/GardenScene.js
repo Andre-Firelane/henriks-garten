@@ -821,6 +821,9 @@ const FINAL_HEARTS = 100; // Expedition: Schatz in der Abschlusskiste, wenn es k
 const BOARD_PLANK_H = 70; // Expeditions-Tafel (exp_board): so hoch ist das Brett oben im Bild (tools/expedition-sprites.py)
 // Fang-Einheit eines wilden Tiers (Expedition): Herde, Kolonie, Trupp, Schwarm oder das Tier selbst
 // Heimfahrt von einer Expedition: in diesen Zoo-Abschnitt (der Wald hat seinen Wildpark im Zentrum)
+const FAN_R = 42; // Tierfreunde im offenen Bereich: so weit von Henrik ...
+const FAN_STEP = 0.8; // ... und so weit (Bogenmaß) nebeneinander im Fächer
+const EXP_DAM_REOPEN = [6, 12]; // Expedition: so schnell (Sekunden) hat der Biberdamm wieder ein Loch
 const EXP_HOME_SECTION = { savanna: 'park2', asia: 'park3', jungle: 'park3', ice: 'park4', forest: 'park' };
 const unitOf = (a) => a.herd ?? a.colony ?? a.troop ?? a.school ?? a;
 // Bild eines Tiers im Wagen (seltene Variante mit eigenem Bild bzw. eingefärbt)
@@ -1581,7 +1584,8 @@ export default class GardenScene extends Phaser.Scene {
     }
     // Biber am Fluss: Damm, Stöcke und die Kolonie an den angenagten Bäumen (wilde Biber werden nicht gespeichert)
     // (Expedition: nur, wenn Biber auf der Tierliste stehen; dann so viele, wie noch frei sind)
-    const beavers = this.expMap ? (LEVEL.beavers && expRun()?.left?.beaver ? { ...LEVEL.beavers, count: () => expRun()?.left?.beaver ?? 0 } : null) : LEVEL.beavers;
+    // (Expedition: so viele Biber wie in der Tierliste; der Damm bricht schnell wieder, sonst wartet man lange auf den nächsten)
+    const beavers = this.expMap ? (LEVEL.beavers && expRun()?.left?.beaver ? { ...LEVEL.beavers, count: () => expRun()?.left?.beaver ?? 0, reopen: EXP_DAM_REOPEN } : null) : LEVEL.beavers;
     this.beaverDam = beavers ? new BeaverDam(this, beavers) : null;
     this.beaverDam?.fill(true);
     // Yak-Herde auf der Hochebene: Steinhaufen, Salzstein und die Herde (wilde Yaks werden nicht gespeichert)
@@ -3258,7 +3262,7 @@ export default class GardenScene extends Phaser.Scene {
       const level = friendLevel(bond);
       let tag = this.friendTags.get(a);
       if (!tag) {
-        tag = this.add.text(0, 0, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '9px', fontStyle: 'bold', padding: { x: 3, y: 1 }, resolution: 4 }).setOrigin(0.5, 1);
+        tag = this.add.text(0, 0, '', { fontFamily: 'Trebuchet MS, Arial', fontSize: '7px', fontStyle: 'bold', padding: { x: 2, y: 0 }, resolution: 5 }).setOrigin(0.5, 1); // (klein: nimmt sonst viel Platz ein)
         this.friendTags.set(a, tag);
       }
       const label = `${bond.name} ${levelHearts(level)}`;
@@ -3276,16 +3280,17 @@ export default class GardenScene extends Phaser.Scene {
         bar = this.add.graphics();
         this.friendBars.set(a, bar);
       }
-      const near = spr.visible && Math.hypot(this.player.x - a.x, (this.player.y - a.y) * 2) < FRIEND_BAR_DIST;
+      // (bester Freund, höchste Stufe: kein Balken mehr)
+      const near = spr.visible && level < BEST_LEVEL && Math.hypot(this.player.x - a.x, (this.player.y - a.y) * 2) < FRIEND_BAR_DIST;
       bar.setVisible(near);
       if (near) {
-        const { frac, level, max } = levelProgress(bond);
-        const w = Math.max(30, tag.width);
+        const { frac } = levelProgress(bond);
+        const w = Math.max(20, tag.width);
         const x = Math.round(spr.x - w / 2);
-        const y = Math.round(tag.y - tag.height - 6);
+        const y = Math.round(tag.y - tag.height - 4);
         bar.clear().setDepth(FRIEND_TAG_DEPTH + spr.depth / 1e4);
-        bar.fillStyle(0x3c2814, 0.85).fillRoundedRect(x - 1, y - 1, w + 2, 6, 3);
-        if (frac > 0) bar.fillStyle(level >= max ? 0xffd966 : 0xff6fa8, 1).fillRoundedRect(x, y, Math.max(4, w * frac), 4, 2);
+        bar.fillStyle(0x3c2814, 0.85).fillRoundedRect(x - 1, y - 1, w + 2, 4, 2);
+        if (frac > 0) bar.fillStyle(0xff6fa8, 1).fillRoundedRect(x, y, Math.max(3, w * frac), 2, 1);
       }
     }
     this.friendVisitTimer -= dt;
@@ -3293,6 +3298,10 @@ export default class GardenScene extends Phaser.Scene {
     this.friendVisitTimer = 0.4;
     const p = this.player;
     const { tx, ty } = worldToTile(p.x, p.y);
+    // mehrere Freunde kommen: jeder bekommt einen eigenen Platz (um Henrik gefächert bzw. eine eigene Kachel am Zaun),
+    // sonst stehen sie übereinander und man erreicht sie nicht einzeln
+    const near = []; // im offenen Bereich zu Henrik
+    const usedFence = new Set(); // am Zaun schon vergebene Kacheln
     for (const a of friends) {
       const level = friendLevel(bondOf(a));
       if (level < 2 || a.baby || a.companion) continue; // (der beste Freund läuft sowieso mit)
@@ -3307,10 +3316,26 @@ export default class GardenScene extends Phaser.Scene {
       if (a.feed || a.petted || a.inCanopy?.()) continue; // (Brüllaffen oben in den Bäumen der Tropenhalle: bleiben oben)
       // im offenen Bereich (Streichelzoo) kommt es zu Henrik selbst, sonst an die Stelle am Zaun, die ihm am nächsten ist
       const inside = a.enclosure.tileSet.has(tx + ',' + ty);
-      const spot = inside ? this.besidePlayer(a) : this.penSpotNear(a.enclosure, p);
+      if (inside) {
+        near.push(a);
+        continue;
+      }
+      const spot = this.penSpotNear(a.enclosure, p, usedFence);
       if (!spot) continue;
+      usedFence.add(spot.key);
       if (!a.visit || Math.hypot(spot.x - a.visit.spot.x, spot.y - a.visit.spot.y) > 12) a.visit = { spot };
     }
+    // im offenen Bereich: nach ihrer Richtung sortiert im Fächer um Henrik (FAN_STEP auseinander, Mitte: ihre mittlere Richtung)
+    if (!near.length) return;
+    const angOf = (a) => Math.atan2((a.y - p.y) * 2, a.x - p.x);
+    near.sort((u, v) => angOf(u) - angOf(v));
+    const mid = Math.atan2(near.reduce((n, a) => n + Math.sin(angOf(a)), 0), near.reduce((n, a) => n + Math.cos(angOf(a)), 0));
+    near.forEach((a, i) => {
+      const ang = mid + (i - (near.length - 1) / 2) * FAN_STEP;
+      const r = FAN_R + (near.length > 4 ? (i % 2) * 16 : 0); // (viele: zweite Reihe abwechselnd etwas weiter weg)
+      const spot = { x: p.x + Math.cos(ang) * r, y: p.y + (Math.sin(ang) * r) / 2 };
+      if (!a.visit || Math.hypot(spot.x - a.visit.spot.x, spot.y - a.visit.spot.y) > 12) a.visit = { spot };
+    });
   }
 
   // ---- Bedürfnisse: Blasen mit Hand oder Futter über den Tieren im Tierpark ----
@@ -3535,11 +3560,13 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // die Kachel im Gehege, die diesem Punkt am nächsten ist (als Weltpunkt)
-  penSpotNear(e, pt) {
+  // (taken: Kacheln, die schon ein anderer bekommen hat; das Ergebnis trägt dann key)
+  penSpotNear(e, pt, taken = null) {
     let best = null;
     let bd = Infinity;
     for (const t of e.tiles) {
-      const w = tileToWorld(t.tx, t.ty);
+      if (taken?.has(t.tx + ',' + t.ty)) continue;
+      const w = { ...tileToWorld(t.tx, t.ty), key: t.tx + ',' + t.ty };
       const d = Math.hypot(w.x - pt.x, (w.y - pt.y) * 2);
       if (d < bd) {
         bd = d;
@@ -4433,6 +4460,14 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   // Wie viele Tiere jeder Art sind zuhause (im Gehege bzw. Fischteich), über alle Level?
+  // so viele dieser Art (mit skin: dieser Variante) leben im Zoo (ohne Babys, wie homeCounts)
+  ownedCount(species, skin = null) {
+    const fits = (a) => a.state === 'penned' && !a.baby && a.species === species && (!skin || a.skin === skin);
+    let n = LEVEL.camp ? 0 : this.animals.filter(fits).length; // (Käfige im Expeditions-Camp zählen nicht)
+    for (const [id, saved] of Object.entries(game.levels)) if (id !== LEVEL_ID) n += saved.animals.filter(fits).length;
+    return n;
+  }
+
   homeCounts() {
     const counts = {};
     const add = (species, state) => {
@@ -7094,7 +7129,8 @@ export default class GardenScene extends Phaser.Scene {
     else this.updateToolbar();
     if (this.cache.audio.exists('whoosh')) this.sound.play('whoosh', { volume: WHOOSH_VOLUME });
     const p = this.player;
-    const beavers = this.beaverDam.wild().sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
+    // es kommt der nächste – eine Nutria (selten bzw. von der Karte versprochen) aber immer zuerst
+    const beavers = this.beaverDam.wild().sort((a, b) => !!b.skin - !!a.skin || Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y));
     const [helper, ...others] = beavers;
     for (const b of others) b.cheer();
     this.showToast(`${animalIcon('beaver', 3.2)} ${helper
@@ -9394,17 +9430,19 @@ export default class GardenScene extends Phaser.Scene {
   }
 
   expCardView(c) {
+    // wie viele davon schon im Zoo leben (Tier- und Variantenkarten)
+    const owned = (n) => `<br><small class="card-owned">${tr(`Im Zoo: ${n}`, `In your zoo: ${n}`)}</small>`;
     // darunter: Map, ihr gewürfeltes Wetter und ihre Tiere (kleine Bilder)
     const w = SEASON_INFO[c.plan?.season ?? 'normal'];
     const animals = Object.keys(c.plan?.home ?? {}).map((s) => animalIcon(s, 1.6)).join('');
     const where = `<br>${tr('Nächste Map', 'Next map')}: <b>${mapName(c.map)}</b><span class="exp-plan" title="${w.name}">${w.icon}${animals}</span>`;
     if (c.kind === 'animal') {
       const name = ANIMAL_INFO[c.species]?.[0] ?? c.species;
-      return { icon: animalIcon(c.species, 3), title: name, text: tr('Taucht dort sicher auf.', 'Sure to show up there.') + where, color: '#5fae4a', tag: tr('Tier', 'Animal') };
+      return { icon: animalIcon(c.species, 3), title: name, text: tr('Taucht dort sicher auf.', 'Sure to show up there.') + owned(this.ownedCount(c.species)) + where, color: '#5fae4a', tag: tr('Tier', 'Animal') };
     }
     if (c.kind === 'rare') {
-      const v = this.luck.view({ kind: 'rare', species: c.species, skin: c.skin, tier: 'rare' });
-      return { ...v, text: tr('Kommt dort sicher als seltene Variante!', 'Sure to show up there as a rare variant!') + where };
+      const v = this.luck.view({ kind: 'rare', species: c.species, skin: c.skin });
+      return { ...v, text: tr('Kommt dort sicher als seltene Variante!', 'Sure to show up there as a rare variant!') + owned(this.ownedCount(c.species, c.skin)) + where };
     }
     if (c.kind === 'bonus') {
       const v = this.luck.view({ kind: 'bonus', id: c.id });

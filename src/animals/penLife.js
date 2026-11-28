@@ -21,6 +21,10 @@ const BUSY = ['digging', 'sit', 'grazing', 'sleeping', 'jumping', 'tree', 'eatin
 const HERD_R = 70; // so weit (Kachelmaß, y doppelt) darf sich ein Herdentier vom Leittier entfernen
 const HERD_SPACE = 34; // so viel Abstand (Kachelmaß, y doppelt) halten Herdentiere im Stehen mindestens zueinander
 const HERD_SLOT = [36, 62]; // Abstand des eigenen Platzes ums Leittier (jedes Tier hat seine Richtung, siehe herdSlot)
+// offene Bereiche (Wildpark, Safari): die Herde ist viel lockerer – alle Abstände oben so viel mal größer (sonst hängen
+// im großen Gelände alle auf einem Haufen)
+const OPEN_SPREAD = 2.6;
+const spread = (a) => (a.enclosure?.open ? OPEN_SPREAD : 1);
 const BABY_R = 34; // Tierbaby bleibt dicht bei einem Erwachsenen
 const SPOT_CHANCE = 0.5; // so oft geht ein Tier zu einem Lieblingsplatz statt irgendwohin
 const SPOT_REST = 1.8; // am Lieblingsplatz so viel länger stehen
@@ -143,7 +147,7 @@ function goToward(a, x, y, maxTime) {
 
 // eigener Platz eines Herdentiers ums Leittier (Richtung und Abstand, bleibt für das Tier gleich)
 function herdSlot(a) {
-  return (a.herdSlot ??= { ang: Math.random() * Math.PI * 2, r: Phaser.Math.Between(...HERD_SLOT) });
+  return (a.herdSlot ??= { ang: Math.random() * Math.PI * 2, r: Phaser.Math.Between(...HERD_SLOT) * spread(a) });
 }
 
 // kommt es in gerader Linie hin (alle 12 Pixel geprüft)?
@@ -193,7 +197,7 @@ function waypoint(a, x, y) {
 // steht ein anderes Tier der Herde zu dicht daneben? Dann dieses (sonst null)
 function crowdedBy(a) {
   let best = null;
-  let bd = HERD_SPACE;
+  let bd = HERD_SPACE * spread(a);
   for (const b of a.scene.animals ?? []) {
     if (b === a || b.species !== a.species || b.state !== 'penned' || b.enclosure !== a.enclosure || b.baby) continue;
     const d = Math.hypot(b.x - a.x, (b.y - a.y) * 2);
@@ -232,13 +236,23 @@ export function penWander(a) {
     else return false;
     return true;
   }
+  // Herde: steht es (auch das Leittier, auch in der Ruhephase) zu dicht an einem anderen, erst ein Stück zur Seite
+  if (inHerd(a) && !a.atSpot) {
+    const c = crowdedBy(a);
+    if (c) {
+      const ang = c.x === a.x && c.y === a.y ? Math.random() * Math.PI * 2 : Math.atan2((a.y - c.y) * 2, a.x - c.x) + Phaser.Math.FloatBetween(-0.6, 0.6);
+      const step = HERD_SPACE * spread(a);
+      goToward(a, a.x + Math.cos(ang) * step, a.y + (Math.sin(ang) * step) / 2, 0.9 * spread(a));
+      return true;
+    }
+  }
   // Herde: Leittier entscheidet, die anderen folgen mit lockerem Abstand
   if (inHerd(a)) {
     const lead = leaderOf(a);
     if (lead && lead !== a) {
       a.herdSeen = lead.herdTick;
       const d = Math.hypot(lead.x - a.x, (lead.y - a.y) * 2);
-      if (d > HERD_R) {
+      if (d > HERD_R * spread(a)) {
         // nicht alle auf denselben Fleck: jedes Tier zu seinem eigenen Platz rund ums Leittier
         // (liegt etwas Großes dazwischen, z. B. der Teich: den Weg drumherum gehen, sonst bleibt es am Ufer hängen)
         const s = herdSlot(a);
@@ -252,7 +266,8 @@ export function penWander(a) {
         const c = crowdedBy(a);
         if (c) {
           const ang = c.x === a.x && c.y === a.y ? Math.random() * Math.PI * 2 : Math.atan2((a.y - c.y) * 2, a.x - c.x) + Phaser.Math.FloatBetween(-0.6, 0.6);
-          goToward(a, a.x + Math.cos(ang) * HERD_SPACE, a.y + (Math.sin(ang) * HERD_SPACE) / 2, 0.9);
+          const step = HERD_SPACE * spread(a);
+          goToward(a, a.x + Math.cos(ang) * step, a.y + (Math.sin(ang) * step) / 2, 0.9 * spread(a));
         } else rest(a, Math.max(0.5, lead.wanderTime + Phaser.Math.FloatBetween(-0.3, 1.2)));
       } else {
         const angle = Math.atan2(lead.dirY, lead.dirX) + Phaser.Math.FloatBetween(-0.35, 0.35);
@@ -266,7 +281,7 @@ export function penWander(a) {
   if (inHerd(a)) {
     a.herdTick = (a.herdTick ?? 0) + 1; // Leittier: die Herde zieht kurz danach nach (siehe updateLife)
     // Nachzügler weit weg: kurz warten, bis die Herde aufgeschlossen hat
-    const far = (a.scene.animals ?? []).some((b) => b !== a && b.species === a.species && b.state === 'penned' && b.enclosure === a.enclosure && !b.baby && Math.hypot(b.x - a.x, (b.y - a.y) * 2) > HERD_R * 1.6);
+    const far = (a.scene.animals ?? []).some((b) => b !== a && b.species === a.species && b.state === 'penned' && b.enclosure === a.enclosure && !b.baby && Math.hypot(b.x - a.x, (b.y - a.y) * 2) > HERD_R * spread(a) * 1.6);
     if (far && !a.spotGoal && Math.random() < 0.7) {
       rest(a, Phaser.Math.FloatBetween(2, 4));
       return true;

@@ -146,7 +146,7 @@ export default class DecorMode {
       + section(tr('Buden', 'Stands'), this.booths()) + section(LEVEL_ID === ROOM ? tr('Möbel', 'Furniture') : tr('Deko', 'Decor'), this.decos());
     const none = LEVEL_ID === ROOM ? tr('Möbel gibt es unter „Bestellen“.', 'Order furniture below.') : tr('Buden und Deko gibt es unter „Bestellen“.', 'Order stands and decor below.');
     const empty = this.entries().length ? '' : `<div class="decor-empty">${none}</div>`;
-    this.bar.innerHTML = `<button class="decor-turn${this.sel && this.turnable() ? '' : ' off'}${this.turned() ? ' on' : ''}" data-id="@turn"><span class="turn-icon">↻</span>${tr('Drehen', 'Turn')}<span class="key">R</span></button>
+    this.bar.innerHTML = `<button class="decor-turn${this.canTurn() ? '' : ' off'}${this.sel && this.turned() ? ' on' : ''}" data-id="@turn"><span class="turn-icon">↻</span>${tr('Drehen', 'Turn')}<span class="key">R</span></button>
       <div class="decor-title">${tr('Bauen', 'Build')}</div>
       ${empty}<div class="decor-items">${items}</div>
       <button class="decor-order" data-id="@order">${tr('Bestellen', 'Order')}</button>
@@ -313,8 +313,21 @@ export default class DecorMode {
     return !!DECOR[id]?.indoor;
   }
 
-  turnable() {
-    return !this.indoor() || (DECOR[this.sel]?.views ?? 1) > 1;
+  turnable(id = this.sel) {
+    return !this.indoor(id) || (DECOR[id]?.views ?? 1) > 1;
+  }
+
+  // zuletzt gesetztes bzw. verschobenes Teil, das noch dort steht und sich drehen lässt (Touch: nach dem Ziehen ist
+  // nichts mehr in der Hand – „Drehen“ dreht dann dieses Teil an Ort und Stelle), sonst null
+  lastEntry() {
+    const lp = this.lastPlaced;
+    if (!lp) return null;
+    const entry = this.entryAt(lp.tx, lp.ty);
+    return entry && !entry.booth && entry.id === lp.id && entry.item.tx === lp.tx && entry.item.ty === lp.ty && this.turnable(entry.id) ? entry : null;
+  }
+
+  canTurn() {
+    return this.sel ? this.turnable() : !!this.lastEntry();
   }
 
   turned() {
@@ -323,12 +336,35 @@ export default class DecorMode {
 
   // Drehen: Möbel in die nächste Ansicht (eine Vierteldrehung), anderes Teil gespiegelt (bzw. wieder normal) setzen
   turn() {
-    if (!this.sel || !this.turnable()) return;
+    if (!this.sel) return this.turnLast();
+    if (!this.turnable()) return;
     if (this.indoor()) this.rot = (this.rot + 1) % DECOR[this.sel].views;
     else this.flip = !this.flip;
     this.key = '';
     this.renderBar();
     this.update();
+  }
+
+  // das zuletzt gesetzte Teil an Ort und Stelle drehen (aufheben, drehen, an dieselbe Stelle; passt es gedreht nicht,
+  // bleibt es, wie es war). Danach ist wieder gewählt, was vorher gewählt war
+  turnLast() {
+    const entry = this.lastEntry();
+    if (!entry) return;
+    const back = { sel: this.sel, picking: this.picking, flip: this.flip, rot: this.rot };
+    const at = { tx: entry.item.tx, ty: entry.item.ty };
+    this.pickUp(entry);
+    const was = { flip: this.flip, rot: this.rot };
+    if (this.indoor()) this.rot = (this.rot + 1) % DECOR[this.sel].views;
+    else this.flip = !this.flip;
+    this.dir = [0, 0];
+    // (nur der Platz zählt, nicht Henrik oder Tiere daneben: es steht ja schon dort)
+    const fits = this.block(at.tx, at.ty, this.sel).tiles.every((t) => this.freeTile(t.tx, t.ty, this.sel));
+    if (!fits) {
+      Object.assign(this, was);
+      this.tapNo(at.tx, at.ty, tr('Gedreht passt es hier nicht', 'It does not fit here turned'));
+    }
+    this.place(at.tx, at.ty, this.sel);
+    this.restore(back);
   }
 
   // Aktionstaste im Setzen-Modus (die Aktionen am Ort – Schild, Futterhaus … – kommen vorher dran); true: erledigt
@@ -656,6 +692,7 @@ export default class DecorMode {
     if (!isRug(id)) for (const t of block.tiles) setTileChar(t.tx, t.ty, t.tx === block.tx && t.ty === block.ty ? def.char : fillChar(id));
     // der Tierfreund des Geheges freut sich (nur ein Effekt, keine Herzen: sonst lohnte sich Hin- und Herstellen)
     if (designablePen(pen)) for (const a of this.scene.animals ?? []) if (a.enclosure?.id === pen.id && a.sprite && isFriend(a)) this.scene.friendHeart(a);
+    this.lastPlaced = isToy(id) ? { tx, ty, id } : { tx: block.tx, ty: block.ty, id }; // (für „Drehen“ ohne Teil in der Hand)
     const img = this.scene.drawDecor(block.tx, block.ty, isRug(id) ? item : null);
     if (!this.indoor(id)) img?.setFlipX(this.flip);
     if (img) {
@@ -729,6 +766,7 @@ export default class DecorMode {
       const rug = placedIn(LEVEL_ID).some((d) => isRug(d.id) && decorTiles(d).some((t) => t.tx === tx && t.ty === ty));
       return room && !rug && !this.keepOut.has(tx + ',' + ty);
     }
+    if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return false; // (außerhalb der Karte gilt charAt als Rasen: dort verschwände es)
     if (charAt(tx, ty) !== '.') return false; // nur Rasen (kein Weg, kein Wasser, nichts darauf)
     // Haupthaus: nur Möbel, überall im Raum (ohne Teil: die Fläche fürs Overlay)
     if (LEVEL_ID === ROOM) return (!id || !!DECOR[id]?.indoor) && !this.keepOut.has(tx + ',' + ty);

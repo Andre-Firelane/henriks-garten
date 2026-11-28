@@ -1434,6 +1434,16 @@ function skinsHere(species) {
   return [SKINS[species] ?? []].flat().filter((s) => (!s.level || s.level === biomeOf()) && (!s.seasons || s.seasons.includes(LEVEL.season)));
 }
 
+// wie wahrscheinlich ein wildes Tier dieser Art diese Variante ist (0 bis 1, ohne Events und Glücksbringer): mit Anteil
+// (share) neben dem Grundbild (kind.baseShare) und den anderen Anteilen, sonst die Chance wild (je Wetter: die höchste)
+export function skinChance(species, id) {
+  const all = [SKINS[species] ?? []].flat();
+  const s = all.find((x) => x.id === id);
+  if (!s) return 0;
+  if (s.share) return s.share / ((SPECIES[species]?.baseShare ?? 0) + all.reduce((n, x) => n + (x.share ?? 0), 0));
+  return typeof s.wild === 'object' ? Math.max(0, ...Object.values(s.wild)) : s.wild ?? 0;
+}
+
 // Angaben zu einem Skin (Name, männlich ...), oder null
 export function skinInfo(species, id) {
   return [SKINS[species] ?? []].flat().find((s) => s.id === id) ?? null;

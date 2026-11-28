@@ -8,7 +8,7 @@ import { tileToWorld, worldToTile } from './iso.js';
 import { LEVEL, LEVEL_ID, MAP_H, MAP_W, biomeOf, buildingAt, charAt, exitAt, isBlocked } from './map.js';
 import { SEASON_LEVELS, skipSeason } from './season.js';
 import { formatTime } from './events.js';
-import { rareSkinHere, skinInfo } from '../animals/Animal.js';
+import { rareSkinHere, skinChance, skinInfo } from '../animals/Animal.js';
 import { animalIcon, animalIconFit } from '../ui/icons.js';
 import { openLuckPicker } from '../ui/luckPicker.js';
 import { EVENT_GROUPS, groupsLoaded } from '../scenes/BootScene.js';
@@ -16,7 +16,7 @@ import { GHOST_ALPHA, GHOST_DEPTH, isCovered, outlineTexture } from './Boat.js';
 import {
   BONI, CHARMS, CHARM_SCOPE, CHEST_COUNT, CHEST_LEVELS, HEART_RAIN, LEVEL_EVENT, TIERS,
   activeBoni, bonusActive, campfireLeft, cardCount, chestOpened, chestState, dropBoniElsewhere, giveCharm, hasCharm, iconImg,
-  inExpedition, luckState, ownsCharm, rerollCost, rollCards, startBonus,
+  inExpedition, luckState, ownsCharm, rerollCost, rollCards, startBonus, tierOf,
 } from './luck.js';
 import { RUN_BONI, addUnit, moreUnitsNow, runBonusTag } from './expedition.js';
 import { coveredAt } from './expeditionMaps.js';
@@ -200,7 +200,7 @@ export default class Luck {
   view(c) {
     if (c.kind === 'rare') {
       const info = skinInfo(c.species, c.skin);
-      const tier = TIERS[c.tier];
+      const tier = TIERS[tierOf(skinChance(c.species, c.skin))]; // nach der Seltenheit der Variante selbst (ein Hirsch ist nur selten)
       // großes Kartenbild der seltenen Variante (tools/card-images.py); sonst das Spielbild (z. B. Schoko-Giraffe),
       // Platzhalter: das Bild der Art, eingefärbt wie im Spiel
       const pic = CARD_SKINS.has(c.skin)

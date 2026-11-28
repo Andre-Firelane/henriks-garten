@@ -397,7 +397,9 @@ function addSheet(job, source) {
   const tex = textures.addSpriteSheet(key, source, { frameWidth: frame.width, frameHeight: frame.height });
   Object.assign(tex.customData, textures.get(src).customData);
   const anim = anims.get(src);
-  if (anim && !anims.exists(key)) anims.create({ key, frames: anims.generateFrameNumbers(key), frameRate: anim.frameRate, repeat: anim.repeat, yoyo: anim.yoyo });
+  // dieselben Bilder wie die Vorlage (nicht alle Plätze des Blatts: liegt es in zwei Reihen, z. B. der Eisbär von hinten,
+  // sind in der letzten Reihe Plätze leer – die Animation flackerte dann)
+  if (anim && !anims.exists(key)) anims.create({ key, frames: anim.frames.map((f) => ({ key, frame: f.textureFrame })), frameRate: anim.frameRate, repeat: anim.repeat, yoyo: anim.yoyo });
 }
 
 // ---- Fertige Fellfarben auf dem Gerät speichern ----

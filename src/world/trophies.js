@@ -45,6 +45,8 @@ const skinsOf = (sp) => [SKINS[sp] ?? []].flat();
 const rareSkins = () => (game.skinsCaught ?? []).filter((id) => Object.keys(SKINS).some((sp) => skinsOf(sp).some((s) => s.id === id && !s.common)));
 const expBiomes = () => [...new Set(Object.values(LEVELS).map((l) => l.expedition).filter(Boolean))];
 const expCount = () => Object.values(game.expDone ?? {}).reduce((n, k) => n + k, 0);
+const ONE_COAT = ['walrus', 'polarbear']; // Arten mit nur einer (seltenen) Fellfarbe: keine Trophäe „Alle Fellfarben“
+const friendsAt = (lv) => Object.values(game.bonds ?? {}).filter((b) => friendLevel(b) >= lv).length; // Tierfreunde ab dieser Stufe
 const bondsNamed = () => Object.values(game.bonds ?? {}).filter((b) => b.name);
 const count = (list, f) => list.filter(f).length;
 const eventIds = () => EVENTS.map((e) => e.id).filter((id) => id !== 'ride');
@@ -61,14 +63,18 @@ export const TROPHIES = [
   { id: 'world_all', group: 'book', tier: 'gold', mark: '★', name: tr('Alle Tiere der Welt', 'Every animal'), text: tr('Jede Tierart im Spiel gefangen.', 'Caught every kind of animal in the game.'), progress: () => [count(allSpecies(), caught), allSpecies().length], check: () => allSpecies().length > 0 && allSpecies().every(caught) },
   { id: 'rare_1', group: 'coats', tier: 'bronze', animal: 'cat2', name: tr('Etwas Seltenes', 'Something rare'), text: tr('Ein seltenes Tier gefangen.', 'Caught a rare animal.'), progress: () => [Math.min(1, rareSkins().length), 1], check: () => rareSkins().length >= 1 },
   { id: 'rare_10', group: 'coats', tier: 'silver', animal: 'tiger2', name: tr('Sammler', 'Collector'), text: tr('10 verschiedene seltene Tiere gefangen.', 'Caught 10 different rare animals.'), progress: () => [Math.min(10, rareSkins().length), 10], check: () => rareSkins().length >= 10 },
-  ...Object.keys(COATS).map((sp) => ({
+  // (nicht für Walross und Eisbär: dort gibt es nur die eine seltene Farbe, das ist schon „Etwas Seltenes“)
+  ...Object.keys(COATS).filter((sp) => !ONE_COAT.includes(sp)).map((sp) => ({
     id: `coats_${sp}`, group: 'coats', tier: 'gold', animal: sp,
     name: tr('Alle Fellfarben', 'All coats'),
     text: tr('Jedes Aussehen dieser Tierart gefangen.', 'Caught every look of this animal.'),
     progress: () => [count(skinsOf(sp), (k) => game.skinsCaught?.includes(k.id)) + (caught(sp) ? 1 : 0), skinsOf(sp).length + 1], // (+1: das Grundbild)
     check: () => caught(sp) && skinsOf(sp).every((s) => game.skinsCaught?.includes(s.id)),
   })),
+  { id: 'friend_3', group: 'friends', tier: 'bronze', mark: '♥', name: tr('Gute Freunde', 'Good friends'), text: tr('Ein Tierfreund auf Stufe 3.', 'An animal friend at level 3.'), progress: () => [Math.min(1, friendsAt(3)), 1], check: () => friendsAt(3) >= 1 },
+  { id: 'friend_3x5', group: 'friends', tier: 'silver', mark: '♥', name: tr('Freundeskreis', 'Circle of friends'), text: tr('5 Tierfreunde auf Stufe 3.', '5 animal friends at level 3.'), progress: () => [Math.min(5, friendsAt(3)), 5], check: () => friendsAt(3) >= 5 },
   { id: 'friend_max', group: 'friends', tier: 'gold', mark: '♥', name: tr('Beste Freunde', 'Best friends'), text: tr('Ein bester Freund (Stufe 4).', 'A best friend (level 4).'), progress: () => [Math.max(0, ...Object.values(game.bonds ?? {}).map((b) => friendLevel(b))), FRIEND_LEVELS.length], check: () => Object.values(game.bonds ?? {}).some((b) => friendLevel(b) >= FRIEND_LEVELS.length) },
+  { id: 'friend_max3', group: 'friends', tier: 'gold', mark: '♥', name: tr('Unzertrennlich', 'Inseparable'), text: tr('3 beste Freunde (Stufe 4).', '3 best friends (level 4).'), progress: () => [Math.min(3, friendsAt(FRIEND_LEVELS.length)), 3], check: () => friendsAt(FRIEND_LEVELS.length) >= 3 },
   { id: 'friend_10', group: 'friends', tier: 'silver', mark: '♥', name: tr('10 Tierfreunde', '10 animal friends'), text: tr('10 Tieren einen Namen gegeben.', 'Named 10 animals.'), progress: () => [Math.min(10, bondsNamed().length), 10], check: () => bondsNamed().length >= 10 },
   ...SECTIONS.map(([s, name, animal]) => ({
     id: `full_${s}`, group: 'park', tier: 'gold', animal,

@@ -124,6 +124,15 @@ export default class Walrus extends Animal {
     return false;
   }
 
+  // Futter im Becken (Tierpfleger, Henrik): ein dösendes Walross wacht auf, bevor es hinrobbt (sonst rutschte es mit dem
+  // Schlafbild übers Eis)
+  startFeed() {
+    if (this.state === 'penned' && this.dozing) {
+      this.dozing = false;
+      this.phaseLeft = Phaser.Math.FloatBetween(...AWAKE_TIME) + 15; // (+ Weg und Fressen: nicht mittendrin wieder eindösen)
+    }
+  }
+
   get sleepy() {
     return (this.state === 'wild' && (this.dozing || this.warming)) || (this.state === 'penned' && this.dozing);
   }

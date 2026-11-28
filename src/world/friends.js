@@ -165,7 +165,7 @@ export function randomName(species, current = '') {
 }
 
 // Herzen der Bindung als Text (eins je Stufe)
-export const levelHearts = (level) => '♥'.repeat(level);
+export const levelHearts = (level) => (level >= BEST_LEVEL ? '★' : '♥'.repeat(level)); // (bester Freund: ein Stern statt 4 Herzen)
 
 // Was die neue Stufe bringt (Meldung beim Aufstieg)
 export function levelText(name, level) {

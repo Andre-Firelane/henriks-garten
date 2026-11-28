@@ -70,8 +70,8 @@ export const LONG_EVENTS = 1.5;
 export const PIGGY = 0.85;
 export const CAMPFIRE_COOLDOWN = 3 * MINUTE;
 
-// Neu würfeln: 10, 20, 40 … Herzen (mit dem Glückswürfel die Hälfte), zählt je Kiste von vorn
-const REROLL_BASE = 10;
+// Neu würfeln: 40, 80, 160 … Herzen (mit dem Glückswürfel die Hälfte), zählt je Kiste von vorn
+const REROLL_BASE = 40; // Herzen fürs erste Neuwürfeln (Kiste, Expeditions-Karten, Ziel-Belohnung), danach jeweils doppelt (war 10, zu billig)
 
 // Seltenheit der Karte "seltenes Tier", nach dem Anteil der Art an den Tieren des Gebiets (Rahmenfarbe)
 export const TIERS = {

@@ -15,7 +15,7 @@ const STICK_DIST = 30; // so nah muss man an einem Stock stehen, um ihn aufzuheb
 const STICK_ORIGIN = [28 / 56, 21 / 28];
 const STICK_BACK = 20; // so lange (Sekunden), bis ein verbauter Stock wieder an seinem Platz liegt
 const STICK_DROPPED = 3; // ... ein nicht verbauter (weggelegt, anderes Werkzeug genommen)
-const REOPEN = [60, 120]; // so lange bleibt der Damm dicht
+const REOPEN = [60, 120]; // so lange bleibt der Damm dicht (cfg.reopen: auf Expeditions-Maps kürzer)
 const SPRAY_EVERY = 0.07;
 const CHECK_EVERY = 3; // so oft wird die Kolonie aufgefüllt
 const SPOT_SIDES = [
@@ -74,6 +74,7 @@ export default class BeaverDam {
       if (!spot) return;
       const from = first || !this.lodge ? spot : { x: this.lodge.x + 10, y: this.lodge.y + 6 };
       const b = this.scene.createAnimal('beaver', from.x, from.y);
+      b.rollSkin('wild'); // selten eine Nutria; mit der Karte „seltenes Tier“ (Kiste, Expedition) ist es die versprochene
       if (first) b.sitAt(spot);
       else {
         b.goTo(spot);
@@ -137,7 +138,7 @@ export default class BeaverDam {
     if (this.carried) this.carried.back = STICK_BACK;
     this.carried = null;
     this.open = false;
-    this.reopen = Phaser.Math.FloatBetween(...REOPEN);
+    this.reopen = Phaser.Math.FloatBetween(...(this.cfg.reopen ?? REOPEN)); // (Expedition: schneller wieder offen, siehe GardenScene)
     this.img.setTexture('forest_beaver_dam');
     this.scene.tweens.add({ targets: this.img, scaleY: { from: 0.94, to: 1 }, duration: 260, ease: 'Back.easeOut' });
   }

@@ -168,7 +168,7 @@ export class KeeperFeeder {
   lure(w) {
     for (const a of this.scene.animals) {
       if (a.enclosure !== w.pen || !a.canFeed() || this.noFeed.includes(a.species) || !a.sprite?.visible) continue;
-      if (a.feed || a.play || a.sleeping || a.napping || a.petted || a.visit || a.fetch || a.companion || a.penMoment || a.tree || a.jumping) continue;
+      if (a.feed || a.play || a.sleeping || a.napping || a.dozing || a.sleepy || a.petted || a.visit || a.fetch || a.companion || a.penMoment || a.tree || a.jumping) continue;
       const dx = w.x - a.x;
       const dy = w.y - a.y;
       const d = Math.hypot(dx, dy * 2);
